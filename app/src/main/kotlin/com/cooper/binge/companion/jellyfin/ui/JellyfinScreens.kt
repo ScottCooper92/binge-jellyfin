@@ -292,7 +292,7 @@ private fun SignedIn(
         if (state.isAdministrator) item { AdminGroup(actions) }
         item { LibraryGroup(state, actions) }
         item {
-            BingeOutlinedButton(
+            BingeTextButton(
                 label = stringResource(R.string.settings_sign_out),
                 onClick = actions.onAskSignOut,
                 leadingIcon = Icons.AutoMirrored.Outlined.Logout,
