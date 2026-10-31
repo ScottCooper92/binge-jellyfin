@@ -46,6 +46,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordActions
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.TasksActions
+import com.cooper.binge.companion.jellyfin.ui.console.TasksScreen
+import com.cooper.binge.companion.jellyfin.ui.console.TasksViewModel
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -140,6 +143,7 @@ class MainActivity : ComponentActivity() {
                                 ConsolePage.NowPlaying ->
                                     NowPlayingRoute(graph, (state as? UiState.SignedIn)?.isAdministrator == true, close)
                                 ConsolePage.Libraries -> LibrariesRoute(graph, close)
+                                ConsolePage.Tasks -> TasksRoute(graph, close)
                             }
                         }
                     }
@@ -220,6 +224,17 @@ class MainActivity : ComponentActivity() {
                 onBack = onBack,
             ),
         )
+    }
+
+    /** The scheduled tasks page, whose event socket closes with the page. */
+    @Composable
+    private fun TasksRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
+        val state by tasks.state.collectAsStateWithLifecycle()
+        TasksScreen(state, TasksActions(onRun = tasks::run, onStop = tasks::stop, onRetry = tasks::load, onBack = onBack))
     }
 
     /** The now-playing page with its own view model, whose event socket closes with the page. */

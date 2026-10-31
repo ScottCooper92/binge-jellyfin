@@ -16,4 +16,7 @@ enum class ConsolePage {
 
     /** The server's libraries, and scanning them. Admin only. */
     Libraries,
+
+    /** The server's scheduled tasks, run and stopped. Admin only. */
+    Tasks,
 }

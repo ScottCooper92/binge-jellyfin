@@ -15,6 +15,7 @@ app:console_approve_detail  8371322fc723
 app:console_languages_detail  69f8faf85034
 app:console_libraries_detail  2799454505fe
 app:console_retry  d8b8392e2c54
+app:console_tasks_detail  48496ae36269
 app:error_generic  4def98c89240
 app:error_invalid_address  3f5c0f63269d
 app:error_not_jellyfin  37cafc7954e3
@@ -25,6 +26,7 @@ app:error_unreachable  8224327e4cec
 app:error_wrong_credentials  c16954ee58f2
 app:job_done  11a6767d5674
 app:job_failed  031a8f0f659d
+app:job_last_failed  13e824ef466d
 app:job_last_run  89d15f327f56
 app:job_never_run  7c054d45f358
 app:job_run  00d60e31a4e6
@@ -104,6 +106,8 @@ app:subtitle_mode_none  ca7981b46ecf
 app:subtitle_mode_none_detail  1547386ff931
 app:subtitle_mode_smart  9e6ad6db21db
 app:subtitle_mode_smart_detail  319b67f1f5af
+app:tasks_not_sent  ca0afa8ce6b6
+app:tasks_title  21c4a0a31b6a
 app:transcode_audio  ab82f46e218a
 app:transcode_bitrate  f776e945cb6d
 app:transcode_container  415a9113ceb1

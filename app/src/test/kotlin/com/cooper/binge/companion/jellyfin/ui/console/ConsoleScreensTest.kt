@@ -22,6 +22,8 @@ import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
+import com.cooper.binge.companion.jellyfin.server.TaskRun
+import com.cooper.binge.companion.jellyfin.server.TaskStatus
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -205,5 +207,50 @@ class ConsoleScreensTest {
         val icons = listOf("movies", "tvshows", "music", "books", "photos", "homevideos", "", "boxsets").map(::typeIcon)
         assertEquals(6, icons.distinct().size)
         assertEquals(typeIcon(""), typeIcon("boxsets"))
+    }
+
+    @Test
+    fun `tasks group by category, run and stop in place, and say how each last ran`() {
+        val ran = mutableListOf<String>()
+        val stopped = mutableListOf<String>()
+        val scan = ServerTask("a", LIBRARY_SCAN_TASK, "Scan Media Library", "", "Library", false, false, null, null)
+        val clean =
+            ServerTask("b", "CleanCache", "Clean Cache Directory", "", "Maintenance", true, false, 30, TaskRun(TaskStatus.Failed, 0, null))
+        val failed = ServerTask("c", "OptimizeDatabaseTask", "Optimise database", "", "Maintenance", false, false, null, clean.lastRun)
+        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(scan, clean, failed))))
+        compose.setContent {
+            JellyfinTheme { TasksScreen(state, TasksActions(onRun = { ran += it.id }, onStop = { stopped += it.id }), now = 0) }
+        }
+        compose.onNodeWithText("LIBRARY").assertExists()
+        compose.onNodeWithText("MAINTENANCE").assertExists()
+        compose.onNodeWithText("Running… 30%").assertExists()
+        compose.onNodeWithText("Hasn't run yet").assertExists()
+        compose.onAllNodesWithContentDescription("Run")[0].performClick()
+        compose.onNodeWithContentDescription("Stop").performClick()
+        assertEquals(listOf("a"), ran)
+        assertEquals(listOf("b"), stopped)
+        state = state.copy(actionFailed = ConsoleFailure.Refused)
+        val notSent = "That didn't reach the server. Something went wrong. Try again."
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(notSent))
+        compose.onNodeWithText(notSent).assertExists()
+    }
+
+    @Test
+    fun `each kind of task has its icon, and one this app doesn't know a clock`() {
+        val keys =
+            listOf(
+                LIBRARY_SCAN_TASK,
+                "AudioNormalization",
+                "DownloadSubtitles",
+                "DownloadLyrics",
+                "RefreshPeople",
+                "RefreshChapterImages",
+                "DeleteCacheFiles",
+                "PluginUpdates",
+                "RefreshGuide",
+                "OptimizeDatabaseTask",
+                "Something",
+            )
+        assertEquals(keys.size, keys.map(::taskIcon).distinct().size)
     }
 }

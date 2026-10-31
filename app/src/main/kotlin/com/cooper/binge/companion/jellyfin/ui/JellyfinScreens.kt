@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
@@ -376,6 +377,12 @@ private fun AdminGroup(actions: Actions) {
                     label = stringResource(R.string.libraries_title),
                     detail = stringResource(R.string.console_libraries_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Libraries) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Schedule,
+                    label = stringResource(R.string.tasks_title),
+                    detail = stringResource(R.string.console_tasks_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Tasks) },
                 ),
             ),
     )
