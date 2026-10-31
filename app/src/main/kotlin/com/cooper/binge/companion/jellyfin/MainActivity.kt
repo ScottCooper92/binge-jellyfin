@@ -34,6 +34,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.ApproveActions
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeScreen
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageScope
+import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageStores
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
@@ -93,11 +95,13 @@ class MainActivity : ComponentActivity() {
             val state by viewModel.state.collectAsStateWithLifecycle()
             // The console page open over its home, if any. Back closes it; leaving SignedIn closes it too.
             var page by rememberSaveable { mutableStateOf<ConsolePage?>(null) }
-            // Counts openings, so each one gets a fresh page view model.
+            // Counts openings, so each one gets a fresh store for its page's view model.
             var opened by rememberSaveable { mutableIntStateOf(0) }
+            val pageStores: ConsolePageStores = viewModel()
             val signedIn = state is UiState.SignedIn
             LaunchedEffect(signedIn) { if (!signedIn) page = null }
             val openPage = page.takeIf { signedIn }
+            LaunchedEffect(openPage) { if (openPage == null) pageStores.close() }
             BackHandler(enabled = openPage != null) { page = null }
             val actions =
                 Actions(
@@ -128,18 +132,23 @@ class MainActivity : ComponentActivity() {
             } else {
                 JellyfinTheme {
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        when (openPage) {
-                            null -> JellyfinRoot(state, actions)
-                            ConsolePage.ApproveCode -> ApproveCodeRoute(graph, opened, onBack = { page = null })
-                            ConsolePage.Languages -> LanguagesRoute(graph, opened, onBack = { page = null })
-                            ConsolePage.Password -> PasswordRoute(graph, opened, onBack = { page = null })
-                            ConsolePage.NowPlaying ->
-                                NowPlayingRoute(
-                                    graph,
-                                    opened,
-                                    (state as? UiState.SignedIn)?.isAdministrator == true,
-                                    onBack = { page = null },
-                                )
+                        if (openPage == null) {
+                            JellyfinRoot(state, actions)
+                        } else {
+                            val close = { page = null }
+                            ConsolePageScope(pageStores.storeFor(opened)) {
+                                when (openPage) {
+                                    ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
+                                    ConsolePage.Languages -> LanguagesRoute(graph, close)
+                                    ConsolePage.Password -> PasswordRoute(graph, close)
+                                    ConsolePage.NowPlaying ->
+                                        NowPlayingRoute(
+                                            graph,
+                                            (state as? UiState.SignedIn)?.isAdministrator == true,
+                                            close,
+                                        )
+                                }
+                            }
                         }
                     }
                 }
@@ -151,14 +160,10 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ApproveCodeRoute(
         graph: AppGraph,
-        opening: Int,
         onBack: () -> Unit,
     ) {
         val approve: ApproveCodeViewModel =
-            viewModel(
-                key = "approve-code-$opening",
-                factory = viewModelFactory { initializer { ApproveCodeViewModel(graph.connection) } },
-            )
+            viewModel(factory = viewModelFactory { initializer { ApproveCodeViewModel(graph.connection) } })
         val state by approve.state.collectAsStateWithLifecycle()
         ApproveCodeScreen(state, ApproveActions(onCode = approve::onCode, onApprove = approve::approve, onBack = onBack))
     }
@@ -167,14 +172,10 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun LanguagesRoute(
         graph: AppGraph,
-        opening: Int,
         onBack: () -> Unit,
     ) {
         val languages: LanguagesViewModel =
-            viewModel(
-                key = "languages-$opening",
-                factory = viewModelFactory { initializer { LanguagesViewModel(graph.connection) } },
-            )
+            viewModel(factory = viewModelFactory { initializer { LanguagesViewModel(graph.connection) } })
         val state by languages.state.collectAsStateWithLifecycle()
         LanguagesScreen(
             state,
@@ -192,14 +193,10 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun PasswordRoute(
         graph: AppGraph,
-        opening: Int,
         onBack: () -> Unit,
     ) {
         val password: PasswordViewModel =
-            viewModel(
-                key = "password-$opening",
-                factory = viewModelFactory { initializer { PasswordViewModel(graph.connection) } },
-            )
+            viewModel(factory = viewModelFactory { initializer { PasswordViewModel(graph.connection) } })
         val state by password.state.collectAsStateWithLifecycle()
         PasswordScreen(
             state,
@@ -217,15 +214,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun NowPlayingRoute(
         graph: AppGraph,
-        opening: Int,
         administrator: Boolean,
         onBack: () -> Unit,
     ) {
         val nowPlaying: NowPlayingViewModel =
-            viewModel(
-                key = "now-playing-$opening",
-                factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection) } },
-            )
+            viewModel(factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection) } })
         val state by nowPlaying.state.collectAsStateWithLifecycle()
         NowPlayingScreen(
             state,
