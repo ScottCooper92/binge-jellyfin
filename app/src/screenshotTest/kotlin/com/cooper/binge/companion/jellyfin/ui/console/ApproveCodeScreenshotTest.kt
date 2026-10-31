@@ -32,4 +32,9 @@ class ApproveCodeScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun wrongCode() = ApproveCodeScreen(ApproveUiState(code = "111111", result = ApproveResult.WrongCode), ApproveActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun failed() = ApproveCodeScreen(ApproveUiState(code = "111111", result = ApproveResult.Failed), ApproveActions())
 }
