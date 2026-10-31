@@ -69,7 +69,24 @@ suspend fun JellyfinClient.logout() {
     post("Sessions/Logout", null)
 }
 
-suspend fun JellyfinClient.me(): String = getObject("Users/Me").string("Name").orEmpty()
+/** The signed-in user as the server knows them, and whether their policy makes them an administrator. */
+data class CurrentUser(
+    val name: String,
+    val isAdministrator: Boolean,
+)
+
+suspend fun JellyfinClient.me(): CurrentUser {
+    val json = getObject("Users/Me")
+    return CurrentUser(name = json.string("Name").orEmpty(), isAdministrator = json.obj("Policy")?.bool("IsAdministrator") == true)
+}
+
+/**
+ * Approves a Quick Connect [code] another device shows, signing that device in as this user. A code
+ * the server is not waiting on answers 404; Quick Connect turned off answers 403 or 503.
+ */
+suspend fun JellyfinClient.authorizeQuickConnect(code: String) {
+    post("QuickConnect/Authorize", null, mapOf("code" to code))
+}
 
 private fun JsonObject.toSignedIn(): SignedIn {
     val user = obj("User")

@@ -17,6 +17,7 @@ import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
 import com.cooper.binge.companion.jellyfin.server.authenticateWithQuickConnect
 import com.cooper.binge.companion.jellyfin.server.logout
+import com.cooper.binge.companion.jellyfin.server.me
 import com.cooper.binge.companion.jellyfin.server.publicInfo
 import com.cooper.binge.companion.jellyfin.server.quickConnectAuthenticated
 import com.cooper.binge.companion.jellyfin.server.quickConnectEnabled
@@ -67,6 +68,8 @@ sealed interface UiState {
         val refreshing: Boolean = false,
         val refreshFailed: Boolean = false,
         val confirmingSignOut: Boolean = false,
+        /** From the user's own policy, read with each refresh: what decides the console's admin pages. */
+        val isAdministrator: Boolean = false,
     ) : UiState {
         val cleartext: Boolean get() = session.baseUrl.startsWith("http://")
     }
@@ -237,6 +240,8 @@ class JellyfinViewModel(
                         return@launch
                     }
                     index.refresh(signedIn.second, signedIn.first.userId)
+                    val admin = signedIn.second.me().isAdministrator
+                    _state.update { (it as? UiState.SignedIn)?.copy(isAdministrator = admin) ?: it }
                     false
                 } catch (e: CancellationException) {
                     throw e

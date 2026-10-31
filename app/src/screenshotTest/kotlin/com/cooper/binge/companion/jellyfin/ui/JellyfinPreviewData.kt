@@ -62,3 +62,5 @@ val previewSignedInChecking = UiState.SignedIn(session = session, titles = null,
 val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = true)
 
 val previewSignedInHttps = previewSignedIn.copy(session = session.copy(baseUrl = REMOTE, serverName = "Cabin"))
+
+val previewSignedInAdmin = previewSignedIn.copy(isAdministrator = true)

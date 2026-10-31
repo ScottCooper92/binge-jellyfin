@@ -4,13 +4,18 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,6 +25,11 @@ import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
+import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.console.ApproveActions
+import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -66,6 +76,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: JellyfinViewModel = viewModel(factory = factory)
             val state by viewModel.state.collectAsStateWithLifecycle()
+            // The console page open over its home, if any. Back closes it; signing out closes it too.
+            var page by rememberSaveable { mutableStateOf<ConsolePage?>(null) }
+            val openPage = page.takeIf { state is UiState.SignedIn }
+            BackHandler(enabled = openPage != null) { page = null }
             val actions =
                 Actions(
                     onAddress = viewModel::onAddress,
@@ -85,13 +99,29 @@ class MainActivity : ComponentActivity() {
                         viewModel.onAddress(server.address)
                         viewModel.connect()
                     },
+                    onOpenPage = { page = it },
                 )
             JellyfinTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    JellyfinRoot(state, actions)
+                    when (openPage) {
+                        null -> JellyfinRoot(state, actions)
+                        ConsolePage.ApproveCode -> ApproveCodeRoute(graph, onBack = { page = null })
+                    }
                 }
             }
         }
+    }
+
+    /** The approval page with its own view model, kept while the page is open. */
+    @Composable
+    private fun ApproveCodeRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val approve: ApproveCodeViewModel =
+            viewModel(factory = viewModelFactory { initializer { ApproveCodeViewModel(graph.connection) } })
+        val state by approve.state.collectAsStateWithLifecycle()
+        ApproveCodeScreen(state, ApproveActions(onCode = approve::onCode, onApprove = approve::approve, onBack = onBack))
     }
 
     private companion object {
