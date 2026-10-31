@@ -37,6 +37,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageScope
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageStores
+import com.cooper.binge.companion.jellyfin.ui.console.DevicesActions
+import com.cooper.binge.companion.jellyfin.ui.console.DevicesScreen
+import com.cooper.binge.companion.jellyfin.ui.console.DevicesViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
@@ -148,6 +151,7 @@ class MainActivity : ComponentActivity() {
                                 ConsolePage.Libraries -> LibrariesRoute(graph, close)
                                 ConsolePage.Tasks -> TasksRoute(graph, close)
                                 ConsolePage.Activity -> ActivityRoute(graph, close)
+                                ConsolePage.Devices -> DevicesRoute(graph, close)
                             }
                         }
                     }
@@ -252,6 +256,27 @@ class MainActivity : ComponentActivity() {
         ActivityScreen(
             state,
             ActivityActions(onRefresh = activity::refresh, onLoadMore = activity::loadMore, onRetry = activity::load, onBack = onBack),
+        )
+    }
+
+    /** The devices page. */
+    @Composable
+    private fun DevicesRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val devices: DevicesViewModel = viewModel(factory = viewModelFactory { initializer { DevicesViewModel(graph.connection) } })
+        val state by devices.state.collectAsStateWithLifecycle()
+        DevicesScreen(
+            state,
+            DevicesActions(
+                onAskRename = devices::askRename,
+                onRename = devices::rename,
+                onAskRemove = devices::askRemove,
+                onRemove = devices::remove,
+                onRetry = devices::load,
+                onBack = onBack,
+            ),
         )
     }
 

@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.History
@@ -379,6 +380,12 @@ private fun AdminGroup(actions: Actions) {
                     label = stringResource(R.string.activity_title),
                     detail = stringResource(R.string.console_activity_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Activity) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Devices,
+                    label = stringResource(R.string.devices_title),
+                    detail = stringResource(R.string.console_devices_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Devices) },
                 ),
             ),
     )

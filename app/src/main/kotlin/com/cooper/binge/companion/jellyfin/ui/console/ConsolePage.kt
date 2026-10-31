@@ -22,4 +22,7 @@ enum class ConsolePage {
 
     /** The server's activity log. Admin only. */
     Activity,
+
+    /** The devices signed in to the server, renamed or removed. Admin only. */
+    Devices,
 }
