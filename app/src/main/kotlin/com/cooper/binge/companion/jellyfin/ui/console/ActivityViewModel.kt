@@ -62,11 +62,11 @@ class ActivityViewModel(
         }
     }
 
-    /** Re-reads the newest page, keeping what's showing until it lands, and what it fails to replace. */
+    /** Re-reads the newest page, unless a page is on its way, keeping what's showing until it lands, and what it fails to replace. */
     fun refresh() {
         val ready = _state.value as? ActivityUiState.Ready ?: return
-        if (ready.refreshing) return
-        _state.value = ready.copy(refreshing = true)
+        if (ready.refreshing || ready.loadingMore) return
+        _state.value = ready.copy(refreshing = true, moreFailed = null)
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> client.activity(0, pageSize) }
@@ -78,7 +78,12 @@ class ActivityViewModel(
     /** Reads the page after the last entry showing. Entries that arrived meanwhile shift the pages, so repeats are dropped. */
     fun loadMore() {
         val ready = _state.value as? ActivityUiState.Ready ?: return
-        if (ready.loadingMore || ready.refreshing || !ready.hasMore) return
+        if (ready.loadingMore || ready.refreshing) return
+        // A failed refresh shows the same row, and with nothing more to page, Try again re-reads the newest.
+        if (!ready.hasMore) {
+            if (ready.moreFailed != null) refresh()
+            return
+        }
         _state.value = ready.copy(loadingMore = true, moreFailed = null)
         viewModelScope.launch {
             connection
