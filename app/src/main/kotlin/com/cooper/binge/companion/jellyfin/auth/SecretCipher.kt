@@ -12,8 +12,8 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Encrypts and decrypts the secrets this app keeps on disk: the access token for the
- * server, and the bearer secret of a sign-in waiting to be approved in another app.
+ * Encrypts and decrypts the one secret this app keeps on disk: the server's access token. A pending
+ * Quick Connect's secret stays in memory and is never written.
  */
 interface SecretCipher {
     fun encrypt(plaintext: String): String
