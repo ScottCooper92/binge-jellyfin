@@ -104,6 +104,7 @@ class LibrariesViewModel(
                             scanning = scanning - library.id,
                             outcomes = outcomes + (library.id to JobOutcome.Failed),
                             actionFailed = error.consoleFailure(),
+                            stopFailed = false,
                         )
                     }
                     clearLater(library.id)
