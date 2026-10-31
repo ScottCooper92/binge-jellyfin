@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    A home Jellyfin server is usually plain http on the LAN, so cleartext is allowed; the setup screen
+    asks before saving an http address. User-installed CAs are trusted too, for servers behind a
+    private CA.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

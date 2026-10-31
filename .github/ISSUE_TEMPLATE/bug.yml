@@ -1,0 +1,36 @@
+name: Bug report
+description: Something in the app does not work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue is public. Do not include anyone's name or account details.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      description: The movie or show, and the episode, if the bug is about one title.
+      placeholder: Severance S1 E1
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+  - type: input
+    id: server-version
+    attributes:
+      label: Jellyfin server version
+      description: Shown in the app's Server row.

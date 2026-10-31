@@ -1,0 +1,4 @@
+# The hash of every source string a locale translates, so an edit to the source cannot
+# pass silently while a translation still carries the old wording. Generated -
+# run ./gradlew updateTranslationHashes after re-reading the translations it names.
+app:app_label  03f509a513e8
