@@ -63,6 +63,12 @@ class FakeJellyfin : Dispatcher() {
 
     var quickConnectEnabled = true
     var quickConnectApproved = false
+
+    /** Whether `/Users/Me` answers with an administrator's policy. */
+    var administrator = false
+
+    /** The one Quick Connect code another device is waiting to have approved. */
+    var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
 
     init {
@@ -122,7 +128,9 @@ class FakeJellyfin : Dispatcher() {
             path == "/QuickConnect/Connect" -> json("""{"Authenticated":$quickConnectApproved}""")
             path == "/Users/AuthenticateWithQuickConnect" -> signedIn()
             path == "/Sessions/Logout" -> MockResponse(code = 204)
-            path == "/Users/Me" -> json("""{"Name":"Claude"}""")
+            path == "/Users/Me" -> json("""{"Name":"Claude","Policy":{"IsAdministrator":$administrator}}""")
+            path == "/QuickConnect/Authorize" ->
+                if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
             path.startsWith("/Shows/") && path.endsWith("/Episodes") -> episodes(path.split('/')[2])
             path == "/UserItems/Resume" -> paged(request, items.filter { it.positionTicks > 0 })
