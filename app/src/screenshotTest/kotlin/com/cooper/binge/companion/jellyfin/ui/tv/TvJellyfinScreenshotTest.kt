@@ -36,6 +36,7 @@ class TvJellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
     @Composable
     fun serverUnreachable() = TvJellyfinRoot(previewEnterServerError, Actions())
 

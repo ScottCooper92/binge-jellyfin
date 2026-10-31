@@ -104,7 +104,7 @@ private fun TvServerPage(
                 fillWidth = true,
                 modifier = Modifier.focusRequester(entry),
             )
-            TvStatusLine(state.error?.let { errorText(it) }, isError = true, lines = 1)
+            TvStatusLine(state.error?.let { errorText(it) }, isError = true, lines = 1, capped = false)
             TvButton(
                 label = stringResource(R.string.setup_connect),
                 onClick = actions.onConnect,
