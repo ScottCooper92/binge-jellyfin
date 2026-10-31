@@ -112,7 +112,8 @@ code. The calls this app makes are all in `server/JellyfinClient.kt`.
 where to confirm the list.
 
 - Kotlin compilation, and the debug and release builds (R8 on release).
-- The unit tests (`:app:testDebugUnitTest`).
+- The unit tests (`:app:testDebugUnitTest`). CI runs them against the debug variant only: the release
+  variant is the same tests against the same classes, since R8 does not touch unit tests.
 - `ktlintCheck`.
 - `detekt`, with type resolution, against the root `detekt.yml`. There is no baseline: the gate is
   zero findings. Keep it that way rather than creating one.
