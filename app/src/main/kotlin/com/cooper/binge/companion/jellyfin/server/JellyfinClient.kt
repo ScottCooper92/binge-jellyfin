@@ -1,18 +1,25 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import com.binge.companion.sdk.attempt
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import java.io.IOException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /** A Jellyfin answer other than 2xx. 401 is a broken session; 404 an item the server does not have. */
 class JellyfinHttpException(
@@ -30,8 +37,7 @@ data class ClientIdentity(
 
 /**
  * The transport to one Jellyfin server: the header that names this app (and carries the token once
- * signed in), and JSON over HTTP on [io]. The calls themselves are in `JellyfinAuth.kt` and
- * `JellyfinLibraryApi.kt`; their shapes are the server's own OpenAPI document (`/api-docs/openapi.json`).
+ * signed in), and JSON over HTTP on [io]. The calls themselves are in `JellyfinAuth.kt`; their shapes are the server's own OpenAPI document (`/api-docs/openapi.json`).
  */
 class JellyfinClient(
     private val http: OkHttpClient,
@@ -85,14 +91,41 @@ class JellyfinClient(
     private suspend fun call(
         builder: Request.Builder,
         path: String,
-    ): JsonElement =
-        withContext(io) {
-            val request = builder.header("Authorization", authorization()).header("Accept", "application/json").build()
-            http.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw JellyfinHttpException(response.code, path)
-                val text = response.body.string()
-                if (text.isBlank()) JsonNull else PARSER.parseToJsonElement(text)
-            }
+    ): JsonElement {
+        val request = builder.header("Authorization", authorization()).header("Accept", "application/json").build()
+        val text = awaitBody(http.newCall(request), path)
+        return withContext(io) { if (text.isBlank()) JsonNull else PARSER.parseToJsonElement(text) }
+    }
+
+    /** Runs [call] and reads its body; cancelling the caller cancels the [Call], closing the socket. */
+    private suspend fun awaitBody(
+        call: Call,
+        path: String,
+    ): String =
+        suspendCancellableCoroutine { cont ->
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(
+                object : Callback {
+                    override fun onFailure(
+                        call: Call,
+                        e: IOException,
+                    ) = cont.resumeWithException(e)
+
+                    override fun onResponse(
+                        call: Call,
+                        response: Response,
+                    ) {
+                        val outcome =
+                            attempt {
+                                response.use {
+                                    if (!it.isSuccessful) throw JellyfinHttpException(it.code, path)
+                                    it.body.string()
+                                }
+                            }
+                        outcome.fold(cont::resume, cont::resumeWithException)
+                    }
+                },
+            )
         }
 
     companion object {
