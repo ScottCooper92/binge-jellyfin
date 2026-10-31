@@ -105,6 +105,27 @@ class LanguagesViewModelTest {
     }
 
     @Test
+    fun `a failed save leaves a newer pick of the same row alone`() {
+        val vm = LanguagesViewModel(connection)
+        vm.ready()
+        jellyfin.status["/Users/Configuration"] = 500
+        vm.setAudio("spa")
+        saves(1)
+        jellyfin.status.remove("/Users/Configuration")
+        vm.setAudio("fra")
+        saves(2)
+        assertEquals("fra", vm.ready().languages.audio)
+        assertEquals(
+            "fra",
+            jellyfin
+                .lastBody("/Users/Configuration")
+                .getValue("AudioLanguagePreference")
+                .jsonPrimitive.content,
+        )
+        assertEquals(null, vm.ready().saveFailed)
+    }
+
+    @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/Localization/Cultures"] = 500
         val vm = LanguagesViewModel(connection)
