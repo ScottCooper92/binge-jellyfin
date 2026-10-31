@@ -37,7 +37,7 @@ sealed interface LibrariesUiState {
 
     /**
      * The libraries and their scans; the scheduled tasks, for the scan of everything; how each
-     * library's last scan just ended; and the last scan or stop that couldn't be sent.
+     * library's last scan just ended; and the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop.
      */
     data class Ready(
         val libraries: List<ServerLibrary>,
@@ -45,6 +45,7 @@ sealed interface LibrariesUiState {
         val scanning: Map<String, LibraryScan> = emptyMap(),
         val outcomes: Map<String, JobOutcome> = emptyMap(),
         val actionFailed: ConsoleFailure? = null,
+        val stopFailed: Boolean = false,
     ) : LibrariesUiState
 }
 
@@ -86,7 +87,14 @@ class LibrariesViewModel(
     }
 
     fun scan(library: ServerLibrary) {
-        update { copy(scanning = scanning + (library.id to LibraryScan()), outcomes = outcomes - library.id, actionFailed = null) }
+        update {
+            copy(
+                scanning = scanning + (library.id to LibraryScan()),
+                outcomes = outcomes - library.id,
+                actionFailed = null,
+                stopFailed = false,
+            )
+        }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> client.scanLibrary(library.id) }
@@ -109,13 +117,19 @@ class LibrariesViewModel(
 
     private fun taskCall(run: Boolean) {
         val task = (_state.value as? LibrariesUiState.Ready)?.board?.task(LIBRARY_SCAN_TASK) ?: return
-        update { copy(board = board.copy(busy = board.busy + task.id), actionFailed = null) }
+        update { copy(board = board.copy(busy = board.busy + task.id), actionFailed = null, stopFailed = false) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> if (run) client.runTask(task.id) else client.stopTask(task.id) }
                 .onSuccess { update { copy(board = if (run) board.started(task.id) else board.copy(busy = board.busy - task.id)) } }
                 .onFailure { error ->
-                    update { copy(board = board.copy(busy = board.busy - task.id), actionFailed = error.consoleFailure()) }
+                    update {
+                        copy(
+                            board = board.copy(busy = board.busy - task.id),
+                            actionFailed = error.consoleFailure(),
+                            stopFailed = !run,
+                        )
+                    }
                 }
         }
     }

@@ -153,6 +153,18 @@ class LibrariesViewModelTest {
     }
 
     @Test
+    fun `a stop that can't be sent is reported as a stop`() {
+        val vm = LibrariesViewModel(connection)
+        vm.ready()
+        jellyfin.status["/ScheduledTasks/Running/t-scan"] = 500
+        vm.stopEverything()
+        val failed = vm.ready { it.actionFailed != null }
+        assertTrue(failed.stopFailed)
+        vm.scanEverything()
+        assertEquals(false, vm.ready { it.board.busy.isEmpty() && !it.stopFailed }.stopFailed)
+    }
+
+    @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/Library/VirtualFolders"] = 403
         val vm = LibrariesViewModel(connection)
