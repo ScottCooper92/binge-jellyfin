@@ -1,9 +1,9 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import java.time.Instant
-import java.time.format.DateTimeParseException
 
 /** How a task's last run ended, as `LastExecutionResult.Status` says. */
 enum class TaskStatus { Completed, Failed, Cancelled, Aborted }
@@ -48,6 +48,9 @@ suspend fun JellyfinClient.stopTask(id: String) {
     delete("ScheduledTasks/Running/$id")
 }
 
+/** Every task's state as the server pushes it, on a socket of the caller's own, about once a second. */
+fun JellyfinClient.taskPushes(): Flow<List<ServerTask>> = socketMessages(subscribe = listOf(TASKS_START)).mapNotNull { it.pushedTasks() }
+
 /** A `ScheduledTasksInfo` push's tasks, hidden ones left out; null for any other message. */
 internal fun JsonObject.pushedTasks(): List<ServerTask>? =
     if (string("MessageType") == "ScheduledTasksInfo") (this["Data"] as? JsonArray)?.toTasks() else null
@@ -73,15 +76,8 @@ private fun JsonObject.taskOrNull(): ServerTask? {
 
 private fun JsonObject.taskRun(): TaskRun? {
     val status = TaskStatus.entries.firstOrNull { it.name == string("Status") } ?: return null
-    return TaskRun(status, string("EndTimeUtc")?.epochMillis(), string("ErrorMessage")?.takeIf { it.isNotBlank() })
+    return TaskRun(status, string("EndTimeUtc")?.epochMillisOrNull(), string("ErrorMessage")?.takeIf { it.isNotBlank() })
 }
-
-private fun String.epochMillis(): Long? =
-    try {
-        Instant.parse(this).toEpochMilli()
-    } catch (_: DateTimeParseException) {
-        null
-    }
 
 /** A running task's progress, 0 until it reports any; null when it isn't running. */
 internal fun JsonObject.runningPercent(): Int? =

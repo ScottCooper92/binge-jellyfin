@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
@@ -21,7 +22,10 @@ import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerTask
+import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
+import com.cooper.binge.companion.jellyfin.server.TaskRun
+import com.cooper.binge.companion.jellyfin.server.TaskStatus
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -205,5 +209,100 @@ class ConsoleScreensTest {
         val icons = listOf("movies", "tvshows", "music", "books", "photos", "homevideos", "", "boxsets").map(::typeIcon)
         assertEquals(6, icons.distinct().size)
         assertEquals(typeIcon(""), typeIcon("boxsets"))
+    }
+
+    @Test
+    fun `tasks group by category, run and stop in place, and say how each last ran`() {
+        val ran = mutableListOf<String>()
+        val stopped = mutableListOf<String>()
+        val scan = ServerTask("a", LIBRARY_SCAN_TASK, "Scan Media Library", "", "Library", false, false, null, null)
+        val clean =
+            ServerTask("b", "CleanCache", "Clean Cache Directory", "", "Maintenance", true, false, 30, TaskRun(TaskStatus.Failed, 0, null))
+        val failed = ServerTask("c", "OptimizeDatabaseTask", "Optimise database", "", "Maintenance", false, false, null, clean.lastRun)
+        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(scan, clean, failed))))
+        compose.setContent {
+            JellyfinTheme { TasksScreen(state, TasksActions(onRun = { ran += it.id }, onStop = { stopped += it.id }), now = 0) }
+        }
+        compose.onNodeWithText("LIBRARY").assertExists()
+        compose.onNodeWithText("MAINTENANCE").assertExists()
+        compose.onNodeWithText("Running… 30%").assertExists()
+        compose.onNodeWithText("Hasn't run yet").assertExists()
+        compose.onAllNodesWithContentDescription("Run")[0].performClick()
+        compose.onNodeWithContentDescription("Stop").performClick()
+        assertEquals(listOf("a"), ran)
+        assertEquals(listOf("b"), stopped)
+        state = state.copy(actionFailed = ConsoleFailure.Refused)
+        val notSent = "That didn't reach the server. Something went wrong. Try again."
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(notSent))
+        compose.onNodeWithText(notSent).assertExists()
+    }
+
+    @Test
+    fun `each kind of task has its icon, and one this app doesn't know a clock`() {
+        val keys =
+            listOf(
+                LIBRARY_SCAN_TASK,
+                "AudioNormalization",
+                "DownloadSubtitles",
+                "DownloadLyrics",
+                "RefreshPeople",
+                "RefreshChapterImages",
+                "DeleteCacheFiles",
+                "PluginUpdates",
+                "RefreshGuide",
+                "OptimizeDatabaseTask",
+                "Something",
+            )
+        assertEquals(keys.size, keys.map(::taskIcon).distinct().size)
+    }
+
+    @Test
+    fun `activity groups by day, marks errors, and asks for more at the end`() {
+        var more = 0
+        val now = 1_793_570_400_000L
+        val entries =
+            listOf(
+                ActivityEntry(
+                    2,
+                    "Failed login attempt from sam",
+                    "IP address: 10.0.0.9",
+                    "AuthenticationFailed",
+                    now - 60_000,
+                    Severity.Error,
+                ),
+                ActivityEntry(1, "sam is online from TV", null, "SessionStarted", now - 2 * 86_400_000L, Severity.Information),
+            )
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(entries, total = 3))
+        compose.setContent {
+            JellyfinTheme { ActivityScreen(state, ActivityActions(onLoadMore = { more++ }), now = now, zone = java.time.ZoneOffset.UTC) }
+        }
+        compose.onNodeWithText("Failed login attempt from sam").assertExists()
+        compose.onNodeWithText("sam is online from TV").assertExists()
+        compose.waitUntil { more == 1 }
+        state = ActivityUiState.Ready(entries, total = 3, moreFailed = ConsoleFailure.Unreachable)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Try again"))
+        compose.onNodeWithText("Try again").performClick()
+        assertEquals(2, more)
+        state = ActivityUiState.Ready(emptyList(), total = 0)
+        compose.onNodeWithText("Nothing has happened on this server yet.").assertExists()
+    }
+
+    @Test
+    fun `each kind of activity has its icon, and one this app doesn't know an information mark`() {
+        val types =
+            listOf(
+                "SessionStarted",
+                "SessionEnded",
+                "AuthenticationFailed",
+                "AuthenticationSucceeded",
+                "VideoPlaybackStopped",
+                "VideoPlayback",
+                "UserCreated",
+                "PluginInstalled",
+                "ScheduledTaskFailed",
+                "SubtitleDownloadFailure",
+                "Something",
+            )
+        assertEquals(types.size, types.map(::activityIcon).distinct().size)
     }
 }

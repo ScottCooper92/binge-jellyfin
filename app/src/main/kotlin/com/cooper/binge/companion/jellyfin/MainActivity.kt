@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -30,6 +31,9 @@ import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.console.ActivityActions
+import com.cooper.binge.companion.jellyfin.ui.console.ActivityScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ActivityViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveActions
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeScreen
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeViewModel
@@ -48,6 +52,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordActions
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.TasksActions
+import com.cooper.binge.companion.jellyfin.ui.console.TasksScreen
+import com.cooper.binge.companion.jellyfin.ui.console.TasksViewModel
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
 
@@ -101,6 +108,7 @@ class MainActivity : ComponentActivity() {
             // Counts openings, so each one gets a fresh store for its page's view model.
             var opened by rememberSaveable { mutableIntStateOf(0) }
             val pageStores: ConsolePageStores = viewModel()
+            val home = rememberSaveableStateHolder()
             val signedIn = state is UiState.SignedIn
             LaunchedEffect(signedIn) { if (!signedIn) page = null }
             val openPage = page.takeIf { signedIn }
@@ -136,7 +144,9 @@ class MainActivity : ComponentActivity() {
                 JellyfinTheme {
                     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                         if (openPage == null) {
-                            JellyfinRoot(state, actions)
+                            // The home leaves the composition while a page is open; this keeps its saved
+                            // state (the list's scroll position) for when it comes back.
+                            home.SaveableStateProvider(HOME_KEY) { JellyfinRoot(state, actions) }
                         } else {
                             val close = { page = null }
                             ConsolePageScope(pageStores.storeFor(opened)) {
@@ -151,6 +161,8 @@ class MainActivity : ComponentActivity() {
                                             close,
                                         )
                                     ConsolePage.Libraries -> LibrariesRoute(graph, close)
+                                    ConsolePage.Tasks -> TasksRoute(graph, close)
+                                    ConsolePage.Activity -> ActivityRoute(graph, close)
                                 }
                             }
                         }
@@ -234,6 +246,31 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    /** The scheduled tasks page, whose event socket closes with the page. */
+    @Composable
+    private fun TasksRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
+        val state by tasks.state.collectAsStateWithLifecycle()
+        TasksScreen(state, TasksActions(onRun = tasks::run, onStop = tasks::stop, onRetry = tasks::load, onBack = onBack))
+    }
+
+    /** The activity page, read a page at a time. */
+    @Composable
+    private fun ActivityRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val activity: ActivityViewModel = viewModel(factory = viewModelFactory { initializer { ActivityViewModel(graph.connection) } })
+        val state by activity.state.collectAsStateWithLifecycle()
+        ActivityScreen(
+            state,
+            ActivityActions(onRefresh = activity::refresh, onLoadMore = activity::loadMore, onRetry = activity::load, onBack = onBack),
+        )
+    }
+
     /** The now-playing page with its own view model, whose event socket closes with the page. */
     @Composable
     private fun NowPlayingRoute(
@@ -258,6 +295,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
+        const val HOME_KEY = "home"
+
         /** Android 17, where reaching the local network became a permission of its own. */
         const val LOCAL_NETWORK_SDK = 37
         const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"

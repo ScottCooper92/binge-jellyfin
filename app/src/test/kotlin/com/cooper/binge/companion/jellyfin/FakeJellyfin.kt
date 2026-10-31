@@ -81,6 +81,13 @@ class FakeJellyfin : Dispatcher() {
     /** `/ScheduledTasks`: the library scan, an idle task that last failed, and a hidden one. */
     var scheduledTasks = TASKS
 
+    /** The activity log, newest first: `/System/ActivityLog/Entries` pages through it. */
+    var activityEntries: List<String> =
+        (1..5).map { n ->
+            """{"Id":${6 - n},"Name":"Entry ${6 - n}","Type":"SessionStarted","Severity":"Information",""" +
+                """"Date":"2026-10-31T1$n:00:00Z","ShortOverview":"IP address: 10.0.0.$n"}"""
+        }
+
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
@@ -153,6 +160,7 @@ class FakeJellyfin : Dispatcher() {
             path == "/Sessions" -> json(sessions)
             path == "/Library/VirtualFolders" -> json(LIBRARIES)
             path == "/ScheduledTasks" -> json(scheduledTasks)
+            path == "/System/ActivityLog/Entries" -> activityPage(request)
             path.startsWith("/ScheduledTasks/Running/") -> MockResponse(code = 204)
             path.startsWith("/Items/") && path.endsWith("/Refresh") -> MockResponse(code = 204)
             path.startsWith("/Sessions/") && path.endsWith("/Playing/Stop") -> MockResponse(code = 204)
@@ -268,6 +276,13 @@ class FakeJellyfin : Dispatcher() {
         if (body["CurrentPw"]?.jsonPrimitive?.content != password) return MockResponse(code = 403)
         password = body.getValue("NewPw").jsonPrimitive.content
         return MockResponse(code = 204)
+    }
+
+    private fun activityPage(request: RecordedRequest): MockResponse {
+        val start = request.url.queryParameter("startIndex")?.toInt() ?: 0
+        val limit = request.url.queryParameter("limit")?.toInt() ?: activityEntries.size
+        val page = activityEntries.drop(start).take(limit)
+        return json("""{"Items":[${page.joinToString(",")}],"TotalRecordCount":${activityEntries.size},"StartIndex":$start}""")
     }
 
     private fun json(body: String): MockResponse =
