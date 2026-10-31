@@ -158,4 +158,15 @@ class JellyfinViewModelTest {
         vm.refresh()
         assertTrue(vm.await<UiState.SignedIn> { it.refreshFailed }.refreshFailed)
     }
+
+    @Test
+    fun `a token the server refuses sends the user back to sign in`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        jellyfin.status["/Items"] = 401
+        vm.refresh()
+        assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
+        assertNull(runBlocking { sessions.current() })
+    }
 }

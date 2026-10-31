@@ -201,11 +201,22 @@ class JellyfinViewModel(
         viewModelScope.launch {
             val failed =
                 try {
-                    val (session, client) = connection.signedIn() ?: return@launch
-                    index.refresh(client, session.userId)
+                    val signedIn = connection.signedIn()
+                    if (signedIn == null) {
+                        _state.update { (it as? UiState.SignedIn)?.copy(refreshing = false) ?: it }
+                        return@launch
+                    }
+                    index.refresh(signedIn.second, signedIn.first.userId)
                     false
                 } catch (e: CancellationException) {
                     throw e
+                } catch (e: JellyfinHttpException) {
+                    Log.i(TAG, "Library refresh refused", e)
+                    if (e.code == HTTP_UNAUTHORIZED) {
+                        sessionRefused(current.session)
+                        return@launch
+                    }
+                    true
                 } catch (e: IOException) {
                     Log.i(TAG, "Library refresh failed", e)
                     true
@@ -214,12 +225,20 @@ class JellyfinViewModel(
         }
     }
 
+    /** The server no longer accepts the token (a revoked device, say): forget it and ask for a sign-in, as the Service's UNAUTHENTICATED does. */
+    private suspend fun sessionRefused(session: JellyfinSession) {
+        sessions.clear()
+        index.clear()
+        _state.value = UiState.EnterServer(address = session.baseUrl)
+    }
+
     fun askSignOut() = _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = true) ?: it }
 
     fun cancelSignOut() = _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = false) ?: it }
 
     /** Ends the session on the server too, so the device leaves the user's Jellyfin devices list. A failure there still signs out here. */
     fun signOut() {
+        _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = false) ?: it }
         viewModelScope.launch {
             val signedIn = connection.signedIn()
             attempt { signedIn?.second?.logout() }
