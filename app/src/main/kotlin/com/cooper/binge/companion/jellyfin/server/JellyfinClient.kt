@@ -117,26 +117,45 @@ class JellyfinClient(
         query: Map<String, String> = emptyMap(),
     ): JsonElement = call(Request.Builder().url(url(path, query)).delete(), path)
 
+    /**
+     * [get] for a JSON object, with the URL the answer came from once any redirects were followed: a
+     * server behind an http-to-https redirect answers from somewhere other than where it was asked.
+     */
+    internal suspend fun getObjectFrom(path: String): Pair<JsonObject, HttpUrl> {
+        val (json, from) = located(Request.Builder().url(url(path)).get(), path)
+        return json.asObject(path) to from
+    }
+
     private suspend fun call(
         builder: Request.Builder,
         path: String,
-    ): JsonElement {
+    ): JsonElement = located(builder, path).first
+
+    private suspend fun located(
+        builder: Request.Builder,
+        path: String,
+    ): Pair<JsonElement, HttpUrl> {
         val request = builder.header("Authorization", authorization()).header("Accept", "application/json").build()
-        val text = awaitBody(http.newCall(request), path)
-        return withContext(io) {
-            try {
-                if (text.isBlank()) JsonNull else PARSER.parseToJsonElement(text)
-            } catch (e: SerializationException) {
-                throw JellyfinUnreadableAnswer(path, e)
+        val (text, from) = awaitBody(http.newCall(request), path)
+        val json =
+            withContext(io) {
+                try {
+                    if (text.isBlank()) JsonNull else PARSER.parseToJsonElement(text)
+                } catch (e: SerializationException) {
+                    throw JellyfinUnreadableAnswer(path, e)
+                }
             }
-        }
+        return json to from
     }
 
-    /** Runs [call] and reads its body; cancelling the caller cancels the [Call], closing the socket. */
+    /**
+     * Runs [call] and reads its body, with the URL the answer came from; cancelling the caller cancels
+     * the [Call], closing the socket.
+     */
     private suspend fun awaitBody(
         call: Call,
         path: String,
-    ): String =
+    ): Pair<String, HttpUrl> =
         suspendCancellableCoroutine { cont ->
             cont.invokeOnCancellation { call.cancel() }
             call.enqueue(
@@ -154,7 +173,7 @@ class JellyfinClient(
                             attempt {
                                 response.use {
                                     if (!it.isSuccessful) throw JellyfinHttpException(it.code, path)
-                                    it.body.string()
+                                    it.body.string() to it.request.url
                                 }
                             }
                         outcome.fold(cont::resume, cont::resumeWithException)

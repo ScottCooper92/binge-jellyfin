@@ -123,7 +123,7 @@ class JellyfinViewModel(
                 if (info == null) {
                     current.copy(checking = false, error = SetupError.NotJellyfin)
                 } else {
-                    UiState.SignIn(baseUrl = url.toString().trimEnd('/'), server = info)
+                    UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
                 }
         }
     }

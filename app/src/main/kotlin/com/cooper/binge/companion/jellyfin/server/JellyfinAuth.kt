@@ -3,12 +3,19 @@ package com.cooper.binge.companion.jellyfin.server
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import okhttp3.HttpUrl
 
 /** The server as it answers before sign-in. */
 data class PublicServerInfo(
     val serverName: String,
     val version: String,
     val serverId: String,
+    /**
+     * The server's base as it answered, after any redirects: `https://…` for an address typed bare
+     * whose http request was redirected. Sign-in and every later call use this one, since OkHttp turns
+     * a redirected POST into a GET and drops `Authorization` on a change of scheme or host.
+     */
+    val baseUrl: HttpUrl,
 )
 
 /** A session the server minted: its token, and who it is for. */
@@ -26,11 +33,12 @@ data class QuickConnectStart(
 )
 
 suspend fun JellyfinClient.publicInfo(): PublicServerInfo {
-    val json = getObject("System/Info/Public")
+    val (json, from) = getObjectFrom(PUBLIC_INFO)
     return PublicServerInfo(
         serverName = json.string("ServerName").orEmpty(),
         version = json.string("Version").orEmpty(),
         serverId = json.string("Id").orEmpty(),
+        baseUrl = baseOf(from) ?: baseUrl,
     )
 }
 
@@ -71,4 +79,18 @@ private fun JsonObject.toSignedIn(): SignedIn {
         userName = user?.string("Name").orEmpty(),
         serverId = string("ServerId").orEmpty(),
     )
+}
+
+private const val PUBLIC_INFO = "System/Info/Public"
+
+/** The base [answered] sits under, or null for a redirect to somewhere that is not this call's path. */
+private fun baseOf(answered: HttpUrl): HttpUrl? {
+    val path = answered.encodedPath
+    if (!path.endsWith("/$PUBLIC_INFO", ignoreCase = true)) return null
+    return answered
+        .newBuilder()
+        .encodedPath(path.dropLast(PUBLIC_INFO.length))
+        .query(null)
+        .fragment(null)
+        .build()
 }
