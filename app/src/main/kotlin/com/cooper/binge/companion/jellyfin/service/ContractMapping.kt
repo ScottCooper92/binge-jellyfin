@@ -21,6 +21,9 @@ internal const val TICKS_PER_MILLI = 10_000L
 
 private const val TAG = "JellyfinContract"
 
+/** The reason the host reads on UNAUTHENTICATED to send the user to sign in. */
+internal const val REASON_SIGNED_OUT = "SIGNED_OUT"
+
 internal fun notInLibrary(): Availability = Availability.newBuilder().setState(AvailabilityState.AVAILABILITY_STATE_NOT_IN_LIBRARY).build()
 
 internal fun notFound(): StatusException = StatusException(Status.NOT_FOUND.withDescription("not on this Jellyfin server"))
@@ -87,3 +90,17 @@ internal fun Instant.toTimestamp(): Timestamp =
         .setSeconds(epochSecond)
         .setNanos(nano)
         .build()
+
+/** The checks `library.proto` puts on a media id with an episode beside it, for the rpcs that take both. */
+internal fun requireEpisodeFits(
+    media: MediaId,
+    episode: EpisodeRef?,
+) {
+    if (media.mediaType == MediaType.MEDIA_TYPE_TV && episode == null) throw invalid("a series needs an episode")
+    if (media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null) throw invalid("a movie takes no episode")
+}
+
+/** This app issues no page tokens, so any the host sends is one it did not issue. */
+internal fun requireNoPageToken(token: String) {
+    if (token.isNotEmpty()) throw invalid("unknown page_token")
+}

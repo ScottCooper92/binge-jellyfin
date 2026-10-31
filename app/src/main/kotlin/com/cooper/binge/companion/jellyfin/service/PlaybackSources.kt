@@ -29,6 +29,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.time.Instant
 
 /**
@@ -140,7 +141,7 @@ class PlaybackSources(
         if (sitting.playMethod == TRANSCODE && transcodingUrl != null) {
             return PlaybackSource
                 .newBuilder()
-                .setUrl(client.resolve(transcodingUrl).withApiKey(tokenInUrl))
+                .setUrl(client.resolve(transcodingUrl).withoutApiKey().withApiKey(tokenInUrl))
                 .setMimeType(HLS)
                 .build()
         }
@@ -233,6 +234,16 @@ class PlaybackSources(
         const val API_KEY = "ApiKey"
         const val SOURCE_LIFETIME_SECONDS = 6 * 60 * 60L
         const val MAX_SUBTITLES = 10
+
+        /** [this] without any `ApiKey` or `api_key` parameter: Jellyfin puts the token into its transcode URL, which the header already covers. */
+        fun String.withoutApiKey(): String {
+            val url = toHttpUrlOrNull() ?: return this
+            val builder = url.newBuilder()
+            url.queryParameterNames
+                .filter { it.equals(API_KEY, ignoreCase = true) || it.equals("api_key", ignoreCase = true) }
+                .forEach(builder::removeAllQueryParameters)
+            return builder.build().toString()
+        }
 
         /** [this] with [token] as `ApiKey`, unless there is none to add or it already carries one. */
         fun String.withApiKey(token: String?): String {

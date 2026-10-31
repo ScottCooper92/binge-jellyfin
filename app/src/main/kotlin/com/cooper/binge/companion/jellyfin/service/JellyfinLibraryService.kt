@@ -23,7 +23,6 @@ import com.binge.companion.contracts.library.v1.ReportPlaybackRequest
 import com.binge.companion.contracts.library.v1.ReportPlaybackResponse
 import com.binge.companion.contracts.library.v1.SetPlayedRequest
 import com.binge.companion.contracts.library.v1.SetPlayedResponse
-import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.requireDeclared
 import com.binge.companion.sdk.withUserMessage
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
@@ -62,12 +61,15 @@ class JellyfinLibraryService(
     private val messages: UserMessages,
 ) : LibraryServiceGrpcKt.LibraryServiceCoroutineImplBase() {
     override suspend fun handshake(request: HandshakeRequest): HandshakeResponse =
-        HandshakeResponse
-            .newBuilder()
-            .addAllCapabilities(CAPABILITIES.sortedBy(Capability::getNumber))
-            .setProviderName(PROVIDER_NAME)
-            .setCompanionVersionName(versionName)
-            .build()
+        guard {
+            reads.signedIn()
+            HandshakeResponse
+                .newBuilder()
+                .addAllCapabilities(CAPABILITIES.sortedBy(Capability::getNumber))
+                .setProviderName(PROVIDER_NAME)
+                .setCompanionVersionName(versionName)
+                .build()
+        }
 
     override suspend fun getAvailability(request: GetAvailabilityRequest): GetAvailabilityResponse =
         guard {
@@ -99,6 +101,7 @@ class JellyfinLibraryService(
     override suspend fun listContinueWatching(request: ListContinueWatchingRequest): ListContinueWatchingResponse =
         guard {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_CONTINUE_WATCHING)
+            requireNoPageToken(request.pageToken)
             val (session, client) = reads.signedIn()
             val items = client.resumeItems(session.userId, pageSize(request.pageSize))
             ListContinueWatchingResponse.newBuilder().addAllEntries(reads.entries(session, client, items)).build()
@@ -107,6 +110,7 @@ class JellyfinLibraryService(
     override suspend fun listNextUp(request: ListNextUpRequest): ListNextUpResponse =
         guard {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_CONTINUE_WATCHING)
+            requireNoPageToken(request.pageToken)
             val (session, client) = reads.signedIn()
             val items = client.nextUp(session.userId, pageSize(request.pageSize))
             ListNextUpResponse.newBuilder().addAllEntries(reads.entries(session, client, items)).build()
@@ -117,14 +121,14 @@ class JellyfinLibraryService(
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_PLAYBACK_SOURCE)
             val (session, client) = reads.signedIn()
             val episode = if (request.hasEpisode()) request.episode else null
-            if (request.media.mediaType == MediaType.MEDIA_TYPE_TV && episode == null) throw invalid("a series needs an episode")
-            if (request.media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null) throw invalid("a movie takes no episode")
+            requireEpisodeFits(request.media, episode)
             playback.mint(session, client, reads.playableItem(session, client, request.media, episode), request)
         }
 
     override suspend fun reportPlayback(request: ReportPlaybackRequest): ReportPlaybackResponse =
         guard {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_PLAYBACK_PROGRESS)
+            requireEpisodeFits(request.media, if (request.hasEpisode()) request.episode else null)
             val (_, client) = reads.signedIn()
             playback.report(client, request)
             ReportPlaybackResponse.getDefaultInstance()
@@ -170,7 +174,6 @@ class JellyfinLibraryService(
     private companion object {
         const val TAG = "JellyfinLibrary"
         const val PROVIDER_NAME = "Jellyfin"
-        const val REASON_SIGNED_OUT = "SIGNED_OUT"
         const val REASON_UNREACHABLE = "UNREACHABLE"
         const val OBSERVE_POLL_MILLIS = 30_000L
         const val DEFAULT_PAGE = 20

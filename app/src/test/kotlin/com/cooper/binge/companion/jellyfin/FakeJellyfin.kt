@@ -17,6 +17,7 @@ import mockwebserver3.RecordedRequest
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.TimeUnit
 
 /** One title or episode on the fake server. Ticks are Jellyfin's: 10,000 to the millisecond. */
 data class FakeItem(
@@ -36,13 +37,14 @@ data class FakeItem(
 
 /**
  * A Jellyfin server in a [MockWebServer], answering the calls this app makes with the shapes the
- * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path.
+ * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path and [slow] holds one back.
  */
 class FakeJellyfin : Dispatcher() {
     val server = MockWebServer()
     val items = CopyOnWriteArrayList<FakeItem>()
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
+    val slow = mutableSetOf<String>()
     var quickConnectEnabled = true
     var quickConnectApproved = false
     var playbackInfo: String = directPlayInfo()
@@ -72,6 +74,13 @@ class FakeJellyfin : Dispatcher() {
     override fun dispatch(request: RecordedRequest): MockResponse {
         requests += request
         val path = request.url.encodedPath
+        if (path in slow) {
+            return MockResponse
+                .Builder()
+                .code(200)
+                .headersDelay(30, TimeUnit.SECONDS)
+                .build()
+        }
         status[path]?.let { return MockResponse(code = it) }
         return when {
             path == "/System/Info/Public" ->
@@ -166,7 +175,7 @@ class FakeJellyfin : Dispatcher() {
 
         fun transcodeInfo(): String =
             """{"PlaySessionId":"play-2","MediaSources":[{"Id":"source-2","Container":"mkv","SupportsDirectPlay":false,""" +
-                """"SupportsDirectStream":false,"TranscodingUrl":"/videos/x/master.m3u8?MediaSourceId=source-2","MediaStreams":[]}]}"""
+                """"SupportsDirectStream":false,"TranscodingUrl":"/videos/x/master.m3u8?MediaSourceId=source-2&ApiKey=token-1","MediaStreams":[]}]}"""
     }
 }
 

@@ -350,11 +350,61 @@ class JellyfinLibraryServiceTest {
                         .setEpisode(episode(1, 2))
                         .build(),
                 )
+            // The server puts the token into its transcode URL; Binge's own player gets it in the header only.
             assertEquals("${jellyfin.baseUrl}/videos/x/master.m3u8?MediaSourceId=source-2", response.source.url)
+            assertFalse(response.source.url.contains("ApiKey", ignoreCase = true))
             assertEquals("application/x-mpegURL", response.source.mimeType)
             assertEquals(PlaybackMethod.PLAYBACK_METHOD_TRANSCODE, response.method)
             assertEquals("ep-2|source-2|play-2|Transcode", response.playbackSessionId)
         }
+
+    @Test
+    fun `an installed player's transcode source carries the token in the URL`() =
+        runBlocking {
+            jellyfin.playbackInfo = FakeJellyfin.transcodeInfo()
+            val response =
+                stub.getPlaybackSource(
+                    GetPlaybackSourceRequest
+                        .newBuilder()
+                        .setMedia(series)
+                        .setEpisode(episode(1, 2))
+                        .setPlayerPackage("org.videolan.vlc")
+                        .build(),
+                )
+            assertEquals("${jellyfin.baseUrl}/videos/x/master.m3u8?MediaSourceId=source-2&ApiKey=token-1", response.source.url)
+        }
+
+    @Test
+    fun `a signed-out handshake is UNAUTHENTICATED with a message for the user`() {
+        runBlocking { sessions.clear() }
+        val failure = statusOf { stub.handshake(HandshakeRequest.getDefaultInstance()) }
+        assertEquals(Status.Code.UNAUTHENTICATED, failure.status.code)
+        assertEquals("Sign in to Jellyfin", userMessageOf(failure.trailers)?.message)
+    }
+
+    @Test
+    fun `a report with an episode on a movie, or without one on a series, is INVALID_ARGUMENT`() {
+        fun report(
+            media: MediaId,
+            episode: EpisodeRef?,
+        ) = ReportPlaybackRequest
+            .newBuilder()
+            .setMedia(media)
+            .setPlaybackSessionId("movie-1|source-1|play-1|DirectPlay")
+            .setEvent(PlaybackEvent.PLAYBACK_EVENT_PROGRESS)
+            .apply { episode?.let(::setEpisode) }
+            .build()
+        assertEquals(Status.Code.INVALID_ARGUMENT, statusOf { stub.reportPlayback(report(movie, episode(1, 1))) }.status.code)
+        assertEquals(Status.Code.INVALID_ARGUMENT, statusOf { stub.reportPlayback(report(series, null)) }.status.code)
+    }
+
+    @Test
+    fun `a page_token on a list is INVALID_ARGUMENT, since none was issued`() {
+        val resume = statusOf { stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageToken("x").build()) }
+        assertEquals(Status.Code.INVALID_ARGUMENT, resume.status.code)
+        val nextUp = statusOf { stub.listNextUp(ListNextUpRequest.newBuilder().setPageToken("x").build()) }
+        assertEquals(Status.Code.INVALID_ARGUMENT, nextUp.status.code)
+    }
 
     @Test
     fun `a series without an episode, or a movie with one, is INVALID_ARGUMENT`() {
