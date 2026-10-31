@@ -38,8 +38,9 @@ class LibrariesViewModelTest {
 
     @After
     fun close() {
-        Dispatchers.resetMain()
+        // Close the server first: a socket message arriving as Main is reset trips the test dispatcher.
         jellyfin.close()
+        Dispatchers.resetMain()
     }
 
     private fun LibrariesViewModel.settled(check: (LibrariesUiState) -> Boolean = { it !is LibrariesUiState.Loading }) =
