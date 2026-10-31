@@ -117,4 +117,8 @@
     <string name="console_tasks_detail">Run or stop the server\'s upkeep</string>
     <string name="tasks_not_sent">That didn\'t reach the server. %1$s</string>
     <string name="job_last_failed">Last run failed %1$s</string>
+    <string name="activity_title">Activity</string>
+    <string name="console_activity_detail">Sign-ins, plays and changes on the server</string>
+    <string name="activity_empty">Nothing has happened on this server yet.</string>
+    <string name="activity_undated">Undated</string>
 </resources>

@@ -28,6 +28,9 @@ import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.console.ActivityActions
+import com.cooper.binge.companion.jellyfin.ui.console.ActivityScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ActivityViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveActions
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeScreen
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeViewModel
@@ -144,6 +147,7 @@ class MainActivity : ComponentActivity() {
                                     NowPlayingRoute(graph, (state as? UiState.SignedIn)?.isAdministrator == true, close)
                                 ConsolePage.Libraries -> LibrariesRoute(graph, close)
                                 ConsolePage.Tasks -> TasksRoute(graph, close)
+                                ConsolePage.Activity -> ActivityRoute(graph, close)
                             }
                         }
                     }
@@ -235,6 +239,20 @@ class MainActivity : ComponentActivity() {
         val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
         val state by tasks.state.collectAsStateWithLifecycle()
         TasksScreen(state, TasksActions(onRun = tasks::run, onStop = tasks::stop, onRetry = tasks::load, onBack = onBack))
+    }
+
+    /** The activity page, read a page at a time. */
+    @Composable
+    private fun ActivityRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val activity: ActivityViewModel = viewModel(factory = viewModelFactory { initializer { ActivityViewModel(graph.connection) } })
+        val state by activity.state.collectAsStateWithLifecycle()
+        ActivityScreen(
+            state,
+            ActivityActions(onRefresh = activity::refresh, onLoadMore = activity::loadMore, onRetry = activity::load, onBack = onBack),
+        )
     }
 
     /** The now-playing page with its own view model, whose event socket closes with the page. */

@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
@@ -21,6 +22,7 @@ import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerTask
+import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.server.TaskRun
 import com.cooper.binge.companion.jellyfin.server.TaskStatus
@@ -252,5 +254,55 @@ class ConsoleScreensTest {
                 "Something",
             )
         assertEquals(keys.size, keys.map(::taskIcon).distinct().size)
+    }
+
+    @Test
+    fun `activity groups by day, marks errors, and asks for more at the end`() {
+        var more = 0
+        val now = 1_793_570_400_000L
+        val entries =
+            listOf(
+                ActivityEntry(
+                    2,
+                    "Failed login attempt from sam",
+                    "IP address: 10.0.0.9",
+                    "AuthenticationFailed",
+                    now - 60_000,
+                    Severity.Error,
+                ),
+                ActivityEntry(1, "sam is online from TV", null, "SessionStarted", now - 2 * 86_400_000L, Severity.Information),
+            )
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(entries, total = 3))
+        compose.setContent {
+            JellyfinTheme { ActivityScreen(state, ActivityActions(onLoadMore = { more++ }), now = now, zone = java.time.ZoneOffset.UTC) }
+        }
+        compose.onNodeWithText("Failed login attempt from sam").assertExists()
+        compose.onNodeWithText("sam is online from TV").assertExists()
+        compose.waitUntil { more == 1 }
+        state = ActivityUiState.Ready(entries, total = 3, moreFailed = ConsoleFailure.Unreachable)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Try again"))
+        compose.onNodeWithText("Try again").performClick()
+        assertEquals(2, more)
+        state = ActivityUiState.Ready(emptyList(), total = 0)
+        compose.onNodeWithText("Nothing has happened on this server yet.").assertExists()
+    }
+
+    @Test
+    fun `each kind of activity has its icon, and one this app doesn't know an information mark`() {
+        val types =
+            listOf(
+                "SessionStarted",
+                "SessionEnded",
+                "AuthenticationFailed",
+                "AuthenticationSucceeded",
+                "VideoPlaybackStopped",
+                "VideoPlayback",
+                "UserCreated",
+                "PluginInstalled",
+                "ScheduledTaskFailed",
+                "SubtitleDownloadFailure",
+                "Something",
+            )
+        assertEquals(types.size, types.map(::activityIcon).distinct().size)
     }
 }

@@ -117,4 +117,8 @@
     <string name="console_tasks_detail">Ejecuta o detén el mantenimiento del servidor</string>
     <string name="tasks_not_sent">No ha llegado al servidor. %1$s</string>
     <string name="job_last_failed">La última ejecución falló %1$s</string>
+    <string name="activity_title">Actividad</string>
+    <string name="console_activity_detail">Inicios de sesión, reproducciones y cambios en el servidor</string>
+    <string name="activity_empty">Aún no ha pasado nada en este servidor.</string>
+    <string name="activity_undated">Sin fecha</string>
 </resources>
