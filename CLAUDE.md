@@ -17,8 +17,8 @@ exports a bound Android Service implementing a contract from
 wire format is a PR against binge-companions.
 
 Status is pre-alpha. Sign-in, the library index, the exported Service and a phone settings screen
-are in, and playback has been checked against Binge's player on a phone. The TV screens and the
-release tooling are open issues. Nothing is on Play.
+are in, and playback has been checked against Binge's player on a phone. The release workflow and
+the device lane are in. The TV screens are an open issue. Nothing is on Play.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.

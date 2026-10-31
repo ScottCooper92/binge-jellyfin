@@ -185,8 +185,6 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
 
-    // The frames render against the same Compose the app ships, and the validation API is what
-    // @PreviewTest resolves to.
     // The device lane alone: the Service over a real Binder, on the minified build.
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.runner)
@@ -194,6 +192,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.kotlinx.coroutines.android)
 
+    // The frames render against the same Compose the app ships, and the validation API is what
+    // @PreviewTest resolves to.
     screenshotTestImplementation(platform(libs.compose.bom))
     screenshotTestImplementation(libs.compose.ui.tooling)
     screenshotTestImplementation(libs.screenshot.validation.api)
