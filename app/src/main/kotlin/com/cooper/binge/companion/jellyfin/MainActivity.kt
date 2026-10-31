@@ -12,14 +12,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
+import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
+import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -86,9 +90,13 @@ class MainActivity : ComponentActivity() {
                         viewModel.connect()
                     },
                 )
-            JellyfinTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    JellyfinRoot(state, actions)
+            if (LocalConfiguration.current.isTelevision()) {
+                JellyfinTvTheme { TvJellyfinRoot(state, actions) }
+            } else {
+                JellyfinTheme {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        JellyfinRoot(state, actions)
+                    }
                 }
             }
         }

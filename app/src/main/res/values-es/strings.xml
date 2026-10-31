@@ -42,4 +42,15 @@
     <string name="error_quick_connect_expired">El código ha caducado. Inténtalo de nuevo.</string>
     <string name="error_generic">Algo ha fallado. Inténtalo de nuevo.</string>
     <string name="error_signed_out">Inicia sesión en Jellyfin para ver tu biblioteca</string>
+    <string name="tv_sign_in_to">Iniciar sesión en %1$s</string>
+    <string name="tv_change_server">Cambiar de servidor</string>
+    <string name="tv_quick_connect_getting">Obteniendo un código…</string>
+    <string name="tv_try_again">Reintentar</string>
+    <string name="tv_use_password">Iniciar sesión con contraseña</string>
+    <string name="tv_signed_in_as">Sesión iniciada como %1$s</string>
+    <plurals name="tv_titles_count">
+        <item quantity="one">%1$d película o serie que Binge puede ver</item>
+        <item quantity="many">%1$d películas y series que Binge puede ver</item>
+        <item quantity="other">%1$d películas y series que Binge puede ver</item>
+    </plurals>
 </resources>
