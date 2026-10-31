@@ -77,6 +77,9 @@ class LibraryReads(
         return builder.build()
     }
 
+    /** The server said its library changed: the next lookup rebuilds the index rather than trust it. */
+    suspend fun libraryChanged() = index.invalidate()
+
     /** The movie, or the series' episode, as a Jellyfin item; NOT_FOUND when the server does not hold it. */
     suspend fun playableItem(
         session: JellyfinSession,

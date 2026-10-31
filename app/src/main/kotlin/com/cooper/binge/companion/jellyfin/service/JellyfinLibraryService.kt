@@ -26,6 +26,7 @@ import com.binge.companion.contracts.library.v1.SetPlayedResponse
 import com.binge.companion.sdk.requireDeclared
 import com.binge.companion.sdk.withUserMessage
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
+import com.cooper.binge.companion.jellyfin.server.ServerEvent
 import com.cooper.binge.companion.jellyfin.server.nextUp
 import com.cooper.binge.companion.jellyfin.server.resumeItems
 import com.cooper.binge.companion.jellyfin.server.setPlayed
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import java.io.IOException
 
 /** The sentences the host may show for a failure, in the device's language. */
@@ -59,6 +61,8 @@ class JellyfinLibraryService(
     private val playback: PlaybackSources,
     private val versionName: String,
     private val messages: UserMessages,
+    /** The server's pushes, from [com.cooper.binge.companion.jellyfin.server.ServerEvents]: what wakes the Observe streams. */
+    private val events: Flow<ServerEvent>,
 ) : LibraryServiceGrpcKt.LibraryServiceCoroutineImplBase() {
     override suspend fun handshake(request: HandshakeRequest): HandshakeResponse =
         guard {
@@ -78,7 +82,7 @@ class JellyfinLibraryService(
         }
 
     override fun observeAvailability(request: ObserveAvailabilityRequest): Flow<ObserveAvailabilityResponse> =
-        poll { reads.availability(request.media) }.map { ObserveAvailabilityResponse.newBuilder().setAvailability(it).build() }
+        watch { reads.availability(request.media) }.map { ObserveAvailabilityResponse.newBuilder().setAvailability(it).build() }
 
     override suspend fun getWatchState(request: GetWatchStateRequest): GetWatchStateResponse =
         guard {
@@ -87,7 +91,7 @@ class JellyfinLibraryService(
         }
 
     override fun observeWatchState(request: ObserveWatchStateRequest): Flow<ObserveWatchStateResponse> =
-        poll { reads.watchState(request.media) }.map { ObserveWatchStateResponse.newBuilder().setState(it).build() }
+        watch { reads.watchState(request.media) }.map { ObserveWatchStateResponse.newBuilder().setState(it).build() }
 
     override suspend fun setPlayed(request: SetPlayedRequest): SetPlayedResponse =
         guard {
@@ -142,14 +146,27 @@ class JellyfinLibraryService(
             ReportPlaybackResponse.getDefaultInstance()
         }
 
-    /** Pushes the state now, then whenever a poll finds it changed: Jellyfin's websocket is a later improvement. */
-    private fun <T> poll(read: suspend () -> T): Flow<T> =
+    /**
+     * Pushes the state now, then reads it again after every server event that could change it, and at
+     * least every [FALLBACK_POLL_MILLIS] in case the event socket is down. A library change marks the
+     * index stale first, so the read sees it. Repeats are dropped.
+     */
+    private fun <T> watch(read: suspend () -> T): Flow<T> =
         flow {
-            while (true) {
+            emit(guard { read() })
+            merge(events, fallbackTicks()).collect { event ->
+                if (event == ServerEvent.LIBRARY_CHANGED) reads.libraryChanged()
                 emit(guard { read() })
-                delay(OBSERVE_POLL_MILLIS)
             }
         }.distinctUntilChanged()
+
+    private fun fallbackTicks(): Flow<ServerEvent?> =
+        flow {
+            while (true) {
+                delay(FALLBACK_POLL_MILLIS)
+                emit(null)
+            }
+        }
 
     /** The contract's error model: a broken session is UNAUTHENTICATED, a missing item NOT_FOUND, a network failure UNAVAILABLE. */
     private suspend fun <T> guard(block: suspend () -> T): T =
@@ -183,7 +200,7 @@ class JellyfinLibraryService(
         const val TAG = "JellyfinLibrary"
         const val PROVIDER_NAME = "Jellyfin"
         const val REASON_UNREACHABLE = "UNREACHABLE"
-        const val OBSERVE_POLL_MILLIS = 30_000L
+        const val FALLBACK_POLL_MILLIS = 5 * 60_000L
         const val DEFAULT_PAGE = 20
         const val MAX_PAGE = 50
         const val HTTP_UNAUTHORIZED = 401

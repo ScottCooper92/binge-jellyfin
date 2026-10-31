@@ -10,8 +10,11 @@ import com.cooper.binge.companion.jellyfin.auth.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
+import com.cooper.binge.companion.jellyfin.server.ServerEvents
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -54,4 +57,9 @@ class AppGraph(
     }
 
     val index: LibraryIndex by lazy { LibraryIndex() }
+
+    /** Lives as long as the process: the event socket is shared by every Observe stream in it. */
+    private val scope = CoroutineScope(SupervisorJob())
+
+    val events: ServerEvents by lazy { ServerEvents(connection, scope, io) }
 }

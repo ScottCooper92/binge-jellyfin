@@ -96,6 +96,14 @@ transport alone.
 - **No query by TMDB id.** Jellyfin can filter on `hasTmdbId` but not on a value, so `LibraryIndex`
   pages in every movie and series with one and holds the map in memory, refreshed after 15 minutes,
   or after a minute when a lookup misses.
+- **Events, not polling.** The Observe streams follow the server's event socket (`ServerEvents`):
+  `/socket`, authenticated by the same `Authorization` header, so the token stays out of the URL. One
+  socket is shared while anything observes, answered with `KeepAlive` at half the server's
+  `ForceKeepAlive` interval, and reopened with a backoff when it drops. `UserDataChanged` re-reads
+  watch state, `LibraryChanged` marks the index stale and re-reads, and a five-minute poll covers a
+  socket that is down.
+- **The user's own library.** Every library call passes the signed-in `userId`, so the server answers
+  with only what that user's access policy lets them see. The index is built per user and server.
 - **Device profile rules learned on hardware.** Android decodes 8-bit H.264 only, so the profile
   limits H.264 to 8-bit and the standard profiles; without it a 10-bit source transcodes to High 10
   and fails to decode. E-AC-3 with Atmos (JOC) needs its own decoder, which many devices lack, so

@@ -18,6 +18,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import java.io.IOException
 import java.net.URLEncoder
 import kotlin.coroutines.resume
@@ -86,6 +88,20 @@ class JellyfinClient(
         query.forEach { (k, v) -> builder.addQueryParameter(k, v) }
         return builder.build()
     }
+
+    /**
+     * The server's event socket (`/socket`), authenticated by the same `Authorization` header as every
+     * call, so the token stays out of the URL. [listener] hears every message the server pushes.
+     */
+    fun openSocket(listener: WebSocketListener): WebSocket =
+        http.newWebSocket(
+            Request
+                .Builder()
+                .url(url("socket"))
+                .header("Authorization", authorization())
+                .build(),
+            listener,
+        )
 
     /** A server-relative URL the server handed back (a transcoding or subtitle URL), made absolute. */
     fun resolve(relative: String): String = baseUrl.toString().trimEnd('/') + "/" + relative.trimStart('/')
