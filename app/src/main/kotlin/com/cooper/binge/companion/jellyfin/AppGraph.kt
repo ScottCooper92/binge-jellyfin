@@ -38,6 +38,7 @@ class AppGraph(
                 produceFile = { appContext.preferencesDataStoreFile("session") },
             ),
             KeystoreSecretCipher(),
+            io,
         )
     }
 
