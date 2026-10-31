@@ -55,6 +55,9 @@ class LanguagesViewModel(
     private var saved = JsonObject(emptyMap())
     private val saving = Mutex()
 
+    /** The latest pick made for each key, so a failed save only puts back a choice nothing newer replaced. */
+    private val latestPick = mutableMapOf<String, Int>()
+
     init {
         load()
     }
@@ -92,6 +95,8 @@ class LanguagesViewModel(
         shown: PlaybackLanguages.() -> PlaybackLanguages,
     ) {
         if (_state.value !is LanguagesUiState.Ready) return
+        val pick = (latestPick[key] ?: 0) + 1
+        latestPick[key] = pick
         updateReady { copy(languages = languages.shown(), saveFailed = null) }
         viewModelScope.launch {
             saving.withLock {
@@ -100,7 +105,9 @@ class LanguagesViewModel(
                     .consoleCall(TAG) { session, client -> client.saveUserConfiguration(session.userId, next) }
                     .onSuccess { saved = next }
                     .onFailure { error ->
-                        // Only this choice goes back; another saved meanwhile stays.
+                        // Only this choice goes back, and only if it is still the one shown: a newer pick
+                        // for the same row is waiting to save, and says how it went itself.
+                        if (latestPick[key] != pick) return@onFailure
                         val before = saved.playbackLanguages()
                         updateReady { copy(languages = languages.restoring(key, before), saveFailed = error.consoleFailure()) }
                     }
