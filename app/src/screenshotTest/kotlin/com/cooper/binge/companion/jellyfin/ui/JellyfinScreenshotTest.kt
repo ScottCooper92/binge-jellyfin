@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -118,4 +119,12 @@ class JellyfinScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
+
+    /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signOutConfirm() = Surface { SignOutConfirm(Actions(), inWindow = false) }
 }

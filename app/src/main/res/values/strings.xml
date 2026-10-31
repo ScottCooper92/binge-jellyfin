@@ -105,6 +105,7 @@
     <string name="libraries_scan">Scan</string>
     <string name="libraries_unnamed">Unnamed library</string>
     <string name="libraries_not_started">The scan didn\'t start. %1$s</string>
+    <string name="libraries_not_stopped">The scan didn\'t stop. %1$s</string>
     <string name="job_run">Run</string>
     <string name="job_stop">Stop</string>
     <string name="job_running">Running…</string>

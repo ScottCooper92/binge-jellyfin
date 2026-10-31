@@ -105,6 +105,7 @@
     <string name="libraries_scan">Escanear</string>
     <string name="libraries_unnamed">Biblioteca sin nombre</string>
     <string name="libraries_not_started">El escaneo no ha empezado. %1$s</string>
+    <string name="libraries_not_stopped">El escaneo no se ha detenido. %1$s</string>
     <string name="job_run">Ejecutar</string>
     <string name="job_stop">Detener</string>
     <string name="job_running">En curso…</string>
