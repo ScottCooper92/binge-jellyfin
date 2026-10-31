@@ -19,4 +19,7 @@ enum class ConsolePage {
 
     /** The server's scheduled tasks, run and stopped. Admin only. */
     Tasks,
+
+    /** The server's activity log. Admin only. */
+    Activity,
 }

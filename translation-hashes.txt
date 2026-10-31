@@ -1,6 +1,9 @@
 # The hash of every source string a locale translates, so an edit to the source cannot
 # pass silently while a translation still carries the old wording. Generated -
 # run ./gradlew updateTranslationHashes after re-reading the translations it names.
+app:activity_empty  3512469df41b
+app:activity_title  38da1505ca83
+app:activity_undated  f332fef6195a
 app:app_label  03f509a513e8
 app:approve_action  6007acbe30b2
 app:approve_body  7fdf32e702f5
@@ -10,6 +13,7 @@ app:approve_title  914f3d3bccbc
 app:approve_wrong  8bb61c428d9c
 app:companion_label  8e03b3c29d2b
 app:console_account_title  dbb5f6371b6a
+app:console_activity_detail  3487307bf3ea
 app:console_admin_title  4b42c6690ebe
 app:console_approve_detail  8371322fc723
 app:console_languages_detail  69f8faf85034
