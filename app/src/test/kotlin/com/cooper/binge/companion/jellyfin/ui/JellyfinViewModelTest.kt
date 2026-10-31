@@ -198,4 +198,38 @@ class JellyfinViewModelTest {
         vm.signInWithPassword()
         assertEquals(SetupError.Generic, vm.await<UiState.SignIn> { it.error != null }.error)
     }
+
+    @Test
+    fun `an address that redirects signs in at, and saves, the server the redirect leads to`() {
+        // A proxy in front of the server that answers every request with a 301 to the server itself,
+        // as an http-to-https redirect does. OkHttp would turn the sign-in POST into a GET through it.
+        val proxy = mockwebserver3.MockWebServer()
+        proxy.dispatcher =
+            object : mockwebserver3.Dispatcher() {
+                override fun dispatch(request: mockwebserver3.RecordedRequest): mockwebserver3.MockResponse =
+                    mockwebserver3.MockResponse
+                        .Builder()
+                        .code(301)
+                        .addHeader("Location", jellyfin.baseUrl + request.url.encodedPath)
+                        .build()
+            }
+        proxy.start()
+        try {
+            val vm = viewModel()
+            vm.await<UiState.EnterServer>()
+            vm.onAddress(proxy.url("/").toString())
+            vm.connect()
+            assertEquals(jellyfin.baseUrl, vm.await<UiState.SignIn>().baseUrl)
+
+            vm.onUsername("Claude")
+            vm.onPassword("right")
+            vm.signInWithPassword()
+            vm.await<UiState.SignedIn>()
+            assertEquals(jellyfin.baseUrl, runBlocking { sessions.current() }?.baseUrl)
+            // Only the first request went through the redirect.
+            assertEquals(1, proxy.requestCount)
+        } finally {
+            proxy.close()
+        }
+    }
 }
