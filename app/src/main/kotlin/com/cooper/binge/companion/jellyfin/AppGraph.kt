@@ -50,5 +50,4 @@ class AppGraph(
             io = io,
         )
     }
-
 }
