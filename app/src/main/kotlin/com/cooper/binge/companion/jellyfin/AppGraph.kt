@@ -11,6 +11,8 @@ import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
+import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
+import com.cooper.binge.companion.jellyfin.server.lanTargets
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,4 +64,7 @@ class AppGraph(
     private val scope = CoroutineScope(SupervisorJob())
 
     val events: ServerEvents by lazy { ServerEvents(connection, index, scope, io) }
+
+    /** Jellyfin's UDP broadcast, on this device's LAN networks. */
+    val discovery: UdpDiscovery by lazy { UdpDiscovery(targets = { lanTargets(appContext) }, io = io) }
 }
