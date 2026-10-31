@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -349,6 +350,12 @@ private fun AccountGroup(actions: Actions) {
                     label = stringResource(R.string.approve_title),
                     detail = stringResource(R.string.console_approve_detail),
                     onClick = { actions.onOpenPage(ConsolePage.ApproveCode) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Translate,
+                    label = stringResource(R.string.languages_title),
+                    detail = stringResource(R.string.console_languages_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Languages) },
                 ),
             ),
     )
