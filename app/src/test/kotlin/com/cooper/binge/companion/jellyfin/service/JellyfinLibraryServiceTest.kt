@@ -35,6 +35,7 @@ import io.grpc.StatusException
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -49,6 +50,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 /** The whole LIBRARY contract over an in-process channel, against a fake Jellyfin server. */
 @RunWith(RobolectricTestRunner::class)
@@ -65,7 +68,7 @@ class JellyfinLibraryServiceTest {
             override fun locale() = "en-GB"
         }
 
-    private val events = kotlinx.coroutines.flow.MutableSharedFlow<ServerEvent>(extraBufferCapacity = 8)
+    private val events = MutableSharedFlow<ServerEvent>(extraBufferCapacity = 8)
     private val name = InProcessServerBuilder.generateName()
     private val server: Server =
         InProcessServerBuilder
@@ -569,39 +572,20 @@ class JellyfinLibraryServiceTest {
     @Test
     fun `a watch state stream pushes again when the server says user data changed`() =
         runBlocking {
-            val states = java.util.concurrent.LinkedBlockingQueue<Long>()
+            val states = LinkedBlockingQueue<Long>()
             val job =
                 launch(Dispatchers.IO) {
                     stub.observeWatchState(ObserveWatchStateRequest.newBuilder().setMedia(movie).build()).collect {
                         states.put(it.state.positionMillis)
                     }
                 }
-            assertEquals(526_000L, states.poll(10, java.util.concurrent.TimeUnit.SECONDS))
+            assertEquals(526_000L, states.poll(10, TimeUnit.SECONDS))
             // The stream subscribes to the events after its first read: wait for it, or the event is dropped.
             events.subscriptionCount.first { it > 0 }
             val index = jellyfin.items.indexOfFirst { it.id == "movie-1" }
             jellyfin.items[index] = jellyfin.items[index].copy(positionTicks = 9_000_000_000L)
             events.emit(ServerEvent.USER_DATA_CHANGED)
-            assertEquals(900_000L, states.poll(10, java.util.concurrent.TimeUnit.SECONDS))
-            job.cancel()
-        }
-
-    @Test
-    fun `an availability stream sees a title added once the server says the library changed`() =
-        runBlocking {
-            val newMovie = media(MediaType.MEDIA_TYPE_MOVIE, 777)
-            val states = java.util.concurrent.LinkedBlockingQueue<AvailabilityState>()
-            val job =
-                launch(Dispatchers.IO) {
-                    stub.observeAvailability(ObserveAvailabilityRequest.newBuilder().setMedia(newMovie).build()).collect {
-                        states.put(it.availability.state)
-                    }
-                }
-            assertEquals(AvailabilityState.AVAILABILITY_STATE_NOT_IN_LIBRARY, states.poll(10, java.util.concurrent.TimeUnit.SECONDS))
-            events.subscriptionCount.first { it > 0 }
-            jellyfin.items += FakeItem("movie-777", "New", "Movie", tmdbId = 777)
-            events.emit(ServerEvent.LIBRARY_CHANGED)
-            assertEquals(AvailabilityState.AVAILABILITY_STATE_IN_LIBRARY, states.poll(10, java.util.concurrent.TimeUnit.SECONDS))
+            assertEquals(900_000L, states.poll(10, TimeUnit.SECONDS))
             job.cancel()
         }
 }

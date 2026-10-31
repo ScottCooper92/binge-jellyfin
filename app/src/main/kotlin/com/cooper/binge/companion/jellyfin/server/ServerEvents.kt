@@ -4,7 +4,6 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -12,8 +11,11 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -36,11 +38,13 @@ enum class ServerEvent {
 /**
  * The signed-in server's event socket, as a flow shared by every observer: one socket while anything
  * listens, none otherwise. It answers the server's `ForceKeepAlive` with a `KeepAlive` at half the
- * interval the server asks for, and reconnects with a backoff when the socket drops. Signed out,
- * it waits without connecting.
+ * interval the server asks for, and reconnects with a backoff when the socket drops. It follows the
+ * saved session: a sign-out closes the socket, a new sign-in opens one for it. Signed out, it waits
+ * without connecting. A `LibraryChanged` marks [index] stale once, here, before any observer reads.
  */
 class ServerEvents(
     private val connection: Connection,
+    private val index: LibraryIndex,
     scope: CoroutineScope,
     io: CoroutineDispatcher,
     private val retryDelayMillis: (attempt: Int) -> Long = { attempt ->
@@ -52,16 +56,26 @@ class ServerEvents(
 ) {
     val events: SharedFlow<ServerEvent> =
         flow {
+            emitAll(
+                connection.clients().flatMapLatest { client ->
+                    if (client == null) emptyFlow() else reconnecting(client)
+                },
+            )
+        }.onEach { if (it == ServerEvent.LIBRARY_CHANGED) index.invalidate() }
+            .flowOn(io)
+            .shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS))
+
+    /** [client]'s socket, opened again with a backoff each time it drops. */
+    private fun reconnecting(client: JellyfinClient): Flow<ServerEvent> =
+        flow {
             var attempt = 0
             while (true) {
-                val client = connection.signedIn()?.second ?: awaitCancellation()
                 var opened = false
                 emitAll(socket(client) { opened = true })
                 attempt = if (opened) 0 else attempt + 1
                 delay(retryDelayMillis(attempt))
             }
-        }.flowOn(io)
-            .shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS))
+        }
 
     /** One socket's events until it closes or fails; [onOpen] runs once the server accepts it. */
     private fun socket(

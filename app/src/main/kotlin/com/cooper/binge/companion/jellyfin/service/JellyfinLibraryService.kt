@@ -148,16 +148,12 @@ class JellyfinLibraryService(
 
     /**
      * Pushes the state now, then reads it again after every server event that could change it, and at
-     * least every [FALLBACK_POLL_MILLIS] in case the event socket is down. A library change marks the
-     * index stale first, so the read sees it. Repeats are dropped.
+     * least every [FALLBACK_POLL_MILLIS] in case the event socket is down. Repeats are dropped.
      */
     private fun <T> watch(read: suspend () -> T): Flow<T> =
         flow {
             emit(guard { read() })
-            merge(events, fallbackTicks()).collect { event ->
-                if (event == ServerEvent.LIBRARY_CHANGED) reads.libraryChanged()
-                emit(guard { read() })
-            }
+            merge(events, fallbackTicks()).collect { emit(guard { read() }) }
         }.distinctUntilChanged()
 
     private fun fallbackTicks(): Flow<ServerEvent?> =

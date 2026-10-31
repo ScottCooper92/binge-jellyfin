@@ -61,5 +61,5 @@ class AppGraph(
     /** Lives as long as the process: the event socket is shared by every Observe stream in it. */
     private val scope = CoroutineScope(SupervisorJob())
 
-    val events: ServerEvents by lazy { ServerEvents(connection, scope, io) }
+    val events: ServerEvents by lazy { ServerEvents(connection, index, scope, io) }
 }
