@@ -34,6 +34,26 @@ class JellyfinScreenshotTest {
     @Composable
     fun serverUnreachable() = JellyfinRoot(previewEnterServerError, Actions())
 
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun serverInvalidAddress() = JellyfinRoot(previewEnterServerInvalid, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun serverNotJellyfin() = JellyfinRoot(previewEnterServerNotJellyfin, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun serverGenericError() = JellyfinRoot(previewEnterServerGeneric, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun loading() = JellyfinRoot(UiState.Loading, Actions())
+
     // Sign-in.
 
     @PreviewTest
@@ -59,6 +79,16 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun quickConnectCode() = JellyfinRoot(previewQuickConnect, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun quickConnectOff() = JellyfinRoot(previewQuickConnectOff, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun quickConnectExpired() = JellyfinRoot(previewQuickConnectExpired, Actions())
 
     // Signed in.
 
