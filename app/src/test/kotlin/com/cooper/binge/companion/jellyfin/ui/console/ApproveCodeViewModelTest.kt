@@ -4,9 +4,13 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -15,10 +19,12 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.CopyOnWriteArrayList
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -33,8 +39,12 @@ class ApproveCodeViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
     }
 
+    /** Listens to [Connection.refused] for a test, and stops when it ends. */
+    private val listening = CoroutineScope(Dispatchers.Unconfined)
+
     @After
     fun close() {
+        listening.cancel()
         Dispatchers.resetMain()
         jellyfin.close()
     }
@@ -83,7 +93,34 @@ class ApproveCodeViewModelTest {
         assertEquals(ApproveResult.Unreachable, ApproveCodeViewModel(connection).resultAfter("654321").result)
     }
 
+    @Test
+    fun `a 401 with the session still good is Quick Connect turned off, and nothing is reported`() {
+        jellyfin.status["/QuickConnect/Authorize"] = 401
+        val refused = refusals()
+        assertEquals(ApproveResult.QuickConnectOff, ApproveCodeViewModel(connection).resultAfter("654321").result)
+        assertEquals(1, jellyfin.hits("/Users/Me"))
+        assertTrue(refused.isEmpty())
+    }
+
+    @Test
+    fun `a 401 the session can't pass is a refused token, reported for the home to sign in again`() {
+        jellyfin.status["/QuickConnect/Authorize"] = 401
+        jellyfin.status["/Users/Me"] = 401
+        val refused = refusals()
+        ApproveCodeViewModel(connection).resultAfter("654321")
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (refused.isEmpty()) delay(POLL_MILLIS) } }
+        assertEquals(1, refused.size)
+    }
+
+    /** What [Connection.refused] reports from here on. */
+    private fun refusals(): MutableList<Unit> {
+        val seen = CopyOnWriteArrayList<Unit>()
+        listening.launch { connection.refused.collect { seen += it } }
+        return seen
+    }
+
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
+        const val POLL_MILLIS = 10L
     }
 }
