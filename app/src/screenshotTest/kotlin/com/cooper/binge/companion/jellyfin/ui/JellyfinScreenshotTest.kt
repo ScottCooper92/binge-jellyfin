@@ -113,4 +113,9 @@ class JellyfinScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun signedInHttps() = JellyfinRoot(previewSignedInHttps, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
 }

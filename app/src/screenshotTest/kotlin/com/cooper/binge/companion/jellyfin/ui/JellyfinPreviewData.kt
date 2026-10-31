@@ -64,3 +64,5 @@ val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = 
 val previewSignedInHttps = previewSignedIn.copy(session = session.copy(baseUrl = REMOTE, serverName = "Cabin"))
 
 val previewQuickConnectGetting = previewSignIn
+
+val previewSignedInAdmin = previewSignedIn.copy(isAdministrator = true)

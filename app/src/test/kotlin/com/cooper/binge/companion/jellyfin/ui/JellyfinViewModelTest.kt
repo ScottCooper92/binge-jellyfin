@@ -290,4 +290,12 @@ class JellyfinViewModelTest {
             assertEquals(server, state.discovered)
         }
     }
+
+    @Test
+    fun `an administrator is marked as one once the library is read`() {
+        jellyfin.administrator = true
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        assertTrue(vm.await<UiState.SignedIn> { it.isAdministrator }.isAdministrator)
+    }
 }

@@ -52,4 +52,14 @@
         <item quantity="one">%1$d movie or show Binge can see</item>
         <item quantity="other">%1$d movies and shows Binge can see</item>
     </plurals>
+
+    <string name="settings_signed_in_admin">Signed in · Administrator</string>
+    <string name="console_account_title">Your account</string>
+    <string name="console_approve_detail">For a TV or browser showing a Quick Connect code</string>
+    <string name="approve_title">Approve a sign-in code</string>
+    <string name="approve_body">Enter the code another device shows. Approving it signs that device in as you.</string>
+    <string name="approve_field">Code</string>
+    <string name="approve_action">Approve</string>
+    <string name="approve_done">Approved. The other device is signing in as you.</string>
+    <string name="approve_wrong">That code isn\'t waiting to be approved. Check it, or get a new one on the other device.</string>
 </resources>

@@ -62,7 +62,7 @@ class JellyfinClientTest {
             jellyfin.quickConnectApproved = true
             assertTrue(client.quickConnectAuthenticated(start.secret))
             assertEquals("token-1", client.authenticateWithQuickConnect(start.secret).token)
-            assertEquals("Claude", client.withToken("token-1").me())
+            assertEquals(CurrentUser("Claude", isAdministrator = false), client.withToken("token-1").me())
         }
 
     @Test
@@ -101,4 +101,15 @@ class JellyfinClientTest {
         assertTrue(failure is java.io.IOException)
         assertTrue(failure.cause is kotlinx.serialization.SerializationException)
     }
+
+    @Test
+    fun `approving a code the server waits on works, and any other is a 404`() =
+        runBlocking {
+            val signed = client.withToken("token-1")
+            signed.authorizeQuickConnect("654321")
+            val wrong = assertThrows(JellyfinHttpException::class.java) { runBlocking { signed.authorizeQuickConnect("000000") } }
+            assertEquals(404, wrong.code)
+            jellyfin.administrator = true
+            assertTrue(signed.me().isAdministrator)
+        }
 }

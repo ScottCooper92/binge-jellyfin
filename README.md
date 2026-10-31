@@ -15,14 +15,16 @@ This app implements the LIBRARY contract against the user's own Jellyfin server:
 - a playback source for Binge's player, chosen by the server from what the device can decode, with
   the plays reported back so Jellyfin keeps the resume point.
 
-It is a companion, not a client. Its own screens are sign-in (a password, or Quick Connect) and
-settings. Browsing the library stays in Binge, and in Jellyfin's own apps.
+It is also a console for the server, so it stands on its own: approve a Quick Connect code from
+your phone, set your playback languages, see what's playing, and, as an admin, scan libraries, run
+tasks, read the activity log, and manage devices and users. It is not a client: browsing and
+playing stay in Binge, and in Jellyfin's own apps.
 
 ## Status
 
 **Pre-alpha.** Sign-in, the library index, the exported Service and the phone settings screen are
-in, and playback has been checked against Binge's player on a phone. TV screens and the release
-tooling are open issues. Nothing is on Play.
+in, and playback has been checked against Binge's player on a phone. The console is being built
+(#71). Nothing is on Play.
 
 ## Building
 
