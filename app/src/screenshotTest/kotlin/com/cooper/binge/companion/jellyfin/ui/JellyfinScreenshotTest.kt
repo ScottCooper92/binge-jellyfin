@@ -90,6 +90,18 @@ class JellyfinScreenshotTest {
     @Composable
     fun quickConnectExpired() = JellyfinRoot(previewQuickConnectExpired, Actions())
 
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun quickConnectGetting() = JellyfinRoot(previewQuickConnectGetting, Actions())
+
+    /** A failure that isn't the password's is said under Sign in, and the field stays unmarked. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signInUnreachable() = JellyfinRoot(previewSignInUnreachable, Actions())
+
     // Signed in.
 
     @PreviewTest
