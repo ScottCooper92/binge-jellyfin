@@ -1,8 +1,12 @@
 package com.cooper.binge.companion.jellyfin.server
 
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
@@ -65,4 +69,14 @@ class JellyfinClientTest {
     fun `a server-relative URL is resolved against the base`() {
         assertEquals("${jellyfin.baseUrl}/videos/a.m3u8?x=1", client.resolve("/videos/a.m3u8?x=1"))
     }
+
+    @Test
+    fun `cancelling a call stops it instead of waiting for the server`() =
+        runBlocking {
+            jellyfin.slow += "/Users/Me"
+            val call = async(Dispatchers.IO, CoroutineStart.UNDISPATCHED) { client.withToken("abc").me() }
+            while (jellyfin.hits("/Users/Me") == 0) Thread.sleep(10)
+            withTimeout(5_000) { call.cancelAndJoin() }
+            assertTrue(call.isCancelled)
+        }
 }
