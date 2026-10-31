@@ -36,7 +36,7 @@ class JellyfinClientTest {
     @Test
     fun `the header names the client and carries the token only once signed in`() {
         assertFalse(client.authorization().contains("Token"))
-        assertTrue(client.authorization().contains("Device=\"Pixel 10\""))
+        assertTrue(client.authorization().contains("Device=\"Pixel%20%2210%22\""))
         assertTrue(client.withToken("abc").authorization().endsWith("Token=\"abc\""))
     }
 
@@ -78,5 +78,19 @@ class JellyfinClientTest {
             while (jellyfin.hits("/Users/Me") == 0) Thread.sleep(10)
             withTimeout(5_000) { call.cancelAndJoin() }
             assertTrue(call.isCancelled)
+        }
+
+    @Test
+    fun `a device model with non-ASCII characters or a comma is encoded, and the request is sent`() =
+        runBlocking {
+            val odd = JellyfinClient(OkHttpClient(), jellyfin.baseUrl.toHttpUrl(), identity.copy(device = "Ünï Phone, Pro"), Dispatchers.IO)
+            assertTrue(odd.authorization().contains("Device=\"%C3%9Cn%C3%AF%20Phone%2C%20Pro\""))
+            assertEquals("truenas", odd.publicInfo().serverName)
+            val sent =
+                jellyfin.requests
+                    .last()
+                    .headers["Authorization"]
+                    .orEmpty()
+            assertTrue(sent.contains("%C3%9Cn%C3%AF%20Phone%2C%20Pro"))
         }
 }
