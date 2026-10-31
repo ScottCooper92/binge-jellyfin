@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -82,9 +84,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: JellyfinViewModel = viewModel(factory = factory)
             val state by viewModel.state.collectAsStateWithLifecycle()
-            // The console page open over its home, if any. Back closes it; signing out closes it too.
+            // The console page open over its home, if any. Back closes it; leaving SignedIn closes it too.
             var page by rememberSaveable { mutableStateOf<ConsolePage?>(null) }
-            val openPage = page.takeIf { state is UiState.SignedIn }
+            // Counts openings, so each one gets a fresh page view model.
+            var opened by rememberSaveable { mutableIntStateOf(0) }
+            val signedIn = state is UiState.SignedIn
+            LaunchedEffect(signedIn) { if (!signedIn) page = null }
+            val openPage = page.takeIf { signedIn }
             BackHandler(enabled = openPage != null) { page = null }
             val actions =
                 Actions(
@@ -105,29 +111,36 @@ class MainActivity : ComponentActivity() {
                         viewModel.onAddress(server.address)
                         viewModel.connect()
                     },
-                    onOpenPage = { page = it },
+                    onOpenPage = {
+                        opened++
+                        page = it
+                    },
                 )
             JellyfinTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     when (openPage) {
                         null -> JellyfinRoot(state, actions)
-                        ConsolePage.ApproveCode -> ApproveCodeRoute(graph, onBack = { page = null })
-                        ConsolePage.Languages -> LanguagesRoute(graph, onBack = { page = null })
-                        ConsolePage.Password -> PasswordRoute(graph, onBack = { page = null })
+                        ConsolePage.ApproveCode -> ApproveCodeRoute(graph, opened, onBack = { page = null })
+                        ConsolePage.Languages -> LanguagesRoute(graph, opened, onBack = { page = null })
+                        ConsolePage.Password -> PasswordRoute(graph, opened, onBack = { page = null })
                     }
                 }
             }
         }
     }
 
-    /** The approval page with its own view model, kept while the page is open. */
+    /** The approval page with its own view model, kept while the page is open and new for each opening. */
     @Composable
     private fun ApproveCodeRoute(
         graph: AppGraph,
+        opening: Int,
         onBack: () -> Unit,
     ) {
         val approve: ApproveCodeViewModel =
-            viewModel(factory = viewModelFactory { initializer { ApproveCodeViewModel(graph.connection) } })
+            viewModel(
+                key = "approve-code-$opening",
+                factory = viewModelFactory { initializer { ApproveCodeViewModel(graph.connection) } },
+            )
         val state by approve.state.collectAsStateWithLifecycle()
         ApproveCodeScreen(state, ApproveActions(onCode = approve::onCode, onApprove = approve::approve, onBack = onBack))
     }
@@ -136,10 +149,14 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun LanguagesRoute(
         graph: AppGraph,
+        opening: Int,
         onBack: () -> Unit,
     ) {
         val languages: LanguagesViewModel =
-            viewModel(factory = viewModelFactory { initializer { LanguagesViewModel(graph.connection) } })
+            viewModel(
+                key = "languages-$opening",
+                factory = viewModelFactory { initializer { LanguagesViewModel(graph.connection) } },
+            )
         val state by languages.state.collectAsStateWithLifecycle()
         LanguagesScreen(
             state,
@@ -153,14 +170,18 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /** The password page with its own view model, so the form is gone once the page closes. */
+    /** The password page with a view model per opening, so the form is empty each time it opens. */
     @Composable
     private fun PasswordRoute(
         graph: AppGraph,
+        opening: Int,
         onBack: () -> Unit,
     ) {
         val password: PasswordViewModel =
-            viewModel(factory = viewModelFactory { initializer { PasswordViewModel(graph.connection) } })
+            viewModel(
+                key = "password-$opening",
+                factory = viewModelFactory { initializer { PasswordViewModel(graph.connection) } },
+            )
         val state by password.state.collectAsStateWithLifecycle()
         PasswordScreen(
             state,

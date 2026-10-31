@@ -96,5 +96,6 @@ private fun resultText(result: ApproveResult): String =
             ApproveResult.WrongCode -> R.string.approve_wrong
             ApproveResult.QuickConnectOff -> R.string.error_quick_connect_off
             ApproveResult.Unreachable -> R.string.error_unreachable
+            ApproveResult.Failed -> R.string.error_generic
         },
     )

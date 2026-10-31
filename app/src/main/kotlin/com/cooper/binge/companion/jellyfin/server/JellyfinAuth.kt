@@ -82,7 +82,8 @@ suspend fun JellyfinClient.me(): CurrentUser {
 
 /**
  * Approves a Quick Connect [code] another device shows, signing that device in as this user. A code
- * the server is not waiting on answers 404; Quick Connect turned off answers 403 or 503.
+ * the server is not waiting on answers 404; Quick Connect turned off answers 401, as does a token
+ * the server refuses, so a 401 is only approximately "off". A code already approved answers 500.
  */
 suspend fun JellyfinClient.authorizeQuickConnect(code: String) {
     post("QuickConnect/Authorize", null, mapOf("code" to code))
