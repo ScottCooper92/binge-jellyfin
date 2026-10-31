@@ -5,10 +5,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.binge.companion.sdk.attempt
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /** The signed-in session: one server, one user, and the access token Jellyfin minted for this device. */
@@ -30,6 +33,12 @@ data class JellyfinSession(
 class SessionStore(
     private val dataStore: DataStore<Preferences>,
     private val cipher: SecretCipher,
+    /**
+     * Where the Keystore work runs. Each encrypt or decrypt is a binder call to keystore2, and the
+     * first sign-in also generates the key, which can be slow (StrongBox in particular), so none of it
+     * runs on the caller's thread: the setup screens call from the main thread.
+     */
+    private val io: CoroutineDispatcher,
 ) {
     val session: Flow<JellyfinSession?> =
         dataStore.data
@@ -50,13 +59,14 @@ class SessionStore(
                         token = token,
                     )
                 }
-            }.distinctUntilChanged()
+            }.flowOn(io)
+            .distinctUntilChanged()
 
     suspend fun current(): JellyfinSession? = session.first()
 
     /** Encrypts and saves [session]; false, saving nothing, when the Keystore refuses. */
     suspend fun save(session: JellyfinSession): Boolean {
-        val token = attempt { cipher.encrypt(session.token) }.getOrElse { return false }
+        val token = attempt { withContext(io) { cipher.encrypt(session.token) } }.getOrElse { return false }
         dataStore.edit { prefs ->
             prefs[Keys.BASE_URL] = session.baseUrl
             prefs[Keys.SERVER_NAME] = session.serverName

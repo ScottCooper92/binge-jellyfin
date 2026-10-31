@@ -17,8 +17,8 @@ exports a bound Android Service implementing a contract from
 wire format is a PR against binge-companions.
 
 Status is pre-alpha. Sign-in, the library index, the exported Service and a phone settings screen
-are in, and playback has been checked against Binge's player on a phone. TV screens, tests for most
-of the code and the release tooling are not. Nothing is on Play.
+are in, and playback has been checked against Binge's player on a phone. The TV screens and the
+release tooling are open issues. Nothing is on Play.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -44,6 +44,17 @@ two places:
 
 Never log the token, never put it in any other URL, never send it to another host, and never store
 it outside `SessionStore`. Fixing a test or a playback bug is never a reason to move it.
+
+Two things the rule rests on are the user's own choice, and this app accepts them rather than
+working around them:
+
+- **Plain http.** Most home servers are http on the LAN, so `network_security_config.xml` allows
+  cleartext, and the screens mark an http server "Not encrypted". On such a server anything on the
+  network path can read the header.
+- **User-installed CAs.** The same config trusts them, so a server behind a private CA works. A
+  user-installed CA can also intercept TLS and read the header. Installing one is the user's
+  decision, and this app relies on it as made. A change to what the config trusts is reviewed
+  against this paragraph.
 
 ## Talking to the host
 
@@ -72,7 +83,9 @@ it outside `SessionStore`. Fixing a test or a playback bug is never a reason to 
 
 The server's own OpenAPI document is the source of truth for every endpoint and field:
 `http://<server>/api-docs/openapi.json`. Read it rather than inferring an endpoint from this app's
-code. The calls this app makes are all in `server/JellyfinClient.kt`.
+code. The calls this app makes are extension functions on `JellyfinClient` in `server/`: sign-in in
+`JellyfinAuth.kt`, the library and playback in `JellyfinLibraryApi.kt`. `JellyfinClient.kt` is the
+transport alone.
 
 - **Sign-in.** Two ways, as binge-seerr signs in to Plex: a username and password
   (`/Users/AuthenticateByName`), or Quick Connect, where the app shows a code and polls until the
