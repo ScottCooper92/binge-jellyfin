@@ -62,4 +62,5 @@
     <string name="approve_action">Approve</string>
     <string name="approve_done">Approved. The other device is signing in as you.</string>
     <string name="approve_wrong">That code isn\'t waiting to be approved. Check it, or get a new one on the other device.</string>
+    <string name="tv_loading">Loading…</string>
 </resources>

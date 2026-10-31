@@ -62,7 +62,8 @@ fun TvJellyfinRoot(
     modifier: Modifier = Modifier,
 ) {
     when (state) {
-        UiState.Loading -> TvMessagePage(body = "", loading = true, modifier = modifier)
+        // TvMessagePage draws no spinner: loading only holds back its actions, so the body is what shows.
+        UiState.Loading -> TvMessagePage(body = stringResource(R.string.tv_loading), loading = true, modifier = modifier)
         is UiState.EnterServer -> TvServerPage(state, actions, modifier)
         is UiState.SignIn -> TvSignInPage(state, actions, modifier)
         is UiState.SignedIn -> TvSignedInPage(state, actions, modifier)
