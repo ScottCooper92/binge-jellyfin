@@ -223,6 +223,9 @@ kover {
                     "com.cooper.binge.companion.jellyfin.JellyfinApp",
                     // The hand-built graph: wiring, every member a constructed object.
                     "com.cooper.binge.companion.jellyfin.AppGraph*",
+                    // The exported Service: services() and hostPolicy() hand the SDK objects from the graph.
+                    // What they choose is tested through JellyfinLibraryService and selectHostPolicy.
+                    "com.cooper.binge.companion.jellyfin.service.JellyfinCompanionService",
                     // Generated.
                     "com.cooper.binge.companion.jellyfin.BuildConfig",
                 )
