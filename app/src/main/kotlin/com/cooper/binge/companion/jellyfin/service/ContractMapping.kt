@@ -101,27 +101,30 @@ internal fun requireEpisodeFits(
     if (media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null) throw invalid("a movie takes no episode")
 }
 
-private const val PAGE_TOKEN_PREFIX = "p"
+private val PAGE_TOKEN = Regex("p(0|[1-9][0-9]*)s(0|[1-9][0-9]*)")
 
 /**
- * The start index [token] names: empty is the first page, and this app's own tokens are
- * [PAGE_TOKEN_PREFIX] and an index. Anything else is a token this app did not issue, INVALID_ARGUMENT.
+ * The start index [token] names: empty is the first page, and this app's own tokens are `p<start>s<size>`,
+ * valid only with the [pageSize] they were issued under. Anything else is INVALID_ARGUMENT.
  */
-internal fun startOf(token: String): Int {
+internal fun startOf(
+    token: String,
+    pageSize: Int,
+): Int {
     if (token.isEmpty()) return 0
-    return token
-        .takeIf { it.startsWith(PAGE_TOKEN_PREFIX) }
-        ?.removePrefix(PAGE_TOKEN_PREFIX)
-        ?.toIntOrNull()
-        ?.takeIf { it >= 0 }
-        ?: throw invalid("unknown page_token")
+    val match = PAGE_TOKEN.matchEntire(token) ?: throw invalid("unknown page_token")
+    val (start, size) = match.destructured
+    return start.toIntOrNull()?.takeIf { size == pageSize.toString() } ?: throw invalid("unknown page_token")
 }
 
-/** The token for the page after [page], which started at [start]; empty when [page] was the last. */
+/**
+ * The token for the page after [page], which started at [start] under [pageSize]; empty when [page] was the last.
+ */
 internal fun nextTokenAfter(
     start: Int,
+    pageSize: Int,
     page: ItemPage,
 ): String {
     val next = start + page.items.size
-    return if (page.items.isNotEmpty() && next < page.total) "$PAGE_TOKEN_PREFIX$next" else ""
+    return if (page.items.isNotEmpty() && next < page.total) "p${next}s$pageSize" else ""
 }
