@@ -2,3 +2,6 @@
 # pass silently while a translation still carries the old wording. Generated -
 # run ./gradlew updateTranslationHashes after re-reading the translations it names.
 app:app_label  03f509a513e8
+app:companion_label  8e03b3c29d2b
+app:error_signed_out  827096b0fbe6
+app:error_unreachable  8224327e4cec

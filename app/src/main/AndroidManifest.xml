@@ -36,6 +36,30 @@
             </intent-filter>
         </activity>
 
+        <!--
+            The integration surface. exported="true": the caller policy in JellyfinCompanionService is
+            what guards it. Binge reads the meta-data without binding.
+        -->
+        <service
+            android:name=".service.JellyfinCompanionService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.binge.companion.LIBRARY" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.binge.companion.name"
+                android:value="@string/companion_label" />
+            <meta-data
+                android:name="com.binge.companion.icon"
+                android:resource="@drawable/ic_companion" />
+            <meta-data
+                android:name="com.binge.companion.majors"
+                android:value="1" />
+            <meta-data
+                android:name="com.binge.companion.majors.library"
+                android:value="1" />
+        </service>
     </application>
 
 </manifest>
