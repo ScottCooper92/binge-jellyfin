@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    A home Jellyfin server is usually plain http on the LAN, so cleartext is allowed; the setup screen
-    asks before saving an http address. User-installed CAs are trusted too, for servers behind a
-    private CA.
+    A home Jellyfin server is usually plain http on the LAN, so cleartext is allowed, and the screens
+    mark an http server "Not encrypted". User-installed CAs are trusted too, for servers behind a
+    private CA. Both expose the access token to whatever the user's network or CA lets read it:
+    CLAUDE.md > The one rule says why that is accepted, and a change here is reviewed against it.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true">

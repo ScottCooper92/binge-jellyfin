@@ -37,7 +37,9 @@ data class ClientIdentity(
 
 /**
  * The transport to one Jellyfin server: the header that names this app (and carries the token once
- * signed in), and JSON over HTTP on [io]. The calls themselves are in `JellyfinAuth.kt`; their shapes are the server's own OpenAPI document (`/api-docs/openapi.json`).
+ * signed in), and JSON over HTTP on [io]. The calls themselves are extensions in `JellyfinAuth.kt`
+ * (sign-in) and `JellyfinLibraryApi.kt` (the library and playback). Their shapes are the server's own
+ * OpenAPI document (`/api-docs/openapi.json`).
  */
 class JellyfinClient(
     private val http: OkHttpClient,
