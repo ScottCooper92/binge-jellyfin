@@ -221,6 +221,8 @@ kover {
                     "com.cooper.binge.companion.jellyfin.MainActivity*",
                     // The Application: wiring.
                     "com.cooper.binge.companion.jellyfin.JellyfinApp",
+                    // The hand-built graph: wiring, every member a constructed object.
+                    "com.cooper.binge.companion.jellyfin.AppGraph*",
                     // Generated.
                     "com.cooper.binge.companion.jellyfin.BuildConfig",
                 )
