@@ -75,6 +75,9 @@ class FakeJellyfin : Dispatcher() {
     /** The user's password, as `/Users/Password` checks and changes it. */
     var password = "old-secret"
 
+    /** `/Sessions`: one stream playing, a movie being transcoded, and a session playing nothing. */
+    var sessions = SESSIONS
+
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
@@ -144,6 +147,8 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/Localization/Cultures" -> json(CULTURES)
             path == "/Users/Password" -> changePassword(request)
+            path == "/Sessions" -> json(sessions)
+            path.startsWith("/Sessions/") && path.endsWith("/Playing/Stop") -> MockResponse(code = 204)
             path == "/QuickConnect/Authorize" ->
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
@@ -268,6 +273,15 @@ class FakeJellyfin : Dispatcher() {
 
     companion object {
         private const val GOING_AWAY = 1001
+
+        const val SESSIONS =
+            """[
+            {"Id":"s-tv","UserName":"Claude","DeviceName":"Living room","Client":"Jellyfin Android TV",
+             "PlayState":{"PositionTicks":6000000000,"IsPaused":false,"PlayMethod":"Transcode"},
+             "NowPlayingItem":{"Name":"Sintel","RunTimeTicks":8880000000},
+             "TranscodingInfo":{"TranscodeReasons":["AudioCodecNotSupported","VideoCodecNotSupported"]}},
+            {"Id":"s-idle","UserName":"Claude","DeviceName":"Phone","Client":"Binge Jellyfin"}
+            ]"""
 
         /** A few of `/Localization/Cultures`, French with both of its three-letter names and two Spanishes under one code, as the server lists them. */
         private const val CULTURES =
