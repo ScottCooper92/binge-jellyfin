@@ -28,4 +28,7 @@ enum class ConsolePage {
 
     /** The server's users: create, access, password, delete. Admin only. */
     Users,
+
+    /** The server itself: its info, and restarting it. Admin only. */
+    Server,
 }

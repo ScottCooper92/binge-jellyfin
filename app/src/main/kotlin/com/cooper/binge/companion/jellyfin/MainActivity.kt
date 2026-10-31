@@ -52,6 +52,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordActions
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.ServerActions
+import com.cooper.binge.companion.jellyfin.ui.console.ServerScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ServerViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.TasksActions
 import com.cooper.binge.companion.jellyfin.ui.console.TasksScreen
 import com.cooper.binge.companion.jellyfin.ui.console.TasksViewModel
@@ -156,6 +159,7 @@ class MainActivity : ComponentActivity() {
                                 ConsolePage.Activity -> ActivityRoute(graph, close)
                                 ConsolePage.Devices -> DevicesRoute(graph, close)
                                 ConsolePage.Users -> UsersRoute(graph, close)
+                                ConsolePage.Server -> ServerRoute(graph, close)
                             }
                         }
                     }
@@ -307,6 +311,20 @@ class MainActivity : ComponentActivity() {
                 onRetry = users::load,
                 onBack = onBack,
             ),
+        )
+    }
+
+    /** The server page. */
+    @Composable
+    private fun ServerRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val server: ServerViewModel = viewModel(factory = viewModelFactory { initializer { ServerViewModel(graph.connection) } })
+        val state by server.state.collectAsStateWithLifecycle()
+        ServerScreen(
+            state,
+            ServerActions(onConfirm = server::confirm, onRestart = server::restart, onRetry = server::load, onBack = onBack),
         )
     }
 

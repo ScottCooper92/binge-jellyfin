@@ -164,4 +164,20 @@
     <string name="users_password_set">Password set.</string>
     <string name="users_deleted">User deleted.</string>
     <string name="users_not_changed">Not changed. %1$s</string>
+    <string name="server_title">Server</string>
+    <string name="console_server_detail">Version, updates and restarting</string>
+    <string name="server_unnamed">Jellyfin</string>
+    <string name="server_version">Jellyfin %1$s</string>
+    <string name="server_update">An update is available. Install it where the server runs.</string>
+    <string name="server_system_unknown">System not reported</string>
+    <string name="server_restart_pending">A restart is waiting</string>
+    <string name="server_restart_pending_detail">Some changes apply after the next restart</string>
+    <string name="server_restart">Restart server</string>
+    <string name="server_restart_title">Restart %1$s?</string>
+    <string name="server_restart_body">Everyone using it is cut off until it\'s back, usually within a minute.</string>
+    <string name="server_restarting">Restarting… This page carries on when the server is back.</string>
+    <string name="server_restarted">Restarted.</string>
+    <string name="server_not_back">The server hasn\'t come back after two minutes. Check it where it runs.</string>
+    <string name="server_restart_failed">The server didn\'t take the restart. Try again.</string>
+    <string name="server_cant_restart">This server can\'t restart itself. Restart it where it runs.</string>
 </resources>

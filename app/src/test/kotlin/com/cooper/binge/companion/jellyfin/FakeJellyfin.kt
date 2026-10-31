@@ -122,6 +122,15 @@ class FakeJellyfin : Dispatcher() {
     /** Passwords an administrator set, by user id. */
     val adminPasswords = mutableMapOf<String, String>()
 
+    /** `/System/Info`, as an administrator reads it. */
+    var systemInfo =
+        """{"ServerName":"truenas","Version":"10.11.6","LocalAddress":"http://192.168.1.10:8096","SystemArchitecture":"X64",""" +
+            """"OperatingSystemDisplayName":"Linux","HasUpdateAvailable":false,"HasPendingRestart":true,"CanSelfRestart":true}"""
+
+    /** How many `/System/Info/Public` reads a restart refuses, as the server goes down and comes back. */
+    var restartDownPolls = 2
+    private var down = 0
+
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
@@ -172,6 +181,15 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         return when {
+            path == "/System/Info/Public" && down > 0 -> {
+                down--
+                MockResponse(code = 503)
+            }
+            path == "/System/Info" -> json(systemInfo)
+            path == "/System/Restart" -> {
+                down = restartDownPolls
+                MockResponse(code = 204)
+            }
             path == "/System/Info/Public" ->
                 json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":true}""")
             path == "/Users/AuthenticateByName" -> {

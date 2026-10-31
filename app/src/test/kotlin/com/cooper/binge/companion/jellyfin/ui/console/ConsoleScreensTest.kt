@@ -22,6 +22,7 @@ import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
+import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.ServerUser
@@ -406,5 +407,30 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Delete user").assertDoesNotExist()
         state = state.copy(open = null)
         compose.onNodeWithText("Users").assertExists()
+    }
+
+    @Test
+    fun `the server page restarts after a confirm, reports how it went, and says when it can't`() {
+        val asked = mutableListOf<Boolean>()
+        var restarted = false
+        val info =
+            ServerInfo("truenas", "10.11.6", "http://nas:8096", "X64", "", updateAvailable = true, restartPending = true, canRestart = true)
+        var state by mutableStateOf(ServerUiState.Ready(info))
+        compose.setContent {
+            JellyfinTheme { ServerScreen(state, ServerActions(onConfirm = { asked += it }, onRestart = { restarted = true })) }
+        }
+        compose.onNodeWithText("Jellyfin 10.11.6").assertExists()
+        compose.onNodeWithText("An update is available. Install it where the server runs.").assertExists()
+        compose.onNodeWithText("A restart is waiting").assertExists()
+        compose.onNodeWithText("Restart server").performScrollTo().performClick()
+        assertEquals(listOf(true), asked)
+        state = state.copy(confirming = true)
+        compose.onNodeWithText("Restart truenas?").assertExists()
+        compose.onAllNodesWithText("Restart server")[1].performClick()
+        assertTrue(restarted)
+        Restart.entries.forEach { restart -> state = state.copy(confirming = false, restart = restart) }
+        compose.onNodeWithText("The server didn't take the restart. Try again.").assertExists()
+        state = state.copy(info = info.copy(canRestart = false), restart = null)
+        compose.onNodeWithText("This server can't restart itself. Restart it where it runs.").assertExists()
     }
 }
