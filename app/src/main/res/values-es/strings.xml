@@ -3,6 +3,41 @@
     <string name="app_label">Binge Jellyfin</string>
     <string name="companion_label">Jellyfin</string>
 
+    <string name="setup_server_title">Conectar con Jellyfin</string>
+    <string name="setup_server_body">Escribe la dirección de tu servidor de Jellyfin, la que usas en el navegador.</string>
+    <string name="setup_server_field">Dirección del servidor</string>
+    <string name="setup_connect">Conectar</string>
+    <string name="setup_change">Cambiar</string>
+    <string name="setup_sign_in_title">Iniciar sesión</string>
+    <string name="setup_username">Nombre de usuario</string>
+    <string name="setup_password">Contraseña</string>
+    <string name="setup_sign_in">Iniciar sesión</string>
+    <string name="setup_quick_connect">Usar Quick Connect</string>
+
+    <string name="quick_connect_title">Introduce este código</string>
+    <string name="quick_connect_body">En una app de Jellyfin en la que hayas iniciado sesión, abre tu perfil, luego Quick Connect, e introduce el código.</string>
+    <string name="quick_connect_cancel">Usar una contraseña</string>
+
+    <string name="server_detail">%1$s · Jellyfin %2$s</string>
+    <string name="server_detail_cleartext">%1$s · Sin cifrar</string>
+
+    <string name="settings_server">Servidor</string>
+    <string name="settings_signed_in_as">Sesión iniciada</string>
+    <string name="settings_library">Biblioteca</string>
+    <string name="settings_titles">Películas y series que Binge puede ver</string>
+    <string name="settings_titles_checking">Comprobando tu biblioteca…</string>
+    <string name="settings_titles_failed">No se ha podido conectar con el servidor</string>
+    <string name="settings_refresh">Volver a comprobar la biblioteca</string>
+    <string name="settings_sign_out">Cerrar sesión</string>
+    <string name="sign_out_title">¿Cerrar sesión en Jellyfin?</string>
+    <string name="sign_out_body">Binge dejará de mostrar lo que hay en tu biblioteca y no podrá reproducir desde ella hasta que vuelvas a iniciar sesión.</string>
+
+    <string name="error_invalid_address">Esa no es una dirección de servidor</string>
     <string name="error_unreachable">No se ha podido conectar con tu servidor de Jellyfin</string>
+    <string name="error_not_jellyfin">Esa dirección no ha respondido como un servidor de Jellyfin</string>
+    <string name="error_wrong_credentials">Nombre de usuario o contraseña incorrectos</string>
+    <string name="error_quick_connect_off">Quick Connect está desactivado en este servidor</string>
+    <string name="error_quick_connect_expired">El código ha caducado. Inténtalo de nuevo.</string>
+    <string name="error_generic">Algo ha fallado. Inténtalo de nuevo.</string>
     <string name="error_signed_out">Inicia sesión en Jellyfin para ver tu biblioteca</string>
 </resources>

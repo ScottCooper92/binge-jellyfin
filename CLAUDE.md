@@ -16,9 +16,9 @@ exports a bound Android Service implementing a contract from
 `binge.companion.library.v1`. **Nothing in this repository defines a contract.** A change to the
 wire format is a PR against binge-companions.
 
-Status is pre-alpha. This is the repository's scaffold: the gates, CI and the bots. The app's code
-(sign-in, the library index, the exported Service and the phone screens) lands in the PRs that
-follow it. Nothing is on Play.
+Status is pre-alpha. Sign-in, the library index, the exported Service and a phone settings screen
+are in, and playback has been checked against Binge's player on a phone. TV screens, tests for most
+of the code and the release tooling are not. Nothing is on Play.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.

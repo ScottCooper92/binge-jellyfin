@@ -3,6 +3,41 @@
     <string name="app_label">Binge Jellyfin</string>
     <string name="companion_label">Jellyfin</string>
 
+    <string name="setup_server_title">Connect to Jellyfin</string>
+    <string name="setup_server_body">Enter your Jellyfin server\'s address, the one you use in a browser.</string>
+    <string name="setup_server_field">Server address</string>
+    <string name="setup_connect">Connect</string>
+    <string name="setup_change">Change</string>
+    <string name="setup_sign_in_title">Sign in</string>
+    <string name="setup_username">Username</string>
+    <string name="setup_password">Password</string>
+    <string name="setup_sign_in">Sign in</string>
+    <string name="setup_quick_connect">Use Quick Connect</string>
+
+    <string name="quick_connect_title">Enter this code</string>
+    <string name="quick_connect_body">In a Jellyfin app you\'re signed in to, open your profile, then Quick Connect, and enter the code.</string>
+    <string name="quick_connect_cancel">Use a password instead</string>
+
+    <string name="server_detail">%1$s · Jellyfin %2$s</string>
+    <string name="server_detail_cleartext">%1$s · Not encrypted</string>
+
+    <string name="settings_server">Server</string>
+    <string name="settings_signed_in_as">Signed in</string>
+    <string name="settings_library">Library</string>
+    <string name="settings_titles">Movies and shows Binge can see</string>
+    <string name="settings_titles_checking">Checking your library…</string>
+    <string name="settings_titles_failed">Couldn\'t reach the server</string>
+    <string name="settings_refresh">Check the library again</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="sign_out_title">Sign out of Jellyfin?</string>
+    <string name="sign_out_body">Binge will stop showing what\'s in your library and won\'t play from it until you sign in again.</string>
+
+    <string name="error_invalid_address">That isn\'t a server address</string>
     <string name="error_unreachable">Couldn\'t reach your Jellyfin server</string>
+    <string name="error_not_jellyfin">That address didn\'t answer as a Jellyfin server</string>
+    <string name="error_wrong_credentials">Wrong username or password</string>
+    <string name="error_quick_connect_off">Quick Connect is turned off on this server</string>
+    <string name="error_quick_connect_expired">The code expired. Try again.</string>
+    <string name="error_generic">Something went wrong. Try again.</string>
     <string name="error_signed_out">Sign in to Jellyfin to see your library</string>
 </resources>

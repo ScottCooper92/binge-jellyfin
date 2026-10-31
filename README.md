@@ -20,8 +20,9 @@ settings. Browsing the library stays in Binge, and in Jellyfin's own apps.
 
 ## Status
 
-**Pre-alpha.** This is the scaffold: the gates, CI and the review bots. The app's code lands in the
-PRs that follow it. Nothing is on Play.
+**Pre-alpha.** Sign-in, the library index, the exported Service and the phone settings screen are
+in, and playback has been checked against Binge's player on a phone. TV screens and the release
+tooling are open issues. Nothing is on Play.
 
 ## Building
 
