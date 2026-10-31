@@ -81,6 +81,20 @@ class LibrariesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
+    fun notStopped() =
+        LibrariesScreen(
+            previewReady.copy(
+                board = TaskBoard(listOf(previewScanTask.copy(running = true, percent = 68))),
+                actionFailed = ConsoleFailure.Unreachable,
+                stopFailed = true,
+            ),
+            LibrariesActions(),
+            now = NOW,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
     fun loading() = LibrariesScreen(LibrariesUiState.Loading, LibrariesActions())
 
     @PreviewTest
