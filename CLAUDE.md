@@ -133,7 +133,8 @@ transport alone.
 where to confirm the list.
 
 - Kotlin compilation, and the debug and release builds (R8 on release).
-- The unit tests (`:app:testDebugUnitTest`).
+- The unit tests (`:app:testDebugUnitTest`). It is the only unit-test task: AGP 9 creates unit tests
+  for the debug build type alone, so CI runs the suite once, in the `tests` job.
 - `ktlintCheck`.
 - `detekt`, with type resolution, against the root `detekt.yml`. There is no baseline: the gate is
   zero findings. Keep it that way rather than creating one.
