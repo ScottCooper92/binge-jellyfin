@@ -51,6 +51,10 @@ object DeviceProfiles {
 
     private const val DEFAULT_MAX_BITRATE = 120_000_000L
     private const val EAC3_JOC = "audio/eac3-joc"
+    private const val DOLBY_VISION = "video/dolby-vision"
+    private val BASE_LAYER_RANGES =
+        listOf("SDR", "HDR10", "HLG", "HDR10Plus", "DOVIWithHDR10", "DOVIWithHLG", "DOVIWithSDR", "DOVIWithHDR10Plus")
+    private val ALL_RANGES = BASE_LAYER_RANGES + listOf("DOVI", "DOVIWithEL", "DOVIWithELHDR10Plus")
 
     fun maxBitrate(device: PlaybackDeviceProfile?): Long = device?.maxBitrateBps?.takeIf { it > 0 } ?: DEFAULT_MAX_BITRATE
 
@@ -133,7 +137,7 @@ object DeviceProfiles {
             val limits = mutableListOf<JsonElement>()
             device?.maxWidth?.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Width", it.toString()) }
             device?.maxHeight?.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Height", it.toString()) }
-            if (device != null && !device.supportsHdr) limits += condition("EqualsAny", "VideoRangeType", "SDR")
+            device?.let { limits += condition("EqualsAny", "VideoRangeType", playableRanges(it).joinToString("|")) }
             if (limits.isNotEmpty()) add(obj("Type" to str("Video"), "Conditions" to JsonArray(limits)))
             // E-AC-3 with Atmos (JOC) needs its own decoder; a device with plain E-AC-3 only fails to start on it.
             if (!decodesAtmos) {
@@ -159,6 +163,20 @@ object DeviceProfiles {
                         ),
                 ),
             )
+        }
+
+    /**
+     * The video ranges [device] can show. Without HDR, SDR alone. With HDR but no Dolby Vision decoder,
+     * the ranges whose base layer a plain HEVC or AV1 decoder plays: Dolby Vision with an HDR10, HLG,
+     * SDR or HDR10+ base (profiles 8 and 9; Media3 falls back to the base layer for them). Profile 5
+     * (`DOVI`) has no such base, and the enhancement-layer profiles (`DOVIWithEL…`) are left to the
+     * server, so it transcodes them. A device that lists `video/dolby-vision` plays every range.
+     */
+    private fun playableRanges(device: PlaybackDeviceProfile): List<String> =
+        when {
+            !device.supportsHdr -> listOf("SDR")
+            device.videoCodecsList.any { it.equals(DOLBY_VISION, ignoreCase = true) } -> ALL_RANGES
+            else -> BASE_LAYER_RANGES
         }
 
     /** A Jellyfin container name as the MIME type Binge's allowlist takes. */

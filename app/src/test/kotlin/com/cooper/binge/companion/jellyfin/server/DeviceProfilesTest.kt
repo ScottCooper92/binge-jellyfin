@@ -97,4 +97,31 @@ class DeviceProfilesTest {
         assertEquals("text/vtt", DeviceProfiles.subtitleMime("webvtt"))
         assertNull(DeviceProfiles.subtitleMime("pgssub"))
     }
+
+    private fun ranges(device: PlaybackDeviceProfile): List<String> {
+        val video =
+            (DeviceProfiles.toJellyfin(device).getValue("CodecProfiles") as JsonArray)
+                .map { it.jsonObject }
+                .single { it.text("Type") == "Video" && it["Codec"] == null }
+        return video
+            .getValue("Conditions")
+            .jsonArray
+            .map { it.jsonObject }
+            .single { it.text("Property") == "VideoRangeType" }
+            .text("Value")
+            .split('|')
+    }
+
+    @Test
+    fun `an HDR device without a Dolby Vision decoder plays only ranges with a base layer`() {
+        val hdrNoDv = ranges(pixel)
+        assertTrue("DOVIWithHDR10Plus" in hdrNoDv)
+        assertTrue("HDR10" in hdrNoDv)
+        assertFalse("DOVI" in hdrNoDv)
+        assertFalse("DOVIWithEL" in hdrNoDv)
+
+        val withDv = ranges(pixel.toBuilder().addVideoCodecs("video/dolby-vision").build())
+        assertTrue("DOVI" in withDv)
+        assertTrue("DOVIWithEL" in withDv)
+    }
 }
