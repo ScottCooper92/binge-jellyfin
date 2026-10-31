@@ -40,7 +40,8 @@ The screens wear the design system's `BingeExpressiveTheme`, with this app's own
 
 Jellyfin mints a long-lived token when the user signs in. It is stored only through `SessionStore`,
 encrypted under an Android Keystore key (`SecretCipher`). It travels in the `Authorization:
-MediaBrowser …` header on every call to the server the user typed. It goes into a URL in exactly
+MediaBrowser …` header on every call to the server the user chose: typed, or picked from the servers
+found on the network. It goes into a URL in exactly
 two places:
 
 - a playback source minted for an installed player (`player_package` non-empty), which may not send
@@ -50,7 +51,7 @@ two places:
 Never log the token, never put it in any other URL, never send it to another host, and never store
 it outside `SessionStore`. Fixing a test or a playback bug is never a reason to move it.
 
-Two things the rule rests on are the user's own choice, and this app accepts them rather than
+Three things the rule rests on are the user's own choice, and this app accepts them rather than
 working around them:
 
 - **Plain http.** Most home servers are http on the LAN, so `network_security_config.xml` allows
@@ -60,6 +61,11 @@ working around them:
   user-installed CA can also intercept TLS and read the header. Installing one is the user's
   decision, and this app relies on it as made. A change to what the config trusts is reviewed
   against this paragraph.
+- **Servers found on the network.** The server step lists what answers Jellyfin's UDP discovery
+  broadcast (`UdpDiscovery`). Nothing authenticates an answer: anything on the network can reply
+  with any name, and an address of its own. The row shows the address and marks http "Not
+  encrypted", and picking it is the user's choice, as typing it would be. Never connect to, or sign
+  in to, a discovered server without that pick.
 
 ## Talking to the host
 
