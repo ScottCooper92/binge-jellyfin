@@ -183,7 +183,8 @@ where to confirm the list.
   the SDK the graph's objects), `BuildConfig`, and composables with their `ComposableSingletons`.
   Nothing is excluded for merely lacking tests. Raise the floor as the code grows; never lower it.
 - `validateDebugScreenshotTest`: a `@PreviewTest` frame that no longer renders like its committed
-  PNG. `app/build.gradle.kts` wires it into `check` by hand. There are no frames yet.
+  PNG. `app/build.gradle.kts` wires it into `check` by hand. The frames are described under
+  Screenshot frames below.
 - `checkTvMaterialSeparation`: a Material 3 import under `ui/tv`, or a tv-material import anywhere
   else. `theme/JellyfinTheme.kt` is the one allowed crossing.
 
