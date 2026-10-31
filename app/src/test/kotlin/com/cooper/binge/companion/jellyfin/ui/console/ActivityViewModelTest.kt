@@ -77,7 +77,6 @@ class ActivityViewModelTest {
     fun `a page that adds nothing new ends the list rather than asking for it again`() {
         val vm = ActivityViewModel(connection, pageSize = 2)
         vm.ready()
-        jellyfin.activityEntries = jellyfin.activityEntries.take(2) + jellyfin.activityEntries.take(2) + jellyfin.activityEntries.drop(2)
         jellyfin.activityEntries = jellyfin.activityEntries.take(4)
         vm.loadMore()
         assertFalse(vm.ready { !it.loadingMore }.hasMore)
@@ -98,6 +97,33 @@ class ActivityViewModelTest {
         // The next page can't come either, and says so.
         vm.loadMore()
         assertEquals(ConsoleFailure.Refused, vm.ready { !it.loadingMore }.moreFailed)
+    }
+
+    @Test
+    fun `Try again after a failed refresh re-reads the newest when everything fit on one page`() {
+        val vm = ActivityViewModel(connection)
+        assertFalse(vm.ready().hasMore)
+        jellyfin.status["/System/ActivityLog/Entries"] = 500
+        vm.refresh()
+        assertEquals(ConsoleFailure.Refused.javaClass, vm.ready { it.moreFailed != null && !it.refreshing }.moreFailed?.javaClass)
+        jellyfin.status.remove("/System/ActivityLog/Entries")
+        vm.loadMore()
+        assertEquals(null, vm.ready { !it.refreshing && it.moreFailed == null }.moreFailed)
+        assertEquals(3, jellyfin.hits("/System/ActivityLog/Entries"))
+    }
+
+    @Test
+    fun `a critical entry reads as an error`() {
+        jellyfin.activityEntries = listOf("""{"Id":9,"Name":"Bad","Type":"X","Severity":"Critical"}""")
+        val vm = ActivityViewModel(connection)
+        assertEquals(
+            Severity.Error,
+            vm
+                .ready()
+                .entries
+                .single()
+                .severity,
+        )
     }
 
     @Test
