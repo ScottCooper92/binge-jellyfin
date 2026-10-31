@@ -232,11 +232,12 @@ kover {
                 annotatedBy("androidx.compose.runtime.Composable")
             }
         }
-        // 0 while the code it measures is landing, a PR at a time. The PR that completes the app
-        // sets it to what the suite measures then; never lower it.
+        // 85, measured: the suite sat at 87.8% when the Service and the screens landed. Chosen rather than
+        // inherited, with a little headroom for a class that is awkward to reach. Raise it as the code
+        // grows; never lower it.
         verify {
             rule {
-                minBound(0)
+                minBound(85)
             }
         }
     }
