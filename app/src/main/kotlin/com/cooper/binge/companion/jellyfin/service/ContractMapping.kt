@@ -101,7 +101,7 @@ internal fun requireEpisodeFits(
     if (media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null) throw invalid("a movie takes no episode")
 }
 
-private val PAGE_TOKEN = Regex("p(0|[1-9][0-9]*)s(0|[1-9][0-9]*)")
+private val PAGE_TOKEN = Regex("p(0|[1-9][0-9]*)s(0|-?[1-9][0-9]*)")
 
 /**
  * The start index [token] names: empty is the first page, and this app's own tokens are `p<start>s<size>`,
