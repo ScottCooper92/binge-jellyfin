@@ -106,8 +106,9 @@ class FakeJellyfin : Dispatcher() {
             path == "/Users/Me" -> json("""{"Name":"Claude"}""")
             path == "/Items" -> items(request)
             path.startsWith("/Shows/") && path.endsWith("/Episodes") -> episodes(path.split('/')[2])
-            path == "/UserItems/Resume" -> page(items.filter { it.positionTicks > 0 })
-            path == "/Shows/NextUp" -> page(items.filter { it.type == "Episode" && !it.played }.take(1))
+            path == "/UserItems/Resume" -> paged(request, items.filter { it.positionTicks > 0 })
+            path == "/Shows/NextUp" ->
+                paged(request, items.filter { it.type == "Episode" && !it.played }.distinctBy { it.seriesId })
             path.startsWith("/UserPlayedItems/") -> setPlayed(path.removePrefix("/UserPlayedItems/"), request.method == "POST")
             path.endsWith("/PlaybackInfo") -> json(playbackInfo)
             path.startsWith("/Sessions/Playing") -> MockResponse(code = 204)
@@ -146,6 +147,16 @@ class FakeJellyfin : Dispatcher() {
         if (index < 0) return MockResponse(code = 404)
         items[index] = items[index].copy(played = played)
         return json("{}")
+    }
+
+    /** [list] paged by the request's `startIndex` and `limit`, with the whole list's count. */
+    private fun paged(
+        request: RecordedRequest,
+        list: List<FakeItem>,
+    ): MockResponse {
+        val start = request.url.queryParameter("startIndex")?.toInt() ?: 0
+        val limit = request.url.queryParameter("limit")?.toInt() ?: list.size
+        return page(list.drop(start).take(limit), total = list.size)
     }
 
     private fun page(

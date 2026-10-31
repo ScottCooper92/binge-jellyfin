@@ -399,12 +399,35 @@ class JellyfinLibraryServiceTest {
     }
 
     @Test
-    fun `a page_token on a list is INVALID_ARGUMENT, since none was issued`() {
-        val resume = statusOf { stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageToken("x").build()) }
-        assertEquals(Status.Code.INVALID_ARGUMENT, resume.status.code)
+    fun `a page_token this app did not issue is INVALID_ARGUMENT`() {
+        for (token in listOf("x", "p", "p-1", "12")) {
+            val resume = statusOf { stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageToken(token).build()) }
+            assertEquals(token, Status.Code.INVALID_ARGUMENT, resume.status.code)
+        }
         val nextUp = statusOf { stub.listNextUp(ListNextUpRequest.newBuilder().setPageToken("x").build()) }
         assertEquals(Status.Code.INVALID_ARGUMENT, nextUp.status.code)
     }
+
+    @Test
+    fun `continue watching pages through the whole list, and the last page carries no token`() =
+        runBlocking {
+            jellyfin.items += (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(2).build())
+            assertEquals(2, first.entriesCount)
+            assertEquals("p2", first.nextPageToken)
+            val last =
+                stub.listContinueWatching(
+                    ListContinueWatchingRequest
+                        .newBuilder()
+                        .setPageSize(2)
+                        .setPageToken(first.nextPageToken)
+                        .build(),
+                )
+            assertEquals(1, last.entriesCount)
+            assertEquals("", last.nextPageToken)
+            val all = (first.entriesList + last.entriesList).map { it.media.tmdbId }.toSet()
+            assertEquals(setOf(1084199, 2002, 2003), all)
+        }
 
     @Test
     fun `a series without an episode, or a movie with one, is INVALID_ARGUMENT`() {

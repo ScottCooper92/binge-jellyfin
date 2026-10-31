@@ -101,19 +101,27 @@ class JellyfinLibraryService(
     override suspend fun listContinueWatching(request: ListContinueWatchingRequest): ListContinueWatchingResponse =
         guard {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_CONTINUE_WATCHING)
-            requireNoPageToken(request.pageToken)
+            val start = startOf(request.pageToken)
             val (session, client) = reads.signedIn()
-            val items = client.resumeItems(session.userId, pageSize(request.pageSize))
-            ListContinueWatchingResponse.newBuilder().addAllEntries(reads.entries(session, client, items)).build()
+            val page = client.resumeItems(session.userId, start, pageSize(request.pageSize))
+            ListContinueWatchingResponse
+                .newBuilder()
+                .addAllEntries(reads.entries(session, client, page.items))
+                .setNextPageToken(nextTokenAfter(start, page))
+                .build()
         }
 
     override suspend fun listNextUp(request: ListNextUpRequest): ListNextUpResponse =
         guard {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_CONTINUE_WATCHING)
-            requireNoPageToken(request.pageToken)
+            val start = startOf(request.pageToken)
             val (session, client) = reads.signedIn()
-            val items = client.nextUp(session.userId, pageSize(request.pageSize))
-            ListNextUpResponse.newBuilder().addAllEntries(reads.entries(session, client, items)).build()
+            val page = client.nextUp(session.userId, start, pageSize(request.pageSize))
+            ListNextUpResponse
+                .newBuilder()
+                .addAllEntries(reads.entries(session, client, page.items))
+                .setNextPageToken(nextTokenAfter(start, page))
+                .build()
         }
 
     override suspend fun getPlaybackSource(request: GetPlaybackSourceRequest): GetPlaybackSourceResponse =
