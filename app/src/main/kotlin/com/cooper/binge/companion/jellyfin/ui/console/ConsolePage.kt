@@ -13,4 +13,7 @@ enum class ConsolePage {
 
     /** Who is watching what, and stopping a stream. Everyone's for an admin, else the user's own. */
     NowPlaying,
+
+    /** The server's libraries, and scanning them. Admin only. */
+    Libraries,
 }
