@@ -55,6 +55,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.TasksActions
 import com.cooper.binge.companion.jellyfin.ui.console.TasksScreen
 import com.cooper.binge.companion.jellyfin.ui.console.TasksViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.UsersActions
+import com.cooper.binge.companion.jellyfin.ui.console.UsersScreen
+import com.cooper.binge.companion.jellyfin.ui.console.UsersViewModel
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -152,6 +155,7 @@ class MainActivity : ComponentActivity() {
                                 ConsolePage.Tasks -> TasksRoute(graph, close)
                                 ConsolePage.Activity -> ActivityRoute(graph, close)
                                 ConsolePage.Devices -> DevicesRoute(graph, close)
+                                ConsolePage.Users -> UsersRoute(graph, close)
                             }
                         }
                     }
@@ -275,6 +279,32 @@ class MainActivity : ComponentActivity() {
                 onAskRemove = devices::askRemove,
                 onRemove = devices::remove,
                 onRetry = devices::load,
+                onBack = onBack,
+            ),
+        )
+    }
+
+    /** The users page, with each user's own page inside it. */
+    @Composable
+    private fun UsersRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val users: UsersViewModel = viewModel(factory = viewModelFactory { initializer { UsersViewModel(graph.connection) } })
+        val state by users.state.collectAsStateWithLifecycle()
+        UsersScreen(
+            state,
+            UsersActions(
+                onOpen = users::open,
+                onShow = users::show,
+                onAdministrator = users::setAdministrator,
+                onCanSignIn = users::setCanSignIn,
+                onAllLibraries = users::setAllLibraries,
+                onLibrary = users::setLibrary,
+                onCreate = users::create,
+                onSetPassword = users::setPassword,
+                onDelete = users::delete,
+                onRetry = users::load,
                 onBack = onBack,
             ),
         )

@@ -25,4 +25,7 @@ enum class ConsolePage {
 
     /** The devices signed in to the server, renamed or removed. Admin only. */
     Devices,
+
+    /** The server's users: create, access, password, delete. Admin only. */
+    Users,
 }

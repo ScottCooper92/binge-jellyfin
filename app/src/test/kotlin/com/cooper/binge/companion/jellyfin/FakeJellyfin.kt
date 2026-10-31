@@ -99,6 +99,29 @@ class FakeJellyfin : Dispatcher() {
     /** The names an admin gave devices, by id. */
     val deviceNames = mutableMapOf<String, String>()
 
+    /**
+     * `/Users`, by id: Claude, the signed-in administrator (`user-1`), and Sam, who sees one library.
+     * A policy saved here replaces the user's whole policy, as the server does.
+     */
+    val serverUsers: MutableMap<String, JsonObject> =
+        mutableMapOf(
+            "user-1" to
+                user(
+                    "user-1",
+                    "Claude",
+                    """{"IsAdministrator":true,"IsDisabled":false,"EnableAllFolders":true,"EnabledFolders":[],"MaxActiveSessions":0}""",
+                ),
+            "user-2" to
+                user(
+                    "user-2",
+                    "Sam",
+                    """{"IsAdministrator":false,"IsDisabled":false,"EnableAllFolders":false,"EnabledFolders":["lib-movies"],"MaxActiveSessions":3}""",
+                ),
+        )
+
+    /** Passwords an administrator set, by user id. */
+    val adminPasswords = mutableMapOf<String, String>()
+
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
@@ -167,7 +190,15 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/Localization/Cultures" -> json(CULTURES)
+            path == "/Users/Password" && "CurrentPw" !in request.body?.utf8().orEmpty() -> adminPassword(request)
             path == "/Users/Password" -> changePassword(request)
+            path == "/Users" -> json(serverUsers.values.joinToString(",", "[", "]") { it.toString() })
+            path == "/Users/New" -> createUser(request)
+            path.startsWith("/Users/") && path.endsWith("/Policy") -> savePolicy(path.split('/')[2], request)
+            path.startsWith("/Users/") && request.method == "DELETE" -> {
+                serverUsers.remove(path.removePrefix("/Users/"))
+                MockResponse(code = 204)
+            }
             path == "/Sessions" -> json(sessions)
             path == "/Library/VirtualFolders" -> json(LIBRARIES)
             path == "/ScheduledTasks" -> json(scheduledTasks)
@@ -320,6 +351,40 @@ class FakeJellyfin : Dispatcher() {
         json(
             deviceNames[id]?.let { """{"Id":"$id","CustomName":"$it"}""" } ?: """{"Id":"$id"}""",
         )
+
+    private fun user(
+        id: String,
+        name: String,
+        policy: String,
+    ): JsonObject = Json.parseToJsonElement("""{"Id":"$id","Name":"$name","HasPassword":true,"Policy":$policy}""").jsonObject
+
+    private fun createUser(request: RecordedRequest): MockResponse {
+        val name =
+            Json
+                .parseToJsonElement(request.body?.utf8().orEmpty())
+                .jsonObject
+                .getValue("Name")
+                .jsonPrimitive.content
+        val id = "user-${serverUsers.size + 1}"
+        serverUsers[id] = user(id, name, """{"IsAdministrator":false,"IsDisabled":false,"EnableAllFolders":true,"EnabledFolders":[]}""")
+        return json(serverUsers.getValue(id).toString())
+    }
+
+    private fun savePolicy(
+        id: String,
+        request: RecordedRequest,
+    ): MockResponse {
+        val policy = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
+        val user = serverUsers[id] ?: return MockResponse(code = 404)
+        serverUsers[id] = JsonObject(user + ("Policy" to policy))
+        return MockResponse(code = 204)
+    }
+
+    private fun adminPassword(request: RecordedRequest): MockResponse {
+        val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
+        adminPasswords[request.url.queryParameter("userId").orEmpty()] = body.getValue("NewPw").jsonPrimitive.content
+        return MockResponse(code = 204)
+    }
 
     private fun json(body: String): MockResponse =
         MockResponse
