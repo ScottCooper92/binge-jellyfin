@@ -35,6 +35,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.PasswordActions
+import com.cooper.binge.companion.jellyfin.ui.console.PasswordScreen
+import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -119,6 +122,7 @@ class MainActivity : ComponentActivity() {
                         null -> JellyfinRoot(state, actions)
                         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, opened, onBack = { page = null })
                         ConsolePage.Languages -> LanguagesRoute(graph, opened, onBack = { page = null })
+                        ConsolePage.Password -> PasswordRoute(graph, opened, onBack = { page = null })
                     }
                 }
             }
@@ -161,6 +165,31 @@ class MainActivity : ComponentActivity() {
                 onSubtitles = languages::setSubtitles,
                 onSubtitleMode = languages::setSubtitleMode,
                 onRetry = languages::load,
+                onBack = onBack,
+            ),
+        )
+    }
+
+    /** The password page with a view model per opening, so the form is empty each time it opens. */
+    @Composable
+    private fun PasswordRoute(
+        graph: AppGraph,
+        opening: Int,
+        onBack: () -> Unit,
+    ) {
+        val password: PasswordViewModel =
+            viewModel(
+                key = "password-$opening",
+                factory = viewModelFactory { initializer { PasswordViewModel(graph.connection) } },
+            )
+        val state by password.state.collectAsStateWithLifecycle()
+        PasswordScreen(
+            state,
+            PasswordActions(
+                onCurrent = password::onCurrent,
+                onNew = password::onNew,
+                onConfirm = password::onConfirm,
+                onChange = password::change,
                 onBack = onBack,
             ),
         )

@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -70,6 +71,9 @@ class FakeJellyfin : Dispatcher() {
     /** The user's configuration, as `/Users/Me` answers it and `/Users/Configuration` replaces it. */
     var userConfiguration =
         """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
+
+    /** The user's password, as `/Users/Password` checks and changes it. */
+    var password = "old-secret"
 
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
@@ -139,6 +143,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/Localization/Cultures" -> json(CULTURES)
+            path == "/Users/Password" -> changePassword(request)
             path == "/QuickConnect/Authorize" ->
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
@@ -245,6 +250,13 @@ class FakeJellyfin : Dispatcher() {
             episode?.let { append(""","IndexNumber":$it""") }
             append(""","ImageTags":{"Primary":"tag"}}""")
         }
+
+    private fun changePassword(request: RecordedRequest): MockResponse {
+        val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
+        if (body["CurrentPw"]?.jsonPrimitive?.content != password) return MockResponse(code = 403)
+        password = body.getValue("NewPw").jsonPrimitive.content
+        return MockResponse(code = 204)
+    }
 
     private fun json(body: String): MockResponse =
         MockResponse

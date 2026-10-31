@@ -7,4 +7,7 @@ enum class ConsolePage {
 
     /** The audio and subtitle languages Jellyfin chooses tracks by. For everyone. */
     Languages,
+
+    /** Change the user's own password. For everyone. */
+    Password,
 }

@@ -94,3 +94,19 @@ fun JsonObject.with(
     key: String,
     value: String,
 ): JsonObject = JsonObject(this + (key to JsonPrimitive(value)))
+
+/**
+ * Changes [userId]'s password. A wrong [current] password is a 403. Jellyfin then signs the user out
+ * everywhere but here: every other device's token stops working, and this one's carries on.
+ */
+suspend fun JellyfinClient.changePassword(
+    userId: String,
+    current: String,
+    new: String,
+) {
+    post(
+        "Users/Password",
+        JsonObject(mapOf("CurrentPw" to JsonPrimitive(current), "NewPw" to JsonPrimitive(new))),
+        mapOf("userId" to userId),
+    )
+}

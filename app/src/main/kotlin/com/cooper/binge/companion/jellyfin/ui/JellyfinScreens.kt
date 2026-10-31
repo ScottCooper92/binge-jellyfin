@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
@@ -356,6 +357,11 @@ private fun AccountGroup(actions: Actions) {
                     label = stringResource(R.string.languages_title),
                     detail = stringResource(R.string.console_languages_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Languages) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Password,
+                    label = stringResource(R.string.password_title),
+                    onClick = { actions.onOpenPage(ConsolePage.Password) },
                 ),
             ),
     )
