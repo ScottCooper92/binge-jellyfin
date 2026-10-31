@@ -90,9 +90,9 @@ android {
         debug {
             // A package of its own, so a debug build installs beside a release one instead of over it.
             applicationIdSuffix = ".debug"
-            // Opt-in (`-PminifyDebug`) minified debug build: the one the device lane runs, so a keep
+            // Opt-in (`-PminifyDebug`) minified debug build: the one a device lane will run (#11), so a keep
             // rule that goes stale fails there rather than on a user. BuildConfig.DEBUG stays true, which
-            // is what lets the smoke test bind as a caller. Off by default: it would slow the dev loop.
+            // is what will let its smoke test bind as a caller. Off by default: it would slow the dev loop.
             if (project.hasProperty("minifyDebug")) {
                 optimization { enable = true }
             }
