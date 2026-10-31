@@ -72,9 +72,11 @@ class ApproveCodeViewModelTest {
     }
 
     @Test
-    fun `Quick Connect turned off, an unreachable server and no session each say so`() {
-        jellyfin.status["/QuickConnect/Authorize"] = 403
+    fun `Quick Connect turned off, another failure, an unreachable server and no session each say so`() {
+        jellyfin.status["/QuickConnect/Authorize"] = 401
         assertEquals(ApproveResult.QuickConnectOff, ApproveCodeViewModel(connection).resultAfter("654321").result)
+        jellyfin.status["/QuickConnect/Authorize"] = 500
+        assertEquals(ApproveResult.Failed, ApproveCodeViewModel(connection).resultAfter("654321").result)
         jellyfin.close()
         assertEquals(ApproveResult.Unreachable, ApproveCodeViewModel(connection).resultAfter("654321").result)
         runBlocking { sessions.clear() }
