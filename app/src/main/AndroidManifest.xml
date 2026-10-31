@@ -11,8 +11,8 @@
         android:required="false" />
 
     <!--
-        Cleartext is allowed because most home Jellyfin servers are plain http on the LAN. The user
-        confirms an http address before it is saved (CleartextConsent), as binge-seerr does.
+        Cleartext is allowed because most home Jellyfin servers are plain http on the LAN. The app's
+        screens say so wherever an http server is shown.
     -->
     <application
         android:name=".JellyfinApp"
