@@ -20,6 +20,12 @@ Status is pre-alpha. This is the repository's scaffold: the gates, CI and the bo
 (sign-in, the library index, the exported Service and the phone screens) lands in the PRs that
 follow it. Nothing is on Play.
 
+**Until that stack lands, the classes this file names are the plan, not code that exists:**
+`SessionStore`, `SecretCipher`, `server/JellyfinClient.kt` and `AppGraph` (#14), `LibraryIndex`
+(#15), `DeviceProfiles` (#16), the exported Service with `JellyfinCompanionService` (#17), and the
+screens (#18). Review each of those PRs against the rules here as written; #18 rewrites this
+paragraph when the last of them is in.
+
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
 `binge-ci/` is a third, for the shared Gradle gates. `.gitmodules` is an agent-governed path, so
@@ -121,11 +127,12 @@ where to confirm the list.
   does not exist, so an English string added without its Spanish is a red build.
 - `checkTranslationStaleness`: a reworded English string whose Spanish was not re-read. Re-read it,
   then `./gradlew updateTranslationHashes` and commit `translation-hashes.txt`.
-- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`. The floor was measured
-  when the gate was set up, not inherited. Excluded: `MainActivity`, the Application and `AppGraph`
-  (wiring), `JellyfinCompanionService` (it only hands the SDK the graph's objects), `BuildConfig`,
-  and composables with their `ComposableSingletons`. Nothing is excluded for merely lacking tests.
-  Raise the floor as the code grows; never lower it.
+- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`. The floor is 0 while the
+  app lands a PR at a time; the PR that completes it (#18) sets it from a measurement, and from then
+  on it only rises. Excluded: `MainActivity`, the Application, `BuildConfig`, and composables with
+  their `ComposableSingletons`; and, each with the PR that adds it, `AppGraph` (wiring) and
+  `JellyfinCompanionService` (it only hands the SDK the graph's objects). Nothing is excluded for
+  merely lacking tests. Never lower the floor.
 - `validateDebugScreenshotTest`: a `@PreviewTest` frame that no longer renders like its committed
   PNG. `app/build.gradle.kts` wires it into `check` by hand. There are no frames yet.
 - `checkTvMaterialSeparation`: a Material 3 import under `ui/tv`, or a tv-material import anywhere

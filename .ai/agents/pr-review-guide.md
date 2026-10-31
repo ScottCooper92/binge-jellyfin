@@ -23,8 +23,9 @@ Roughly in order of how expensive they are to get wrong.
 **The access token goes to the user's own server and nowhere else.** It travels in the
 `Authorization` header, and in a URL only where `CLAUDE.md` > The one rule allows: a playback source
 minted for an installed player that takes no headers, and a subtitle URL. A diff that logs it, puts
-it in a URL anywhere else, sends it to any other host, or stores it outside `SessionStore`'s cipher
-is a finding, whatever the PR says it is for. This is the single most important thing to read for.
+it in a URL anywhere else, sends it to any other host, or stores it anywhere but the app's encrypted
+session store is a finding, whatever the PR says it is for. This is the single most important thing
+to read for.
 
 **The exported Service is the attack surface.** Release admits Binge's pinned certificate only;
 debug admits Binge's package names and this app's own uid. A diff that loosens the policy, or widens

@@ -219,11 +219,9 @@ kover {
                     "*ComposableSingletons*",
                     "*PreviewData*",
                     "com.cooper.binge.companion.jellyfin.MainActivity*",
-                    // The exported Service: services() and hostPolicy() hand the SDK objects from the graph.
-                    // What they choose is tested through JellyfinLibraryService and selectHostPolicy.
-                    "com.cooper.binge.companion.jellyfin.service.JellyfinCompanionService",
-                    // The Application and the hand-built graph: wiring, every member a constructed object.
+                    // The Application: wiring.
                     "com.cooper.binge.companion.jellyfin.JellyfinApp",
+                    // The hand-built graph: wiring, every member a constructed object.
                     "com.cooper.binge.companion.jellyfin.AppGraph*",
                     // Generated.
                     "com.cooper.binge.companion.jellyfin.BuildConfig",
