@@ -175,7 +175,7 @@ class FakeJellyfin : Dispatcher() {
 
         fun transcodeInfo(): String =
             """{"PlaySessionId":"play-2","MediaSources":[{"Id":"source-2","Container":"mkv","SupportsDirectPlay":false,""" +
-                """"SupportsDirectStream":false,"TranscodingUrl":"/videos/x/master.m3u8?MediaSourceId=source-2","MediaStreams":[]}]}"""
+                """"SupportsDirectStream":false,"TranscodingUrl":"/videos/x/master.m3u8?MediaSourceId=source-2&ApiKey=token-1","MediaStreams":[]}]}"""
     }
 }
 

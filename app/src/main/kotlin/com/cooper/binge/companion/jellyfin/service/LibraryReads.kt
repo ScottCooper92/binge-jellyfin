@@ -113,7 +113,6 @@ class LibraryReads(
         }
 
     private companion object {
-        const val REASON_SIGNED_OUT = "SIGNED_OUT"
         const val EPISODE = "Episode"
         const val ARTWORK_HEIGHT = "600"
     }
