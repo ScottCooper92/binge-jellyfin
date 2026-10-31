@@ -12,13 +12,14 @@ kotlin = "2.4.21"
 coreKtx = "1.19.1"
 junit = "4.13.2"
 # The version binge-design-system pins.
-robolectric = "4.16.1"
+robolectric = "4.17"
 # The version binge-design-system pins: a baseline recorded by one renderer has to validate under
 # the other, and these frames are built from that build's components.
 screenshot = "0.0.1-alpha16"
 ktlint = "14.2.0"
 kover = "0.9.11"
 kotlinxCoroutines = "1.11.0"
+# The version binge-design-system pins.
 composeBom = "2026.09.00"
 # Pinned ahead of the BOM to the version binge-design-system pins: its theme reads material3 APIs
 # the BOM's stable line does not have, and resolution would otherwise pick one of the two silently.
