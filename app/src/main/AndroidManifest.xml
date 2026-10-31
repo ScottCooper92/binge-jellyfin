@@ -2,6 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+        Finding the server on the network: a UDP broadcast to Jellyfin's discovery port. Android 17 asks
+        the user for it at run time; earlier versions grant it with INTERNET. Refused, the address is
+        typed instead.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!-- To find the device's Wi-Fi and Ethernet networks, and send the broadcast on them. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-feature
         android:name="android.software.leanback"

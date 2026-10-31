@@ -2,7 +2,15 @@
 # pass silently while a translation still carries the old wording. Generated -
 # run ./gradlew updateTranslationHashes after re-reading the translations it names.
 app:app_label  03f509a513e8
+app:approve_action  6007acbe30b2
+app:approve_body  7fdf32e702f5
+app:approve_done  60cb7aa6d6ef
+app:approve_field  340f463033e0
+app:approve_title  914f3d3bccbc
+app:approve_wrong  8bb61c428d9c
 app:companion_label  8e03b3c29d2b
+app:console_account_title  dbb5f6371b6a
+app:console_approve_detail  8371322fc723
 app:error_generic  4def98c89240
 app:error_invalid_address  3f5c0f63269d
 app:error_not_jellyfin  37cafc7954e3
@@ -20,14 +28,17 @@ app:settings_library  dc20b3d5d2cd
 app:settings_refresh  046c434d323d
 app:settings_server  aef7de28d529
 app:settings_sign_out  48f0d3d397d4
+app:settings_signed_in_admin  6f696fff619b
 app:settings_signed_in_as  ca566c8968e7
 app:settings_titles  b189742ec3ad
 app:settings_titles_checking  809f41354580
 app:settings_titles_failed  4c763975c12b
 app:setup_change  c0bf75bd78bf
 app:setup_connect  1a2303ede074
+app:setup_found_title  45dc8020467a
 app:setup_password  e7cf3ef4f17c
 app:setup_quick_connect  d52940712fbe
+app:setup_searching  fad10c01b7c9
 app:setup_server_body  3219d0cc0f0a
 app:setup_server_field  8be89710b2f1
 app:setup_server_title  b7830a0234e7

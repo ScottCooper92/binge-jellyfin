@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -47,6 +48,8 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.binge.designsystem.R as DesR
 
 /** What the screens can ask of the [JellyfinViewModel]. */
@@ -63,6 +66,9 @@ data class Actions(
     val onAskSignOut: () -> Unit = {},
     val onCancelSignOut: () -> Unit = {},
     val onSignOut: () -> Unit = {},
+    val onDiscover: () -> Unit = {},
+    val onChooseServer: (DiscoveredServer) -> Unit = {},
+    val onOpenPage: (ConsolePage) -> Unit = {},
 )
 
 @Composable
@@ -107,9 +113,11 @@ private fun EnterServer(
     actions: Actions,
     inner: PaddingValues,
 ) {
+    LaunchedEffect(Unit) { actions.onDiscover() }
     SetupColumn(inner) {
         Text(stringResource(R.string.setup_server_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.setup_server_body), style = MaterialTheme.typography.bodyMedium)
+        DiscoveredServers(state, actions)
         OutlinedTextField(
             value = state.address,
             onValueChange = actions.onAddress,
@@ -129,6 +137,37 @@ private fun EnterServer(
             enabled = state.address.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/** The servers that answered on the local network, each one tap from connecting; a quiet line while the search runs. */
+@Composable
+private fun DiscoveredServers(
+    state: UiState.EnterServer,
+    actions: Actions,
+) {
+    if (state.discovered.isNotEmpty()) {
+        ItemGroup(
+            title = stringResource(R.string.setup_found_title),
+            rows =
+                state.discovered.map { server ->
+                    val cleartext = server.address.startsWith("http://")
+                    ListItem(
+                        icon = if (cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
+                        label = server.name,
+                        detail = if (cleartext) stringResource(R.string.server_detail_cleartext, server.address) else server.address,
+                        onClick = { actions.onChooseServer(server) },
+                    )
+                },
+        )
+    } else if (state.discovering) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+        ) {
+            BingeLoadingIndicator()
+            Text(stringResource(R.string.setup_searching), style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }
 
@@ -237,63 +276,13 @@ private fun SignedIn(
     actions: Actions,
     inner: PaddingValues,
 ) {
-    val session = state.session
     LazyColumn(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        item {
-            ItemGroup(
-                title = stringResource(R.string.settings_server),
-                rows =
-                    listOf(
-                        ListItem(
-                            icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
-                            label = session.serverName.ifBlank { session.baseUrl },
-                            detail =
-                                if (state.cleartext) {
-                                    stringResource(R.string.server_detail_cleartext, session.baseUrl)
-                                } else {
-                                    stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
-                                },
-                            clickable = false,
-                        ),
-                        ListItem(
-                            icon = Icons.Outlined.Person,
-                            label = session.userName,
-                            detail = stringResource(R.string.settings_signed_in_as),
-                            clickable = false,
-                        ),
-                    ),
-            )
-        }
-        item {
-            ItemGroup(
-                title = stringResource(R.string.settings_library),
-                rows =
-                    listOf(
-                        ListItem(
-                            icon = Icons.Outlined.VideoLibrary,
-                            label = stringResource(R.string.settings_titles),
-                            detail =
-                                when {
-                                    state.refreshFailed -> stringResource(R.string.settings_titles_failed)
-                                    state.titles == null -> stringResource(R.string.settings_titles_checking)
-                                    else -> null
-                                },
-                            trailingContent =
-                                state.titles?.let { count -> { Text(count.toString(), style = MaterialTheme.typography.bodyLarge) } },
-                            clickable = false,
-                        ),
-                        ListItem(
-                            icon = Icons.Outlined.Refresh,
-                            label = stringResource(R.string.settings_refresh),
-                            trailingContent = if (state.refreshing) ({ BingeLoadingIndicator() }) else null,
-                            onClick = actions.onRefresh,
-                        ),
-                    ),
-            )
-        }
+        item { ServerGroup(state) }
+        item { AccountGroup(actions) }
+        item { LibraryGroup(state, actions) }
         item {
             BingeOutlinedButton(
                 label = stringResource(R.string.settings_sign_out),
@@ -314,6 +303,87 @@ private fun SignedIn(
             destructive = true,
         )
     }
+}
+
+/** Where and who: the server, marked when it is not encrypted, and the user, marked when an admin. */
+@Composable
+private fun ServerGroup(state: UiState.SignedIn) {
+    val session = state.session
+    ItemGroup(
+        title = stringResource(R.string.settings_server),
+        rows =
+            listOf(
+                ListItem(
+                    icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
+                    label = session.serverName.ifBlank { session.baseUrl },
+                    detail =
+                        if (state.cleartext) {
+                            stringResource(R.string.server_detail_cleartext, session.baseUrl)
+                        } else {
+                            stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
+                        },
+                    clickable = false,
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Person,
+                    label = session.userName,
+                    detail =
+                        stringResource(
+                            if (state.isAdministrator) R.string.settings_signed_in_admin else R.string.settings_signed_in_as,
+                        ),
+                    clickable = false,
+                ),
+            ),
+    )
+}
+
+/** The console's pages for everyone. */
+@Composable
+private fun AccountGroup(actions: Actions) {
+    ItemGroup(
+        title = stringResource(R.string.console_account_title),
+        rows =
+            listOf(
+                ListItem(
+                    icon = Icons.Outlined.QrCode2,
+                    label = stringResource(R.string.approve_title),
+                    detail = stringResource(R.string.console_approve_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.ApproveCode) },
+                ),
+            ),
+    )
+}
+
+@Composable
+private fun LibraryGroup(
+    state: UiState.SignedIn,
+    actions: Actions,
+) {
+    ItemGroup(
+        title = stringResource(R.string.settings_library),
+        rows =
+            listOf(
+                ListItem(
+                    icon = Icons.Outlined.VideoLibrary,
+                    label = stringResource(R.string.settings_titles),
+                    detail =
+                        when {
+                            state.refreshFailed -> stringResource(R.string.settings_titles_failed)
+                            state.titles == null -> stringResource(R.string.settings_titles_checking)
+                            else -> null
+                        },
+                    trailingContent =
+                        state.titles?.let { count -> { Text(count.toString(), style = MaterialTheme.typography.bodyLarge) } },
+                    clickable = false,
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Refresh,
+                    label = stringResource(R.string.settings_refresh),
+                    trailingContent = if (state.refreshing) ({ BingeLoadingIndicator() }) else null,
+                    onClick = actions.onRefresh,
+                ),
+            ),
+    )
 }
 
 @Composable

@@ -6,6 +6,8 @@
     <string name="setup_server_title">Connect to Jellyfin</string>
     <string name="setup_server_body">Enter your Jellyfin server\'s address, the one you use in a browser.</string>
     <string name="setup_server_field">Server address</string>
+    <string name="setup_found_title">On your network</string>
+    <string name="setup_searching">Looking for servers on your network…</string>
     <string name="setup_connect">Connect</string>
     <string name="setup_change">Change</string>
     <string name="setup_sign_in_title">Sign in</string>
@@ -40,4 +42,13 @@
     <string name="error_quick_connect_expired">The code expired. Try again.</string>
     <string name="error_generic">Something went wrong. Try again.</string>
     <string name="error_signed_out">Sign in to Jellyfin to see your library</string>
+    <string name="settings_signed_in_admin">Signed in · Administrator</string>
+    <string name="console_account_title">Your account</string>
+    <string name="console_approve_detail">For a TV or browser showing a Quick Connect code</string>
+    <string name="approve_title">Approve a sign-in code</string>
+    <string name="approve_body">Enter the code another device shows. Approving it signs that device in as you.</string>
+    <string name="approve_field">Code</string>
+    <string name="approve_action">Approve</string>
+    <string name="approve_done">Approved. The other device is signing in as you.</string>
+    <string name="approve_wrong">That code isn\'t waiting to be approved. Check it, or get a new one on the other device.</string>
 </resources>

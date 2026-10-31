@@ -6,6 +6,8 @@
     <string name="setup_server_title">Conectar con Jellyfin</string>
     <string name="setup_server_body">Escribe la dirección de tu servidor de Jellyfin, la que usas en el navegador.</string>
     <string name="setup_server_field">Dirección del servidor</string>
+    <string name="setup_found_title">En tu red</string>
+    <string name="setup_searching">Buscando servidores en tu red…</string>
     <string name="setup_connect">Conectar</string>
     <string name="setup_change">Cambiar</string>
     <string name="setup_sign_in_title">Iniciar sesión</string>
@@ -40,4 +42,13 @@
     <string name="error_quick_connect_expired">El código ha caducado. Inténtalo de nuevo.</string>
     <string name="error_generic">Algo ha fallado. Inténtalo de nuevo.</string>
     <string name="error_signed_out">Inicia sesión en Jellyfin para ver tu biblioteca</string>
+    <string name="settings_signed_in_admin">Sesión iniciada · Administrador</string>
+    <string name="console_account_title">Tu cuenta</string>
+    <string name="console_approve_detail">Para una tele o un navegador que muestre un código de Quick Connect</string>
+    <string name="approve_title">Aprobar un código de inicio de sesión</string>
+    <string name="approve_body">Introduce el código que muestra el otro dispositivo. Al aprobarlo, ese dispositivo inicia sesión como tú.</string>
+    <string name="approve_field">Código</string>
+    <string name="approve_action">Aprobar</string>
+    <string name="approve_done">Aprobado. El otro dispositivo está iniciando sesión como tú.</string>
+    <string name="approve_wrong">Ese código no está esperando aprobación. Revísalo o pide uno nuevo en el otro dispositivo.</string>
 </resources>

@@ -15,6 +15,9 @@ import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CopyOnWriteArrayList
@@ -47,8 +50,25 @@ class FakeJellyfin : Dispatcher() {
     val status = mutableMapOf<String, Int>()
     val slow = mutableSetOf<String>()
     val notJson = mutableSetOf<String>()
+
+    /** The event sockets the app opened, and every message it sent on them. */
+    val sockets = CopyOnWriteArrayList<WebSocket>()
+    val socketMessages = CopyOnWriteArrayList<String>()
+
+    /** The `Data` of the `ForceKeepAlive` the socket opens with, in seconds. */
+    var keepAliveSeconds = 60
+
+    /** Sends [message] on every open event socket. */
+    fun push(message: String) = sockets.forEach { it.send(message) }
+
     var quickConnectEnabled = true
     var quickConnectApproved = false
+
+    /** Whether `/Users/Me` answers with an administrator's policy. */
+    var administrator = false
+
+    /** The one Quick Connect code another device is waiting to have approved. */
+    var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
 
     init {
@@ -58,7 +78,11 @@ class FakeJellyfin : Dispatcher() {
 
     val baseUrl: String get() = server.url("/").toString().trimEnd('/')
 
-    override fun close() = server.close()
+    override fun close() {
+        // An event socket still open holds the server's shutdown, so close them first.
+        sockets.forEach { it.close(GOING_AWAY, null) }
+        server.close()
+    }
 
     /** The JSON body of the last request to [path]. */
     fun lastBody(path: String): JsonObject =
@@ -84,6 +108,7 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         status[path]?.let { return MockResponse(code = it) }
+        if (path == "/socket") return socket(request)
         if (path in notJson) {
             return MockResponse
                 .Builder()
@@ -103,16 +128,51 @@ class FakeJellyfin : Dispatcher() {
             path == "/QuickConnect/Connect" -> json("""{"Authenticated":$quickConnectApproved}""")
             path == "/Users/AuthenticateWithQuickConnect" -> signedIn()
             path == "/Sessions/Logout" -> MockResponse(code = 204)
-            path == "/Users/Me" -> json("""{"Name":"Claude"}""")
+            path == "/Users/Me" -> json("""{"Name":"Claude","Policy":{"IsAdministrator":$administrator}}""")
+            path == "/QuickConnect/Authorize" ->
+                if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
             path.startsWith("/Shows/") && path.endsWith("/Episodes") -> episodes(path.split('/')[2])
-            path == "/UserItems/Resume" -> page(items.filter { it.positionTicks > 0 })
-            path == "/Shows/NextUp" -> page(items.filter { it.type == "Episode" && !it.played }.take(1))
+            path == "/UserItems/Resume" -> paged(request, items.filter { it.positionTicks > 0 })
+            path == "/Shows/NextUp" ->
+                paged(request, items.filter { it.type == "Episode" && !it.played }.distinctBy { it.seriesId })
             path.startsWith("/UserPlayedItems/") -> setPlayed(path.removePrefix("/UserPlayedItems/"), request.method == "POST")
             path.endsWith("/PlaybackInfo") -> json(playbackInfo)
             path.startsWith("/Sessions/Playing") -> MockResponse(code = 204)
             else -> MockResponse(code = 404)
         }
+    }
+
+    private fun socket(request: RecordedRequest): MockResponse {
+        if (request.headers["Authorization"]?.contains("Token=") != true) return MockResponse(code = 403)
+        return MockResponse
+            .Builder()
+            .webSocketUpgrade(
+                object : WebSocketListener() {
+                    override fun onOpen(
+                        webSocket: WebSocket,
+                        response: Response,
+                    ) {
+                        sockets += webSocket
+                        webSocket.send("""{"MessageType":"ForceKeepAlive","Data":$keepAliveSeconds}""")
+                    }
+
+                    override fun onMessage(
+                        webSocket: WebSocket,
+                        text: String,
+                    ) {
+                        socketMessages += text
+                    }
+
+                    override fun onClosed(
+                        webSocket: WebSocket,
+                        code: Int,
+                        reason: String,
+                    ) {
+                        sockets -= webSocket
+                    }
+                },
+            ).build()
     }
 
     private fun signedIn(): MockResponse =
@@ -148,6 +208,16 @@ class FakeJellyfin : Dispatcher() {
         return json("{}")
     }
 
+    /** [list] paged by the request's `startIndex` and `limit`, with the whole list's count. */
+    private fun paged(
+        request: RecordedRequest,
+        list: List<FakeItem>,
+    ): MockResponse {
+        val start = request.url.queryParameter("startIndex")?.toInt() ?: 0
+        val limit = request.url.queryParameter("limit")?.toInt() ?: list.size
+        return page(list.drop(start).take(limit), total = list.size)
+    }
+
     private fun page(
         list: List<FakeItem>,
         total: Int = list.size,
@@ -175,6 +245,8 @@ class FakeJellyfin : Dispatcher() {
             .build()
 
     companion object {
+        private const val GOING_AWAY = 1001
+
         fun directPlayInfo(): String =
             """{"PlaySessionId":"play-1","MediaSources":[{"Id":"source-1","Container":"mp4","SupportsDirectPlay":true,""" +
                 """"SupportsDirectStream":true,"RunTimeTicks":36000000000,"MediaStreams":[""" +

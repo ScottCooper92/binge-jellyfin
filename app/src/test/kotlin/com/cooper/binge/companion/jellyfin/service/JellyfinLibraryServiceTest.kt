@@ -25,6 +25,7 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
+import com.cooper.binge.companion.jellyfin.server.ServerEvent
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import io.grpc.ManagedChannel
@@ -34,7 +35,9 @@ import io.grpc.StatusException
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.OkHttpClient
@@ -47,6 +50,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 /** The whole LIBRARY contract over an in-process channel, against a fake Jellyfin server. */
 @RunWith(RobolectricTestRunner::class)
@@ -63,6 +68,7 @@ class JellyfinLibraryServiceTest {
             override fun locale() = "en-GB"
         }
 
+    private val events = MutableSharedFlow<ServerEvent>(extraBufferCapacity = 8)
     private val name = InProcessServerBuilder.generateName()
     private val server: Server =
         InProcessServerBuilder
@@ -74,6 +80,7 @@ class JellyfinLibraryServiceTest {
                     playback = PlaybackSources(now = { Instant.ofEpochSecond(1_000) }),
                     versionName = "1.2.3",
                     messages = messages,
+                    events = events,
                 ),
             ).build()
             .start()
@@ -399,12 +406,103 @@ class JellyfinLibraryServiceTest {
     }
 
     @Test
-    fun `a page_token on a list is INVALID_ARGUMENT, since none was issued`() {
-        val resume = statusOf { stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageToken("x").build()) }
-        assertEquals(Status.Code.INVALID_ARGUMENT, resume.status.code)
-        val nextUp = statusOf { stub.listNextUp(ListNextUpRequest.newBuilder().setPageToken("x").build()) }
-        assertEquals(Status.Code.INVALID_ARGUMENT, nextUp.status.code)
+    fun `a page_token this app did not issue is INVALID_ARGUMENT`() {
+        for (token in listOf("x", "p", "p-1", "12", "p2", "p+2s0", "p02s0", "p2s")) {
+            val resume = statusOf { stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageToken(token).build()) }
+            assertEquals(token, Status.Code.INVALID_ARGUMENT, resume.status.code)
+            val nextUp = statusOf { stub.listNextUp(ListNextUpRequest.newBuilder().setPageToken(token).build()) }
+            assertEquals(token, Status.Code.INVALID_ARGUMENT, nextUp.status.code)
+        }
     }
+
+    @Test
+    fun `a page_token replayed under a different page_size is INVALID_ARGUMENT`() =
+        runBlocking {
+            jellyfin.items += (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(2).build())
+            val resume =
+                statusOf {
+                    stub.listContinueWatching(
+                        ListContinueWatchingRequest
+                            .newBuilder()
+                            .setPageSize(3)
+                            .setPageToken(first.nextPageToken)
+                            .build(),
+                    )
+                }
+            assertEquals(Status.Code.INVALID_ARGUMENT, resume.status.code)
+            val nextUp =
+                statusOf {
+                    stub.listNextUp(
+                        ListNextUpRequest
+                            .newBuilder()
+                            .setPageSize(3)
+                            .setPageToken(first.nextPageToken)
+                            .build(),
+                    )
+                }
+            assertEquals(Status.Code.INVALID_ARGUMENT, nextUp.status.code)
+        }
+
+    @Test
+    fun `a negative page_size pages on, because the token it issued is accepted back`() =
+        runBlocking {
+            jellyfin.items +=
+                (2..22).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(-1).build())
+            assertEquals("p20s-1", first.nextPageToken)
+            val second =
+                stub.listContinueWatching(
+                    ListContinueWatchingRequest
+                        .newBuilder()
+                        .setPageSize(-1)
+                        .setPageToken(first.nextPageToken)
+                        .build(),
+                )
+            assertEquals(2, second.entriesCount)
+            assertEquals("", second.nextPageToken)
+        }
+
+    @Test
+    fun `next up pages on under a negative page_size`() =
+        runBlocking {
+            jellyfin.items +=
+                (1..21).map {
+                    FakeItem("ep-$it", "Episode $it", "Episode", seriesId = "series-$it", season = 1, episode = 1)
+                }
+            val first = stub.listNextUp(ListNextUpRequest.newBuilder().setPageSize(-1).build())
+            assertEquals("p20s-1", first.nextPageToken)
+            val second =
+                stub.listNextUp(
+                    ListNextUpRequest
+                        .newBuilder()
+                        .setPageSize(-1)
+                        .setPageToken(first.nextPageToken)
+                        .build(),
+                )
+            assertEquals("", second.nextPageToken)
+        }
+
+    @Test
+    fun `continue watching pages through the whole list, and the last page carries no token`() =
+        runBlocking {
+            jellyfin.items += (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(2).build())
+            assertEquals(2, first.entriesCount)
+            assertEquals("p2s2", first.nextPageToken)
+            val last =
+                stub.listContinueWatching(
+                    ListContinueWatchingRequest
+                        .newBuilder()
+                        .setPageSize(2)
+                        .setPageToken(first.nextPageToken)
+                        .build(),
+                )
+            assertEquals(1, last.entriesCount)
+            assertEquals("", last.nextPageToken)
+            val all = (first.entriesList + last.entriesList).map { it.media.tmdbId }.toSet()
+            assertEquals(setOf(1084199, 2002, 2003), all)
+        }
 
     @Test
     fun `a series without an episode, or a movie with one, is INVALID_ARGUMENT`() {
@@ -538,4 +636,24 @@ class JellyfinLibraryServiceTest {
         assertEquals(Status.Code.UNAVAILABLE, failure.status.code)
         assertEquals("Can't reach Jellyfin", userMessageOf(failure.trailers)?.message)
     }
+
+    @Test
+    fun `a watch state stream pushes again when the server says user data changed`() =
+        runBlocking {
+            val states = LinkedBlockingQueue<Long>()
+            val job =
+                launch(Dispatchers.IO) {
+                    stub.observeWatchState(ObserveWatchStateRequest.newBuilder().setMedia(movie).build()).collect {
+                        states.put(it.state.positionMillis)
+                    }
+                }
+            assertEquals(526_000L, states.poll(10, TimeUnit.SECONDS))
+            // The stream subscribes to the events after its first read: wait for it, or the event is dropped.
+            events.subscriptionCount.first { it > 0 }
+            val index = jellyfin.items.indexOfFirst { it.id == "movie-1" }
+            jellyfin.items[index] = jellyfin.items[index].copy(positionTicks = 9_000_000_000L)
+            events.emit(ServerEvent.USER_DATA_CHANGED)
+            assertEquals(900_000L, states.poll(10, TimeUnit.SECONDS))
+            job.cancel()
+        }
 }

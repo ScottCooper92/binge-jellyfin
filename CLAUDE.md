@@ -10,6 +10,10 @@ It signs in to the user's own Jellyfin server and answers Binge's questions abou
 in my library, what have I watched, and a playback source for Binge's player, with the plays
 reported back to the server. It serves the LIBRARY contract.
 
+It is also a console for that server, as binge-seerr is for Seerr: it stands on its own, without
+Binge. It manages the server and never browses or plays it (that is Binge's job, through this app's
+playback source, and Jellyfin's own apps'). See The console below, and the epic, #71.
+
 Binge ships as a plain TMDB client with no bundled providers. A companion is a separate APK that
 exports a bound Android Service implementing a contract from
 [binge-companions](https://github.com/ScottCooper92/binge-companions). This one implements
@@ -17,8 +21,9 @@ exports a bound Android Service implementing a contract from
 wire format is a PR against binge-companions.
 
 Status is pre-alpha. Sign-in, the library index, the exported Service and a phone settings screen
-are in, and playback has been checked against Binge's player on a phone. The release workflow and
-the device lane are in. The TV screens are an open issue. Nothing is on Play.
+are in, and playback has been checked against Binge's player on a phone. The console is being built
+(#71). The release workflow and the device lane are in. The TV screens are an open issue. Nothing is
+on Play.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -96,10 +101,41 @@ transport alone.
 - **No query by TMDB id.** Jellyfin can filter on `hasTmdbId` but not on a value, so `LibraryIndex`
   pages in every movie and series with one and holds the map in memory, refreshed after 15 minutes,
   or after a minute when a lookup misses.
+- **Events, not polling.** The Observe streams follow the server's event socket (`ServerEvents`):
+  `/socket`, authenticated by the same `Authorization` header, so the token stays out of the URL. One
+  socket is shared while anything observes, answered with `KeepAlive` at half the server's
+  `ForceKeepAlive` interval, and reopened with a backoff when it drops. `UserDataChanged` re-reads
+  watch state, `LibraryChanged` marks the index stale and re-reads, and a five-minute poll covers a
+  socket that is down.
+- **The user's own library.** Every library call passes the signed-in `userId`, so the server answers
+  with only what that user's access policy lets them see. The index is built per user and server.
 - **Device profile rules learned on hardware.** Android decodes 8-bit H.264 only, so the profile
   limits H.264 to 8-bit and the standard profiles; without it a 10-bit source transcodes to High 10
   and fails to decode. E-AC-3 with Atmos (JOC) needs its own decoder, which many devices lack, so
   without `audio/eac3-joc` in the host's codecs E-AC-3 stays out of the transcode and is re-encoded.
+
+## The console
+
+The signed-in phone screen is the console's home: the server, the user and the library, then a page
+per thing the user can manage, then Sign out, last. On TV the app stays sign-in and settings, a subset
+as binge-seerr's TV is.
+
+- **What a user sees is what they may do.** The pages come from the signed-in user's own policy
+  (`/Users/Me`: `Policy.IsAdministrator`). A non-admin never sees an admin page, rather than seeing
+  one the server would refuse. Jellyfin's OpenAPI document marks each admin call `RequiresElevation`.
+- **For everyone:** approving a Quick Connect code another device shows, their playback languages,
+  their password, and their own active sessions.
+- **For an admin:** every session, libraries and scans, scheduled tasks, activity, devices, users,
+  and the server itself.
+- **Settings save as made**, with no Save button. The exceptions are a form whose submit is the point
+  (a new password, a new user) and anything destructive: removing a device or a user, stopping a
+  stream, restarting the server. Those are last on their page, red, and behind a confirm that opens
+  on Cancel.
+- **Never test an admin call against a real server.** Admin pages are exercised against the fake
+  server in the unit tests, and on a device only against a disposable test server, never one whose
+  users, devices or uptime matter.
+- **Out of scope:** browsing the library, editing metadata, plugin configuration, transcoding and
+  network settings, and anything that plays media.
 
 ## Kotlin, Gradle and Android
 

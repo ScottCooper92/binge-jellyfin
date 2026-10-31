@@ -25,6 +25,7 @@ class JellyfinCompanionService : IntegrationService() {
                 playback = PlaybackSources(now = Instant::now),
                 versionName = BuildConfig.VERSION_NAME,
                 messages = messages,
+                events = graph.events.events,
             ),
         )
     }

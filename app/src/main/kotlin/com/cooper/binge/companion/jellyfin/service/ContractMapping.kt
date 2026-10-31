@@ -9,6 +9,7 @@ import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.cooper.binge.companion.jellyfin.server.IndexKey
 import com.cooper.binge.companion.jellyfin.server.IndexType
+import com.cooper.binge.companion.jellyfin.server.ItemPage
 import com.cooper.binge.companion.jellyfin.server.JellyfinItem
 import com.google.protobuf.Timestamp
 import io.grpc.Status
@@ -100,7 +101,30 @@ internal fun requireEpisodeFits(
     if (media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null) throw invalid("a movie takes no episode")
 }
 
-/** This app issues no page tokens, so any the host sends is one it did not issue. */
-internal fun requireNoPageToken(token: String) {
-    if (token.isNotEmpty()) throw invalid("unknown page_token")
+private val PAGE_TOKEN = Regex("p(0|[1-9][0-9]*)s(0|-?[1-9][0-9]*)")
+
+/**
+ * The start index [token] names: empty is the first page, and this app's own tokens are `p<start>s<size>`,
+ * valid only with the [pageSize] they were issued under. Anything else is INVALID_ARGUMENT.
+ */
+internal fun startOf(
+    token: String,
+    pageSize: Int,
+): Int {
+    if (token.isEmpty()) return 0
+    val match = PAGE_TOKEN.matchEntire(token) ?: throw invalid("unknown page_token")
+    val (start, size) = match.destructured
+    return start.toIntOrNull()?.takeIf { size == pageSize.toString() } ?: throw invalid("unknown page_token")
+}
+
+/**
+ * The token for the page after [page], which started at [start] under [pageSize]; empty when [page] was the last.
+ */
+internal fun nextTokenAfter(
+    start: Int,
+    pageSize: Int,
+    page: ItemPage,
+): String {
+    val next = start + page.items.size
+    return if (page.items.isNotEmpty() && next < page.total) "p${next}s$pageSize" else ""
 }
