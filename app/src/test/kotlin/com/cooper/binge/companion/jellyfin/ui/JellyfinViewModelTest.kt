@@ -4,6 +4,7 @@ import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -45,7 +46,9 @@ class JellyfinViewModelTest {
         jellyfin.close()
     }
 
-    private fun viewModel() = JellyfinViewModel(sessions, connection, index, quickConnectPollMillis = 10L)
+    private var found: List<DiscoveredServer> = emptyList()
+
+    private fun viewModel() = JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L)
 
     private inline fun <reified T : UiState> JellyfinViewModel.await(crossinline matches: (T) -> Boolean = { true }): T =
         runBlocking { withTimeout(10_000) { state.first { it is T && matches(it) } as T } }
@@ -139,9 +142,9 @@ class JellyfinViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
         vm.await<UiState.SignedIn> { it.titles != null }
-        vm.askSignOut()
+        vm.confirmSignOut(true)
         assertTrue(vm.await<UiState.SignedIn> { it.confirmingSignOut }.confirmingSignOut)
-        vm.cancelSignOut()
+        vm.confirmSignOut(false)
         vm.await<UiState.SignedIn> { !it.confirmingSignOut }
         vm.signOut()
         assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
@@ -231,5 +234,27 @@ class JellyfinViewModelTest {
         } finally {
             proxy.close()
         }
+    }
+
+    @Test
+    fun `servers found on the network are listed, and choosing one connects to it`() {
+        found = listOf(DiscoveredServer(id = "server-1", name = "truenas", address = jellyfin.baseUrl))
+        val vm = viewModel()
+        vm.await<UiState.EnterServer>()
+        vm.discoverServers()
+        assertEquals(found, vm.await<UiState.EnterServer> { it.discovered.isNotEmpty() }.discovered)
+        vm.onAddress(found.single().address)
+        vm.connect()
+        assertEquals(jellyfin.baseUrl, vm.await<UiState.SignIn>().baseUrl)
+    }
+
+    @Test
+    fun `nothing found leaves the typed address as the way in, with no error`() {
+        val vm = viewModel()
+        vm.await<UiState.EnterServer>()
+        vm.discoverServers()
+        val state = vm.await<UiState.EnterServer> { !it.discovering }
+        assertTrue(state.discovered.isEmpty())
+        assertNull(state.error)
     }
 }

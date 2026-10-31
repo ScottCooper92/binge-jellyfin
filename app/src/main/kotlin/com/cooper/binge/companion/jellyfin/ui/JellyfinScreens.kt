@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -47,6 +48,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.binge.designsystem.R as DesR
 
 /** What the screens can ask of the [JellyfinViewModel]. */
@@ -63,6 +65,8 @@ data class Actions(
     val onAskSignOut: () -> Unit = {},
     val onCancelSignOut: () -> Unit = {},
     val onSignOut: () -> Unit = {},
+    val onDiscover: () -> Unit = {},
+    val onChooseServer: (DiscoveredServer) -> Unit = {},
 )
 
 @Composable
@@ -107,9 +111,11 @@ private fun EnterServer(
     actions: Actions,
     inner: PaddingValues,
 ) {
+    LaunchedEffect(Unit) { actions.onDiscover() }
     SetupColumn(inner) {
         Text(stringResource(R.string.setup_server_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.setup_server_body), style = MaterialTheme.typography.bodyMedium)
+        DiscoveredServers(state, actions)
         OutlinedTextField(
             value = state.address,
             onValueChange = actions.onAddress,
@@ -129,6 +135,37 @@ private fun EnterServer(
             enabled = state.address.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/** The servers that answered on the local network, each one tap from connecting; a quiet line while the search runs. */
+@Composable
+private fun DiscoveredServers(
+    state: UiState.EnterServer,
+    actions: Actions,
+) {
+    if (state.discovered.isNotEmpty()) {
+        ItemGroup(
+            title = stringResource(R.string.setup_found_title),
+            rows =
+                state.discovered.map { server ->
+                    val cleartext = server.address.startsWith("http://")
+                    ListItem(
+                        icon = if (cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
+                        label = server.name,
+                        detail = if (cleartext) stringResource(R.string.server_detail_cleartext, server.address) else server.address,
+                        onClick = { actions.onChooseServer(server) },
+                    )
+                },
+        )
+    } else if (state.discovering) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+        ) {
+            BingeLoadingIndicator()
+            Text(stringResource(R.string.setup_searching), style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }
 

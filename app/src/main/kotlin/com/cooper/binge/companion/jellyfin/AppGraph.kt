@@ -10,6 +10,8 @@ import com.cooper.binge.companion.jellyfin.auth.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
+import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
+import com.cooper.binge.companion.jellyfin.server.lanTargets
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
@@ -54,4 +56,7 @@ class AppGraph(
     }
 
     val index: LibraryIndex by lazy { LibraryIndex() }
+
+    /** Jellyfin's UDP broadcast, on this device's LAN networks. */
+    val discovery: UdpDiscovery by lazy { UdpDiscovery(targets = { lanTargets(appContext) }, io = io) }
 }
