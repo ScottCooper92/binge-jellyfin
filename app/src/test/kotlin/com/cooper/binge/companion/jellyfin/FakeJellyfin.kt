@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -195,7 +196,10 @@ object PlainCipher : SecretCipher {
 }
 
 /** A [SessionStore] on a file of its own, in a directory that is deleted with the JVM. */
-fun testSessionStore(cipher: SecretCipher = PlainCipher): SessionStore {
+fun testSessionStore(
+    cipher: SecretCipher = PlainCipher,
+    io: CoroutineDispatcher = Dispatchers.IO,
+): SessionStore {
     val dir: File = Files.createTempDirectory("session").toFile().apply { deleteOnExit() }
     return SessionStore(
         PreferenceDataStoreFactory.create(
@@ -203,6 +207,7 @@ fun testSessionStore(cipher: SecretCipher = PlainCipher): SessionStore {
             produceFile = { File(dir, "session.preferences_pb") },
         ),
         cipher,
+        io,
     )
 }
 
