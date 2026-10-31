@@ -35,6 +35,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingActions
+import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingScreen
+import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordActions
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
@@ -123,6 +126,8 @@ class MainActivity : ComponentActivity() {
                         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, opened, onBack = { page = null })
                         ConsolePage.Languages -> LanguagesRoute(graph, opened, onBack = { page = null })
                         ConsolePage.Password -> PasswordRoute(graph, opened, onBack = { page = null })
+                        ConsolePage.NowPlaying ->
+                            NowPlayingRoute(graph, opened, (state as? UiState.SignedIn)?.isAdministrator == true, onBack = { page = null })
                     }
                 }
             }
@@ -190,6 +195,33 @@ class MainActivity : ComponentActivity() {
                 onNew = password::onNew,
                 onConfirm = password::onConfirm,
                 onChange = password::change,
+                onBack = onBack,
+            ),
+        )
+    }
+
+    /** The now-playing page with its own view model, whose event socket closes with the page. */
+    @Composable
+    private fun NowPlayingRoute(
+        graph: AppGraph,
+        opening: Int,
+        administrator: Boolean,
+        onBack: () -> Unit,
+    ) {
+        val nowPlaying: NowPlayingViewModel =
+            viewModel(
+                key = "now-playing-$opening",
+                factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection) } },
+            )
+        val state by nowPlaying.state.collectAsStateWithLifecycle()
+        NowPlayingScreen(
+            state,
+            administrator,
+            NowPlayingActions(
+                onStop = nowPlaying::askStop,
+                onConfirmStop = nowPlaying::stop,
+                onCancelStop = nowPlaying::cancelStop,
+                onRetry = nowPlaying::load,
                 onBack = onBack,
             ),
         )

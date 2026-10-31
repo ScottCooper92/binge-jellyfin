@@ -10,4 +10,7 @@ enum class ConsolePage {
 
     /** Change the user's own password. For everyone. */
     Password,
+
+    /** Who is watching what, and stopping a stream. Everyone's for an admin, else the user's own. */
+    NowPlaying,
 }

@@ -28,6 +28,17 @@ app:languages_not_saved  34bacdd62ff6
 app:languages_subtitle_mode  0ee695bdeb26
 app:languages_subtitles  d67647781e97
 app:languages_title  28446c01863d
+app:method_direct_play  0ff1147e6fd1
+app:method_direct_stream  63fb8a90ea1a
+app:now_playing_body  121fdbe9ea0e
+app:now_playing_body_admin  b3b28513c297
+app:now_playing_empty  a5a5b4149b90
+app:now_playing_not_stopped  f96ec21644f6
+app:now_playing_stop  cae7d57bc067
+app:now_playing_stop_body  8afcb72f95e7
+app:now_playing_stop_title  2b266e376814
+app:now_playing_title  0906bc70a0ec
+app:now_playing_who  287892958adf
 app:password_action  3f9c991f63a9
 app:password_body  1214c1df1782
 app:password_changed  53111bdc6d08
@@ -75,3 +86,9 @@ app:subtitle_mode_none  ca7981b46ecf
 app:subtitle_mode_none_detail  1547386ff931
 app:subtitle_mode_smart  9e6ad6db21db
 app:subtitle_mode_smart_detail  319b67f1f5af
+app:transcode_audio  ab82f46e218a
+app:transcode_bitrate  f776e945cb6d
+app:transcode_container  415a9113ceb1
+app:transcode_other  2514fab855a6
+app:transcode_subtitles  86b18fdc4999
+app:transcode_video  9a60bedd0041
