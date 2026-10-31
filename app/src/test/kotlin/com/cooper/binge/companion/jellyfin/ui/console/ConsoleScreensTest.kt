@@ -3,16 +3,24 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
+import com.cooper.binge.companion.jellyfin.server.ServerLibrary
+import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
@@ -150,5 +158,52 @@ class ConsoleScreensTest {
             state = PasswordUiState(result = result)
             compose.onNodeWithText(text).assertExists()
         }
+    }
+
+    @Test
+    fun `libraries scan one or all as job rows, stop the scan of everything, and show how a run went`() {
+        val scanned = mutableListOf<String>()
+        var everything = 0
+        var stopped = false
+        val libraries =
+            listOf(
+                ServerLibrary("m", "Movies", "movies", listOf("/media/movies")),
+                ServerLibrary("s", "Shows", "tvshows", listOf("/media/tv")),
+            )
+        val scanTask = ServerTask("t", LIBRARY_SCAN_TASK, "Scan Media Library", "", "Library", false, false, null, null)
+        var state by mutableStateOf(LibrariesUiState.Ready(libraries, TaskBoard(listOf(scanTask))))
+        val actions =
+            LibrariesActions(onScan = { scanned += it.id }, onScanEverything = { everything++ }, onStopEverything = { stopped = true })
+        compose.setContent { JellyfinTheme { LibrariesScreen(state, actions) } }
+        compose.onNodeWithText("Hasn't run yet").assertExists()
+        compose.onAllNodesWithContentDescription("Scan")[0].performClick()
+        assertEquals(1, everything)
+        compose.onAllNodesWithContentDescription("Scan")[1].performClick()
+        assertEquals(listOf("m"), scanned)
+        state =
+            state.copy(
+                board = TaskBoard(listOf(scanTask.copy(running = true, percent = 12))),
+                scanning = mapOf("m" to LibraryScan(40, started = true)),
+                outcomes = mapOf("s" to JobOutcome.Failed),
+                actionFailed = ConsoleFailure.Unreachable,
+            )
+        compose.onNodeWithText("Running… 12%").assertExists()
+        compose.onNodeWithText("Running… 40%").assertExists()
+        compose.onNodeWithText("Failed").assertExists()
+        compose.onNodeWithContentDescription("Stop").performClick()
+        assertTrue(stopped)
+        val notStarted = "The scan didn't start. Couldn't reach your Jellyfin server"
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText(notStarted))
+        compose.onNodeWithText(notStarted).assertExists()
+        state = state.copy(board = TaskBoard(listOf(scanTask)), scanning = emptyMap(), outcomes = mapOf("m" to JobOutcome.Succeeded))
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Done"))
+        compose.onNodeWithText("Done").assertExists()
+    }
+
+    @Test
+    fun `each kind of library has its icon, and a mixed one a folder`() {
+        val icons = listOf("movies", "tvshows", "music", "books", "photos", "homevideos", "", "boxsets").map(::typeIcon)
+        assertEquals(6, icons.distinct().size)
+        assertEquals(typeIcon(""), typeIcon("boxsets"))
     }
 }

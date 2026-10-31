@@ -39,6 +39,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageStores
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.LibrariesActions
+import com.cooper.binge.companion.jellyfin.ui.console.LibrariesScreen
+import com.cooper.binge.companion.jellyfin.ui.console.LibrariesViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingActions
 import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingScreen
 import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingViewModel
@@ -147,6 +150,7 @@ class MainActivity : ComponentActivity() {
                                             (state as? UiState.SignedIn)?.isAdministrator == true,
                                             close,
                                         )
+                                    ConsolePage.Libraries -> LibrariesRoute(graph, close)
                                 }
                             }
                         }
@@ -205,6 +209,26 @@ class MainActivity : ComponentActivity() {
                 onNew = password::onNew,
                 onConfirm = password::onConfirm,
                 onChange = password::change,
+                onBack = onBack,
+            ),
+        )
+    }
+
+    /** The libraries page, whose event socket closes with the page. */
+    @Composable
+    private fun LibrariesRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val libraries: LibrariesViewModel = viewModel(factory = viewModelFactory { initializer { LibrariesViewModel(graph.connection) } })
+        val state by libraries.state.collectAsStateWithLifecycle()
+        LibrariesScreen(
+            state,
+            LibrariesActions(
+                onScan = libraries::scan,
+                onScanEverything = libraries::scanEverything,
+                onStopEverything = libraries::stopEverything,
+                onRetry = libraries::load,
                 onBack = onBack,
             ),
         )
