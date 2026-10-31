@@ -240,8 +240,9 @@ private fun ColumnScope.TvQuickConnectPanel(
         capped = failed || code == null,
     )
     // A failed code collapses to its message and Try again, and the remote moves there: the way on.
+    // When the code arrives Try again leaves, and the remote returns to the control that stays.
     val retry = remember { FocusRequester() }
-    LaunchedEffect(failed) { if (failed) retry.requestFocus() }
+    LaunchedEffect(failed) { if (failed) retry.requestFocus() else entry.requestFocus() }
     if (failed) {
         TvButton(
             label = stringResource(R.string.tv_try_again),
