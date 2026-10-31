@@ -27,7 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeLoadingIndicator
-import com.binge.designsystem.component.BingeOutlinedButton
+import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
@@ -156,7 +156,7 @@ private fun Stream(
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
             ) {
                 session.progress?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
-                BingeOutlinedButton(
+                BingeTextButton(
                     label = stringResource(R.string.now_playing_stop),
                     onClick = onStop,
                     leadingIcon = Icons.Outlined.Stop,
