@@ -57,6 +57,9 @@ class LibraryIndex(
         userId: String,
     ) = ensure(client, userId, maxAge = 0L)
 
+    /** Marks the index stale, so the next lookup rebuilds it: the server said its library changed. */
+    suspend fun invalidate() = lock.withLock { builtAt = 0L }
+
     suspend fun clear() =
         lock.withLock {
             owner = null

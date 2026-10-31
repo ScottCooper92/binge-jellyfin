@@ -25,6 +25,7 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
+import com.cooper.binge.companion.jellyfin.server.ServerEvent
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import io.grpc.ManagedChannel
@@ -34,7 +35,9 @@ import io.grpc.StatusException
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.inprocess.InProcessServerBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.OkHttpClient
@@ -47,6 +50,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 /** The whole LIBRARY contract over an in-process channel, against a fake Jellyfin server. */
 @RunWith(RobolectricTestRunner::class)
@@ -63,6 +68,7 @@ class JellyfinLibraryServiceTest {
             override fun locale() = "en-GB"
         }
 
+    private val events = MutableSharedFlow<ServerEvent>(extraBufferCapacity = 8)
     private val name = InProcessServerBuilder.generateName()
     private val server: Server =
         InProcessServerBuilder
@@ -74,6 +80,7 @@ class JellyfinLibraryServiceTest {
                     playback = PlaybackSources(now = { Instant.ofEpochSecond(1_000) }),
                     versionName = "1.2.3",
                     messages = messages,
+                    events = events,
                 ),
             ).build()
             .start()
@@ -629,4 +636,24 @@ class JellyfinLibraryServiceTest {
         assertEquals(Status.Code.UNAVAILABLE, failure.status.code)
         assertEquals("Can't reach Jellyfin", userMessageOf(failure.trailers)?.message)
     }
+
+    @Test
+    fun `a watch state stream pushes again when the server says user data changed`() =
+        runBlocking {
+            val states = LinkedBlockingQueue<Long>()
+            val job =
+                launch(Dispatchers.IO) {
+                    stub.observeWatchState(ObserveWatchStateRequest.newBuilder().setMedia(movie).build()).collect {
+                        states.put(it.state.positionMillis)
+                    }
+                }
+            assertEquals(526_000L, states.poll(10, TimeUnit.SECONDS))
+            // The stream subscribes to the events after its first read: wait for it, or the event is dropped.
+            events.subscriptionCount.first { it > 0 }
+            val index = jellyfin.items.indexOfFirst { it.id == "movie-1" }
+            jellyfin.items[index] = jellyfin.items[index].copy(positionTicks = 9_000_000_000L)
+            events.emit(ServerEvent.USER_DATA_CHANGED)
+            assertEquals(900_000L, states.poll(10, TimeUnit.SECONDS))
+            job.cancel()
+        }
 }

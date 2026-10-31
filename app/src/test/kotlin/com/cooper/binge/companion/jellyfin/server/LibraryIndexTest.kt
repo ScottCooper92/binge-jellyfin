@@ -9,6 +9,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LibraryIndexTest {
@@ -59,5 +60,15 @@ class LibraryIndexTest {
             assertEquals(3, requestsForItems())
             index.clear()
             assertNull(index.size)
+        }
+
+    @Test
+    fun `every library page is asked for as the signed-in user, so the server applies their access`() =
+        runBlocking {
+            jellyfin.items += FakeItem("m", "M", "Movie", tmdbId = 5)
+            index.find(client, "user-1", IndexKey(IndexType.MOVIE, 5))
+            val pages = jellyfin.requests.filter { it.url.encodedPath == "/Items" }
+            assertTrue(pages.isNotEmpty())
+            assertTrue(pages.all { it.url.queryParameter("userId") == "user-1" })
         }
 }
