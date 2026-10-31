@@ -67,6 +67,10 @@ class FakeJellyfin : Dispatcher() {
     /** Whether `/Users/Me` answers with an administrator's policy. */
     var administrator = false
 
+    /** The user's configuration, as `/Users/Me` answers it and `/Users/Configuration` replaces it. */
+    var userConfiguration =
+        """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
+
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
@@ -128,7 +132,13 @@ class FakeJellyfin : Dispatcher() {
             path == "/QuickConnect/Connect" -> json("""{"Authenticated":$quickConnectApproved}""")
             path == "/Users/AuthenticateWithQuickConnect" -> signedIn()
             path == "/Sessions/Logout" -> MockResponse(code = 204)
-            path == "/Users/Me" -> json("""{"Name":"Claude","Policy":{"IsAdministrator":$administrator}}""")
+            path == "/Users/Me" ->
+                json("""{"Name":"Claude","Policy":{"IsAdministrator":$administrator},"Configuration":$userConfiguration}""")
+            path == "/Users/Configuration" -> {
+                userConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/Localization/Cultures" -> json(CULTURES)
             path == "/QuickConnect/Authorize" ->
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
@@ -246,6 +256,17 @@ class FakeJellyfin : Dispatcher() {
 
     companion object {
         private const val GOING_AWAY = 1001
+
+        /** A few of `/Localization/Cultures`, French with both of its three-letter names and two Spanishes under one code, as the server lists them. */
+        private const val CULTURES =
+            """[
+            {"Name":"English","DisplayName":"English","TwoLetterISOLanguageName":"en","ThreeLetterISOLanguageName":"eng","ThreeLetterISOLanguageNames":["eng"]},
+            {"Name":"French","DisplayName":"French","TwoLetterISOLanguageName":"fr","ThreeLetterISOLanguageName":"fre","ThreeLetterISOLanguageNames":["fre","fra"]},
+            {"Name":"Spanish","DisplayName":"Spanish; Castilian","TwoLetterISOLanguageName":"es","ThreeLetterISOLanguageName":"spa","ThreeLetterISOLanguageNames":["spa"]},
+            {"Name":"Spanish; Latin","DisplayName":"Spanish; Latin","TwoLetterISOLanguageName":"es-mx","ThreeLetterISOLanguageName":"spa","ThreeLetterISOLanguageNames":["spa"]},
+            {"Name":"Klingon","DisplayName":"Klingon","TwoLetterISOLanguageName":"","ThreeLetterISOLanguageName":"tlh","ThreeLetterISOLanguageNames":["tlh"]},
+            {"Name":"Nameless","DisplayName":"","TwoLetterISOLanguageName":"","ThreeLetterISOLanguageName":"","ThreeLetterISOLanguageNames":[]}
+            ]"""
 
         fun directPlayInfo(): String =
             """{"PlaySessionId":"play-1","MediaSources":[{"Id":"source-1","Container":"mp4","SupportsDirectPlay":true,""" +

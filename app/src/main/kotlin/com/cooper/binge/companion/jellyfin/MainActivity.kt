@@ -32,6 +32,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ApproveActions
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeScreen
 import com.cooper.binge.companion.jellyfin.ui.console.ApproveCodeViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
+import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
+import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -115,6 +118,7 @@ class MainActivity : ComponentActivity() {
                     when (openPage) {
                         null -> JellyfinRoot(state, actions)
                         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, opened, onBack = { page = null })
+                        ConsolePage.Languages -> LanguagesRoute(graph, opened, onBack = { page = null })
                     }
                 }
             }
@@ -135,6 +139,31 @@ class MainActivity : ComponentActivity() {
             )
         val state by approve.state.collectAsStateWithLifecycle()
         ApproveCodeScreen(state, ApproveActions(onCode = approve::onCode, onApprove = approve::approve, onBack = onBack))
+    }
+
+    /** The languages page with its own view model, which reads the user's configuration when it opens. */
+    @Composable
+    private fun LanguagesRoute(
+        graph: AppGraph,
+        opening: Int,
+        onBack: () -> Unit,
+    ) {
+        val languages: LanguagesViewModel =
+            viewModel(
+                key = "languages-$opening",
+                factory = viewModelFactory { initializer { LanguagesViewModel(graph.connection) } },
+            )
+        val state by languages.state.collectAsStateWithLifecycle()
+        LanguagesScreen(
+            state,
+            LanguagesActions(
+                onAudio = languages::setAudio,
+                onSubtitles = languages::setSubtitles,
+                onSubtitleMode = languages::setSubtitleMode,
+                onRetry = languages::load,
+                onBack = onBack,
+            ),
+        )
     }
 
     private companion object {

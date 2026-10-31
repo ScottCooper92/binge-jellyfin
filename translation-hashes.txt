@@ -11,6 +11,8 @@ app:approve_wrong  8bb61c428d9c
 app:companion_label  8e03b3c29d2b
 app:console_account_title  dbb5f6371b6a
 app:console_approve_detail  8371322fc723
+app:console_languages_detail  69f8faf85034
+app:console_retry  d8b8392e2c54
 app:error_generic  4def98c89240
 app:error_invalid_address  3f5c0f63269d
 app:error_not_jellyfin  37cafc7954e3
@@ -19,6 +21,13 @@ app:error_quick_connect_off  045782322966
 app:error_signed_out  827096b0fbe6
 app:error_unreachable  8224327e4cec
 app:error_wrong_credentials  c16954ee58f2
+app:languages_any  fb3b2acda004
+app:languages_audio  0be233af17d9
+app:languages_body  749dd2f48ceb
+app:languages_not_saved  34bacdd62ff6
+app:languages_subtitle_mode  0ee695bdeb26
+app:languages_subtitles  d67647781e97
+app:languages_title  28446c01863d
 app:quick_connect_body  8c49a6f5ca88
 app:quick_connect_cancel  cd40fe2dcba7
 app:quick_connect_title  d0dbbcf762fa
@@ -47,3 +56,13 @@ app:setup_sign_in_title  bfd402b2f6f3
 app:setup_username  e3b89e9d33f8
 app:sign_out_body  efc3fdd58f7b
 app:sign_out_title  c010e3d14518
+app:subtitle_mode_always  de9f057a471c
+app:subtitle_mode_always_detail  c3aa96f52311
+app:subtitle_mode_default  1cb6ffef5751
+app:subtitle_mode_default_detail  4c7fa0898098
+app:subtitle_mode_forced  4bfe68094d29
+app:subtitle_mode_forced_detail  35758d914435
+app:subtitle_mode_none  ca7981b46ecf
+app:subtitle_mode_none_detail  1547386ff931
+app:subtitle_mode_smart  9e6ad6db21db
+app:subtitle_mode_smart_detail  319b67f1f5af

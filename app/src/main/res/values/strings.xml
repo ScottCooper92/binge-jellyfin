@@ -51,4 +51,23 @@
     <string name="approve_action">Approve</string>
     <string name="approve_done">Approved. The other device is signing in as you.</string>
     <string name="approve_wrong">That code isn\'t waiting to be approved. Check it, or get a new one on the other device.</string>
+    <string name="console_languages_detail">The audio and subtitles Jellyfin picks for you</string>
+    <string name="console_retry">Try again</string>
+    <string name="languages_title">Playback languages</string>
+    <string name="languages_body">Jellyfin uses these to choose the audio and subtitles when you play something, in Binge and in its own apps.</string>
+    <string name="languages_audio">Audio language</string>
+    <string name="languages_subtitles">Subtitle language</string>
+    <string name="languages_subtitle_mode">Subtitles</string>
+    <string name="languages_any">Any language</string>
+    <string name="languages_not_saved">Not saved. %1$s</string>
+    <string name="subtitle_mode_default">Follow the file</string>
+    <string name="subtitle_mode_default_detail">The subtitles the file marks as default or forced</string>
+    <string name="subtitle_mode_smart">Smart</string>
+    <string name="subtitle_mode_smart_detail">When the audio isn\'t in your language</string>
+    <string name="subtitle_mode_forced">Only forced</string>
+    <string name="subtitle_mode_forced_detail">Just signs and lines in another language</string>
+    <string name="subtitle_mode_always">Always</string>
+    <string name="subtitle_mode_always_detail">In your subtitle language, whatever the audio</string>
+    <string name="subtitle_mode_none">Off</string>
+    <string name="subtitle_mode_none_detail">You can still turn them on while watching</string>
 </resources>
