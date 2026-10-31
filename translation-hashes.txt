@@ -52,7 +52,7 @@ app:quick_connect_body  8c49a6f5ca88
 app:quick_connect_cancel  cd40fe2dcba7
 app:quick_connect_title  d0dbbcf762fa
 app:server_detail  48e857ba0ec9
-app:server_detail_cleartext  1ee584388d07
+app:server_detail_cleartext  c830dc79a39a
 app:settings_library  dc20b3d5d2cd
 app:settings_refresh  046c434d323d
 app:settings_server  aef7de28d529
