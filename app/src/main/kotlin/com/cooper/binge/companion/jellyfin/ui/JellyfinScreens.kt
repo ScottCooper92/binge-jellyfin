@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Translate
@@ -282,7 +283,7 @@ private fun SignedIn(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        item { ServerGroup(state) }
+        item { ServerGroup(state, actions) }
         item { AccountGroup(actions) }
         item { LibraryGroup(state, actions) }
         item {
@@ -307,9 +308,15 @@ private fun SignedIn(
     }
 }
 
-/** Where and who: the server, marked when it is not encrypted, and the user, marked when an admin. */
+/**
+ * Where and who: the server, marked when it is not encrypted, and the user, marked when an admin.
+ * Then what's playing on it.
+ */
 @Composable
-private fun ServerGroup(state: UiState.SignedIn) {
+private fun ServerGroup(
+    state: UiState.SignedIn,
+    actions: Actions,
+) {
     val session = state.session
     ItemGroup(
         title = stringResource(R.string.settings_server),
@@ -334,6 +341,11 @@ private fun ServerGroup(state: UiState.SignedIn) {
                             if (state.isAdministrator) R.string.settings_signed_in_admin else R.string.settings_signed_in_as,
                         ),
                     clickable = false,
+                ),
+                ListItem(
+                    icon = Icons.Outlined.PlayCircle,
+                    label = stringResource(R.string.now_playing_title),
+                    onClick = { actions.onOpenPage(ConsolePage.NowPlaying) },
                 ),
             ),
     )

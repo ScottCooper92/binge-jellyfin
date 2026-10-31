@@ -95,9 +95,13 @@ class LanguagesViewModel(
         shown: PlaybackLanguages.() -> PlaybackLanguages,
     ) {
         if (_state.value !is LanguagesUiState.Ready) return
-        val pick = (latestPick[key] ?: 0) + 1
-        latestPick[key] = pick
-        updateReady { copy(languages = languages.shown(), saveFailed = null) }
+        val pick =
+            synchronized(latestPick) {
+                val next = (latestPick[key] ?: 0) + 1
+                latestPick[key] = next
+                updateReady { copy(languages = languages.shown(), saveFailed = null) }
+                next
+            }
         viewModelScope.launch {
             saving.withLock {
                 val next = saved.with(key, value)
@@ -107,9 +111,11 @@ class LanguagesViewModel(
                     .onFailure { error ->
                         // Only this choice goes back, and only if it is still the one shown: a newer pick
                         // for the same row is waiting to save, and says how it went itself.
-                        if (latestPick[key] != pick) return@onFailure
                         val before = saved.playbackLanguages()
-                        updateReady { copy(languages = languages.restoring(key, before), saveFailed = error.consoleFailure()) }
+                        synchronized(latestPick) {
+                            if (latestPick[key] != pick) return@onFailure
+                            updateReady { copy(languages = languages.restoring(key, before), saveFailed = error.consoleFailure()) }
+                        }
                     }
             }
         }

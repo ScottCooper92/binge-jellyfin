@@ -92,4 +92,21 @@
     <string name="password_changed">Cambiada. Tus otros dispositivos te pedirán la contraseña nueva.</string>
     <string name="password_wrong">Esa no es tu contraseña actual.</string>
     <string name="password_mismatch">Las contraseñas nuevas no coinciden.</string>
+    <string name="now_playing_title">Reproduciendo ahora</string>
+    <string name="now_playing_body_admin">Todo lo que se está reproduciendo desde este servidor, en directo.</string>
+    <string name="now_playing_body">Lo que reproduces desde este servidor, en cualquier dispositivo. Un administrador ve lo de todos.</string>
+    <string name="now_playing_empty">No se está reproduciendo nada.</string>
+    <string name="now_playing_who">%1$s en %2$s · %3$s</string>
+    <string name="now_playing_stop">Detener</string>
+    <string name="now_playing_stop_title">¿Detener %1$s?</string>
+    <string name="now_playing_stop_body">Se detiene en %1$s, para %2$s.</string>
+    <string name="now_playing_not_stopped">No se ha detenido. %1$s</string>
+    <string name="method_direct_play">Reproducción directa: el archivo tal cual</string>
+    <string name="method_direct_stream">Transmisión directa: reempaquetado, sin recodificar</string>
+    <string name="transcode_subtitles">Transcodificando para incrustar los subtítulos</string>
+    <string name="transcode_video">Transcodificando: el dispositivo no puede reproducir el vídeo</string>
+    <string name="transcode_audio">Transcodificando: el dispositivo no puede reproducir el audio</string>
+    <string name="transcode_bitrate">Transcodificando: supera el límite de bitrate</string>
+    <string name="transcode_container">Transcodificando: el dispositivo no puede abrir el archivo</string>
+    <string name="transcode_other">Transcodificando</string>
 </resources>

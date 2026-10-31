@@ -91,4 +91,21 @@
     <string name="password_changed">Changed. Your other devices will ask for the new password.</string>
     <string name="password_wrong">That isn\'t your current password.</string>
     <string name="password_mismatch">The new passwords don\'t match.</string>
+    <string name="now_playing_title">Now playing</string>
+    <string name="now_playing_body_admin">Everyone streaming from this server, as it happens.</string>
+    <string name="now_playing_body">What you\'re playing from this server, on any device. An administrator sees everyone\'s.</string>
+    <string name="now_playing_empty">Nothing\'s playing right now.</string>
+    <string name="now_playing_who">%1$s on %2$s · %3$s</string>
+    <string name="now_playing_stop">Stop</string>
+    <string name="now_playing_stop_title">Stop %1$s?</string>
+    <string name="now_playing_stop_body">It stops playing on %1$s, for %2$s.</string>
+    <string name="now_playing_not_stopped">Not stopped. %1$s</string>
+    <string name="method_direct_play">Direct play: the file as it is</string>
+    <string name="method_direct_stream">Direct stream: repackaged, not re-encoded</string>
+    <string name="transcode_subtitles">Transcoding to burn in the subtitles</string>
+    <string name="transcode_video">Transcoding: the device can\'t play the video</string>
+    <string name="transcode_audio">Transcoding: the device can\'t play the audio</string>
+    <string name="transcode_bitrate">Transcoding: over the bitrate limit</string>
+    <string name="transcode_container">Transcoding: the device can\'t open the file</string>
+    <string name="transcode_other">Transcoding</string>
 </resources>
