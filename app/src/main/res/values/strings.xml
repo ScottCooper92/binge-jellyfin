@@ -70,4 +70,13 @@
     <string name="subtitle_mode_always_detail">In your subtitle language, whatever the audio</string>
     <string name="subtitle_mode_none">Off</string>
     <string name="subtitle_mode_none_detail">You can still turn them on while watching</string>
+    <string name="password_title">Change your password</string>
+    <string name="password_body">Changing it signs you out of Jellyfin on your other devices, which will ask for the new one. This app stays signed in.</string>
+    <string name="password_current">Current password</string>
+    <string name="password_new">New password</string>
+    <string name="password_confirm">New password again</string>
+    <string name="password_action">Change password</string>
+    <string name="password_changed">Changed. Your other devices will ask for the new password.</string>
+    <string name="password_wrong">That isn\'t your current password.</string>
+    <string name="password_mismatch">The new passwords don\'t match.</string>
 </resources>

@@ -33,6 +33,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.PasswordActions
+import com.cooper.binge.companion.jellyfin.ui.console.PasswordScreen
+import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -110,6 +113,7 @@ class MainActivity : ComponentActivity() {
                         null -> JellyfinRoot(state, actions)
                         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, onBack = { page = null })
                         ConsolePage.Languages -> LanguagesRoute(graph, onBack = { page = null })
+                        ConsolePage.Password -> PasswordRoute(graph, onBack = { page = null })
                     }
                 }
             }
@@ -144,6 +148,27 @@ class MainActivity : ComponentActivity() {
                 onSubtitles = languages::setSubtitles,
                 onSubtitleMode = languages::setSubtitleMode,
                 onRetry = languages::load,
+                onBack = onBack,
+            ),
+        )
+    }
+
+    /** The password page with its own view model, so the form is gone once the page closes. */
+    @Composable
+    private fun PasswordRoute(
+        graph: AppGraph,
+        onBack: () -> Unit,
+    ) {
+        val password: PasswordViewModel =
+            viewModel(factory = viewModelFactory { initializer { PasswordViewModel(graph.connection) } })
+        val state by password.state.collectAsStateWithLifecycle()
+        PasswordScreen(
+            state,
+            PasswordActions(
+                onCurrent = password::onCurrent,
+                onNew = password::onNew,
+                onConfirm = password::onConfirm,
+                onChange = password::change,
                 onBack = onBack,
             ),
         )
