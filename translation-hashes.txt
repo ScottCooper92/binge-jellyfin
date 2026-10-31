@@ -26,8 +26,10 @@ app:settings_titles_checking  809f41354580
 app:settings_titles_failed  4c763975c12b
 app:setup_change  c0bf75bd78bf
 app:setup_connect  1a2303ede074
+app:setup_found_title  45dc8020467a
 app:setup_password  e7cf3ef4f17c
 app:setup_quick_connect  d52940712fbe
+app:setup_searching  fad10c01b7c9
 app:setup_server_body  3219d0cc0f0a
 app:setup_server_field  8be89710b2f1
 app:setup_server_title  b7830a0234e7

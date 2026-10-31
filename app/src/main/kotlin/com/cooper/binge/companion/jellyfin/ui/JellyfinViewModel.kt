@@ -7,6 +7,7 @@ import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
@@ -42,6 +43,9 @@ sealed interface UiState {
         val address: String = "",
         val checking: Boolean = false,
         val error: SetupError? = null,
+        /** The servers that answered on the local network, and whether the search is still running. */
+        val discovered: List<DiscoveredServer> = emptyList(),
+        val discovering: Boolean = false,
     ) : UiState
 
     /** Step two: sign in to a server that answered. */
@@ -73,6 +77,8 @@ class JellyfinViewModel(
     private val sessions: SessionStore,
     private val connection: Connection,
     private val index: LibraryIndex,
+    /** The servers that answer a broadcast on the local network; empty when none does. */
+    private val discover: suspend () -> List<DiscoveredServer>,
     private val quickConnectPollMillis: Long = QUICK_CONNECT_POLL_MILLIS,
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
@@ -93,6 +99,17 @@ class JellyfinViewModel(
     fun onUsername(value: String) = _state.update { (it as? UiState.SignIn)?.copy(username = value, error = null) ?: it }
 
     fun onPassword(value: String) = _state.update { (it as? UiState.SignIn)?.copy(password = value, error = null) ?: it }
+
+    /** Looks for servers on the local network once per visit to the server step. A server is one tap away; nothing found shows nothing. */
+    fun discoverServers() {
+        val current = _state.value as? UiState.EnterServer ?: return
+        if (current.discovering) return
+        _state.value = current.copy(discovering = true)
+        viewModelScope.launch {
+            val found = discover()
+            _state.update { (it as? UiState.EnterServer)?.copy(discovered = found, discovering = false) ?: it }
+        }
+    }
 
     fun connect() {
         val current = _state.value as? UiState.EnterServer ?: return
@@ -116,15 +133,14 @@ class JellyfinViewModel(
                     null
                 } catch (e: IOException) {
                     Log.i(TAG, "Server check failed", e)
-                    _state.value = current.copy(checking = false, error = SetupError.Unreachable)
+                    _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.Unreachable) ?: it }
                     return@launch
                 }
-            _state.value =
-                if (info == null) {
-                    current.copy(checking = false, error = SetupError.NotJellyfin)
-                } else {
-                    UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
-                }
+            if (info == null) {
+                _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.NotJellyfin) ?: it }
+            } else {
+                _state.value = UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
+            }
         }
     }
 
@@ -249,9 +265,8 @@ class JellyfinViewModel(
         _state.value = UiState.EnterServer(address = session.baseUrl)
     }
 
-    fun askSignOut() = _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = true) ?: it }
-
-    fun cancelSignOut() = _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = false) ?: it }
+    /** Shows or hides the sign-out confirm. */
+    fun confirmSignOut(showing: Boolean) = _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = showing) ?: it }
 
     /** Ends the session on the server too, so the device leaves the user's Jellyfin devices list. A failure there still signs out here. */
     fun signOut() {

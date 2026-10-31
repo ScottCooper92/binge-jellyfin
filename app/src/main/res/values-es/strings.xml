@@ -6,6 +6,8 @@
     <string name="setup_server_title">Conectar con Jellyfin</string>
     <string name="setup_server_body">Escribe la dirección de tu servidor de Jellyfin, la que usas en el navegador.</string>
     <string name="setup_server_field">Dirección del servidor</string>
+    <string name="setup_found_title">En tu red</string>
+    <string name="setup_searching">Buscando servidores en tu red…</string>
     <string name="setup_connect">Conectar</string>
     <string name="setup_change">Cambiar</string>
     <string name="setup_sign_in_title">Iniciar sesión</string>
