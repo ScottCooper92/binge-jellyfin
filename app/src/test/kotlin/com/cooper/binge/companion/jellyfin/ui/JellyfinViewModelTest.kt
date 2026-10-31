@@ -1,5 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
@@ -45,13 +49,22 @@ class JellyfinViewModelTest {
 
     @After
     fun close() {
+        // Cancels what the view models still have in flight, so none resumes on Main while it is reset.
+        stores.forEach { it.clear() }
         Dispatchers.resetMain()
         jellyfin.close()
     }
 
     private var found: List<DiscoveredServer> = emptyList()
 
-    private fun viewModel() = JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L)
+    private val stores = mutableListOf<ViewModelStore>()
+
+    private fun viewModel() = track(JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L))
+
+    private fun track(vm: JellyfinViewModel): JellyfinViewModel {
+        val store = ViewModelStore().also { stores += it }
+        return ViewModelProvider(store, viewModelFactory { initializer { vm } })[JellyfinViewModel::class.java]
+    }
 
     private inline fun <reified T : UiState> JellyfinViewModel.await(crossinline matches: (T) -> Boolean = { true }): T =
         runBlocking { withTimeout(10_000) { state.first { it is T && matches(it) } as T } }
@@ -311,15 +324,17 @@ class JellyfinViewModelTest {
         ServerSocket(0).use { silent ->
             val slow = OkHttpClient.Builder().callTimeout(500, TimeUnit.MILLISECONDS).build()
             val vm =
-                JellyfinViewModel(
-                    sessions,
-                    Connection(slow, sessions, "Binge Jellyfin", "Test", "1.0", Dispatchers.IO),
-                    index,
-                    discover = {
-                        gate.await()
-                        server
-                    },
-                    quickConnectPollMillis = 10L,
+                track(
+                    JellyfinViewModel(
+                        sessions,
+                        Connection(slow, sessions, "Binge Jellyfin", "Test", "1.0", Dispatchers.IO),
+                        index,
+                        discover = {
+                            gate.await()
+                            server
+                        },
+                        quickConnectPollMillis = 10L,
+                    ),
                 )
             vm.await<UiState.EnterServer>()
             vm.discoverServers()
