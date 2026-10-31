@@ -24,7 +24,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeLoadingIndicator
-import com.binge.designsystem.component.BingeOutlinedButton
+import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
@@ -106,7 +106,7 @@ private fun Server(
             maxLines = STATUS_LINES,
         )
         if (state.info.canRestart) {
-            BingeOutlinedButton(
+            BingeTextButton(
                 label = stringResource(R.string.server_restart),
                 onClick = { actions.onConfirm(true) },
                 leadingIcon = Icons.Outlined.RestartAlt,
