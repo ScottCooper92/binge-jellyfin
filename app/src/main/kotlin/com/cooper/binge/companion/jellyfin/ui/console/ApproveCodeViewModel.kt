@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 
 /** How an approval went. */
-enum class ApproveResult { Approved, WrongCode, QuickConnectOff, Unreachable }
+enum class ApproveResult { Approved, WrongCode, QuickConnectOff, Unreachable, Failed }
 
 data class ApproveUiState(
     val code: String = "",
@@ -59,7 +59,11 @@ class ApproveCodeViewModel(
                     throw e
                 } catch (e: JellyfinHttpException) {
                     Log.i(TAG, "Approval refused", e)
-                    if (e.code == HTTP_NOT_FOUND) ApproveResult.WrongCode else ApproveResult.QuickConnectOff
+                    when (e.code) {
+                        HTTP_NOT_FOUND -> ApproveResult.WrongCode
+                        HTTP_UNAUTHORIZED -> ApproveResult.QuickConnectOff
+                        else -> ApproveResult.Failed
+                    }
                 } catch (e: IOException) {
                     Log.i(TAG, "Approval failed", e)
                     ApproveResult.Unreachable
@@ -73,6 +77,7 @@ class ApproveCodeViewModel(
 
     private companion object {
         const val TAG = "JellyfinApprove"
+        const val HTTP_UNAUTHORIZED = 401
         const val HTTP_NOT_FOUND = 404
     }
 }
