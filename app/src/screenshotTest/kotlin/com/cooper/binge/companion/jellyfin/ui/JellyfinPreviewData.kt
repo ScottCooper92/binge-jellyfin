@@ -42,7 +42,7 @@ val previewQuickConnect = previewSignIn.copy(quickConnectCode = "482913")
 
 val previewQuickConnectOff = previewSignIn.copy(error = SetupError.QuickConnectOff)
 
-val previewQuickConnectExpired = previewQuickConnect.copy(error = SetupError.QuickConnectExpired)
+val previewQuickConnectExpired = previewSignIn.copy(error = SetupError.QuickConnectExpired)
 
 private val session =
     JellyfinSession(
