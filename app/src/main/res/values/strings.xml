@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_label">Binge Jellyfin</string>
+    <string name="companion_label">Jellyfin</string>
+
+    <string name="error_unreachable">Couldn\'t reach your Jellyfin server</string>
+    <string name="error_signed_out">Sign in to Jellyfin to see your library</string>
 </resources>
