@@ -133,15 +133,14 @@ class JellyfinViewModel(
                     null
                 } catch (e: IOException) {
                     Log.i(TAG, "Server check failed", e)
-                    _state.value = current.copy(checking = false, error = SetupError.Unreachable)
+                    _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.Unreachable) ?: it }
                     return@launch
                 }
-            _state.value =
-                if (info == null) {
-                    current.copy(checking = false, error = SetupError.NotJellyfin)
-                } else {
-                    UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
-                }
+            if (info == null) {
+                _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.NotJellyfin) ?: it }
+            } else {
+                _state.value = UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
+            }
         }
     }
 

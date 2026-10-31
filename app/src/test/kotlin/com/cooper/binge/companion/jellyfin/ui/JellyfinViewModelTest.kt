@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -24,6 +25,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.net.ServerSocket
+import java.util.concurrent.TimeUnit
 
 /** Setup and settings against a fake server. The server calls run on a real IO thread, so each step waits for its state. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -256,5 +259,35 @@ class JellyfinViewModelTest {
         val state = vm.await<UiState.EnterServer> { !it.discovering }
         assertTrue(state.discovered.isEmpty())
         assertNull(state.error)
+    }
+
+    @Test
+    fun `a failed check that outlasts the search keeps what the search found`() {
+        val gate = CompletableDeferred<Unit>()
+        val server = listOf(DiscoveredServer(id = "server-1", name = "truenas", address = jellyfin.baseUrl))
+        // Accepts the connection and never answers, so the check fails by timeout after the search is done.
+        ServerSocket(0).use { silent ->
+            val slow = OkHttpClient.Builder().callTimeout(500, TimeUnit.MILLISECONDS).build()
+            val vm =
+                JellyfinViewModel(
+                    sessions,
+                    Connection(slow, sessions, "Binge Jellyfin", "Test", "1.0", Dispatchers.IO),
+                    index,
+                    discover = {
+                        gate.await()
+                        server
+                    },
+                    quickConnectPollMillis = 10L,
+                )
+            vm.await<UiState.EnterServer>()
+            vm.discoverServers()
+            vm.onAddress("http://127.0.0.1:${silent.localPort}")
+            vm.connect()
+            vm.await<UiState.EnterServer> { it.checking }
+            gate.complete(Unit)
+            val state = vm.await<UiState.EnterServer> { it.error == SetupError.Unreachable }
+            assertTrue(!state.discovering)
+            assertEquals(server, state.discovered)
+        }
     }
 }

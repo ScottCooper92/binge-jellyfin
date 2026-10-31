@@ -399,12 +399,103 @@ class JellyfinLibraryServiceTest {
     }
 
     @Test
-    fun `a page_token on a list is INVALID_ARGUMENT, since none was issued`() {
-        val resume = statusOf { stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageToken("x").build()) }
-        assertEquals(Status.Code.INVALID_ARGUMENT, resume.status.code)
-        val nextUp = statusOf { stub.listNextUp(ListNextUpRequest.newBuilder().setPageToken("x").build()) }
-        assertEquals(Status.Code.INVALID_ARGUMENT, nextUp.status.code)
+    fun `a page_token this app did not issue is INVALID_ARGUMENT`() {
+        for (token in listOf("x", "p", "p-1", "12", "p2", "p+2s0", "p02s0", "p2s")) {
+            val resume = statusOf { stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageToken(token).build()) }
+            assertEquals(token, Status.Code.INVALID_ARGUMENT, resume.status.code)
+            val nextUp = statusOf { stub.listNextUp(ListNextUpRequest.newBuilder().setPageToken(token).build()) }
+            assertEquals(token, Status.Code.INVALID_ARGUMENT, nextUp.status.code)
+        }
     }
+
+    @Test
+    fun `a page_token replayed under a different page_size is INVALID_ARGUMENT`() =
+        runBlocking {
+            jellyfin.items += (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(2).build())
+            val resume =
+                statusOf {
+                    stub.listContinueWatching(
+                        ListContinueWatchingRequest
+                            .newBuilder()
+                            .setPageSize(3)
+                            .setPageToken(first.nextPageToken)
+                            .build(),
+                    )
+                }
+            assertEquals(Status.Code.INVALID_ARGUMENT, resume.status.code)
+            val nextUp =
+                statusOf {
+                    stub.listNextUp(
+                        ListNextUpRequest
+                            .newBuilder()
+                            .setPageSize(3)
+                            .setPageToken(first.nextPageToken)
+                            .build(),
+                    )
+                }
+            assertEquals(Status.Code.INVALID_ARGUMENT, nextUp.status.code)
+        }
+
+    @Test
+    fun `a negative page_size pages on, because the token it issued is accepted back`() =
+        runBlocking {
+            jellyfin.items +=
+                (2..22).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(-1).build())
+            assertEquals("p20s-1", first.nextPageToken)
+            val second =
+                stub.listContinueWatching(
+                    ListContinueWatchingRequest
+                        .newBuilder()
+                        .setPageSize(-1)
+                        .setPageToken(first.nextPageToken)
+                        .build(),
+                )
+            assertEquals(2, second.entriesCount)
+            assertEquals("", second.nextPageToken)
+        }
+
+    @Test
+    fun `next up pages on under a negative page_size`() =
+        runBlocking {
+            jellyfin.items +=
+                (1..21).map {
+                    FakeItem("ep-$it", "Episode $it", "Episode", seriesId = "series-$it", season = 1, episode = 1)
+                }
+            val first = stub.listNextUp(ListNextUpRequest.newBuilder().setPageSize(-1).build())
+            assertEquals("p20s-1", first.nextPageToken)
+            val second =
+                stub.listNextUp(
+                    ListNextUpRequest
+                        .newBuilder()
+                        .setPageSize(-1)
+                        .setPageToken(first.nextPageToken)
+                        .build(),
+                )
+            assertEquals("", second.nextPageToken)
+        }
+
+    @Test
+    fun `continue watching pages through the whole list, and the last page carries no token`() =
+        runBlocking {
+            jellyfin.items += (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(2).build())
+            assertEquals(2, first.entriesCount)
+            assertEquals("p2s2", first.nextPageToken)
+            val last =
+                stub.listContinueWatching(
+                    ListContinueWatchingRequest
+                        .newBuilder()
+                        .setPageSize(2)
+                        .setPageToken(first.nextPageToken)
+                        .build(),
+                )
+            assertEquals(1, last.entriesCount)
+            assertEquals("", last.nextPageToken)
+            val all = (first.entriesList + last.entriesList).map { it.media.tmdbId }.toSet()
+            assertEquals(setOf(1084199, 2002, 2003), all)
+        }
 
     @Test
     fun `a series without an episode, or a movie with one, is INVALID_ARGUMENT`() {

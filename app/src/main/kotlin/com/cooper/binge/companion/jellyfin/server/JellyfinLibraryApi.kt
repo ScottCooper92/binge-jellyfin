@@ -70,21 +70,45 @@ suspend fun JellyfinClient.episodes(
     ).itemsOf()
         .filter { it.locationType != "Virtual" }
 
+/** One page of a list the server pages, and how many entries the whole list holds. */
+data class ItemPage(
+    val items: List<JellyfinItem>,
+    val total: Int,
+)
+
+/** The user's continue watching: what they started and did not finish, from [startIndex]. */
 suspend fun JellyfinClient.resumeItems(
     userId: String,
+    startIndex: Int,
     limit: Int,
-): List<JellyfinItem> =
+): ItemPage =
     getObject(
         "UserItems/Resume",
-        mapOf("userId" to userId, "limit" to limit.toString(), "mediaTypes" to "Video", "enableUserData" to "true"),
-    ).itemsOf()
+        mapOf(
+            "userId" to userId,
+            "startIndex" to startIndex.toString(),
+            "limit" to limit.toString(),
+            "mediaTypes" to "Video",
+            "enableUserData" to "true",
+        ),
+    ).toPage()
 
+/** The next episode of each series the user is watching, from [startIndex]. */
 suspend fun JellyfinClient.nextUp(
     userId: String,
+    startIndex: Int,
     limit: Int,
-): List<JellyfinItem> =
-    getObject("Shows/NextUp", mapOf("userId" to userId, "limit" to limit.toString(), "enableUserData" to "true"))
-        .itemsOf()
+): ItemPage =
+    getObject(
+        "Shows/NextUp",
+        mapOf(
+            "userId" to userId,
+            "startIndex" to startIndex.toString(),
+            "limit" to limit.toString(),
+            "enableUserData" to "true",
+            "enableTotalRecordCount" to "true",
+        ),
+    ).toPage()
 
 suspend fun JellyfinClient.setPlayed(
     userId: String,
@@ -138,4 +162,9 @@ private fun JsonObject.toItem(): JellyfinItem {
         episodeNumber = int("IndexNumber"),
         locationType = string("LocationType"),
     )
+}
+
+private fun JsonObject.toPage(): ItemPage {
+    val items = itemsOf()
+    return ItemPage(items, int("TotalRecordCount") ?: items.size)
 }
