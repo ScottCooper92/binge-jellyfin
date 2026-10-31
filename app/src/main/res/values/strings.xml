@@ -113,4 +113,8 @@
     <string name="job_failed">Failed</string>
     <string name="job_last_run">Last ran %1$s</string>
     <string name="job_never_run">Hasn\'t run yet</string>
+    <string name="tasks_title">Scheduled tasks</string>
+    <string name="console_tasks_detail">Run or stop the server\'s upkeep</string>
+    <string name="tasks_not_sent">That didn\'t reach the server. %1$s</string>
+    <string name="job_last_failed">Last run failed %1$s</string>
 </resources>

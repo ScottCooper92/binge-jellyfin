@@ -113,4 +113,8 @@
     <string name="job_failed">Ha fallado</string>
     <string name="job_last_run">Última ejecución: %1$s</string>
     <string name="job_never_run">Aún no se ha ejecutado</string>
+    <string name="tasks_title">Tareas programadas</string>
+    <string name="console_tasks_detail">Ejecuta o detén el mantenimiento del servidor</string>
+    <string name="tasks_not_sent">No ha llegado al servidor. %1$s</string>
+    <string name="job_last_failed">La última ejecución falló %1$s</string>
 </resources>

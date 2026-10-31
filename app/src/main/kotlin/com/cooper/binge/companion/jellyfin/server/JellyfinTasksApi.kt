@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import java.time.Instant
@@ -47,6 +49,9 @@ suspend fun JellyfinClient.runTask(id: String) {
 suspend fun JellyfinClient.stopTask(id: String) {
     delete("ScheduledTasks/Running/$id")
 }
+
+/** Every task's state as the server pushes it, on a socket of the caller's own, about once a second. */
+fun JellyfinClient.taskPushes(): Flow<List<ServerTask>> = socketMessages(subscribe = listOf(TASKS_START)).mapNotNull { it.pushedTasks() }
 
 /** A `ScheduledTasksInfo` push's tasks, hidden ones left out; null for any other message. */
 internal fun JsonObject.pushedTasks(): List<ServerTask>? =
