@@ -179,4 +179,23 @@ class JellyfinViewModelTest {
         vm.refresh()
         assertTrue(vm.await<UiState.SignedIn> { it.refreshFailed }.refreshFailed)
     }
+
+    @Test
+    fun `a server address that answers a web page is not Jellyfin, and a sign-in that does is a generic failure`() {
+        val vm = viewModel()
+        vm.await<UiState.EnterServer>()
+        jellyfin.notJson += "/System/Info/Public"
+        vm.onAddress(jellyfin.baseUrl)
+        vm.connect()
+        assertEquals(SetupError.NotJellyfin, vm.await<UiState.EnterServer> { it.error != null }.error)
+
+        jellyfin.notJson.clear()
+        vm.connect()
+        vm.await<UiState.SignIn>()
+        jellyfin.notJson += "/Users/AuthenticateByName"
+        vm.onUsername("Claude")
+        vm.onPassword("right")
+        vm.signInWithPassword()
+        assertEquals(SetupError.Generic, vm.await<UiState.SignIn> { it.error != null }.error)
+    }
 }

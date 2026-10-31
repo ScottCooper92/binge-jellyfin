@@ -93,4 +93,12 @@ class JellyfinClientTest {
                     .orEmpty()
             assertTrue(sent.contains("%C3%9Cn%C3%AF%20Phone%2C%20Pro"))
         }
+
+    @Test
+    fun `an answer that is not JSON is an IOException, not an IllegalArgumentException`() {
+        jellyfin.notJson += "/System/Info/Public"
+        val failure = assertThrows(JellyfinUnreadableAnswer::class.java) { runBlocking { client.publicInfo() } }
+        assertTrue(failure is java.io.IOException)
+        assertTrue(failure.cause is kotlinx.serialization.SerializationException)
+    }
 }

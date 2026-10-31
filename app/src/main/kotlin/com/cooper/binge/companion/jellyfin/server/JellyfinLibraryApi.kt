@@ -1,10 +1,8 @@
 package com.cooper.binge.companion.jellyfin.server
 
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
 
 /** The user's view of one item: played, where they stopped, and when. */
 data class UserData(
@@ -34,7 +32,7 @@ suspend fun JellyfinClient.libraryPage(
     limit: Int,
 ): Pair<List<JellyfinItem>, Int> {
     val json =
-        get(
+        getObject(
             "Items",
             mapOf(
                 "userId" to userId,
@@ -47,7 +45,7 @@ suspend fun JellyfinClient.libraryPage(
                 "startIndex" to startIndex.toString(),
                 "limit" to limit.toString(),
             ),
-        ).jsonObject
+        )
     val items = json.itemsOf()
     return items to (json.int("TotalRecordCount") ?: items.size)
 }
@@ -57,8 +55,7 @@ suspend fun JellyfinClient.item(
     userId: String,
     itemId: String,
 ): JellyfinItem? =
-    get("Items", mapOf("userId" to userId, "ids" to itemId, "enableUserData" to "true", "fields" to "ProviderIds"))
-        .jsonObject
+    getObject("Items", mapOf("userId" to userId, "ids" to itemId, "enableUserData" to "true", "fields" to "ProviderIds"))
         .itemsOf()
         .firstOrNull()
 
@@ -67,27 +64,26 @@ suspend fun JellyfinClient.episodes(
     userId: String,
     seriesId: String,
 ): List<JellyfinItem> =
-    get(
+    getObject(
         "Shows/$seriesId/Episodes",
         mapOf("userId" to userId, "enableUserData" to "true", "isMissing" to "false", "enableImages" to "false"),
-    ).jsonObject
-        .itemsOf()
+    ).itemsOf()
         .filter { it.locationType != "Virtual" }
 
 suspend fun JellyfinClient.resumeItems(
     userId: String,
     limit: Int,
 ): List<JellyfinItem> =
-    get("UserItems/Resume", mapOf("userId" to userId, "limit" to limit.toString(), "mediaTypes" to "Video", "enableUserData" to "true"))
-        .jsonObject
-        .itemsOf()
+    getObject(
+        "UserItems/Resume",
+        mapOf("userId" to userId, "limit" to limit.toString(), "mediaTypes" to "Video", "enableUserData" to "true"),
+    ).itemsOf()
 
 suspend fun JellyfinClient.nextUp(
     userId: String,
     limit: Int,
 ): List<JellyfinItem> =
-    get("Shows/NextUp", mapOf("userId" to userId, "limit" to limit.toString(), "enableUserData" to "true"))
-        .jsonObject
+    getObject("Shows/NextUp", mapOf("userId" to userId, "limit" to limit.toString(), "enableUserData" to "true"))
         .itemsOf()
 
 suspend fun JellyfinClient.setPlayed(
@@ -103,7 +99,7 @@ suspend fun JellyfinClient.playbackInfo(
     userId: String,
     itemId: String,
     body: JsonObject,
-): JsonObject = post("Items/$itemId/PlaybackInfo", body, mapOf("userId" to userId)).jsonObject
+): JsonObject = postObject("Items/$itemId/PlaybackInfo", body, mapOf("userId" to userId))
 
 suspend fun JellyfinClient.reportStart(body: JsonObject) {
     post("Sessions/Playing", body)
@@ -117,7 +113,8 @@ suspend fun JellyfinClient.reportStopped(body: JsonObject) {
     post("Sessions/Playing/Stopped", body)
 }
 
-private fun JsonObject.itemsOf(): List<JellyfinItem> = array("Items").map(JsonElement::jsonObject).map { it.toItem() }
+/** The answer's `Items`; an entry that is not an object is skipped, as a field the server drops reads as absent. */
+private fun JsonObject.itemsOf(): List<JellyfinItem> = array("Items").filterIsInstance<JsonObject>().map { it.toItem() }
 
 private fun JsonObject.toItem(): JellyfinItem {
     val tmdb = obj("ProviderIds")?.entries?.firstOrNull { it.key.equals("Tmdb", ignoreCase = true) }?.value

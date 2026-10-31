@@ -4,6 +4,7 @@ import com.binge.companion.sdk.attempt
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -27,6 +28,16 @@ class JellyfinHttpException(
     val code: Int,
     path: String,
 ) : IOException("Jellyfin answered $code for $path")
+
+/**
+ * A 2xx answer that is not the JSON the call needs: not JSON at all (a captive portal's HTML login page,
+ * a proxy's error page), or JSON of the wrong shape. An [IOException], so every caller that already
+ * treats a failed call as "the server could not be reached" treats this one the same way.
+ */
+class JellyfinUnreadableAnswer(
+    path: String,
+    cause: Throwable? = null,
+) : IOException("Jellyfin's answer for $path is not the JSON it should be", cause)
 
 /** Who this app is to the server: the `Authorization: MediaBrowser …` header's fields. */
 data class ClientIdentity(
@@ -90,6 +101,19 @@ class JellyfinClient(
         query: Map<String, String> = emptyMap(),
     ): JsonElement = call(Request.Builder().url(url(path, query)).post((body?.toString() ?: "").toRequestBody(JSON)), path)
 
+    /** [get], for a call whose answer is a JSON object. */
+    internal suspend fun getObject(
+        path: String,
+        query: Map<String, String> = emptyMap(),
+    ): JsonObject = get(path, query).asObject(path)
+
+    /** [post], for a call whose answer is a JSON object. */
+    internal suspend fun postObject(
+        path: String,
+        body: JsonObject?,
+        query: Map<String, String> = emptyMap(),
+    ): JsonObject = post(path, body, query).asObject(path)
+
     internal suspend fun delete(
         path: String,
         query: Map<String, String> = emptyMap(),
@@ -101,7 +125,13 @@ class JellyfinClient(
     ): JsonElement {
         val request = builder.header("Authorization", authorization()).header("Accept", "application/json").build()
         val text = awaitBody(http.newCall(request), path)
-        return withContext(io) { if (text.isBlank()) JsonNull else PARSER.parseToJsonElement(text) }
+        return withContext(io) {
+            try {
+                if (text.isBlank()) JsonNull else PARSER.parseToJsonElement(text)
+            } catch (e: SerializationException) {
+                throw JellyfinUnreadableAnswer(path, e)
+            }
+        }
     }
 
     /** Runs [call] and reads its body; cancelling the caller cancels the [Call], closing the socket. */
@@ -151,3 +181,5 @@ class JellyfinClient(
 
 /** Percent-encoded as a URI component: `%20` for a space, not the form encoding's `+`. */
 private fun String.encoded(): String = URLEncoder.encode(this, "UTF-8").replace("+", "%20")
+
+private fun JsonElement.asObject(path: String): JsonObject = this as? JsonObject ?: throw JellyfinUnreadableAnswer(path)

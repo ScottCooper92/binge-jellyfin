@@ -25,10 +25,8 @@ import com.cooper.binge.companion.jellyfin.server.reportStopped
 import com.cooper.binge.companion.jellyfin.server.string
 import io.grpc.Status
 import io.grpc.StatusException
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.time.Instant
 
@@ -54,7 +52,7 @@ class PlaybackSources(
         info.string("ErrorCode")?.let { code ->
             throw StatusException(Status.FAILED_PRECONDITION.withDescription("Jellyfin refused playback: $code"))
         }
-        val source = info.array("MediaSources").firstOrNull()?.jsonObject ?: throw notFound()
+        val source = info.array("MediaSources").firstOrNull() as? JsonObject ?: throw notFound()
         val sitting =
             Sitting(
                 itemId = item.id,
@@ -167,7 +165,7 @@ class PlaybackSources(
     ): List<SubtitleTrack> =
         source
             .array("MediaStreams")
-            .map(JsonElement::jsonObject)
+            .filterIsInstance<JsonObject>()
             .filter { it.string("Type") == "Subtitle" && it.string("DeliveryMethod") == "External" }
             .mapNotNull { stream ->
                 val path = stream.string("DeliveryUrl") ?: return@mapNotNull null
