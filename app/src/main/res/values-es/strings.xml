@@ -96,4 +96,21 @@
     <string name="transcode_bitrate">Transcodificando: supera el límite de bitrate</string>
     <string name="transcode_container">Transcodificando: el dispositivo no puede abrir el archivo</string>
     <string name="transcode_other">Transcodificando</string>
+    <string name="console_admin_title">Administración</string>
+    <string name="console_libraries_detail">Busca archivos nuevos y cambiados</string>
+    <string name="libraries_title">Bibliotecas</string>
+    <string name="libraries_body">Jellyfin busca archivos nuevos según su propia programación. Escanea para encontrarlos ahora.</string>
+    <string name="libraries_scan_all">Escanear todas las bibliotecas</string>
+    <string name="libraries_group">En este servidor</string>
+    <string name="libraries_scan">Escanear</string>
+    <string name="libraries_unnamed">Biblioteca sin nombre</string>
+    <string name="libraries_not_started">El escaneo no ha empezado. %1$s</string>
+    <string name="job_run">Ejecutar</string>
+    <string name="job_stop">Detener</string>
+    <string name="job_running">En curso…</string>
+    <string name="job_running_percent">En curso… %1$d%%</string>
+    <string name="job_done">Hecho</string>
+    <string name="job_failed">Ha fallado</string>
+    <string name="job_last_run">Última ejecución: %1$s</string>
+    <string name="job_never_run">Aún no se ha ejecutado</string>
 </resources>

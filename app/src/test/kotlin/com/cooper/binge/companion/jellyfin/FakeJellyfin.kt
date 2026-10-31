@@ -78,6 +78,9 @@ class FakeJellyfin : Dispatcher() {
     /** `/Sessions`: one stream playing, a movie being transcoded, and a session playing nothing. */
     var sessions = SESSIONS
 
+    /** `/ScheduledTasks`: the library scan, an idle task that last failed, and a hidden one. */
+    var scheduledTasks = TASKS
+
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
@@ -148,6 +151,10 @@ class FakeJellyfin : Dispatcher() {
             path == "/Localization/Cultures" -> json(CULTURES)
             path == "/Users/Password" -> changePassword(request)
             path == "/Sessions" -> json(sessions)
+            path == "/Library/VirtualFolders" -> json(LIBRARIES)
+            path == "/ScheduledTasks" -> json(scheduledTasks)
+            path.startsWith("/ScheduledTasks/Running/") -> MockResponse(code = 204)
+            path.startsWith("/Items/") && path.endsWith("/Refresh") -> MockResponse(code = 204)
             path.startsWith("/Sessions/") && path.endsWith("/Playing/Stop") -> MockResponse(code = 204)
             path == "/QuickConnect/Authorize" ->
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
@@ -273,6 +280,24 @@ class FakeJellyfin : Dispatcher() {
 
     companion object {
         private const val GOING_AWAY = 1001
+
+        /** Two libraries, and an entry with no id, which isn't one. */
+        const val LIBRARIES =
+            """[
+            {"Name":"Movies","CollectionType":"movies","ItemId":"lib-movies","Locations":["/media/movies"]},
+            {"Name":"Shows","CollectionType":"tvshows","ItemId":"lib-shows","Locations":["/media/tv","/media/anime"]},
+            {"Name":"Broken"}
+            ]"""
+
+        const val TASKS =
+            """[
+            {"Id":"t-scan","Key":"RefreshLibrary","Name":"Scan Media Library","Category":"Library","State":"Idle",
+             "Description":"Scans your media library for new files.",
+             "LastExecutionResult":{"Status":"Completed","EndTimeUtc":"2026-10-31T18:00:00Z"}},
+            {"Id":"t-clean","Key":"CleanCache","Name":"Clean Cache Directory","Category":"Maintenance","State":"Idle",
+             "LastExecutionResult":{"Status":"Failed","EndTimeUtc":"2026-10-30T03:00:00Z","ErrorMessage":"Disk full"}},
+            {"Id":"t-guide","Key":"RefreshGuide","Name":"Refresh Guide","Category":"Live TV","State":"Idle","IsHidden":true}
+            ]"""
 
         const val SESSIONS =
             """[

@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
@@ -285,6 +286,7 @@ private fun SignedIn(
     ) {
         item { ServerGroup(state, actions) }
         item { AccountGroup(actions) }
+        if (state.isAdministrator) item { AdminGroup(actions) }
         item { LibraryGroup(state, actions) }
         item {
             BingeOutlinedButton(
@@ -346,6 +348,23 @@ private fun ServerGroup(
                     icon = Icons.Outlined.PlayCircle,
                     label = stringResource(R.string.now_playing_title),
                     onClick = { actions.onOpenPage(ConsolePage.NowPlaying) },
+                ),
+            ),
+    )
+}
+
+/** The console's pages for an administrator, shown only to one: the server would refuse anyone else. */
+@Composable
+private fun AdminGroup(actions: Actions) {
+    ItemGroup(
+        title = stringResource(R.string.console_admin_title),
+        rows =
+            listOf(
+                ListItem(
+                    icon = Icons.Outlined.Folder,
+                    label = stringResource(R.string.libraries_title),
+                    detail = stringResource(R.string.console_libraries_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Libraries) },
                 ),
             ),
     )
