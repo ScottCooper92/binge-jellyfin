@@ -43,6 +43,11 @@ class TvJellyfinScreenshotTest {
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
+    fun quickConnectAfterWrongPassword() = TvJellyfinRoot(previewSignInWrongPassword, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
     fun quickConnectOff() = TvJellyfinRoot(previewQuickConnectOff, Actions())
 
     @PreviewTest

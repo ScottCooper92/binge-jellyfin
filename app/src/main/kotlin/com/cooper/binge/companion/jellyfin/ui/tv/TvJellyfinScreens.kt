@@ -215,9 +215,11 @@ private fun ColumnScope.TvQuickConnectPanel(
     onUsePassword: () -> Unit,
 ) {
     val code = state.quickConnectCode
-    val failed = state.error != null && code == null
+    // A wrong password belongs to the password panel: it is not a failure to get a code.
+    val error = state.error?.takeUnless { it == SetupError.WrongCredentials }
+    val failed = error != null && code == null
     // A code is asked for when the panel shows; a failure waits for Try again rather than asking in a loop.
-    LaunchedEffect(Unit) { if (code == null && state.error == null) actions.onQuickConnect() }
+    LaunchedEffect(Unit) { if (code == null && error == null) actions.onQuickConnect() }
     Text(
         text = code ?: " ",
         style = MaterialTheme.typography.displayLarge,
@@ -229,11 +231,13 @@ private fun ColumnScope.TvQuickConnectPanel(
     TvStatusLine(
         text =
             when {
-                failed -> state.error?.let { errorText(it) }
+                failed -> error?.let { errorText(it) }
                 code != null -> stringResource(R.string.quick_connect_body)
                 else -> stringResource(R.string.tv_quick_connect_getting)
             },
         isError = failed,
+        // The instruction is how the user approves the code: it is shown whole, never clipped.
+        capped = failed || code == null,
     )
     // A failed code collapses to its message and Try again, and the remote moves there: the way on.
     val retry = remember { FocusRequester() }
@@ -365,19 +369,20 @@ private fun TvSignedInPage(
     }
 }
 
-/** A status under a form, always [lines] tall, so it never moves the controls below it. */
+/** A status under a form, [lines] tall at least, and at most unless not [capped], so it rarely moves the controls below it. */
 @Composable
 private fun TvStatusLine(
     text: String?,
     isError: Boolean,
     lines: Int = STATUS_LINES,
+    capped: Boolean = true,
 ) {
     Text(
         text = text.orEmpty(),
         style = MaterialTheme.typography.bodyLarge,
         color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
         minLines = lines,
-        maxLines = lines,
+        maxLines = if (capped) lines else Int.MAX_VALUE,
         modifier = Modifier.fillMaxWidth(),
     )
 }
