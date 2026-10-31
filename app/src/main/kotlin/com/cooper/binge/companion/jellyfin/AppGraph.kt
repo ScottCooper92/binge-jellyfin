@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.cooper.binge.companion.jellyfin.auth.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
@@ -51,4 +52,5 @@ class AppGraph(
         )
     }
 
+    val index: LibraryIndex by lazy { LibraryIndex() }
 }
