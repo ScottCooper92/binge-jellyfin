@@ -26,6 +26,12 @@ val previewEnterServerFound =
 
 val previewEnterServerError = UiState.EnterServer(address = "192.168.1.99:8096", error = SetupError.Unreachable)
 
+val previewEnterServerInvalid = UiState.EnterServer(address = "jellyfin lan", error = SetupError.InvalidAddress)
+
+val previewEnterServerNotJellyfin = UiState.EnterServer(address = "192.168.1.30:8080", error = SetupError.NotJellyfin)
+
+val previewEnterServerGeneric = UiState.EnterServer(address = "192.168.1.20:8096", error = SetupError.Generic)
+
 val previewSignIn = UiState.SignIn(baseUrl = LAN, server = lanServer, username = "sam")
 
 val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
@@ -33,6 +39,10 @@ val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 val previewSignInWrongPassword = previewSignIn.copy(password = "hunter2", error = SetupError.WrongCredentials)
 
 val previewQuickConnect = previewSignIn.copy(quickConnectCode = "482913")
+
+val previewQuickConnectOff = previewSignIn.copy(error = SetupError.QuickConnectOff)
+
+val previewQuickConnectExpired = previewQuickConnect.copy(error = SetupError.QuickConnectExpired)
 
 private val session =
     JellyfinSession(
