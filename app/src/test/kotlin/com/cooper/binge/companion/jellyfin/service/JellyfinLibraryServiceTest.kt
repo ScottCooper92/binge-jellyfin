@@ -530,4 +530,12 @@ class JellyfinLibraryServiceTest {
             val state = stub.observeWatchState(ObserveWatchStateRequest.newBuilder().setMedia(movie).build()).first()
             assertEquals(526_000L, state.state.positionMillis)
         }
+
+    @Test
+    fun `an answer that is not JSON, a captive portal's page say, is UNAVAILABLE with a sentence for the user`() {
+        jellyfin.notJson += "/Items"
+        val failure = statusOf { stub.getAvailability(GetAvailabilityRequest.newBuilder().setMedia(movie).build()) }
+        assertEquals(Status.Code.UNAVAILABLE, failure.status.code)
+        assertEquals("Can't reach Jellyfin", userMessageOf(failure.trailers)?.message)
+    }
 }

@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
+import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.SignedIn
@@ -110,13 +111,13 @@ class JellyfinViewModel(
                 } catch (e: JellyfinHttpException) {
                     Log.i(TAG, "The address answered, but not as Jellyfin", e)
                     null
+                } catch (e: JellyfinUnreadableAnswer) {
+                    Log.i(TAG, "The address answered something that is not Jellyfin", e)
+                    null
                 } catch (e: IOException) {
                     Log.i(TAG, "Server check failed", e)
                     _state.value = current.copy(checking = false, error = SetupError.Unreachable)
                     return@launch
-                } catch (e: IllegalArgumentException) {
-                    Log.i(TAG, "Server answered something that is not Jellyfin", e)
-                    null
                 }
             _state.value =
                 if (info == null) {
@@ -141,12 +142,12 @@ class JellyfinViewModel(
                 Log.i(TAG, "Password sign-in refused", e)
                 val error = if (e.code == HTTP_UNAUTHORIZED) SetupError.WrongCredentials else SetupError.Generic
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = error) ?: it }
+            } catch (e: JellyfinUnreadableAnswer) {
+                Log.i(TAG, "Password sign-in answered something that is not Jellyfin", e)
+                _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = SetupError.Generic) ?: it }
             } catch (e: IOException) {
                 Log.i(TAG, "Password sign-in failed", e)
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = SetupError.Unreachable) ?: it }
-            } catch (e: IllegalArgumentException) {
-                Log.i(TAG, "Password sign-in answered something that is not Jellyfin", e)
-                _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = SetupError.Generic) ?: it }
             }
         }
     }
@@ -165,12 +166,12 @@ class JellyfinViewModel(
                 } catch (e: JellyfinHttpException) {
                     Log.i(TAG, "Quick Connect refused", e)
                     _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.QuickConnectExpired) ?: it }
+                } catch (e: JellyfinUnreadableAnswer) {
+                    Log.i(TAG, "Quick Connect answered something that is not Jellyfin", e)
+                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.Generic) ?: it }
                 } catch (e: IOException) {
                     Log.i(TAG, "Quick Connect failed", e)
                     _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.Unreachable) ?: it }
-                } catch (e: IllegalArgumentException) {
-                    Log.i(TAG, "Quick Connect answered something that is not Jellyfin", e)
-                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.Generic) ?: it }
                 }
             }
     }
@@ -230,11 +231,11 @@ class JellyfinViewModel(
                         return@launch
                     }
                     true
+                } catch (e: JellyfinUnreadableAnswer) {
+                    Log.i(TAG, "Library refresh answered something that is not Jellyfin", e)
+                    true
                 } catch (e: IOException) {
                     Log.i(TAG, "Library refresh failed", e)
-                    true
-                } catch (e: IllegalArgumentException) {
-                    Log.i(TAG, "Library refresh answered something that is not Jellyfin", e)
                     true
                 }
             _state.update { (it as? UiState.SignedIn)?.copy(refreshing = false, refreshFailed = failed, titles = index.size) ?: it }

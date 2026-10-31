@@ -3,7 +3,6 @@ package com.cooper.binge.companion.jellyfin.server
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.jsonObject
 
 /** The server as it answers before sign-in. */
 data class PublicServerInfo(
@@ -27,7 +26,7 @@ data class QuickConnectStart(
 )
 
 suspend fun JellyfinClient.publicInfo(): PublicServerInfo {
-    val json = get("System/Info/Public").jsonObject
+    val json = getObject("System/Info/Public")
     return PublicServerInfo(
         serverName = json.string("ServerName").orEmpty(),
         version = json.string("Version").orEmpty(),
@@ -39,30 +38,30 @@ suspend fun JellyfinClient.authenticateByName(
     username: String,
     password: String,
 ): SignedIn =
-    post(
+    postObject(
         "Users/AuthenticateByName",
         JsonObject(mapOf("Username" to JsonPrimitive(username), "Pw" to JsonPrimitive(password))),
-    ).jsonObject.toSignedIn()
+    ).toSignedIn()
 
 suspend fun JellyfinClient.quickConnectEnabled(): Boolean = (get("QuickConnect/Enabled") as? JsonPrimitive)?.booleanOrNull == true
 
 suspend fun JellyfinClient.quickConnectInitiate(): QuickConnectStart {
-    val json = post("QuickConnect/Initiate", null).jsonObject
+    val json = postObject("QuickConnect/Initiate", null)
     return QuickConnectStart(secret = json.string("Secret").orEmpty(), code = json.string("Code").orEmpty())
 }
 
 suspend fun JellyfinClient.quickConnectAuthenticated(secret: String): Boolean =
-    get("QuickConnect/Connect", mapOf("secret" to secret)).jsonObject.bool("Authenticated") == true
+    getObject("QuickConnect/Connect", mapOf("secret" to secret)).bool("Authenticated") == true
 
 suspend fun JellyfinClient.authenticateWithQuickConnect(secret: String): SignedIn =
-    post("Users/AuthenticateWithQuickConnect", JsonObject(mapOf("Secret" to JsonPrimitive(secret)))).jsonObject.toSignedIn()
+    postObject("Users/AuthenticateWithQuickConnect", JsonObject(mapOf("Secret" to JsonPrimitive(secret)))).toSignedIn()
 
 /** Ends this device's session on the server, so it leaves the user's devices list. */
 suspend fun JellyfinClient.logout() {
     post("Sessions/Logout", null)
 }
 
-suspend fun JellyfinClient.me(): String = get("Users/Me").jsonObject.string("Name").orEmpty()
+suspend fun JellyfinClient.me(): String = getObject("Users/Me").string("Name").orEmpty()
 
 private fun JsonObject.toSignedIn(): SignedIn {
     val user = obj("User")
