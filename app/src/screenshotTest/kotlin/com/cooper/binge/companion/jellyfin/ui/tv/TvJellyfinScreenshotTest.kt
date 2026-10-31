@@ -5,7 +5,10 @@ import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvStressPreviews
 import com.cooper.binge.companion.jellyfin.ui.Actions
+import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.previewEnterServerError
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerFound
+import com.cooper.binge.companion.jellyfin.ui.previewEnterServerNotJellyfin
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerSearching
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnect
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
@@ -23,6 +26,23 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvStressPreviews
     @Composable
     fun serverFound() = TvJellyfinRoot(previewEnterServerFound, Actions())
+
+    /** The address error is one line on TV, so its longest wording is checked in Spanish and at large fonts. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun serverNotJellyfin() = TvJellyfinRoot(previewEnterServerNotJellyfin, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun serverUnreachable() = TvJellyfinRoot(previewEnterServerError, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun loading() = TvJellyfinRoot(UiState.Loading, Actions())
 
     @PreviewTest
     @JellyfinTvScreenPreviews
