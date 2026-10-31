@@ -144,6 +144,9 @@ class JellyfinViewModel(
             } catch (e: IOException) {
                 Log.i(TAG, "Password sign-in failed", e)
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = SetupError.Unreachable) ?: it }
+            } catch (e: IllegalArgumentException) {
+                Log.i(TAG, "Password sign-in answered something that is not Jellyfin", e)
+                _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = SetupError.Generic) ?: it }
             }
         }
     }
@@ -156,22 +159,7 @@ class JellyfinViewModel(
             viewModelScope.launch {
                 val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return@launch
                 try {
-                    val client = connection.anonymous(url)
-                    if (!client.quickConnectEnabled()) {
-                        _state.update { (it as? UiState.SignIn)?.copy(error = SetupError.QuickConnectOff) ?: it }
-                        return@launch
-                    }
-                    val start = client.quickConnectInitiate()
-                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = start.code, error = null) ?: it }
-                    val deadline = System.currentTimeMillis() + QUICK_CONNECT_WINDOW_MILLIS
-                    while (System.currentTimeMillis() < deadline) {
-                        delay(quickConnectPollMillis)
-                        if (client.quickConnectAuthenticated(start.secret)) {
-                            finish(url, current.server, client.authenticateWithQuickConnect(start.secret))
-                            return@launch
-                        }
-                    }
-                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.QuickConnectExpired) ?: it }
+                    awaitQuickConnect(url, current.server)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: JellyfinHttpException) {
@@ -180,8 +168,33 @@ class JellyfinViewModel(
                 } catch (e: IOException) {
                     Log.i(TAG, "Quick Connect failed", e)
                     _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.Unreachable) ?: it }
+                } catch (e: IllegalArgumentException) {
+                    Log.i(TAG, "Quick Connect answered something that is not Jellyfin", e)
+                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.Generic) ?: it }
                 }
             }
+    }
+
+    private suspend fun awaitQuickConnect(
+        url: HttpUrl,
+        server: PublicServerInfo,
+    ) {
+        val client = connection.anonymous(url)
+        if (!client.quickConnectEnabled()) {
+            _state.update { (it as? UiState.SignIn)?.copy(error = SetupError.QuickConnectOff) ?: it }
+            return
+        }
+        val start = client.quickConnectInitiate()
+        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = start.code, error = null) ?: it }
+        val deadline = System.currentTimeMillis() + QUICK_CONNECT_WINDOW_MILLIS
+        while (System.currentTimeMillis() < deadline) {
+            delay(quickConnectPollMillis)
+            if (client.quickConnectAuthenticated(start.secret)) {
+                finish(url, server, client.authenticateWithQuickConnect(start.secret))
+                return
+            }
+        }
+        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.QuickConnectExpired) ?: it }
     }
 
     fun cancelQuickConnect() {
@@ -219,6 +232,9 @@ class JellyfinViewModel(
                     true
                 } catch (e: IOException) {
                     Log.i(TAG, "Library refresh failed", e)
+                    true
+                } catch (e: IllegalArgumentException) {
+                    Log.i(TAG, "Library refresh answered something that is not Jellyfin", e)
                     true
                 }
             _state.update { (it as? UiState.SignedIn)?.copy(refreshing = false, refreshFailed = failed, titles = index.size) ?: it }

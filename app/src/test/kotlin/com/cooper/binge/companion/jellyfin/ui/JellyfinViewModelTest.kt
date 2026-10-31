@@ -169,4 +169,14 @@ class JellyfinViewModelTest {
         assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
         assertNull(runBlocking { sessions.current() })
     }
+
+    @Test
+    fun `a refresh answered with something that is not JSON fails without crashing`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        jellyfin.notJson += "/Items"
+        vm.refresh()
+        assertTrue(vm.await<UiState.SignedIn> { it.refreshFailed }.refreshFailed)
+    }
 }

@@ -37,7 +37,7 @@ data class FakeItem(
 
 /**
  * A Jellyfin server in a [MockWebServer], answering the calls this app makes with the shapes the
- * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path and [slow] holds one back.
+ * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back.
  */
 class FakeJellyfin : Dispatcher() {
     val server = MockWebServer()
@@ -45,6 +45,7 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
     val slow = mutableSetOf<String>()
+    val notJson = mutableSetOf<String>()
     var quickConnectEnabled = true
     var quickConnectApproved = false
     var playbackInfo: String = directPlayInfo()
@@ -82,6 +83,13 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         status[path]?.let { return MockResponse(code = it) }
+        if (path in notJson) {
+            return MockResponse
+                .Builder()
+                .code(200)
+                .body("<html>Sign in to the Wi-Fi</html>")
+                .build()
+        }
         return when {
             path == "/System/Info/Public" ->
                 json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":true}""")
