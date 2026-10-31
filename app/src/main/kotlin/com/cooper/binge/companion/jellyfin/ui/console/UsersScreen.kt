@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
+import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
@@ -207,7 +208,7 @@ private fun UserPage(
         item { Status(state) }
         if (!mine) {
             item {
-                BingeOutlinedButton(
+                BingeTextButton(
                     label = stringResource(R.string.users_delete),
                     onClick = { actions.onShow(UserDialog.Delete) },
                     leadingIcon = Icons.Outlined.Delete,
