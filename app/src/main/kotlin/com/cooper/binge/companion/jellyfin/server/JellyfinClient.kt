@@ -18,6 +18,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
+import java.net.URLEncoder
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -50,14 +51,18 @@ class JellyfinClient(
 ) {
     fun withToken(token: String): JellyfinClient = JellyfinClient(http, baseUrl, identity, io, token)
 
-    /** The header the server reads who we are from, with the token once signed in. */
+    /**
+     * The header the server reads who we are from, with the token once signed in. Each field is
+     * percent-encoded, as Jellyfin's own clients do and the server decodes: a device model can carry
+     * characters a header may not (non-ASCII), or ones the header's syntax splits on (`,` and `"`).
+     */
     fun authorization(): String =
         buildString {
             append("MediaBrowser ")
-            append("Client=\"").append(identity.client.unquoted()).append("\", ")
-            append("Device=\"").append(identity.device.unquoted()).append("\", ")
-            append("DeviceId=\"").append(identity.deviceId.unquoted()).append("\", ")
-            append("Version=\"").append(identity.version.unquoted()).append('"')
+            append("Client=\"").append(identity.client.encoded()).append("\", ")
+            append("Device=\"").append(identity.device.encoded()).append("\", ")
+            append("DeviceId=\"").append(identity.deviceId.encoded()).append("\", ")
+            append("Version=\"").append(identity.version.encoded()).append('"')
             token?.let { append(", Token=\"").append(it).append('"') }
         }
 
@@ -144,4 +149,5 @@ class JellyfinClient(
     }
 }
 
-private fun String.unquoted(): String = replace("\"", "")
+/** Percent-encoded as a URI component: `%20` for a space, not the form encoding's `+`. */
+private fun String.encoded(): String = URLEncoder.encode(this, "UTF-8").replace("+", "%20")
