@@ -100,6 +100,10 @@ class JellyfinViewModel(
             _state.value = if (session == null) UiState.EnterServer() else UiState.SignedIn(session)
             if (session != null) refresh()
         }
+        // A console page found the token refused: sign-in again, as a refused library refresh does.
+        viewModelScope.launch {
+            connection.refused.collect { (_state.value as? UiState.SignedIn)?.let { sessionRefused(it.session) } }
+        }
     }
 
     fun onAddress(value: String) = _state.update { (it as? UiState.EnterServer)?.copy(address = value, error = null) ?: it }

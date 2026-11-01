@@ -177,6 +177,16 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a token a console page found refused sends the user to sign in again`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        connection.reportRefused()
+        assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
+        assertNull(runBlocking { sessions.current() })
+    }
+
+    @Test
     fun `a refresh answered with something that is not JSON fails without crashing`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()

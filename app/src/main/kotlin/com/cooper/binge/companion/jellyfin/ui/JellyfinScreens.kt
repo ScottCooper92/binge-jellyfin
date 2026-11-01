@@ -17,12 +17,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import com.binge.designsystem.component.BingeConfirmDialog
+import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
@@ -295,9 +299,10 @@ private fun SignedIn(
     ) {
         item { ServerGroup(state, actions) }
         item { AccountGroup(actions) }
+        if (state.isAdministrator) item { AdminGroup(actions) }
         item { LibraryGroup(state, actions) }
         item {
-            BingeOutlinedButton(
+            BingeTextButton(
                 label = stringResource(R.string.settings_sign_out),
                 onClick = actions.onAskSignOut,
                 leadingIcon = Icons.AutoMirrored.Outlined.Logout,
@@ -306,15 +311,25 @@ private fun SignedIn(
             )
         }
     }
-    if (state.confirmingSignOut) {
-        BingeConfirmDialog(
-            title = stringResource(R.string.sign_out_title),
-            message = stringResource(R.string.sign_out_body),
-            confirmLabel = stringResource(R.string.settings_sign_out),
-            onConfirm = actions.onSignOut,
-            onDismissRequest = actions.onCancelSignOut,
-            destructive = true,
-        )
+    if (state.confirmingSignOut) SignOutConfirm(actions)
+}
+
+/**
+ * The sign-out confirm. [inWindow] false draws its body alone, without the dialog window a screen
+ * frame can't capture, so a `@PreviewTest` can show it.
+ */
+@Composable
+internal fun SignOutConfirm(
+    actions: Actions,
+    inWindow: Boolean = true,
+) {
+    val title = stringResource(R.string.sign_out_title)
+    val message = stringResource(R.string.sign_out_body)
+    val confirm = stringResource(R.string.settings_sign_out)
+    if (inWindow) {
+        BingeConfirmDialog(title, message, confirm, actions.onSignOut, actions.onCancelSignOut, destructive = true)
+    } else {
+        BingeConfirmDialogContent(title, message, confirm, actions.onSignOut, actions.onCancelSignOut, destructive = true)
     }
 }
 
@@ -356,6 +371,35 @@ private fun ServerGroup(
                     icon = Icons.Outlined.PlayCircle,
                     label = stringResource(R.string.now_playing_title),
                     onClick = { actions.onOpenPage(ConsolePage.NowPlaying) },
+                ),
+            ),
+    )
+}
+
+/** The console's pages for an administrator, shown only to one: the server would refuse anyone else. */
+@Composable
+private fun AdminGroup(actions: Actions) {
+    ItemGroup(
+        title = stringResource(R.string.console_admin_title),
+        rows =
+            listOf(
+                ListItem(
+                    icon = Icons.Outlined.Folder,
+                    label = stringResource(R.string.libraries_title),
+                    detail = stringResource(R.string.console_libraries_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Libraries) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Schedule,
+                    label = stringResource(R.string.tasks_title),
+                    detail = stringResource(R.string.console_tasks_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Tasks) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.History,
+                    label = stringResource(R.string.activity_title),
+                    detail = stringResource(R.string.console_activity_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Activity) },
                 ),
             ),
     )
