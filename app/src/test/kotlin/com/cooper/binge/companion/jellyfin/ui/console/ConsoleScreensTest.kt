@@ -176,6 +176,20 @@ class ConsoleScreensTest {
     }
 
     @Test
+    fun `a grouped library keeps its switch on the main page, though it has left the list`() {
+        val calls = mutableListOf<String>()
+        val state =
+            HomeLayoutUiState.Ready(
+                listOf(UserView("a", "Movies", "movies")),
+                HomeLayout(grouped = setOf("b")),
+                groupable = listOf(UserView("b", "Mixed")),
+            )
+        compose.setContent { JellyfinTheme { HomeLayoutScreen(state, HomeLayoutActions(onGrouped = { id, on -> calls += "$id:$on" })) } }
+        compose.onNodeWithText("Mixed").performScrollTo().performClick()
+        assertEquals(listOf("b:false"), calls)
+    }
+
+    @Test
     fun `the server settings page hands its switches and dialogs on, and hides the splash screen before 10_9`() {
         val calls = mutableListOf<String>()
         val state = ServerSettingsUiState.Ready(ServerSettings("truenas", "en", "GB"), Branding())

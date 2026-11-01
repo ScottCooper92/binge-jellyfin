@@ -1,17 +1,18 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ServerSettings
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.booleanOrNull
@@ -32,6 +33,10 @@ class ServerSettingsViewModelTest {
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -39,10 +44,7 @@ class ServerSettingsViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
     private fun ServerSettingsViewModel.settled(check: (ServerSettingsUiState) -> Boolean = { it !is ServerSettingsUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
@@ -62,7 +64,7 @@ class ServerSettingsViewModelTest {
 
     @Test
     fun `reads the settings, the branding and what the pickers offer`() {
-        val ready = ServerSettingsViewModel(connection).ready()
+        val ready = made(ServerSettingsViewModel(connection)).ready()
         assertEquals(ServerSettings("truenas", "en", "US", quickConnect = true), ready.settings)
         assertEquals(Branding(), ready.branding)
         assertEquals(listOf("GB", "US"), ready.countries.map { it.code })
@@ -71,7 +73,7 @@ class ServerSettingsViewModelTest {
 
     @Test
     fun `a setting saves into the whole configuration, the rest as it was`() {
-        val vm = ServerSettingsViewModel(connection)
+        val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
         vm.setMetadataCountry("GB")
         saves("/System/Configuration", 1)
@@ -86,7 +88,7 @@ class ServerSettingsViewModelTest {
 
     @Test
     fun `a text saves when its dialog does, and a blank server name doesn't`() {
-        val vm = ServerSettingsViewModel(connection)
+        val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
         vm.edit(ServerText.Name)
         assertEquals(ServerText.Name, vm.ready().editing)
@@ -116,7 +118,7 @@ class ServerSettingsViewModelTest {
 
     @Test
     fun `the splash screen saves into the branding`() {
-        val vm = ServerSettingsViewModel(connection)
+        val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
         vm.setSplashscreen(true)
         saves("/System/Configuration/branding", 1)
@@ -132,7 +134,7 @@ class ServerSettingsViewModelTest {
 
     @Test
     fun `a save that fails puts the setting back and says so`() {
-        val vm = ServerSettingsViewModel(connection)
+        val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
         jellyfin.status["/System/Configuration"] = 500
         vm.setMetadataLanguage("fr")
@@ -144,7 +146,7 @@ class ServerSettingsViewModelTest {
     @Test
     fun `countries that can't be read leave the rest of the page`() {
         jellyfin.status["/Localization/Countries"] = 500
-        val ready = ServerSettingsViewModel(connection).ready()
+        val ready = made(ServerSettingsViewModel(connection)).ready()
         assertEquals(emptyList<Any>(), ready.countries)
         assertEquals("truenas", ready.settings.name)
     }
@@ -152,7 +154,7 @@ class ServerSettingsViewModelTest {
     @Test
     fun `settings that can't be read fail the page`() {
         jellyfin.status["/System/Configuration"] = 500
-        assertEquals(ServerSettingsUiState.Failed(ConsoleFailure.Refused), ServerSettingsViewModel(connection).settled())
+        assertEquals(ServerSettingsUiState.Failed(ConsoleFailure.Refused), made(ServerSettingsViewModel(connection)).settled())
     }
 
     private companion object {

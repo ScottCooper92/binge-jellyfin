@@ -1,15 +1,16 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -29,6 +30,10 @@ class ServerViewModelTest {
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -36,12 +41,9 @@ class ServerViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
-    private fun viewModel() = ServerViewModel(connection, pollMillis = 10, downWaitMillis = 100, backWaitMillis = 600)
+    private fun viewModel() = made(ServerViewModel(connection, pollMillis = 10, downWaitMillis = 100, backWaitMillis = 600))
 
     private fun ServerViewModel.settled(check: (ServerUiState) -> Boolean = { it !is ServerUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
