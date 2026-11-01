@@ -22,8 +22,8 @@ wire format is a PR against binge-companions.
 
 Status is pre-alpha. Sign-in, the library index, the exported Service and a phone settings screen
 are in, and playback has been checked against Binge's player on a phone. The console is being built
-(#71). The TV screens and the
-release tooling are open issues. Nothing is on Play.
+(#71). The release workflow and the device lane are in. The TV screens are an open issue. Nothing is
+on Play.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
@@ -215,7 +215,25 @@ comment (`./gradlew ktlintFormat` is the fix), a `lint-baseline.xml`, `abortOnEr
 - **R8.** Release builds shrink. The app's own keep rules are the `keepRules` source set
   (`app/src/main/keepRules/`). The libraries and the contracts bring their own; add a rule here only
   for what they do not cover.
-- There is no release workflow or device lane yet. Both are follow-ups.
+- **`-PminifyDebug`** builds a minified debug app. The device lane runs it, so a stale keep rule fails
+  there rather than on a user. Its `optimization` block must match release's.
+- **`app/src/debug/keepRules/instrumentation.keep`** keeps, for the minified debug build only, the
+  exact members the instrumentation test calls that the app itself never uses: request builders,
+  the gRPC client, the user-message reader and a few stdlib and coroutines helpers. Without it the
+  test fails on the device (`NoClassDefFoundError`, `NoSuchMethodError`).
+  `tools/instrumentation-keep/check.sh` lists what is missing; run it after changing the test.
+- **The device lane** (`device-smoke.yml`, never `ci.yml`): an emulator binds the Service across a
+  real Binder on the minified debug build, then handshakes and asks for an availability
+  (`app/src/androidTest`). With no server and no session both answer `UNAUTHENTICATED` with the
+  sign-in sentence; signed in on a device, both succeed, and the test accepts either. A run with zero
+  tests fails: a crashed test process can otherwise end green. It runs on a push to `main` that
+  touches the paths it lists, weekly, and by hand. A red weekly run opens one issue, which closes on
+  the next green one.
+- **`release.yml`** builds a signed bundle from a `v*` tag, checks it is release-signed (never
+  `CN=Android Debug`) and shrunk, and attaches it with the R8 mapping to a GitHub Release. It needs
+  the `RELEASE_KEYSTORE_BASE64`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS` and
+  `RELEASE_KEY_PASSWORD` secrets, which are the maintainer's to set. Play upload and the Play Console
+  app are the maintainer's too.
 
 ## Follow-ups
 

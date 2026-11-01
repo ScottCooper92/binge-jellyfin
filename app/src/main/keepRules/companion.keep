@@ -1,7 +1,7 @@
 # This app's R8 keep rules. It is a `keepRules` source set (AGP 9.3+), so every `.keep` file here is
 # picked up with no `proguardFiles` entry naming it. It sits in `main` rather than `release` so the
-# opt-in `-PminifyDebug` build, which a device lane will run (#11), minifies against the same rules as
-# release; a per-variant copy is the one that goes stale.
+# opt-in `-PminifyDebug` build the device lane runs minifies against the same rules as release; a
+# per-variant copy is the one that goes stale.
 #
 # OkHttp, DataStore and kotlinx.serialization ship their own consumer rules, and so does
 # binge-companions' contracts module: its META-INF/proguard rule keeps the fields of every contract
