@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import android.app.TimePickerDialog
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,8 +19,11 @@ import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -241,19 +243,20 @@ internal fun AddTriggerSheet(actions: TasksActions) {
 
 /**
  * A new trigger's form: its kind, then what that kind needs (a time of day, a day, how often), and an
- * optional time limit. The time comes from the platform's time picker, in the device's 24-hour setting.
+ * optional time limit. The time is entered in the form itself, in the device's 24-hour setting.
  * It is the content of [AddTriggerSheet], and draws without a window for a frame.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AddTriggerForm(actions: TasksActions) {
     var kindIndex by rememberSaveable { mutableIntStateOf(0) }
-    var minutes by rememberSaveable { mutableIntStateOf(DEFAULT_HOUR * MINUTES_PER_HOUR) }
+    val context = LocalContext.current
+    val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, DateFormat.is24HourFormat(context))
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
     var intervalTicks by rememberSaveable { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
     var limitHours by rememberSaveable { mutableIntStateOf(0) }
     val kind = TriggerKind.entries[kindIndex]
     val limit = limitHours.takeIf { it > 0 }?.let { it * TICKS_PER_HOUR }
-    val timeTicks = minutes * TICKS_PER_MINUTE
     Column {
         BingeSheetHeader(
             title = stringResource(R.string.tasks_trigger_new_title),
@@ -265,17 +268,18 @@ internal fun AddTriggerForm(actions: TasksActions) {
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
         ) {
             KindChips(kind) { kindIndex = it.ordinal }
-            if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) TimeButton(minutes) { minutes = it }
+            if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) TimeInput(timeState)
             if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
             if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
             LimitChips(limitHours) { limitHours = it }
             BingeFilledButton(
                 label = stringResource(R.string.tasks_trigger_create),
                 onClick = {
+                    val timeTicks = { (timeState.hour * MINUTES_PER_HOUR + timeState.minute) * TICKS_PER_MINUTE }
                     actions.onAddTrigger(
                         when (kind) {
-                            TriggerKind.Daily -> TaskTrigger.daily(timeTicks, limit)
-                            TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks, limit)
+                            TriggerKind.Daily -> TaskTrigger.daily(timeTicks(), limit)
+                            TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks(), limit)
                             TriggerKind.Interval -> TaskTrigger.interval(intervalTicks, limit)
                             TriggerKind.Startup -> TaskTrigger.startup(limit)
                         },
@@ -304,30 +308,6 @@ private fun KindChips(
             BingeFilterChip(label = stringResource(label), selected = kind == selected, onClick = { onSelect(kind) })
         }
     }
-}
-
-/** The time as a button that opens the platform's time picker, in the device's 24-hour setting. */
-@Composable
-private fun TimeButton(
-    minutes: Int,
-    onPicked: (Int) -> Unit,
-) {
-    val context = LocalContext.current
-    val timeLabel = rememberTimeLabel()
-    BingeOutlinedButton(
-        label = timeLabel(minutes * TICKS_PER_MINUTE),
-        leadingIcon = Icons.Outlined.Schedule,
-        onClick = {
-            TimePickerDialog(
-                context,
-                { _, hour, minute -> onPicked(hour * MINUTES_PER_HOUR + minute) },
-                minutes / MINUTES_PER_HOUR,
-                minutes % MINUTES_PER_HOUR,
-                DateFormat.is24HourFormat(context),
-            ).show()
-        },
-        modifier = Modifier.fillMaxWidth(),
-    )
 }
 
 @Composable

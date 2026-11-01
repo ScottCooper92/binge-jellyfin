@@ -28,7 +28,7 @@ sealed interface TasksUiState {
     /**
      * The tasks and what this page has asked of them, and the last run, stop or trigger change that
      * couldn't be sent. [open] is the id of the task whose triggers are showing; [adding] the new trigger
-     * dialog; [saving] a trigger change in flight.
+     * sheet; [saving] a trigger change in flight.
      */
     data class Ready(
         val board: TaskBoard,
