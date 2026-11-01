@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_label">Binge Jellyfin</string>
+    <string name="app_label" translatable="false">Jellyfin Companion</string>
     <string name="companion_label">Jellyfin</string>
 
     <string name="setup_server_title">Connect to Jellyfin</string>
@@ -193,4 +193,6 @@
     <string name="server_not_back">The server hasn\'t come back after two minutes. Check it where it runs.</string>
     <string name="server_restart_failed">The server didn\'t take the restart. Try again.</string>
     <string name="server_cant_restart">This server can\'t restart itself. Restart it where it runs.</string>
+    <string name="sign_out_body_plain">You\'ll need to sign in again to manage your server from this app.</string>
+    <string name="languages_body_plain">Jellyfin uses these to choose the audio and subtitles when you play something.</string>
 </resources>

@@ -439,7 +439,7 @@ class FakeJellyfin : Dispatcher() {
              "PlayState":{"PositionTicks":6000000000,"IsPaused":false,"PlayMethod":"Transcode"},
              "NowPlayingItem":{"Name":"Sintel","RunTimeTicks":8880000000},
              "TranscodingInfo":{"TranscodeReasons":["AudioCodecNotSupported","VideoCodecNotSupported"]}},
-            {"Id":"s-idle","UserName":"Claude","DeviceName":"Phone","Client":"Binge Jellyfin"}
+            {"Id":"s-idle","UserName":"Claude","DeviceName":"Phone","Client":"Jellyfin Companion"}
             ]"""
 
         /** A few of `/Localization/Cultures`, French with both of its three-letter names and two Spanishes under one code, as the server lists them. */

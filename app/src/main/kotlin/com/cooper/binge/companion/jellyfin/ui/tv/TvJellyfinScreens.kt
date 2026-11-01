@@ -41,6 +41,7 @@ import com.binge.designsystem.tv.template.TvTwoPaneSplit
 import com.binge.designsystem.tv.template.TvTwoPaneStyle
 import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.errorText
@@ -312,6 +313,7 @@ private fun TvSignedInPage(
     modifier: Modifier,
 ) {
     val session = state.session
+    val promoted = LocalFlags.current.bingePromotion
     val entry = remember { FocusRequester() }
     // Arriving from sign-in, the control the remote was on is gone with it: land on the first row.
     LaunchedEffect(Unit) { entry.requestFocus() }
@@ -335,32 +337,36 @@ private fun TvSignedInPage(
         },
         action = {
             val titles = state.titles
-            TvOptionRow(
-                label = stringResource(R.string.settings_refresh),
-                supportingText =
-                    when {
-                        state.refreshFailed -> stringResource(R.string.settings_titles_failed)
-                        titles == null -> stringResource(R.string.settings_titles_checking)
-                        else -> pluralStringResource(R.plurals.tv_titles_count, titles, titles)
-                    },
-                icon = Icons.Outlined.Refresh,
-                selected = false,
-                saving = state.refreshing,
-                onClick = actions.onRefresh,
-                modifier = Modifier.focusRequester(entry),
-            )
+            // What Binge can find in the library is Binge's to show; without the flag the page is the account alone.
+            if (promoted) {
+                TvOptionRow(
+                    label = stringResource(R.string.settings_refresh),
+                    supportingText =
+                        when {
+                            state.refreshFailed -> stringResource(R.string.settings_titles_failed)
+                            titles == null -> stringResource(R.string.settings_titles_checking)
+                            else -> pluralStringResource(R.plurals.tv_titles_count, titles, titles)
+                        },
+                    icon = Icons.Outlined.Refresh,
+                    selected = false,
+                    saving = state.refreshing,
+                    onClick = actions.onRefresh,
+                    modifier = Modifier.focusRequester(entry),
+                )
+            }
             TvOptionRow(
                 label = stringResource(R.string.settings_sign_out),
                 icon = Icons.AutoMirrored.Outlined.Logout,
                 selected = false,
                 onClick = actions.onAskSignOut,
+                modifier = if (promoted) Modifier else Modifier.focusRequester(entry),
             )
         },
     )
     if (state.confirmingSignOut) {
         TvConfirmDialog(
             title = stringResource(R.string.sign_out_title),
-            message = stringResource(R.string.sign_out_body),
+            message = stringResource(if (promoted) R.string.sign_out_body else R.string.sign_out_body_plain),
             confirmLabel = stringResource(R.string.settings_sign_out),
             onConfirm = actions.onSignOut,
             onDismissRequest = actions.onCancelSignOut,

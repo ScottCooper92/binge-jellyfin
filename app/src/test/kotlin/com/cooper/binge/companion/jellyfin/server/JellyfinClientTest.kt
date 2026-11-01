@@ -19,7 +19,7 @@ import org.junit.Test
 
 class JellyfinClientTest {
     private val jellyfin = FakeJellyfin()
-    private val identity = ClientIdentity("Binge Jellyfin", "Pixel \"10\"", "device-1", "1.0")
+    private val identity = ClientIdentity("Jellyfin Companion", "Pixel \"10\"", "device-1", "1.0")
     private val client = JellyfinClient(OkHttpClient(), jellyfin.baseUrl.toHttpUrl(), identity, Dispatchers.IO)
 
     @After

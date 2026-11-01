@@ -45,6 +45,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import java.util.Locale
@@ -106,7 +107,8 @@ private fun LanguagesBody(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        Text(stringResource(R.string.languages_body), style = MaterialTheme.typography.bodyMedium)
+        val body = if (LocalFlags.current.bingePromotion) R.string.languages_body else R.string.languages_body_plain
+        Text(stringResource(body), style = MaterialTheme.typography.bodyMedium)
         ItemGroup(
             title = null,
             rows =

@@ -8,6 +8,9 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.cooper.binge.companion.jellyfin.auth.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
+import com.cooper.binge.companion.jellyfin.flags.FeatureFlags
+import com.cooper.binge.companion.jellyfin.flags.FixedFeatureFlags
+import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
@@ -47,11 +50,14 @@ class AppGraph(
         )
     }
 
+    /** Whether the app names Binge: the build decides, until there is a flag service (see [FeatureFlags]). */
+    val flags: FeatureFlags = FixedFeatureFlags(Flags(bingePromotion = BuildConfig.BINGE_PROMOTION))
+
     val connection: Connection by lazy {
         Connection(
             http = http,
             sessions = sessions,
-            client = "Binge Jellyfin",
+            client = CLIENT_NAME,
             device = Build.MODEL ?: "Android",
             version = BuildConfig.VERSION_NAME,
             io = io,
@@ -68,3 +74,6 @@ class AppGraph(
     /** Jellyfin's UDP broadcast, on this device's LAN networks. */
     val discovery: UdpDiscovery by lazy { UdpDiscovery(targets = { lanTargets(appContext) }, io = io) }
 }
+
+/** The client name Jellyfin shows for this app, in its dashboard's devices, sessions and activity. */
+internal const val CLIENT_NAME = "Jellyfin Companion"

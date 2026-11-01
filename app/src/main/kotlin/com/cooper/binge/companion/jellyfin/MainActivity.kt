@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -25,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -147,40 +149,54 @@ class MainActivity : ComponentActivity() {
                         page = it
                     },
                 )
-            if (LocalConfiguration.current.isTelevision()) {
-                JellyfinTvTheme { TvJellyfinRoot(state, actions) }
-            } else {
-                JellyfinTheme {
-                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        if (openPage == null) {
-                            // The home leaves the composition while a page is open; this keeps its saved
-                            // state (the list's scroll position) for when it comes back.
-                            home.SaveableStateProvider(HOME_KEY) { JellyfinRoot(state, actions) }
-                        } else {
-                            val close = { page = null }
-                            ConsolePageScope(pageStores.storeFor(opened)) {
-                                when (openPage) {
-                                    ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
-                                    ConsolePage.Languages -> LanguagesRoute(graph, close)
-                                    ConsolePage.Password -> PasswordRoute(graph, close)
-                                    ConsolePage.NowPlaying ->
-                                        NowPlayingRoute(
-                                            graph,
-                                            (state as? UiState.SignedIn)?.isAdministrator == true,
-                                            close,
-                                        )
-                                    ConsolePage.Libraries -> LibrariesRoute(graph, close)
-                                    ConsolePage.Tasks -> TasksRoute(graph, close)
-                                    ConsolePage.Activity -> ActivityRoute(graph, close)
-                                    ConsolePage.Devices -> DevicesRoute(graph, close)
-                                    ConsolePage.Users -> UsersRoute(graph, close)
-                                    ConsolePage.Server -> ServerRoute(graph, close)
+            val flags by graph.flags.flags.collectAsStateWithLifecycle()
+            CompositionLocalProvider(LocalFlags provides flags) {
+                if (LocalConfiguration.current.isTelevision()) {
+                    JellyfinTvTheme { TvJellyfinRoot(state, actions) }
+                } else {
+                    JellyfinTheme {
+                        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                            if (openPage == null) {
+                                // The home leaves the composition while a page is open; this keeps its saved
+                                // state (the list's scroll position) for when it comes back.
+                                home.SaveableStateProvider(HOME_KEY) { JellyfinRoot(state, actions) }
+                            } else {
+                                val close = { page = null }
+                                ConsolePageScope(pageStores.storeFor(opened)) {
+                                    ConsolePageRoute(openPage, graph, (state as? UiState.SignedIn)?.isAdministrator == true, close)
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    /** The open console page, with its own view model from the page's store. */
+    @Composable
+    private fun ConsolePageRoute(
+        page: ConsolePage,
+        graph: AppGraph,
+        administrator: Boolean,
+        close: () -> Unit,
+    ) {
+        when (page) {
+            ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
+            ConsolePage.Languages -> LanguagesRoute(graph, close)
+            ConsolePage.Password -> PasswordRoute(graph, close)
+            ConsolePage.NowPlaying ->
+                NowPlayingRoute(
+                    graph,
+                    administrator,
+                    close,
+                )
+            ConsolePage.Libraries -> LibrariesRoute(graph, close)
+            ConsolePage.Tasks -> TasksRoute(graph, close)
+            ConsolePage.Activity -> ActivityRoute(graph, close)
+            ConsolePage.Devices -> DevicesRoute(graph, close)
+            ConsolePage.Users -> UsersRoute(graph, close)
+            ConsolePage.Server -> ServerRoute(graph, close)
         }
     }
 

@@ -317,7 +317,7 @@ class ConsoleScreensTest {
         val asked = mutableListOf<ServerDevice?>()
         var removed = false
         val tv = ServerDevice("tv", "SHIELD", null, "Jellyfin Android TV", "sam", null)
-        val mine = ServerDevice("me", "Pixel", null, "Binge Jellyfin", "Claude", null)
+        val mine = ServerDevice("me", "Pixel", null, "Jellyfin Companion", "Claude", null)
         var state by mutableStateOf(DevicesUiState.Ready(listOf(tv, mine), thisDevice = "me"))
         val actions =
             DevicesActions(
@@ -347,7 +347,7 @@ class ConsoleScreensTest {
             listOf(
                 deviceIcon("Jellyfin Android TV", "SHIELD"),
                 deviceIcon("Jellyfin Web", "Firefox"),
-                deviceIcon("Binge Jellyfin", "Pixel 10"),
+                deviceIcon("Jellyfin Companion", "Pixel 10"),
                 deviceIcon("Kodi", "Den box"),
             )
         assertEquals(4, icons.distinct().size)

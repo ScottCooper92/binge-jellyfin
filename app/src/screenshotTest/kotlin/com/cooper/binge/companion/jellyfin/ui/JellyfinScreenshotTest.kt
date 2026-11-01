@@ -2,7 +2,10 @@ package com.cooper.binge.companion.jellyfin.ui
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
+import com.cooper.binge.companion.jellyfin.flags.Flags
+import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -115,12 +118,12 @@ class JellyfinScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun signedInChecking() = JellyfinRoot(previewSignedInChecking, Actions())
+    fun signedInChecking() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInChecking, Actions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun signedInFailed() = JellyfinRoot(previewSignedInFailed, Actions())
+    fun signedInFailed() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInFailed, Actions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -139,4 +142,18 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun signOutConfirm() = Surface { SignOutConfirm(Actions(), inWindow = false) }
+
+    /** With the Binge flag on: the Library group shows what Binge can see. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signedInPromoted() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedIn, Actions()) }
+
+    /** With the Binge flag on, signing out says what Binge stops doing. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signOutConfirmPromoted() =
+        CompositionLocalProvider(LocalFlags provides Flags.AllOn) { Surface { SignOutConfirm(Actions(), inWindow = false) } }
 }
