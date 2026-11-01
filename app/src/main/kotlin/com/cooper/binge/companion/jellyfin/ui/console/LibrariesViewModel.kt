@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.LibraryPush
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
+import com.cooper.binge.companion.jellyfin.server.addLibrary
 import com.cooper.binge.companion.jellyfin.server.libraries
 import com.cooper.binge.companion.jellyfin.server.libraryPushes
 import com.cooper.binge.companion.jellyfin.server.runTask
@@ -37,7 +38,9 @@ sealed interface LibrariesUiState {
 
     /**
      * The libraries and their scans; the scheduled tasks, for the scan of everything; how each
-     * library's last scan just ended; and the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop.
+     * library's last scan just ended; the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop;
+     * the library whose page is open ([opened]); and the new library sheet, when [adding], with the add in flight
+     * ([saving]) or refused ([addFailed]).
      */
     data class Ready(
         val libraries: List<ServerLibrary>,
@@ -46,6 +49,10 @@ sealed interface LibrariesUiState {
         val outcomes: Map<String, JobOutcome> = emptyMap(),
         val actionFailed: ConsoleFailure? = null,
         val stopFailed: Boolean = false,
+        val opened: String? = null,
+        val adding: Boolean = false,
+        val saving: Boolean = false,
+        val addFailed: ConsoleFailure? = null,
     ) : LibrariesUiState
 }
 
@@ -109,6 +116,43 @@ class LibrariesViewModel(
                     }
                     clearLater(library.id)
                 }
+        }
+    }
+
+    /** Opens the page of the library with [id], or the list for null. */
+    fun open(id: String?) = update { copy(opened = id) }
+
+    /** Opens the new library sheet, or closes it. */
+    fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null) }
+
+    /** Reads the libraries again, quietly: the list stays as it is until the answer comes. */
+    fun refresh() {
+        viewModelScope.launch {
+            connection.awaitSaves()
+            connection
+                .consoleCall(TAG) { _, client -> client.libraries() }
+                .onSuccess { fresh -> update { copy(libraries = fresh, opened = opened?.takeIf { id -> fresh.any { it.id == id } }) } }
+        }
+    }
+
+    /** Makes a library named [name] of [kind] over the folder [path]. The sheet doesn't offer a name another library has. */
+    fun add(
+        name: String,
+        kind: String,
+        path: String,
+    ) {
+        val ready = _state.value as? LibrariesUiState.Ready ?: return
+        val trimmed = name.trim()
+        if (trimmed.isEmpty() || path.isBlank()) return
+        if (ready.libraries.any { it.name.equals(trimmed, ignoreCase = true) }) return
+        update { copy(saving = true, addFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client ->
+                    client.addLibrary(trimmed, kind, path)
+                    client.libraries()
+                }.onSuccess { fresh -> update { copy(libraries = fresh, saving = false, adding = false) } }
+                .onFailure { error -> update { copy(saving = false, addFailed = error.consoleFailure()) } }
         }
     }
 

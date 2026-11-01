@@ -62,6 +62,15 @@ data class JellyfinServerProfile(
     /** Media segments (intros, credits) and a library's segment providers. 10.10. */
     val hasMediaSegments: Boolean get() = atLeast(TEN, TEN)
 
+    /** A library's lyric providers: which, and in what order, listed by the server. 10.10. */
+    val hasLibraryLyricFetchers: Boolean get() = atLeast(TEN, TEN)
+
+    /** A library can save its trickplay images beside the media. 10.10. */
+    val hasLibraryTrickplayWithMedia: Boolean get() = atLeast(TEN, TEN)
+
+    /** A library's media segment providers: which, and in what order, listed by the server. 10.11. */
+    val hasLibrarySegmentProviders: Boolean get() = atLeast(TEN, ELEVEN)
+
     /** Server backups: list, create and restore. 10.11. */
     val hasBackups: Boolean get() = atLeast(TEN, ELEVEN)
 

@@ -1,11 +1,12 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.LibraryMusic
@@ -16,15 +17,17 @@ import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.component.BingeLoadingIndicator
+import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
+import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.EmptyScreen
+import com.binge.designsystem.template.ScreenAction
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -38,9 +41,15 @@ data class LibrariesActions(
     val onScan: (ServerLibrary) -> Unit = {},
     val onScanEverything: () -> Unit = {},
     val onStopEverything: () -> Unit = {},
+    val onOpen: (ServerLibrary) -> Unit = {},
+    val onAskAdd: (Boolean) -> Unit = {},
+    val onAdd: (name: String, kind: String, path: String) -> Unit = { _, _, _ -> },
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
+
+/** Rows in the page's skeleton while it loads. */
+private const val LOADING_ROWS = 6
 
 /** Lines a failed scan's message takes, so it never moves the list. */
 private const val STATUS_LINES = 2
@@ -55,14 +64,37 @@ fun LibrariesScreen(
     state: LibrariesUiState,
     actions: LibrariesActions,
     now: Long = System.currentTimeMillis(),
+    folders: FolderBrowseState = FolderBrowseState.Loading,
+    folderActions: FolderActions = FolderActions(),
 ) {
     BingeScreenScaffold(title = stringResource(R.string.libraries_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                LibrariesUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                LibrariesUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
                 is LibrariesUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is LibrariesUiState.Ready -> Libraries(state, actions, inner, now)
+                is LibrariesUiState.Ready -> {
+                    if (state.libraries.isEmpty()) {
+                        EmptyScreen(
+                            message = stringResource(R.string.libraries_empty),
+                            title = stringResource(R.string.libraries_empty_title),
+                            action = ScreenAction(stringResource(R.string.libraries_add), { actions.onAskAdd(true) }, Icons.Outlined.Add),
+                        )
+                    } else {
+                        Libraries(state, actions, inner, now)
+                    }
+                    if (state.adding) {
+                        AddLibrarySheet(
+                            names = state.libraries.map { it.name },
+                            saving = state.saving,
+                            failed = state.addFailed,
+                            folders = folders,
+                            folderActions = folderActions,
+                            onAdd = actions.onAdd,
+                            onDismiss = { actions.onAskAdd(false) },
+                        )
+                    }
+                }
             }
         }
     }
@@ -76,7 +108,17 @@ private fun Libraries(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item { Text(stringResource(R.string.libraries_body), style = MaterialTheme.typography.bodyMedium) }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
+                Text(stringResource(R.string.libraries_body), style = MaterialTheme.typography.bodyMedium)
+                BingeOutlinedButton(
+                    label = stringResource(R.string.libraries_add),
+                    onClick = { actions.onAskAdd(true) },
+                    leadingIcon = Icons.Outlined.Add,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
         state.board.task(LIBRARY_SCAN_TASK)?.let { task ->
             item {
                 val row =
@@ -133,6 +175,7 @@ private fun ServerLibrary.row(
         outcome = state.outcomes[id],
         runLabel = R.string.libraries_scan,
         onRun = { actions.onScan(this) },
+        onOpen = { actions.onOpen(this) },
     )
 }
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
+import com.cooper.binge.companion.jellyfin.server.MIXED_LIBRARY
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -15,9 +16,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonArray
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -174,6 +180,82 @@ class LibrariesViewModelTest {
         jellyfin.status.remove("/Library/VirtualFolders")
         vm.load()
         assertEquals(2, vm.ready().libraries.size)
+    }
+
+    @Test
+    fun `a library opens and closes, and the list is read again quietly`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.open("lib-shows")
+        assertEquals("lib-shows", vm.ready().opened)
+        jellyfin.libraries =
+            Json
+                .parseToJsonElement(FakeJellyfin.LIBRARIES)
+                .jsonArray
+                .take(1)
+                .let(::JsonArray)
+        vm.refresh()
+        // The open library went with the refresh, and the list shows what the server has now.
+        val refreshed = vm.ready { it.libraries.size == 1 }
+        assertNull(refreshed.opened)
+        vm.open(null)
+        assertNull(vm.ready().opened)
+    }
+
+    @Test
+    fun `a new library is added with no scan, and shown with the others`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        assertTrue(vm.ready().adding)
+        vm.add("  Anime ", "tvshows", "/media/anime")
+        val added = vm.ready { it.libraries.size == 3 }
+        assertFalse(added.adding)
+        assertFalse(added.saving)
+        assertEquals("Anime", added.libraries.last().name)
+        val request = jellyfin.requests.last { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" }
+        assertEquals("Anime", request.url.queryParameter("name"))
+        assertEquals("tvshows", request.url.queryParameter("collectionType"))
+        assertEquals("/media/anime", request.url.queryParameter("paths"))
+        assertEquals("false", request.url.queryParameter("refreshLibrary"))
+        assertEquals(0, jellyfin.hits("/Items/lib-anime/Refresh"))
+    }
+
+    @Test
+    fun `mixed content has no collection type, and a path with a comma is added after the library`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.add("Everything", MIXED_LIBRARY, "/media/a,b")
+        val added = vm.ready { it.libraries.size == 3 }
+        val request = jellyfin.requests.last { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" }
+        assertNull(request.url.queryParameter("collectionType"))
+        assertNull(request.url.queryParameter("paths"))
+        assertEquals(listOf("/media/a,b"), added.libraries.last().folders)
+    }
+
+    @Test
+    fun `a name another library has, or a blank name or path, adds nothing`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.add("movies", "movies", "/media/movies")
+        vm.add("   ", "movies", "/media/x")
+        vm.add("Other", "movies", "  ")
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
+    }
+
+    @Test
+    fun `an add the server refuses says so and keeps the sheet open`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        jellyfin.status["/Library/VirtualFolders"] = 500
+        vm.add("Anime", "tvshows", "/media/anime")
+        // The status override answers the list too, so the failure is the add's own.
+        val failed = vm.ready { it.addFailed != null }
+        assertTrue(failed.adding)
+        assertFalse(failed.saving)
+        vm.ask(false)
+        assertNull(vm.ready().addFailed)
     }
 
     private fun progress(

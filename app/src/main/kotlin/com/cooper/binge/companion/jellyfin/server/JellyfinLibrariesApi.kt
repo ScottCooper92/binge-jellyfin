@@ -13,6 +13,8 @@ data class ServerLibrary(
     /** Jellyfin's `CollectionType`: `movies`, `tvshows`, `music` and so on; empty for mixed content. */
     val type: String,
     val folders: List<String>,
+    /** The library's `LibraryOptions`, whole: an option this app doesn't know is kept as it came. */
+    val options: JsonObject = JsonObject(emptyMap()),
 )
 
 /** What the libraries page's socket brings. */
@@ -39,6 +41,7 @@ suspend fun JellyfinClient.libraries(): List<ServerLibrary> {
             name = json.string("Name").orEmpty(),
             type = json.string("CollectionType").orEmpty(),
             folders = json.array("Locations").mapNotNull { (it as? JsonPrimitive)?.content },
+            options = json.obj("LibraryOptions") ?: JsonObject(emptyMap()),
         )
     }
 }
@@ -78,5 +81,5 @@ private fun JsonObject.libraryProgress(): LibraryPush.Progress? {
     return LibraryPush.Progress(id, percent.toInt().coerceIn(0, FULL))
 }
 
-private const val VIRTUAL_FOLDERS = "Library/VirtualFolders"
+internal const val VIRTUAL_FOLDERS = "Library/VirtualFolders"
 private const val FULL = 100

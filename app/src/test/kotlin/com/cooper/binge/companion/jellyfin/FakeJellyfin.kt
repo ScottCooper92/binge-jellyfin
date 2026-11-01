@@ -11,9 +11,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -96,6 +99,20 @@ class FakeJellyfin : Dispatcher() {
             },
         ).toString()
     }
+
+    /** `/Library/VirtualFolders`: the libraries as the server lists them, changed by the calls that add, rename and remove. */
+    var libraries: JsonArray = Json.parseToJsonElement(LIBRARIES).jsonArray
+
+    /** `/Libraries/AvailableOptions`: the providers the server offers a library. */
+    var availableOptions =
+        """{"MetadataSavers":[{"Name":"Nfo","DefaultEnabled":false}],"MetadataReaders":[{"Name":"Nfo","DefaultEnabled":true}],""" +
+            """"SubtitleFetchers":[{"Name":"Open Subtitles","DefaultEnabled":true},{"Name":"Podnapisi","DefaultEnabled":true}],""" +
+            """"LyricFetchers":[{"Name":"LrcLib","DefaultEnabled":true}],""" +
+            """"MediaSegmentProviders":[{"Name":"Chapter Segments","DefaultEnabled":true}],"TypeOptions":[]}"""
+
+    /** The folders `/Environment/DirectoryContents` lists, by parent: `""` holds the drives. */
+    var serverFolders: Map<String, List<String>> =
+        mapOf("" to listOf("/media"), "/media" to listOf("/media/movies", "/media/tv"), "/media/movies" to emptyList())
 
     /** The libraries `GroupedFolders` may name, as the grouping options list them. */
     var groupingOptions = """[{"Id":"lib-home","Name":"Home videos"}]"""
@@ -300,7 +317,9 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/Sessions" -> json(sessions)
-            path == "/Library/VirtualFolders" -> json(LIBRARIES)
+            path == "/Library/VirtualFolders" && request.method == "GET" -> json(libraries.toString())
+            path.startsWith("/Library/VirtualFolders") || path.startsWith("/Environment/") || path == "/Libraries/AvailableOptions" ->
+                libraryCall(path, request)
             path == "/ScheduledTasks" -> json(scheduledTasks)
             path == "/System/ActivityLog/Entries" -> activityPage(request)
             path == "/System/Logs" -> json("[${logFiles.joinToString(",")}]")
@@ -491,6 +510,101 @@ class FakeJellyfin : Dispatcher() {
         val id = "user-${serverUsers.size + 1}"
         serverUsers[id] = user(id, name, """{"IsAdministrator":false,"IsDisabled":false,"EnableAllFolders":true,"EnabledFolders":[]}""")
         return json(serverUsers.getValue(id).toString())
+    }
+
+    private fun libraryCall(
+        path: String,
+        request: RecordedRequest,
+    ): MockResponse {
+        val query = request.url
+        val name = query.queryParameter("name")
+        val body =
+            request.body
+                ?.utf8()
+                .orEmpty()
+                .takeIf { it.isNotBlank() }
+                ?.let { Json.parseToJsonElement(it).jsonObject }
+        return when {
+            path == "/Environment/Drives" -> folderList(serverFolders[""].orEmpty())
+            path == "/Environment/DirectoryContents" -> folderList(serverFolders[query.queryParameter("path")].orEmpty())
+            path == "/Environment/ValidatePath" ->
+                MockResponse(
+                    code =
+                        if (body?.get("Path")?.jsonPrimitive?.content in
+                            serverFolders.keys + serverFolders.values.flatten()
+                        ) {
+                            204
+                        } else {
+                            404
+                        },
+                )
+            path == "/Libraries/AvailableOptions" -> json(availableOptions)
+            path == "/Library/VirtualFolders" && request.method == "POST" -> {
+                val paths = query.queryParameter("paths")?.split(',').orEmpty()
+                val entry =
+                    buildJsonObject {
+                        put("Name", name.orEmpty())
+                        query.queryParameter("collectionType")?.let { put("CollectionType", it) }
+                        put("ItemId", "lib-${name.orEmpty().lowercase()}")
+                        put("Locations", JsonArray(paths.map(::JsonPrimitive)))
+                        put("LibraryOptions", body?.get("LibraryOptions") ?: JsonObject(emptyMap()))
+                    }
+                libraries = JsonArray(libraries + entry)
+                MockResponse(code = 204)
+            }
+            path == "/Library/VirtualFolders" -> {
+                libraries = JsonArray(libraries.filterNot { it.jsonObject["Name"]?.jsonPrimitive?.content == name })
+                MockResponse(code = 204)
+            }
+            path == "/Library/VirtualFolders/Name" ->
+                changeLibrary(name) {
+                    JsonObject(
+                        it + ("Name" to JsonPrimitive(query.queryParameter("newName"))) +
+                            ("ItemId" to JsonPrimitive("lib-${query.queryParameter("newName").orEmpty().lowercase()}")),
+                    )
+                }
+            path == "/Library/VirtualFolders/Paths" && request.method == "POST" ->
+                changeLibrary(body?.get("Name")?.jsonPrimitive?.content) {
+                    val added = body?.get("PathInfo")?.jsonObject?.get("Path") ?: return@changeLibrary it
+                    JsonObject(it + ("Locations" to JsonArray(it.getValue("Locations").jsonArray + added)))
+                }
+            path == "/Library/VirtualFolders/Paths" ->
+                changeLibrary(name) {
+                    val kept =
+                        it.getValue("Locations").jsonArray.filterNot { path ->
+                            path.jsonPrimitive.content ==
+                                query.queryParameter("path")
+                        }
+                    JsonObject(it + ("Locations" to JsonArray(kept)))
+                }
+            path == "/Library/VirtualFolders/LibraryOptions" ->
+                changeLibrary(
+                    libraries
+                        .firstOrNull {
+                            it.jsonObject["ItemId"]?.jsonPrimitive?.content ==
+                                body?.get("Id")?.jsonPrimitive?.content
+                        }?.jsonObject
+                        ?.get("Name")
+                        ?.jsonPrimitive
+                        ?.content,
+                ) {
+                    JsonObject(it + ("LibraryOptions" to body!!.getValue("LibraryOptions")))
+                }
+            else -> MockResponse(code = 404)
+        }
+    }
+
+    private fun folderList(paths: List<String>) =
+        json(paths.joinToString(",", "[", "]") { """{"Name":"${it.substringAfterLast('/')}","Path":"$it","Type":"Directory"}""" })
+
+    /** Applies [change] to the library called [name], and answers 204; 404 for one the server hasn't got. */
+    private fun changeLibrary(
+        name: String?,
+        change: (JsonObject) -> JsonObject,
+    ): MockResponse {
+        if (libraries.none { it.jsonObject["Name"]?.jsonPrimitive?.content == name }) return MockResponse(code = 404)
+        libraries = JsonArray(libraries.map { if (it.jsonObject["Name"]?.jsonPrimitive?.content == name) change(it.jsonObject) else it })
+        return MockResponse(code = 204)
     }
 
     private fun savePolicy(
