@@ -48,8 +48,8 @@ app:home_layout_body  5b830087e38e
 app:home_layout_collections  1667416a133a
 app:home_layout_collections_detail  b423e46e3340
 app:home_layout_display  34e108c0896d
-app:home_layout_grouped  c6663401d7f9
 app:home_layout_grouped_detail  3ce812054f0d
+app:home_layout_grouping  cf10ad355b83
 app:home_layout_hide_played  942707a23bbf
 app:home_layout_in_latest  02324dd4f421
 app:home_layout_in_my_media  b35c1eaa2df4

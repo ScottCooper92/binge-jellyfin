@@ -21,7 +21,7 @@ private val previewHome =
     HomeLayoutUiState.Ready(
         previewViews,
         HomeLayout(order = listOf("shows"), myMediaExcludes = setOf("home"), latestExcludes = setOf("music", "home")),
-        groupable = setOf("home"),
+        groupable = listOf(previewViews.last()),
     )
 
 /** The home screen page: the libraries and switches across the matrix, a library's page, then each other state. */

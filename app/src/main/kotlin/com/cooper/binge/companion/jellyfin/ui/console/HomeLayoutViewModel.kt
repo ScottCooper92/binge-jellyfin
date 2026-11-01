@@ -40,8 +40,8 @@ sealed interface HomeLayoutUiState {
     data class Ready(
         private val views: List<UserView>,
         val layout: HomeLayout,
-        /** The libraries that can be grouped into Movies, Shows and the like, by id. */
-        val groupable: Set<String> = emptySet(),
+        /** The libraries that can be grouped into Movies, Shows and the like, grouped or not: not `/UserViews`, which leaves a grouped one out. */
+        val groupable: List<UserView> = emptyList(),
         val saveFailed: ConsoleFailure? = null,
         /** The library whose own page is open, by id. */
         val openId: String? = null,
@@ -91,7 +91,7 @@ class HomeLayoutViewModel(
                     }.fold(
                         onSuccess = { (configuration, views, groupable) ->
                             saves.loaded(configuration)
-                            HomeLayoutUiState.Ready(views, configuration.homeLayout(), groupable.map { it.id }.toSet())
+                            HomeLayoutUiState.Ready(views, configuration.homeLayout(), groupable)
                         },
                         onFailure = { HomeLayoutUiState.Failed(it.consoleFailure()) },
                     )

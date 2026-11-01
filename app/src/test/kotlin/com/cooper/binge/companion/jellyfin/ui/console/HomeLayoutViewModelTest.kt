@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,7 @@ class HomeLayoutViewModelTest {
         val ready = HomeLayoutViewModel(connection, current).ready()
         assertEquals(listOf("lib-shows", "lib-movies", "lib-home"), ready.libraries.map { it.id })
         assertEquals(setOf("lib-home"), ready.layout.myMediaExcludes)
-        assertEquals(setOf("lib-home"), ready.groupable)
+        assertEquals(listOf("lib-home"), ready.groupable.map { it.id })
         assertTrue(ready.layout.hidePlayedInLatest)
         assertFalse(ready.layout.displayMissingEpisodes)
     }
@@ -137,6 +138,24 @@ class HomeLayoutViewModelTest {
     }
 
     @Test
+    fun `a grouped library leaves the views but stays in the grouping options, so it can be ungrouped`() {
+        val vm = HomeLayoutViewModel(connection, current)
+        vm.ready()
+        vm.setGrouped("lib-home", true)
+        saves(1)
+        vm.load()
+        val grouped = vm.ready()
+        assertEquals(listOf("lib-movies", "lib-shows"), grouped.libraries.map { it.id })
+        assertEquals(listOf("lib-home"), grouped.groupable.map { it.id })
+        assertEquals(setOf("lib-home"), grouped.layout.grouped)
+        vm.setGrouped("lib-home", false)
+        saves(2)
+        assertEquals(emptyList<String>(), ids("GroupedFolders"))
+        vm.load()
+        assertEquals(listOf("lib-movies", "lib-shows", "lib-home"), vm.ready().libraries.map { it.id })
+    }
+
+    @Test
     fun `a save that fails puts the change back and says so`() {
         val vm = HomeLayoutViewModel(connection, current)
         vm.ready()
@@ -162,7 +181,7 @@ class HomeLayoutViewModelTest {
         jellyfin.status["/UserViews/GroupingOptions"] = 500
         val ready = HomeLayoutViewModel(connection, current).ready()
         assertEquals(3, ready.libraries.size)
-        assertEquals(emptySet<String>(), ready.groupable)
+        assertEquals(emptyList<UserView>(), ready.groupable)
     }
 
     @Test
