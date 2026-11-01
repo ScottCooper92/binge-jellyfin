@@ -456,7 +456,7 @@ private fun LibraryGroup(
 }
 
 @Composable
-private fun errorText(error: SetupError): String =
+internal fun errorText(error: SetupError): String =
     stringResource(
         when (error) {
             SetupError.InvalidAddress -> R.string.error_invalid_address

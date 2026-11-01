@@ -20,11 +20,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
@@ -53,6 +55,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.TasksActions
 import com.cooper.binge.companion.jellyfin.ui.console.TasksScreen
 import com.cooper.binge.companion.jellyfin.ui.console.TasksViewModel
+import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
+import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -134,24 +138,32 @@ class MainActivity : ComponentActivity() {
                         page = it
                     },
                 )
-            JellyfinTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    if (openPage == null) {
-                        // The home leaves the composition while a page is open; this keeps its saved
-                        // state (the list's scroll position) for when it comes back.
-                        home.SaveableStateProvider(HOME_KEY) { JellyfinRoot(state, actions) }
-                    } else {
-                        val close = { page = null }
-                        ConsolePageScope(pageStores.storeFor(opened)) {
-                            when (openPage) {
-                                ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
-                                ConsolePage.Languages -> LanguagesRoute(graph, close)
-                                ConsolePage.Password -> PasswordRoute(graph, close)
-                                ConsolePage.NowPlaying ->
-                                    NowPlayingRoute(graph, (state as? UiState.SignedIn)?.isAdministrator == true, close)
-                                ConsolePage.Libraries -> LibrariesRoute(graph, close)
-                                ConsolePage.Tasks -> TasksRoute(graph, close)
-                                ConsolePage.Activity -> ActivityRoute(graph, close)
+            if (LocalConfiguration.current.isTelevision()) {
+                JellyfinTvTheme { TvJellyfinRoot(state, actions) }
+            } else {
+                JellyfinTheme {
+                    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                        if (openPage == null) {
+                            // The home leaves the composition while a page is open; this keeps its saved
+                            // state (the list's scroll position) for when it comes back.
+                            home.SaveableStateProvider(HOME_KEY) { JellyfinRoot(state, actions) }
+                        } else {
+                            val close = { page = null }
+                            ConsolePageScope(pageStores.storeFor(opened)) {
+                                when (openPage) {
+                                    ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
+                                    ConsolePage.Languages -> LanguagesRoute(graph, close)
+                                    ConsolePage.Password -> PasswordRoute(graph, close)
+                                    ConsolePage.NowPlaying ->
+                                        NowPlayingRoute(
+                                            graph,
+                                            (state as? UiState.SignedIn)?.isAdministrator == true,
+                                            close,
+                                        )
+                                    ConsolePage.Libraries -> LibrariesRoute(graph, close)
+                                    ConsolePage.Tasks -> TasksRoute(graph, close)
+                                    ConsolePage.Activity -> ActivityRoute(graph, close)
+                                }
                             }
                         }
                     }
