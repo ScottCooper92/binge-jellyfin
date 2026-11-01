@@ -130,7 +130,7 @@
     <string name="tasks_title">Tareas programadas</string>
     <string name="console_tasks_detail">Ejecuta o detén el mantenimiento del servidor</string>
     <string name="tasks_not_sent">No ha llegado al servidor. %1$s</string>
-    <string name="job_last_failed">La última ejecución falló %1$s</string>
+    <string name="job_last_failed">Falló la última ejecución: %1$s</string>
     <string name="activity_title">Actividad</string>
     <string name="console_activity_detail">Inicios de sesión, reproducciones y cambios en el servidor</string>
     <string name="activity_empty">Aún no ha pasado nada en este servidor.</string>
@@ -138,7 +138,7 @@
     <string name="devices_title">Dispositivos</string>
     <string name="console_devices_detail">Cámbiales el nombre o cierra su sesión</string>
     <string name="devices_body">Todos los dispositivos que han iniciado sesión en este servidor. Al quitar uno se cierra su sesión hasta que vuelva a iniciarla.</string>
-    <string name="devices_seen">visto %1$s</string>
+    <string name="devices_seen">última vez: %1$s</string>
     <string name="devices_unnamed">Dispositivo sin nombre</string>
     <string name="devices_this_one">Este dispositivo. Quítalo desde otro o cierra sesión aquí.</string>
     <string name="devices_remove">Quitar</string>
