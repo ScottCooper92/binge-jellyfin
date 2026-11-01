@@ -123,8 +123,12 @@ class LibrariesViewModel(
         }
     }
 
-    /** Opens the page of the library with [id], or the list for null. */
-    fun open(id: String?) = update { copy(opened = id) }
+    /** Opens the page of the library with [id], or the list for null. A blank id opens nothing. */
+    fun open(id: String?) {
+        // A library the server hasn't given an id yet has no page: nothing on it could be saved.
+        if (id?.isEmpty() == true) return
+        update { copy(opened = id) }
+    }
 
     /** Opens the new library sheet, or closes it. */
     fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null, folderMissing = false) }

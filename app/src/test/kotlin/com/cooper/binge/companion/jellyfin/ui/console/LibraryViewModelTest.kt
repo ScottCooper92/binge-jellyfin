@@ -248,6 +248,22 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun `a library opened with no id takes up the id the server has by now, and saves go to it`() {
+        val vm = made(LibraryViewModel(connection, movies.copy(id = "")))
+        val ready = vm.ready()
+        assertEquals("lib-movies", ready.library.id)
+        vm.set(LIBRARY_REALTIME, JsonPrimitive(true))
+        saves(1)
+        assertEquals(
+            "lib-movies",
+            jellyfin
+                .lastBody(OPTIONS)
+                .getValue("Id")
+                .jsonPrimitive.content,
+        )
+    }
+
+    @Test
     fun `renaming moves to the library's new id, and saves go to it`() {
         val vm = made(LibraryViewModel(connection, movies))
         vm.ready()

@@ -141,6 +141,9 @@ class LibraryViewModel(
                         }
                     }.fold(
                         onSuccess = {
+                            // The server may have given the library an id since the list was read.
+                            id = it.library.id
+                            name = it.library.name
                             saves.loaded(it.options)
                             it
                         },

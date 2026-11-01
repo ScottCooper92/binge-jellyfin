@@ -203,6 +203,14 @@ class LibrariesViewModelTest {
     }
 
     @Test
+    fun `a library with no id yet cannot be opened`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.open("")
+        assertNull(vm.ready().opened)
+    }
+
+    @Test
     fun `a library the server has not given an id yet still shows, and its name counts as taken`() {
         jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
         jellyfin.withholdIds = true
