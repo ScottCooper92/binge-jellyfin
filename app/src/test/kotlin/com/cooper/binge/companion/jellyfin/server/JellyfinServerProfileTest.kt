@@ -34,9 +34,12 @@ class JellyfinServerProfileTest {
         assertTrue(v109.hasTrickplay)
         assertTrue(v109.hasContentManagementPermissions)
         assertTrue(v109.hasUserViewsRoute)
+        assertTrue(v109.hasTrickplay)
+        assertFalse(v109.hasKeyFrameOnlyTrickplay)
         assertFalse(v109.hasMediaSegments)
         val v1010 = JellyfinServerProfile.from("10.10.7")
         assertTrue(v1010.hasMediaSegments)
+        assertTrue(v1010.hasKeyFrameOnlyTrickplay)
         assertFalse(v1010.hasBackups)
         val v1011 = JellyfinServerProfile.from("10.11.0")
         assertTrue(v1011.hasBackups)
@@ -50,5 +53,6 @@ class JellyfinServerProfileTest {
         assertNull(unknown.version)
         assertTrue(unknown.hasBackups)
         assertTrue(unknown.hasTrickplay)
+        assertTrue(unknown.hasKeyFrameOnlyTrickplay)
     }
 }
