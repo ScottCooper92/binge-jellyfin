@@ -62,6 +62,9 @@ data class JellyfinServerProfile(
     /** Media segments (intros, credits) and a library's segment providers. 10.10. */
     val hasMediaSegments: Boolean get() = atLeast(TEN, TEN)
 
+    /** The resolution of chapter images and the dummy chapter duration, in the server's configuration. 10.9. */
+    val hasChapterImageSettings: Boolean get() = atLeast(TEN, NINE)
+
     /** A library's lyric providers: which, and in what order, listed by the server. 10.10. */
     val hasLibraryLyricFetchers: Boolean get() = atLeast(TEN, TEN)
 

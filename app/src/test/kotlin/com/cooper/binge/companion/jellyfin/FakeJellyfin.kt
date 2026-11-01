@@ -303,6 +303,10 @@ class FakeJellyfin : Dispatcher() {
                 userConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
             }
+            path == "/Localization/Options" ->
+                json(
+                    """[{"Name":"English (United States)","Value":"en-US"},{"Name":"Español","Value":"es"}]""",
+                )
             path == "/Localization/Cultures" -> json(CULTURES)
             path == "/UserViews" || path.startsWith("/Users/") && path.endsWith("/Views") -> json("""{"Items":${ungroupedViews()}}""")
             path == "/UserViews/GroupingOptions" || path.startsWith("/Users/") && path.endsWith("/GroupingOptions") ->
