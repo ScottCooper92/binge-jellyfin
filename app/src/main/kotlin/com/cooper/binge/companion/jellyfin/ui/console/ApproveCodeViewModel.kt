@@ -1,18 +1,15 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.authorizeQuickConnect
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 /** How an approval went. */
 enum class ApproveResult { Approved, WrongCode, QuickConnectOff, Unreachable, Failed }
@@ -47,27 +44,9 @@ class ApproveCodeViewModel(
         _state.value = current.copy(approving = true, result = null)
         viewModelScope.launch {
             val result =
-                try {
-                    val client = connection.signedIn()?.second
-                    if (client == null) {
-                        ApproveResult.Unreachable
-                    } else {
-                        client.authorizeQuickConnect(current.code)
-                        ApproveResult.Approved
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: JellyfinHttpException) {
-                    Log.i(TAG, "Approval refused", e)
-                    when (e.code) {
-                        HTTP_NOT_FOUND -> ApproveResult.WrongCode
-                        HTTP_UNAUTHORIZED -> ApproveResult.QuickConnectOff
-                        else -> ApproveResult.Failed
-                    }
-                } catch (e: IOException) {
-                    Log.i(TAG, "Approval failed", e)
-                    ApproveResult.Unreachable
-                }
+                connection
+                    .consoleCall(TAG) { _, client -> client.authorizeQuickConnect(current.code) }
+                    .fold(onSuccess = { ApproveResult.Approved }, onFailure = { it.approveResult() })
             // An approved code is spent, so the field empties for the next one.
             _state.update {
                 it.copy(approving = false, result = result, code = if (result == ApproveResult.Approved) "" else it.code)
@@ -77,7 +56,20 @@ class ApproveCodeViewModel(
 
     private companion object {
         const val TAG = "JellyfinApprove"
-        const val HTTP_UNAUTHORIZED = 401
-        const val HTTP_NOT_FOUND = 404
     }
 }
+
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_NOT_FOUND = 404
+
+/**
+ * A 404 is a code the server isn't waiting on, and a 401 with the session still good is Quick
+ * Connect turned off. A 401 that is the token's was reported by [consoleCall], and the page closes.
+ */
+private fun Throwable.approveResult(): ApproveResult =
+    when {
+        this !is JellyfinHttpException -> ApproveResult.Unreachable
+        code == HTTP_NOT_FOUND -> ApproveResult.WrongCode
+        code == HTTP_UNAUTHORIZED -> ApproveResult.QuickConnectOff
+        else -> ApproveResult.Failed
+    }

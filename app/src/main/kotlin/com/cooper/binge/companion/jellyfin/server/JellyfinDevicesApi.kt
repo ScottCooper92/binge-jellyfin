@@ -10,13 +10,17 @@ import kotlinx.serialization.json.JsonPrimitive
 /** A device signed in to the server, as `/Devices` lists it. Admin only: every device call needs elevation. */
 data class ServerDevice(
     val id: String,
-    /** The admin's name for it, or the name the device gave. */
+    /** The name the device gave itself. */
     val name: String,
+    /** The admin's name for it, if they gave one. */
     val customName: String?,
     val app: String,
     val user: String,
     val lastSeenMillis: Long?,
-)
+) {
+    /** What to call it: the admin's name, else the one the device gave. */
+    val displayName: String get() = customName ?: name
+}
 
 /**
  * The devices, most recently seen first. The list leaves out the names an admin gave them (Jellyfin
@@ -48,7 +52,7 @@ suspend fun JellyfinClient.devices(): List<ServerDevice> {
 private suspend fun JellyfinClient.customName(id: String): String? =
     attempt { getObject("Devices/Info", mapOf("id" to id)) }.getOrNull()?.string("CustomName")?.takeIf { it.isNotBlank() }
 
-private fun ServerDevice.named(custom: String?): ServerDevice = if (custom == null) this else copy(name = custom, customName = custom)
+private fun ServerDevice.named(custom: String?): ServerDevice = if (custom == null) this else copy(customName = custom)
 
 /** Names [id] as [name] on the server; an empty name goes back to the one the device gave. */
 suspend fun JellyfinClient.renameDevice(

@@ -21,7 +21,7 @@
     <string name="quick_connect_cancel">Usar una contraseña</string>
 
     <string name="server_detail">%1$s · Jellyfin %2$s</string>
-    <string name="server_detail_cleartext">%1$s · Sin cifrar</string>
+    <string name="server_detail_cleartext">Sin cifrar · %1$s</string>
 
     <string name="settings_server">Servidor</string>
     <string name="settings_signed_in_as">Sesión iniciada</string>
@@ -42,6 +42,18 @@
     <string name="error_quick_connect_expired">El código ha caducado. Inténtalo de nuevo.</string>
     <string name="error_generic">Algo ha fallado. Inténtalo de nuevo.</string>
     <string name="error_signed_out">Inicia sesión en Jellyfin para ver tu biblioteca</string>
+    <string name="tv_sign_in_to">Iniciar sesión en %1$s</string>
+    <string name="tv_change_server">Cambiar de servidor</string>
+    <string name="tv_quick_connect_getting">Obteniendo un código…</string>
+    <string name="tv_try_again">Reintentar</string>
+    <string name="tv_use_password">Iniciar sesión con contraseña</string>
+    <string name="tv_signed_in_as">Sesión iniciada como %1$s</string>
+    <plurals name="tv_titles_count">
+        <item quantity="one">%1$d película o serie que Binge puede ver</item>
+        <item quantity="many">%1$d películas y series que Binge puede ver</item>
+        <item quantity="other">%1$d películas y series que Binge puede ver</item>
+    </plurals>
+
     <string name="settings_signed_in_admin">Sesión iniciada · Administrador</string>
     <string name="console_account_title">Tu cuenta</string>
     <string name="console_approve_detail">Para una tele o un navegador que muestre un código de Quick Connect</string>
@@ -51,6 +63,7 @@
     <string name="approve_action">Aprobar</string>
     <string name="approve_done">Aprobado. El otro dispositivo está iniciando sesión como tú.</string>
     <string name="approve_wrong">Ese código no está esperando aprobación. Revísalo o pide uno nuevo en el otro dispositivo.</string>
+    <string name="tv_loading">Cargando…</string>
     <string name="console_languages_detail">El audio y los subtítulos que Jellyfin elige por ti</string>
     <string name="console_retry">Reintentar</string>
     <string name="languages_title">Idiomas de reproducción</string>
@@ -105,6 +118,7 @@
     <string name="libraries_scan">Escanear</string>
     <string name="libraries_unnamed">Biblioteca sin nombre</string>
     <string name="libraries_not_started">El escaneo no ha empezado. %1$s</string>
+    <string name="libraries_not_stopped">El escaneo no se ha detenido. %1$s</string>
     <string name="job_run">Ejecutar</string>
     <string name="job_stop">Detener</string>
     <string name="job_running">En curso…</string>
@@ -116,7 +130,7 @@
     <string name="tasks_title">Tareas programadas</string>
     <string name="console_tasks_detail">Ejecuta o detén el mantenimiento del servidor</string>
     <string name="tasks_not_sent">No ha llegado al servidor. %1$s</string>
-    <string name="job_last_failed">La última ejecución falló %1$s</string>
+    <string name="job_last_failed">Falló la última ejecución: %1$s</string>
     <string name="activity_title">Actividad</string>
     <string name="console_activity_detail">Inicios de sesión, reproducciones y cambios en el servidor</string>
     <string name="activity_empty">Aún no ha pasado nada en este servidor.</string>
@@ -124,9 +138,9 @@
     <string name="devices_title">Dispositivos</string>
     <string name="console_devices_detail">Cámbiales el nombre o cierra su sesión</string>
     <string name="devices_body">Todos los dispositivos que han iniciado sesión en este servidor. Al quitar uno se cierra su sesión hasta que vuelva a iniciarla.</string>
-    <string name="devices_seen">visto %1$s</string>
+    <string name="devices_seen">última vez: %1$s</string>
     <string name="devices_unnamed">Dispositivo sin nombre</string>
-    <string name="devices_this_one">Este dispositivo. Quítalo desde otro o cierra sesión aquí.</string>
+    <string name="devices_this_one">Este dispositivo. Cierra sesión aquí.</string>
     <string name="devices_remove">Quitar</string>
     <string name="devices_remove_title">¿Quitar %1$s?</string>
     <string name="devices_remove_body">Se cierra su sesión y tendrá que volver a iniciarla para usar este servidor.</string>
@@ -148,7 +162,7 @@
     <string name="users_access">Acceso</string>
     <string name="users_can_sign_in">Puede iniciar sesión</string>
     <string name="users_administrator_detail">Administra el servidor, como tú</string>
-    <string name="users_mine">Eres tú. Otro administrador puede cambiarlo por ti.</string>
+    <string name="users_mine">Eres tú. Otro administrador puede cambiarlo.</string>
     <string name="users_libraries">Bibliotecas</string>
     <string name="users_all_libraries">Todas las bibliotecas</string>
     <string name="users_set_password">Poner una contraseña nueva</string>

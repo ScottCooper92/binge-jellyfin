@@ -68,7 +68,8 @@ class DevicesViewModelTest {
         vm.rename("  Living room ")
         val renamed = vm.ready { it.busy.isEmpty() && it.devices.first().customName != null }
         assertNull(renamed.renaming)
-        assertEquals("Living room", renamed.devices.first().name)
+        assertEquals("Living room", renamed.devices.first().displayName)
+        assertEquals("SHIELD", renamed.devices.first().name)
         val save = jellyfin.requests.last { it.url.encodedPath == "/Devices/Options" && it.method == "POST" }
         assertEquals("d-tv", save.url.queryParameter("id"))
         assertEquals("Living room", jellyfin.deviceNames["d-tv"])

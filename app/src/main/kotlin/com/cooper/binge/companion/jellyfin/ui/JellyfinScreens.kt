@@ -46,6 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import com.binge.designsystem.component.BingeConfirmDialog
+import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
@@ -79,6 +80,9 @@ data class Actions(
     val onChooseServer: (DiscoveredServer) -> Unit = {},
     val onOpenPage: (ConsolePage) -> Unit = {},
 )
+
+/** Lines a server row's marker and address may take: enough for the whole address at 2× font beside Change. */
+private const val ADDRESS_LINES = 5
 
 @Composable
 fun JellyfinRoot(
@@ -164,7 +168,9 @@ private fun DiscoveredServers(
                     ListItem(
                         icon = if (cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
                         label = server.name,
+                        // The marker leads, so a long address takes the ellipsis, never "Not encrypted".
                         detail = if (cleartext) stringResource(R.string.server_detail_cleartext, server.address) else server.address,
+                        supportingMaxLines = ADDRESS_LINES,
                         onClick = { actions.onChooseServer(server) },
                     )
                 },
@@ -200,6 +206,8 @@ private fun SignIn(
                             } else {
                                 state.baseUrl
                             },
+                        // Change sits beside it, so at large fonts the address wraps rather than shrinking to a few characters.
+                        supportingMaxLines = ADDRESS_LINES,
                         trailingContent = {
                             BingeTextButton(
                                 label = stringResource(R.string.setup_change),
@@ -230,8 +238,9 @@ private fun SignIn(
             label = { Text(stringResource(R.string.setup_password)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            isError = state.error != null,
-            supportingText = state.error?.let { { Text(errorText(it)) } },
+            // Only a wrong password is the field's fault; any other failure is said beside the button that failed.
+            isError = state.passwordError == SetupError.WrongCredentials,
+            supportingText = state.passwordError?.takeIf { it == SetupError.WrongCredentials }?.let { { Text(errorText(it)) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
             keyboardActions = KeyboardActions(onGo = { actions.onSignIn() }),
             modifier = Modifier.fillMaxWidth(),
@@ -243,13 +252,22 @@ private fun SignIn(
             enabled = state.username.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
+        state.passwordError?.takeUnless { it == SetupError.WrongCredentials }?.let { ErrorLine(it) }
         BingeOutlinedButton(
             label = stringResource(R.string.setup_quick_connect),
             onClick = actions.onQuickConnect,
             leadingIcon = Icons.Outlined.QrCode2,
+            loading = state.gettingCode,
             modifier = Modifier.fillMaxWidth(),
         )
+        state.quickConnectError?.let { ErrorLine(it) }
     }
+}
+
+/** A failure said under the action it belongs to, rather than on a field that isn't at fault. */
+@Composable
+private fun ErrorLine(error: SetupError) {
+    Text(errorText(error), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
 }
 
 @Composable
@@ -294,7 +312,7 @@ private fun SignedIn(
         if (state.isAdministrator) item { AdminGroup(actions) }
         item { LibraryGroup(state, actions) }
         item {
-            BingeOutlinedButton(
+            BingeTextButton(
                 label = stringResource(R.string.settings_sign_out),
                 onClick = actions.onAskSignOut,
                 leadingIcon = Icons.AutoMirrored.Outlined.Logout,
@@ -303,15 +321,25 @@ private fun SignedIn(
             )
         }
     }
-    if (state.confirmingSignOut) {
-        BingeConfirmDialog(
-            title = stringResource(R.string.sign_out_title),
-            message = stringResource(R.string.sign_out_body),
-            confirmLabel = stringResource(R.string.settings_sign_out),
-            onConfirm = actions.onSignOut,
-            onDismissRequest = actions.onCancelSignOut,
-            destructive = true,
-        )
+    if (state.confirmingSignOut) SignOutConfirm(actions)
+}
+
+/**
+ * The sign-out confirm. [inWindow] false draws its body alone, without the dialog window a screen
+ * frame can't capture, so a `@PreviewTest` can show it.
+ */
+@Composable
+internal fun SignOutConfirm(
+    actions: Actions,
+    inWindow: Boolean = true,
+) {
+    val title = stringResource(R.string.sign_out_title)
+    val message = stringResource(R.string.sign_out_body)
+    val confirm = stringResource(R.string.settings_sign_out)
+    if (inWindow) {
+        BingeConfirmDialog(title, message, confirm, actions.onSignOut, actions.onCancelSignOut, destructive = true)
+    } else {
+        BingeConfirmDialogContent(title, message, confirm, actions.onSignOut, actions.onCancelSignOut, destructive = true)
     }
 }
 
@@ -338,6 +366,7 @@ private fun ServerGroup(
                         } else {
                             stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
                         },
+                    supportingMaxLines = ADDRESS_LINES,
                     clickable = false,
                 ),
                 ListItem(
@@ -466,7 +495,7 @@ private fun LibraryGroup(
 }
 
 @Composable
-private fun errorText(error: SetupError): String =
+internal fun errorText(error: SetupError): String =
     stringResource(
         when (error) {
             SetupError.InvalidAddress -> R.string.error_invalid_address

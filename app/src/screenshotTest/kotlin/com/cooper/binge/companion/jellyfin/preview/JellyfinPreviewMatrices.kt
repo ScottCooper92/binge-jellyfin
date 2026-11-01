@@ -10,6 +10,8 @@ import com.binge.designsystem.preview.PHONE_PORTRAIT_SPEC
 import com.binge.designsystem.preview.SOURCE_LOCALE
 import com.binge.designsystem.preview.ScreenshotThemeWrapper
 import com.binge.designsystem.theme.BingeBrand
+import com.binge.designsystem.tv.preview.TV_PREVIEW_SPEC
+import com.binge.designsystem.tv.preview.TvScreenshotThemeOnBlackWrapper
 import com.cooper.binge.companion.jellyfin.theme.JellyfinBrand
 
 /*
@@ -48,3 +50,20 @@ annotation class JellyfinSpanishPreviews
 @PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
 @Preview(name = "phone", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class JellyfinScreenStatePreview
+
+/** The TV harness painting the window's black, for a screen root, wearing [JellyfinBrand]. */
+class JellyfinTvScreenshotThemeOnBlackWrapper : TvScreenshotThemeOnBlackWrapper() {
+    override val brand: BingeBrand = JellyfinBrand
+}
+
+/** A television screen root, with the window's black behind it. */
+@PreviewWrapper(JellyfinTvScreenshotThemeOnBlackWrapper::class)
+@Preview(name = "tv", device = TV_PREVIEW_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+annotation class JellyfinTvScreenPreviews
+
+/** A television screen root in Spanish, and at font scales 1.3 and 2.0. */
+@PreviewWrapper(JellyfinTvScreenshotThemeOnBlackWrapper::class)
+@Preview(name = "tv-es", device = TV_PREVIEW_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = "es")
+@Preview(name = "tv-font13", device = TV_PREVIEW_SPEC, fontScale = 1.3f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+@Preview(name = "tv-font20", device = TV_PREVIEW_SPEC, fontScale = 2f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+annotation class JellyfinTvStressPreviews

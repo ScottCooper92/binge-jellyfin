@@ -103,7 +103,12 @@ private fun Libraries(
         }
         item {
             Text(
-                text = state.actionFailed?.let { stringResource(R.string.libraries_not_started, stringResource(it.message)) }.orEmpty(),
+                text =
+                    state.actionFailed
+                        ?.let {
+                            val title = if (state.stopFailed) R.string.libraries_not_stopped else R.string.libraries_not_started
+                            stringResource(title, stringResource(it.message))
+                        }.orEmpty(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 minLines = STATUS_LINES,

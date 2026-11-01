@@ -33,7 +33,7 @@ app:devices_rename_field  dcd1d5223f73
 app:devices_rename_save  1509f561f241
 app:devices_rename_title  e378076e71db
 app:devices_seen  1c757d8ab679
-app:devices_this_one  d5ad92596c61
+app:devices_this_one  dea850b51430
 app:devices_title  4ba5121d4d1b
 app:devices_unnamed  6aba593f952e
 app:error_generic  4def98c89240
@@ -63,6 +63,7 @@ app:languages_title  28446c01863d
 app:libraries_body  ed038b40984d
 app:libraries_group  eaed033c1ad1
 app:libraries_not_started  b2bb600b9fb7
+app:libraries_not_stopped  ae4bb938a7ae
 app:libraries_scan  ea1c510d1ddb
 app:libraries_scan_all  17dd759abb08
 app:libraries_title  62ef6fd92ee1
@@ -92,7 +93,7 @@ app:quick_connect_cancel  cd40fe2dcba7
 app:quick_connect_title  d0dbbcf762fa
 app:server_cant_restart  1df046962fb5
 app:server_detail  48e857ba0ec9
-app:server_detail_cleartext  1ee584388d07
+app:server_detail_cleartext  c830dc79a39a
 app:server_not_back  71f9f340b581
 app:server_restart  51cd293a0b55
 app:server_restart_body  cc64dc04d2f5
@@ -148,6 +149,14 @@ app:transcode_container  415a9113ceb1
 app:transcode_other  2514fab855a6
 app:transcode_subtitles  86b18fdc4999
 app:transcode_video  9a60bedd0041
+app:tv_change_server  b7ee1dabf9b9
+app:tv_loading  ba3bbbe10d8b
+app:tv_quick_connect_getting  7b0a260d7428
+app:tv_sign_in_to  5657abe2920e
+app:tv_signed_in_as  f8e475bec2c5
+app:tv_titles_count  766d9492fbea
+app:tv_try_again  d8b8392e2c54
+app:tv_use_password  673a50377a1f
 app:users_access  ec5ba0abb717
 app:users_add  ac856d227536
 app:users_add_action  9fd728c66c9a
@@ -165,7 +174,7 @@ app:users_deleted  5d07e62be6cc
 app:users_disabled  23c4e011f801
 app:users_has_password  93075cbf10e6
 app:users_libraries  62ef6fd92ee1
-app:users_mine  294e5100d65c
+app:users_mine  b90772b40823
 app:users_never_seen  4824871c9d83
 app:users_no_password  6d52de3e4838
 app:users_not_changed  f770f37ad5b3
