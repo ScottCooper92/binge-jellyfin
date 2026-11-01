@@ -159,7 +159,20 @@ private fun TasksRoute(
 ) {
     val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
     val state by tasks.state.collectAsStateWithLifecycle()
-    TasksScreen(state, TasksActions(onRun = tasks::run, onStop = tasks::stop, onRetry = tasks::load, onBack = onBack))
+    TasksScreen(
+        state,
+        TasksActions(
+            onRun = tasks::run,
+            onStop = tasks::stop,
+            onOpen = tasks::open,
+            onCloseTask = { tasks.open(null) },
+            onAskAdd = tasks::askAdd,
+            onAddTrigger = tasks::addTrigger,
+            onRemoveTrigger = tasks::removeTrigger,
+            onRetry = tasks::load,
+            onBack = onBack,
+        ),
+    )
 }
 
 /** The activity page, read a page at a time. */

@@ -29,6 +29,8 @@ data class ServerTask(
     val stopping: Boolean,
     val percent: Int?,
     val lastRun: TaskRun?,
+    /** When the task runs by itself; empty for one that only runs when started. */
+    val triggers: List<TaskTrigger> = emptyList(),
 )
 
 /** The library scan task's key: "Scan Media Library", which `/Library/Refresh` also starts. */
@@ -71,6 +73,7 @@ private fun JsonObject.taskOrNull(): ServerTask? {
         stopping = state == "Cancelling",
         percent = runningPercent(),
         lastRun = obj("LastExecutionResult")?.taskRun(),
+        triggers = (this["Triggers"] as? JsonArray)?.toTriggers().orEmpty(),
     )
 }
 
