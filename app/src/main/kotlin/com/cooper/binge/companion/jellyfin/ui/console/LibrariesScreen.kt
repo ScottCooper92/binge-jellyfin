@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -72,7 +73,7 @@ fun LibrariesScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 LibrariesUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is LibrariesUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is LibrariesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LibrariesUiState.Ready -> {
                     if (state.libraries.isEmpty()) {
                         EmptyScreen(

@@ -102,7 +102,7 @@ fun TrickplayScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 TrickplayUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is TrickplayUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is TrickplayUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is TrickplayUiState.Ready -> {
                     TrickplayBody(state, actions, keyFrameOnlyAvailable, inner) { picker = it }
                     picker?.let { TrickplayPickerSheet(it, state.settings, actions) { picker = null } }

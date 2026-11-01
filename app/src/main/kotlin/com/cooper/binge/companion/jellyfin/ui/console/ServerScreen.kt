@@ -64,7 +64,7 @@ fun ServerScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 ServerUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is ServerUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is ServerUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ServerUiState.Ready -> Server(state, actions, inner)
             }
         }

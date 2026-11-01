@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Login
@@ -77,7 +78,7 @@ fun ActivityScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 ActivityUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is ActivityUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is ActivityUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ActivityUiState.Ready ->
                     BingePullToRefresh(
                         isRefreshing = state.refreshing,
