@@ -84,7 +84,7 @@ fun LibraryScreen(
     val ready = state as? LibraryUiState.Ready
     val page = ready?.page ?: LibraryPage.Main
     val back = if (page == LibraryPage.Main) actions.onBack else ({ actions.onPage(page.parent()) })
-    BackHandler(enabled = page != LibraryPage.Main, onBack = back)
+    BackHandler(onBack = back)
     BingeScreenScaffold(title = page.title(ready), bar = ScreenBar.Small, onBack = back) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
