@@ -219,6 +219,14 @@ class FakeJellyfin : Dispatcher() {
                     .orEmpty(),
             ).jsonObject
 
+    /** The raw body of the last request to [path] that wasn't a read. */
+    fun lastBodyText(path: String): String =
+        requests
+            .last { it.url.encodedPath == path && it.method != "GET" }
+            .body
+            ?.utf8()
+            .orEmpty()
+
     fun hits(path: String): Int = requests.count { it.url.encodedPath == path }
 
     override fun dispatch(request: RecordedRequest): MockResponse {
@@ -299,6 +307,8 @@ class FakeJellyfin : Dispatcher() {
             path == "/Sessions" -> json(sessions)
             path == "/Library/VirtualFolders" -> json(LIBRARIES)
             path == "/ScheduledTasks" -> json(scheduledTasks)
+            path.startsWith("/ScheduledTasks/") && path.endsWith("/Triggers") && request.method == "POST" ->
+                saveTriggers(path.split('/')[2], request)
             path == "/System/ActivityLog/Entries" -> activityPage(request)
             path == "/System/Logs" -> json("[${logFiles.joinToString(",")}]")
             path == "/System/Logs/Log" ->
@@ -506,6 +516,27 @@ class FakeJellyfin : Dispatcher() {
         return MockResponse(code = 204)
     }
 
+    /** `POST /ScheduledTasks/{id}/Triggers`: the body is the task's whole new trigger list. */
+    private fun saveTriggers(
+        id: String,
+        request: RecordedRequest,
+    ): MockResponse {
+        val triggers = Json.parseToJsonElement(request.body?.utf8().orEmpty()) as? JsonArray ?: return MockResponse(code = 400)
+        val tasks = Json.parseToJsonElement(scheduledTasks).jsonArray
+        if (tasks.none { it.jsonObject["Id"]?.jsonPrimitive?.content == id }) return MockResponse(code = 404)
+        scheduledTasks =
+            JsonArray(
+                tasks.map { task ->
+                    if (task.jsonObject["Id"]?.jsonPrimitive?.content == id) {
+                        JsonObject(task.jsonObject + ("Triggers" to triggers))
+                    } else {
+                        task
+                    }
+                },
+            ).toString()
+        return MockResponse(code = 204)
+    }
+
     private fun json(body: String): MockResponse =
         MockResponse
             .Builder()
@@ -529,8 +560,11 @@ class FakeJellyfin : Dispatcher() {
             """[
             {"Id":"t-scan","Key":"RefreshLibrary","Name":"Scan Media Library","Category":"Library","State":"Idle",
              "Description":"Scans your media library for new files.",
+             "Triggers":[{"Type":"DailyTrigger","TimeOfDayTicks":108000000000,"MaxRuntimeTicks":72000000000},
+                         {"Type":"IntervalTrigger","IntervalTicks":216000000000}],
              "LastExecutionResult":{"Status":"Completed","EndTimeUtc":"2026-10-31T18:00:00Z"}},
             {"Id":"t-clean","Key":"CleanCache","Name":"Clean Cache Directory","Category":"Maintenance","State":"Idle",
+             "Triggers":[{"Type":"StartupTrigger"},{"Type":"SystemEventTrigger","FutureField":7}],
              "LastExecutionResult":{"Status":"Failed","EndTimeUtc":"2026-10-30T03:00:00Z","ErrorMessage":"Disk full"}},
             {"Id":"t-guide","Key":"RefreshGuide","Name":"Refresh Guide","Category":"Live TV","State":"Idle","IsHidden":true}
             ]"""

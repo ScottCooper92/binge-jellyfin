@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DateRange
@@ -244,7 +246,11 @@ internal fun AddTriggerDialog(
         onDismissRequest = { actions.onAskAdd(false) },
         inWindow = inWindow,
         extraContent = {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
+            // The form can be taller than the dialog (a small screen, a large font), so it scrolls.
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+            ) {
                 KindChips(kind) { kindIndex = it.ordinal }
                 if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) TimeButton(minutes) { minutes = it }
                 if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }

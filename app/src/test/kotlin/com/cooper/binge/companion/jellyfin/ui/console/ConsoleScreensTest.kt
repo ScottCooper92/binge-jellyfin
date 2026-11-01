@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -36,8 +37,11 @@ import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
+import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
+import com.cooper.binge.companion.jellyfin.server.TICKS_PER_MINUTE
 import com.cooper.binge.companion.jellyfin.server.TaskRun
 import com.cooper.binge.companion.jellyfin.server.TaskStatus
+import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
@@ -437,6 +441,69 @@ class ConsoleScreensTest {
         compose.waitForIdle()
         assertEquals(1, closed)
         assertEquals(0, left)
+    }
+
+    @Test
+    fun `a task opens its triggers, each described, removed in place, and added from a form`() {
+        val opened = mutableListOf<String>()
+        val removed = mutableListOf<Int>()
+        val added = mutableListOf<TaskTrigger>()
+        var closed = 0
+        val triggers =
+            listOf(
+                TaskTrigger.daily(3 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR),
+                TaskTrigger.interval(6 * TICKS_PER_HOUR),
+                TaskTrigger.interval(45 * TICKS_PER_MINUTE),
+                TaskTrigger.startup(),
+                TaskTrigger.weekly("Monday", TICKS_PER_HOUR),
+                TaskTrigger("SystemEventTrigger"),
+            )
+        val scan =
+            ServerTask("t", LIBRARY_SCAN_TASK, "Scan Media Library", "Scans for new files.", "Library", false, false, null, null, triggers)
+        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(scan))))
+        val actions =
+            TasksActions(
+                onOpen = { opened += it.id },
+                onCloseTask = { closed++ },
+                onAskAdd = { state = state.copy(adding = it) },
+                onAddTrigger = { added += it },
+                onRemoveTrigger = { removed += it },
+            )
+        compose.setContent { JellyfinTheme { TasksScreen(state, actions) } }
+        compose.onNodeWithText("Scan Media Library").performClick()
+        assertEquals(listOf("t"), opened)
+        state = state.copy(open = "t")
+        compose.onNodeWithText("Scans for new files.").assertExists()
+        compose.onNodeWithText("Every day at", substring = true).assertExists()
+        compose.onNodeWithText("Stops after 2 hours").assertExists()
+        compose.onNodeWithText("Every 6 hours").assertExists()
+        compose.onNodeWithText("Every 45 minutes").assertExists()
+        compose.onNodeWithText("At startup").assertExists()
+        compose.onNodeWithText("Every Monday at", substring = true).assertExists()
+        compose.onNodeWithText("SystemEventTrigger").assertExists()
+        compose.onAllNodesWithContentDescription("Remove")[1].performClick()
+        assertEquals(listOf(1), removed)
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+        compose.onNodeWithText("Add trigger").performClick()
+        compose.onNodeWithText("New trigger").assertExists()
+        compose.onNodeWithText("Every so often").performClick()
+        compose.onAllNodesWithText("2 h")[1].performScrollTo().performClick()
+        compose.onAllNodesWithText("Add")[0].performClick()
+        assertEquals(listOf(TaskTrigger.interval(6 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR)), added)
+        compose
+            .onAllNodesWithText("At startup")
+            .onLast()
+            .performScrollTo()
+            .performClick()
+        compose.onAllNodesWithText("Add")[0].performClick()
+        // The time limit chosen a moment ago is still chosen: the form keeps what was picked.
+        assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
+        state = state.copy(saving = true, actionFailed = ConsoleFailure.Refused, adding = false)
+        compose.onAllNodesWithContentDescription("Remove").assertCountEquals(0)
+        state = TasksUiState.Ready(TaskBoard(emptyList()), open = "gone")
+        compose.onNodeWithText("Scan Media Library").assertDoesNotExist()
     }
 
     @Test
