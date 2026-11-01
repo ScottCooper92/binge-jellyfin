@@ -22,6 +22,7 @@ import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
+import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
@@ -361,6 +362,45 @@ class ConsoleScreensTest {
         assertEquals(2, more)
         state = ActivityUiState.Ready(emptyList(), total = 0)
         compose.onNodeWithText("Nothing has happened on this server yet.").assertExists()
+    }
+
+    @Test
+    fun `logs list the files, open one to read, search it and share it`() {
+        var opened: String? = null
+        var query = ""
+        var shared: Pair<String, String>? = null
+        var closed = 0
+        val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L), LogFile("log_20261030.log", 2048, null))
+        var state by mutableStateOf<LogsUiState>(LogsUiState.Ready(files))
+        compose.setContent {
+            JellyfinTheme {
+                LogsScreen(
+                    state,
+                    LogsActions(
+                        onOpen = { opened = it },
+                        onCloseLog = { closed++ },
+                        onQuery = { query = it },
+                        onShare = { name, text -> shared = name to text },
+                    ),
+                    zone = java.time.ZoneOffset.UTC,
+                )
+            }
+        }
+        compose.onNodeWithText("log_20261030.log").assertExists()
+        compose.onNodeWithText("log_20261031.log").performClick()
+        assertEquals("log_20261031.log", opened)
+        val lines = listOf("[10:00:00] [INF] Server started", "[10:06:00] [ERR] Boom")
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(lines, truncated = true)))
+        compose.onNodeWithText("[10:06:00] [ERR] Boom").assertExists()
+        compose.onNodeWithText("Showing the last 512 KB of this log.").assertExists()
+        compose.onNodeWithText("Share").performClick()
+        assertEquals("log_20261031.log" to lines.joinToString("\n"), shared)
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(lines, truncated = false), query = "zzz"))
+        compose.onNodeWithText("No lines match.").assertExists()
+        state = LogsUiState.Ready(emptyList())
+        compose.onNodeWithText("The server has no log files.").assertExists()
+        state = LogsUiState.Failed(ConsoleFailure.Unreachable)
+        compose.onNodeWithText("Try again").assertExists()
     }
 
     @Test

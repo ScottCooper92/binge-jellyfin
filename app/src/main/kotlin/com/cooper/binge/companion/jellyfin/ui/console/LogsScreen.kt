@@ -103,6 +103,7 @@ private fun Files(
         } else {
             item {
                 ItemGroup(
+                    title = null,
                     rows =
                         files.map { file ->
                             ListItem(
@@ -195,7 +196,14 @@ private fun Lines(
                     line,
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
-                    color = if (line.contains("[ERR]") || line.contains("[FTL]")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    color =
+                        if (line.contains("[ERR]") ||
+                            line.contains("[FTL]")
+                        ) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                     overflow = TextOverflow.Visible,
                 )
             }

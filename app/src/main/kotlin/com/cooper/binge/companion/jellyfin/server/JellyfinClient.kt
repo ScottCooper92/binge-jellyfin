@@ -154,7 +154,13 @@ class JellyfinClient(
         query: Map<String, String>,
         maxBytes: Int,
     ): TextTail {
-        val request = Request.Builder().url(url(path, query)).get().header("Authorization", authorization()).build()
+        val request =
+            Request
+                .Builder()
+                .url(url(path, query))
+                .get()
+                .header("Authorization", authorization())
+                .build()
         val call = http.newCall(request)
         return suspendCancellableCoroutine { cont ->
             cont.invokeOnCancellation { call.cancel() }

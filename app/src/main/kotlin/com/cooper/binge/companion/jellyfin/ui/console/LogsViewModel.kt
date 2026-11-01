@@ -127,8 +127,7 @@ class LogsViewModel(
             }
     }
 
-    private fun update(change: LogsUiState.Ready.() -> LogsUiState.Ready) =
-        _state.update { (it as? LogsUiState.Ready)?.change() ?: it }
+    private fun update(change: LogsUiState.Ready.() -> LogsUiState.Ready) = _state.update { (it as? LogsUiState.Ready)?.change() ?: it }
 
     private fun updateOpen(
         only: String? = null,
