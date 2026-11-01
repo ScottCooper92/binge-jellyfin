@@ -100,6 +100,14 @@ class FakeJellyfin : Dispatcher() {
     /** The libraries `GroupedFolders` may name, as the grouping options list them. */
     var groupingOptions = """[{"Id":"lib-home","Name":"Home videos"}]"""
 
+    /** The server's configuration, as `/System/Configuration` answers it and a save replaces it. */
+    var serverConfiguration =
+        """{"ServerName":"truenas","PreferredMetadataLanguage":"en","MetadataCountryCode":"US",""" +
+            """"QuickConnectAvailable":true,"EnableMetrics":false}"""
+
+    /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
+    var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""
+
     /** The user's password, as `/Users/Password` checks and changes it. */
     var password = "old-secret"
 
@@ -181,7 +189,7 @@ class FakeJellyfin : Dispatcher() {
         Json
             .parseToJsonElement(
                 requests
-                    .last { it.url.encodedPath == path }
+                    .last { it.url.encodedPath == path && it.method != "GET" }
                     .body
                     ?.utf8()
                     .orEmpty(),
@@ -214,6 +222,22 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 503)
             }
             path == "/System/Info" -> json(systemInfo)
+            path == "/System/Configuration" && request.method == "POST" -> {
+                serverConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration" -> json(serverConfiguration)
+            path == "/System/Configuration/branding" && request.method == "POST" -> {
+                brandingConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/branding" -> json(brandingConfiguration)
+            path == "/Localization/Countries" ->
+                json(
+                    """[{"Name":"GB","DisplayName":"United Kingdom","TwoLetterISORegionName":"GB"},""" +
+                        """{"Name":"US","DisplayName":"United States","TwoLetterISORegionName":"US"}]""",
+                )
+            path == "/System/Shutdown" -> MockResponse(code = 204)
             path == "/System/Restart" -> {
                 down = restartDownPolls
                 MockResponse(code = 204)

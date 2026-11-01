@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
+import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
@@ -27,6 +28,7 @@ import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
+import com.cooper.binge.companion.jellyfin.server.ServerSettings
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.server.Severity
@@ -170,6 +172,27 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Move down").assertIsNotEnabled()
         compose.onNodeWithText("Move up").performClick()
         assertEquals(listOf("open:b", "latest:b:true", "media:b:false", "move:b:-1"), calls)
+    }
+
+    @Test
+    fun `the server settings page hands its switches and dialogs on, and hides the splash screen before 10_9`() {
+        val calls = mutableListOf<String>()
+        val state = ServerSettingsUiState.Ready(ServerSettings("truenas", "en", "GB"), Branding())
+        val actions =
+            ServerSettingsActions(
+                onEdit = { calls += "edit:$it" },
+                onQuickConnect = { calls += "qc:$it" },
+                onSplashscreen = { calls += "splash:$it" },
+            )
+        var splash by mutableStateOf(true)
+        compose.setContent { JellyfinTheme { ServerSettingsScreen(state, actions, splashscreenAvailable = splash) } }
+        compose.onNodeWithText("Server name").performClick()
+        compose.onNodeWithText("Quick Connect").performScrollTo().performClick()
+        compose.onNodeWithText("Login disclaimer").performScrollTo().performClick()
+        compose.onNodeWithText("Splash screen").performScrollTo().performClick()
+        assertEquals(listOf("edit:Name", "qc:false", "edit:LoginDisclaimer", "splash:true"), calls)
+        splash = false
+        compose.onNodeWithText("Splash screen").assertDoesNotExist()
     }
 
     @Test

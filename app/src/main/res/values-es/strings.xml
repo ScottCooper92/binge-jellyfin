@@ -225,6 +225,37 @@
     <string name="server_not_back">El servidor no ha vuelto tras dos minutos. Compruébalo donde se ejecuta.</string>
     <string name="server_restart_failed">El servidor no ha aceptado el reinicio. Vuelve a intentarlo.</string>
     <string name="server_cant_restart">Este servidor no puede reiniciarse solo. Reinícialo donde se ejecuta.</string>
+    <string name="server_settings_title">Ajustes del servidor</string>
+    <string name="console_server_settings_detail">Nombre, metadatos, Quick Connect y marca</string>
+    <string name="server_settings_body">Se aplican a todos los que usan este servidor.</string>
+    <string name="server_settings_general">General</string>
+    <string name="server_settings_branding">Pantalla de inicio de sesión</string>
+    <string name="server_settings_not_set">Sin definir</string>
+    <string name="server_settings_none">Ninguno</string>
+    <string name="server_settings_name">Nombre del servidor</string>
+    <string name="server_settings_name_body">El nombre que las apps muestran para este servidor.</string>
+    <string name="server_settings_metadata_language">Idioma de los metadatos</string>
+    <string name="server_settings_metadata_country">País de los metadatos</string>
+    <string name="server_settings_quick_connect">Quick Connect</string>
+    <string name="server_settings_quick_connect_detail">Inicia sesión en otro dispositivo con un código</string>
+    <string name="server_settings_disclaimer">Aviso de inicio de sesión</string>
+    <string name="server_settings_disclaimer_body">Se muestra bajo el formulario de inicio de sesión del cliente web de Jellyfin. Déjalo vacío para no mostrar ninguno.</string>
+    <string name="server_settings_css">CSS personalizado</string>
+    <string name="server_settings_css_body">Cambia el estilo del cliente web de Jellyfin para todos. Déjalo vacío para usar el aspecto predeterminado.</string>
+    <string name="server_settings_splashscreen">Pantalla de bienvenida</string>
+    <string name="server_settings_splashscreen_detail">Se muestra mientras carga el cliente web</string>
+    <string name="server_settings_save">Guardar</string>
+    <string name="server_shutdown">Apagar servidor</string>
+    <string name="server_shutdown_title">¿Apagar %1$s?</string>
+    <string name="server_shutdown_body">Todos los que lo usan se desconectan, también esta app. Si no vuelve solo, alguien tendrá que iniciarlo donde se ejecuta.</string>
+    <string name="server_shutting_down">Apagando…</string>
+    <string name="server_shut_down">Apagado. Si no vuelve solo, inícialo donde se ejecuta.</string>
+    <string name="server_shutdown_failed">El servidor no ha aceptado el apagado. Vuelve a intentarlo.</string>
+    <plurals name="server_settings_css_lines">
+        <item quantity="one">%1$d línea</item>
+        <item quantity="many">%1$d líneas</item>
+        <item quantity="other">%1$d líneas</item>
+    </plurals>
     <string name="sign_out_body_plain">Tendrás que volver a iniciar sesión para gestionar tu servidor desde esta app.</string>
     <string name="languages_body_plain">Jellyfin los usa para elegir el audio y los subtítulos cuando reproduces algo.</string>
 </resources>

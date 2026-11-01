@@ -16,6 +16,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -71,6 +72,33 @@ class ServerViewModelTest {
         val back = vm.ready { it.restart == Restart.Restarted }
         assertFalse(back.info.restartPending)
         assertEquals(1, jellyfin.hits("/System/Restart"))
+    }
+
+    @Test
+    fun `a shutdown asks first, and is shut down once the server takes it`() {
+        val vm = viewModel()
+        vm.ready()
+        vm.confirmShutdown(true)
+        assertTrue(vm.ready().confirmingShutdown)
+        vm.shutdown()
+        val done = vm.ready { it.shutdown == Shutdown.ShutDown }
+        assertFalse(done.confirmingShutdown)
+        assertEquals(1, jellyfin.hits("/System/Shutdown"))
+        // Gone, so nothing more can be asked of it.
+        vm.confirm(true)
+        vm.confirmShutdown(true)
+        assertFalse(vm.ready().confirming || vm.ready().confirmingShutdown)
+    }
+
+    @Test
+    fun `a shutdown the server refuses says so, and can be tried again`() {
+        jellyfin.status["/System/Shutdown"] = 500
+        val vm = viewModel()
+        vm.ready()
+        vm.shutdown()
+        vm.ready { it.shutdown == Shutdown.Failed }
+        vm.confirmShutdown(true)
+        assertTrue(vm.ready().confirmingShutdown)
     }
 
     @Test

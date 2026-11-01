@@ -225,6 +225,36 @@
     <string name="server_not_back">The server hasn\'t come back after two minutes. Check it where it runs.</string>
     <string name="server_restart_failed">The server didn\'t take the restart. Try again.</string>
     <string name="server_cant_restart">This server can\'t restart itself. Restart it where it runs.</string>
+    <string name="server_settings_title">Server settings</string>
+    <string name="console_server_settings_detail">Name, metadata, Quick Connect and branding</string>
+    <string name="server_settings_body">These apply to everyone who uses this server.</string>
+    <string name="server_settings_general">General</string>
+    <string name="server_settings_branding">Login screen</string>
+    <string name="server_settings_not_set">Not set</string>
+    <string name="server_settings_none">None</string>
+    <string name="server_settings_name">Server name</string>
+    <string name="server_settings_name_body">The name apps show for this server.</string>
+    <string name="server_settings_metadata_language">Metadata language</string>
+    <string name="server_settings_metadata_country">Metadata country</string>
+    <string name="server_settings_quick_connect">Quick Connect</string>
+    <string name="server_settings_quick_connect_detail">Sign in on another device with a code</string>
+    <string name="server_settings_disclaimer">Login disclaimer</string>
+    <string name="server_settings_disclaimer_body">Shown under the sign-in form in Jellyfin\'s web client. Leave it empty for none.</string>
+    <string name="server_settings_css">Custom CSS</string>
+    <string name="server_settings_css_body">Restyles Jellyfin\'s web client for everyone. Leave it empty to use the default look.</string>
+    <string name="server_settings_splashscreen">Splash screen</string>
+    <string name="server_settings_splashscreen_detail">Shown while the web client loads</string>
+    <string name="server_settings_save">Save</string>
+    <string name="server_shutdown">Shut down server</string>
+    <string name="server_shutdown_title">Shut down %1$s?</string>
+    <string name="server_shutdown_body">Everyone using it is cut off, this app included. If it doesn\'t come back by itself, someone has to start it where it runs.</string>
+    <string name="server_shutting_down">Shutting down…</string>
+    <string name="server_shut_down">Shut down. If it doesn\'t come back by itself, start it where it runs.</string>
+    <string name="server_shutdown_failed">The server didn\'t take the shutdown. Try again.</string>
+    <plurals name="server_settings_css_lines">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
     <string name="sign_out_body_plain">You\'ll need to sign in again to manage your server from this app.</string>
     <string name="languages_body_plain">Jellyfin uses these to choose the audio and subtitles when you play something.</string>
 </resources>

@@ -62,6 +62,23 @@ class ServerScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun confirmingShutdown() = Surface { ShutdownDialog(previewInfo, ServerActions(), inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun shutDown() = ServerScreen(previewReady.copy(shutdown = Shutdown.ShutDown), ServerActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun shutdownFailed() = ServerScreen(previewReady.copy(shutdown = Shutdown.Failed), ServerActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun cantRestart() = ServerScreen(ServerUiState.Ready(previewInfo.copy(canRestart = false, operatingSystem = "")), ServerActions())
 

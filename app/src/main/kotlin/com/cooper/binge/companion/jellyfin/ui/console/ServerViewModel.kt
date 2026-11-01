@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.server.answers
 import com.cooper.binge.companion.jellyfin.server.restartServer
 import com.cooper.binge.companion.jellyfin.server.serverInfo
+import com.cooper.binge.companion.jellyfin.server.shutdownServer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,9 @@ import kotlinx.coroutines.launch
 /** Where a restart has got to. */
 enum class Restart { Restarting, Restarted, NotBack, Failed }
 
+/** Where a shutdown has got to. A server that's shut down stays down, so there's no coming back to wait for. */
+enum class Shutdown { ShuttingDown, ShutDown, Failed }
+
 sealed interface ServerUiState {
     data object Loading : ServerUiState
 
@@ -25,17 +29,25 @@ sealed interface ServerUiState {
         val failure: ConsoleFailure,
     ) : ServerUiState
 
-    /** The server's info; [confirming] while the restart confirm is open; [restart], where a restart has got to. */
+    /**
+     * The server's info; [confirming] while the restart confirm is open, [confirmingShutdown] while the
+     * shutdown's is; [restart] and [shutdown], where each has got to.
+     */
     data class Ready(
         val info: ServerInfo,
         val confirming: Boolean = false,
         val restart: Restart? = null,
-    ) : ServerUiState
+        val confirmingShutdown: Boolean = false,
+        val shutdown: Shutdown? = null,
+    ) : ServerUiState {
+        /** Whether the server is going or gone, so nothing more can be asked of it. */
+        val down: Boolean get() = shutdown == Shutdown.ShuttingDown || shutdown == Shutdown.ShutDown
+    }
 }
 
 /**
  * The server itself: its version and address, whether an update or a restart is waiting, and Restart,
- * behind a confirm. Admin only. A restart is reported as it goes: restarting while the server goes down
+ * and Shut down, each behind a confirm. Admin only. A restart is reported as it goes: restarting while the server goes down
  * and comes back, then restarted, with its info read again.
  */
 class ServerViewModel(
@@ -61,12 +73,14 @@ class ServerViewModel(
         }
     }
 
-    fun confirm(showing: Boolean) = update { copy(confirming = showing && info.canRestart) }
+    fun confirm(showing: Boolean) = update { copy(confirming = showing && info.canRestart && !down) }
+
+    fun confirmShutdown(showing: Boolean) = update { copy(confirmingShutdown = showing && !down) }
 
     fun restart() {
         val ready = _state.value as? ServerUiState.Ready ?: return
-        if (!ready.info.canRestart || ready.restart == Restart.Restarting) return
-        update { copy(confirming = false, restart = Restart.Restarting) }
+        if (!ready.info.canRestart || ready.restart == Restart.Restarting || ready.down) return
+        update { copy(confirming = false, restart = Restart.Restarting, shutdown = null) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
@@ -75,6 +89,21 @@ class ServerViewModel(
                 }.fold(
                     onSuccess = { back -> if (back) reloaded() else update { copy(restart = Restart.NotBack) } },
                     onFailure = { update { copy(restart = Restart.Failed) } },
+                )
+        }
+    }
+
+    /** Shuts the server down. It's reported shut down once it has taken the request: it won't answer again. */
+    fun shutdown() {
+        val ready = _state.value as? ServerUiState.Ready ?: return
+        if (ready.down || ready.restart == Restart.Restarting) return
+        update { copy(confirmingShutdown = false, shutdown = Shutdown.ShuttingDown, restart = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.shutdownServer() }
+                .fold(
+                    onSuccess = { update { copy(shutdown = Shutdown.ShutDown) } },
+                    onFailure = { update { copy(shutdown = Shutdown.Failed) } },
                 )
         }
     }

@@ -17,11 +17,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,6 +66,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.PlaybackScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ServerActions
 import com.cooper.binge.companion.jellyfin.ui.console.ServerScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsActions
+import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ServerViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.TasksActions
 import com.cooper.binge.companion.jellyfin.ui.console.TasksScreen
@@ -139,6 +144,7 @@ class MainActivity : ComponentActivity() {
             }
             val openPage = page.takeIf { signedIn }
             LaunchedEffect(openPage) { if (openPage == null) pageStores.close() }
+            RefreshGatesWhenHomeReturns(openPage) { viewModel.refresh(gatesOnly = true) }
             BackHandler(enabled = openPage != null) { page = null }
             val actions =
                 Actions(
@@ -212,6 +218,7 @@ class MainActivity : ComponentActivity() {
             ConsolePage.Activity -> ActivityRoute(graph, close)
             ConsolePage.Devices -> DevicesRoute(graph, close)
             ConsolePage.Users -> UsersRoute(graph, close)
+            ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
             ConsolePage.Server -> ServerRoute(graph, close)
         }
     }
@@ -393,6 +400,32 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    /** The server settings page, with the splash screen switch only on a server that has one. */
+    @Composable
+    private fun ServerSettingsRoute(
+        graph: AppGraph,
+        splashscreenAvailable: Boolean,
+        onBack: () -> Unit,
+    ) {
+        val settings: ServerSettingsViewModel =
+            viewModel(factory = viewModelFactory { initializer { ServerSettingsViewModel(graph.connection) } })
+        val state by settings.state.collectAsStateWithLifecycle()
+        ServerSettingsScreen(
+            state,
+            ServerSettingsActions(
+                onEdit = settings::edit,
+                onSaveText = settings::saveText,
+                onMetadataLanguage = settings::setMetadataLanguage,
+                onMetadataCountry = settings::setMetadataCountry,
+                onQuickConnect = settings::setQuickConnect,
+                onSplashscreen = settings::setSplashscreen,
+                onRetry = settings::load,
+                onBack = onBack,
+            ),
+            splashscreenAvailable = splashscreenAvailable,
+        )
+    }
+
     /** The server page. */
     @Composable
     private fun ServerRoute(
@@ -403,7 +436,14 @@ class MainActivity : ComponentActivity() {
         val state by server.state.collectAsStateWithLifecycle()
         ServerScreen(
             state,
-            ServerActions(onConfirm = server::confirm, onRestart = server::restart, onRetry = server::load, onBack = onBack),
+            ServerActions(
+                onConfirm = server::confirm,
+                onRestart = server::restart,
+                onConfirmShutdown = server::confirmShutdown,
+                onShutdown = server::shutdown,
+                onRetry = server::load,
+                onBack = onBack,
+            ),
         )
     }
 
@@ -436,5 +476,25 @@ class MainActivity : ComponentActivity() {
         /** Android 17, where reaching the local network became a permission of its own. */
         const val LOCAL_NETWORK_SDK = 37
         const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+    }
+}
+
+/**
+ * A page may have changed a gate (Quick Connect turned off), and so may the server's admin while the
+ * app was away: [refresh] reads them again whenever the home comes back, from a page or to the front.
+ */
+@Composable
+private fun RefreshGatesWhenHomeReturns(
+    openPage: ConsolePage?,
+    refresh: () -> Unit,
+) {
+    var pageWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(openPage) {
+        if (openPage == null && pageWasOpen) refresh()
+        pageWasOpen = openPage != null
+    }
+    LifecycleResumeEffect(Unit) {
+        refresh()
+        onPauseOrDispose {}
     }
 }

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsApplications
 import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -433,6 +434,12 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_users_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Users) },
                 ).takeIf { ConsolePage.Users.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.Tune,
+                    label = stringResource(R.string.server_settings_title),
+                    detail = stringResource(R.string.console_server_settings_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.ServerSettings) },
+                ).takeIf { ConsolePage.ServerSettings.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.SettingsApplications,
                     label = stringResource(R.string.server_title),

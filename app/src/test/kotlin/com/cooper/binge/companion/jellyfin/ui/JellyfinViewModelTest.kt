@@ -377,4 +377,16 @@ class JellyfinViewModelTest {
         assertFalse(state.profile.quickConnect)
         assertFalse(state.account.canEditPreferences)
     }
+
+    @Test
+    fun `a gates-only refresh picks up a change without reading the library again`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.account.isRead && !it.refreshing }
+        val libraryReads = jellyfin.hits("/Items")
+        jellyfin.quickConnectEnabled = false
+        vm.refresh(gatesOnly = true)
+        vm.await<UiState.SignedIn> { !it.profile.quickConnect }
+        assertEquals(libraryReads, jellyfin.hits("/Items"))
+    }
 }
