@@ -178,4 +178,20 @@
     <string name="users_password_set">Contraseña puesta.</string>
     <string name="users_deleted">Usuario eliminado.</string>
     <string name="users_not_changed">No se ha cambiado. %1$s</string>
+    <string name="server_title">Servidor</string>
+    <string name="console_server_detail">Versión, actualizaciones y reinicio</string>
+    <string name="server_unnamed">Jellyfin</string>
+    <string name="server_version">Jellyfin %1$s</string>
+    <string name="server_update">Hay una actualización. Instálala donde se ejecuta el servidor.</string>
+    <string name="server_system_unknown">Sistema no indicado</string>
+    <string name="server_restart_pending">Hay un reinicio pendiente</string>
+    <string name="server_restart_pending_detail">Algunos cambios se aplican tras el próximo reinicio</string>
+    <string name="server_restart">Reiniciar servidor</string>
+    <string name="server_restart_title">¿Reiniciar %1$s?</string>
+    <string name="server_restart_body">Todos los que lo usan se desconectan hasta que vuelva, normalmente en menos de un minuto.</string>
+    <string name="server_restarting">Reiniciando… Esta página sigue cuando el servidor vuelva.</string>
+    <string name="server_restarted">Reiniciado.</string>
+    <string name="server_not_back">El servidor no ha vuelto tras dos minutos. Compruébalo donde se ejecuta.</string>
+    <string name="server_restart_failed">El servidor no ha aceptado el reinicio. Vuelve a intentarlo.</string>
+    <string name="server_cant_restart">Este servidor no puede reiniciarse solo. Reinícialo donde se ejecuta.</string>
 </resources>
