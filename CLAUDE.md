@@ -136,17 +136,20 @@ The signed-in phone screen is the console's home: the server, the user and the l
 per thing the user can manage, then Sign out, last. On TV the app stays sign-in and settings, a subset
 as binge-seerr's TV is.
 
-- **What a user sees is what they may do.** The pages come from the signed-in user's own policy
-  (`/Users/Me`: `Policy.IsAdministrator`). A non-admin never sees an admin page, rather than seeing
-  one the server would refuse. Jellyfin's OpenAPI document marks each admin call `RequiresElevation`.
-- **For everyone:** approving a Quick Connect code another device shows, their playback languages,
-  their password, and their own active sessions.
+- **What a user sees is what they may do.** A page shows only when `ConsolePage.available(profile, account)`
+  says so: the server's version (`JellyfinServerProfile`), the user's policy (`JellyfinAccount`) and the
+  server's configuration (Quick Connect, for one). A user never sees a page the server would refuse.
+  `docs/server-compatibility.md` describes the three gates and how to add a feature behind them.
+- **For everyone:** approving a Quick Connect code another device shows, Playback (their languages and
+  playback switches), the Home screen, their password, and their own active sessions.
 - **For an admin:** every session, libraries and scans, scheduled tasks, activity, devices, users,
-  and the server itself.
-- **Settings save as made**, with no Save button. The exceptions are a form whose submit is the point
-  (a new password, a new user) and anything destructive: removing a device or a user, stopping a
-  stream, restarting the server. Those are last on their page, red, and behind a confirm that opens
-  on Cancel.
+  and the server itself (Server settings).
+- **Settings save as made**, with no Save button. Every settings page saves through `ConfigurationSaves`.
+  The exceptions are a form whose submit is the point (a new password, a new user) and anything
+  destructive: removing a device or a user, stopping a stream, restarting the server. Those are last on
+  their page, red, and behind a confirm that opens on Cancel.
+- **A settings PR is checked on a device first.** Against jellyfin-test, each field changed in the app and
+  read back from the server's API, before it merges.
 - **Never test an admin call against a real server.** Admin pages are exercised against the fake
   server in the unit tests, and on a device only against a disposable test server, never one whose
   users, devices or uptime matter.
