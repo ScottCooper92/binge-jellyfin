@@ -183,12 +183,12 @@ class JellyfinViewModel(
     /** Shows a code, then polls until the user approves it in a signed-in Jellyfin app, as Seerr's Plex PIN flow does. */
     fun startQuickConnect() {
         val current = _state.value as? UiState.SignIn ?: return
+        val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return
         quickConnect?.cancel()
         // The last failure goes as the new request starts, so a retry shows progress, not the old error.
         _state.value = current.copy(quickConnectCode = null, quickConnectError = null, gettingCode = true)
         quickConnect =
             viewModelScope.launch {
-                val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return@launch
                 try {
                     awaitQuickConnect(url, current.server)
                 } catch (e: CancellationException) {
