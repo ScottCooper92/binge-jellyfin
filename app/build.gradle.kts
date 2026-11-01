@@ -11,6 +11,18 @@ plugins {
     id("binge.gates.translation-staleness")
 }
 
+// Remote Config needs this app's own Firebase project, whose google-services.json is never committed:
+// a release writes it from a secret, as binge-seerr's does. Without it the plugin isn't applied, so a fork
+// or a local build still builds, and the flags keep their defaults (flags/FeatureFlags.kt).
+if (file("google-services.json").exists()) {
+    apply(
+        plugin =
+            libs.plugins.google.services
+                .get()
+                .pluginId,
+    )
+}
+
 android {
     namespace = "com.cooper.binge.companion.jellyfin"
     compileSdk = 37
@@ -176,6 +188,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
 
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.config)
+    implementation(libs.androidx.fragment)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -36,6 +36,11 @@ datastore = "1.2.1"
 # in-process transport the tests use has to be the same release.
 grpc = "1.85.1"
 
+firebaseBom = "34.19.0"
+# Firebase brings fragment 1.1.0, which lint refuses beside registerForActivityResult (needs 1.3+).
+fragment = "1.9.1"
+googleServices = "4.5.0"
+
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -69,6 +74,10 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
 
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-config = { module = "com.google.firebase:firebase-config" }
+androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
@@ -76,3 +85,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

@@ -22,3 +22,6 @@ keystore.properties
 
 # Heap dumps the daemon writes on OutOfMemoryError (gradle.properties asks for them)
 *.hprof
+
+# This app's Firebase config: written from a secret in a release, never committed.
+app/google-services.json

@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -68,6 +69,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.UsersScreen
 import com.cooper.binge.companion.jellyfin.ui.console.UsersViewModel
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
+import kotlinx.coroutines.launch
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
 class MainActivity : ComponentActivity() {
@@ -111,6 +113,8 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        // Fresh Remote Config values for the flags; until they land, the last ones activated are used.
+        lifecycleScope.launch { graph.flags.refresh() }
         setContent {
             val viewModel: JellyfinViewModel = viewModel(factory = factory)
             val state by viewModel.state.collectAsStateWithLifecycle()

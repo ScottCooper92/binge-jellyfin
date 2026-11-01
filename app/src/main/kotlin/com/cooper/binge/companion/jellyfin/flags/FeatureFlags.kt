@@ -4,10 +4,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/** A switch for the Binge-facing surfaces, as binge-seerr has. */
-enum class Flag {
+/** A switch for the Binge-facing surfaces, with the Remote Config key that carries it, as binge-seerr has. */
+enum class Flag(
+    val key: String,
+) {
     /** Anything that names Binge to the user: what it can see, what it stops doing, where it plays. */
-    BingePromotion,
+    BingePromotion("binge_promotion_enabled"),
 }
 
 /**
@@ -27,12 +29,12 @@ data class Flags(
     }
 }
 
-/**
- * The current [Flags]. binge-seerr feeds its flags from Remote Config; this app has no flag service
- * yet, so the build decides ([FixedFeatureFlags]), and a remote source can come in behind this interface.
- */
+/** The current [Flags]: Remote Config's values, with a build's local override on top ([RemoteFeatureFlags]). */
 interface FeatureFlags {
     val flags: StateFlow<Flags>
+
+    /** Fetches fresh remote values; the next value of [flags] carries them. A failed fetch keeps the last ones. */
+    suspend fun refresh() = Unit
 }
 
 /** Fixed flags, for a build, a test or a preview. It has no default of its own: the caller says which. */
