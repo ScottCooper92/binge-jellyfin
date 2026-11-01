@@ -6,7 +6,10 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.LibraryPush
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
+import com.cooper.binge.companion.jellyfin.server.addLibrary
+import com.cooper.binge.companion.jellyfin.server.folderExists
 import com.cooper.binge.companion.jellyfin.server.libraries
+import com.cooper.binge.companion.jellyfin.server.librariesWithId
 import com.cooper.binge.companion.jellyfin.server.libraryPushes
 import com.cooper.binge.companion.jellyfin.server.runTask
 import com.cooper.binge.companion.jellyfin.server.scanLibrary
@@ -37,7 +40,9 @@ sealed interface LibrariesUiState {
 
     /**
      * The libraries and their scans; the scheduled tasks, for the scan of everything; how each
-     * library's last scan just ended; and the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop.
+     * library's last scan just ended; the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop;
+     * the library whose page is open ([opened]); and the new library sheet, when [adding], with the add in flight
+     * ([saving]) or refused ([addFailed]), or its typed folder is one the server hasn't got ([folderMissing]).
      */
     data class Ready(
         val libraries: List<ServerLibrary>,
@@ -46,6 +51,11 @@ sealed interface LibrariesUiState {
         val outcomes: Map<String, JobOutcome> = emptyMap(),
         val actionFailed: ConsoleFailure? = null,
         val stopFailed: Boolean = false,
+        val opened: String? = null,
+        val adding: Boolean = false,
+        val saving: Boolean = false,
+        val addFailed: ConsoleFailure? = null,
+        val folderMissing: Boolean = false,
     ) : LibrariesUiState
 }
 
@@ -87,6 +97,7 @@ class LibrariesViewModel(
     }
 
     fun scan(library: ServerLibrary) {
+        if (library.id.isEmpty()) return
         update {
             copy(
                 scanning = scanning + (library.id to LibraryScan()),
@@ -108,6 +119,62 @@ class LibrariesViewModel(
                         )
                     }
                     clearLater(library.id)
+                }
+        }
+    }
+
+    /** Opens the page of the library with [id], or the list for null. A blank id opens nothing. */
+    fun open(id: String?) {
+        // A library the server hasn't given an id yet has no page: nothing on it could be saved.
+        if (id?.isEmpty() == true) return
+        update { copy(opened = id) }
+    }
+
+    /** Opens the new library sheet, or closes it. */
+    fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null, folderMissing = false) }
+
+    /** Reads the libraries again, quietly: the list stays as it is until the answer comes. */
+    fun refresh() {
+        viewModelScope.launch {
+            connection.awaitSaves()
+            connection
+                .consoleCall(TAG) { _, client -> client.libraries() }
+                .onSuccess { fresh -> update { copy(libraries = fresh, opened = opened?.takeIf { id -> fresh.any { it.id == id } }) } }
+        }
+    }
+
+    /** Makes a library named [name] of [kind] over the folder [path]. The sheet doesn't offer a name another library has. */
+    fun add(
+        name: String,
+        kind: String,
+        path: String,
+    ) {
+        val ready = _state.value as? LibrariesUiState.Ready ?: return
+        val trimmed = name.trim()
+        val folder = path.trim()
+        if (trimmed.isEmpty() || folder.isEmpty()) return
+        if (ready.libraries.any { it.name.equals(trimmed, ignoreCase = true) }) return
+        update { copy(saving = true, addFailed = null, folderMissing = false) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client ->
+                    // Checked first: a path with a comma is added after the library is made, and would leave it empty.
+                    if (client.folderExists(folder)) {
+                        client.addLibrary(trimmed, kind, folder)
+                        client.librariesWithId(trimmed)
+                    } else {
+                        null
+                    }
+                }.onSuccess { fresh ->
+                    if (fresh == null) {
+                        update { copy(saving = false, folderMissing = true) }
+                    } else {
+                        update { copy(libraries = fresh, saving = false, adding = false) }
+                    }
+                }.onFailure { error ->
+                    update { copy(saving = false, addFailed = error.consoleFailure()) }
+                    // A library the server made before it failed shows, and its name counts as taken.
+                    refresh()
                 }
         }
     }

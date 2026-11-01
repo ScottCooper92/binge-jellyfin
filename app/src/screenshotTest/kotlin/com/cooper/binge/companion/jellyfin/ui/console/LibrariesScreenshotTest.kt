@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -7,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
+import com.cooper.binge.companion.jellyfin.server.ServerFolder
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.TaskRun
@@ -101,4 +103,94 @@ class LibrariesScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = LibrariesScreen(LibrariesUiState.Failed(ConsoleFailure.Refused), LibrariesActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun empty() = LibrariesScreen(LibrariesUiState.Ready(emptyList(), TaskBoard(emptyList())), LibrariesActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun newLibraryName() =
+        Surface {
+            AddLibraryForm(listOf("Movies"), saving = false, failed = null, FolderBrowseState.Loading, FolderActions(), { _, _, _ -> }, {})
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun newLibraryNameTaken() =
+        Surface {
+            AddLibraryForm(listOf("Movies"), saving = false, failed = null, FolderBrowseState.Loading, FolderActions(), { _, _, _ -> }, {
+            }, startName = "movies")
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun newLibraryKind() =
+        Surface {
+            AddLibraryForm(
+                emptyList(),
+                saving = false,
+                failed = null,
+                FolderBrowseState.Loading,
+                FolderActions(),
+                { _, _, _ -> },
+                {},
+                startStep = 1,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun newLibraryFolder() =
+        Surface {
+            AddLibraryForm(
+                emptyList(),
+                saving = false,
+                failed = null,
+                FolderBrowseState.Ready(listOf(ServerFolder("media", "/media")), listOf(ServerFolder("movies", "/media/movies"))),
+                FolderActions(),
+                { _, _, _ -> },
+                {},
+                startStep = 2,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun newLibraryPath() =
+        Surface {
+            AddLibraryForm(emptyList(), saving = false, failed = ConsoleFailure.Refused, FolderBrowseState.Loading, FolderActions(), {
+                _,
+                _,
+                _,
+                ->
+            }, {
+            }, startStep = 3)
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun newLibraryPathMissing() =
+        Surface {
+            AddLibraryForm(
+                emptyList(),
+                saving = false,
+                failed = null,
+                FolderBrowseState.Loading,
+                FolderActions(),
+                { _, _, _ -> },
+                {},
+                startStep = 3,
+                folderMissing = true,
+            )
+        }
 }

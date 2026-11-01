@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.SettingsApplications
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -462,6 +463,12 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_trickplay_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Trickplay) },
                 ).takeIf { ConsolePage.Trickplay.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.ViewModule,
+                    label = stringResource(R.string.display_title),
+                    detail = stringResource(R.string.console_display_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.LibraryDisplay) },
+                ).takeIf { ConsolePage.LibraryDisplay.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Extension,
                     label = stringResource(R.string.plugins_title),

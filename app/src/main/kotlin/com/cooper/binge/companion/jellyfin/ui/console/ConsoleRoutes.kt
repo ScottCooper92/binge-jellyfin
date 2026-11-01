@@ -32,7 +32,7 @@ internal fun ConsolePageRoute(
                 signedIn.isAdministrator,
                 close,
             )
-        ConsolePage.Libraries -> LibrariesRoute(graph, close)
+        ConsolePage.Libraries -> LibrariesRoute(graph, signedIn.profile, close)
         ConsolePage.Tasks -> TasksRoute(graph, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
         ConsolePage.Logs -> LogsRoute(graph, close)
@@ -42,6 +42,7 @@ internal fun ConsolePageRoute(
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
         ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
+        ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
         ConsolePage.Server -> ServerRoute(graph, close)
     }
 }
@@ -126,26 +127,6 @@ private fun PasswordRoute(
             onNew = password::onNew,
             onConfirm = password::onConfirm,
             onChange = password::change,
-            onBack = onBack,
-        ),
-    )
-}
-
-/** The libraries page, whose event socket closes with the page. */
-@Composable
-private fun LibrariesRoute(
-    graph: AppGraph,
-    onBack: () -> Unit,
-) {
-    val libraries: LibrariesViewModel = viewModel(factory = viewModelFactory { initializer { LibrariesViewModel(graph.connection) } })
-    val state by libraries.state.collectAsStateWithLifecycle()
-    LibrariesScreen(
-        state,
-        LibrariesActions(
-            onScan = libraries::scan,
-            onScanEverything = libraries::scanEverything,
-            onStopEverything = libraries::stopEverything,
-            onRetry = libraries::load,
             onBack = onBack,
         ),
     )

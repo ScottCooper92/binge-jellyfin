@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
+import com.cooper.binge.companion.jellyfin.server.MIXED_LIBRARY
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -15,9 +16,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonArray
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -55,7 +61,7 @@ class LibrariesViewModelTest {
     private fun subscribed() = waitFor { jellyfin.socketMessages.any { "ScheduledTasksInfoStart" in it } }
 
     @Test
-    fun `reads the libraries and the scan task, leaving out an entry with no id`() {
+    fun `reads the libraries and the scan task`() {
         val ready = made(LibrariesViewModel(connection)).ready()
         assertEquals(
             listOf(
@@ -174,6 +180,147 @@ class LibrariesViewModelTest {
         jellyfin.status.remove("/Library/VirtualFolders")
         vm.load()
         assertEquals(2, vm.ready().libraries.size)
+    }
+
+    @Test
+    fun `a library opens and closes, and the list is read again quietly`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.open("lib-shows")
+        assertEquals("lib-shows", vm.ready().opened)
+        jellyfin.libraries =
+            Json
+                .parseToJsonElement(FakeJellyfin.LIBRARIES)
+                .jsonArray
+                .take(1)
+                .let(::JsonArray)
+        vm.refresh()
+        // The open library went with the refresh, and the list shows what the server has now.
+        val refreshed = vm.ready { it.libraries.size == 1 }
+        assertNull(refreshed.opened)
+        vm.open(null)
+        assertNull(vm.ready().opened)
+    }
+
+    @Test
+    fun `a library with no id yet cannot be opened`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.open("")
+        assertNull(vm.ready().opened)
+    }
+
+    @Test
+    fun `a library the server has not given an id yet still shows, and its name counts as taken`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
+        jellyfin.withholdIds = true
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        vm.add("Anime", "tvshows", "/media/anime")
+        val added = vm.ready { it.libraries.size == 3 && !it.adding }
+        assertEquals("", added.libraries.last().id)
+        val posts = jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" }
+        vm.add("anime", "tvshows", "/media/anime")
+        assertEquals(posts, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
+    }
+
+    @Test
+    fun `a typed path is trimmed before the server is asked`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        vm.add("Anime", "tvshows", " /media/anime ")
+        val added = vm.ready { it.libraries.size == 3 && !it.adding }
+        assertFalse(added.folderMissing)
+    }
+
+    @Test
+    fun `a new library is added, and shown with the others`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        assertTrue(vm.ready().adding)
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/anime"))
+        vm.add("  Anime ", "tvshows", "/media/anime")
+        val added = vm.ready { it.libraries.size == 3 }
+        assertFalse(added.adding)
+        assertFalse(added.saving)
+        assertEquals("Anime", added.libraries.last().name)
+        val request = jellyfin.requests.last { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" }
+        assertEquals("Anime", request.url.queryParameter("name"))
+        assertEquals("tvshows", request.url.queryParameter("collectionType"))
+        assertEquals("/media/anime", request.url.queryParameter("paths"))
+        assertEquals("true", request.url.queryParameter("refreshLibrary"))
+    }
+
+    @Test
+    fun `mixed content has no collection type, and a path with a comma is added after the library`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media/a,b"))
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/a,b"))
+        vm.add("Everything", MIXED_LIBRARY, "/media/a,b")
+        val added = vm.ready { it.libraries.size == 3 }
+        val request = jellyfin.requests.last { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" }
+        assertNull(request.url.queryParameter("collectionType"))
+        assertNull(request.url.queryParameter("paths"))
+        assertEquals(listOf("/media/a,b"), added.libraries.last().folders)
+    }
+
+    @Test
+    fun `a name another library has, or a blank name or path, adds nothing`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.add("movies", "movies", "/media/movies")
+        vm.add("   ", "movies", "/media/x")
+        vm.add("Other", "movies", "  ")
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
+    }
+
+    @Test
+    fun `a folder the server hasn't got makes no library, with or without a comma, and says so`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        vm.add("Anime", "tvshows", "/media/missing,folder")
+        assertTrue(vm.ready { it.folderMissing }.adding)
+        vm.add("Anime", "tvshows", "/media/missing")
+        assertTrue(vm.ready { it.folderMissing && !it.saving }.folderMissing)
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
+        assertEquals(2, jellyfin.libraries.size)
+        vm.ask(true)
+        assertFalse(vm.ready().folderMissing)
+    }
+
+    @Test
+    fun `an add the server refuses says so and keeps the sheet open`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media/anime"))
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/anime"))
+        jellyfin.status["/Library/VirtualFolders"] = 500
+        vm.add("Anime", "tvshows", "/media/anime")
+        // The status override answers the list too, so the failure is the add's own.
+        val failed = vm.ready { it.addFailed != null }
+        assertTrue(failed.adding)
+        assertFalse(failed.saving)
+        vm.ask(false)
+        assertNull(vm.ready().addFailed)
+    }
+
+    @Test
+    fun `an add that fails after the server made the library reads the libraries again`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/a,b"))
+        jellyfin.status["/Library/VirtualFolders/Paths"] = 500
+        vm.add("Everything", MIXED_LIBRARY, "/media/a,b")
+        val failed = vm.ready { it.addFailed != null && it.libraries.size == 3 }
+        assertTrue(failed.libraries.any { it.name == "Everything" })
     }
 
     private fun progress(
