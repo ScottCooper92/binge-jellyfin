@@ -19,7 +19,8 @@ class ApiKey(
 
     override fun toString(): String = "ApiKey(app=$app, key=…$lastFour)"
 
-    override fun equals(other: Any?): Boolean = other is ApiKey && other.key == key && other.app == app && other.createdMillis == createdMillis
+    override fun equals(other: Any?): Boolean =
+        other is ApiKey && other.key == key && other.app == app && other.createdMillis == createdMillis
 
     override fun hashCode(): Int = key.hashCode()
 

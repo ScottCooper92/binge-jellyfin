@@ -71,7 +71,13 @@ class ApiKeysViewModelTest {
         assertEquals("Radarr", made.created!!.app)
         assertEquals("newkey30000000000000", made.created!!.key)
         assertEquals(3, made.keys.size)
-        assertEquals("Radarr", jellyfin.requests.last { it.url.encodedPath == "/Auth/Keys" && it.method == "POST" }.url.queryParameter("app"))
+        assertEquals(
+            "Radarr",
+            jellyfin.requests
+                .last { it.url.encodedPath == "/Auth/Keys" && it.method == "POST" }
+                .url
+                .queryParameter("app"),
+        )
         vm.dismissCreated()
         val after = vm.ready { it.created == null }
         assertEquals(3, after.keys.size)
