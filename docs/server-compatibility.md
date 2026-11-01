@@ -51,6 +51,8 @@ older server shows less rather than failing on a call it can't answer.
 | Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |
 | Chapter image resolution and dummy chapter duration (server configuration) | 10.9 | `hasChapterImageSettings` |
+| Segment deletion, stereo downmix algorithm, audio VBR and VideoToolbox tone mapping (encoding options) | 10.9 | `hasAdvancedEncoding` |
+| The Quick Sync device, and the RFC 7845 and AC-4 downmix algorithms (encoding options) | 10.10 | `hasQsvDeviceAndDownmix` |
 | A library's lyric providers, and saving its trickplay images with the media | 10.10 | `hasLibraryLyricFetchers`, `hasLibraryTrickplayWithMedia` |
 | A library's media segment providers (the server lists them from 10.11, and 10.10 misspells the order option) | 10.11 | `hasLibrarySegmentProviders` |
 | Backups | 10.11 | `hasBackups` |

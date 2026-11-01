@@ -128,6 +128,19 @@ class FakeJellyfin : Dispatcher() {
             """"ProcessPriority":"BelowNormal","Interval":10000,"WidthResolutions":[320],"TileWidth":10,"TileHeight":10,""" +
             """"Qscale":4,"JpegQuality":90,"ProcessThreads":1}}"""
 
+    /** The encoding configuration, as `/System/Configuration/encoding` answers it and a save replaces it. */
+    var encodingConfiguration =
+        """{"HardwareAccelerationType":"qsv","VaapiDevice":"/dev/dri/renderD128","QsvDevice":"","EnableHardwareEncoding":true,""" +
+            """"AllowHevcEncoding":false,"EnableIntelLowPowerHevcHwEncoder":false,"EnableEnhancedNvdecDecoder":true,""" +
+            """"PreferSystemNativeHwDecoder":false,"HardwareDecodingCodecs":["h264","hevc"],"EnableTonemapping":true,""" +
+            """"TonemappingAlgorithm":"bt2390","TonemappingMode":"auto","TonemappingRange":"auto","TonemappingDesat":0,""" +
+            """"TonemappingPeak":100,"TonemappingParam":0,"EnableVppTonemapping":false,"VppTonemappingBrightness":16,""" +
+            """"VppTonemappingContrast":1,"EncoderPreset":"auto","EncodingThreadCount":-1,"DeinterlaceMethod":"yadif",""" +
+            """"DeinterlaceDoubleRate":false,"DownMixAudioBoost":2,"DownMixStereoAlgorithm":"None","EnableAudioVbr":false,""" +
+            """"EnableThrottling":false,"ThrottleDelaySeconds":180,"EnableSegmentDeletion":true,"SegmentKeepSeconds":720,""" +
+            """"EnableSubtitleExtraction":true,"EnableFallbackFont":false,"FallbackFontPath":"","TranscodingTempPath":"",""" +
+            """"FutureOption":{"keep":"me"}}"""
+
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
     var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""
 
@@ -312,6 +325,11 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Configuration" -> json(serverConfiguration)
+            path == "/System/Configuration/encoding" && request.method == "POST" -> {
+                encodingConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/encoding" -> json(encodingConfiguration)
             path == "/System/Configuration/branding" && request.method == "POST" -> {
                 brandingConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)

@@ -380,6 +380,102 @@
     <string name="api_keys_not_changed">Not changed. %1$s</string>
     <string name="trickplay_title">Trickplay</string>
     <string name="console_trickplay_detail">Seek thumbnails</string>
+    <string name="console_transcoding_detail">Hardware acceleration, resume and streaming</string>
+    <string name="transcoding_title">Playback and transcoding</string>
+    <string name="transcoding_body">How the server converts media for a device that can\'t play it as it is, and when playback resumes. Each change saves as you make it.</string>
+    <string name="transcoding_hardware">Hardware acceleration</string>
+    <string name="transcoding_acceleration">Acceleration type</string>
+    <string name="transcoding_acceleration_warning">The wrong type breaks every transcode.</string>
+    <string name="transcoding_type_none">None</string>
+    <string name="transcoding_vaapi_device">VAAPI device</string>
+    <string name="transcoding_qsv_device">Quick Sync device</string>
+    <string name="transcoding_not_set">Not set</string>
+    <string name="transcoding_decoding">Hardware decoding</string>
+    <string name="transcoding_encoding">Hardware encoding</string>
+    <string name="transcoding_hardware_encoding">Use hardware encoding</string>
+    <string name="transcoding_hevc">Allow HEVC encoding</string>
+    <string name="transcoding_hevc_detail">Encode to HEVC when the device can play it.</string>
+    <string name="transcoding_low_power">Low power HEVC encoder</string>
+    <string name="transcoding_low_power_detail">Use Intel\'s low power encoder where there is one.</string>
+    <string name="transcoding_nvdec">Enhanced NVDEC decoder</string>
+    <string name="transcoding_nvdec_detail">Use NVIDIA\'s enhanced decoder.</string>
+    <string name="transcoding_native">Prefer the system\'s decoder</string>
+    <string name="transcoding_native_detail">Use the operating system\'s decoder for Quick Sync.</string>
+    <string name="transcoding_tonemapping">Tone mapping</string>
+    <string name="transcoding_tonemapping_enable">Enable tone mapping</string>
+    <string name="transcoding_vpp">VPP tone mapping</string>
+    <string name="transcoding_vpp_detail">Use Intel\'s video processing engine for tone mapping.</string>
+    <string name="transcoding_toolbox">VideoToolbox tone mapping</string>
+    <string name="transcoding_algorithm">Algorithm</string>
+    <string name="transcoding_mode">Mode</string>
+    <string name="transcoding_range">Range</string>
+    <string name="transcoding_desaturation">Desaturation</string>
+    <string name="transcoding_peak">Peak brightness</string>
+    <string name="transcoding_tonemapping_param">Algorithm parameter</string>
+    <string name="transcoding_vpp_brightness">VPP brightness</string>
+    <string name="transcoding_vpp_contrast">VPP contrast</string>
+    <string name="transcoding_quality">Quality</string>
+    <string name="transcoding_preset">Encoder preset</string>
+    <string name="transcoding_threads">Encoding threads</string>
+    <string name="transcoding_auto">Auto</string>
+    <string name="transcoding_none">None</string>
+    <string name="transcoding_deinterlace">Deinterlace method</string>
+    <string name="transcoding_double_rate">Double the frame rate</string>
+    <string name="transcoding_double_rate_detail">Turn each field of an interlaced video into a frame.</string>
+    <string name="transcoding_audio">Audio</string>
+    <string name="transcoding_downmix_boost">Downmix volume boost</string>
+    <string name="transcoding_downmix">Stereo downmix algorithm</string>
+    <string name="transcoding_vbr">Variable bitrate audio</string>
+    <string name="transcoding_vbr_detail">Better quality for its size, on encoders that support it.</string>
+    <string name="transcoding_throttling">Throttling and segments</string>
+    <string name="transcoding_throttle">Throttle transcodes</string>
+    <string name="transcoding_throttle_detail">Pause a transcode that is far ahead of the player.</string>
+    <string name="transcoding_throttle_delay">Delay before throttling</string>
+    <string name="transcoding_segment_deletion">Delete played segments</string>
+    <string name="transcoding_segment_deletion_detail">Remove transcoded segments the player has finished with.</string>
+    <string name="transcoding_segment_keep">Keep played segments for</string>
+    <string name="transcoding_subtitles">Subtitles</string>
+    <string name="transcoding_extraction">Extract subtitles on demand</string>
+    <string name="transcoding_extraction_detail">Pull embedded subtitles out of a file when they are needed.</string>
+    <string name="transcoding_fallback_font">Use a fallback font</string>
+    <string name="transcoding_fallback_font_path">Fallback font folder</string>
+    <string name="transcoding_paths">Paths</string>
+    <string name="transcoding_temp_path">Transcoding temporary files</string>
+    <string name="transcoding_path_default">Server default</string>
+    <string name="transcoding_resume">Resume</string>
+    <string name="transcoding_min_resume">Least played before it resumes</string>
+    <string name="transcoding_max_resume">Most played before it counts as watched</string>
+    <string name="transcoding_min_duration">Shortest item that can resume</string>
+    <string name="transcoding_min_audiobook">Audiobook: least played before it resumes</string>
+    <string name="transcoding_max_audiobook">Audiobook: time left that counts as finished</string>
+    <string name="transcoding_streaming">Streaming</string>
+    <string name="transcoding_bitrate">Bitrate limit away from home</string>
+    <string name="transcoding_no_limit">No limit</string>
+    <string name="transcoding_unit_seconds">%1$s s</string>
+    <string name="transcoding_unit_percent">%1$s%%</string>
+    <string name="transcoding_unit_minutes">%1$s min</string>
+    <string name="transcoding_number_invalid">Use a number from %1$s to %2$s.</string>
+    <string name="transcoding_range_hint">Between %1$s and %2$s.</string>
+    <string name="transcoding_type_amf" translatable="false">AMD AMF</string>
+    <string name="transcoding_type_nvenc" translatable="false">Nvidia NVENC</string>
+    <string name="transcoding_type_qsv" translatable="false">Intel Quick Sync (QSV)</string>
+    <string name="transcoding_type_vaapi" translatable="false">Video Acceleration API (VAAPI)</string>
+    <string name="transcoding_type_rkmpp" translatable="false">Rockchip MPP (RKMPP)</string>
+    <string name="transcoding_type_videotoolbox" translatable="false">Apple VideoToolbox</string>
+    <string name="transcoding_type_v4l2" translatable="false">Video4Linux2 (V4L2)</string>
+    <string name="transcoding_codec_h264" translatable="false">H.264</string>
+    <string name="transcoding_codec_hevc" translatable="false">HEVC</string>
+    <string name="transcoding_codec_mpeg1" translatable="false">MPEG-1</string>
+    <string name="transcoding_codec_mpeg2" translatable="false">MPEG-2</string>
+    <string name="transcoding_codec_mpeg4" translatable="false">MPEG-4</string>
+    <string name="transcoding_codec_vc1" translatable="false">VC-1</string>
+    <string name="transcoding_codec_vp8" translatable="false">VP8</string>
+    <string name="transcoding_codec_vp9" translatable="false">VP9</string>
+    <string name="transcoding_codec_av1" translatable="false">AV1</string>
+    <string name="transcoding_device_hint" translatable="false">/dev/dri/renderD128</string>
+    <string name="transcoding_font_hint" translatable="false">/usr/share/fonts</string>
+    <string name="transcoding_temp_hint" translatable="false">/config/transcodes</string>
+    <string name="transcoding_unit_mbps" translatable="false">%1$s Mbps</string>
     <string name="console_display_detail">Sorting, collections, metadata and paths</string>
     <string name="display_title">Library display and metadata</string>
     <string name="display_body">Defaults for every library on this server. Each change saves as you make it.</string>
