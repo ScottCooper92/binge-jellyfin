@@ -3,9 +3,12 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import android.app.TimePickerDialog
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -39,6 +42,8 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.WrappingRow
+import com.binge.designsystem.template.EmptyScreen
+import com.binge.designsystem.template.ScreenAction
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
@@ -79,6 +84,21 @@ internal fun TaskTriggers(
     inner: PaddingValues,
 ) {
     val timeLabel = rememberTimeLabel()
+    if (task.triggers.isEmpty()) {
+        // Nothing yet: one screen that says so, with the one thing to do about it. A failed change says so here instead.
+        Box(Modifier.fillMaxSize().padding(inner)) {
+            EmptyScreen(
+                message =
+                    state.actionFailed?.let { stringResource(R.string.tasks_trigger_not_saved, stringResource(it.message)) }
+                        ?: stringResource(R.string.tasks_triggers_empty),
+                title = stringResource(R.string.tasks_triggers_empty_title),
+                icon = Icons.Outlined.Schedule,
+                action = ScreenAction(stringResource(R.string.tasks_trigger_add), { actions.onAskAdd(true) }, Icons.Outlined.Add),
+            )
+        }
+        if (state.adding) AddTriggerDialog(actions)
+        return
+    }
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         if (task.description.isNotBlank()) item { Text(task.description, style = MaterialTheme.typography.bodyMedium) }
         item {
@@ -91,14 +111,10 @@ internal fun TaskTriggers(
             )
         }
         item {
-            if (task.triggers.isEmpty()) {
-                Text(stringResource(R.string.tasks_triggers_empty), style = MaterialTheme.typography.bodyLarge)
-            } else {
-                ItemGroup(
-                    title = stringResource(R.string.tasks_triggers),
-                    rows = task.triggers.mapIndexed { index, trigger -> trigger.row(index, state.saving, actions, timeLabel) },
-                )
-            }
+            ItemGroup(
+                title = stringResource(R.string.tasks_triggers),
+                rows = task.triggers.mapIndexed { index, trigger -> trigger.row(index, state.saving, actions, timeLabel) },
+            )
         }
         item {
             Text(

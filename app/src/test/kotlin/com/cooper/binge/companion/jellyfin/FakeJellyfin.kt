@@ -103,7 +103,10 @@ class FakeJellyfin : Dispatcher() {
     /** The server's configuration, as `/System/Configuration` answers it and a save replaces it. */
     var serverConfiguration =
         """{"ServerName":"truenas","PreferredMetadataLanguage":"en","MetadataCountryCode":"US",""" +
-            """"QuickConnectAvailable":true,"EnableMetrics":false}"""
+            """"QuickConnectAvailable":true,"EnableMetrics":false,"TrickplayOptions":{"EnableHwAcceleration":false,""" +
+            """"EnableHwEncoding":false,"EnableKeyFrameOnlyExtraction":false,"ScanBehavior":"NonBlocking",""" +
+            """"ProcessPriority":"BelowNormal","Interval":10000,"WidthResolutions":[320],"TileWidth":10,"TileHeight":10,""" +
+            """"Qscale":4,"JpegQuality":90,"ProcessThreads":1}}"""
 
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
     var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""

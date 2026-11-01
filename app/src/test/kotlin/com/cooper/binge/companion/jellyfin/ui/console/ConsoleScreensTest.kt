@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.Branding
@@ -42,6 +44,7 @@ import com.cooper.binge.companion.jellyfin.server.TICKS_PER_MINUTE
 import com.cooper.binge.companion.jellyfin.server.TaskRun
 import com.cooper.binge.companion.jellyfin.server.TaskStatus
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
+import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
 import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
@@ -504,6 +507,14 @@ class ConsoleScreensTest {
         compose.onAllNodesWithContentDescription("Remove").assertCountEquals(0)
         state = TasksUiState.Ready(TaskBoard(emptyList()), open = "gone")
         compose.onNodeWithText("Scan Media Library").assertDoesNotExist()
+        // A task with none says so, with Add trigger as its one action; a failed change says so in its place.
+        state = TasksUiState.Ready(TaskBoard(listOf(scan.copy(triggers = emptyList()))), open = "t")
+        compose.onNodeWithText("No triggers").assertExists()
+        compose.onNodeWithText("This task only runs when you start it.").assertExists()
+        state = state.copy(actionFailed = ConsoleFailure.Refused)
+        compose.onNodeWithText("This task only runs when you start it.").assertDoesNotExist()
+        compose.onNodeWithText("Add trigger").performClick()
+        assertTrue(state.adding)
     }
 
     @Test
@@ -597,6 +608,61 @@ class ConsoleScreensTest {
         assertTrue(revoked)
         state = ApiKeysUiState.Ready(emptyList())
         compose.onNodeWithText("This server has no API keys.").assertExists()
+    }
+
+    @Test
+    fun `trickplay switches, pickers and numbers reach their actions, and a number out of range is refused in place`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(TrickplayUiState.Ready(TrickplaySettings()))
+        val actions =
+            TrickplayActions(
+                onEdit = { state = state.copy(editing = it) },
+                onSave = { field, text -> calls += "save ${field.name} $text" },
+                onHwAcceleration = { calls += "hwAcceleration $it" },
+                onKeyFrameOnly = { calls += "keyFrameOnly $it" },
+                onScanBehavior = { calls += "scan $it" },
+                onProcessPriority = { calls += "priority $it" },
+                onInterval = { calls += "interval $it" },
+            )
+        var keyFrames by mutableStateOf(true)
+        compose.setContent { JellyfinTheme { TrickplayScreen(state, actions, keyFrameOnlyAvailable = keyFrames) } }
+        compose.onNodeWithText("Hardware decoding").performClick()
+        compose.onNodeWithText("Key frames only").performClick()
+        keyFrames = false
+        compose.onNodeWithText("Key frames only").assertDoesNotExist()
+        compose.onNodeWithText("Every 10 s").performScrollTo().performClick()
+        compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Custom…"))
+        compose.onNodeWithText("Custom…").assertExists()
+        compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Every 5 s"))
+        compose.onNodeWithText("Every 5 s").performClick()
+        compose.onNodeWithText("Don\'t wait for the images").performScrollTo().performClick()
+        compose.onNodeWithText("Wait for the images").performClick()
+        compose.onNodeWithText("Below normal").performClick()
+        compose.onNodeWithText("Idle").performClick()
+        assertEquals(
+            listOf("hwAcceleration true", "keyFrameOnly true", "interval 5000", "scan Blocking", "priority Idle"),
+            calls,
+        )
+        calls.clear()
+        state = state.copy(editing = TrickplayField.JpegQuality)
+        compose.onNode(hasSetTextAction()).performTextReplacement("500")
+        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithText("Enter a whole number from 1 to 100.").assertExists()
+        assertEquals(emptyList<String>(), calls)
+        compose.onNode(hasSetTextAction()).performTextReplacement("70")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("save JpegQuality 70"), calls)
+        state = state.copy(editing = TrickplayField.Widths)
+        compose.onNode(hasSetTextAction()).performTextReplacement("wide")
+        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithText("Enter widths from 1 to 7680, separated by commas.").assertExists()
+        state = TrickplayUiState.Ready(TrickplaySettings(threads = 0, widths = listOf(320, 640), intervalMillis = 2500))
+        compose.onNodeWithText("Automatic").assertExists()
+        compose.onNodeWithText("320 px, 640 px").assertExists()
+        compose.onNodeWithText("Every 2500 ms").assertExists()
+        state = TrickplayUiState.Ready(TrickplaySettings(tileWidth = 1, tileHeight = 10))
+        compose.onNodeWithText("1 image").assertExists()
+        compose.onNodeWithText("10 images").assertExists()
     }
 
     @Test
