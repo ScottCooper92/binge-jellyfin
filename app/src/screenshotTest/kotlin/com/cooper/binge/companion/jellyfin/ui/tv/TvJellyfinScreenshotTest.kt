@@ -94,12 +94,13 @@ class TvJellyfinScreenshotTest {
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
-    fun signedInChecking() = TvJellyfinRoot(previewSignedInChecking, Actions())
+    fun signedInChecking() =
+        CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInChecking, Actions()) }
 
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
-    fun signedInFailed() = TvJellyfinRoot(previewSignedInFailed, Actions())
+    fun signedInFailed() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInFailed, Actions()) }
 
     /** With the Binge flag on: the library check, with what Binge can see, leads the page. */
     @PreviewTest

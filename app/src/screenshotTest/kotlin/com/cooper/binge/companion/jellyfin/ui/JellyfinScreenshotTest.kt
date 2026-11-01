@@ -118,12 +118,12 @@ class JellyfinScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun signedInChecking() = JellyfinRoot(previewSignedInChecking, Actions())
+    fun signedInChecking() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInChecking, Actions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun signedInFailed() = JellyfinRoot(previewSignedInFailed, Actions())
+    fun signedInFailed() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInFailed, Actions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
