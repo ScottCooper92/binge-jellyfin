@@ -45,7 +45,12 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.ENABLED_FOLDERS
+import com.cooper.binge.companion.jellyfin.server.ENABLE_ALL_FOLDERS
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.ServerUser
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import com.binge.designsystem.R as DesR
 
 /** What the users page can ask of its view model, and of the console. */
@@ -54,8 +59,10 @@ data class UsersActions(
     val onShow: (UserDialog?) -> Unit = {},
     val onAdministrator: (Boolean) -> Unit = {},
     val onCanSignIn: (Boolean) -> Unit = {},
-    val onAllLibraries: (Boolean) -> Unit = {},
-    val onLibrary: (String, Boolean) -> Unit = { _, _ -> },
+    val onPolicy: (key: String, value: JsonElement) -> Unit = { _, _ -> },
+    val onList: (key: String, change: (List<JsonElement>) -> List<JsonElement>) -> Unit = { _, _ -> },
+    val onSection: (UserSection?) -> Unit = {},
+    val onChoicesRetry: (UserSection) -> Unit = {},
     val onCreate: (String, String) -> Unit = { _, _ -> },
     val onSetPassword: (String) -> Unit = {},
     val onDelete: () -> Unit = {},
@@ -76,20 +83,36 @@ fun UsersScreen(
     state: UsersUiState,
     actions: UsersActions,
     now: Long = System.currentTimeMillis(),
+    choices: UserChoices = UserChoices(),
+    profile: JellyfinServerProfile = JellyfinServerProfile.from(null),
 ) {
     val user = (state as? UsersUiState.Ready)?.openUser
-    BackHandler(enabled = user != null) { actions.onOpen(null) }
+    val section = (state as? UsersUiState.Ready)?.section.takeIf { user != null }
+    val back =
+        if (section != null) {
+            ({ actions.onSection(null) })
+        } else if (user != null) {
+            ({ actions.onOpen(null) })
+        } else {
+            actions.onBack
+        }
+    BackHandler(enabled = user != null, onBack = back)
     BingeScreenScaffold(
-        title = user?.name ?: stringResource(R.string.users_title),
+        title = section?.let { stringResource(it.title()) } ?: user?.name ?: stringResource(R.string.users_title),
         bar = ScreenBar.Small,
-        onBack = if (user != null) ({ actions.onOpen(null) }) else actions.onBack,
+        onBack = back,
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
                 UsersUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
                 is UsersUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is UsersUiState.Ready -> if (user == null) UserList(state, actions, inner, now) else UserPage(state, user, actions, inner)
+                is UsersUiState.Ready ->
+                    when {
+                        user == null -> UserList(state, actions, inner, now)
+                        section == null -> UserPage(state, user, actions, inner)
+                        else -> PolicySection(section, state, user, choices, profile, actions, inner)
+                    }
             }
         }
     }
@@ -189,6 +212,7 @@ private fun UserPage(
             )
         }
         item { LibraryAccess(state, user, actions) }
+        item { ItemGroup(title = stringResource(R.string.users_settings), rows = sectionRows(user, actions)) }
         if (!mine) {
             item {
                 ItemGroup(
@@ -233,7 +257,7 @@ private fun LibraryAccess(
             icon = Icons.Outlined.VideoLibrary,
             label = stringResource(R.string.users_all_libraries),
             toggled = user.allLibraries,
-            onClick = { actions.onAllLibraries(!user.allLibraries) },
+            onClick = { actions.onPolicy(ENABLE_ALL_FOLDERS, JsonPrimitive(!user.allLibraries)) },
         )
     val each =
         if (user.allLibraries) {
@@ -245,7 +269,7 @@ private fun LibraryAccess(
                     icon = typeIcon(library.type),
                     label = library.name,
                     toggled = on,
-                    onClick = { actions.onLibrary(library.id, !on) },
+                    onClick = { actions.onList(ENABLED_FOLDERS, memberChange(library.id, !on)) },
                 )
             }
         }
