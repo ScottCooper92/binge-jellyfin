@@ -56,6 +56,9 @@ data class JellyfinServerProfile(
     /** The user's libraries are read from `/UserViews`; before 10.9, from `/Users/{id}/Views`. 10.9. */
     val hasUserViewsRoute: Boolean get() = atLeast(TEN, NINE)
 
+    /** Trickplay can extract key frames only, from the server's options. 10.10. */
+    val hasKeyFrameOnlyTrickplay: Boolean get() = atLeast(TEN, TEN)
+
     /** Media segments (intros, credits) and a library's segment providers. 10.10. */
     val hasMediaSegments: Boolean get() = atLeast(TEN, TEN)
 

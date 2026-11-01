@@ -37,6 +37,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
+        ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.Server -> ServerRoute(graph, close)
     }
 }

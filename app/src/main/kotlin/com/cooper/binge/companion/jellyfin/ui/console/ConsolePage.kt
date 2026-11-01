@@ -45,6 +45,9 @@ enum class ConsolePage {
     /** The server's general settings and login branding. Admin only. */
     ServerSettings,
 
+    /** The server's trickplay (seek thumbnail) options. Admin only, on a server that has trickplay. */
+    Trickplay,
+
     /** The server itself: its info, restarting it and shutting it down. Admin only. */
     Server,
     ;
@@ -62,9 +65,10 @@ enum class ConsolePage {
             Playback, HomeLayout -> account.canEditPreferences
             Password -> account.hasLocalPassword
             NowPlaying -> true
+            Trickplay -> account.isAdministrator && profile.hasTrickplay
             Libraries, Tasks, Activity, ApiKeys, Devices, Users, ServerSettings, Server -> account.isAdministrator
         }
 
     /** One of the administrator's pages, listed together on the home. */
-    val isAdmin: Boolean get() = this in setOf(Libraries, Tasks, Activity, ApiKeys, Devices, Users, ServerSettings, Server)
+    val isAdmin: Boolean get() = this in setOf(Libraries, Tasks, Activity, ApiKeys, Devices, Users, ServerSettings, Trickplay, Server)
 }

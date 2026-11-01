@@ -48,6 +48,7 @@ older server shows less rather than failing on a call it can't answer.
 | Collection, subtitle and lyric management permissions | 10.9 | `hasContentManagementPermissions` |
 | Loudness (LUFS) scanning for music libraries | 10.9 | `hasLoudnessScan` |
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
+| Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |
 | Backups | 10.11 | `hasBackups` |
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |
@@ -58,6 +59,7 @@ older server shows less rather than failing on a call it can't answer.
 | Capability | Who | Gate |
 |---|---|---|
 | The server's pages (libraries, tasks, activity, API keys, devices, users, server) | administrators | `isAdministrator` |
+| Trickplay settings (its own page) | administrators, on a server that has trickplay | `isAdministrator` and `hasTrickplay` |
 | Their own preferences (languages, playback, the home screen) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |
 | Changing their own password | users of Jellyfin's own provider, not LDAP or another plugin | `hasLocalPassword` |
 | Stopping someone else's stream | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers` |

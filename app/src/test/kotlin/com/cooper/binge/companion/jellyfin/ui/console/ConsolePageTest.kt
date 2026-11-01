@@ -31,6 +31,16 @@ class ConsolePageTest {
     }
 
     @Test
+    fun `trickplay is for an administrator on a server that has it`() {
+        val admin = account("""{"IsAdministrator":true}""")
+        val user = account("""{"IsAdministrator":false}""")
+        assertFalse(ConsolePage.Trickplay.available(JellyfinServerProfile.from("10.8.13"), admin))
+        assertTrue(ConsolePage.Trickplay.available(JellyfinServerProfile.from("10.9.0"), admin))
+        assertTrue(ConsolePage.Trickplay.available(JellyfinServerProfile.from(null), admin))
+        assertFalse(ConsolePage.Trickplay.available(server, user))
+    }
+
+    @Test
     fun `pages follow what the server and the user's policy turned off`() {
         val user =
             account(
