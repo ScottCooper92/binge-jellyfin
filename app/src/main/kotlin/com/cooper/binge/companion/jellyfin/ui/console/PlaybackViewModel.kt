@@ -51,7 +51,7 @@ class PlaybackViewModel(
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(viewModelScope, connection, TAG) { shown, failure ->
+        ConfigurationSaves(connection, TAG) { shown, failure ->
             _state.update { (it as? PlaybackUiState.Ready)?.copy(preferences = shown.playbackPreferences(), saveFailed = failure) ?: it }
         }
 
@@ -62,6 +62,7 @@ class PlaybackViewModel(
     fun load() {
         _state.value = PlaybackUiState.Loading
         viewModelScope.launch {
+            connection.awaitSaves()
             _state.value =
                 connection
                     .consoleCall(TAG) { _, client ->

@@ -68,12 +68,12 @@ class ServerSettingsViewModel(
     val state: StateFlow<ServerSettingsUiState> = _state.asStateFlow()
 
     private val server =
-        ConfigurationSaves(viewModelScope, connection, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
+        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
             update { copy(settings = shown.serverSettings(), saveFailed = failure) }
         }
 
     private val brand =
-        ConfigurationSaves(viewModelScope, connection, TAG, { _, client, json -> client.saveBranding(json) }) { shown, failure ->
+        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveBranding(json) }) { shown, failure ->
             update { copy(branding = shown.branding(), saveFailed = failure) }
         }
 
@@ -84,6 +84,7 @@ class ServerSettingsViewModel(
     fun load() {
         _state.value = ServerSettingsUiState.Loading
         viewModelScope.launch {
+            connection.awaitSaves()
             _state.value =
                 connection
                     .consoleCall(TAG) { _, client ->

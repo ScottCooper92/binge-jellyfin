@@ -4,8 +4,6 @@ import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.saveUserConfiguration
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
@@ -20,9 +18,10 @@ import kotlinx.serialization.json.JsonObject
  * A change shows at once ([shown] goes to [onShown]). A save that fails puts that one key back to what
  * the server last accepted, with the failure, unless a newer change to the same key is on its way and
  * will say how it went itself.
+ *
+ * A save runs on the connection's own scope, not the page's, so closing the page does not cancel it.
  */
 internal class ConfigurationSaves(
-    private val scope: CoroutineScope,
     private val connection: Connection,
     private val tag: String,
     private val save: suspend (JellyfinSession, JellyfinClient, JsonObject) -> Unit = { session, client, configuration ->
@@ -63,7 +62,7 @@ internal class ConfigurationSaves(
                 onShown(shown, null)
                 next
             }
-        scope.launch {
+        connection.launchSave {
             saving.withLock {
                 val next = JsonObject(saved + (key to value))
                 connection

@@ -1,7 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.changePassword
@@ -9,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /** How a change went. */
 enum class PasswordResult { Changed, WrongCurrent, Mismatch, Refused, Unreachable }
@@ -49,7 +47,8 @@ class PasswordViewModel(
             return
         }
         _state.value = form.copy(changing = true, result = null)
-        viewModelScope.launch {
+        // On the connection's scope: a request already sent must finish if the page closes, so the result isn't lost.
+        connection.launchSave {
             val result =
                 connection
                     .consoleCall(TAG) { session, client -> client.changePassword(session.userId, form.current, form.new) }
