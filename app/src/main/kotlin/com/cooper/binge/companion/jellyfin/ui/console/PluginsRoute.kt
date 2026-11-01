@@ -34,6 +34,10 @@ internal fun PluginsRoute(
     val catalogState by catalog.state.collectAsStateWithLifecycle()
     val repositoriesState by repositories.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val installsDone = (catalogState as? CatalogUiState.Ready)?.outcomes?.count { it.value == InstallOutcome.Done } ?: 0
+    LaunchedEffect(installsDone) {
+        if (installsDone > 0) installed.refresh()
+    }
     val settingsUrl = (installedState as? PluginsUiState.Ready)?.settingsUrl
     LaunchedEffect(settingsUrl) {
         if (settingsUrl != null) {

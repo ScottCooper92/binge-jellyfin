@@ -87,6 +87,19 @@ class PluginsViewModelTest {
     }
 
     @Test
+    fun `refresh reads a plugin installed since, and the restart it needs, without going back to loading`() {
+        val vm = made(PluginsViewModel(connection))
+        assertFalse(vm.ready().restartNeeded)
+        jellyfin.plugins +=
+            """{"Name":"Kodi Sync Queue","Version":"15.0.0.0","Description":"","Id":"771e19d6-5385-4caa-b35d-b7bc8a3c8b0a",""" +
+            """"CanUninstall":true,"HasImage":false,"Status":"Restart"}"""
+        vm.refresh()
+        val ready = vm.ready { it.plugins.size == 3 }
+        assertTrue(ready.restartNeeded)
+        assertTrue(ready.plugins.any { it.name == "Kodi Sync Queue" })
+    }
+
+    @Test
     fun `a plugin waiting for a restart says so, for the page to point at Restart`() {
         jellyfin.plugins = jellyfin.plugins.map { it.replace("\"Status\":\"Active\"", "\"Status\":\"Restart\"") }
         assertTrue(made(PluginsViewModel(connection)).ready().restartNeeded)

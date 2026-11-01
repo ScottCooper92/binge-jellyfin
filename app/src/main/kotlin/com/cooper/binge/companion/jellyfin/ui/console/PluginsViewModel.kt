@@ -81,6 +81,23 @@ class PluginsViewModel(
         }
     }
 
+    /**
+     * Reads the plugins again without going back to Loading, for a change made elsewhere on the page (an
+     * install). Keeps what the page is showing, and the last on/off sent for a plugin still waiting for a restart.
+     */
+    fun refresh() {
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.plugins() }
+                .onSuccess { plugins ->
+                    update {
+                        val waiting = plugins.filter { it.status == PluginStatus.Restart }.map { it.id }.toSet()
+                        copy(plugins = plugins, sentEnabled = sentEnabled.filterKeys { it in waiting })
+                    }
+                }
+        }
+    }
+
     /** Opens [plugin]'s page, or goes back to the list for null. */
     fun open(plugin: ServerPlugin?) = update { copy(open = plugin?.id, confirming = null, actionFailed = null) }
 

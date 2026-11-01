@@ -99,7 +99,7 @@ suspend fun JellyfinClient.pluginSettingsPage(plugin: ServerPlugin): String? {
 fun JellyfinClient.pluginSettingsUrl(page: String): String =
     url("web/index.html")
         .newBuilder()
-        .fragment("!/configurationpage?name=${java.net.URLEncoder.encode(page, "UTF-8")}")
+        .encodedFragment("!/configurationpage?name=${java.net.URLEncoder.encode(page, "UTF-8")}")
         .build()
         .toString()
 
