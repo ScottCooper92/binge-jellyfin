@@ -76,7 +76,7 @@ private enum class TrickplayPicker { Scan, Priority, Interval }
 private const val STATUS_LINES = 2
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
-private const val DETAIL_LINES = 3
+private const val DETAIL_LINES = 6
 
 private const val MILLIS_PER_SECOND = 1000
 
