@@ -37,7 +37,6 @@ internal fun LibraryDisplayRoute(
             onEdit = display::edit,
             onAdd = display::add,
             onRemove = display::remove,
-            onSave = display::saveList,
             onRetry = display::load,
             onBack = onBack,
         ),

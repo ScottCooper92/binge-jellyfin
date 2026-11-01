@@ -112,24 +112,21 @@ class LibraryDisplayViewModelTest {
     }
 
     @Test
-    fun `a list is edited as a draft, and saves whole with its Save`() {
+    fun `each add and remove in a list saves the whole list as it is made`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
         vm.edit(DisplayList.RemoveWords)
         assertEquals(listOf(ListEntry("the"), ListEntry("a")), vm.ready().draft)
         vm.sheet(DisplaySheet.NewEntry)
         vm.add(ListEntry("  an "))
+        saves(1)
         vm.add(ListEntry("an"))
         vm.add(ListEntry("   "))
         vm.remove(0)
-        val draft = vm.ready { it.draft.size == 2 }
-        assertNull(draft.sheet)
-        assertEquals(listOf(ListEntry("a"), ListEntry("an")), draft.draft)
-        // Nothing is sent until Save.
-        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" })
-        vm.saveList()
-        assertNull(vm.ready { it.editing == null }.editing)
-        saves(1)
+        saves(2)
+        val ready = vm.ready { it.draft.size == 2 }
+        assertNull(ready.sheet)
+        assertEquals(listOf(ListEntry("a"), ListEntry("an")), ready.draft)
         assertEquals(
             listOf("a", "an"),
             jellyfin
@@ -141,17 +138,27 @@ class LibraryDisplayViewModelTest {
     }
 
     @Test
-    fun `leaving the editor drops the draft`() {
+    fun `leaving the editor loses nothing`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
         vm.edit(DisplayList.RemoveWords)
         vm.remove(0)
+        saves(1)
         vm.edit(null)
         val ready = vm.ready { it.editing == null }
-        assertEquals(listOf(ListEntry("the"), ListEntry("a")), ready.configuration.entries(DisplayList.RemoveWords))
+        assertEquals(listOf(ListEntry("a")), ready.configuration.entries(DisplayList.RemoveWords))
         assertEquals(emptyList<ListEntry>(), ready.draft)
-        vm.saveList()
-        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" })
+    }
+
+    @Test
+    fun `a refused list save puts the list back and says so`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        vm.edit(DisplayList.RemoveWords)
+        jellyfin.status[CONFIGURATION] = 500
+        vm.remove(0)
+        val failed = vm.ready { it.saveFailed != null }
+        assertEquals(listOf(ListEntry("the"), ListEntry("a")), failed.draft)
     }
 
     @Test
@@ -161,9 +168,8 @@ class LibraryDisplayViewModelTest {
         vm.edit(DisplayList.Substitutions)
         vm.add(ListEntry("/data", " "))
         vm.add(ListEntry(" /data ", " /mnt/data "))
-        assertEquals(listOf(ListEntry("/media", "/mnt/media"), ListEntry("/data", "/mnt/data")), vm.ready { it.draft.size == 2 }.draft)
-        vm.saveList()
         saves(1)
+        assertEquals(listOf(ListEntry("/media", "/mnt/media"), ListEntry("/data", "/mnt/data")), vm.ready { it.draft.size == 2 }.draft)
         val saved =
             jellyfin
                 .lastBody(CONFIGURATION)

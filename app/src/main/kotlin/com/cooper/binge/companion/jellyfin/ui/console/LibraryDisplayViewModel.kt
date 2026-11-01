@@ -40,7 +40,7 @@ sealed interface LibraryDisplayUiState {
 
     /**
      * The configuration as shown, the languages the server can be shown in, the sheet open, and the list being
-     * edited with its [draft] (a list saves with its Save, and Back drops it).
+     * edited, whose entries are [draft] (each add and remove saves as it's made, so Back loses nothing).
      */
     data class Ready(
         val configuration: JsonObject,
@@ -54,8 +54,8 @@ sealed interface LibraryDisplayUiState {
 
 /**
  * The server's library display and metadata defaults, each saved as it's made (see [ConfigurationSaves], the
- * same save as Server settings: the whole configuration goes back with one key changed). A list is edited as a
- * draft and saves with its Save. The language list is a nicety: the page works without it.
+ * same save as Server settings: the whole configuration goes back with one key changed). A list's editor saves
+ * each add and remove the same way. The language list is a nicety: the page works without it.
  */
 class LibraryDisplayViewModel(
     private val connection: Connection,
@@ -65,7 +65,7 @@ class LibraryDisplayViewModel(
 
     private val saves =
         ConfigurationSaves(connection, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
-            update { copy(configuration = shown, saveFailed = failure) }
+            update { copy(configuration = shown, saveFailed = failure, draft = editing?.let { shown.entries(it) } ?: draft) }
         }
 
     init {
@@ -102,24 +102,24 @@ class LibraryDisplayViewModel(
     /** Opens [sheet], or closes whichever is open for null. */
     fun sheet(sheet: DisplaySheet?) = update { copy(sheet = sheet) }
 
-    /** Opens the editor for [list] with its entries as a draft, or closes the editor for null, dropping the draft. */
+    /** Opens the editor for [list] with its entries, or closes the editor for null. */
     fun edit(list: DisplayList?) = update { copy(editing = list, draft = list?.let { configuration.entries(it) }.orEmpty(), sheet = null) }
 
-    /** Adds [entry] to the draft, unless it is blank or already there. */
+    /** Adds [entry] to the list and saves it, unless it is blank or already there. */
     fun add(entry: ListEntry) {
         val clean = entry.copy(first = entry.first.trim(), second = entry.second?.trim())
         if (clean.first.isEmpty() || clean.second?.isEmpty() == true) return
-        update { copy(draft = if (clean in draft) draft else draft + clean, sheet = null) }
+        update { copy(sheet = null) }
+        changeList { if (clean in it) it else it + clean }
     }
 
-    fun remove(index: Int) = update { copy(draft = draft.filterIndexed { i, _ -> i != index }) }
+    fun remove(index: Int) = changeList { entries -> entries.filterIndexed { i, _ -> i != index } }
 
-    /** Saves the draft as the list's setting, and closes the editor. */
-    fun saveList() {
+    private fun changeList(change: (List<ListEntry>) -> List<ListEntry>) {
         val ready = _state.value as? LibraryDisplayUiState.Ready ?: return
         val list = ready.editing ?: return
-        saves.set(list.key, jsonEntries(list, ready.draft))
-        update { copy(editing = null, draft = emptyList()) }
+        val entries = change(ready.draft)
+        if (entries != ready.draft) saves.set(list.key, jsonEntries(list, entries))
     }
 
     private fun update(change: LibraryDisplayUiState.Ready.() -> LibraryDisplayUiState.Ready) =

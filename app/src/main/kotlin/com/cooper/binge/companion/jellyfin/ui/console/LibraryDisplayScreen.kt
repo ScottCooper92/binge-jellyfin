@@ -74,7 +74,6 @@ data class LibraryDisplayActions(
     val onEdit: (DisplayList?) -> Unit = {},
     val onAdd: (ListEntry) -> Unit = {},
     val onRemove: (Int) -> Unit = {},
-    val onSave: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -88,7 +87,7 @@ private enum class DisplayPicker { Language, Convention, Resolution }
 /**
  * The server's library display and metadata defaults: how libraries show, what metadata is saved and where,
  * how titles sort, and path substitutions. Each switch and choice saves as it's made; a list has an editor
- * page with its own Save. [profile] says which settings this release has.
+ * page that saves each add and remove. [profile] says which settings this release has.
  */
 @Composable
 fun LibraryDisplayScreen(

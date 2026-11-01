@@ -4,14 +4,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +25,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeAdaptiveSheet
-import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -144,7 +141,7 @@ internal fun MetadataPathForm(
 
 /**
  * A new entry for [list]: a word or character, or for the substitutions a from and then a to. It joins the
- * draft, which saves with the editor's Save.
+ * list, which saves as it's added.
  */
 @Composable
 internal fun NewEntryForm(
@@ -183,7 +180,7 @@ internal fun NewEntryForm(
     }
 }
 
-/** A list's editor: its entries with a red remove on each, Add, and Save, which keeps the list as it now reads. */
+/** A list's editor: its entries with a red remove on each, and Add. Each saves as it's made. */
 @Composable
 internal fun ListEditor(
     list: DisplayList,
@@ -225,12 +222,6 @@ internal fun ListEditor(
                         destination = ListItemDestination.Action,
                         onClick = { actions.onSheet(DisplaySheet.NewEntry) },
                     ),
-        )
-        BingeFilledButton(
-            label = stringResource(R.string.library_save),
-            onClick = actions.onSave,
-            leadingIcon = Icons.Outlined.Check,
-            modifier = Modifier.fillMaxWidth(),
         )
         FailureText(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
     }
