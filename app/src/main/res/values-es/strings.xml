@@ -288,4 +288,48 @@
     <string name="api_keys_done">Hecho</string>
     <string name="api_keys_copy">Copiar</string>
     <string name="api_keys_not_changed">No se ha cambiado. %1$s</string>
+    <string name="tasks_triggers">Activadores</string>
+    <string name="tasks_triggers_empty">Esta tarea solo se ejecuta cuando la inicias.</string>
+    <string name="tasks_trigger_add">Añadir activador</string>
+    <string name="tasks_trigger_remove">Quitar</string>
+    <string name="tasks_trigger_not_saved">No se han cambiado los activadores. %1$s</string>
+    <string name="tasks_trigger_new_title">Nuevo activador</string>
+    <string name="tasks_trigger_new_body">¿Cuándo debe ejecutarse esta tarea por sí sola?</string>
+    <string name="tasks_trigger_create">Añadir</string>
+    <string name="tasks_trigger_limit">Límite de tiempo</string>
+    <string name="tasks_trigger_no_limit">Sin límite</string>
+    <string name="trigger_kind_daily">Diario</string>
+    <string name="trigger_kind_weekly">Semanal</string>
+    <string name="trigger_kind_interval">Cada cierto tiempo</string>
+    <string name="trigger_startup">Al iniciar</string>
+    <string name="trigger_daily_at">Todos los días a las %1$s</string>
+    <string name="trigger_weekly_at">Cada %1$s a las %2$s</string>
+    <string name="trigger_other">%1$s</string>
+    <string name="trigger_minutes_short">%1$d min</string>
+    <string name="trigger_hours_short">%1$d h</string>
+    <plurals name="trigger_every_hours">
+        <item quantity="one">Cada %1$d hora</item>
+        <item quantity="many">Cada %1$d horas</item>
+        <item quantity="other">Cada %1$d horas</item>
+    </plurals>
+    <plurals name="trigger_every_minutes">
+        <item quantity="one">Cada %1$d minuto</item>
+        <item quantity="many">Cada %1$d minutos</item>
+        <item quantity="other">Cada %1$d minutos</item>
+    </plurals>
+    <plurals name="trigger_every_seconds">
+        <item quantity="one">Cada %1$d segundo</item>
+        <item quantity="many">Cada %1$d segundos</item>
+        <item quantity="other">Cada %1$d segundos</item>
+    </plurals>
+    <plurals name="trigger_limit_hours">
+        <item quantity="one">Se detiene tras %1$d hora</item>
+        <item quantity="many">Se detiene tras %1$d horas</item>
+        <item quantity="other">Se detiene tras %1$d horas</item>
+    </plurals>
+    <plurals name="trigger_limit_minutes">
+        <item quantity="one">Se detiene tras %1$d minuto</item>
+        <item quantity="many">Se detiene tras %1$d minutos</item>
+        <item quantity="other">Se detiene tras %1$d minutos</item>
+    </plurals>
 </resources>
