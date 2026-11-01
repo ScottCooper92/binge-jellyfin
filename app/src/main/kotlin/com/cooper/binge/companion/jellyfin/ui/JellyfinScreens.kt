@@ -228,8 +228,9 @@ private fun SignIn(
             label = { Text(stringResource(R.string.setup_password)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            isError = state.error != null,
-            supportingText = state.error?.let { { Text(errorText(it)) } },
+            // Only a wrong password is the field's fault; any other failure is said beside the button that failed.
+            isError = state.passwordError == SetupError.WrongCredentials,
+            supportingText = state.passwordError?.takeIf { it == SetupError.WrongCredentials }?.let { { Text(errorText(it)) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
             keyboardActions = KeyboardActions(onGo = { actions.onSignIn() }),
             modifier = Modifier.fillMaxWidth(),
@@ -241,13 +242,22 @@ private fun SignIn(
             enabled = state.username.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
+        state.passwordError?.takeUnless { it == SetupError.WrongCredentials }?.let { ErrorLine(it) }
         BingeOutlinedButton(
             label = stringResource(R.string.setup_quick_connect),
             onClick = actions.onQuickConnect,
             leadingIcon = Icons.Outlined.QrCode2,
+            loading = state.gettingCode,
             modifier = Modifier.fillMaxWidth(),
         )
+        state.quickConnectError?.let { ErrorLine(it) }
     }
+}
+
+/** A failure said under the action it belongs to, rather than on a field that isn't at fault. */
+@Composable
+private fun ErrorLine(error: SetupError) {
+    Text(errorText(error), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
 }
 
 @Composable

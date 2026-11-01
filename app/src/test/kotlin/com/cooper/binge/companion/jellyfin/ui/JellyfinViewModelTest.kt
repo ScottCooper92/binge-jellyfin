@@ -102,7 +102,7 @@ class JellyfinViewModelTest {
         vm.onUsername("Claude")
         vm.onPassword("wrong")
         vm.signInWithPassword()
-        assertEquals(SetupError.WrongCredentials, vm.await<UiState.SignIn> { it.error != null }.error)
+        assertEquals(SetupError.WrongCredentials, vm.await<UiState.SignIn> { it.passwordError != null }.passwordError)
 
         vm.onPassword("right")
         vm.signInWithPassword()
@@ -129,7 +129,7 @@ class JellyfinViewModelTest {
         vm.toSignIn()
         jellyfin.quickConnectEnabled = false
         vm.startQuickConnect()
-        assertEquals(SetupError.QuickConnectOff, vm.await<UiState.SignIn> { it.error != null }.error)
+        assertEquals(SetupError.QuickConnectOff, vm.await<UiState.SignIn> { it.quickConnectError != null }.quickConnectError)
 
         jellyfin.quickConnectEnabled = true
         vm.startQuickConnect()
@@ -212,7 +212,49 @@ class JellyfinViewModelTest {
         vm.onUsername("Claude")
         vm.onPassword("right")
         vm.signInWithPassword()
-        assertEquals(SetupError.Generic, vm.await<UiState.SignIn> { it.error != null }.error)
+        assertEquals(SetupError.Generic, vm.await<UiState.SignIn> { it.passwordError != null }.passwordError)
+    }
+
+    @Test
+    fun `each sign-in method keeps its own failure, so switching never shows the other's`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        jellyfin.status["/Users/AuthenticateByName"] = 500
+        vm.onUsername("Claude")
+        vm.onPassword("right")
+        vm.signInWithPassword()
+        vm.await<UiState.SignIn> { it.passwordError == SetupError.Generic }
+        // Switching to Quick Connect asks for a code rather than showing the password's failure.
+        vm.startQuickConnect()
+        val code = vm.await<UiState.SignIn> { it.quickConnectCode != null }
+        assertNull(code.quickConnectError)
+
+        // A Quick Connect failure stays with Quick Connect, and leaving it takes the failure along.
+        vm.cancelQuickConnect()
+        jellyfin.quickConnectEnabled = false
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectError == SetupError.QuickConnectOff }
+        vm.cancelQuickConnect()
+        val back = vm.await<UiState.SignIn> { it.quickConnectError == null }
+        assertEquals(false, back.gettingCode)
+        // Typing clears the password's own failure.
+        vm.onPassword("again")
+        assertNull((vm.state.value as UiState.SignIn).passwordError)
+    }
+
+    @Test
+    fun `retrying Quick Connect drops the last failure at once and shows it's getting a code`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        jellyfin.quickConnectEnabled = false
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectError != null }
+        jellyfin.slow += "/QuickConnect/Enabled"
+        vm.startQuickConnect()
+        val retrying = vm.state.value as UiState.SignIn
+        assertNull(retrying.quickConnectError)
+        assertTrue(retrying.gettingCode)
+        vm.cancelQuickConnect()
     }
 
     @Test

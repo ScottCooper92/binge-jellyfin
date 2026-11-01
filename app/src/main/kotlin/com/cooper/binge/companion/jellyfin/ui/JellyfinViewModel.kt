@@ -57,7 +57,12 @@ sealed interface UiState {
         val password: String = "",
         val busy: Boolean = false,
         val quickConnectCode: String? = null,
-        val error: SetupError? = null,
+        /** The password sign-in's failure. It belongs to the password form, and only a wrong password marks the field. */
+        val passwordError: SetupError? = null,
+        /** Quick Connect's failure: it couldn't get or keep a code. It belongs to Quick Connect, never the password form. */
+        val quickConnectError: SetupError? = null,
+        /** A Quick Connect code is being asked for, so a retry shows progress rather than the last failure. */
+        val gettingCode: Boolean = false,
     ) : UiState {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
     }
@@ -103,9 +108,9 @@ class JellyfinViewModel(
 
     fun onAddress(value: String) = _state.update { (it as? UiState.EnterServer)?.copy(address = value, error = null) ?: it }
 
-    fun onUsername(value: String) = _state.update { (it as? UiState.SignIn)?.copy(username = value, error = null) ?: it }
+    fun onUsername(value: String) = _state.update { (it as? UiState.SignIn)?.copy(username = value, passwordError = null) ?: it }
 
-    fun onPassword(value: String) = _state.update { (it as? UiState.SignIn)?.copy(password = value, error = null) ?: it }
+    fun onPassword(value: String) = _state.update { (it as? UiState.SignIn)?.copy(password = value, passwordError = null) ?: it }
 
     /** Looks for servers on the local network once per visit to the server step. A server is one tap away; nothing found shows nothing. */
     fun discoverServers() {
@@ -154,7 +159,7 @@ class JellyfinViewModel(
     fun signInWithPassword() {
         val current = _state.value as? UiState.SignIn ?: return
         if (current.username.isBlank()) return
-        _state.value = current.copy(busy = true, error = null)
+        _state.value = current.copy(busy = true, passwordError = null)
         viewModelScope.launch {
             val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return@launch
             try {
@@ -164,13 +169,13 @@ class JellyfinViewModel(
             } catch (e: JellyfinHttpException) {
                 Log.i(TAG, "Password sign-in refused", e)
                 val error = if (e.code == HTTP_UNAUTHORIZED) SetupError.WrongCredentials else SetupError.Generic
-                _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = error) ?: it }
+                _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = error) ?: it }
             } catch (e: JellyfinUnreadableAnswer) {
                 Log.i(TAG, "Password sign-in answered something that is not Jellyfin", e)
-                _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = SetupError.Generic) ?: it }
+                _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = SetupError.Generic) ?: it }
             } catch (e: IOException) {
                 Log.i(TAG, "Password sign-in failed", e)
-                _state.update { (it as? UiState.SignIn)?.copy(busy = false, error = SetupError.Unreachable) ?: it }
+                _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = SetupError.Unreachable) ?: it }
             }
         }
     }
@@ -178,23 +183,25 @@ class JellyfinViewModel(
     /** Shows a code, then polls until the user approves it in a signed-in Jellyfin app, as Seerr's Plex PIN flow does. */
     fun startQuickConnect() {
         val current = _state.value as? UiState.SignIn ?: return
+        val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return
         quickConnect?.cancel()
+        // The last failure goes as the new request starts, so a retry shows progress, not the old error.
+        _state.value = current.copy(quickConnectCode = null, quickConnectError = null, gettingCode = true)
         quickConnect =
             viewModelScope.launch {
-                val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return@launch
                 try {
                     awaitQuickConnect(url, current.server)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: JellyfinHttpException) {
                     Log.i(TAG, "Quick Connect refused", e)
-                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.QuickConnectExpired) ?: it }
+                    _state.failQuickConnect(SetupError.QuickConnectExpired)
                 } catch (e: JellyfinUnreadableAnswer) {
                     Log.i(TAG, "Quick Connect answered something that is not Jellyfin", e)
-                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.Generic) ?: it }
+                    _state.failQuickConnect(SetupError.Generic)
                 } catch (e: IOException) {
                     Log.i(TAG, "Quick Connect failed", e)
-                    _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.Unreachable) ?: it }
+                    _state.failQuickConnect(SetupError.Unreachable)
                 }
             }
     }
@@ -205,11 +212,11 @@ class JellyfinViewModel(
     ) {
         val client = connection.anonymous(url)
         if (!client.quickConnectEnabled()) {
-            _state.update { (it as? UiState.SignIn)?.copy(error = SetupError.QuickConnectOff) ?: it }
+            _state.failQuickConnect(SetupError.QuickConnectOff)
             return
         }
         val start = client.quickConnectInitiate()
-        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = start.code, error = null) ?: it }
+        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = start.code, gettingCode = false) ?: it }
         val deadline = System.currentTimeMillis() + QUICK_CONNECT_WINDOW_MILLIS
         while (System.currentTimeMillis() < deadline) {
             delay(quickConnectPollMillis)
@@ -218,12 +225,13 @@ class JellyfinViewModel(
                 return
             }
         }
-        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, error = SetupError.QuickConnectExpired) ?: it }
+        _state.failQuickConnect(SetupError.QuickConnectExpired)
     }
 
+    /** Leaves Quick Connect for the password form, taking Quick Connect's code and failure with it. */
     fun cancelQuickConnect() {
         quickConnect?.cancel()
-        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null) ?: it }
+        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, quickConnectError = null, gettingCode = false) ?: it }
     }
 
     fun changeServer() {
@@ -305,7 +313,15 @@ class JellyfinViewModel(
                 token = signedIn.token,
             )
         if (!sessions.save(session)) {
-            _state.update { (it as? UiState.SignIn)?.copy(busy = false, quickConnectCode = null, error = SetupError.Generic) ?: it }
+            // The failure belongs to the method that got this far: Quick Connect holds a code, a password does not.
+            _state.update {
+                val signIn = it as? UiState.SignIn ?: return@update it
+                if (signIn.quickConnectCode != null) {
+                    signIn.copy(quickConnectCode = null, gettingCode = false, quickConnectError = SetupError.Generic)
+                } else {
+                    signIn.copy(busy = false, passwordError = SetupError.Generic)
+                }
+            }
             return
         }
         index.clear()
@@ -320,3 +336,7 @@ class JellyfinViewModel(
         const val QUICK_CONNECT_WINDOW_MILLIS = 10 * 60_000L
     }
 }
+
+/** Quick Connect couldn't get or keep a code: the code goes, and the failure stays with Quick Connect. */
+private fun MutableStateFlow<UiState>.failQuickConnect(error: SetupError) =
+    update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, gettingCode = false, quickConnectError = error) ?: it }
