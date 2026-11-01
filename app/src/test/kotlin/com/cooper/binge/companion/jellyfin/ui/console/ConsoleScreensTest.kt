@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -145,7 +146,7 @@ class ConsoleScreensTest {
         compose.setContent { JellyfinTheme { PasswordScreen(PasswordUiState(new = "a", confirm = "a"), actions) } }
         compose.onNodeWithText("Current password").performTextInput("x")
         compose.onNodeWithText("New password again").performTextInput("y")
-        compose.onNodeWithText("Change password").performScrollTo().performClick()
+        compose.onNode(hasText("Change password") and hasClickAction()).performScrollTo().performClick()
         // The fields are the view model's: each keystroke goes to it, against the value it holds.
         assertTrue("c:x" in typed)
         assertTrue(typed.any { it.startsWith("r:") && 'y' in it })

@@ -83,7 +83,7 @@
     <string name="subtitle_mode_always_detail">En tu idioma de subtítulos, sea cual sea el audio</string>
     <string name="subtitle_mode_none">Desactivados</string>
     <string name="subtitle_mode_none_detail">Puedes activarlos mientras ves algo</string>
-    <string name="password_title">Cambiar tu contraseña</string>
+    <string name="password_title">Cambiar contraseña</string>
     <string name="password_body">Al cambiarla se cierra tu sesión de Jellyfin en tus otros dispositivos, que te pedirán la nueva. Esta app sigue con la sesión iniciada.</string>
     <string name="password_current">Contraseña actual</string>
     <string name="password_new">Contraseña nueva</string>
