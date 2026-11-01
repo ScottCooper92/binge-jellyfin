@@ -42,6 +42,8 @@ sealed interface CatalogUiState {
         val installing: Map<String, String?> = emptyMap(),
         val outcomes: Map<String, InstallOutcome> = emptyMap(),
         val actionFailed: ConsoleFailure? = null,
+        /** The server's release, so a package page offers the version built for it. */
+        val server: JellyfinVersion? = null,
     ) : CatalogUiState
 }
 
@@ -80,7 +82,7 @@ class CatalogViewModel(
                         Triple(client.packages(), names, client)
                     }.onFailure { _state.value = CatalogUiState.Failed(it.consoleFailure()) }
                     .onSuccess { (packages, installed, client) ->
-                        _state.value = CatalogUiState.Ready(packages, installed)
+                        _state.value = CatalogUiState.Ready(packages, installed, server = server)
                         client.installEvents().collect { following(it) }
                     }
             }

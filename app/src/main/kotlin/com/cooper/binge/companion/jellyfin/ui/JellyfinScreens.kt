@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.History
@@ -461,6 +462,12 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_trickplay_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Trickplay) },
                 ).takeIf { ConsolePage.Trickplay.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.Extension,
+                    label = stringResource(R.string.plugins_title),
+                    detail = stringResource(R.string.console_plugins_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Plugins) },
+                ).takeIf { ConsolePage.Plugins.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.SettingsApplications,
                     label = stringResource(R.string.server_title),
