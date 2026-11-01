@@ -23,6 +23,7 @@ import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -364,5 +365,16 @@ class JellyfinViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
         assertTrue(vm.await<UiState.SignedIn> { it.isAdministrator }.isAdministrator)
+    }
+
+    @Test
+    fun `the refresh reads what the server and the user allow`() {
+        jellyfin.quickConnectEnabled = false
+        jellyfin.policy = ""","EnableUserPreferenceAccess":false"""
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        val state = vm.await<UiState.SignedIn> { it.account.isRead }
+        assertFalse(state.profile.quickConnect)
+        assertFalse(state.account.canEditPreferences)
     }
 }

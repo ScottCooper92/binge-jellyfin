@@ -69,15 +69,10 @@ suspend fun JellyfinClient.logout() {
     post("Sessions/Logout", null)
 }
 
-/** The signed-in user as the server knows them, and whether their policy makes them an administrator. */
-data class CurrentUser(
-    val name: String,
-    val isAdministrator: Boolean,
-)
-
-suspend fun JellyfinClient.me(): CurrentUser {
+/** The signed-in user, with their policy: what the console offers them. */
+suspend fun JellyfinClient.me(): JellyfinAccount {
     val json = getObject("Users/Me")
-    return CurrentUser(name = json.string("Name").orEmpty(), isAdministrator = json.obj("Policy")?.bool("IsAdministrator") == true)
+    return JellyfinAccount(name = json.string("Name").orEmpty(), policy = json.obj("Policy") ?: JsonObject(emptyMap()))
 }
 
 /**

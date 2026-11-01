@@ -1,6 +1,13 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-/** A page of the console, opened from its home (the signed-in screen) and closed back to it. */
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+
+/**
+ * A page of the console, opened from its home (the signed-in screen) and closed back to it. Each
+ * says what it needs (see [available]): the home lists only the pages this server and this user can
+ * use, and a page that stops being available closes.
+ */
 enum class ConsolePage {
     /** Approve a Quick Connect code another device shows. For everyone. */
     ApproveCode,
@@ -31,4 +38,24 @@ enum class ConsolePage {
 
     /** The server itself: its info, and restarting it. Admin only. */
     Server,
+    ;
+
+    /**
+     * Whether this server and this user can use the page: the version gate ([profile]), the account gate
+     * ([account]), and what the server's administrator turned on. `docs/server-compatibility.md` lists them.
+     */
+    fun available(
+        profile: JellyfinServerProfile,
+        account: JellyfinAccount,
+    ): Boolean =
+        when (this) {
+            ApproveCode -> profile.quickConnect
+            Languages -> account.canEditPreferences
+            Password -> account.hasLocalPassword
+            NowPlaying -> true
+            Libraries, Tasks, Activity, Devices, Users, Server -> account.isAdministrator
+        }
+
+    /** One of the administrator's pages, listed together on the home. */
+    val isAdmin: Boolean get() = this in setOf(Libraries, Tasks, Activity, Devices, Users, Server)
 }

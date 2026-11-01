@@ -62,7 +62,9 @@ class JellyfinClientTest {
             jellyfin.quickConnectApproved = true
             assertTrue(client.quickConnectAuthenticated(start.secret))
             assertEquals("token-1", client.authenticateWithQuickConnect(start.secret).token)
-            assertEquals(CurrentUser("Claude", isAdministrator = false), client.withToken("token-1").me())
+            val me = client.withToken("token-1").me()
+            assertEquals("Claude", me.name)
+            assertFalse(me.isAdministrator)
         }
 
     @Test

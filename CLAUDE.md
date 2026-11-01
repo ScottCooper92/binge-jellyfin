@@ -150,8 +150,10 @@ as binge-seerr's TV is.
 - **Never test an admin call against a real server.** Admin pages are exercised against the fake
   server in the unit tests, and on a device only against a disposable test server, never one whose
   users, devices or uptime matter.
-- **Out of scope:** browsing the library, editing metadata, plugin configuration, transcoding and
-  network settings, and anything that plays media.
+- **Out of scope:** browsing the library, editing an item's metadata, and anything that plays media.
+  Everything else in Jellyfin's settings is in scope, the server's and the user's: the app means to
+  be the best way to manage both. Every feature is gated on the server's version, the user's policy
+  and the server's configuration, as `docs/server-compatibility.md` describes.
 
 ## Kotlin, Gradle and Android
 

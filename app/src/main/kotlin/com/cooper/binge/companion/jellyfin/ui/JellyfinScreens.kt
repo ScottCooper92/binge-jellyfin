@@ -310,8 +310,10 @@ private fun SignedIn(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { ServerGroup(state, actions) }
-        item { AccountGroup(actions) }
-        if (state.isAdministrator) item { AdminGroup(actions) }
+        item { AccountGroup(state, actions) }
+        if (ConsolePage.entries.any { it.isAdmin && it.available(state.profile, state.account) }) {
+            item { AdminGroup(state, actions) }
+        }
         // What Binge can find in the library is Binge's to show; without the flag the app names no Binge.
         if (promoted) item { LibraryGroup(state, actions) }
         item {
@@ -359,7 +361,7 @@ private fun ServerGroup(
     ItemGroup(
         title = stringResource(R.string.settings_server),
         rows =
-            listOf(
+            listOfNotNull(
                 ListItem(
                     icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
                     label = session.serverName.ifBlank { session.baseUrl },
@@ -385,82 +387,88 @@ private fun ServerGroup(
                     icon = Icons.Outlined.PlayCircle,
                     label = stringResource(R.string.now_playing_title),
                     onClick = { actions.onOpenPage(ConsolePage.NowPlaying) },
-                ),
+                ).takeIf { ConsolePage.NowPlaying.available(state.profile, state.account) },
             ),
     )
 }
 
 /** The console's pages for an administrator, shown only to one: the server would refuse anyone else. */
 @Composable
-private fun AdminGroup(actions: Actions) {
+private fun AdminGroup(
+    state: UiState.SignedIn,
+    actions: Actions,
+) {
     ItemGroup(
         title = stringResource(R.string.console_admin_title),
         rows =
-            listOf(
+            listOfNotNull(
                 ListItem(
                     icon = Icons.Outlined.Folder,
                     label = stringResource(R.string.libraries_title),
                     detail = stringResource(R.string.console_libraries_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Libraries) },
-                ),
+                ).takeIf { ConsolePage.Libraries.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Schedule,
                     label = stringResource(R.string.tasks_title),
                     detail = stringResource(R.string.console_tasks_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Tasks) },
-                ),
+                ).takeIf { ConsolePage.Tasks.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.History,
                     label = stringResource(R.string.activity_title),
                     detail = stringResource(R.string.console_activity_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Activity) },
-                ),
+                ).takeIf { ConsolePage.Activity.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Devices,
                     label = stringResource(R.string.devices_title),
                     detail = stringResource(R.string.console_devices_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Devices) },
-                ),
+                ).takeIf { ConsolePage.Devices.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Group,
                     label = stringResource(R.string.users_title),
                     detail = stringResource(R.string.console_users_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Users) },
-                ),
+                ).takeIf { ConsolePage.Users.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.SettingsApplications,
                     label = stringResource(R.string.server_title),
                     detail = stringResource(R.string.console_server_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Server) },
-                ),
+                ).takeIf { ConsolePage.Server.available(state.profile, state.account) },
             ),
     )
 }
 
 /** The console's pages for everyone. */
 @Composable
-private fun AccountGroup(actions: Actions) {
+private fun AccountGroup(
+    state: UiState.SignedIn,
+    actions: Actions,
+) {
     ItemGroup(
         title = stringResource(R.string.console_account_title),
         rows =
-            listOf(
+            listOfNotNull(
                 ListItem(
                     icon = Icons.Outlined.QrCode2,
                     label = stringResource(R.string.approve_title),
                     detail = stringResource(R.string.console_approve_detail),
                     onClick = { actions.onOpenPage(ConsolePage.ApproveCode) },
-                ),
+                ).takeIf { ConsolePage.ApproveCode.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Translate,
                     label = stringResource(R.string.languages_title),
                     detail = stringResource(R.string.console_languages_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Languages) },
-                ),
+                ).takeIf { ConsolePage.Languages.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Password,
                     label = stringResource(R.string.password_title),
                     onClick = { actions.onOpenPage(ConsolePage.Password) },
-                ),
+                ).takeIf { ConsolePage.Password.available(state.profile, state.account) },
             ),
     )
 }

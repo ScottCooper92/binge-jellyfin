@@ -8,8 +8,10 @@ import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
@@ -73,10 +75,13 @@ sealed interface UiState {
         val refreshing: Boolean = false,
         val refreshFailed: Boolean = false,
         val confirmingSignOut: Boolean = false,
-        /** From the user's own policy, read with each refresh: what decides the console's admin pages. */
-        val isAdministrator: Boolean = false,
+        /** What the server is and has turned on: the version gate. Read again with each refresh. */
+        val profile: JellyfinServerProfile = JellyfinServerProfile.from(session.serverVersion),
+        /** What the signed-in user may do, from their own policy: the account gate. Read with each refresh. */
+        val account: JellyfinAccount = JellyfinAccount(session.userName),
     ) : UiState {
         val cleartext: Boolean get() = session.baseUrl.startsWith("http://")
+        val isAdministrator: Boolean get() = account.isAdministrator
     }
 }
 
@@ -251,9 +256,10 @@ class JellyfinViewModel(
                         _state.update { (it as? UiState.SignedIn)?.copy(refreshing = false) ?: it }
                         return@launch
                     }
+                    // The gates first, so a library index that fails can't leave them unread.
+                    val gates = signedIn.second.readGates(signedIn.first.serverVersion)
+                    _state.update { (it as? UiState.SignedIn)?.copy(profile = gates.first, account = gates.second) ?: it }
                     index.refresh(signedIn.second, signedIn.first.userId)
-                    val admin = signedIn.second.me().isAdministrator
-                    _state.update { (it as? UiState.SignedIn)?.copy(isAdministrator = admin) ?: it }
                     false
                 } catch (e: CancellationException) {
                     throw e
@@ -340,3 +346,14 @@ class JellyfinViewModel(
 /** Quick Connect couldn't get or keep a code: the code goes, and the failure stays with Quick Connect. */
 private fun MutableStateFlow<UiState>.failQuickConnect(error: SetupError) =
     update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, gettingCode = false, quickConnectError = error) ?: it }
+
+/**
+ * The console's gates: the server's profile (its current version, which may have moved since sign-in,
+ * and whether Quick Connect is on) and the user's account. Only the account read may fail the refresh.
+ */
+private suspend fun JellyfinClient.readGates(signedInVersion: String): Pair<JellyfinServerProfile, JellyfinAccount> {
+    val account = me()
+    val version = attempt { publicInfo().version }.getOrNull() ?: signedInVersion
+    val quickConnect = attempt { quickConnectEnabled() }.getOrDefault(true)
+    return JellyfinServerProfile.from(version, quickConnect) to account
+}

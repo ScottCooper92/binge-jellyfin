@@ -68,6 +68,9 @@ class FakeJellyfin : Dispatcher() {
     /** Whether `/Users/Me` answers with an administrator's policy. */
     var administrator = false
 
+    /** More of the user's policy for `/Users/Me`, as JSON members after `IsAdministrator` (`,"Key":value`). */
+    var policy = ""
+
     /** The user's configuration, as `/Users/Me` answers it and `/Users/Configuration` replaces it. */
     var userConfiguration =
         """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
@@ -202,7 +205,7 @@ class FakeJellyfin : Dispatcher() {
             path == "/Users/AuthenticateWithQuickConnect" -> signedIn()
             path == "/Sessions/Logout" -> MockResponse(code = 204)
             path == "/Users/Me" ->
-                json("""{"Name":"Claude","Policy":{"IsAdministrator":$administrator},"Configuration":$userConfiguration}""")
+                json("""{"Name":"Claude","Policy":{"IsAdministrator":$administrator$policy},"Configuration":$userConfiguration}""")
             path == "/Users/Configuration" -> {
                 userConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
