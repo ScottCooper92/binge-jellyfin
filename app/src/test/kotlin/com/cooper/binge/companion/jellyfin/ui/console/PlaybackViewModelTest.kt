@@ -1,5 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
@@ -89,6 +94,31 @@ class PlaybackViewModelTest {
                 .queryParameter("userId"),
         )
         assertEquals(PlaybackPreferences("eng", "fre", SubtitleMode.Smart), vm.ready().preferences)
+    }
+
+    /** A view model held in [store], so clearing the store closes it as closing the page does. */
+    private fun playbackIn(store: ViewModelStore): PlaybackViewModel =
+        ViewModelProvider(
+            object : ViewModelStoreOwner {
+                override val viewModelStore = store
+            },
+            viewModelFactory { initializer { PlaybackViewModel(connection) } },
+        )[PlaybackViewModel::class.java]
+
+    @Test
+    fun `closing the page mid-save still sends every pick, and a page opened next reads them`() {
+        val store = ViewModelStore()
+        playbackIn(store).apply {
+            ready()
+            setAudio("spa")
+            setSubtitles("fre")
+        }
+        store.clear()
+        saves(2)
+        val body = jellyfin.lastBody("/Users/Configuration")
+        assertEquals("spa", body.getValue("AudioLanguagePreference").jsonPrimitive.content)
+        assertEquals("fre", body.getValue("SubtitleLanguagePreference").jsonPrimitive.content)
+        assertEquals(PlaybackPreferences("spa", "fre", SubtitleMode.Default), PlaybackViewModel(connection).ready().preferences)
     }
 
     @Test

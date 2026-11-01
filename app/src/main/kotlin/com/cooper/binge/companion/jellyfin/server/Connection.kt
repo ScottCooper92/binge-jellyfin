@@ -3,14 +3,21 @@ package com.cooper.binge.companion.jellyfin.server
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import java.util.concurrent.ConcurrentHashMap
 
 /** Makes [JellyfinClient]s: an anonymous one for a typed address, and one for the saved session. */
 class Connection(
@@ -32,6 +39,24 @@ class Connection(
     fun reportRefused() {
         refusals.tryEmit(Unit)
     }
+
+    /** Lives as long as the connection, so a save outlives the page that started it. */
+    private val saveScope = CoroutineScope(SupervisorJob() + io)
+    private val pendingSaves: MutableSet<Job> = ConcurrentHashMap.newKeySet()
+
+    /**
+     * Runs [block], a save the user made, to its end even if the page that made it closes first.
+     * Settings save as made, so closing a page must not drop a change still on its way.
+     */
+    fun launchSave(block: suspend () -> Unit) {
+        val job = saveScope.launch(start = CoroutineStart.LAZY) { block() }
+        pendingSaves += job
+        job.invokeOnCompletion { pendingSaves -= job }
+        job.start()
+    }
+
+    /** Waits for every save started so far, so a page opened next reads what the last one saved. */
+    suspend fun awaitSaves() = pendingSaves.toList().joinAll()
 
     suspend fun identity(): ClientIdentity = ClientIdentity(client, device, sessions.deviceId(), version)
 

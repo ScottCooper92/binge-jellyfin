@@ -1,5 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.session
@@ -103,6 +108,22 @@ class PasswordViewModelTest {
         assertEquals(PasswordResult.Refused, PasswordViewModel(connection).fill("old-secret", "n").resultOfChange().result)
         runBlocking { sessions.clear() }
         assertEquals(PasswordResult.Unreachable, PasswordViewModel(connection).fill("old-secret", "n").resultOfChange().result)
+    }
+
+    @Test
+    fun `closing the page right after submitting still sends the change`() {
+        val store = ViewModelStore()
+        val vm =
+            ViewModelProvider(
+                object : ViewModelStoreOwner {
+                    override val viewModelStore = store
+                },
+                viewModelFactory { initializer { PasswordViewModel(connection) } },
+            )[PasswordViewModel::class.java]
+        vm.fill("old-secret", "new-secret").change()
+        store.clear()
+        runBlocking { connection.awaitSaves() }
+        assertEquals("new-secret", jellyfin.password)
     }
 
     private companion object {

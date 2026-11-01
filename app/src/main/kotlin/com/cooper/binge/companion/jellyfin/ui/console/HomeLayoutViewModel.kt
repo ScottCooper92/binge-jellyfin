@@ -67,7 +67,7 @@ class HomeLayoutViewModel(
     val state: StateFlow<HomeLayoutUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(viewModelScope, connection, TAG) { shown, failure ->
+        ConfigurationSaves(connection, TAG) { shown, failure ->
             _state.update { (it as? HomeLayoutUiState.Ready)?.copy(layout = shown.homeLayout(), saveFailed = failure) ?: it }
         }
 
@@ -78,6 +78,7 @@ class HomeLayoutViewModel(
     fun load() {
         _state.value = HomeLayoutUiState.Loading
         viewModelScope.launch {
+            connection.awaitSaves()
             _state.value =
                 connection
                     .consoleCall(TAG) { session, client ->
