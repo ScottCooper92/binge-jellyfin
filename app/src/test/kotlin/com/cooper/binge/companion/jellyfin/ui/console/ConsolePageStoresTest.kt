@@ -68,4 +68,14 @@ class ConsolePageStoresTest {
         assertSame(stores, held)
         assertTrue(reopened.cleared)
     }
+
+    @Test
+    fun `a page opened from another leaves the opener's view model alone, so Back finds it as it was`() {
+        val stores = ConsolePageStores()
+        val opener = stores.storeFor(1).page()
+        stores.storeFor(2).page()
+        // Back from the second page: the opener is on the stack still, so it is the same view model, not a fresh load.
+        assertSame(opener, stores.storeFor(1).page())
+        assertFalse(opener.cleared)
+    }
 }
