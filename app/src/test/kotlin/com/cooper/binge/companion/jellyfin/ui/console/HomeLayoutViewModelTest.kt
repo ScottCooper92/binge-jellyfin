@@ -1,17 +1,18 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
@@ -36,6 +37,10 @@ class HomeLayoutViewModelTest {
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
     private val current = JellyfinServerProfile.from("10.11.6")
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -43,10 +48,7 @@ class HomeLayoutViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
     private fun HomeLayoutViewModel.settled(check: (HomeLayoutUiState) -> Boolean = { it !is HomeLayoutUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
@@ -66,7 +68,7 @@ class HomeLayoutViewModelTest {
     @Test
     fun `reads the libraries in the saved order, the rest after, and the server's defaults`() {
         jellyfin.userConfiguration = """{"OrderedViews":["lib-shows"],"MyMediaExcludes":["lib-home"]}"""
-        val ready = HomeLayoutViewModel(connection, current).ready()
+        val ready = made(HomeLayoutViewModel(connection, current)).ready()
         assertEquals(listOf("lib-shows", "lib-movies", "lib-home"), ready.libraries.map { it.id })
         assertEquals(setOf("lib-home"), ready.layout.myMediaExcludes)
         assertEquals(listOf("lib-home"), ready.groupable.map { it.id })
@@ -76,7 +78,7 @@ class HomeLayoutViewModelTest {
 
     @Test
     fun `a current server is asked with UserViews and an older one the old way`() {
-        HomeLayoutViewModel(connection, current).ready()
+        made(HomeLayoutViewModel(connection, current)).ready()
         assertEquals(1, jellyfin.hits("/UserViews"))
         HomeLayoutViewModel(connection, JellyfinServerProfile.from("10.8.13")).ready()
         assertEquals(1, jellyfin.hits("/Users/user-1/Views"))
@@ -85,7 +87,7 @@ class HomeLayoutViewModelTest {
 
     @Test
     fun `hiding a library from My Media and Latest saves each list, the rest as it was`() {
-        val vm = HomeLayoutViewModel(connection, current)
+        val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.setInMyMedia("lib-movies", false)
         saves(1)
@@ -107,7 +109,7 @@ class HomeLayoutViewModelTest {
 
     @Test
     fun `moving a library saves the whole order, and the ends don't move`() {
-        val vm = HomeLayoutViewModel(connection, current)
+        val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.move("lib-home", -1)
         saves(1)
@@ -120,7 +122,7 @@ class HomeLayoutViewModelTest {
 
     @Test
     fun `grouping and the display switches save as they're made`() {
-        val vm = HomeLayoutViewModel(connection, current)
+        val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.setGrouped("lib-home", true)
         saves(1)
@@ -139,7 +141,7 @@ class HomeLayoutViewModelTest {
 
     @Test
     fun `a grouped library leaves the views but stays in the grouping options, so it can be ungrouped`() {
-        val vm = HomeLayoutViewModel(connection, current)
+        val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.setGrouped("lib-home", true)
         saves(1)
@@ -157,7 +159,7 @@ class HomeLayoutViewModelTest {
 
     @Test
     fun `a save that fails puts the change back and says so`() {
-        val vm = HomeLayoutViewModel(connection, current)
+        val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.move("lib-shows", -1)
@@ -168,7 +170,7 @@ class HomeLayoutViewModelTest {
 
     @Test
     fun `a library's page opens and closes`() {
-        val vm = HomeLayoutViewModel(connection, current)
+        val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.open("lib-shows")
         assertEquals("Shows", vm.ready().openLibrary?.name)
@@ -179,7 +181,7 @@ class HomeLayoutViewModelTest {
     @Test
     fun `grouping that can't be read leaves the rest of the page`() {
         jellyfin.status["/UserViews/GroupingOptions"] = 500
-        val ready = HomeLayoutViewModel(connection, current).ready()
+        val ready = made(HomeLayoutViewModel(connection, current)).ready()
         assertEquals(3, ready.libraries.size)
         assertEquals(emptyList<UserView>(), ready.groupable)
     }
@@ -187,7 +189,7 @@ class HomeLayoutViewModelTest {
     @Test
     fun `libraries that can't be read fail the page`() {
         jellyfin.status["/UserViews"] = 500
-        assertEquals(HomeLayoutUiState.Failed(ConsoleFailure.Refused), HomeLayoutViewModel(connection, current).settled())
+        assertEquals(HomeLayoutUiState.Failed(ConsoleFailure.Refused), made(HomeLayoutViewModel(connection, current)).settled())
     }
 
     private companion object {

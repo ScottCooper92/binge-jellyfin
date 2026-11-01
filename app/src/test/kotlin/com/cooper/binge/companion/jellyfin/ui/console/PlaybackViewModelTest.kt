@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -11,12 +12,12 @@ import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.booleanOrNull
@@ -38,6 +39,10 @@ class PlaybackViewModelTest {
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -45,10 +50,7 @@ class PlaybackViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
     private fun PlaybackViewModel.settled(check: (PlaybackUiState) -> Boolean = { it !is PlaybackUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
@@ -66,7 +68,7 @@ class PlaybackViewModelTest {
 
     @Test
     fun `reads the user's choices and the server's languages, one per code, the unnamed one left out`() {
-        val ready = PlaybackViewModel(connection).ready()
+        val ready = made(PlaybackViewModel(connection)).ready()
         assertEquals(PlaybackPreferences(audio = "eng", subtitles = "", subtitleMode = SubtitleMode.Default), ready.preferences)
         assertEquals(listOf("English", "French", "Klingon", "Spanish; Castilian"), ready.cultures.map { it.displayName })
         assertEquals(listOf("fre", "fra"), ready.cultures.first { it.displayName == "French" }.codes)
@@ -74,7 +76,7 @@ class PlaybackViewModelTest {
 
     @Test
     fun `each pick saves the whole configuration with that one change, for this user`() {
-        val vm = PlaybackViewModel(connection)
+        val vm = made(PlaybackViewModel(connection))
         vm.ready()
         vm.setSubtitles("fre")
         saves(1)
@@ -118,12 +120,12 @@ class PlaybackViewModelTest {
         val body = jellyfin.lastBody("/Users/Configuration")
         assertEquals("spa", body.getValue("AudioLanguagePreference").jsonPrimitive.content)
         assertEquals("fre", body.getValue("SubtitleLanguagePreference").jsonPrimitive.content)
-        assertEquals(PlaybackPreferences("spa", "fre", SubtitleMode.Default), PlaybackViewModel(connection).ready().preferences)
+        assertEquals(PlaybackPreferences("spa", "fre", SubtitleMode.Default), made(PlaybackViewModel(connection)).ready().preferences)
     }
 
     @Test
     fun `a save queued under one session never reaches the next one signed in`() {
-        val vm = PlaybackViewModel(connection)
+        val vm = made(PlaybackViewModel(connection))
         vm.ready()
         jellyfin.slow += "/Users/Configuration"
         vm.setAudio("spa")
@@ -141,7 +143,7 @@ class PlaybackViewModelTest {
 
     @Test
     fun `a save that fails puts that choice back and says so`() {
-        val vm = PlaybackViewModel(connection)
+        val vm = made(PlaybackViewModel(connection))
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.setAudio("spa")
@@ -156,7 +158,7 @@ class PlaybackViewModelTest {
 
     @Test
     fun `a failed save leaves a newer pick of the same row alone`() {
-        val vm = PlaybackViewModel(connection)
+        val vm = made(PlaybackViewModel(connection))
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.setAudio("spa")
@@ -178,7 +180,7 @@ class PlaybackViewModelTest {
     @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/Localization/Cultures"] = 500
-        val vm = PlaybackViewModel(connection)
+        val vm = made(PlaybackViewModel(connection))
         assertEquals(PlaybackUiState.Failed(ConsoleFailure.Refused), vm.settled())
         jellyfin.status.remove("/Localization/Cultures")
         vm.load()
@@ -188,13 +190,13 @@ class PlaybackViewModelTest {
     @Test
     fun `signed out, the page can't read`() {
         runBlocking { sessions.clear() }
-        assertEquals(PlaybackUiState.Failed(ConsoleFailure.Unreachable), PlaybackViewModel(connection).settled())
+        assertEquals(PlaybackUiState.Failed(ConsoleFailure.Unreachable), made(PlaybackViewModel(connection)).settled())
     }
 
     @Test
     fun `reads the playback switches, each on unless the server says off`() {
         jellyfin.userConfiguration = """{"PlayDefaultAudioTrack":false,"RememberSubtitleSelections":false}"""
-        val ready = PlaybackViewModel(connection).ready().preferences
+        val ready = made(PlaybackViewModel(connection)).ready().preferences
         assertFalse(ready.playDefaultAudioTrack)
         assertTrue(ready.rememberAudio)
         assertFalse(ready.rememberSubtitles)
@@ -203,7 +205,7 @@ class PlaybackViewModelTest {
 
     @Test
     fun `a switch saves as a boolean, with the rest of the configuration`() {
-        val vm = PlaybackViewModel(connection)
+        val vm = made(PlaybackViewModel(connection))
         vm.ready()
         vm.setAutoplayNextEpisode(false)
         saves(1)
@@ -220,7 +222,7 @@ class PlaybackViewModelTest {
 
     @Test
     fun `a switch whose save fails goes back`() {
-        val vm = PlaybackViewModel(connection)
+        val vm = made(PlaybackViewModel(connection))
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.setPlayDefaultAudioTrack(false)
