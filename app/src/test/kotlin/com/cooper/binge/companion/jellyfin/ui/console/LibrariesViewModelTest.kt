@@ -204,6 +204,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `a new library is added with no scan, and shown with the others`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
         val vm = made(LibrariesViewModel(connection))
         vm.ready()
         vm.ask(true)
@@ -223,6 +224,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `mixed content has no collection type, and a path with a comma is added after the library`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media/a,b"))
         val vm = made(LibrariesViewModel(connection))
         vm.ready()
         vm.add("Everything", MIXED_LIBRARY, "/media/a,b")
@@ -244,7 +246,35 @@ class LibrariesViewModelTest {
     }
 
     @Test
+    fun `a folder the server hasn't got makes no library, with or without a comma, and says so`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        vm.add("Anime", "tvshows", "/media/missing,folder")
+        assertTrue(vm.ready { it.folderMissing }.adding)
+        vm.add("Anime", "tvshows", "/media/missing")
+        assertTrue(vm.ready { it.folderMissing && !it.saving }.folderMissing)
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
+        assertEquals(3, jellyfin.libraries.size)
+        vm.ask(true)
+        assertFalse(vm.ready().folderMissing)
+    }
+
+    @Test
+    fun `a failed add reads the libraries again, so a part-made one shows`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        jellyfin.libraries =
+            JsonArray(jellyfin.libraries + Json.parseToJsonElement("""{"Name":"Half","ItemId":"lib-half","Locations":[]}"""))
+        jellyfin.status["/Environment/ValidatePath"] = 500
+        vm.add("Other", "movies", "/media/x")
+        val failed = vm.ready { it.addFailed != null && it.libraries.any { library -> library.name == "Half" } }
+        assertEquals(ConsoleFailure.Refused, failed.addFailed)
+    }
+
+    @Test
     fun `an add the server refuses says so and keeps the sheet open`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media/anime"))
         val vm = made(LibrariesViewModel(connection))
         vm.ready()
         vm.ask(true)

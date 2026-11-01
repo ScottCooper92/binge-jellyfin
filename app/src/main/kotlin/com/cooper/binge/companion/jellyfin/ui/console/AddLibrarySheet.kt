@@ -34,13 +34,14 @@ internal fun AddLibrarySheet(
     names: List<String>,
     saving: Boolean,
     failed: ConsoleFailure?,
+    folderMissing: Boolean,
     folders: FolderBrowseState,
     folderActions: FolderActions,
     onAdd: (name: String, kind: String, path: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
-        AddLibraryForm(names, saving, failed, folders, folderActions, onAdd, onDismiss)
+        AddLibraryForm(names, saving, failed, folders, folderActions, onAdd, onDismiss, folderMissing = folderMissing)
     }
 }
 
@@ -68,6 +69,7 @@ internal fun AddLibraryForm(
     onCancel: () -> Unit,
     startStep: Int = Step.NAME,
     startName: String = "",
+    folderMissing: Boolean = false,
 ) {
     var step by rememberSaveable { mutableIntStateOf(startStep) }
     var name by rememberSaveable { mutableStateOf(startName) }
@@ -120,7 +122,12 @@ internal fun AddLibraryForm(
                 submitLabel = stringResource(R.string.library_add_submit),
                 hint = stringResource(R.string.library_path_hint),
                 isSubmitting = saving,
-                error = failed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) },
+                error =
+                    if (folderMissing) {
+                        stringResource(R.string.library_path_missing)
+                    } else {
+                        failed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
+                    },
                 minLines = 1,
                 maxLines = 2,
             )
