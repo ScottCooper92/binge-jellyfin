@@ -34,11 +34,11 @@ internal fun AddLibrarySheet(
     names: List<String>,
     saving: Boolean,
     failed: ConsoleFailure?,
-    folderMissing: Boolean,
     folders: FolderBrowseState,
     folderActions: FolderActions,
     onAdd: (name: String, kind: String, path: String) -> Unit,
     onDismiss: () -> Unit,
+    folderMissing: Boolean = false,
 ) {
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
         AddLibraryForm(names, saving, failed, folders, folderActions, onAdd, onDismiss, folderMissing = folderMissing)

@@ -209,6 +209,7 @@ class LibrariesViewModelTest {
         vm.ready()
         vm.ask(true)
         assertTrue(vm.ready().adding)
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/anime"))
         vm.add("  Anime ", "tvshows", "/media/anime")
         val added = vm.ready { it.libraries.size == 3 }
         assertFalse(added.adding)
@@ -227,6 +228,7 @@ class LibrariesViewModelTest {
         jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media/a,b"))
         val vm = made(LibrariesViewModel(connection))
         vm.ready()
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/a,b"))
         vm.add("Everything", MIXED_LIBRARY, "/media/a,b")
         val added = vm.ready { it.libraries.size == 3 }
         val request = jellyfin.requests.last { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" }
@@ -278,6 +280,7 @@ class LibrariesViewModelTest {
         val vm = made(LibrariesViewModel(connection))
         vm.ready()
         vm.ask(true)
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/anime"))
         jellyfin.status["/Library/VirtualFolders"] = 500
         vm.add("Anime", "tvshows", "/media/anime")
         // The status override answers the list too, so the failure is the add's own.
@@ -286,6 +289,33 @@ class LibrariesViewModelTest {
         assertFalse(failed.saving)
         vm.ask(false)
         assertNull(vm.ready().addFailed)
+    }
+
+    @Test
+    fun `a folder the server hasn't got adds no library, comma or not`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        vm.add("Gone", "movies", "/media/gone,here")
+        val missing = vm.ready { it.folderMissing }
+        assertFalse(missing.saving)
+        assertTrue(missing.adding)
+        assertNull(missing.addFailed)
+        vm.add("Gone", "movies", "/media/gone")
+        vm.ready { it.folderMissing }
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
+        assertEquals(2, vm.ready().libraries.size)
+    }
+
+    @Test
+    fun `an add that fails after the server made the library reads the libraries again`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        jellyfin.serverFolders = jellyfin.serverFolders + ("/media/more" to listOf("/media/a,b"))
+        jellyfin.status["/Library/VirtualFolders/Paths"] = 500
+        vm.add("Everything", MIXED_LIBRARY, "/media/a,b")
+        val failed = vm.ready { it.addFailed != null && it.libraries.size == 3 }
+        assertTrue(failed.libraries.any { it.name == "Everything" })
     }
 
     private fun progress(
