@@ -78,8 +78,8 @@ data class Actions(
     val onOpenPage: (ConsolePage) -> Unit = {},
 )
 
-/** Lines a server row's address may take, so it stays readable at large font sizes. */
-private const val ADDRESS_LINES = 2
+/** Lines a server row's marker and address may take: enough for the whole address at 2× font beside Change. */
+private const val ADDRESS_LINES = 5
 
 @Composable
 fun JellyfinRoot(
