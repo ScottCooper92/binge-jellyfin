@@ -24,16 +24,22 @@ import androidx.compose.ui.test.performTextReplacement
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.Branding
+import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
+import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
+import com.cooper.binge.companion.jellyfin.server.PackageVersion
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
+import com.cooper.binge.companion.jellyfin.server.PluginRepository
+import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
+import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.server.ServerSettings
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.ServerUser
@@ -444,6 +450,223 @@ class ConsoleScreensTest {
         compose.waitForIdle()
         assertEquals(1, closed)
         assertEquals(0, left)
+    }
+
+    private val aniDb =
+        ServerPlugin("a1b2", "AniDB", "1.2.3.4", "Anime metadata.", PluginStatus.Active, canUninstall = true, hasSettings = true)
+
+    private fun pluginsScreen(
+        installed: PluginsUiState = PluginsUiState.Ready(listOf(aniDb)),
+        catalog: CatalogUiState = CatalogUiState.Ready(emptyList()),
+        repositories: RepositoriesUiState = RepositoriesUiState.Ready(emptyList()),
+        actions: PluginsActions = PluginsActions(),
+        catalogActions: CatalogActions = CatalogActions(),
+        repositoryActions: RepositoriesActions = RepositoriesActions(),
+        onBack: () -> Unit = {},
+    ) = compose.setContent {
+        JellyfinTheme { PluginsScreen(installed, catalog, repositories, actions, catalogActions, repositoryActions, onBack) }
+    }
+
+    @Test
+    fun `installed plugins open to their page, switch, open settings, and uninstall after a confirm`() {
+        val calls = mutableListOf<String>()
+        val waiting = aniDb.copy(id = "c3", name = "Waiting", status = PluginStatus.Restart, hasSettings = false)
+        var state by mutableStateOf(PluginsUiState.Ready(listOf(aniDb, waiting)))
+        val actions =
+            PluginsActions(
+                onOpen = {
+                    state = state.copy(open = it?.id)
+                    calls += "open ${it?.name}"
+                },
+                onToggle = { plugin, on -> calls += "toggle ${plugin.name} $on" },
+                onAskUninstall = { state = state.copy(confirming = it) },
+                onUninstall = { calls += "uninstall" },
+                onOpenSettings = { calls += "settings ${it.name}" },
+                onRestart = { calls += "restart" },
+            )
+        pluginsScreen(installed = state, actions = actions)
+        compose.onAllNodesWithText("Restart needed", substring = true).assertCountEquals(2)
+        compose.onNodeWithText("AniDB").assertExists()
+        compose.onNodeWithText("A change to a plugin takes effect when the server restarts.", substring = true).performClick()
+        assertEquals(listOf("restart"), calls)
+        calls.clear()
+        compose.onNodeWithText("AniDB").performClick()
+        assertEquals(listOf("open AniDB"), calls)
+    }
+
+    @Test
+    fun `a plugin page has its switch, settings and Uninstall, last and red, behind a confirm`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(PluginsUiState.Ready(listOf(aniDb), open = "a1b2"))
+        val actions =
+            PluginsActions(
+                onOpen = { calls += "open ${it?.name}" },
+                onToggle = { plugin, on -> calls += "toggle ${plugin.name} $on" },
+                onAskUninstall = { state = state.copy(confirming = it) },
+                onUninstall = { calls += "uninstall" },
+                onOpenSettings = { calls += "settings ${it.name}" },
+            )
+        compose.setContent {
+            JellyfinTheme {
+                PluginsScreen(
+                    state,
+                    CatalogUiState.Ready(
+                        emptyList(),
+                    ),
+                    RepositoriesUiState.Ready(emptyList()),
+                    actions,
+                    CatalogActions(),
+                    RepositoriesActions(),
+                    {
+                    },
+                )
+            }
+        }
+        compose.onNodeWithText("Anime metadata.").assertExists()
+        compose.onNodeWithText("Settings").performClick()
+        compose.onNodeWithText("Enabled").performClick()
+        assertEquals(listOf("settings AniDB", "toggle AniDB false"), calls)
+        compose.onNodeWithText("Uninstall").performScrollTo().performClick()
+        compose.onNodeWithText("Uninstall AniDB?").assertExists()
+        compose.onAllNodesWithText("Uninstall")[1].performClick()
+        assertTrue("uninstall" in calls)
+        calls.clear()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        assertEquals(listOf("open null"), calls)
+    }
+
+    @Test
+    fun `a plugin that can't run has no switch, and one that can't be uninstalled has no Uninstall`() {
+        val stuck = aniDb.copy(status = PluginStatus.NotSupported, canUninstall = false, hasSettings = false)
+        pluginsScreen(installed = PluginsUiState.Ready(listOf(stuck), open = "a1b2"))
+        compose.onNodeWithText("Not supported by this server", substring = true).assertExists()
+        compose.onNodeWithText("Enabled").assertDoesNotExist()
+        compose.onNodeWithText("Settings").assertDoesNotExist()
+        compose.onNodeWithText("Uninstall").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the catalog lists packages by category, and a package installs the version for this server, or says there is none`() {
+        val calls = mutableListOf<String>()
+        val version = PackageVersion("13.0.0.0", "Fixes a thing.", "10.10.0.0", "Jellyfin Stable", "https://r.example/m.json")
+        val reporting =
+            CatalogPackage(
+                "g1",
+                "Playback Reporting",
+                "Reports playback.",
+                "Shows who watched what.",
+                "jellyfin",
+                "General",
+                listOf(version),
+            )
+        val future =
+            CatalogPackage(
+                "g2",
+                "Future Plugin",
+                "Needs a newer server.",
+                "",
+                "someone",
+                "Metadata",
+                listOf(version.copy(targetAbi = "10.12.0.0")),
+            )
+        var state by mutableStateOf(CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7")))
+        val actions =
+            CatalogActions(
+                onOpen = { state = state.copy(open = it) },
+                onInstall = { calls += "install ${it.name}" },
+                onCancel = { calls += "cancel ${it.name}" },
+            )
+        compose.setContent {
+            JellyfinTheme {
+                PluginsScreen(
+                    PluginsUiState.Ready(emptyList()),
+                    state,
+                    RepositoriesUiState.Ready(emptyList()),
+                    PluginsActions(),
+                    actions,
+                    RepositoriesActions(),
+                    {},
+                )
+            }
+        }
+        compose.onNodeWithText("Catalog").performClick()
+        compose.onNodeWithText("GENERAL").assertExists()
+        compose.onNodeWithText("Reports playback.").assertExists()
+        compose.onNodeWithText("Playback Reporting").performClick()
+        compose.onNodeWithText("Shows who watched what.").assertExists()
+        compose.onNodeWithText("13.0.0.0 · Jellyfin Stable").assertExists()
+        compose.onNodeWithText("Fixes a thing.").assertExists()
+        compose.onNodeWithText("Install").performClick()
+        assertEquals(listOf("install Playback Reporting"), calls)
+        state = state.copy(installing = mapOf("Playback Reporting" to null))
+        compose.onNodeWithText("Cancel install").assertIsNotEnabled()
+        state = state.copy(installing = mapOf("Playback Reporting" to "install-1"))
+        compose.onNodeWithText("Cancel install").performClick()
+        assertEquals("cancel Playback Reporting", calls.last())
+        state =
+            state.copy(
+                installing = emptyMap(),
+                installed = setOf("Playback Reporting"),
+                outcomes =
+                    mapOf(
+                        "Playback Reporting" to InstallOutcome.Done,
+                    ),
+            )
+        compose.onNodeWithText("Installed. Restart the server to start using it.").assertExists()
+        compose.onNodeWithText("Install").assertDoesNotExist()
+        state = state.copy(open = "Future Plugin", outcomes = emptyMap())
+        compose.onNodeWithText("None built for this server's release").assertExists()
+        compose.onNodeWithText("Install").assertDoesNotExist()
+    }
+
+    @Test
+    fun `repositories add in two steps, with the warning, and remove after a confirm`() {
+        val calls = mutableListOf<String>()
+        val stable = PluginRepository("Jellyfin Stable", "https://repo.example/stable.json", true)
+        var state by mutableStateOf(RepositoriesUiState.Ready(listOf(stable)))
+        val actions =
+            RepositoriesActions(
+                onAskAdd = { state = state.copy(adding = it) },
+                onAdd = { name, url -> calls += "add $name $url" },
+                onAskRemove = { state = state.copy(removing = it) },
+                onRemove = { calls += "remove" },
+            )
+        compose.setContent {
+            JellyfinTheme {
+                PluginsScreen(
+                    PluginsUiState.Ready(emptyList()),
+                    CatalogUiState.Ready(emptyList()),
+                    state,
+                    PluginsActions(),
+                    CatalogActions(),
+                    actions,
+                    {},
+                )
+            }
+        }
+        compose.onNodeWithText("Repositories").performClick()
+        compose.onNodeWithText("Jellyfin Stable").assertExists()
+        compose.onNodeWithText("https://repo.example/stable.json").assertExists()
+        compose.onNodeWithText("Add repository").performClick()
+        compose.onNodeWithText("Repository name").assertExists()
+        compose.onNode(hasSetTextAction()).performTextInput("Mine")
+        compose.onNodeWithText("Next").performClick()
+        compose.onNodeWithText("Repository address").assertExists()
+        compose.onNodeWithText("A repository can offer code that runs on your server. Only add one you trust.").assertExists()
+        compose.onNode(hasSetTextAction()).performTextInput("not a url")
+        compose.onNodeWithText("Enter a web address starting with http:// or https://.").assertExists()
+        compose.onNodeWithText("Add").assertIsNotEnabled()
+        compose.onNode(hasSetTextAction()).performTextReplacement("https://mine.example/m.json")
+        compose.onNodeWithText("Add").performClick()
+        assertEquals(listOf("add Mine https://mine.example/m.json"), calls)
+        state = state.copy(adding = false)
+        compose.onNodeWithContentDescription("Remove").performClick()
+        compose.onNodeWithText("Remove Jellyfin Stable?").assertExists()
+        compose.onAllNodesWithText("Remove")[0].performClick()
+        assertEquals("remove", calls.last())
+        state = RepositoriesUiState.Ready(emptyList())
+        compose.onNodeWithText("No repositories").assertExists()
     }
 
     @Test

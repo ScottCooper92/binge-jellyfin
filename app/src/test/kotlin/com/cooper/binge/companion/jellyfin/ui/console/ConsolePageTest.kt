@@ -41,6 +41,17 @@ class ConsolePageTest {
     }
 
     @Test
+    fun `plugins is for an administrator on any release`() {
+        val admin = account("""{"IsAdministrator":true}""")
+        val user = account("""{"IsAdministrator":false}""")
+        for (release in listOf("10.8.13", "10.9.0", "10.11.2", null)) {
+            assertTrue(ConsolePage.Plugins.available(JellyfinServerProfile.from(release), admin))
+            assertFalse(ConsolePage.Plugins.available(JellyfinServerProfile.from(release), user))
+        }
+        assertTrue(ConsolePage.Plugins.isAdmin)
+    }
+
+    @Test
     fun `pages follow what the server and the user's policy turned off`() {
         val user =
             account(

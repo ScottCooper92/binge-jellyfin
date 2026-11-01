@@ -19,6 +19,7 @@ internal fun ConsolePageRoute(
     graph: AppGraph,
     signedIn: UiState.SignedIn,
     close: () -> Unit,
+    open: (ConsolePage) -> Unit = {},
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
@@ -39,6 +40,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
+        ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.Server -> ServerRoute(graph, close)
     }
