@@ -59,6 +59,7 @@ class AppGraph(
         RemoteFeatureFlags(
             source = FirebaseRemoteFlagSource(appContext),
             overrides = if (BuildConfig.BINGE_PROMOTION) mapOf(Flag.BingePromotion to true) else emptyMap(),
+            io = io,
         )
     }
 

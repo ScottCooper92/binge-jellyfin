@@ -1,6 +1,6 @@
 package com.cooper.binge.companion.jellyfin.flags
 
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,12 +14,13 @@ import kotlinx.coroutines.withContext
 class RemoteFeatureFlags(
     private val source: RemoteFlagSource,
     private val overrides: Map<Flag, Boolean> = emptyMap(),
+    private val io: CoroutineDispatcher,
 ) : FeatureFlags {
     private val resolved = MutableStateFlow(resolve(Flags()))
     override val flags: StateFlow<Flags> = resolved.asStateFlow()
 
     override suspend fun refresh() {
-        withContext(Dispatchers.IO) {
+        withContext(io) {
             resolved.value = resolve(source.current())
             source.fetch()?.let { resolved.value = resolve(it) }
         }

@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.flags
 
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -23,7 +24,7 @@ class RemoteFeatureFlagsTest {
     @Test
     fun `starts off, and a fetch replaces the values`() {
         val source = FakeSource(current = Flags(bingePromotion = false), fetched = Flags.AllOn)
-        val flags = RemoteFeatureFlags(source)
+        val flags = RemoteFeatureFlags(source, io = Dispatchers.Unconfined)
         assertFalse(flags.flags.value.bingePromotion)
         runBlocking { flags.refresh() }
         assertTrue(flags.flags.value.bingePromotion)
@@ -31,7 +32,7 @@ class RemoteFeatureFlagsTest {
 
     @Test
     fun `a failed fetch keeps the last activated values, read on refresh`() {
-        val flags = RemoteFeatureFlags(FakeSource(current = Flags.AllOn, fetched = null))
+        val flags = RemoteFeatureFlags(FakeSource(current = Flags.AllOn, fetched = null), io = Dispatchers.Unconfined)
         assertFalse(flags.flags.value.bingePromotion)
         runBlocking { flags.refresh() }
         assertTrue(flags.flags.value.bingePromotion)
@@ -40,7 +41,7 @@ class RemoteFeatureFlagsTest {
     @Test
     fun `a build's override wins over the remote, whichever way the remote goes`() {
         val source = FakeSource(current = Flags(), fetched = Flags())
-        val flags = RemoteFeatureFlags(source, overrides = mapOf(Flag.BingePromotion to true))
+        val flags = RemoteFeatureFlags(source, overrides = mapOf(Flag.BingePromotion to true), io = Dispatchers.Unconfined)
         assertTrue(flags.flags.value.bingePromotion)
         runBlocking { flags.refresh() }
         assertTrue(flags.flags.value.bingePromotion)
