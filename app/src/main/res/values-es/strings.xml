@@ -103,7 +103,7 @@
     <string name="languages_subtitles">Idioma de los subtítulos</string>
     <string name="languages_subtitle_mode">Modo de subtítulos</string>
     <string name="languages_any">Cualquier idioma</string>
-    <string name="languages_not_saved">No se ha guardado. %1$s</string>
+    <string name="settings_not_saved">No se ha guardado. %1$s</string>
     <string name="subtitle_mode_default">Según el archivo</string>
     <string name="subtitle_mode_default_detail">Los subtítulos que el archivo marca como predeterminados o forzados</string>
     <string name="subtitle_mode_smart">Inteligente</string>

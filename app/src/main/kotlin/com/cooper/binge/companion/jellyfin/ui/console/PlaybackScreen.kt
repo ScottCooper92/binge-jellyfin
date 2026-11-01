@@ -190,7 +190,7 @@ private fun PlaybackBody(
                 ),
         )
         Text(
-            text = state.saveFailed?.let { stringResource(R.string.languages_not_saved, stringResource(it.message)) }.orEmpty(),
+            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }.orEmpty(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
             minLines = STATUS_LINES,
