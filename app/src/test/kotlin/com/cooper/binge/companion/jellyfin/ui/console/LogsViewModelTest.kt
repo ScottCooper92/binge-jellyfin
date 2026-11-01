@@ -1,14 +1,15 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -28,6 +29,10 @@ class LogsViewModelTest {
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -35,10 +40,7 @@ class LogsViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
     private fun LogsViewModel.settled(check: (LogsUiState) -> Boolean) = runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
 
@@ -50,7 +52,7 @@ class LogsViewModelTest {
 
     @Test
     fun `lists the log files, newest first`() {
-        val vm = LogsViewModel(connection)
+        val vm = made(LogsViewModel(connection))
         assertEquals(listOf("log_20261031.log", "log_20261030.log"), vm.ready().files.map { it.name })
         assertEquals(
             4096L,
@@ -64,7 +66,7 @@ class LogsViewModelTest {
 
     @Test
     fun `opening a log reads its end with keys blanked, and closing returns to the list`() {
-        val vm = LogsViewModel(connection)
+        val vm = made(LogsViewModel(connection))
         vm.ready()
         vm.open("log_20261031.log")
         val open = vm.opened()
@@ -78,7 +80,7 @@ class LogsViewModelTest {
 
     @Test
     fun `search narrows the lines, and so does warnings only`() {
-        val vm = LogsViewModel(connection)
+        val vm = made(LogsViewModel(connection))
         vm.ready()
         vm.open("log_20261031.log")
         assertEquals(4, vm.opened().visible.size) // three lines and the empty one after the last newline
@@ -93,7 +95,7 @@ class LogsViewModelTest {
 
     @Test
     fun `a slow read for a log that was closed is dropped`() {
-        val vm = LogsViewModel(connection)
+        val vm = made(LogsViewModel(connection))
         vm.ready()
         jellyfin.slow += "/System/Logs/Log"
         vm.open("log_20261030.log")
@@ -107,7 +109,7 @@ class LogsViewModelTest {
 
     @Test
     fun `a log that can't be read says why, and Try again reads it`() {
-        val vm = LogsViewModel(connection)
+        val vm = made(LogsViewModel(connection))
         vm.ready()
         jellyfin.status["/System/Logs/Log"] = 500
         vm.open("log_20261031.log")
@@ -120,7 +122,7 @@ class LogsViewModelTest {
     @Test
     fun `a list that can't be read says why, and Try again reads it`() {
         jellyfin.status["/System/Logs"] = 403
-        val vm = LogsViewModel(connection)
+        val vm = made(LogsViewModel(connection))
         assertEquals(LogsUiState.Failed(ConsoleFailure.Refused), vm.settled { it !is LogsUiState.Loading })
         jellyfin.status.remove("/System/Logs")
         vm.load()

@@ -52,9 +52,9 @@ suspend fun JellyfinClient.logTail(
 const val LOG_TAIL_BYTES = 512 * 1024
 
 private val SECRET =
-    Regex("""(?i)\b(api[_-]?key|access[_-]?token|token)\b(\s*[=:]\s*"?)([A-Za-z0-9._~+/=-]{8,})""")
+    Regex("""(?i)\b(api[_-]?key|access[_-]?token|token)\b("?\s*[=:]\s*"?)([A-Za-z0-9._~+/=-]{8,})""")
 
-/** [line] with the value after `api_key=`, `ApiKey:`, `Token="…"` and the like replaced by `[redacted]`. */
+/** [line] with the value after `api_key=`, `ApiKey:`, `Token="…"` and the like replaced by `[redacted]`; a JSON `"AccessToken":"…"` counts too. */
 fun redactSecrets(line: String): String = SECRET.replace(line) { "${it.groupValues[1]}${it.groupValues[2]}[redacted]" }
 
 /** Reads [source] to its end, keeping the last [maxBytes] of it. A cut-off first line is dropped. */

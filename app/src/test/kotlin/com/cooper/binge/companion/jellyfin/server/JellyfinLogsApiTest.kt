@@ -49,6 +49,10 @@ class JellyfinLogsApiTest {
         assertEquals("GET /Videos/1/stream?api_key=[redacted] 200", redactSecrets("GET /Videos/1/stream?api_key=abcdef123456 200"))
         assertEquals("""ApiKey: [redacted]""", redactSecrets("ApiKey: 0123456789abcdef"))
         assertEquals("""Authorization Token="[redacted]" ok""", redactSecrets("""Authorization Token="0123456789abcdef" ok"""))
+        assertEquals(
+            """{"AccessToken":"[redacted]","Name":"x"}""",
+            redactSecrets("""{"AccessToken":"0123456789abcdef","Name":"x"}"""),
+        )
         val plain = "[INF] Server started, a token of thanks, key=short"
         assertEquals(plain, redactSecrets(plain))
     }

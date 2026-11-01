@@ -39,6 +39,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.LOG_TAIL_BYTES
 import com.cooper.binge.companion.jellyfin.server.LogFile
 import java.time.Instant
 import java.time.ZoneId
@@ -162,7 +163,7 @@ private fun Reader(
                 BingeTextButton(
                     label = stringResource(R.string.logs_share),
                     leadingIcon = Icons.Outlined.Share,
-                    onClick = { actions.onShare(open.name, content.lines.joinToString("\n")) },
+                    onClick = { actions.onShare(open.name, open.visible.joinToString("\n")) },
                 )
                 Text(
                     stringResource(R.string.logs_share_note),
@@ -211,4 +212,4 @@ private fun Lines(
     }
 }
 
-private const val LOG_KEPT_KB = 512
+private const val LOG_KEPT_KB = LOG_TAIL_BYTES / 1024
