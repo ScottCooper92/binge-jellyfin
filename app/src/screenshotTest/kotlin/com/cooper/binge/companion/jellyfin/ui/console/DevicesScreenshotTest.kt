@@ -58,4 +58,10 @@ class DevicesScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = DevicesScreen(DevicesUiState.Failed(ConsoleFailure.Refused), DevicesActions())
+
+    /** The failure screen at 1.5x and 2x font. Its layout is the design system's, so one page stands for all of them. */
+    @PreviewTest
+    @JellyfinFontScalePreviews
+    @Composable
+    fun failedLargeText() = DevicesScreen(DevicesUiState.Failed(ConsoleFailure.Refused), DevicesActions())
 }
