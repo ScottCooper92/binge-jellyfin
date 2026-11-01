@@ -36,13 +36,13 @@ val previewSignIn = UiState.SignIn(baseUrl = LAN, server = lanServer, username =
 
 val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 
-val previewSignInWrongPassword = previewSignIn.copy(password = "hunter2", error = SetupError.WrongCredentials)
+val previewSignInWrongPassword = previewSignIn.copy(password = "hunter2", passwordError = SetupError.WrongCredentials)
 
 val previewQuickConnect = previewSignIn.copy(quickConnectCode = "482913")
 
-val previewQuickConnectOff = previewSignIn.copy(error = SetupError.QuickConnectOff)
+val previewQuickConnectOff = previewSignIn.copy(quickConnectError = SetupError.QuickConnectOff)
 
-val previewQuickConnectExpired = previewSignIn.copy(error = SetupError.QuickConnectExpired)
+val previewQuickConnectExpired = previewSignIn.copy(quickConnectError = SetupError.QuickConnectExpired)
 
 private val session =
     JellyfinSession(
@@ -62,5 +62,9 @@ val previewSignedInChecking = UiState.SignedIn(session = session, titles = null,
 val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = true)
 
 val previewSignedInHttps = previewSignedIn.copy(session = session.copy(baseUrl = REMOTE, serverName = "Cabin"))
+
+val previewQuickConnectGetting = previewSignIn.copy(gettingCode = true)
+
+val previewSignInUnreachable = previewSignIn.copy(password = "hunter2", passwordError = SetupError.Unreachable)
 
 val previewSignedInAdmin = previewSignedIn.copy(isAdministrator = true)

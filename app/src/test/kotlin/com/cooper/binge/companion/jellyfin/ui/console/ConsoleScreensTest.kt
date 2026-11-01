@@ -325,7 +325,7 @@ class ConsoleScreensTest {
                 onRemove = { removed = true },
             )
         compose.setContent { JellyfinTheme { DevicesScreen(state, actions) } }
-        compose.onNodeWithText("This device. Remove it from another one, or sign out here.").assertExists()
+        compose.onNodeWithText("This device. Sign out here instead.").assertExists()
         compose.onAllNodesWithContentDescription("Remove").assertCountEquals(1)
         compose.onNodeWithContentDescription("Remove").performClick()
         assertEquals(listOf<ServerDevice?>(tv), asked)

@@ -7,6 +7,9 @@ import com.binge.designsystem.theme.BingeBrand
 import com.binge.designsystem.theme.BingeExpressiveTheme
 import com.binge.designsystem.theme.DarkColorScheme
 import com.binge.designsystem.theme.LightColorScheme
+import com.binge.designsystem.tv.theme.BingeTvTheme
+import com.binge.designsystem.tv.theme.toTvColorScheme
+import androidx.tv.material3.ColorScheme as TvColorScheme
 
 private val Purple200 = Color(0xFFE3C6EE)
 private val Purple300 = Color(0xFFCC9BDD)
@@ -62,4 +65,13 @@ val JellyfinBrand = BingeBrand(light = JellyfinLightColorScheme, dark = Jellyfin
 @Composable
 fun JellyfinTheme(content: @Composable () -> Unit) {
     BingeExpressiveTheme(brand = JellyfinBrand, content = content)
+}
+
+/** [JellyfinDarkColorScheme] projected for the TV surface, which is dark-only like [BingeTvTheme]. */
+val JellyfinTvColorScheme: TvColorScheme = JellyfinDarkColorScheme.toTvColorScheme()
+
+/** [BingeTvTheme] wearing [JellyfinTvColorScheme], the TV counterpart of [JellyfinTheme]. */
+@Composable
+fun JellyfinTvTheme(content: @Composable () -> Unit) {
+    BingeTvTheme(colorScheme = JellyfinTvColorScheme, content = content)
 }

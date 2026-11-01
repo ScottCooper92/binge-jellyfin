@@ -1,5 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
@@ -45,13 +49,22 @@ class JellyfinViewModelTest {
 
     @After
     fun close() {
+        // Cancels what the view models still have in flight, so none resumes on Main while it is reset.
+        stores.forEach { it.clear() }
         Dispatchers.resetMain()
         jellyfin.close()
     }
 
     private var found: List<DiscoveredServer> = emptyList()
 
-    private fun viewModel() = JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L)
+    private val stores = mutableListOf<ViewModelStore>()
+
+    private fun viewModel() = track(JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L))
+
+    private fun track(vm: JellyfinViewModel): JellyfinViewModel {
+        val store = ViewModelStore().also { stores += it }
+        return ViewModelProvider(store, viewModelFactory { initializer { vm } })[JellyfinViewModel::class.java]
+    }
 
     private inline fun <reified T : UiState> JellyfinViewModel.await(crossinline matches: (T) -> Boolean = { true }): T =
         runBlocking { withTimeout(10_000) { state.first { it is T && matches(it) } as T } }
@@ -102,7 +115,7 @@ class JellyfinViewModelTest {
         vm.onUsername("Claude")
         vm.onPassword("wrong")
         vm.signInWithPassword()
-        assertEquals(SetupError.WrongCredentials, vm.await<UiState.SignIn> { it.error != null }.error)
+        assertEquals(SetupError.WrongCredentials, vm.await<UiState.SignIn> { it.passwordError != null }.passwordError)
 
         vm.onPassword("right")
         vm.signInWithPassword()
@@ -129,7 +142,7 @@ class JellyfinViewModelTest {
         vm.toSignIn()
         jellyfin.quickConnectEnabled = false
         vm.startQuickConnect()
-        assertEquals(SetupError.QuickConnectOff, vm.await<UiState.SignIn> { it.error != null }.error)
+        assertEquals(SetupError.QuickConnectOff, vm.await<UiState.SignIn> { it.quickConnectError != null }.quickConnectError)
 
         jellyfin.quickConnectEnabled = true
         vm.startQuickConnect()
@@ -177,6 +190,16 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a token a console page found refused sends the user to sign in again`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        connection.reportRefused()
+        assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
+        assertNull(runBlocking { sessions.current() })
+    }
+
+    @Test
     fun `a refresh answered with something that is not JSON fails without crashing`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
@@ -202,7 +225,49 @@ class JellyfinViewModelTest {
         vm.onUsername("Claude")
         vm.onPassword("right")
         vm.signInWithPassword()
-        assertEquals(SetupError.Generic, vm.await<UiState.SignIn> { it.error != null }.error)
+        assertEquals(SetupError.Generic, vm.await<UiState.SignIn> { it.passwordError != null }.passwordError)
+    }
+
+    @Test
+    fun `each sign-in method keeps its own failure, so switching never shows the other's`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        jellyfin.status["/Users/AuthenticateByName"] = 500
+        vm.onUsername("Claude")
+        vm.onPassword("right")
+        vm.signInWithPassword()
+        vm.await<UiState.SignIn> { it.passwordError == SetupError.Generic }
+        // Switching to Quick Connect asks for a code rather than showing the password's failure.
+        vm.startQuickConnect()
+        val code = vm.await<UiState.SignIn> { it.quickConnectCode != null }
+        assertNull(code.quickConnectError)
+
+        // A Quick Connect failure stays with Quick Connect, and leaving it takes the failure along.
+        vm.cancelQuickConnect()
+        jellyfin.quickConnectEnabled = false
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectError == SetupError.QuickConnectOff }
+        vm.cancelQuickConnect()
+        val back = vm.await<UiState.SignIn> { it.quickConnectError == null }
+        assertEquals(false, back.gettingCode)
+        // Typing clears the password's own failure.
+        vm.onPassword("again")
+        assertNull((vm.state.value as UiState.SignIn).passwordError)
+    }
+
+    @Test
+    fun `retrying Quick Connect drops the last failure at once and shows it's getting a code`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        jellyfin.quickConnectEnabled = false
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectError != null }
+        jellyfin.slow += "/QuickConnect/Enabled"
+        vm.startQuickConnect()
+        val retrying = vm.state.value as UiState.SignIn
+        assertNull(retrying.quickConnectError)
+        assertTrue(retrying.gettingCode)
+        vm.cancelQuickConnect()
     }
 
     @Test
@@ -269,15 +334,17 @@ class JellyfinViewModelTest {
         ServerSocket(0).use { silent ->
             val slow = OkHttpClient.Builder().callTimeout(500, TimeUnit.MILLISECONDS).build()
             val vm =
-                JellyfinViewModel(
-                    sessions,
-                    Connection(slow, sessions, "Binge Jellyfin", "Test", "1.0", Dispatchers.IO),
-                    index,
-                    discover = {
-                        gate.await()
-                        server
-                    },
-                    quickConnectPollMillis = 10L,
+                track(
+                    JellyfinViewModel(
+                        sessions,
+                        Connection(slow, sessions, "Binge Jellyfin", "Test", "1.0", Dispatchers.IO),
+                        index,
+                        discover = {
+                            gate.await()
+                            server
+                        },
+                        quickConnectPollMillis = 10L,
+                    ),
                 )
             vm.await<UiState.EnterServer>()
             vm.discoverServers()

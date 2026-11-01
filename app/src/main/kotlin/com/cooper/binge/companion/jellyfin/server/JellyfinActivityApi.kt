@@ -43,9 +43,13 @@ private fun JsonObject.activityEntry(): ActivityEntry? {
         overview = (string("ShortOverview") ?: string("Overview"))?.takeIf { it.isNotBlank() },
         type = string("Type").orEmpty(),
         dateMillis = string("Date")?.epochMillisOrNull(),
-        severity = Severity.entries.firstOrNull { it.name == string("Severity") } ?: Severity.Information,
+        severity = severityOf(string("Severity")),
     )
 }
+
+/** Jellyfin's `Severity` is a .NET `LogLevel`, so `Critical` reads as an [Severity.Error]. */
+private fun severityOf(name: String?): Severity =
+    if (name == "Critical") Severity.Error else Severity.entries.firstOrNull { it.name == name } ?: Severity.Information
 
 internal fun String.epochMillisOrNull(): Long? =
     try {

@@ -54,6 +54,9 @@ data class DevicesActions(
     val onBack: () -> Unit = {},
 )
 
+/** Lines a device's detail may take: who, which app, and when it was last seen. */
+private const val DETAIL_LINES = 3
+
 /** Lines a failed change's message takes, so it never moves the list. */
 private const val STATUS_LINES = 2
 
@@ -103,7 +106,7 @@ private fun Devices(
     state.renaming?.let { RenameDialog(it, actions) }
     state.removing?.let { device ->
         BingeConfirmDialog(
-            title = stringResource(R.string.devices_remove_title, device.name),
+            title = stringResource(R.string.devices_remove_title, device.displayName),
             message = stringResource(R.string.devices_remove_body),
             confirmLabel = stringResource(R.string.devices_remove),
             onConfirm = actions.onRemove,
@@ -122,10 +125,11 @@ private fun ServerDevice.row(
     val mine = id == state.thisDevice
     val seen = formatRelativeOrAbsolute(lastSeenMillis, now)?.let { stringResource(R.string.devices_seen, it) }
     return ListItem(
-        icon = deviceIcon(app, name),
-        label = name.ifBlank { stringResource(R.string.devices_unnamed) },
+        icon = deviceIcon(app, displayName),
+        label = displayName.ifBlank { stringResource(R.string.devices_unnamed) },
         detail = listOfNotNull(user.ifBlank { null }, app.ifBlank { null }, seen).joinToString(" · "),
-        supportingMaxLines = 2,
+        // Who, which app and when: three short facts, so at large fonts the time still fits.
+        supportingMaxLines = DETAIL_LINES,
         note = if (mine) ListItemNote(stringResource(R.string.devices_this_one), icon = Icons.Outlined.Info) else null,
         loading = id in state.busy,
         onClick = { actions.onAskRename(this) },
