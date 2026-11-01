@@ -130,10 +130,15 @@ class JellyfinClient(
         query: Map<String, String> = emptyMap(),
     ): JsonObject = post(path, body, query).asObject(path)
 
+    /**
+     * [path] is what is asked for; [label] is what an error names it as. They differ when the path carries
+     * a secret (an API key), which an exception message, and so a log, must never hold.
+     */
     internal suspend fun delete(
         path: String,
         query: Map<String, String> = emptyMap(),
-    ): JsonElement = call(Request.Builder().url(url(path, query)).delete(), path)
+        label: String = path,
+    ): JsonElement = call(Request.Builder().url(url(path, query)).delete(), label)
 
     /**
      * [get] for a JSON object, with the URL the answer came from once any redirects were followed: a

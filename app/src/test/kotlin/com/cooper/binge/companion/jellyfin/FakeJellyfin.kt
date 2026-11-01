@@ -140,6 +140,13 @@ class FakeJellyfin : Dispatcher() {
             "log_20261030.log" to "[09:00:00] [INF] Yesterday\n",
         )
 
+    /** `/Auth/Keys`: the API keys, each `AccessToken`, `AppName` and `DateCreated`. A POST adds one. */
+    var apiKeys: List<String> =
+        listOf(
+            """{"AccessToken":"aaaabbbbccccdddd1111","AppName":"Sonarr","DateCreated":"2026-10-01T10:00:00Z"}""",
+            """{"AccessToken":"eeeeffffgggghhhh2222","AppName":"Home Assistant","DateCreated":"2026-10-20T10:00:00Z"}""",
+        )
+
     /** `/Devices`: a TV seen most recently, a browser, and one with no id, which isn't a device. */
     var devices: List<String> =
         listOf(
@@ -302,6 +309,19 @@ class FakeJellyfin : Dispatcher() {
                         .body(text)
                         .build()
                 } ?: MockResponse(code = 404)
+            path == "/Auth/Keys" && request.method == "POST" -> {
+                val n = apiKeys.size + 1
+                val added =
+                    """{"AccessToken":"newkey${n}0000000000000","AppName":"${request.url.queryParameter("app")}",""" +
+                        """"DateCreated":"2026-11-01T10:00:00Z"}"""
+                apiKeys = apiKeys + added
+                MockResponse(code = 204)
+            }
+            path == "/Auth/Keys" -> json("""{"Items":[${apiKeys.joinToString(",")}],"TotalRecordCount":${apiKeys.size}}""")
+            path.startsWith("/Auth/Keys/") && request.method == "DELETE" -> {
+                apiKeys = apiKeys.filterNot { "\"${path.removePrefix("/Auth/Keys/")}\"" in it }
+                MockResponse(code = 204)
+            }
             path == "/Devices" && request.method == "DELETE" -> {
                 devices = devices.filterNot { "\"${request.url.queryParameter("id")}\"" in it }
                 MockResponse(code = 204)

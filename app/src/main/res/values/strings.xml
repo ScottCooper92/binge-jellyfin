@@ -267,4 +267,24 @@
     </plurals>
     <string name="sign_out_body_plain">You\'ll need to sign in again to manage your server from this app.</string>
     <string name="languages_body_plain">Jellyfin uses these to choose the audio and subtitles when you play something.</string>
+    <string name="api_keys_title">API keys</string>
+    <string name="console_api_keys_detail">Keys for apps that use this server</string>
+    <string name="api_keys_body">An API key lets an app use this server without signing in as a user. Treat each one like a password.</string>
+    <string name="api_keys_new">New key</string>
+    <string name="api_keys_empty">This server has no API keys.</string>
+    <string name="api_keys_unnamed">Unnamed app</string>
+    <string name="api_keys_ends_in">Ends in %1$s</string>
+    <string name="api_keys_created">made %1$s</string>
+    <string name="api_keys_revoke">Revoke</string>
+    <string name="api_keys_revoke_title">Revoke %1$s?</string>
+    <string name="api_keys_revoke_body">Anything using this key is refused from then on.</string>
+    <string name="api_keys_new_title">New API key</string>
+    <string name="api_keys_new_body">Name the app that will use it.</string>
+    <string name="api_keys_app_field">App name</string>
+    <string name="api_keys_create">Create key</string>
+    <string name="api_keys_created_title">Key for %1$s</string>
+    <string name="api_keys_created_body">Copy it now. It is shown only once.</string>
+    <string name="api_keys_done">Done</string>
+    <string name="api_keys_copy">Copy</string>
+    <string name="api_keys_not_changed">Not changed. %1$s</string>
 </resources>

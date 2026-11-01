@@ -268,4 +268,24 @@
     </plurals>
     <string name="sign_out_body_plain">Tendrás que volver a iniciar sesión para gestionar tu servidor desde esta app.</string>
     <string name="languages_body_plain">Jellyfin los usa para elegir el audio y los subtítulos cuando reproduces algo.</string>
+    <string name="api_keys_title">Claves de API</string>
+    <string name="console_api_keys_detail">Claves para las apps que usan este servidor</string>
+    <string name="api_keys_body">Una clave de API permite que una app use este servidor sin iniciar sesión como usuario. Trata cada una como una contraseña.</string>
+    <string name="api_keys_new">Nueva clave</string>
+    <string name="api_keys_empty">Este servidor no tiene claves de API.</string>
+    <string name="api_keys_unnamed">App sin nombre</string>
+    <string name="api_keys_ends_in">Termina en %1$s</string>
+    <string name="api_keys_created">creada %1$s</string>
+    <string name="api_keys_revoke">Revocar</string>
+    <string name="api_keys_revoke_title">¿Revocar %1$s?</string>
+    <string name="api_keys_revoke_body">Todo lo que use esta clave será rechazado desde ahora.</string>
+    <string name="api_keys_new_title">Nueva clave de API</string>
+    <string name="api_keys_new_body">Pon nombre a la app que la usará.</string>
+    <string name="api_keys_app_field">Nombre de la app</string>
+    <string name="api_keys_create">Crear clave</string>
+    <string name="api_keys_created_title">Clave para %1$s</string>
+    <string name="api_keys_created_body">Cópiala ahora. Solo se muestra una vez.</string>
+    <string name="api_keys_done">Hecho</string>
+    <string name="api_keys_copy">Copiar</string>
+    <string name="api_keys_not_changed">No se ha cambiado. %1$s</string>
 </resources>
