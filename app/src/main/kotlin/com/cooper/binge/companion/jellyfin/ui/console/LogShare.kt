@@ -34,7 +34,7 @@ internal fun writeSharedLog(
 ): File {
     dir.mkdirs()
     dir.listFiles()?.forEach { it.delete() }
-    val safe = name.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "log" }
+    val safe = name.trim().replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "log" }
     return File(dir, if (safe.endsWith(".log")) safe else "$safe.log").also { it.writeText(text) }
 }
 
