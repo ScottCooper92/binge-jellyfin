@@ -312,7 +312,10 @@
     <string name="trickplay_tile_width">Tile width</string>
     <string name="trickplay_tile_height">Tile height</string>
     <string name="trickplay_tile_body">How many thumbnails fit across, or down, each tile image.</string>
-    <string name="trickplay_images_count">%1$d images</string>
+    <plurals name="trickplay_images_count">
+        <item quantity="one">%1$d image</item>
+        <item quantity="other">%1$d images</item>
+    </plurals>
     <string name="trickplay_jpeg_quality">JPEG quality</string>
     <string name="trickplay_jpeg_quality_body">From 1 to 100. Higher is sharper, and larger.</string>
     <string name="trickplay_qscale">Quality scale</string>

@@ -525,6 +525,9 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Automatic").assertExists()
         compose.onNodeWithText("320 px, 640 px").assertExists()
         compose.onNodeWithText("Every 2500 ms").assertExists()
+        state = TrickplayUiState.Ready(TrickplaySettings(tileWidth = 1, tileHeight = 10))
+        compose.onNodeWithText("1 image").assertExists()
+        compose.onNodeWithText("10 images").assertExists()
     }
 
     @Test

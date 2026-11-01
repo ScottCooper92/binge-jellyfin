@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -225,13 +226,13 @@ private fun ImagesGroup(
                 ListItem(
                     icon = Icons.Outlined.ViewColumn,
                     label = stringResource(R.string.trickplay_tile_width),
-                    detail = stringResource(R.string.trickplay_images_count, settings.tileWidth),
+                    detail = pluralStringResource(R.plurals.trickplay_images_count, settings.tileWidth, settings.tileWidth),
                     onClick = { actions.onEdit(TrickplayField.TileWidth) },
                 ),
                 ListItem(
                     icon = Icons.Outlined.ViewAgenda,
                     label = stringResource(R.string.trickplay_tile_height),
-                    detail = stringResource(R.string.trickplay_images_count, settings.tileHeight),
+                    detail = pluralStringResource(R.plurals.trickplay_images_count, settings.tileHeight, settings.tileHeight),
                     onClick = { actions.onEdit(TrickplayField.TileHeight) },
                 ),
                 ListItem(

@@ -313,7 +313,11 @@
     <string name="trickplay_tile_width">Anchura del mosaico</string>
     <string name="trickplay_tile_height">Altura del mosaico</string>
     <string name="trickplay_tile_body">Cuántas miniaturas caben a lo ancho, o a lo alto, de cada imagen de mosaico.</string>
-    <string name="trickplay_images_count">%1$d imágenes</string>
+    <plurals name="trickplay_images_count">
+        <item quantity="one">%1$d imagen</item>
+        <item quantity="many">%1$d imágenes</item>
+        <item quantity="other">%1$d imágenes</item>
+    </plurals>
     <string name="trickplay_jpeg_quality">Calidad JPEG</string>
     <string name="trickplay_jpeg_quality_body">De 1 a 100. Más alto es más nítido, y más grande.</string>
     <string name="trickplay_qscale">Escala de calidad</string>
