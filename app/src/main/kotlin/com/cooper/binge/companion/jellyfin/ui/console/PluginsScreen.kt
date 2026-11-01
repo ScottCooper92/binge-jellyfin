@@ -4,11 +4,15 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +23,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.ErrorKind
@@ -68,8 +73,10 @@ fun PluginsScreen(
     catalogActions: CatalogActions,
     repositoryActions: RepositoriesActions,
     onBack: () -> Unit,
+    /** The tab it opens on: the installed plugins, unless a frame opens another. */
+    initialTab: Int = 0,
 ) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var tab by rememberSaveable { mutableIntStateOf(initialTab) }
     val plugin = (installed as? PluginsUiState.Ready)?.let { ready -> ready.plugins.firstOrNull { it.id == ready.open } }
     val pkg = (catalog as? CatalogUiState.Ready)?.let { ready -> ready.packages.firstOrNull { it.name == ready.open } }
     val detail =
@@ -89,14 +96,32 @@ fun PluginsScreen(
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
+            val direction = LocalLayoutDirection.current
+            // Under the tab row the bar is already above, so the lists keep the sides and the bottom only.
+            val content =
+                if (detail == null) {
+                    PaddingValues(
+                        start = inner.calculateStartPadding(direction),
+                        top = dimensionResource(DesR.dimen.padding_m),
+                        end = inner.calculateEndPadding(direction),
+                        bottom = inner.calculateBottomPadding(),
+                    )
+                } else {
+                    inner
+                }
             Column(Modifier.fillMaxSize()) {
                 if (detail == null) {
-                    BingeTabRow(tabs = TABS.map { stringResource(it) }, selectedIndex = tab, onSelect = { tab = it })
+                    BingeTabRow(
+                        tabs = TABS.map { stringResource(it) },
+                        selectedIndex = tab,
+                        onSelect = { tab = it },
+                        modifier = Modifier.padding(top = inner.calculateTopPadding()),
+                    )
                 }
                 when (tab) {
-                    0 -> InstalledTab(installed, plugin, actions, inner)
-                    1 -> CatalogTab(catalog, pkg, catalogActions, inner)
-                    else -> RepositoriesTab(repositories, repositoryActions, inner)
+                    0 -> InstalledTab(installed, plugin, actions, content)
+                    1 -> CatalogTab(catalog, pkg, catalogActions, content)
+                    else -> RepositoriesTab(repositories, repositoryActions, content)
                 }
             }
         }
@@ -225,6 +250,13 @@ private fun PluginPage(
                             loading = busy,
                             onClick = { actions.onToggle(plugin, !plugin.enabled) },
                         ).takeIf { plugin.status.canToggle },
+                        // One that can't be switched still says where it stands, and why it can't.
+                        ListItem(
+                            icon = Icons.Outlined.Info,
+                            label = statusLabel(plugin.status),
+                            detail = plugin.version,
+                            clickable = false,
+                        ).takeIf { !plugin.status.canToggle },
                         ListItem(
                             icon = Icons.Outlined.OpenInBrowser,
                             label = stringResource(R.string.plugins_settings),
