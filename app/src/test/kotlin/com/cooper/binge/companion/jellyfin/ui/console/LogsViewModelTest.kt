@@ -83,7 +83,7 @@ class LogsViewModelTest {
         val vm = made(LogsViewModel(connection))
         vm.ready()
         vm.open("log_20261031.log")
-        assertEquals(4, vm.opened().visible.size) // three lines and the empty one after the last newline
+        assertEquals(3, vm.opened().visible.size)
         vm.setQuery("slow")
         assertEquals(listOf("[10:05:00] [WRN] Slow query"), vm.opened { it.query == "slow" }.visible)
         vm.setQuery("")

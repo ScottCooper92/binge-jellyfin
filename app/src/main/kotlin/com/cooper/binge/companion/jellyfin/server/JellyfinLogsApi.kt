@@ -45,7 +45,13 @@ suspend fun JellyfinClient.logTail(
     maxBytes: Int = LOG_TAIL_BYTES,
 ): LogText {
     val tail = getTail("System/Logs/Log", mapOf("name" to name), maxBytes)
-    return LogText(tail.text.lines().map(::redactSecrets), tail.truncated)
+    return LogText(
+        tail.text
+            .lines()
+            .dropLastWhile { it.isEmpty() }
+            .map(::redactSecrets),
+        tail.truncated,
+    )
 }
 
 /** How much of a log is kept: enough for a day's errors, small enough for a phone. */
