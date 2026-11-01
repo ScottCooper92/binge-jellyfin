@@ -174,7 +174,7 @@ app:plugin_status_superseded  de3f074ea611
 app:plugin_status_unknown  b764cdc0eab7
 app:plugins_empty  09fc9cbc9767
 app:plugins_empty_title  db86a90bd4ea
-app:plugins_enabled  130011756125
+app:plugins_enabled  92c1cdfdf4cb
 app:plugins_loading  52fabe38c01f
 app:plugins_not_changed  f770f37ad5b3
 app:plugins_restart_detail  229fb0714bc1

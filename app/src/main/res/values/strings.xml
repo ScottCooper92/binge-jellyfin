@@ -350,7 +350,7 @@
     <string name="plugin_status_superseded">Replaced by a newer version</string>
     <string name="plugin_status_deleted">Removed</string>
     <string name="plugin_status_unknown">Unknown</string>
-    <string name="plugins_enabled">On</string>
+    <string name="plugins_enabled">Enabled</string>
     <string name="plugins_settings">Settings</string>
     <string name="plugins_settings_detail">Opens the plugin\'s own page in your browser, where you sign in to Jellyfin</string>
     <string name="plugins_uninstall">Uninstall</string>

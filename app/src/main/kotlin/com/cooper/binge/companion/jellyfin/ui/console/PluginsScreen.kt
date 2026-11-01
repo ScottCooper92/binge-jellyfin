@@ -246,9 +246,9 @@ private fun PluginPage(
                             icon = Icons.Outlined.Extension,
                             label = stringResource(R.string.plugins_enabled),
                             detail = listOf(plugin.version, statusLabel(plugin.status)).joinToString(" · "),
-                            toggled = plugin.enabled,
+                            toggled = state.isEnabled(plugin),
                             loading = busy,
-                            onClick = { actions.onToggle(plugin, !plugin.enabled) },
+                            onClick = { actions.onToggle(plugin, !state.isEnabled(plugin)) },
                         ).takeIf { plugin.status.canToggle },
                         // One that can't be switched still says where it stands, and why it can't.
                         ListItem(

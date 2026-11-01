@@ -29,7 +29,8 @@ sealed interface PluginsUiState {
      * The installed plugins. [open] is the id of the one whose page is showing; [confirming] the one asked
      * about uninstalling; [busy] those with a change in flight; [settingsUrl] a plugin settings page ready to
      * open in the browser, until [PluginsViewModel.settingsOpened]; [actionFailed] the last change that
-     * didn't go through.
+     * didn't go through; [sentEnabled] the last on/off sent for each plugin, which the switch shows while that
+     * change waits for a restart.
      */
     data class Ready(
         val plugins: List<ServerPlugin>,
@@ -38,7 +39,15 @@ sealed interface PluginsUiState {
         val busy: Set<String> = emptySet(),
         val settingsUrl: String? = null,
         val actionFailed: ConsoleFailure? = null,
+        val sentEnabled: Map<String, Boolean> = emptyMap(),
     ) : PluginsUiState {
+        /**
+         * Whether [plugin] is switched on. Once a change is waiting for a restart the server reports `Restart`
+         * with no direction, so the switch shows what was last sent for it, until the restart settles it.
+         */
+        fun isEnabled(plugin: ServerPlugin): Boolean =
+            if (plugin.status == PluginStatus.Restart) sentEnabled[plugin.id] ?: plugin.enabled else plugin.enabled
+
         /** Some plugin is waiting for the server to restart, so the admin is pointed at Restart. */
         val restartNeeded: Boolean get() = plugins.any { it.status == PluginStatus.Restart }
     }
@@ -78,7 +87,7 @@ class PluginsViewModel(
     fun setEnabled(
         plugin: ServerPlugin,
         on: Boolean,
-    ) = change(plugin) { client -> if (on) client.enablePlugin(plugin) else client.disablePlugin(plugin) }
+    ) = change(plugin, sent = on) { client -> if (on) client.enablePlugin(plugin) else client.disablePlugin(plugin) }
 
     fun askUninstall(plugin: ServerPlugin?) = update { copy(confirming = plugin, actionFailed = null) }
 
@@ -105,6 +114,7 @@ class PluginsViewModel(
     private fun change(
         plugin: ServerPlugin,
         thenClose: Boolean = false,
+        sent: Boolean? = null,
         call: suspend (JellyfinClient) -> Unit,
     ) {
         update { copy(busy = busy + plugin.id, actionFailed = null) }
@@ -114,7 +124,16 @@ class PluginsViewModel(
                     call(client)
                     client.plugins()
                 }.onSuccess { plugins ->
-                    update { copy(plugins = plugins, busy = busy - plugin.id, open = if (thenClose) null else open) }
+                    update {
+                        val remembered = if (sent == null) sentEnabled else sentEnabled + (plugin.id to sent)
+                        val waiting = plugins.filter { it.status == PluginStatus.Restart }.map { it.id }.toSet()
+                        copy(
+                            plugins = plugins,
+                            busy = busy - plugin.id,
+                            open = if (thenClose) null else open,
+                            sentEnabled = remembered.filterKeys { it in waiting },
+                        )
+                    }
                 }.onFailure { error -> update { copy(busy = busy - plugin.id, actionFailed = error.consoleFailure()) } }
         }
     }

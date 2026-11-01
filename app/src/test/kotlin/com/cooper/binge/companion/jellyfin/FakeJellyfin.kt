@@ -564,13 +564,17 @@ class FakeJellyfin : Dispatcher() {
         return MockResponse(code = 204)
     }
 
+    /** Whether Enable and Disable leave the plugin as `Restart`, which is what a real server reports. */
+    var pluginsReportRestart = false
+
     /** Enable or Disable on `/Plugins/{id}/{version}/…`: the plugin's status becomes [status]. */
     private fun setPluginStatus(
         path: String,
         status: String,
     ): MockResponse {
         val id = path.split('/')[2]
-        plugins = plugins.map { if ("\"$id\"" in it) it.replace(Regex(""""Status":"[A-Za-z]+""""), """"Status":"$status"""") else it }
+        val reported = if (pluginsReportRestart) "Restart" else status
+        plugins = plugins.map { if ("\"$id\"" in it) it.replace(Regex(""""Status":"[A-Za-z]+""""), """"Status":"$reported"""") else it }
         return MockResponse(code = 204)
     }
 

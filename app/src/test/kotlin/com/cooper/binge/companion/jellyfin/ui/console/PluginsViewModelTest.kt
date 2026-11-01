@@ -65,11 +65,25 @@ class PluginsViewModelTest {
         val plugin = vm.ready().plugins.first()
         vm.setEnabled(plugin, on = false)
         val ready = vm.ready { it.plugins.first().status == PluginStatus.Disabled && it.busy.isEmpty() }
-        assertFalse(ready.plugins.first().enabled)
+        assertFalse(ready.isEnabled(ready.plugins.first()))
         assertEquals(1, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == "/Plugins/$aniDb/1.2.3.4/Disable" })
         vm.setEnabled(ready.plugins.first(), on = true)
         vm.ready { it.plugins.first().status == PluginStatus.Active && it.busy.isEmpty() }
         assertEquals(1, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == "/Plugins/$aniDb/1.2.3.4/Enable" })
+    }
+
+    @Test
+    fun `the switch follows what was last sent while the server only says Restart`() {
+        jellyfin.pluginsReportRestart = true
+        val vm = made(PluginsViewModel(connection))
+        val plugin = vm.ready().plugins.first()
+        vm.setEnabled(plugin, on = false)
+        var ready = vm.ready { it.plugins.first().status == PluginStatus.Restart && it.busy.isEmpty() }
+        assertFalse(ready.isEnabled(ready.plugins.first()))
+        vm.setEnabled(ready.plugins.first(), on = true)
+        ready = vm.ready { it.busy.isEmpty() && it.sentEnabled.values.all { on -> on } && it.sentEnabled.isNotEmpty() }
+        assertTrue(ready.isEnabled(ready.plugins.first()))
+        assertEquals(1, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath.endsWith("/Enable") })
     }
 
     @Test

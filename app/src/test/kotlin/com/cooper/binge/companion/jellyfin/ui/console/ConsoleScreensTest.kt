@@ -521,7 +521,7 @@ class ConsoleScreensTest {
         }
         compose.onNodeWithText("Anime metadata.").assertExists()
         compose.onNodeWithText("Settings").performClick()
-        compose.onNodeWithText("On").performClick()
+        compose.onNodeWithText("Enabled").performClick()
         assertEquals(listOf("settings AniDB", "toggle AniDB false"), calls)
         compose.onNodeWithText("Uninstall").performScrollTo().performClick()
         compose.onNodeWithText("Uninstall AniDB?").assertExists()
@@ -538,7 +538,7 @@ class ConsoleScreensTest {
         val stuck = aniDb.copy(status = PluginStatus.NotSupported, canUninstall = false, hasSettings = false)
         pluginsScreen(installed = PluginsUiState.Ready(listOf(stuck), open = "a1b2"))
         compose.onNodeWithText("Not supported by this server", substring = true).assertExists()
-        compose.onNodeWithText("On").assertDoesNotExist()
+        compose.onNodeWithText("Enabled").assertDoesNotExist()
         compose.onNodeWithText("Settings").assertDoesNotExist()
         compose.onNodeWithText("Uninstall").assertDoesNotExist()
     }
