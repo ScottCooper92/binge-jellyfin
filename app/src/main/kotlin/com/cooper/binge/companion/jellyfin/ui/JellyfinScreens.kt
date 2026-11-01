@@ -78,6 +78,9 @@ data class Actions(
     val onOpenPage: (ConsolePage) -> Unit = {},
 )
 
+/** Lines a server row's marker and address may take: enough for the whole address at 2× font beside Change. */
+private const val ADDRESS_LINES = 5
+
 @Composable
 fun JellyfinRoot(
     state: UiState,
@@ -162,7 +165,9 @@ private fun DiscoveredServers(
                     ListItem(
                         icon = if (cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
                         label = server.name,
+                        // The marker leads, so a long address takes the ellipsis, never "Not encrypted".
                         detail = if (cleartext) stringResource(R.string.server_detail_cleartext, server.address) else server.address,
+                        supportingMaxLines = ADDRESS_LINES,
                         onClick = { actions.onChooseServer(server) },
                     )
                 },
@@ -198,6 +203,8 @@ private fun SignIn(
                             } else {
                                 state.baseUrl
                             },
+                        // Change sits beside it, so at large fonts the address wraps rather than shrinking to a few characters.
+                        supportingMaxLines = ADDRESS_LINES,
                         trailingContent = {
                             BingeTextButton(
                                 label = stringResource(R.string.setup_change),
@@ -356,6 +363,7 @@ private fun ServerGroup(
                         } else {
                             stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
                         },
+                    supportingMaxLines = ADDRESS_LINES,
                     clickable = false,
                 ),
                 ListItem(
