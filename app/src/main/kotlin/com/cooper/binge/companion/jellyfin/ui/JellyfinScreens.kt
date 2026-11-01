@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
@@ -422,6 +423,12 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_activity_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Activity) },
                 ).takeIf { ConsolePage.Activity.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.Key,
+                    label = stringResource(R.string.api_keys_title),
+                    detail = stringResource(R.string.console_api_keys_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.ApiKeys) },
+                ).takeIf { ConsolePage.ApiKeys.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Devices,
                     label = stringResource(R.string.devices_title),

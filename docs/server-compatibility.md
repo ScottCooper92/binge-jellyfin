@@ -57,7 +57,7 @@ older server shows less rather than failing on a call it can't answer.
 
 | Capability | Who | Gate |
 |---|---|---|
-| The server's pages (libraries, tasks, activity, devices, users, server) | administrators | `isAdministrator` |
+| The server's pages (libraries, tasks, activity, API keys, devices, users, server) | administrators | `isAdministrator` |
 | Their own preferences (languages, playback, the home screen) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |
 | Changing their own password | users of Jellyfin's own provider, not LDAP or another plugin | `hasLocalPassword` |
 | Stopping someone else's stream | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers` |
