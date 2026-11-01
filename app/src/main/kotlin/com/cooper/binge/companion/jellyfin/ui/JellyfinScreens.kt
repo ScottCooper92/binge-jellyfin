@@ -79,6 +79,9 @@ data class Actions(
     val onOpenPage: (ConsolePage) -> Unit = {},
 )
 
+/** Lines a server row's marker and address may take: enough for the whole address at 2× font beside Change. */
+private const val ADDRESS_LINES = 5
+
 @Composable
 fun JellyfinRoot(
     state: UiState,
@@ -163,7 +166,9 @@ private fun DiscoveredServers(
                     ListItem(
                         icon = if (cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
                         label = server.name,
+                        // The marker leads, so a long address takes the ellipsis, never "Not encrypted".
                         detail = if (cleartext) stringResource(R.string.server_detail_cleartext, server.address) else server.address,
+                        supportingMaxLines = ADDRESS_LINES,
                         onClick = { actions.onChooseServer(server) },
                     )
                 },
@@ -199,6 +204,8 @@ private fun SignIn(
                             } else {
                                 state.baseUrl
                             },
+                        // Change sits beside it, so at large fonts the address wraps rather than shrinking to a few characters.
+                        supportingMaxLines = ADDRESS_LINES,
                         trailingContent = {
                             BingeTextButton(
                                 label = stringResource(R.string.setup_change),
@@ -229,8 +236,9 @@ private fun SignIn(
             label = { Text(stringResource(R.string.setup_password)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            isError = state.error != null,
-            supportingText = state.error?.let { { Text(errorText(it)) } },
+            // Only a wrong password is the field's fault; any other failure is said beside the button that failed.
+            isError = state.passwordError == SetupError.WrongCredentials,
+            supportingText = state.passwordError?.takeIf { it == SetupError.WrongCredentials }?.let { { Text(errorText(it)) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
             keyboardActions = KeyboardActions(onGo = { actions.onSignIn() }),
             modifier = Modifier.fillMaxWidth(),
@@ -242,13 +250,22 @@ private fun SignIn(
             enabled = state.username.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
+        state.passwordError?.takeUnless { it == SetupError.WrongCredentials }?.let { ErrorLine(it) }
         BingeOutlinedButton(
             label = stringResource(R.string.setup_quick_connect),
             onClick = actions.onQuickConnect,
             leadingIcon = Icons.Outlined.QrCode2,
+            loading = state.gettingCode,
             modifier = Modifier.fillMaxWidth(),
         )
+        state.quickConnectError?.let { ErrorLine(it) }
     }
+}
+
+/** A failure said under the action it belongs to, rather than on a field that isn't at fault. */
+@Composable
+private fun ErrorLine(error: SetupError) {
+    Text(errorText(error), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
 }
 
 @Composable
@@ -347,6 +364,7 @@ private fun ServerGroup(
                         } else {
                             stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
                         },
+                    supportingMaxLines = ADDRESS_LINES,
                     clickable = false,
                 ),
                 ListItem(

@@ -21,7 +21,7 @@
     <string name="quick_connect_cancel">Use a password instead</string>
 
     <string name="server_detail">%1$s · Jellyfin %2$s</string>
-    <string name="server_detail_cleartext">%1$s · Not encrypted</string>
+    <string name="server_detail_cleartext">Not encrypted · %1$s</string>
 
     <string name="settings_server">Server</string>
     <string name="settings_signed_in_as">Signed in</string>

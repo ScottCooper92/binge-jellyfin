@@ -42,7 +42,6 @@ import com.binge.designsystem.tv.template.TvTwoPaneStyle
 import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.ui.Actions
-import com.cooper.binge.companion.jellyfin.ui.SetupError
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.errorText
 import com.binge.designsystem.tv.R as TvR
@@ -216,8 +215,7 @@ private fun ColumnScope.TvQuickConnectPanel(
     onUsePassword: () -> Unit,
 ) {
     val code = state.quickConnectCode
-    // A wrong password belongs to the password panel: it is not a failure to get a code.
-    val error = state.error?.takeUnless { it == SetupError.WrongCredentials }
+    val error = state.quickConnectError
     val failed = error != null && code == null
     // A code is asked for when the panel shows; a failure waits for Try again rather than asking in a loop.
     LaunchedEffect(Unit) { if (code == null && error == null) actions.onQuickConnect() }
@@ -290,7 +288,7 @@ private fun ColumnScope.TvPasswordPanel(
             fillWidth = true,
         )
     }
-    TvStatusLine(state.error?.takeUnless { it.isQuickConnect() }?.let { errorText(it) }, isError = true)
+    TvStatusLine(state.passwordError?.let { errorText(it) }, isError = true)
     TvButton(
         label = stringResource(R.string.setup_sign_in),
         onClick = actions.onSignIn,
@@ -300,8 +298,6 @@ private fun ColumnScope.TvPasswordPanel(
     )
     TvButton(label = stringResource(R.string.setup_quick_connect), onClick = onUseQuickConnect, leadingIcon = Icons.Outlined.QrCode2)
 }
-
-private fun SetupError.isQuickConnect(): Boolean = this == SetupError.QuickConnectOff || this == SetupError.QuickConnectExpired
 
 /**
  * Signed in: who and where in the copy pane; checking the library again, then signing out, last and
