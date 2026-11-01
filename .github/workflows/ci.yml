@@ -103,7 +103,8 @@ jobs:
       # There is no release unit-test task to exclude: AGP 9 creates unit tests for the debug build
       # type only, so testDebugUnitTest is the whole suite and it runs once, in `tests`.
       - name: Build and lint, less what the other jobs run
-        run: ./gradlew build --continue -x :app:testDebugUnitTest -x :app:koverVerify -x :app:validateDebugScreenshotTest -x :app:assembleRelease
+        # --stacktrace until #24 names why :app:packageDebug sometimes fails with no cause in the log.
+        run: ./gradlew build --continue --stacktrace -x :app:testDebugUnitTest -x :app:koverVerify -x :app:validateDebugScreenshotTest -x :app:assembleRelease
 
       - name: Upload reports
         if: ${{ failure() }}
