@@ -2,9 +2,12 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- The in-app logo: the jellyfish alone, one colour (tinted by the caller), no ring. -->
+    android:viewportWidth="44"
+    android:viewportHeight="44">
+    <!-- The in-app logo: the jellyfish alone, one colour (tinted by the caller), no ring, and the viewport cropped to the mark. -->
+    <group
+        android:translateX="-32"
+        android:translateY="-32">
     <path
         android:fillColor="#FFFFFFFF"
         android:pathData="M38,52 C38,40 45,34 54,34 C63,34 70,40 70,52 Q66,49 62,52 Q58,49 54,52 Q50,49 46,52 Q42,49 38,52 Z"/>
@@ -23,4 +26,5 @@
         android:strokeColor="#FFFFFFFF"
         android:strokeWidth="4.8"
         android:strokeLineCap="round"/>
+    </group>
 </vector>
