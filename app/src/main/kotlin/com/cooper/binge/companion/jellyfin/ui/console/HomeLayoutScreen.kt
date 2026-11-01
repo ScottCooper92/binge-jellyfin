@@ -128,6 +128,23 @@ private fun HomeLayoutBody(
                         )
                     },
         )
+        if (state.groupable.isNotEmpty()) {
+            ItemGroup(
+                title = stringResource(R.string.home_layout_grouping),
+                rows =
+                    state.groupable.map { option ->
+                        val grouped = option.id in layout.grouped
+                        ListItem(
+                            icon = Icons.Outlined.Workspaces,
+                            label = option.name,
+                            detail = stringResource(R.string.home_layout_grouped_detail),
+                            supportingMaxLines = HOME_DETAIL_LINES,
+                            toggled = grouped,
+                            onClick = { actions.onGrouped(option.id, !grouped) },
+                        )
+                    },
+            )
+        }
         ItemGroup(
             title = stringResource(R.string.home_layout_display),
             rows =
@@ -160,7 +177,7 @@ private fun HomeLayoutBody(
     }
 }
 
-/** One library's page: where it shows on the home, whether it's grouped, and its place in the order. */
+/** One library's page: where it shows on the home and its place in the order. */
 @Composable
 private fun LibraryPage(
     state: HomeLayoutUiState.Ready,
@@ -171,7 +188,6 @@ private fun LibraryPage(
     val layout = state.layout
     val inMyMedia = library.id !in layout.myMediaExcludes
     val inLatest = library.id !in layout.latestExcludes
-    val grouped = library.id in layout.grouped
     val place = state.libraries.indexOf(library)
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
@@ -180,7 +196,7 @@ private fun LibraryPage(
         ItemGroup(
             title = stringResource(R.string.home_layout_where),
             rows =
-                listOfNotNull(
+                listOf(
                     ListItem(
                         icon = Icons.Outlined.ViewModule,
                         label = stringResource(R.string.home_layout_in_my_media),
@@ -193,14 +209,6 @@ private fun LibraryPage(
                         toggled = inLatest,
                         onClick = { actions.onInLatest(library.id, !inLatest) },
                     ),
-                    ListItem(
-                        icon = Icons.Outlined.Workspaces,
-                        label = stringResource(R.string.home_layout_grouped),
-                        detail = stringResource(R.string.home_layout_grouped_detail),
-                        supportingMaxLines = HOME_DETAIL_LINES,
-                        toggled = grouped,
-                        onClick = { actions.onGrouped(library.id, !grouped) },
-                    ).takeIf { library.id in state.groupable },
                 ),
         )
         ItemGroup(

@@ -88,7 +88,7 @@
     <string name="home_layout_where">On your home</string>
     <string name="home_layout_in_my_media">Show in My Media</string>
     <string name="home_layout_in_latest">Show in Latest</string>
-    <string name="home_layout_grouped">Group with other libraries</string>
+    <string name="home_layout_grouping">Group into Movies, Shows and Music</string>
     <string name="home_layout_grouped_detail">Shows its titles inside Movies, Shows or Music</string>
     <string name="home_layout_order">Order</string>
     <string name="home_layout_move_up">Move up</string>

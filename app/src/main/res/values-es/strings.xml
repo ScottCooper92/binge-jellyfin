@@ -88,7 +88,7 @@
     <string name="home_layout_where">En tu inicio</string>
     <string name="home_layout_in_my_media">Mostrar en Mis medios</string>
     <string name="home_layout_in_latest">Mostrar en Últimos</string>
-    <string name="home_layout_grouped">Agrupar con otras bibliotecas</string>
+    <string name="home_layout_grouping">Agrupar en Películas, Series y Música</string>
     <string name="home_layout_grouped_detail">Muestra sus títulos dentro de Películas, Series o Música</string>
     <string name="home_layout_order">Orden</string>
     <string name="home_layout_move_up">Subir</string>
