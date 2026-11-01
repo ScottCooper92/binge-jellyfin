@@ -230,7 +230,7 @@ private fun ColumnScope.TvQuickConnectPanel(
     TvStatusLine(
         text =
             when {
-                failed -> error?.let { errorText(it) }
+                failed -> errorText(error)
                 code != null -> stringResource(R.string.quick_connect_body)
                 else -> stringResource(R.string.tv_quick_connect_getting)
             },
