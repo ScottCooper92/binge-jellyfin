@@ -239,7 +239,7 @@ private fun LibraryPage(
 @Composable
 private fun SaveStatus(failure: ConsoleFailure?) {
     Text(
-        text = failure?.let { stringResource(R.string.languages_not_saved, stringResource(it.message)) }.orEmpty(),
+        text = failure?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }.orEmpty(),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.error,
         minLines = HOME_STATUS_LINES,

@@ -103,7 +103,7 @@
     <string name="languages_subtitles">Subtitle language</string>
     <string name="languages_subtitle_mode">Subtitle mode</string>
     <string name="languages_any">Any language</string>
-    <string name="languages_not_saved">Not saved. %1$s</string>
+    <string name="settings_not_saved">Not saved. %1$s</string>
     <string name="subtitle_mode_default">Follow the file</string>
     <string name="subtitle_mode_default_detail">The subtitles the file marks as default or forced</string>
     <string name="subtitle_mode_smart">Smart</string>
