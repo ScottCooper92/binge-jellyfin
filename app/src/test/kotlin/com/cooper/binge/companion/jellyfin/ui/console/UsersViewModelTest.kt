@@ -113,6 +113,24 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `two library switches made before the first answer are both put back when both are refused`() {
+        val vm = UsersViewModel(connection)
+        vm.openSam()
+        jellyfin.status["/Users/user-2/Policy"] = 503
+        vm.setAllLibraries(false)
+        vm.setLibrary("lib-shows", true)
+        vm.setLibrary("lib-extra", true)
+        val back = vm.ready { it.openUser?.libraries == setOf("lib-movies") && it.actionFailed != null }
+        assertEquals(setOf("lib-movies"), back.openUser!!.libraries)
+        assertEquals(
+            setOf("lib-movies"),
+            policy("user-2").getValue("EnabledFolders").let { folders ->
+                (folders as kotlinx.serialization.json.JsonArray).map { it.jsonPrimitive.content }.toSet()
+            },
+        )
+    }
+
+    @Test
     fun `my own sign-in and administrator switches can't be changed, nor can I be deleted`() {
         val vm = UsersViewModel(connection)
         vm.open(vm.ready().users.first())
