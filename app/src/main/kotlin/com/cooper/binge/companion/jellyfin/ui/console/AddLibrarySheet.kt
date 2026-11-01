@@ -149,6 +149,7 @@ private fun KindStep(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
     ) {
         Text(stringResource(R.string.library_kind_title), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.library_add_scan_note), style = MaterialTheme.typography.bodyMedium)
         ItemGroup(
             title = null,
             rows =

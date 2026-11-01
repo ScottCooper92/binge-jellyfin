@@ -107,6 +107,7 @@ class LibraryViewModel(
 
     /** The library's id now: a rename gives it a new one. */
     private var id = start.id
+    private var name = start.name
 
     private val saves =
         ConfigurationSaves(connection, TAG, { _, client, json -> client.saveLibraryOptions(id, json) }) { shown, failure ->
@@ -258,6 +259,7 @@ class LibraryViewModel(
             fresh == null -> update { copy(busy = false, failed = ConsoleFailure.Refused, dialog = null) }
             else -> {
                 id = fresh.id
+                name = fresh.name
                 saves.loaded(fresh.options)
                 update { copy(library = fresh, options = fresh.options, busy = false, dialog = null) }
             }
@@ -265,7 +267,7 @@ class LibraryViewModel(
     }
 
     /** Whether [row] is this library: by id, or by name while the server hasn't given it one. */
-    private fun isThis(row: ServerLibrary) = if (id.isEmpty()) row.name == start.name else row.id == id
+    private fun isThis(row: ServerLibrary) = if (id.isEmpty()) row.name == name else row.id == id
 
     private fun update(change: LibraryUiState.Ready.() -> LibraryUiState.Ready) =
         _state.update { (it as? LibraryUiState.Ready)?.change() ?: it }

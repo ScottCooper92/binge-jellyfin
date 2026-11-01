@@ -19,9 +19,10 @@ private const val LIBRARY_PATHS = "Library/VirtualFolders/Paths"
 private const val ENVIRONMENT = "Environment"
 
 /**
- * Makes a library of [kind] over [path], with the server's own default options. The server scans it and
- * gives it an id, which a library made without that refresh would not have. A path with a comma can't go in the `paths` list the
- * server splits on commas, so it is added to the empty library after.
+ * Makes a library of [kind] over [path], with the server's own default options. The refresh gives the library
+ * an id, which one made without it would not have, but it also cancels a scan already running and queues the
+ * server's scan of every library. A path with a comma can't go in the `paths` list the server splits on
+ * commas, so it is added to the empty library after.
  */
 suspend fun JellyfinClient.addLibrary(
     name: String,
