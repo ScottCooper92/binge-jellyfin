@@ -190,20 +190,22 @@ private fun UserPage(
             )
         }
         item { LibraryAccess(state, user, actions) }
-        item {
-            ItemGroup(
-                title = null,
-                rows =
-                    listOf(
-                        ListItem(
-                            icon = Icons.Outlined.Password,
-                            label = stringResource(R.string.users_set_password),
-                            detail = stringResource(if (user.hasPassword) R.string.users_has_password else R.string.users_no_password),
-                            loading = state.busy,
-                            onClick = { actions.onShow(UserDialog.Password) },
+        if (!mine) {
+            item {
+                ItemGroup(
+                    title = null,
+                    rows =
+                        listOf(
+                            ListItem(
+                                icon = Icons.Outlined.Password,
+                                label = stringResource(R.string.users_set_password),
+                                detail = stringResource(if (user.hasPassword) R.string.users_has_password else R.string.users_no_password),
+                                loading = state.busy,
+                                onClick = { actions.onShow(UserDialog.Password) },
+                            ),
                         ),
-                    ),
-            )
+                )
+            }
         }
         item { Status(state) }
         if (!mine) {

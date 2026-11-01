@@ -155,11 +155,22 @@ class UsersViewModelTest {
         vm.setPassword("new-one")
         vm.ready { it.done == UserDone.PasswordSet }
         assertEquals("new-one", jellyfin.adminPasswords["user-2"])
+        assertTrue(vm.ready().openUser?.hasPassword == true)
         vm.show(UserDialog.Delete)
         vm.delete()
         val gone = vm.ready { it.done == UserDone.Deleted }
         assertEquals(listOf("Claude"), gone.users.map { it.name })
         assertNull(gone.open)
+    }
+
+    @Test
+    fun `the signed-in user's own password is left to the Password page`() {
+        val vm = UsersViewModel(connection)
+        val me = vm.ready().users.first { it.id == "user-1" }
+        vm.open(me)
+        vm.setPassword("mine")
+        assertEquals(0, jellyfin.hits("/Users/Password"))
+        assertNull(vm.ready().done)
     }
 
     @Test

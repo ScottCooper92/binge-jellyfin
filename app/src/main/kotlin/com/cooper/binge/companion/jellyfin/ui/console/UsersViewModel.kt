@@ -134,8 +134,13 @@ class UsersViewModel(
     }
 
     fun setPassword(password: String) {
-        val user = (_state.value as? UsersUiState.Ready)?.openUser ?: return
-        act(UserDone.PasswordSet) { client -> client.setPassword(user.id, password) }
+        val ready = _state.value as? UsersUiState.Ready ?: return
+        // The server asks the signed-in user for their current password, which the Password page does.
+        val user = ready.openUser?.takeUnless { it.id == ready.me } ?: return
+        act(UserDone.PasswordSet) { client ->
+            client.setPassword(user.id, password)
+            update { copy(users = users.map { if (it.id == user.id) it.copy(hasPassword = password.isNotEmpty()) else it }) }
+        }
     }
 
     fun delete() {
@@ -175,13 +180,27 @@ class UsersViewModel(
         update { copy(users = users.withPolicy(user.id, change(user.policy)), done = null, actionFailed = null) }
         viewModelScope.launch {
             saving.withLock {
-                val next = change(saved[user.id] ?: user.policy)
+                val before = saved[user.id] ?: user.policy
+                val next = change(before)
                 connection
                     .consoleCall(TAG) { _, client -> client.savePolicy(user.id, next) }
                     .onSuccess { saved[user.id] = next }
                     .onFailure { error ->
-                        val back = saved[user.id] ?: user.policy
-                        update { copy(users = users.withPolicy(user.id, back), actionFailed = error.consoleFailure()) }
+                        // Only the keys this change touched go back, and only those still showing its value:
+                        // a change queued behind it has its own say over the rest.
+                        val touched = next.keys.filter { next[it] != before[it] }
+                        update {
+                            val shown = users.firstOrNull { it.id == user.id }?.policy ?: return@update this
+                            val restored =
+                                touched.fold(shown) { policy, key ->
+                                    when {
+                                        policy[key] != next[key] -> policy
+                                        before[key] == null -> JsonObject(policy - key)
+                                        else -> policy + (key to before.getValue(key))
+                                    }
+                                }
+                            copy(users = users.withPolicy(user.id, restored), actionFailed = error.consoleFailure())
+                        }
                     }
             }
         }
