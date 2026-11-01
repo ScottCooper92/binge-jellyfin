@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -34,13 +35,13 @@ class DevicesScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun renaming() = DevicesScreen(previewReady.copy(renaming = previewDevices.first()), DevicesActions(), now = NOW)
+    fun renaming() = Surface { RenameDialog(previewDevices.first(), DevicesActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun removing() = DevicesScreen(previewReady.copy(removing = previewDevices[2]), DevicesActions(), now = NOW)
+    fun removing() = Surface { RemoveDialog(previewDevices[2], DevicesActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

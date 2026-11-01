@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
@@ -118,16 +117,25 @@ private fun Streams(
             )
         }
     }
-    state.confirming?.let { session ->
-        BingeConfirmDialog(
-            title = stringResource(R.string.now_playing_stop_title, session.title),
-            message = stringResource(R.string.now_playing_stop_body, session.deviceName, session.userName),
-            confirmLabel = stringResource(R.string.now_playing_stop),
-            onConfirm = actions.onConfirmStop,
-            onDismissRequest = actions.onCancelStop,
-            destructive = true,
-        )
-    }
+    state.confirming?.let { StopDialog(it, actions) }
+}
+
+/** Stopping a stream, after its title, device and user, as a confirm. [inWindow] false draws its body for a frame. */
+@Composable
+internal fun StopDialog(
+    session: NowPlaying,
+    actions: NowPlayingActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.now_playing_stop_title, session.title),
+        message = stringResource(R.string.now_playing_stop_body, session.deviceName, session.userName),
+        confirmLabel = stringResource(R.string.now_playing_stop),
+        onConfirm = actions.onConfirmStop,
+        onDismissRequest = actions.onCancelStop,
+        destructive = true,
+        inWindow = inWindow,
+    )
 }
 
 @Composable

@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -104,16 +103,25 @@ private fun Devices(
         }
     }
     state.renaming?.let { RenameDialog(it, actions) }
-    state.removing?.let { device ->
-        BingeConfirmDialog(
-            title = stringResource(R.string.devices_remove_title, device.displayName),
-            message = stringResource(R.string.devices_remove_body),
-            confirmLabel = stringResource(R.string.devices_remove),
-            onConfirm = actions.onRemove,
-            onDismissRequest = { actions.onAskRemove(null) },
-            destructive = true,
-        )
-    }
+    state.removing?.let { RemoveDialog(it, actions) }
+}
+
+/** Removing a device, after its name, as a confirm. [inWindow] false draws its body for a frame. */
+@Composable
+internal fun RemoveDialog(
+    device: ServerDevice,
+    actions: DevicesActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.devices_remove_title, device.displayName),
+        message = stringResource(R.string.devices_remove_body),
+        confirmLabel = stringResource(R.string.devices_remove),
+        onConfirm = actions.onRemove,
+        onDismissRequest = { actions.onAskRemove(null) },
+        destructive = true,
+        inWindow = inWindow,
+    )
 }
 
 @Composable
@@ -151,17 +159,19 @@ private fun ServerDevice.row(
 
 /** A name for the device; left empty, it goes back to the name the device gives itself. */
 @Composable
-private fun RenameDialog(
+internal fun RenameDialog(
     device: ServerDevice,
     actions: DevicesActions,
+    inWindow: Boolean = true,
 ) {
     var name by rememberSaveable(device.id) { mutableStateOf(device.customName.orEmpty()) }
-    BingeConfirmDialog(
+    ConsoleConfirm(
         title = stringResource(R.string.devices_rename_title),
         message = stringResource(R.string.devices_rename_body),
         confirmLabel = stringResource(R.string.devices_rename_save),
         onConfirm = { actions.onRename(name) },
         onDismissRequest = { actions.onAskRename(null) },
+        inWindow = inWindow,
         extraContent = {
             OutlinedTextField(
                 value = name,

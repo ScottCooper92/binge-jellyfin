@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -41,7 +42,7 @@ class ServerScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun confirming() = ServerScreen(previewReady.copy(confirming = true), ServerActions())
+    fun confirming() = Surface { RestartDialog(previewInfo, ServerActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -66,18 +67,18 @@ class UsersScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun adding() = UsersScreen(previewReady.copy(dialog = UserDialog.Create), UsersActions(), now = NOW)
+    fun adding() = Surface { CreateDialog(UsersActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun settingPassword() = UsersScreen(previewReady.copy(open = "ana", dialog = UserDialog.Password), UsersActions(), now = NOW)
+    fun settingPassword() = Surface { PasswordDialog(previewUsers.first(), UsersActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun deleting() = UsersScreen(previewReady.copy(open = "old", dialog = UserDialog.Delete), UsersActions(), now = NOW)
+    fun deleting() = Surface { DeleteDialog(previewUsers.last(), UsersActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

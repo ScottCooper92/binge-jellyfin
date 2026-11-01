@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -67,7 +68,7 @@ class NowPlayingScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun confirmingStop() = NowPlayingScreen(previewReady.copy(confirming = previewEpisode), administrator = true, NowPlayingActions())
+    fun confirmingStop() = Surface { StopDialog(previewEpisode, NowPlayingActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

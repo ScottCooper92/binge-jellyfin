@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
@@ -68,16 +67,25 @@ fun ServerScreen(
         }
     }
     val ready = state as? ServerUiState.Ready
-    if (ready?.confirming == true) {
-        BingeConfirmDialog(
-            title = stringResource(R.string.server_restart_title, ready.info.name),
-            message = stringResource(R.string.server_restart_body),
-            confirmLabel = stringResource(R.string.server_restart),
-            onConfirm = actions.onRestart,
-            onDismissRequest = { actions.onConfirm(false) },
-            destructive = true,
-        )
-    }
+    if (ready?.confirming == true) RestartDialog(ready.info, actions)
+}
+
+/** Restarting the server, after its name, as a confirm. [inWindow] false draws its body for a frame. */
+@Composable
+internal fun RestartDialog(
+    info: ServerInfo,
+    actions: ServerActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.server_restart_title, info.name),
+        message = stringResource(R.string.server_restart_body),
+        confirmLabel = stringResource(R.string.server_restart),
+        onConfirm = actions.onRestart,
+        onDismissRequest = { actions.onConfirm(false) },
+        destructive = true,
+        inWindow = inWindow,
+    )
 }
 
 @Composable
