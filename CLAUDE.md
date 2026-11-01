@@ -31,6 +31,12 @@ The contracts, the SDK and the design system are consumed as source. `binge-comp
 an author bot's commit can revert a change to it: bump a submodule in a commit of its own, and check
 the pins after any bot push.
 
+The app is called **Jellyfin Companion**, and so is the client it signs in as. It names Binge only behind
+`FeatureFlags` (`flags/`): `Flags.bingePromotion`, off by default, as binge-seerr has. Every string or surface that
+names Binge reads `LocalFlags` and has a plain alternative. The build sets the flag (`-PbingePromotion=true`); there is
+no flag service yet. The LIBRARY Service and the manifest's `com.binge.companion.*` names are the contract, not text,
+and aren't flagged.
+
 The screens wear the design system's `BingeExpressiveTheme`, with this app's own purple
 `JellyfinBrand` in place of Binge's amber (`theme/JellyfinTheme.kt`).
 

@@ -27,6 +27,8 @@ android {
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Whether the app names Binge (FeatureFlags). Off unless a build asks: ./gradlew … -PbingePromotion=true.
+        buildConfigField("boolean", "BINGE_PROMOTION", (findProperty("bingePromotion") == "true").toString())
     }
 
     buildFeatures {

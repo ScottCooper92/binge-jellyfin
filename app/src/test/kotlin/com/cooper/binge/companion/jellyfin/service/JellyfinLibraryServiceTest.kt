@@ -58,7 +58,7 @@ import java.util.concurrent.TimeUnit
 class JellyfinLibraryServiceTest {
     private val jellyfin = FakeJellyfin()
     private val sessions: SessionStore = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Binge Jellyfin", "Test", "1.2.3", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.2.3", Dispatchers.IO)
     private val messages =
         object : UserMessages {
             override fun signedOut() = "Sign in to Jellyfin"

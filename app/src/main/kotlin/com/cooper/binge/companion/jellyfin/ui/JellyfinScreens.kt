@@ -58,6 +58,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.binge.designsystem.R as DesR
@@ -303,6 +304,7 @@ private fun SignedIn(
     actions: Actions,
     inner: PaddingValues,
 ) {
+    val promoted = LocalFlags.current.bingePromotion
     LazyColumn(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
@@ -310,7 +312,8 @@ private fun SignedIn(
         item { ServerGroup(state, actions) }
         item { AccountGroup(actions) }
         if (state.isAdministrator) item { AdminGroup(actions) }
-        item { LibraryGroup(state, actions) }
+        // What Binge can find in the library is Binge's to show; without the flag the app names no Binge.
+        if (promoted) item { LibraryGroup(state, actions) }
         item {
             BingeTextButton(
                 label = stringResource(R.string.settings_sign_out),
@@ -334,7 +337,7 @@ internal fun SignOutConfirm(
     inWindow: Boolean = true,
 ) {
     val title = stringResource(R.string.sign_out_title)
-    val message = stringResource(R.string.sign_out_body)
+    val message = stringResource(if (LocalFlags.current.bingePromotion) R.string.sign_out_body else R.string.sign_out_body_plain)
     val confirm = stringResource(R.string.settings_sign_out)
     if (inWindow) {
         BingeConfirmDialog(title, message, confirm, actions.onSignOut, actions.onCancelSignOut, destructive = true)

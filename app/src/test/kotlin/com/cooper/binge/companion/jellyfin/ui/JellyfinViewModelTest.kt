@@ -39,7 +39,7 @@ class JellyfinViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions: SessionStore = testSessionStore()
     private val index = LibraryIndex()
-    private val connection = Connection(OkHttpClient(), sessions, "Binge Jellyfin", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
     @Before
     fun main() {
@@ -337,7 +337,7 @@ class JellyfinViewModelTest {
                 track(
                     JellyfinViewModel(
                         sessions,
-                        Connection(slow, sessions, "Binge Jellyfin", "Test", "1.0", Dispatchers.IO),
+                        Connection(slow, sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO),
                         index,
                         discover = {
                             gate.await()

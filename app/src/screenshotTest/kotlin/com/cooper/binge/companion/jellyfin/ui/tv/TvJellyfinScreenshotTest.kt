@@ -1,7 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
+import com.cooper.binge.companion.jellyfin.flags.Flags
+import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvStressPreviews
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -97,4 +100,10 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun signedInFailed() = TvJellyfinRoot(previewSignedInFailed, Actions())
+
+    /** With the Binge flag on: the library check, with what Binge can see, leads the page. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun signedInPromoted() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedIn, Actions()) }
 }
