@@ -69,7 +69,7 @@ class ApiKeysViewModelTest {
         val made = vm.ready { it.created != null && !it.busy }
         assertFalse(made.naming)
         assertEquals("Radarr", made.created!!.app)
-        assertEquals("newkey30000000000000", made.created!!.key)
+        assertEquals("newkey30000000000000", made.created.key)
         assertEquals(3, made.keys.size)
         assertEquals(
             "Radarr",

@@ -285,9 +285,10 @@ class FakeJellyfin : Dispatcher() {
             path == "/System/ActivityLog/Entries" -> activityPage(request)
             path == "/Auth/Keys" && request.method == "POST" -> {
                 val n = apiKeys.size + 1
-                apiKeys = apiKeys +
+                val added =
                     """{"AccessToken":"newkey${n}0000000000000","AppName":"${request.url.queryParameter("app")}",""" +
-                    """"DateCreated":"2026-11-01T10:00:00Z"}"""
+                        """"DateCreated":"2026-11-01T10:00:00Z"}"""
+                apiKeys = apiKeys + added
                 MockResponse(code = 204)
             }
             path == "/Auth/Keys" -> json("""{"Items":[${apiKeys.joinToString(",")}],"TotalRecordCount":${apiKeys.size}}""")
