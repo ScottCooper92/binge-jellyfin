@@ -164,6 +164,8 @@ class TrickplayViewModel(
     }
 }
 
+// The interval, width, tile and thread caps are this app's own; jellyfin-web sets only their minimums.
+// The quality scale (2 to 31) and JPEG quality (1 to 100) ceilings are jellyfin-web's.
 private const val MAX_INTERVAL_MILLIS = 3_600_000
 private const val MAX_WIDTH = 7680
 private const val MAX_TILE = 1000
