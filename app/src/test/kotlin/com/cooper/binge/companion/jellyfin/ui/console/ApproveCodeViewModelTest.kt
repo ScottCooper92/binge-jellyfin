@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -47,7 +48,10 @@ class ApproveCodeViewModelTest {
     private val listening = CoroutineScope(Dispatchers.Unconfined)
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() {
+        listening.cancel()
+        teardown.close(jellyfin)
+    }
 
     private fun ApproveCodeViewModel.resultAfter(code: String): ApproveUiState {
         onCode(code)
