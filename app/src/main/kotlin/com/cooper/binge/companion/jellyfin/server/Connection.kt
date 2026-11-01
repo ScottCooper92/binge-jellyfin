@@ -4,6 +4,9 @@ import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -18,6 +21,18 @@ class Connection(
     private val version: String,
     private val io: CoroutineDispatcher,
 ) {
+    private val refusals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * The saved session's token stopped working: the server refused it outright (revoked, the device
+     * removed, the password changed elsewhere). The home answers by sending the user to sign in.
+     */
+    val refused: SharedFlow<Unit> = refusals.asSharedFlow()
+
+    fun reportRefused() {
+        refusals.tryEmit(Unit)
+    }
+
     suspend fun identity(): ClientIdentity = ClientIdentity(client, device, sessions.deviceId(), version)
 
     suspend fun anonymous(baseUrl: HttpUrl): JellyfinClient = JellyfinClient(http, baseUrl, identity(), io)
