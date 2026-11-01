@@ -103,7 +103,7 @@ private fun Devices(
     state.renaming?.let { RenameDialog(it, actions) }
     state.removing?.let { device ->
         BingeConfirmDialog(
-            title = stringResource(R.string.devices_remove_title, device.name),
+            title = stringResource(R.string.devices_remove_title, device.displayName),
             message = stringResource(R.string.devices_remove_body),
             confirmLabel = stringResource(R.string.devices_remove),
             onConfirm = actions.onRemove,
@@ -122,8 +122,8 @@ private fun ServerDevice.row(
     val mine = id == state.thisDevice
     val seen = formatRelativeOrAbsolute(lastSeenMillis, now)?.let { stringResource(R.string.devices_seen, it) }
     return ListItem(
-        icon = deviceIcon(app, name),
-        label = name.ifBlank { stringResource(R.string.devices_unnamed) },
+        icon = deviceIcon(app, displayName),
+        label = displayName.ifBlank { stringResource(R.string.devices_unnamed) },
         detail = listOfNotNull(user.ifBlank { null }, app.ifBlank { null }, seen).joinToString(" · "),
         supportingMaxLines = 2,
         note = if (mine) ListItemNote(stringResource(R.string.devices_this_one), icon = Icons.Outlined.Info) else null,
