@@ -33,8 +33,12 @@ the pins after any bot push.
 
 The app is called **Jellyfin Companion**, and so is the client it signs in as. It names Binge only behind
 `FeatureFlags` (`flags/`): `Flags.bingePromotion`, off by default, as binge-seerr has. Every string or surface that
-names Binge reads `LocalFlags` and has a plain alternative. The build sets the flag (`-PbingePromotion=true`); there is
-no flag service yet. The LIBRARY Service and the manifest's `com.binge.companion.*` names are the contract, not text,
+names Binge reads `LocalFlags` and has a plain alternative. The value comes from Firebase Remote Config, in the `binge-jellyfin-companion` project, key
+`binge_promotion_enabled`. A build with `-PbingePromotion=true` turns it on whatever the remote says. A build
+without `app/google-services.json` has no Firebase app, so it makes no request and the flag stays off. With one,
+the app registers a Firebase installation ID with Google and fetches from Google's Remote Config service. That
+traffic carries the installation ID and app and device metadata. It never carries the access token or anything
+from the user's server. The LIBRARY Service and the manifest's `com.binge.companion.*` names are the contract, not text,
 and aren't flagged.
 
 The screens wear the design system's `BingeExpressiveTheme`, with this app's own purple

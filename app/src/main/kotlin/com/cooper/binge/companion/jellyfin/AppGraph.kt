@@ -9,8 +9,9 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.cooper.binge.companion.jellyfin.auth.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.flags.FeatureFlags
-import com.cooper.binge.companion.jellyfin.flags.FixedFeatureFlags
-import com.cooper.binge.companion.jellyfin.flags.Flags
+import com.cooper.binge.companion.jellyfin.flags.FirebaseRemoteFlagSource
+import com.cooper.binge.companion.jellyfin.flags.Flag
+import com.cooper.binge.companion.jellyfin.flags.RemoteFeatureFlags
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
@@ -50,8 +51,17 @@ class AppGraph(
         )
     }
 
-    /** Whether the app names Binge: the build decides, until there is a flag service (see [FeatureFlags]). */
-    val flags: FeatureFlags = FixedFeatureFlags(Flags(bingePromotion = BuildConfig.BINGE_PROMOTION))
+    /**
+     * Whether the app names Binge: Remote Config in this app's Firebase project, off by default. A build
+     * made with -PbingePromotion=true turns it on locally, whatever the remote says.
+     */
+    val flags: FeatureFlags by lazy {
+        RemoteFeatureFlags(
+            source = FirebaseRemoteFlagSource(appContext),
+            overrides = if (BuildConfig.BINGE_PROMOTION) mapOf(Flag.BingePromotion to true) else emptyMap(),
+            io = io,
+        )
+    }
 
     val connection: Connection by lazy {
         Connection(
