@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -20,6 +21,7 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
+import com.cooper.binge.companion.jellyfin.server.ServerDevice
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.Severity
@@ -304,5 +306,47 @@ class ConsoleScreensTest {
                 "Something",
             )
         assertEquals(types.size, types.map(::activityIcon).distinct().size)
+    }
+
+    @Test
+    fun `devices rename on a tap, remove after a confirm, and this one has no Remove`() {
+        val renamed = mutableListOf<String>()
+        val asked = mutableListOf<ServerDevice?>()
+        var removed = false
+        val tv = ServerDevice("tv", "SHIELD", null, "Jellyfin Android TV", "sam", null)
+        val mine = ServerDevice("me", "Pixel", null, "Binge Jellyfin", "Claude", null)
+        var state by mutableStateOf(DevicesUiState.Ready(listOf(tv, mine), thisDevice = "me"))
+        val actions =
+            DevicesActions(
+                onAskRename = { state = state.copy(renaming = it) },
+                onRename = { renamed += it },
+                onAskRemove = { asked += it },
+                onRemove = { removed = true },
+            )
+        compose.setContent { JellyfinTheme { DevicesScreen(state, actions) } }
+        compose.onNodeWithText("This device. Sign out here instead.").assertExists()
+        compose.onAllNodesWithContentDescription("Remove").assertCountEquals(1)
+        compose.onNodeWithContentDescription("Remove").performClick()
+        assertEquals(listOf<ServerDevice?>(tv), asked)
+        compose.onNodeWithText("SHIELD").performClick()
+        compose.onNodeWithText("Name").performTextInput("Den")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("Den"), renamed)
+        state = state.copy(renaming = null, removing = tv, actionFailed = ConsoleFailure.Refused)
+        compose.onNodeWithText("Remove SHIELD?").assertExists()
+        compose.onAllNodesWithText("Remove")[0].performClick()
+        assertTrue(removed)
+    }
+
+    @Test
+    fun `each kind of device has its icon`() {
+        val icons =
+            listOf(
+                deviceIcon("Jellyfin Android TV", "SHIELD"),
+                deviceIcon("Jellyfin Web", "Firefox"),
+                deviceIcon("Binge Jellyfin", "Pixel 10"),
+                deviceIcon("Kodi", "Den box"),
+            )
+        assertEquals(4, icons.distinct().size)
     }
 }

@@ -88,6 +88,17 @@ class FakeJellyfin : Dispatcher() {
                 """"Date":"2026-10-31T1$n:00:00Z","ShortOverview":"IP address: 10.0.0.$n"}"""
         }
 
+    /** `/Devices`: a TV seen most recently, a browser, and one with no id, which isn't a device. */
+    var devices: List<String> =
+        listOf(
+            """{"Id":"d-web","Name":"Firefox","AppName":"Jellyfin Web","LastUserName":"sam","DateLastActivity":"2026-10-30T10:00:00Z"}""",
+            """{"Id":"d-tv","Name":"SHIELD","AppName":"Jellyfin Android TV","LastUserName":"Claude","DateLastActivity":"2026-10-31T10:00:00Z"}""",
+            """{"Name":"Ghost"}""",
+        )
+
+    /** The names an admin gave devices, by id. */
+    val deviceNames = mutableMapOf<String, String>()
+
     /** The one Quick Connect code another device is waiting to have approved. */
     var approvableCode = "654321"
     var playbackInfo: String = directPlayInfo()
@@ -161,6 +172,13 @@ class FakeJellyfin : Dispatcher() {
             path == "/Library/VirtualFolders" -> json(LIBRARIES)
             path == "/ScheduledTasks" -> json(scheduledTasks)
             path == "/System/ActivityLog/Entries" -> activityPage(request)
+            path == "/Devices" && request.method == "DELETE" -> {
+                devices = devices.filterNot { "\"${request.url.queryParameter("id")}\"" in it }
+                MockResponse(code = 204)
+            }
+            path == "/Devices" -> json("""{"Items":[${devices.joinToString(",")}]}""")
+            path == "/Devices/Options" -> renameDevice(request)
+            path == "/Devices/Info" -> deviceInfo(request.url.queryParameter("id").orEmpty())
             path.startsWith("/ScheduledTasks/Running/") -> MockResponse(code = 204)
             path.startsWith("/Items/") && path.endsWith("/Refresh") -> MockResponse(code = 204)
             path.startsWith("/Sessions/") && path.endsWith("/Playing/Stop") -> MockResponse(code = 204)
@@ -284,6 +302,24 @@ class FakeJellyfin : Dispatcher() {
         val page = activityEntries.drop(start).take(limit)
         return json("""{"Items":[${page.joinToString(",")}],"TotalRecordCount":${activityEntries.size},"StartIndex":$start}""")
     }
+
+    private fun renameDevice(request: RecordedRequest): MockResponse {
+        val name =
+            Json
+                .parseToJsonElement(request.body?.utf8().orEmpty())
+                .jsonObject["CustomName"]
+                ?.jsonPrimitive
+                ?.content
+                .orEmpty()
+        deviceNames[request.url.queryParameter("id").orEmpty()] = name
+        return MockResponse(code = 204)
+    }
+
+    /** As the real server does, the names an admin gave are only in each device's info, never in `/Devices`. */
+    private fun deviceInfo(id: String): MockResponse =
+        json(
+            deviceNames[id]?.let { """{"Id":"$id","CustomName":"$it"}""" } ?: """{"Id":"$id"}""",
+        )
 
     private fun json(body: String): MockResponse =
         MockResponse
