@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Folder
@@ -464,6 +465,12 @@ private fun AccountGroup(
                     detail = stringResource(R.string.console_playback_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Playback) },
                 ).takeIf { ConsolePage.Playback.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.Dashboard,
+                    label = stringResource(R.string.home_layout_title),
+                    detail = stringResource(R.string.console_home_layout_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.HomeLayout) },
+                ).takeIf { ConsolePage.HomeLayout.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Password,
                     label = stringResource(R.string.password_title),

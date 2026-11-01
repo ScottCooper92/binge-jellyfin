@@ -47,6 +47,7 @@ older server shows less rather than failing on a call it can't answer.
 | Turning a library off without removing it | 10.9 | `canDisableLibraries` |
 | Collection, subtitle and lyric management permissions | 10.9 | `hasContentManagementPermissions` |
 | Loudness (LUFS) scanning for music libraries | 10.9 | `hasLoudnessScan` |
+| Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |
 | Backups | 10.11 | `hasBackups` |
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |

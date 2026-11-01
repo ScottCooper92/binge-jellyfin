@@ -75,6 +75,14 @@ class FakeJellyfin : Dispatcher() {
     var userConfiguration =
         """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
 
+    /** The user's libraries, as `/UserViews` (and before 10.9, `/Users/{id}/Views`) lists them. */
+    var userViews =
+        """[{"Id":"lib-movies","Name":"Movies","CollectionType":"movies"},""" +
+            """{"Id":"lib-shows","Name":"Shows","CollectionType":"tvshows"},{"Id":"lib-home","Name":"Home videos"}]"""
+
+    /** The libraries `GroupedFolders` may name, as the grouping options list them. */
+    var groupingOptions = """[{"Id":"lib-home","Name":"Home videos"}]"""
+
     /** The user's password, as `/Users/Password` checks and changes it. */
     var password = "old-secret"
 
@@ -211,6 +219,9 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/Localization/Cultures" -> json(CULTURES)
+            path == "/UserViews" || path.startsWith("/Users/") && path.endsWith("/Views") -> json("""{"Items":$userViews}""")
+            path == "/UserViews/GroupingOptions" || path.startsWith("/Users/") && path.endsWith("/GroupingOptions") ->
+                json(groupingOptions)
             path == "/Users/Password" && "CurrentPw" !in request.body?.utf8().orEmpty() -> adminPassword(request)
             path == "/Users/Password" -> changePassword(request)
             path == "/Users" -> json(serverUsers.values.joinToString(",", "[", "]") { it.toString() })

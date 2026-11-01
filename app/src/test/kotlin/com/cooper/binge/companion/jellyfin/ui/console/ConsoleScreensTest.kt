@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
@@ -31,6 +33,7 @@ import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.server.TaskRun
 import com.cooper.binge.companion.jellyfin.server.TaskStatus
+import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -141,6 +144,32 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Remember my subtitle choice").performScrollTo().performClick()
         compose.onNodeWithText("Play the next episode automatically").performScrollTo().performClick()
         assertEquals(listOf("default:false", "audio:false", "subtitles:false", "next:true"), switched)
+    }
+
+    @Test
+    fun `the home screen page lists the libraries, and a library's page hands its changes on`() {
+        val calls = mutableListOf<String>()
+        val views = listOf(UserView("a", "Movies", "movies"), UserView("b", "Shows", "tvshows"))
+        val list = HomeLayoutUiState.Ready(views, HomeLayout(latestExcludes = setOf("b")))
+        val actions =
+            HomeLayoutActions(
+                onOpen = { calls += "open:$it" },
+                onInMyMedia = { id, on -> calls += "media:$id:$on" },
+                onInLatest = { id, on -> calls += "latest:$id:$on" },
+                onMove = { id, by -> calls += "move:$id:$by" },
+            )
+        var state by mutableStateOf<HomeLayoutUiState>(list)
+        compose.setContent { JellyfinTheme { HomeLayoutScreen(state, actions) } }
+        compose.onNodeWithText("In My Media and Latest").assertExists()
+        compose.onNodeWithText("In My Media").assertExists()
+        compose.onNodeWithText("Shows").performClick()
+        state = list.copy(openId = "b")
+        compose.onNodeWithText("Show in Latest").performClick()
+        compose.onNodeWithText("Show in My Media").performClick()
+        compose.onNodeWithText("Group with other libraries").assertDoesNotExist()
+        compose.onNodeWithText("Move down").assertIsNotEnabled()
+        compose.onNodeWithText("Move up").performClick()
+        assertEquals(listOf("open:b", "latest:b:true", "media:b:false", "move:b:-1"), calls)
     }
 
     @Test
