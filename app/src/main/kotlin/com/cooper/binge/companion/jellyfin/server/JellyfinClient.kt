@@ -113,7 +113,7 @@ class JellyfinClient(
 
     internal suspend fun post(
         path: String,
-        body: JsonObject?,
+        body: JsonElement?,
         query: Map<String, String> = emptyMap(),
     ): JsonElement = call(Request.Builder().url(url(path, query)).post((body?.toString() ?: "").toRequestBody(JSON)), path)
 

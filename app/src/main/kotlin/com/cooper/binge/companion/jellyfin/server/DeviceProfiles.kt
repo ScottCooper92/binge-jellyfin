@@ -54,7 +54,7 @@ object DeviceProfiles {
     private const val DOLBY_VISION = "video/dolby-vision"
     private val BASE_LAYER_RANGES =
         listOf("SDR", "HDR10", "HLG", "HDR10Plus", "DOVIWithHDR10", "DOVIWithHLG", "DOVIWithSDR", "DOVIWithHDR10Plus")
-    private val ALL_RANGES = BASE_LAYER_RANGES + listOf("DOVI", "DOVIWithEL", "DOVIWithELHDR10Plus")
+    private val DOLBY_VISION_RANGES = BASE_LAYER_RANGES + "DOVI"
 
     fun maxBitrate(device: PlaybackDeviceProfile?): Long = device?.maxBitrateBps?.takeIf { it > 0 } ?: DEFAULT_MAX_BITRATE
 
@@ -169,13 +169,16 @@ object DeviceProfiles {
      * The video ranges [device] can show. Without HDR, SDR alone. With HDR but no Dolby Vision decoder,
      * the ranges whose base layer a plain HEVC or AV1 decoder plays: Dolby Vision with an HDR10, HLG,
      * SDR or HDR10+ base (profiles 8 and 9; Media3 falls back to the base layer for them). Profile 5
-     * (`DOVI`) has no such base, and the enhancement-layer profiles (`DOVIWithEL…`) are left to the
-     * server, so it transcodes them. A device that lists `video/dolby-vision` plays every range.
+     * (`DOVI`) has no such base, so only a Dolby Vision decoder plays it. The enhancement-layer ranges
+     * (`DOVIWithEL…`, profile 7) are left to the server whatever the device has: they need a dual-layer
+     * decode, and the Android decoders seen (the Google TV Streamer's, for one) handle profiles 5 and 8
+     * only. Jellyfin then sends the HDR10 base layer, or transcodes. The host's profile doesn't say which
+     * Dolby Vision profiles the decoder takes, so none is assumed to take profile 7.
      */
     private fun playableRanges(device: PlaybackDeviceProfile): List<String> =
         when {
             !device.supportsHdr -> listOf("SDR")
-            device.videoCodecsList.any { it.equals(DOLBY_VISION, ignoreCase = true) } -> ALL_RANGES
+            device.videoCodecsList.any { it.equals(DOLBY_VISION, ignoreCase = true) } -> DOLBY_VISION_RANGES
             else -> BASE_LAYER_RANGES
         }
 

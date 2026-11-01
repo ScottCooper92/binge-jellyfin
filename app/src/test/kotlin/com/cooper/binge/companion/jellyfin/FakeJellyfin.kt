@@ -171,6 +171,36 @@ class FakeJellyfin : Dispatcher() {
             """{"AccessToken":"eeeeffffgggghhhh2222","AppName":"Home Assistant","DateCreated":"2026-10-20T10:00:00Z"}""",
         )
 
+    /** `/Plugins`: an active plugin with a settings page, and one that was superseded. Enable, Disable and DELETE change it. */
+    var plugins: List<String> =
+        listOf(
+            """{"Name":"AniDB","Version":"1.2.3.4","Description":"Anime metadata.","Id":"a1b2c3d4-e5f6-0718-293a-4b5c6d7e8f90",""" +
+                """"CanUninstall":true,"HasImage":false,"ConfigurationFileName":"AniDB.xml","Status":"Active"}""",
+            """{"Name":"Old thing","Version":"0.1.0.0","Description":"","Id":"0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",""" +
+                """"CanUninstall":true,"HasImage":false,"Status":"Superceded"}""",
+        )
+
+    /** `/web/ConfigurationPages`: the settings pages plugins serve, by the plugin that serves each. */
+    var configurationPages =
+        """[{"Name":"AniDB settings","PluginId":"a1b2c3d4-e5f6-0718-293a-4b5c6d7e8f90"}]"""
+
+    /** `/Packages`: the catalog, one package with a version for this server and a newer one, and one for a newer server only. */
+    var packages =
+        """[
+        {"name":"Playback Reporting","guid":"5c0f1d6a1e8b4b5aa5d0c7f2b8e1d3a9","description":"Reports playback.","overview":"Shows who watched what.",
+         "owner":"jellyfin","category":"General",
+         "versions":[
+           {"version":"14.0.0.0","changelog":"Newer, for a newer server.","targetAbi":"10.11.0.0","repositoryName":"Jellyfin Stable","repositoryUrl":"https://repo.example/stable.json"},
+           {"version":"13.0.0.0","changelog":"Fixes a thing.","targetAbi":"10.10.0.0","repositoryName":"Jellyfin Stable","repositoryUrl":"https://repo.example/stable.json"},
+           {"version":"12.0.0.0","targetAbi":"10.9.0.0","repositoryName":"Jellyfin Stable","repositoryUrl":"https://repo.example/stable.json"}]},
+        {"name":"Future Plugin","guid":"11112222333344445555666677778888","description":"Needs a newer server.","overview":"","owner":"someone","category":"Metadata",
+         "versions":[{"version":"1.0.0.0","targetAbi":"10.12.0.0","repositoryName":"Jellyfin Stable","repositoryUrl":"https://repo.example/stable.json"}]}
+        ]"""
+
+    /** `/Repositories`: where the catalog comes from. A POST replaces the list. */
+    var repositories =
+        """[{"Name":"Jellyfin Stable","Url":"https://repo.example/stable.json","Enabled":true,"FutureField":1}]"""
+
     /** `/Devices`: a TV seen most recently, a browser, and one with no id, which isn't a device. */
     var devices: List<String> =
         listOf(
@@ -241,6 +271,14 @@ class FakeJellyfin : Dispatcher() {
                     ?.utf8()
                     .orEmpty(),
             ).jsonObject
+
+    /** The raw body of the last request to [path] that wasn't a read. */
+    fun lastBodyText(path: String): String =
+        requests
+            .last { it.url.encodedPath == path && it.method != "GET" }
+            .body
+            ?.utf8()
+            .orEmpty()
 
     fun hits(path: String): Int = requests.count { it.url.encodedPath == path }
 
@@ -352,6 +390,23 @@ class FakeJellyfin : Dispatcher() {
                 apiKeys = apiKeys.filterNot { "\"${path.removePrefix("/Auth/Keys/")}\"" in it }
                 MockResponse(code = 204)
             }
+            path == "/Plugins" -> json("[${plugins.joinToString(",")}]")
+            path.startsWith("/Plugins/") && path.endsWith("/Enable") && request.method == "POST" -> setPluginStatus(path, "Active")
+            path.startsWith("/Plugins/") && path.endsWith("/Disable") && request.method == "POST" -> setPluginStatus(path, "Disabled")
+            path.startsWith("/Plugins/") && request.method == "DELETE" -> {
+                val id = path.split('/')[2]
+                plugins = plugins.filterNot { "\"$id\"" in it }
+                MockResponse(code = 204)
+            }
+            path == "/web/ConfigurationPages" -> json(configurationPages)
+            path == "/Packages" -> json(packages)
+            path.startsWith("/Packages/Installed/") && request.method == "POST" -> MockResponse(code = 204)
+            path.startsWith("/Packages/Installing/") && request.method == "DELETE" -> MockResponse(code = 204)
+            path == "/Repositories" && request.method == "POST" -> {
+                repositories = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/Repositories" -> json(repositories)
             path == "/Devices" && request.method == "DELETE" -> {
                 devices = devices.filterNot { "\"${request.url.queryParameter("id")}\"" in it }
                 MockResponse(code = 204)
@@ -631,6 +686,20 @@ class FakeJellyfin : Dispatcher() {
     private fun adminPassword(request: RecordedRequest): MockResponse {
         val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
         adminPasswords[request.url.queryParameter("userId").orEmpty()] = body.getValue("NewPw").jsonPrimitive.content
+        return MockResponse(code = 204)
+    }
+
+    /** Whether Enable and Disable leave the plugin as `Restart`, which is what a real server reports. */
+    var pluginsReportRestart = false
+
+    /** Enable or Disable on `/Plugins/{id}/{version}/…`: the plugin's status becomes [status]. */
+    private fun setPluginStatus(
+        path: String,
+        status: String,
+    ): MockResponse {
+        val id = path.split('/')[2]
+        val reported = if (pluginsReportRestart) "Restart" else status
+        plugins = plugins.map { if ("\"$id\"" in it) it.replace(Regex(""""Status":"[A-Za-z]+""""), """"Status":"$reported"""") else it }
         return MockResponse(code = 204)
     }
 
