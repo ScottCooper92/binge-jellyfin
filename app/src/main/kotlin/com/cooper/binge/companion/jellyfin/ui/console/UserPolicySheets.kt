@@ -318,9 +318,8 @@ internal fun ScheduleForm(
                     1 ->
                         (0 until HOURS_IN_DAY).map { h ->
                             ListItem(icon = Icons.Outlined.Schedule, label = hours(h.toDouble()), onClick = {
-                                from =
-                                    h
-                                ; step = 2
+                                from = h
+                                step = 2
                             })
                         }
                     else ->

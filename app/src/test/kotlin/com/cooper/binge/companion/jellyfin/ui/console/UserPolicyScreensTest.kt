@@ -82,7 +82,7 @@ class UserPolicyScreensTest {
     @Test
     fun `allowed tags need 10_9 and the sub-rating needs 10_11`() {
         val sent =
-            policy("""{"MaxParentalRating":null,"MaxParentalSubRating":null,"BlockedTags":[],"AllowedTags":[],"AccessSchedules":[]}""")
+            policy("""{"BlockedTags":[],"AllowedTags":[],"AccessSchedules":[]}""")
         show(UserSection.Parental, sent, JellyfinServerProfile.from("10.8.13"))
         compose.onNodeWithText("BLOCKED TAGS").assertExists()
         compose.onAllNodesWithText("ALLOWED TAGS").assertCountEquals(0)
@@ -92,16 +92,22 @@ class UserPolicyScreensTest {
     @Test
     fun `from 10_10 allowed tags show, and the sub-rating waits for 10_11`() {
         val sent =
-            policy("""{"MaxParentalRating":null,"MaxParentalSubRating":null,"BlockedTags":[],"AllowedTags":[],"AccessSchedules":[]}""")
+            policy("""{"BlockedTags":[],"AllowedTags":[],"AccessSchedules":[]}""")
         show(UserSection.Parental, sent, JellyfinServerProfile.from("10.10.7"))
         compose.onNodeWithText("ALLOWED TAGS").assertExists()
         compose.onAllNodesWithText("Highest sub-rating allowed").assertCountEquals(0)
     }
 
     @Test
+    fun `the rating row shows for a user with no limit, whose policy leaves the key out`() {
+        show(UserSection.Parental, policy("""{"BlockedTags":[],"AccessSchedules":[]}"""), JellyfinServerProfile.from("10.10.7"))
+        compose.onNodeWithText("Highest rating allowed").assertExists()
+    }
+
+    @Test
     fun `the sub-rating shows on 10_11`() {
         val sent =
-            policy("""{"MaxParentalRating":null,"MaxParentalSubRating":null,"BlockedTags":[],"AllowedTags":[],"AccessSchedules":[]}""")
+            policy("""{"BlockedTags":[],"AllowedTags":[],"AccessSchedules":[]}""")
         show(UserSection.Parental, sent, choices = UserChoices(ratings = Loaded.Ready(listOf(ParentalRating("PG", 5, 2)))))
         compose.onNodeWithText("Highest sub-rating allowed").assertExists()
         compose.onNodeWithText("Highest rating allowed").assertExists()

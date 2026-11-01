@@ -33,7 +33,9 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
+import com.binge.designsystem.component.ListRowSkeleton
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.AccessSchedule
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.POLICY_ALLOWED_TAGS
 import com.cooper.binge.companion.jellyfin.server.POLICY_ALL_CHANNELS
@@ -57,11 +59,13 @@ import com.cooper.binge.companion.jellyfin.server.POLICY_SCHEDULES
 import com.cooper.binge.companion.jellyfin.server.POLICY_SUBTITLES
 import com.cooper.binge.companion.jellyfin.server.UNRATED_ITEM_TYPES
 import com.cooper.binge.companion.jellyfin.server.accessSchedules
+import com.cooper.binge.companion.jellyfin.server.asAccessSchedule
 import com.cooper.binge.companion.jellyfin.server.flag
 import com.cooper.binge.companion.jellyfin.server.has
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.strings
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import com.binge.designsystem.R as DesR
 
@@ -133,7 +137,12 @@ private fun <T> PickList(
     row: @Composable (T) -> ListItem,
 ) {
     when (loaded) {
-        Loaded.Idle, Loaded.Loading -> Text(stringResource(R.string.users_loading), style = MaterialTheme.typography.bodyMedium)
+        Loaded.Idle, Loaded.Loading ->
+            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.list_row_spacing))) {
+                repeat(PICK_LIST_SKELETON_ROWS) { index ->
+                    ListRowSkeleton(description = stringResource(R.string.users_loading).takeIf { index == 0 })
+                }
+            }
         is Loaded.Failed ->
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
                 Text(stringResource(loaded.failure.message), style = MaterialTheme.typography.bodyMedium)
@@ -235,14 +244,14 @@ internal fun ParentalSection(
                     onClick = { onPick(PolicyPicker.Rating) },
                     loading = choices.ratings is Loaded.Loading,
                     enabled = choices.ratings is Loaded.Ready,
-                ).takeIf { policy.has(POLICY_MAX_RATING) },
+                ),
                 ListItem(
                     icon = Icons.Outlined.ChildCare,
                     label = stringResource(R.string.users_max_sub_rating),
                     detail = sub?.toString() ?: stringResource(R.string.users_no_limit),
                     onClick = { onPick(PolicyPicker.SubRating) },
                     enabled = choices.ratings is Loaded.Ready,
-                ).takeIf { profile.hasParentalSubRating && policy.has(POLICY_MAX_SUB_RATING) },
+                ).takeIf { profile.hasParentalSubRating },
             ),
     )
     if (choices.ratings is Loaded.Failed) {
@@ -320,7 +329,7 @@ private fun ScheduleGroup(
     ItemGroup(
         title = stringResource(R.string.users_schedules),
         rows =
-            policy.accessSchedules().mapIndexed { index, schedule ->
+            policy.accessSchedules().map { schedule ->
                 ListItem(
                     icon = Icons.Outlined.Schedule,
                     label =
@@ -333,7 +342,7 @@ private fun ScheduleGroup(
                     clickable = false,
                     trailingContent = {
                         ExpressiveIconButton(
-                            onClick = { actions.onList(POLICY_SCHEDULES) { list -> list.filterIndexed { i, _ -> i != index } } },
+                            onClick = { actions.onList(POLICY_SCHEDULES) { list -> list.withoutSchedule(schedule) } },
                             icon = Icons.Outlined.Delete,
                             contentDescription = stringResource(R.string.users_remove),
                             tint = MaterialTheme.colorScheme.error,
@@ -348,4 +357,12 @@ private fun ScheduleGroup(
                     onClick = onAdd,
                 ),
     )
+}
+
+private const val PICK_LIST_SKELETON_ROWS = 3
+
+/** [this] without the first entry that is [schedule], matched by value so a stale position can't remove another. */
+internal fun List<JsonElement>.withoutSchedule(schedule: AccessSchedule): List<JsonElement> {
+    val at = indexOfFirst { it.asAccessSchedule() == schedule }
+    return if (at < 0) this else filterIndexed { i, _ -> i != at }
 }

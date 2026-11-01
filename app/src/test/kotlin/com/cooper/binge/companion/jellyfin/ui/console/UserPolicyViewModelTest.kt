@@ -53,7 +53,7 @@ class UserPolicyViewModelTest {
             """"EnableSubtitleManagement":false,"EnableLyricManagement":false,"EnableRemoteControlOfOtherUsers":false,""" +
             """"EnableSharedDeviceControl":true,"SyncPlayAccess":"CreateAndJoinGroups","EnableLiveTvAccess":true,""" +
             """"EnableLiveTvManagement":false,"EnableAllChannels":true,"EnabledChannels":[],"EnableAllDevices":true,""" +
-            """"EnabledDevices":[],"MaxParentalRating":null,"MaxParentalSubRating":null,"BlockUnratedItems":[],""" +
+            """"EnabledDevices":[],"BlockUnratedItems":[],""" +
             """"BlockedTags":["gore"],"AllowedTags":[],""" +
             """"AccessSchedules":[{"Id":7,"UserId":"user-2","DayOfWeek":"Monday","StartHour":8,"EndHour":17}],""" +
             """"FutureKey":{"keep":"me"}}"""
@@ -203,8 +203,21 @@ class UserPolicyViewModelTest {
                 .toInt(),
         )
         assertEquals(listOf(AccessSchedule("Monday", 8.0, 17.0), AccessSchedule("Weekend", 9.0, 21.5)), added.accessSchedules())
-        vm.editList("AccessSchedules") { list -> list.filterIndexed { i, _ -> i != 0 } }
+        vm.editList("AccessSchedules") { it.withoutSchedule(AccessSchedule("Monday", 8.0, 17.0)) }
         assertEquals(listOf(AccessSchedule("Weekend", 9.0, 21.5)), saved(2).accessSchedules())
+    }
+
+    @Test
+    fun `a schedule is removed by what it is, so a refused removal before it can't shift the one removed`() {
+        val vm = sam()
+        vm.editList("AccessSchedules") { it + AccessSchedule("Weekend", 9.0, 21.5).json() }
+        saved(1)
+        jellyfin.status["/Users/user-2/Policy"] = 403
+        vm.editList("AccessSchedules") { it.withoutSchedule(AccessSchedule("Monday", 8.0, 17.0)) }
+        vm.ready { it.actionFailed != null }
+        jellyfin.status.remove("/Users/user-2/Policy")
+        vm.editList("AccessSchedules") { it.withoutSchedule(AccessSchedule("Weekend", 9.0, 21.5)) }
+        assertEquals(listOf(AccessSchedule("Monday", 8.0, 17.0)), saved(3).accessSchedules())
     }
 
     @Test

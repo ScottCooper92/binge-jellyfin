@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.server
 
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -113,15 +114,17 @@ data class AccessSchedule(
     val endHour: Double,
 )
 
-fun JsonObject.accessSchedules(): List<AccessSchedule> =
-    array(POLICY_SCHEDULES).mapNotNull { element ->
-        val json = element as? JsonObject ?: return@mapNotNull null
-        AccessSchedule(
-            json.string("DayOfWeek") ?: return@mapNotNull null,
-            (json["StartHour"] as? JsonPrimitive)?.doubleOrNull ?: 0.0,
-            (json["EndHour"] as? JsonPrimitive)?.doubleOrNull ?: 0.0,
-        )
-    }
+fun JsonObject.accessSchedules(): List<AccessSchedule> = array(POLICY_SCHEDULES).mapNotNull { it.asAccessSchedule() }
+
+/** [this] as a schedule, or null if it isn't one. */
+fun JsonElement.asAccessSchedule(): AccessSchedule? {
+    val json = this as? JsonObject ?: return null
+    return AccessSchedule(
+        json.string("DayOfWeek") ?: return null,
+        (json["StartHour"] as? JsonPrimitive)?.doubleOrNull ?: 0.0,
+        (json["EndHour"] as? JsonPrimitive)?.doubleOrNull ?: 0.0,
+    )
+}
 
 /** [schedule] as an entry the server takes: it sets its own id and the user. */
 fun AccessSchedule.json(): JsonObject =
