@@ -460,10 +460,10 @@ private fun AccountGroup(
                 ).takeIf { ConsolePage.ApproveCode.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Translate,
-                    label = stringResource(R.string.languages_title),
-                    detail = stringResource(R.string.console_languages_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Languages) },
-                ).takeIf { ConsolePage.Languages.available(state.profile, state.account) },
+                    label = stringResource(R.string.playback_title),
+                    detail = stringResource(R.string.console_playback_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Playback) },
+                ).takeIf { ConsolePage.Playback.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Password,
                     label = stringResource(R.string.password_title),
