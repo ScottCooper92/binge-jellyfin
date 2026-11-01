@@ -78,6 +78,9 @@ class UsersViewModel(
     private val saved = mutableMapOf<String, JsonObject>()
     private val saving = Mutex()
 
+    /** Each user's changes that are made but not yet answered, oldest first. */
+    private val pending = mutableMapOf<String, MutableList<(JsonObject) -> JsonObject>>()
+
     init {
         load()
     }
@@ -134,8 +137,13 @@ class UsersViewModel(
     }
 
     fun setPassword(password: String) {
-        val user = (_state.value as? UsersUiState.Ready)?.openUser ?: return
-        act(UserDone.PasswordSet) { client -> client.setPassword(user.id, password) }
+        val ready = _state.value as? UsersUiState.Ready ?: return
+        // The server asks the signed-in user for their current password, which the Password page does.
+        val user = ready.openUser?.takeUnless { it.id == ready.me } ?: return
+        act(UserDone.PasswordSet) { client ->
+            client.setPassword(user.id, password)
+            update { copy(users = users.map { if (it.id == user.id) it.copy(hasPassword = password.isNotEmpty()) else it }) }
+        }
     }
 
     fun delete() {
@@ -173,16 +181,21 @@ class UsersViewModel(
         val user = ready.openUser ?: return
         if (!mineAllowed && user.id == ready.me) return
         update { copy(users = users.withPolicy(user.id, change(user.policy)), done = null, actionFailed = null) }
+        pending.getOrPut(user.id) { mutableListOf() }.add(change)
         viewModelScope.launch {
             saving.withLock {
                 val next = change(saved[user.id] ?: user.policy)
-                connection
-                    .consoleCall(TAG) { _, client -> client.savePolicy(user.id, next) }
-                    .onSuccess { saved[user.id] = next }
-                    .onFailure { error ->
-                        val back = saved[user.id] ?: user.policy
-                        update { copy(users = users.withPolicy(user.id, back), actionFailed = error.consoleFailure()) }
-                    }
+                val result = connection.consoleCall(TAG) { _, client -> client.savePolicy(user.id, next) }
+                result.onSuccess { saved[user.id] = next }
+                val queued = pending.getValue(user.id).also { it.remove(change) }
+                // What the screen shows is what the server holds, plus the changes still waiting their turn.
+                val shown = queued.fold(saved[user.id] ?: next) { policy, queuedChange -> queuedChange(policy) }
+                update {
+                    copy(
+                        users = users.withPolicy(user.id, shown),
+                        actionFailed = result.exceptionOrNull()?.consoleFailure() ?: actionFailed,
+                    )
+                }
             }
         }
     }

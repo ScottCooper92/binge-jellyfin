@@ -113,6 +113,24 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `two library switches made before the first answer are both put back when both are refused`() {
+        val vm = UsersViewModel(connection)
+        vm.openSam()
+        jellyfin.status["/Users/user-2/Policy"] = 503
+        vm.setAllLibraries(false)
+        vm.setLibrary("lib-shows", true)
+        vm.setLibrary("lib-extra", true)
+        val back = vm.ready { it.openUser?.libraries == setOf("lib-movies") && it.actionFailed != null }
+        assertEquals(setOf("lib-movies"), back.openUser!!.libraries)
+        assertEquals(
+            setOf("lib-movies"),
+            policy("user-2").getValue("EnabledFolders").let { folders ->
+                (folders as kotlinx.serialization.json.JsonArray).map { it.jsonPrimitive.content }.toSet()
+            },
+        )
+    }
+
+    @Test
     fun `my own sign-in and administrator switches can't be changed, nor can I be deleted`() {
         val vm = UsersViewModel(connection)
         vm.open(vm.ready().users.first())
@@ -155,11 +173,22 @@ class UsersViewModelTest {
         vm.setPassword("new-one")
         vm.ready { it.done == UserDone.PasswordSet }
         assertEquals("new-one", jellyfin.adminPasswords["user-2"])
+        assertTrue(vm.ready().openUser?.hasPassword == true)
         vm.show(UserDialog.Delete)
         vm.delete()
         val gone = vm.ready { it.done == UserDone.Deleted }
         assertEquals(listOf("Claude"), gone.users.map { it.name })
         assertNull(gone.open)
+    }
+
+    @Test
+    fun `the signed-in user's own password is left to the Password page`() {
+        val vm = UsersViewModel(connection)
+        val me = vm.ready().users.first { it.id == "user-1" }
+        vm.open(me)
+        vm.setPassword("mine")
+        assertEquals(0, jellyfin.hits("/Users/Password"))
+        assertNull(vm.ready().done)
     }
 
     @Test

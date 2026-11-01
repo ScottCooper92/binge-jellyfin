@@ -33,8 +33,6 @@ suspend fun JellyfinClient.users(): List<ServerUser> {
     return answer.mapNotNull { (it as? JsonObject)?.serverUser() }.sortedBy { it.name.lowercase() }
 }
 
-suspend fun JellyfinClient.user(id: String): ServerUser = getObject("Users/$id").serverUser() ?: throw JellyfinUnreadableAnswer("Users/$id")
-
 /** Creates a user, who can see every library and isn't an administrator, as Jellyfin's own default. */
 suspend fun JellyfinClient.createUser(
     name: String,
