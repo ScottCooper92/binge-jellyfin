@@ -81,6 +81,22 @@ class LogsViewModelTest {
     }
 
     @Test
+    fun `a log naming this app's own token, or another credential, shows none of them`() {
+        jellyfin.logTexts["log_20261031.log"] =
+            "[10:00:00] [INF] Session for token-1 ended\n" +
+            "[10:01:00] [INF] Logging out access token \"ffffeeeeddddccccbbbbaaaa99998888\"\n" +
+            "[10:02:00] [INF] Revoked the token of Bob: 11112222333344445555666677778888\n"
+        val vm = made(LogsViewModel(connection))
+        vm.ready()
+        vm.open("log_20261031.log")
+        val shown = (vm.opened().content as LogContent.Ready).lines.joinToString("\n")
+        for (secret in listOf("token-1", "ffffeeeeddddccccbbbbaaaa99998888", "11112222333344445555666677778888")) {
+            assertFalse("$secret was shown", secret in shown)
+        }
+        assertEquals(3, shown.lines().size)
+    }
+
+    @Test
     fun `search narrows the lines, and so does warnings only`() {
         val vm = made(LogsViewModel(connection))
         vm.ready()

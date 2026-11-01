@@ -38,10 +38,11 @@ private fun JsonObject.logFile(): LogFile? {
 /**
  * The last [maxBytes] of the log [name], with anything that looks like a credential blanked (see
  * [redactSecrets]): Jellyfin's own logs can carry an `api_key` in a request URL, and what this returns
- * is shown and shared.
+ * is shown and shared. [ownToken], the signed-in user's, is blanked wherever it appears.
  */
 suspend fun JellyfinClient.logTail(
     name: String,
+    ownToken: String? = null,
     maxBytes: Int = LOG_TAIL_BYTES,
 ): LogText {
     val tail = getTail("System/Logs/Log", mapOf("name" to name), maxBytes)
@@ -49,21 +50,42 @@ suspend fun JellyfinClient.logTail(
         tail.text
             .lines()
             .dropLastWhile { it.isEmpty() }
-            .map(::redactSecrets),
+            .map { redactSecrets(it.withoutToken(ownToken)) },
         tail.truncated,
     )
 }
 
+/** [this] line with [token], this app's own, replaced by `[redacted]` wherever it appears: exact, whatever the wording around it. */
+private fun String.withoutToken(token: String?): String = token?.takeIf { it.isNotBlank() }?.let { replace(it, REDACTED) } ?: this
+
 /** How much of a log is kept: enough for a day's errors, small enough for a phone. */
 const val LOG_TAIL_BYTES = 512 * 1024
 
+/** A key word and its value: `api_key=…`, `ApiKey: …`, `Token="…"`, `access token "…"`, `secret "…"`, or a bare 32-digit hex after it. */
 private val SECRET =
     Regex(
-        """(?i)\b(api[_-]?key|access[_-]?token|token)\b("?\s*[=:]\s*"?|\s+"|\s+(?=[0-9a-f]{32}\b))([A-Za-z0-9._~+/=-]{8,})""",
+        """(?i)\b(api[_-]?key|access[_-]?token|token|secret)\b("?\s*[=:]\s*"?|\s+"|\s+(?=[0-9a-f]{32}\b))([A-Za-z0-9._~+/=-]{8,})""",
     )
 
-/** [line] with the value after `api_key=`, `ApiKey:`, `Token="…"`, a quoted `access token "…"` or a bare 32-digit hex after `token`, and the like replaced by `[redacted]`; a JSON `"AccessToken":"…"` counts too. */
-fun redactSecrets(line: String): String = SECRET.replace(line) { "${it.groupValues[1]}${it.groupValues[2]}[redacted]" }
+/** A 32-digit hex (what Jellyfin makes access tokens and API keys of) within a few words after a key word. */
+private val HEX_AFTER_KEY =
+    Regex("""(?i)\b((?:api[ _-]?key|access[ _-]?token|token|secret)\b[^\n]{0,$NEAR_CHARS}?)\b[0-9a-f]{32}\b""")
+
+/**
+ * [line] with credentials replaced by `[redacted]`. Jellyfin's own log statements that print one, read
+ * from its source: `Logging out access token "…"`, `Authenticated with Schedules Direct token: "…"`,
+ * Quick Connect's `Secret "…" already expired`, and the `api_key=` in a request URL. A JSON
+ * `"AccessToken":"…"` counts too, and so does a 32-digit hex within a few words after a key word, for a
+ * wording not seen yet. Over-redacting is the safe side: this is shown and shared.
+ */
+fun redactSecrets(line: String): String {
+    val shaped = SECRET.replace(line) { "${it.groupValues[1]}${it.groupValues[2]}$REDACTED" }
+    return HEX_AFTER_KEY.replace(shaped) { "${it.groupValues[1]}$REDACTED" }
+}
+
+private const val NEAR_CHARS = 60
+
+private const val REDACTED = "[redacted]"
 
 /** Reads [source] to its end, keeping the last [maxBytes] of it. A cut-off first line is dropped. */
 internal fun readTail(

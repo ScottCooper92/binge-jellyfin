@@ -61,4 +61,31 @@ class JellyfinLogsApiTest {
         val plain = "[INF] Server started, a token of thanks, key=short"
         assertEquals(plain, redactSecrets(plain))
     }
+
+    @Test
+    fun `every credential line Jellyfin's own source logs is blanked`() {
+        val hex = "0123456789abcdef0123456789abcdef"
+        // Serilog prints a string argument in quotes. Each is read from Jellyfin's source at 10.11.0.
+        assertEquals("""Logging out access token "[redacted]"""", redactSecrets("""Logging out access token "$hex""""))
+        assertEquals(
+            """Authenticated with Schedules Direct token: "[redacted]"""",
+            redactSecrets("""Authenticated with Schedules Direct token: "$hex""""),
+        )
+        assertEquals("""Removing expired secret "[redacted]"""", redactSecrets("""Removing expired secret "$hex""""))
+        assertEquals("""Secret "[redacted]" already expired""", redactSecrets("""Secret "$hex" already expired"""))
+        assertEquals(
+            "GET /Videos/1/stream?ApiKey=[redacted]&static=true responded 200",
+            redactSecrets("GET /Videos/1/stream?ApiKey=$hex&static=true responded 200"),
+        )
+        assertEquals("X-Emby-Token: [redacted]", redactSecrets("X-Emby-Token: $hex"))
+    }
+
+    @Test
+    fun `a 32-digit hex within a few words after a key word is blanked, and one with no key word is not`() {
+        val hex = "0123456789abcdef0123456789abcdef"
+        assertEquals("Revoked the token of Bob: [redacted] now", redactSecrets("Revoked the token of Bob: $hex now"))
+        assertEquals("The api key was [redacted]", redactSecrets("The api key was $hex"))
+        val item = "[INF] Refreshing /Items/$hex/Images, a token of thanks"
+        assertEquals(item, redactSecrets(item))
+    }
 }

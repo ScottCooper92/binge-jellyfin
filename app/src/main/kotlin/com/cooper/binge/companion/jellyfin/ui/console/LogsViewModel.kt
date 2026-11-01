@@ -117,7 +117,7 @@ class LogsViewModel(
             viewModelScope.launch {
                 val content =
                     connection
-                        .consoleCall(TAG) { _, client -> client.logTail(name) }
+                        .consoleCall(TAG) { session, client -> client.logTail(name, session.token) }
                         .fold(
                             onSuccess = { LogContent.Ready(it.lines, it.truncated) },
                             onFailure = { LogContent.Failed(it.consoleFailure()) },
