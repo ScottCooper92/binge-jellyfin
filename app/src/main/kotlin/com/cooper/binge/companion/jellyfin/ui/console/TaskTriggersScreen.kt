@@ -36,8 +36,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingeAdaptiveSheet
+import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeFilterChip
 import com.binge.designsystem.component.BingeOutlinedButton
+import com.binge.designsystem.component.BingeSheetHeader
+import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -96,7 +100,7 @@ internal fun TaskTriggers(
                 action = ScreenAction(stringResource(R.string.tasks_trigger_add), { actions.onAskAdd(true) }, Icons.Outlined.Add),
             )
         }
-        if (state.adding) AddTriggerDialog(actions)
+        if (state.adding) AddTriggerSheet(actions)
         return
     }
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
@@ -126,7 +130,7 @@ internal fun TaskTriggers(
             )
         }
     }
-    if (state.adding) AddTriggerDialog(actions)
+    if (state.adding) AddTriggerSheet(actions)
 }
 
 @Composable
@@ -227,16 +231,21 @@ internal fun rememberTimeLabel(): (Long) -> String {
     }
 }
 
+/** The new trigger sheet: a task sheet over the page, closed by its own Add or by dismissing it. */
+@Composable
+internal fun AddTriggerSheet(actions: TasksActions) {
+    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onAskAdd(false) }) {
+        AddTriggerForm(actions)
+    }
+}
+
 /**
  * A new trigger's form: its kind, then what that kind needs (a time of day, a day, how often), and an
  * optional time limit. The time comes from the platform's time picker, in the device's 24-hour setting.
- * [inWindow] false draws its body for a frame.
+ * It is the content of [AddTriggerSheet], and draws without a window for a frame.
  */
 @Composable
-internal fun AddTriggerDialog(
-    actions: TasksActions,
-    inWindow: Boolean = true,
-) {
+internal fun AddTriggerForm(actions: TasksActions) {
     var kindIndex by rememberSaveable { mutableIntStateOf(0) }
     var minutes by rememberSaveable { mutableIntStateOf(DEFAULT_HOUR * MINUTES_PER_HOUR) }
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -245,36 +254,37 @@ internal fun AddTriggerDialog(
     val kind = TriggerKind.entries[kindIndex]
     val limit = limitHours.takeIf { it > 0 }?.let { it * TICKS_PER_HOUR }
     val timeTicks = minutes * TICKS_PER_MINUTE
-    ConsoleConfirm(
-        title = stringResource(R.string.tasks_trigger_new_title),
-        message = stringResource(R.string.tasks_trigger_new_body),
-        confirmLabel = stringResource(R.string.tasks_trigger_create),
-        onConfirm = {
-            actions.onAddTrigger(
-                when (kind) {
-                    TriggerKind.Daily -> TaskTrigger.daily(timeTicks, limit)
-                    TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks, limit)
-                    TriggerKind.Interval -> TaskTrigger.interval(intervalTicks, limit)
-                    TriggerKind.Startup -> TaskTrigger.startup(limit)
+    Column {
+        BingeSheetHeader(
+            title = stringResource(R.string.tasks_trigger_new_title),
+            subtitle = stringResource(R.string.tasks_trigger_new_body),
+        )
+        // The form can be taller than the sheet (a small screen, a large font), so it scrolls.
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+        ) {
+            KindChips(kind) { kindIndex = it.ordinal }
+            if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) TimeButton(minutes) { minutes = it }
+            if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
+            if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
+            LimitChips(limitHours) { limitHours = it }
+            BingeFilledButton(
+                label = stringResource(R.string.tasks_trigger_create),
+                onClick = {
+                    actions.onAddTrigger(
+                        when (kind) {
+                            TriggerKind.Daily -> TaskTrigger.daily(timeTicks, limit)
+                            TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks, limit)
+                            TriggerKind.Interval -> TaskTrigger.interval(intervalTicks, limit)
+                            TriggerKind.Startup -> TaskTrigger.startup(limit)
+                        },
+                    )
                 },
+                modifier = Modifier.fillMaxWidth().padding(bottom = dimensionResource(DesR.dimen.padding_m)),
             )
-        },
-        onDismissRequest = { actions.onAskAdd(false) },
-        inWindow = inWindow,
-        extraContent = {
-            // The form can be taller than the dialog (a small screen, a large font), so it scrolls.
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
-            ) {
-                KindChips(kind) { kindIndex = it.ordinal }
-                if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) TimeButton(minutes) { minutes = it }
-                if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
-                if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
-                LimitChips(limitHours) { limitHours = it }
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable

@@ -493,14 +493,14 @@ class ConsoleScreensTest {
         compose.onNodeWithText("New trigger").assertExists()
         compose.onNodeWithText("Every so often").performClick()
         compose.onAllNodesWithText("2 h")[1].performScrollTo().performClick()
-        compose.onAllNodesWithText("Add")[0].performClick()
+        compose.onNodeWithText("Add").performScrollTo().performClick()
         assertEquals(listOf(TaskTrigger.interval(6 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR)), added)
         compose
             .onAllNodesWithText("At startup")
             .onLast()
             .performScrollTo()
             .performClick()
-        compose.onAllNodesWithText("Add")[0].performClick()
+        compose.onNodeWithText("Add").performScrollTo().performClick()
         // The time limit chosen a moment ago is still chosen: the form keeps what was picked.
         assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
         state = state.copy(saving = true, actionFailed = ConsoleFailure.Refused, adding = false)

@@ -73,5 +73,5 @@ class TaskTriggersScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun newTrigger() = Surface { AddTriggerDialog(TasksActions(), inWindow = false) }
+    fun newTrigger() = Surface { AddTriggerForm(TasksActions()) }
 }
