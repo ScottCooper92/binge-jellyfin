@@ -378,6 +378,45 @@
     <string name="api_keys_done">Done</string>
     <string name="api_keys_copy">Copy</string>
     <string name="api_keys_not_changed">Not changed. %1$s</string>
+    <string name="tasks_triggers">Triggers</string>
+    <string name="tasks_triggers_empty">This task only runs when you start it.</string>
+    <string name="tasks_trigger_add">Add trigger</string>
+    <string name="tasks_trigger_remove">Remove</string>
+    <string name="tasks_trigger_not_saved">Triggers not changed. %1$s</string>
+    <string name="tasks_trigger_new_title">New trigger</string>
+    <string name="tasks_trigger_new_body">When should this task run by itself?</string>
+    <string name="tasks_trigger_create">Add</string>
+    <string name="tasks_trigger_limit">Time limit</string>
+    <string name="tasks_trigger_no_limit">No limit</string>
+    <string name="trigger_kind_daily">Daily</string>
+    <string name="trigger_kind_weekly">Weekly</string>
+    <string name="trigger_kind_interval">Every so often</string>
+    <string name="trigger_startup">At startup</string>
+    <string name="trigger_daily_at">Every day at %1$s</string>
+    <string name="trigger_weekly_at">Every %1$s at %2$s</string>
+    <string name="trigger_other">%1$s</string>
+    <string name="trigger_minutes_short">%1$d min</string>
+    <string name="trigger_hours_short">%1$d h</string>
+    <plurals name="trigger_every_hours">
+        <item quantity="one">Every %1$d hour</item>
+        <item quantity="other">Every %1$d hours</item>
+    </plurals>
+    <plurals name="trigger_every_minutes">
+        <item quantity="one">Every %1$d minute</item>
+        <item quantity="other">Every %1$d minutes</item>
+    </plurals>
+    <plurals name="trigger_every_seconds">
+        <item quantity="one">Every %1$d second</item>
+        <item quantity="other">Every %1$d seconds</item>
+    </plurals>
+    <plurals name="trigger_limit_hours">
+        <item quantity="one">Stops after %1$d hour</item>
+        <item quantity="other">Stops after %1$d hours</item>
+    </plurals>
+    <plurals name="trigger_limit_minutes">
+        <item quantity="one">Stops after %1$d minute</item>
+        <item quantity="other">Stops after %1$d minutes</item>
+    </plurals>
     <string name="trickplay_title">Trickplay</string>
     <string name="console_trickplay_detail">Seek thumbnails</string>
     <string name="console_transcoding_detail">Hardware acceleration, resume and streaming</string>
@@ -568,6 +607,7 @@
     <string name="trickplay_qscale_body">ffmpeg\'s quality scale, from 2 to 31. Lower is better, and larger.</string>
     <string name="trickplay_number_invalid">Enter a whole number from %1$d to %2$d.</string>
     <string name="trickplay_save">Save</string>
+    <string name="tasks_triggers_empty_title">No triggers</string>
     <string name="plugins_title">Plugins</string>
     <string name="console_plugins_detail">Installed, the catalog and repositories</string>
     <string name="plugins_tab_installed">Installed</string>

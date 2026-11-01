@@ -384,6 +384,8 @@ class FakeJellyfin : Dispatcher() {
             path.startsWith("/Library/VirtualFolders") || path.startsWith("/Environment/") || path == "/Libraries/AvailableOptions" ->
                 libraryCall(path, request)
             path == "/ScheduledTasks" -> json(scheduledTasks)
+            path.startsWith("/ScheduledTasks/") && path.endsWith("/Triggers") && request.method == "POST" ->
+                saveTriggers(path.split('/')[2], request)
             path == "/System/ActivityLog/Entries" -> activityPage(request)
             path == "/System/Logs" -> json("[${logFiles.joinToString(",")}]")
             path == "/System/Logs/Log" ->
@@ -707,6 +709,27 @@ class FakeJellyfin : Dispatcher() {
         return MockResponse(code = 204)
     }
 
+    /** `POST /ScheduledTasks/{id}/Triggers`: the body is the task's whole new trigger list. */
+    private fun saveTriggers(
+        id: String,
+        request: RecordedRequest,
+    ): MockResponse {
+        val triggers = Json.parseToJsonElement(request.body?.utf8().orEmpty()) as? JsonArray ?: return MockResponse(code = 400)
+        val tasks = Json.parseToJsonElement(scheduledTasks).jsonArray
+        if (tasks.none { it.jsonObject["Id"]?.jsonPrimitive?.content == id }) return MockResponse(code = 404)
+        scheduledTasks =
+            JsonArray(
+                tasks.map { task ->
+                    if (task.jsonObject["Id"]?.jsonPrimitive?.content == id) {
+                        JsonObject(task.jsonObject + ("Triggers" to triggers))
+                    } else {
+                        task
+                    }
+                },
+            ).toString()
+        return MockResponse(code = 204)
+    }
+
     /** Whether Enable and Disable leave the plugin as `Restart`, which is what a real server reports. */
     var pluginsReportRestart = false
 
@@ -743,8 +766,11 @@ class FakeJellyfin : Dispatcher() {
             """[
             {"Id":"t-scan","Key":"RefreshLibrary","Name":"Scan Media Library","Category":"Library","State":"Idle",
              "Description":"Scans your media library for new files.",
+             "Triggers":[{"Type":"DailyTrigger","TimeOfDayTicks":108000000000,"MaxRuntimeTicks":72000000000},
+                         {"Type":"IntervalTrigger","IntervalTicks":216000000000}],
              "LastExecutionResult":{"Status":"Completed","EndTimeUtc":"2026-10-31T18:00:00Z"}},
             {"Id":"t-clean","Key":"CleanCache","Name":"Clean Cache Directory","Category":"Maintenance","State":"Idle",
+             "Triggers":[{"Type":"StartupTrigger"},{"Type":"SystemEventTrigger","FutureField":7}],
              "LastExecutionResult":{"Status":"Failed","EndTimeUtc":"2026-10-30T03:00:00Z","ErrorMessage":"Disk full"}},
             {"Id":"t-guide","Key":"RefreshGuide","Name":"Refresh Guide","Category":"Live TV","State":"Idle","IsHidden":true}
             ]"""

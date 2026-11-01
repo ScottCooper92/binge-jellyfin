@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ServerTask
+import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.runTask
+import com.cooper.binge.companion.jellyfin.server.saveTaskTriggers
 import com.cooper.binge.companion.jellyfin.server.stopTask
 import com.cooper.binge.companion.jellyfin.server.taskPushes
 import com.cooper.binge.companion.jellyfin.server.tasks
@@ -23,10 +25,17 @@ sealed interface TasksUiState {
         val failure: ConsoleFailure,
     ) : TasksUiState
 
-    /** The tasks and what this page has asked of them, and the last run or stop that couldn't be sent. */
+    /**
+     * The tasks and what this page has asked of them, and the last run, stop or trigger change that
+     * couldn't be sent. [open] is the id of the task whose triggers are showing; [adding] the new trigger
+     * sheet; [saving] a trigger change in flight.
+     */
     data class Ready(
         val board: TaskBoard,
         val actionFailed: ConsoleFailure? = null,
+        val open: String? = null,
+        val adding: Boolean = false,
+        val saving: Boolean = false,
     ) : TasksUiState
 }
 
@@ -66,6 +75,37 @@ class TasksViewModel(
     fun run(task: ServerTask) = call(task, run = true)
 
     fun stop(task: ServerTask) = call(task, run = false)
+
+    /** Opens [task]'s triggers, or goes back to the list for null. */
+    fun open(task: ServerTask?) = update { copy(open = task?.id, adding = false, actionFailed = null) }
+
+    fun askAdd(on: Boolean) = update { copy(adding = on, actionFailed = null) }
+
+    /** Adds [trigger] to the open task's triggers, after the ones it has. */
+    fun addTrigger(trigger: TaskTrigger) = changeTriggers { it + trigger }
+
+    /** Removes the open task's trigger at [index]. No confirm: adding it back undoes it. */
+    fun removeTrigger(index: Int) = changeTriggers { triggers -> triggers.filterIndexed { at, _ -> at != index } }
+
+    /**
+     * Sends the open task's triggers as [change] makes them, the whole list as the server wants it, then
+     * reads the tasks again so the page shows what the server now holds. One change at a time: one in
+     * flight turns the next away, since its list would be built on triggers about to change.
+     */
+    private fun changeTriggers(change: (List<TaskTrigger>) -> List<TaskTrigger>) {
+        val ready = _state.value as? TasksUiState.Ready ?: return
+        val task = ready.open?.let { id -> ready.board.tasks.firstOrNull { it.id == id } } ?: return
+        if (ready.saving) return
+        update { copy(adding = false, saving = true, actionFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client ->
+                    client.saveTaskTriggers(task.id, change(task.triggers))
+                    client.tasks()
+                }.onSuccess { tasks -> update { copy(board = board.following(tasks), saving = false) } }
+                .onFailure { error -> update { copy(saving = false, actionFailed = error.consoleFailure()) } }
+        }
+    }
 
     private fun call(
         task: ServerTask,
