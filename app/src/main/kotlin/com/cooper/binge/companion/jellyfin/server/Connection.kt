@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -43,6 +45,17 @@ class Connection(
     /** Lives as long as the connection, so a save outlives the page that started it. */
     private val saveScope = CoroutineScope(SupervisorJob() + io)
     private val pendingSaves: MutableSet<Job> = ConcurrentHashMap.newKeySet()
+
+    init {
+        // A save is built from one account's configuration, so it dies with the session it was made under.
+        saveScope.launch {
+            sessions.session
+                .map { session -> session?.let { Triple(it.baseUrl, it.userId, it.token) } }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { pendingSaves.toList().forEach { it.cancel() } }
+        }
+    }
 
     /**
      * Runs [block], a save the user made, to its end even if the page that made it closes first.

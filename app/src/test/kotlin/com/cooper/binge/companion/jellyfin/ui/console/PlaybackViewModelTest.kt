@@ -122,6 +122,24 @@ class PlaybackViewModelTest {
     }
 
     @Test
+    fun `a save queued under one session never reaches the next one signed in`() {
+        val vm = PlaybackViewModel(connection)
+        vm.ready()
+        jellyfin.slow += "/Users/Configuration"
+        vm.setAudio("spa")
+        saves(1)
+        vm.setSubtitles("fre")
+        // Another account signs in while the first save is on the wire and the second waits behind it.
+        runBlocking { sessions.save(jellyfin.session().copy(userId = "user-2", token = "token-2")) }
+        jellyfin.slow.clear()
+        runBlocking {
+            connection.awaitSaves()
+            delay(SETTLE_MILLIS)
+        }
+        assertEquals(1, jellyfin.hits("/Users/Configuration"))
+    }
+
+    @Test
     fun `a save that fails puts that choice back and says so`() {
         val vm = PlaybackViewModel(connection)
         vm.ready()
@@ -215,6 +233,7 @@ class PlaybackViewModelTest {
 
     private companion object {
         const val POLL_MILLIS = 10L
+        const val SETTLE_MILLIS = 300L
         const val TIMEOUT_MILLIS = 10_000L
     }
 }
