@@ -139,7 +139,7 @@
     <string name="devices_body">Every device that has signed in to this server. Removing one signs it out until it signs in again.</string>
     <string name="devices_seen">seen %1$s</string>
     <string name="devices_unnamed">Unnamed device</string>
-    <string name="devices_this_one">This device. Remove it from another one, or sign out here.</string>
+    <string name="devices_this_one">This device. Sign out here instead.</string>
     <string name="devices_remove">Remove</string>
     <string name="devices_remove_title">Remove %1$s?</string>
     <string name="devices_remove_body">It\'s signed out, and has to sign in again to use this server.</string>
