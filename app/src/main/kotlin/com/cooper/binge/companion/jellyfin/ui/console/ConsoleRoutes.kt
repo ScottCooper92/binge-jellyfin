@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -33,6 +34,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Libraries -> LibrariesRoute(graph, close)
         ConsolePage.Tasks -> TasksRoute(graph, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
+        ConsolePage.Logs -> LogsRoute(graph, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, close)
@@ -284,6 +286,30 @@ private fun NowPlayingRoute(
             onConfirmStop = nowPlaying::stop,
             onCancelStop = nowPlaying::cancelStop,
             onRetry = nowPlaying::load,
+            onBack = onBack,
+        ),
+    )
+}
+
+/** The logs page, with the share sheet it opens for a log. */
+@Composable
+private fun LogsRoute(
+    graph: AppGraph,
+    onBack: () -> Unit,
+) {
+    val logs: LogsViewModel = viewModel(factory = viewModelFactory { initializer { LogsViewModel(graph.connection) } })
+    val state by logs.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    LogsScreen(
+        state,
+        LogsActions(
+            onOpen = logs::open,
+            onCloseLog = logs::closeLog,
+            onQuery = logs::setQuery,
+            onProblemsOnly = logs::setProblemsOnly,
+            onShare = { name, text -> context.startActivity(shareLogIntent(context, name, text)) },
+            onRetry = logs::load,
+            onRetryOpen = logs::retryOpen,
             onBack = onBack,
         ),
     )

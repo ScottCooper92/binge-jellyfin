@@ -38,6 +38,7 @@ app:console_approve_detail  8371322fc723
 app:console_devices_detail  fceb76d23a76
 app:console_home_layout_detail  4920c5a943a4
 app:console_libraries_detail  2799454505fe
+app:console_logs_detail  425dcf674ddf
 app:console_playback_detail  4676d3b03871
 app:console_retry  d8b8392e2c54
 app:console_server_detail  d0f33aeb6e2d
@@ -111,6 +112,15 @@ app:libraries_scan  ea1c510d1ddb
 app:libraries_scan_all  17dd759abb08
 app:libraries_title  62ef6fd92ee1
 app:libraries_unnamed  18d5989da06f
+app:logs_empty  79c3f81612f5
+app:logs_no_match  9a93865e5721
+app:logs_problems_only  671eb9787a59
+app:logs_search  5b02ad313952
+app:logs_share  29887a5ff984
+app:logs_share_note  768f736f4c21
+app:logs_share_title  7c5f2c793f1c
+app:logs_title  ea2100dc89ae
+app:logs_truncated  25d691d0ab0c
 app:method_direct_play  0ff1147e6fd1
 app:method_direct_stream  63fb8a90ea1a
 app:now_playing_body  121fdbe9ea0e
