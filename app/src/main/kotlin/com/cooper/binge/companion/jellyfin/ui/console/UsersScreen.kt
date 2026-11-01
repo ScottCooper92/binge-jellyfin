@@ -33,7 +33,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
@@ -288,31 +287,43 @@ private fun UserDialogs(
     when (state.dialog) {
         UserDialog.Create -> CreateDialog(actions)
         UserDialog.Password -> if (user != null) PasswordDialog(user, actions)
-        UserDialog.Delete ->
-            if (user != null) {
-                BingeConfirmDialog(
-                    title = stringResource(R.string.users_delete_title, user.name),
-                    message = stringResource(R.string.users_delete_body),
-                    confirmLabel = stringResource(R.string.users_delete),
-                    onConfirm = actions.onDelete,
-                    onDismissRequest = { actions.onShow(null) },
-                    destructive = true,
-                )
-            }
+        UserDialog.Delete -> if (user != null) DeleteDialog(user, actions)
         null -> Unit
     }
 }
 
+/** Deleting a user, after their name, as a confirm. [inWindow] false draws its body for a frame. */
 @Composable
-private fun CreateDialog(actions: UsersActions) {
+internal fun DeleteDialog(
+    user: ServerUser,
+    actions: UsersActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.users_delete_title, user.name),
+        message = stringResource(R.string.users_delete_body),
+        confirmLabel = stringResource(R.string.users_delete),
+        onConfirm = actions.onDelete,
+        onDismissRequest = { actions.onShow(null) },
+        destructive = true,
+        inWindow = inWindow,
+    )
+}
+
+@Composable
+internal fun CreateDialog(
+    actions: UsersActions,
+    inWindow: Boolean = true,
+) {
     var name by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    BingeConfirmDialog(
+    ConsoleConfirm(
         title = stringResource(R.string.users_add),
         message = stringResource(R.string.users_add_body),
         confirmLabel = stringResource(R.string.users_add_action),
         onConfirm = { actions.onCreate(name, password) },
         onDismissRequest = { actions.onShow(null) },
+        inWindow = inWindow,
         extraContent = {
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
                 OutlinedTextField(
@@ -329,17 +340,19 @@ private fun CreateDialog(actions: UsersActions) {
 }
 
 @Composable
-private fun PasswordDialog(
+internal fun PasswordDialog(
     user: ServerUser,
     actions: UsersActions,
+    inWindow: Boolean = true,
 ) {
     var password by rememberSaveable { mutableStateOf("") }
-    BingeConfirmDialog(
+    ConsoleConfirm(
         title = stringResource(R.string.users_password_title, user.name),
         message = stringResource(R.string.users_password_body),
         confirmLabel = stringResource(R.string.users_password_action),
         onConfirm = { actions.onSetPassword(password) },
         onDismissRequest = { actions.onShow(null) },
+        inWindow = inWindow,
         extraContent = { PasswordField(password, { password = it }, R.string.password_new) },
     )
 }
