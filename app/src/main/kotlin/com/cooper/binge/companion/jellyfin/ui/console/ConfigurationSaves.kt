@@ -1,6 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.saveUserConfiguration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -10,9 +12,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 /**
- * Saves the signed-in user's configuration a change at a time, as the console's settings pages make
- * them. Jellyfin has no partial update, so each save sends the last configuration the server accepted
- * with that one change, and saves take turns, each building on the last.
+ * Saves a configuration a change at a time, as the console's settings pages make them: the user's own
+ * by default, or another that [save] sends (the server's, its branding). Jellyfin has no partial
+ * update, so each save sends the last configuration the server accepted with that one change, and
+ * saves take turns, each building on the last.
  *
  * A change shows at once ([shown] goes to [onShown]). A save that fails puts that one key back to what
  * the server last accepted, with the failure, unless a newer change to the same key is on its way and
@@ -22,6 +25,9 @@ internal class ConfigurationSaves(
     private val scope: CoroutineScope,
     private val connection: Connection,
     private val tag: String,
+    private val save: suspend (JellyfinSession, JellyfinClient, JsonObject) -> Unit = { session, client, configuration ->
+        client.saveUserConfiguration(session.userId, configuration)
+    },
     private val onShown: (shown: JsonObject, failure: ConsoleFailure?) -> Unit,
 ) {
     /** The configuration as the server last accepted it. */
@@ -61,7 +67,7 @@ internal class ConfigurationSaves(
             saving.withLock {
                 val next = JsonObject(saved + (key to value))
                 connection
-                    .consoleCall(tag) { session, client -> client.saveUserConfiguration(session.userId, next) }
+                    .consoleCall(tag) { session, client -> save(session, client, next) }
                     .onSuccess { synchronized(lock) { saved = next } }
                     .onFailure { error ->
                         synchronized(lock) {

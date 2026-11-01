@@ -64,6 +64,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.PlaybackScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ServerActions
 import com.cooper.binge.companion.jellyfin.ui.console.ServerScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsActions
+import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsScreen
+import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ServerViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.TasksActions
 import com.cooper.binge.companion.jellyfin.ui.console.TasksScreen
@@ -212,6 +215,7 @@ class MainActivity : ComponentActivity() {
             ConsolePage.Activity -> ActivityRoute(graph, close)
             ConsolePage.Devices -> DevicesRoute(graph, close)
             ConsolePage.Users -> UsersRoute(graph, close)
+            ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
             ConsolePage.Server -> ServerRoute(graph, close)
         }
     }
@@ -393,6 +397,32 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    /** The server settings page, with the splash screen switch only on a server that has one. */
+    @Composable
+    private fun ServerSettingsRoute(
+        graph: AppGraph,
+        splashscreenAvailable: Boolean,
+        onBack: () -> Unit,
+    ) {
+        val settings: ServerSettingsViewModel =
+            viewModel(factory = viewModelFactory { initializer { ServerSettingsViewModel(graph.connection) } })
+        val state by settings.state.collectAsStateWithLifecycle()
+        ServerSettingsScreen(
+            state,
+            ServerSettingsActions(
+                onEdit = settings::edit,
+                onSaveText = settings::saveText,
+                onMetadataLanguage = settings::setMetadataLanguage,
+                onMetadataCountry = settings::setMetadataCountry,
+                onQuickConnect = settings::setQuickConnect,
+                onSplashscreen = settings::setSplashscreen,
+                onRetry = settings::load,
+                onBack = onBack,
+            ),
+            splashscreenAvailable = splashscreenAvailable,
+        )
+    }
+
     /** The server page. */
     @Composable
     private fun ServerRoute(
@@ -403,7 +433,14 @@ class MainActivity : ComponentActivity() {
         val state by server.state.collectAsStateWithLifecycle()
         ServerScreen(
             state,
-            ServerActions(onConfirm = server::confirm, onRestart = server::restart, onRetry = server::load, onBack = onBack),
+            ServerActions(
+                onConfirm = server::confirm,
+                onRestart = server::restart,
+                onConfirmShutdown = server::confirmShutdown,
+                onShutdown = server::shutdown,
+                onRetry = server::load,
+                onBack = onBack,
+            ),
         )
     }
 

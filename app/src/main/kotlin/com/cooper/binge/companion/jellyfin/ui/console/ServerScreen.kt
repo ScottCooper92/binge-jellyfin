@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.NewReleases
+import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,6 +40,8 @@ import com.binge.designsystem.R as DesR
 data class ServerActions(
     val onConfirm: (Boolean) -> Unit = {},
     val onRestart: () -> Unit = {},
+    val onConfirmShutdown: (Boolean) -> Unit = {},
+    val onShutdown: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -48,8 +51,8 @@ private const val STATUS_LINES = 2
 
 /**
  * The server itself: its name, version, address and system, marked when an update or a restart is
- * waiting. Restart is last, red, and behind a confirm, and how it's going shows above it. A server
- * that can't restart itself says so instead.
+ * waiting. Restart and Shut down are last, red, and behind a confirm, and how each is going shows above
+ * them. A server that can't restart itself says so instead.
  */
 @Composable
 fun ServerScreen(
@@ -68,6 +71,25 @@ fun ServerScreen(
     }
     val ready = state as? ServerUiState.Ready
     if (ready?.confirming == true) RestartDialog(ready.info, actions)
+    if (ready?.confirmingShutdown == true) ShutdownDialog(ready.info, actions)
+}
+
+/** Shutting the server down, after its name, as a confirm. [inWindow] false draws its body for a frame. */
+@Composable
+internal fun ShutdownDialog(
+    info: ServerInfo,
+    actions: ServerActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.server_shutdown_title, info.name),
+        message = stringResource(R.string.server_shutdown_body),
+        confirmLabel = stringResource(R.string.server_shutdown),
+        onConfirm = actions.onShutdown,
+        onDismissRequest = { actions.onConfirmShutdown(false) },
+        destructive = true,
+        inWindow = inWindow,
+    )
 }
 
 /** Restarting the server, after its name, as a confirm. [inWindow] false draws its body for a frame. */
@@ -99,17 +121,11 @@ private fun Server(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         ItemGroup(title = null, rows = state.info.rows())
+        val failed = state.restart == Restart.Failed || state.restart == Restart.NotBack || state.shutdown == Shutdown.Failed
         Text(
-            text = state.restart?.let { stringResource(it.message) }.orEmpty(),
+            text = (state.shutdown?.let { stringResource(it.message) } ?: state.restart?.let { stringResource(it.message) }).orEmpty(),
             style = MaterialTheme.typography.bodyMedium,
-            color =
-                if (state.restart == Restart.Failed ||
-                    state.restart == Restart.NotBack
-                ) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
+            color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             minLines = STATUS_LINES,
             maxLines = STATUS_LINES,
         )
@@ -119,12 +135,22 @@ private fun Server(
                 onClick = { actions.onConfirm(true) },
                 leadingIcon = Icons.Outlined.RestartAlt,
                 loading = state.restart == Restart.Restarting,
+                enabled = !state.down,
                 destructive = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
             Text(stringResource(R.string.server_cant_restart), style = MaterialTheme.typography.bodyMedium)
         }
+        BingeTextButton(
+            label = stringResource(R.string.server_shutdown),
+            onClick = { actions.onConfirmShutdown(true) },
+            leadingIcon = Icons.Outlined.PowerSettingsNew,
+            loading = state.shutdown == Shutdown.ShuttingDown,
+            enabled = !state.down && state.restart != Restart.Restarting,
+            destructive = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -164,6 +190,14 @@ private fun ServerInfo.rows(): List<ListItem> =
             null
         },
     )
+
+private val Shutdown.message: Int
+    get() =
+        when (this) {
+            Shutdown.ShuttingDown -> R.string.server_shutting_down
+            Shutdown.ShutDown -> R.string.server_shut_down
+            Shutdown.Failed -> R.string.server_shutdown_failed
+        }
 
 private val Restart.message: Int
     get() =
