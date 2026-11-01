@@ -21,7 +21,7 @@ class RemoteFeatureFlagsTest {
     }
 
     @Test
-    fun `starts from the last activated values, and a fetch replaces them`() {
+    fun `starts off, and a fetch replaces the values`() {
         val source = FakeSource(current = Flags(bingePromotion = false), fetched = Flags.AllOn)
         val flags = RemoteFeatureFlags(source)
         assertFalse(flags.flags.value.bingePromotion)
@@ -30,8 +30,9 @@ class RemoteFeatureFlagsTest {
     }
 
     @Test
-    fun `a failed fetch keeps the last values`() {
+    fun `a failed fetch keeps the last activated values, read on refresh`() {
         val flags = RemoteFeatureFlags(FakeSource(current = Flags.AllOn, fetched = null))
+        assertFalse(flags.flags.value.bingePromotion)
         runBlocking { flags.refresh() }
         assertTrue(flags.flags.value.bingePromotion)
     }
