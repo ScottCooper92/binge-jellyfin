@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Folder
@@ -423,6 +424,12 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_activity_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Activity) },
                 ).takeIf { ConsolePage.Activity.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.Description,
+                    label = stringResource(R.string.logs_title),
+                    detail = stringResource(R.string.console_logs_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Logs) },
+                ).takeIf { ConsolePage.Logs.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Key,
                     label = stringResource(R.string.api_keys_title),

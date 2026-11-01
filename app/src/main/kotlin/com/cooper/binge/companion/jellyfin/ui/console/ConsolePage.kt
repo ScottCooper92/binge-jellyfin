@@ -33,6 +33,9 @@ enum class ConsolePage {
     /** The server's activity log. Admin only. */
     Activity,
 
+    /** The server's log files: read, search and share. Admin only. */
+    Logs,
+
     /** The server's API keys: listed, created and revoked. Admin only. */
     ApiKeys,
 
@@ -62,9 +65,9 @@ enum class ConsolePage {
             Playback, HomeLayout -> account.canEditPreferences
             Password -> account.hasLocalPassword
             NowPlaying -> true
-            Libraries, Tasks, Activity, ApiKeys, Devices, Users, ServerSettings, Server -> account.isAdministrator
+            Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, Server -> account.isAdministrator
         }
 
     /** One of the administrator's pages, listed together on the home. */
-    val isAdmin: Boolean get() = this in setOf(Libraries, Tasks, Activity, ApiKeys, Devices, Users, ServerSettings, Server)
+    val isAdmin: Boolean get() = this in setOf(Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, Server)
 }
