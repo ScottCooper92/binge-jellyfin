@@ -24,6 +24,7 @@ import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerTask
+import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.server.TaskRun
@@ -348,5 +349,62 @@ class ConsoleScreensTest {
                 deviceIcon("Kodi", "Den box"),
             )
         assertEquals(4, icons.distinct().size)
+    }
+
+    @Test
+    fun `users open a page whose switches, password and delete reach their actions, and mine has none of the risky ones`() {
+        val calls = mutableListOf<String>()
+        val policy = { admin: Boolean, all: Boolean ->
+            kotlinx.serialization.json.Json.parseToJsonElement(
+                """{"IsAdministrator":$admin,"IsDisabled":false,"EnableAllFolders":$all,"EnabledFolders":["m"]}""",
+            ) as kotlinx.serialization.json.JsonObject
+        }
+        val me = ServerUser("me", "Claude", true, null, policy(true, true))
+        val sam = ServerUser("sam", "Sam", false, null, policy(false, false))
+        val libraries = listOf(ServerLibrary("m", "Movies", "movies", emptyList()), ServerLibrary("s", "Shows", "tvshows", emptyList()))
+        var state by mutableStateOf(UsersUiState.Ready(listOf(me, sam), libraries, me = "me"))
+        val actions =
+            UsersActions(
+                onOpen = { state = state.copy(open = it?.id) },
+                onShow = { state = state.copy(dialog = it) },
+                onAdministrator = { calls += "admin $it" },
+                onCanSignIn = { calls += "signin $it" },
+                onAllLibraries = { calls += "all $it" },
+                onLibrary = { id, on -> calls += "lib $id $on" },
+                onCreate = { name, _ -> calls += "create $name" },
+                onSetPassword = { calls += "password $it" },
+                onDelete = { calls += "delete" },
+            )
+        compose.setContent { JellyfinTheme { UsersScreen(state, actions) } }
+        compose.onNodeWithText("Claude (you)").assertExists()
+        compose.onNodeWithText("Add a user").performClick()
+        compose.onNodeWithText("Username").performTextInput("Ana")
+        compose.onNodeWithText("Add").performClick()
+        state = state.copy(dialog = null)
+        compose.onNodeWithText("Sam").performClick()
+        compose.onNodeWithText("Can sign in").performClick()
+        compose.onNodeWithText("Administrator").performClick()
+        compose.onNodeWithText("All libraries").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Shows"))
+        compose.onNodeWithText("Shows").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Delete user"))
+        compose.onNodeWithText("Delete user").performClick()
+        compose.onNodeWithText("Delete Sam?").assertExists()
+        compose.onAllNodesWithText("Delete user")[1].performClick()
+        state = state.copy(dialog = null, done = UserDone.Deleted)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Set a new password"))
+        compose.onNodeWithText("Set a new password").performClick()
+        compose.onNodeWithText("New password").performTextInput("pw")
+        compose.onNodeWithText("Set").performClick()
+        assertEquals(
+            listOf("create Ana", "signin false", "admin true", "all true", "lib s true", "delete", "password pw"),
+            calls,
+        )
+        state = state.copy(open = "me", dialog = null, actionFailed = ConsoleFailure.Refused)
+        compose.onNodeWithText("This is you. Another admin can change these.").assertExists()
+        compose.onNodeWithText("Can sign in").assertDoesNotExist()
+        compose.onNodeWithText("Delete user").assertDoesNotExist()
+        state = state.copy(open = null)
+        compose.onNodeWithText("Users").assertExists()
     }
 }

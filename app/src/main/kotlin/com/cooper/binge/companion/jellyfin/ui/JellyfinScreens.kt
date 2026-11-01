@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
@@ -415,6 +416,12 @@ private fun AdminGroup(actions: Actions) {
                     label = stringResource(R.string.devices_title),
                     detail = stringResource(R.string.console_devices_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Devices) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Group,
+                    label = stringResource(R.string.users_title),
+                    detail = stringResource(R.string.console_users_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Users) },
                 ),
             ),
     )
