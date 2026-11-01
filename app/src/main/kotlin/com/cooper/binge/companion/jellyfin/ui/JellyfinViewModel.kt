@@ -245,8 +245,23 @@ class JellyfinViewModel(
         _state.value = UiState.EnterServer(address = address)
     }
 
-    fun refresh() {
+    /**
+     * Reads the gates, then the library index. With [gatesOnly], reads the gates again and only them:
+     * when a console page closes (it may have changed one, as turning Quick Connect off does) and when
+     * the app comes back (the server or the user's rights may have changed elsewhere). That read is
+     * quiet: one that fails keeps the gates as they were, and a full refresh says why.
+     */
+    fun refresh(gatesOnly: Boolean = false) {
         val current = _state.value as? UiState.SignedIn ?: return
+        if (gatesOnly) {
+            viewModelScope.launch {
+                val (session, client) = connection.signedIn() ?: return@launch
+                attempt { client.readGates(session.serverVersion) }.onSuccess { (profile, account) ->
+                    _state.update { (it as? UiState.SignedIn)?.copy(profile = profile, account = account) ?: it }
+                }
+            }
+            return
+        }
         _state.value = current.copy(refreshing = true, refreshFailed = false)
         viewModelScope.launch {
             val failed =

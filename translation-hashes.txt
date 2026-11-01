@@ -156,9 +156,9 @@ app:server_settings_save  1509f561f241
 app:server_settings_splashscreen  3fc15c46953b
 app:server_settings_splashscreen_detail  a616eff63b0b
 app:server_settings_title  3e8fb11efc9e
-app:server_shut_down  24ecc8980911
+app:server_shut_down  497f3f5847cc
 app:server_shutdown  5017874aac4d
-app:server_shutdown_body  d6fa64de113a
+app:server_shutdown_body  fc8b4a128df0
 app:server_shutdown_failed  3d2a6f39d6f0
 app:server_shutdown_title  848bc3e00703
 app:server_shutting_down  c93e7b1d3121

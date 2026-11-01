@@ -17,11 +17,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -142,6 +144,7 @@ class MainActivity : ComponentActivity() {
             }
             val openPage = page.takeIf { signedIn }
             LaunchedEffect(openPage) { if (openPage == null) pageStores.close() }
+            RefreshGatesWhenHomeReturns(openPage) { viewModel.refresh(gatesOnly = true) }
             BackHandler(enabled = openPage != null) { page = null }
             val actions =
                 Actions(
@@ -473,5 +476,25 @@ class MainActivity : ComponentActivity() {
         /** Android 17, where reaching the local network became a permission of its own. */
         const val LOCAL_NETWORK_SDK = 37
         const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+    }
+}
+
+/**
+ * A page may have changed a gate (Quick Connect turned off), and so may the server's admin while the
+ * app was away: [refresh] reads them again whenever the home comes back, from a page or to the front.
+ */
+@Composable
+private fun RefreshGatesWhenHomeReturns(
+    openPage: ConsolePage?,
+    refresh: () -> Unit,
+) {
+    var pageWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(openPage) {
+        if (openPage == null && pageWasOpen) refresh()
+        pageWasOpen = openPage != null
+    }
+    LifecycleResumeEffect(Unit) {
+        refresh()
+        onPauseOrDispose {}
     }
 }

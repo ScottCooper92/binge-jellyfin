@@ -76,7 +76,7 @@ suspend fun JellyfinClient.countries(): List<Country> {
         }.distinctBy { it.code }
 }
 
-/** Shuts the server down. It doesn't come back by itself: someone has to start it where it runs. */
+/** Shuts the server down. Unless where it runs restarts it (a container's restart policy), someone has to start it again. */
 suspend fun JellyfinClient.shutdownServer() {
     post("System/Shutdown", null)
 }

@@ -247,9 +247,9 @@
     <string name="server_settings_save">Save</string>
     <string name="server_shutdown">Shut down server</string>
     <string name="server_shutdown_title">Shut down %1$s?</string>
-    <string name="server_shutdown_body">It stays off until someone starts it where it runs. Everyone using it is cut off, this app included.</string>
+    <string name="server_shutdown_body">Everyone using it is cut off, this app included. If it doesn\'t come back by itself, someone has to start it where it runs.</string>
     <string name="server_shutting_down">Shutting down…</string>
-    <string name="server_shut_down">Shut down. Start it where it runs to use it again.</string>
+    <string name="server_shut_down">Shut down. If it doesn\'t come back by itself, start it where it runs.</string>
     <string name="server_shutdown_failed">The server didn\'t take the shutdown. Try again.</string>
     <plurals name="server_settings_css_lines">
         <item quantity="one">%1$d line</item>

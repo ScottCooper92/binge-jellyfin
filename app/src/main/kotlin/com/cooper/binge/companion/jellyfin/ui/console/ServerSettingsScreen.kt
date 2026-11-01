@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -207,22 +209,40 @@ private fun ServerPickerSheet(
                         .distinctBy { it.twoLetter.lowercase() }
                         .map { BingeChoice(it.twoLetter, it.displayName, mark = it.mark()) }
                 }
+            val locales = LocalConfiguration.current.locales
+            val suggested =
+                remember(choices, locales) {
+                    (0 until locales.size())
+                        .mapNotNull { i ->
+                            choices.firstOrNull { it.value.equals(locales[i].language, true) }?.value
+                        }.distinct()
+                }
             BingeChoiceSheet(
                 title = stringResource(R.string.server_settings_metadata_language),
                 choices = BingeChoiceList.Ready(choices),
                 selected = choices.firstOrNull { it.value.equals(state.settings.metadataLanguage, true) }?.value,
                 onSelect = actions.onMetadataLanguage,
                 onDismissRequest = onDismiss,
+                suggested = suggested,
             )
         }
         ServerPicker.MetadataCountry -> {
             val choices = remember(state.countries) { state.countries.map { BingeChoice(it.code, it.displayName, mark = it.code) } }
+            val locales = LocalConfiguration.current.locales
+            val suggested =
+                remember(choices, locales) {
+                    (0 until locales.size())
+                        .mapNotNull { i ->
+                            choices.firstOrNull { it.value.equals(locales[i].country, true) }?.value
+                        }.distinct()
+                }
             BingeChoiceSheet(
                 title = stringResource(R.string.server_settings_metadata_country),
                 choices = BingeChoiceList.Ready(choices),
                 selected = choices.firstOrNull { it.value.equals(state.settings.metadataCountry, true) }?.value,
                 onSelect = actions.onMetadataCountry,
                 onDismissRequest = onDismiss,
+                suggested = suggested,
             )
         }
     }
@@ -269,6 +289,7 @@ internal fun TextDialog(
                 minLines = if (text == ServerText.CustomCss) CSS_LINES else 1,
                 maxLines = if (single) 1 else CSS_LINES,
                 keyboardOptions = KeyboardOptions(imeAction = if (single) ImeAction.Done else ImeAction.Default),
+                keyboardActions = KeyboardActions(onDone = { actions.onSaveText(text, value) }),
                 modifier = Modifier.fillMaxWidth(),
             )
         },
