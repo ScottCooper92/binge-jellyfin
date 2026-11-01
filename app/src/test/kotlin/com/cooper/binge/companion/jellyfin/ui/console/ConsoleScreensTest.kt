@@ -401,7 +401,7 @@ class ConsoleScreensTest {
             calls,
         )
         state = state.copy(open = "me", dialog = null, actionFailed = ConsoleFailure.Refused)
-        compose.onNodeWithText("This is you. Another administrator can change these for you.").assertExists()
+        compose.onNodeWithText("This is you. Another admin can change these.").assertExists()
         compose.onNodeWithText("Can sign in").assertDoesNotExist()
         compose.onNodeWithText("Delete user").assertDoesNotExist()
         state = state.copy(open = null)

@@ -148,7 +148,7 @@
     <string name="users_access">Access</string>
     <string name="users_can_sign_in">Can sign in</string>
     <string name="users_administrator_detail">Manages the server, as you do</string>
-    <string name="users_mine">This is you. Another administrator can change these for you.</string>
+    <string name="users_mine">This is you. Another admin can change these.</string>
     <string name="users_libraries">Libraries</string>
     <string name="users_all_libraries">All libraries</string>
     <string name="users_set_password">Set a new password</string>

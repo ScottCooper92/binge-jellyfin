@@ -148,7 +148,7 @@
     <string name="users_access">Acceso</string>
     <string name="users_can_sign_in">Puede iniciar sesión</string>
     <string name="users_administrator_detail">Administra el servidor, como tú</string>
-    <string name="users_mine">Eres tú. Otro administrador puede cambiarlo por ti.</string>
+    <string name="users_mine">Eres tú. Otro administrador puede cambiarlo.</string>
     <string name="users_libraries">Bibliotecas</string>
     <string name="users_all_libraries">Todas las bibliotecas</string>
     <string name="users_set_password">Poner una contraseña nueva</string>
