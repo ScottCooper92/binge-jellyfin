@@ -74,6 +74,8 @@ class LogsViewModelTest {
         assertFalse(content.truncated)
         assertTrue(content.lines.any { "api_key=[redacted]" in it })
         assertFalse(content.lines.any { "abcdef123456" in it })
+        assertTrue(content.lines.any { "Logging out access token \"[redacted]\"" in it })
+        assertFalse(content.lines.any { "0123456789abcdef0123456789abcdef" in it })
         vm.closeLog()
         assertEquals(null, vm.ready { it.open == null }.open)
     }
@@ -83,7 +85,7 @@ class LogsViewModelTest {
         val vm = made(LogsViewModel(connection))
         vm.ready()
         vm.open("log_20261031.log")
-        assertEquals(3, vm.opened().visible.size)
+        assertEquals(4, vm.opened().visible.size)
         vm.setQuery("slow")
         assertEquals(listOf("[10:05:00] [WRN] Slow query"), vm.opened { it.query == "slow" }.visible)
         vm.setQuery("")

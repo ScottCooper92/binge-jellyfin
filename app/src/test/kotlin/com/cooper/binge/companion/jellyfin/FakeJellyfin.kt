@@ -136,7 +136,8 @@ class FakeJellyfin : Dispatcher() {
         mutableMapOf(
             "log_20261031.log" to
                 "[10:00:00] [INF] Server started\n[10:05:00] [WRN] Slow query\n" +
-                "[10:06:00] [ERR] Request /Videos/1/stream?api_key=abcdef123456 failed\n",
+                "[10:06:00] [ERR] Request /Videos/1/stream?api_key=abcdef123456 failed\n" +
+                "[10:07:00] [INF] Logging out access token \"0123456789abcdef0123456789abcdef\"\n",
             "log_20261030.log" to "[09:00:00] [INF] Yesterday\n",
         )
 
