@@ -51,6 +51,9 @@ older server shows less rather than failing on a call it can't answer.
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
 | Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |
+| Chapter image resolution and dummy chapter duration (server configuration) | 10.9 | `hasChapterImageSettings` |
+| A library's lyric providers, and saving its trickplay images with the media | 10.10 | `hasLibraryLyricFetchers`, `hasLibraryTrickplayWithMedia` |
+| A library's media segment providers (the server lists them from 10.11, and 10.10 misspells the order option) | 10.11 | `hasLibrarySegmentProviders` |
 | Backups | 10.11 | `hasBackups` |
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |
 | Grouping movies and shows into collections separately | 10.11 | `hasSeparateCollectionGrouping` |

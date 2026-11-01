@@ -94,7 +94,7 @@ class UsersViewModel(
                 connection
                     .consoleCall(TAG) { session, client ->
                         coroutineScope {
-                            val libraries = async { client.libraries() }
+                            val libraries = async { client.libraries().filter { it.id.isNotEmpty() } }
                             UsersUiState.Ready(client.users(), libraries.await(), me = session.userId)
                         }
                     }.fold(

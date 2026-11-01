@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,12 +36,19 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.TaskStatus
+import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.binge.designsystem.R as DesR
 
 /** What the tasks page can ask of its view model, and of the console. */
 data class TasksActions(
     val onRun: (ServerTask) -> Unit = {},
     val onStop: (ServerTask) -> Unit = {},
+    /** Opens a task's triggers; [onCloseTask] goes back to the list. */
+    val onOpen: (ServerTask) -> Unit = {},
+    val onCloseTask: () -> Unit = {},
+    val onAskAdd: (Boolean) -> Unit = {},
+    val onAddTrigger: (TaskTrigger) -> Unit = {},
+    val onRemoveTrigger: (Int) -> Unit = {},
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -51,7 +59,7 @@ private const val STATUS_LINES = 2
 /**
  * The server's scheduled tasks as job rows, grouped by the server's own categories in its order: each
  * run or stopped in place, with how far it has got while it runs, and when it last ran (or failed)
- * while it doesn't.
+ * while it doesn't. A tap opens the task's own page, with its triggers.
  */
 @Composable
 fun TasksScreen(
@@ -59,13 +67,25 @@ fun TasksScreen(
     actions: TasksActions,
     now: Long = System.currentTimeMillis(),
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.tasks_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val ready = state as? TasksUiState.Ready
+    val open = ready?.open?.let { id -> ready.board.tasks.firstOrNull { it.id == id } }
+    BackHandler(enabled = open != null) { actions.onCloseTask() }
+    BingeScreenScaffold(
+        title = open?.name ?: stringResource(R.string.tasks_title),
+        bar = ScreenBar.Small,
+        onBack = if (open != null) actions.onCloseTask else actions.onBack,
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
-            when (state) {
-                TasksUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is TasksUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is TasksUiState.Ready -> Tasks(state, actions, inner, now)
+            when {
+                state is TasksUiState.Loading ->
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) { BingeLoadingIndicator() }
+                state is TasksUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                ready != null && open != null -> TaskTriggers(open, ready, actions, inner)
+                ready != null -> Tasks(ready, actions, inner, now)
             }
         }
     }
@@ -124,6 +144,7 @@ private fun ServerTask.row(
         outcome = board.outcomes[id],
         onRun = { actions.onRun(this) },
         onStop = { actions.onStop(this) },
+        onOpen = { actions.onOpen(this) },
     )
 }
 

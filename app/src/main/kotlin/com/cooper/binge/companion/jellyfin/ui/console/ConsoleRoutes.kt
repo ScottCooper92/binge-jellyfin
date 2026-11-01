@@ -32,7 +32,7 @@ internal fun ConsolePageRoute(
                 signedIn.isAdministrator,
                 close,
             )
-        ConsolePage.Libraries -> LibrariesRoute(graph, close)
+        ConsolePage.Libraries -> LibrariesRoute(graph, signedIn.profile, close)
         ConsolePage.Tasks -> TasksRoute(graph, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
         ConsolePage.Logs -> LogsRoute(graph, close)
@@ -42,6 +42,7 @@ internal fun ConsolePageRoute(
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
         ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
+        ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
         ConsolePage.Server -> ServerRoute(graph, close)
     }
 }
@@ -131,26 +132,6 @@ private fun PasswordRoute(
     )
 }
 
-/** The libraries page, whose event socket closes with the page. */
-@Composable
-private fun LibrariesRoute(
-    graph: AppGraph,
-    onBack: () -> Unit,
-) {
-    val libraries: LibrariesViewModel = viewModel(factory = viewModelFactory { initializer { LibrariesViewModel(graph.connection) } })
-    val state by libraries.state.collectAsStateWithLifecycle()
-    LibrariesScreen(
-        state,
-        LibrariesActions(
-            onScan = libraries::scan,
-            onScanEverything = libraries::scanEverything,
-            onStopEverything = libraries::stopEverything,
-            onRetry = libraries::load,
-            onBack = onBack,
-        ),
-    )
-}
-
 /** The scheduled tasks page, whose event socket closes with the page. */
 @Composable
 private fun TasksRoute(
@@ -159,7 +140,20 @@ private fun TasksRoute(
 ) {
     val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
     val state by tasks.state.collectAsStateWithLifecycle()
-    TasksScreen(state, TasksActions(onRun = tasks::run, onStop = tasks::stop, onRetry = tasks::load, onBack = onBack))
+    TasksScreen(
+        state,
+        TasksActions(
+            onRun = tasks::run,
+            onStop = tasks::stop,
+            onOpen = tasks::open,
+            onCloseTask = { tasks.open(null) },
+            onAskAdd = tasks::askAdd,
+            onAddTrigger = tasks::addTrigger,
+            onRemoveTrigger = tasks::removeTrigger,
+            onRetry = tasks::load,
+            onBack = onBack,
+        ),
+    )
 }
 
 /** The activity page, read a page at a time. */

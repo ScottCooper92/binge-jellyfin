@@ -11,9 +11,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -96,6 +99,23 @@ class FakeJellyfin : Dispatcher() {
             },
         ).toString()
     }
+
+    /** `/Library/VirtualFolders`: the libraries as the server lists them, changed by the calls that add, rename and remove. */
+    var libraries: JsonArray = Json.parseToJsonElement(LIBRARIES).jsonArray
+
+    /** Whether a library made or renamed with a refresh is listed with no id, as the server does until it validates its folders. */
+    var withholdIds = false
+
+    /** `/Libraries/AvailableOptions`: the providers the server offers a library. */
+    var availableOptions =
+        """{"MetadataSavers":[{"Name":"Nfo","DefaultEnabled":false}],"MetadataReaders":[{"Name":"Nfo","DefaultEnabled":true}],""" +
+            """"SubtitleFetchers":[{"Name":"Open Subtitles","DefaultEnabled":true},{"Name":"Podnapisi","DefaultEnabled":true}],""" +
+            """"LyricFetchers":[{"Name":"LrcLib","DefaultEnabled":true}],""" +
+            """"MediaSegmentProviders":[{"Name":"Chapter Segments","DefaultEnabled":true}],"TypeOptions":[]}"""
+
+    /** The folders `/Environment/DirectoryContents` lists, by parent: `""` holds the drives. */
+    var serverFolders: Map<String, List<String>> =
+        mapOf("" to listOf("/media"), "/media" to listOf("/media/movies", "/media/tv"), "/media/movies" to emptyList())
 
     /** The libraries `GroupedFolders` may name, as the grouping options list them. */
     var groupingOptions = """[{"Id":"lib-home","Name":"Home videos"}]"""
@@ -324,6 +344,10 @@ class FakeJellyfin : Dispatcher() {
                 userConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
             }
+            path == "/Localization/Options" ->
+                json(
+                    """[{"Name":"English (United States)","Value":"en-US"},{"Name":"Español","Value":"es"}]""",
+                )
             path == "/Localization/Cultures" -> json(CULTURES)
             path == "/UserViews" || path.startsWith("/Users/") && path.endsWith("/Views") -> json("""{"Items":${ungroupedViews()}}""")
             path == "/UserViews/GroupingOptions" || path.startsWith("/Users/") && path.endsWith("/GroupingOptions") ->
@@ -346,8 +370,12 @@ class FakeJellyfin : Dispatcher() {
                     """{"Items":[{"Id":"ch-1","Name":"News"},{"Id":"ch-2","Name":"Sport"}],"TotalRecordCount":2}""",
                 )
             path == "/Sessions" -> json(sessions)
-            path == "/Library/VirtualFolders" -> json(LIBRARIES)
+            path == "/Library/VirtualFolders" && request.method == "GET" -> json(libraries.toString())
+            path.startsWith("/Library/VirtualFolders") || path.startsWith("/Environment/") || path == "/Libraries/AvailableOptions" ->
+                libraryCall(path, request)
             path == "/ScheduledTasks" -> json(scheduledTasks)
+            path.startsWith("/ScheduledTasks/") && path.endsWith("/Triggers") && request.method == "POST" ->
+                saveTriggers(path.split('/')[2], request)
             path == "/System/ActivityLog/Entries" -> activityPage(request)
             path == "/System/Logs" -> json("[${logFiles.joinToString(",")}]")
             path == "/System/Logs/Log" ->
@@ -556,6 +584,105 @@ class FakeJellyfin : Dispatcher() {
         return json(serverUsers.getValue(id).toString())
     }
 
+    private fun libraryCall(
+        path: String,
+        request: RecordedRequest,
+    ): MockResponse {
+        val query = request.url
+        val name = query.queryParameter("name")
+        val body =
+            request.body
+                ?.utf8()
+                .orEmpty()
+                .takeIf { it.isNotBlank() }
+                ?.let { Json.parseToJsonElement(it).jsonObject }
+        return when {
+            path == "/Environment/Drives" -> folderList(serverFolders[""].orEmpty())
+            path == "/Environment/DirectoryContents" -> folderList(serverFolders[query.queryParameter("path")].orEmpty())
+            path == "/Environment/ValidatePath" ->
+                MockResponse(
+                    code =
+                        if (body?.get("Path")?.jsonPrimitive?.content in
+                            serverFolders.keys + serverFolders.values.flatten()
+                        ) {
+                            204
+                        } else {
+                            404
+                        },
+                )
+            path == "/Libraries/AvailableOptions" -> json(availableOptions)
+            path == "/Library/VirtualFolders" && request.method == "POST" -> {
+                val paths = query.queryParameter("paths")?.split(',').orEmpty()
+                val entry =
+                    buildJsonObject {
+                        put("Name", name.orEmpty())
+                        query.queryParameter("collectionType")?.let { put("CollectionType", it) }
+                        if (!withholdIds) {
+                            put("ItemId", "lib-${name.orEmpty().lowercase()}")
+                            put("LibraryOptions", body?.get("LibraryOptions") ?: JsonObject(emptyMap()))
+                        }
+                        put("Locations", JsonArray(paths.map(::JsonPrimitive)))
+                    }
+                libraries = JsonArray(libraries + entry)
+                MockResponse(code = 204)
+            }
+            path == "/Library/VirtualFolders" -> {
+                libraries = JsonArray(libraries.filterNot { it.jsonObject["Name"]?.jsonPrimitive?.content == name })
+                MockResponse(code = 204)
+            }
+            path == "/Library/VirtualFolders/Name" ->
+                changeLibrary(name) {
+                    val renamed = it + ("Name" to JsonPrimitive(query.queryParameter("newName")))
+                    if (withholdIds) {
+                        JsonObject(renamed - "ItemId" - "LibraryOptions")
+                    } else {
+                        JsonObject(renamed + ("ItemId" to JsonPrimitive("lib-${query.queryParameter("newName").orEmpty().lowercase()}")))
+                    }
+                }
+            path == "/Library/VirtualFolders/Paths" && request.method == "POST" ->
+                changeLibrary(body?.get("Name")?.jsonPrimitive?.content) {
+                    val added = body?.get("PathInfo")?.jsonObject?.get("Path") ?: return@changeLibrary it
+                    JsonObject(it + ("Locations" to JsonArray(it.getValue("Locations").jsonArray + added)))
+                }
+            path == "/Library/VirtualFolders/Paths" ->
+                changeLibrary(name) {
+                    val kept =
+                        it.getValue("Locations").jsonArray.filterNot { path ->
+                            path.jsonPrimitive.content ==
+                                query.queryParameter("path")
+                        }
+                    JsonObject(it + ("Locations" to JsonArray(kept)))
+                }
+            path == "/Library/VirtualFolders/LibraryOptions" ->
+                changeLibrary(
+                    libraries
+                        .firstOrNull {
+                            it.jsonObject["ItemId"]?.jsonPrimitive?.content ==
+                                body?.get("Id")?.jsonPrimitive?.content
+                        }?.jsonObject
+                        ?.get("Name")
+                        ?.jsonPrimitive
+                        ?.content,
+                ) {
+                    JsonObject(it + ("LibraryOptions" to body!!.getValue("LibraryOptions")))
+                }
+            else -> MockResponse(code = 404)
+        }
+    }
+
+    private fun folderList(paths: List<String>) =
+        json(paths.joinToString(",", "[", "]") { """{"Name":"${it.substringAfterLast('/')}","Path":"$it","Type":"Directory"}""" })
+
+    /** Applies [change] to the library called [name], and answers 204; 404 for one the server hasn't got. */
+    private fun changeLibrary(
+        name: String?,
+        change: (JsonObject) -> JsonObject,
+    ): MockResponse {
+        if (libraries.none { it.jsonObject["Name"]?.jsonPrimitive?.content == name }) return MockResponse(code = 404)
+        libraries = JsonArray(libraries.map { if (it.jsonObject["Name"]?.jsonPrimitive?.content == name) change(it.jsonObject) else it })
+        return MockResponse(code = 204)
+    }
+
     private fun savePolicy(
         id: String,
         request: RecordedRequest,
@@ -569,6 +696,27 @@ class FakeJellyfin : Dispatcher() {
     private fun adminPassword(request: RecordedRequest): MockResponse {
         val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
         adminPasswords[request.url.queryParameter("userId").orEmpty()] = body.getValue("NewPw").jsonPrimitive.content
+        return MockResponse(code = 204)
+    }
+
+    /** `POST /ScheduledTasks/{id}/Triggers`: the body is the task's whole new trigger list. */
+    private fun saveTriggers(
+        id: String,
+        request: RecordedRequest,
+    ): MockResponse {
+        val triggers = Json.parseToJsonElement(request.body?.utf8().orEmpty()) as? JsonArray ?: return MockResponse(code = 400)
+        val tasks = Json.parseToJsonElement(scheduledTasks).jsonArray
+        if (tasks.none { it.jsonObject["Id"]?.jsonPrimitive?.content == id }) return MockResponse(code = 404)
+        scheduledTasks =
+            JsonArray(
+                tasks.map { task ->
+                    if (task.jsonObject["Id"]?.jsonPrimitive?.content == id) {
+                        JsonObject(task.jsonObject + ("Triggers" to triggers))
+                    } else {
+                        task
+                    }
+                },
+            ).toString()
         return MockResponse(code = 204)
     }
 
@@ -601,16 +749,18 @@ class FakeJellyfin : Dispatcher() {
         const val LIBRARIES =
             """[
             {"Name":"Movies","CollectionType":"movies","ItemId":"lib-movies","Locations":["/media/movies"]},
-            {"Name":"Shows","CollectionType":"tvshows","ItemId":"lib-shows","Locations":["/media/tv","/media/anime"]},
-            {"Name":"Broken"}
+            {"Name":"Shows","CollectionType":"tvshows","ItemId":"lib-shows","Locations":["/media/tv","/media/anime"]}
             ]"""
 
         const val TASKS =
             """[
             {"Id":"t-scan","Key":"RefreshLibrary","Name":"Scan Media Library","Category":"Library","State":"Idle",
              "Description":"Scans your media library for new files.",
+             "Triggers":[{"Type":"DailyTrigger","TimeOfDayTicks":108000000000,"MaxRuntimeTicks":72000000000},
+                         {"Type":"IntervalTrigger","IntervalTicks":216000000000}],
              "LastExecutionResult":{"Status":"Completed","EndTimeUtc":"2026-10-31T18:00:00Z"}},
             {"Id":"t-clean","Key":"CleanCache","Name":"Clean Cache Directory","Category":"Maintenance","State":"Idle",
+             "Triggers":[{"Type":"StartupTrigger"},{"Type":"SystemEventTrigger","FutureField":7}],
              "LastExecutionResult":{"Status":"Failed","EndTimeUtc":"2026-10-30T03:00:00Z","ErrorMessage":"Disk full"}},
             {"Id":"t-guide","Key":"RefreshGuide","Name":"Refresh Guide","Category":"Live TV","State":"Idle","IsHidden":true}
             ]"""

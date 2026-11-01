@@ -113,7 +113,7 @@ class DeviceProfilesTest {
     }
 
     @Test
-    fun `an HDR device without a Dolby Vision decoder plays only ranges with a base layer`() {
+    fun `an HDR device plays base-layer ranges, a Dolby Vision decoder adds profile 5, none plays profile 7`() {
         val hdrNoDv = ranges(pixel)
         assertTrue("DOVIWithHDR10Plus" in hdrNoDv)
         assertTrue("HDR10" in hdrNoDv)
@@ -122,6 +122,9 @@ class DeviceProfilesTest {
 
         val withDv = ranges(pixel.toBuilder().addVideoCodecs("video/dolby-vision").build())
         assertTrue("DOVI" in withDv)
-        assertTrue("DOVIWithEL" in withDv)
+        assertTrue("DOVIWithHDR10" in withDv)
+        // Profile 7 needs a dual-layer decode; the server sends its base layer instead.
+        assertFalse("DOVIWithEL" in withDv)
+        assertFalse("DOVIWithELHDR10Plus" in withDv)
     }
 }
