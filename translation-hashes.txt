@@ -132,3 +132,11 @@ app:transcode_container  415a9113ceb1
 app:transcode_other  2514fab855a6
 app:transcode_subtitles  86b18fdc4999
 app:transcode_video  9a60bedd0041
+app:tv_change_server  b7ee1dabf9b9
+app:tv_loading  ba3bbbe10d8b
+app:tv_quick_connect_getting  7b0a260d7428
+app:tv_sign_in_to  5657abe2920e
+app:tv_signed_in_as  f8e475bec2c5
+app:tv_titles_count  766d9492fbea
+app:tv_try_again  d8b8392e2c54
+app:tv_use_password  673a50377a1f

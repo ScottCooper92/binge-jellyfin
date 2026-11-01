@@ -42,6 +42,18 @@
     <string name="error_quick_connect_expired">El código ha caducado. Inténtalo de nuevo.</string>
     <string name="error_generic">Algo ha fallado. Inténtalo de nuevo.</string>
     <string name="error_signed_out">Inicia sesión en Jellyfin para ver tu biblioteca</string>
+    <string name="tv_sign_in_to">Iniciar sesión en %1$s</string>
+    <string name="tv_change_server">Cambiar de servidor</string>
+    <string name="tv_quick_connect_getting">Obteniendo un código…</string>
+    <string name="tv_try_again">Reintentar</string>
+    <string name="tv_use_password">Iniciar sesión con contraseña</string>
+    <string name="tv_signed_in_as">Sesión iniciada como %1$s</string>
+    <plurals name="tv_titles_count">
+        <item quantity="one">%1$d película o serie que Binge puede ver</item>
+        <item quantity="many">%1$d películas y series que Binge puede ver</item>
+        <item quantity="other">%1$d películas y series que Binge puede ver</item>
+    </plurals>
+
     <string name="settings_signed_in_admin">Sesión iniciada · Administrador</string>
     <string name="console_account_title">Tu cuenta</string>
     <string name="console_approve_detail">Para una tele o un navegador que muestre un código de Quick Connect</string>
@@ -51,6 +63,7 @@
     <string name="approve_action">Aprobar</string>
     <string name="approve_done">Aprobado. El otro dispositivo está iniciando sesión como tú.</string>
     <string name="approve_wrong">Ese código no está esperando aprobación. Revísalo o pide uno nuevo en el otro dispositivo.</string>
+    <string name="tv_loading">Cargando…</string>
     <string name="console_languages_detail">El audio y los subtítulos que Jellyfin elige por ti</string>
     <string name="console_retry">Reintentar</string>
     <string name="languages_title">Idiomas de reproducción</string>

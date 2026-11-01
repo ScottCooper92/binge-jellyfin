@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
@@ -8,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -36,10 +39,16 @@ class LibrariesViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
     }
 
+    /** The view models a test made; their sockets are stopped before Main is reset, so a late push can't race the reset. */
+    private val viewModels = mutableListOf<ViewModel>()
+
+    private fun <T : ViewModel> made(viewModel: T): T = viewModel.also { viewModels += it }
+
     @After
     fun close() {
-        Dispatchers.resetMain()
+        viewModels.forEach { it.viewModelScope.cancel() }
         jellyfin.close()
+        Dispatchers.resetMain()
     }
 
     private fun LibrariesViewModel.settled(check: (LibrariesUiState) -> Boolean = { it !is LibrariesUiState.Loading }) =
@@ -54,7 +63,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `reads the libraries and the scan task, leaving out an entry with no id`() {
-        val ready = LibrariesViewModel(connection).ready()
+        val ready = made(LibrariesViewModel(connection)).ready()
         assertEquals(
             listOf(
                 ServerLibrary("lib-movies", "Movies", "movies", listOf("/media/movies")),
@@ -75,7 +84,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `a scan shows from the tap, reads the server's first 0 as its start and the next as its end`() {
-        val vm = LibrariesViewModel(connection).apply { outcomeMillis = OUTCOME_MILLIS }
+        val vm = made(LibrariesViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }
         val movies = vm.ready().libraries.first()
         subscribed()
         vm.scan(movies)
@@ -100,7 +109,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `a scan the server started shows from its first step, and 100 ends it`() {
-        val vm = LibrariesViewModel(connection).apply { outcomeMillis = OUTCOME_MILLIS }
+        val vm = made(LibrariesViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }
         vm.ready()
         subscribed()
         jellyfin.push(progress("lib-shows", "10"))
@@ -115,7 +124,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `scanning everything runs the scan task, follows it, and can stop it`() {
-        val vm = LibrariesViewModel(connection).apply { outcomeMillis = OUTCOME_MILLIS }
+        val vm = made(LibrariesViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }
         vm.ready()
         subscribed()
         vm.scanEverything()
@@ -139,7 +148,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `a scan that can't start goes back, says so, and shows it failed`() {
-        val vm = LibrariesViewModel(connection).apply { outcomeMillis = OUTCOME_MILLIS }
+        val vm = made(LibrariesViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }
         val movies = vm.ready().libraries.first()
         jellyfin.status["/Items/lib-movies/Refresh"] = 500
         vm.scan(movies)
@@ -154,7 +163,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `a stop that can't be sent is reported as a stop`() {
-        val vm = LibrariesViewModel(connection)
+        val vm = made(LibrariesViewModel(connection))
         vm.ready()
         jellyfin.status["/ScheduledTasks/Running/t-scan"] = 500
         vm.stopEverything()
@@ -167,7 +176,7 @@ class LibrariesViewModelTest {
     @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/Library/VirtualFolders"] = 403
-        val vm = LibrariesViewModel(connection)
+        val vm = made(LibrariesViewModel(connection))
         assertEquals(LibrariesUiState.Failed(ConsoleFailure.Refused), vm.settled())
         jellyfin.status.remove("/Library/VirtualFolders")
         vm.load()

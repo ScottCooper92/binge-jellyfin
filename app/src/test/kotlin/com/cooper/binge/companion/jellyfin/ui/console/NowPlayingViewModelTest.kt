@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.Connection
@@ -8,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -37,10 +40,16 @@ class NowPlayingViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
     }
 
+    /** The view models a test made; their sockets are stopped before Main is reset, so a late push can't race the reset. */
+    private val viewModels = mutableListOf<ViewModel>()
+
+    private fun <T : ViewModel> made(viewModel: T): T = viewModel.also { viewModels += it }
+
     @After
     fun close() {
-        Dispatchers.resetMain()
+        viewModels.forEach { it.viewModelScope.cancel() }
         jellyfin.close()
+        Dispatchers.resetMain()
     }
 
     private fun NowPlayingViewModel.settled(check: (NowPlayingUiState) -> Boolean = { it !is NowPlayingUiState.Loading }) =
@@ -57,7 +66,7 @@ class NowPlayingViewModelTest {
 
     @Test
     fun `reads what's playing, leaving out sessions playing nothing`() {
-        val ready = NowPlayingViewModel(connection).ready()
+        val ready = made(NowPlayingViewModel(connection)).ready()
         val stream = ready.sessions.single()
         assertEquals("Sintel", stream.title)
         assertEquals(PlayMethod.Transcode, stream.method)
@@ -67,7 +76,7 @@ class NowPlayingViewModelTest {
 
     @Test
     fun `the list follows the server's pushes on the page's own socket`() {
-        val vm = NowPlayingViewModel(connection)
+        val vm = made(NowPlayingViewModel(connection))
         vm.ready()
         subscribed()
         jellyfin.push("""{"MessageType":"Sessions","Data":[]}""")
@@ -85,7 +94,7 @@ class NowPlayingViewModelTest {
 
     @Test
     fun `stop asks first, then asks the server to stop that session`() {
-        val vm = NowPlayingViewModel(connection)
+        val vm = made(NowPlayingViewModel(connection))
         val stream = vm.ready().sessions.single()
         vm.askStop(stream)
         assertEquals(stream, vm.ready().confirming)
@@ -100,7 +109,7 @@ class NowPlayingViewModelTest {
 
     @Test
     fun `a stop that fails says so, and a confirm for a stream that ended closes`() {
-        val vm = NowPlayingViewModel(connection)
+        val vm = made(NowPlayingViewModel(connection))
         val stream = vm.ready().sessions.single()
         jellyfin.status["/Sessions/s-tv/Playing/Stop"] = 500
         vm.askStop(stream)
@@ -115,7 +124,7 @@ class NowPlayingViewModelTest {
     @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/Sessions"] = 500
-        val vm = NowPlayingViewModel(connection)
+        val vm = made(NowPlayingViewModel(connection))
         assertEquals(NowPlayingUiState.Failed(ConsoleFailure.Refused), vm.settled())
         jellyfin.status.remove("/Sessions")
         vm.load()

@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.TaskRun
@@ -8,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -36,10 +39,16 @@ class TasksViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
     }
 
+    /** The view models a test made; their sockets are stopped before Main is reset, so a late push can't race the reset. */
+    private val viewModels = mutableListOf<ViewModel>()
+
+    private fun <T : ViewModel> made(viewModel: T): T = viewModel.also { viewModels += it }
+
     @After
     fun close() {
-        Dispatchers.resetMain()
+        viewModels.forEach { it.viewModelScope.cancel() }
         jellyfin.close()
+        Dispatchers.resetMain()
     }
 
     private fun TasksViewModel.settled(check: (TasksUiState) -> Boolean = { it !is TasksUiState.Loading }) =
@@ -55,7 +64,7 @@ class TasksViewModelTest {
 
     @Test
     fun `reads the tasks the dashboard shows, with how each last ran`() {
-        val tasks = TasksViewModel(connection).ready().board.tasks
+        val tasks = made(TasksViewModel(connection)).ready().board.tasks
         assertEquals(listOf("t-scan", "t-clean"), tasks.map { it.id })
         assertEquals(TaskRun(TaskStatus.Failed, 1_793_329_200_000L, "Disk full"), tasks[1].lastRun)
         assertEquals("Maintenance", tasks[1].category)
@@ -63,7 +72,7 @@ class TasksViewModelTest {
 
     @Test
     fun `run shows the task running from the tap, follows its pushes, and shows how it ended`() {
-        val vm = TasksViewModel(connection).apply { outcomeMillis = OUTCOME_MILLIS }
+        val vm = made(TasksViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }
         val clean = vm.ready().board.tasks[1]
         waitFor { jellyfin.socketMessages.any { "ScheduledTasksInfoStart" in it } }
         vm.run(clean)
@@ -88,7 +97,7 @@ class TasksViewModelTest {
 
     @Test
     fun `stop asks the server to stop the run`() {
-        val vm = TasksViewModel(connection)
+        val vm = made(TasksViewModel(connection))
         val clean = vm.ready().board.tasks[1]
         vm.stop(clean)
         waitFor { hit("DELETE") }
@@ -97,7 +106,7 @@ class TasksViewModelTest {
 
     @Test
     fun `a run that can't be sent says so`() {
-        val vm = TasksViewModel(connection)
+        val vm = made(TasksViewModel(connection))
         val clean = vm.ready().board.tasks[1]
         jellyfin.status["/ScheduledTasks/Running/t-clean"] = 500
         vm.run(clean)
@@ -110,7 +119,7 @@ class TasksViewModelTest {
     @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/ScheduledTasks"] = 403
-        val vm = TasksViewModel(connection)
+        val vm = made(TasksViewModel(connection))
         assertEquals(TasksUiState.Failed(ConsoleFailure.Refused), vm.settled())
         jellyfin.status.remove("/ScheduledTasks")
         vm.load()
