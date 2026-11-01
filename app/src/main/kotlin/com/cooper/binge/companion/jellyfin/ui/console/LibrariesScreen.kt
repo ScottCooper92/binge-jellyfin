@@ -93,6 +93,7 @@ fun LibrariesScreen(
                             folderActions = folderActions,
                             onAdd = actions.onAdd,
                             onDismiss = { actions.onAskAdd(false) },
+                            folderMissing = state.folderMissing,
                         )
                     }
                 }

@@ -41,7 +41,7 @@ sealed interface LibrariesUiState {
      * The libraries and their scans; the scheduled tasks, for the scan of everything; how each
      * library's last scan just ended; the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop;
      * the library whose page is open ([opened]); and the new library sheet, when [adding], with the add in flight
-     * ([saving]) refused ([addFailed]), or for a folder the server hasn't got ([folderMissing]).
+     * ([saving]) or refused ([addFailed]), or its typed folder is one the server hasn't got ([folderMissing]).
      */
     data class Ready(
         val libraries: List<ServerLibrary>,
@@ -151,26 +151,22 @@ class LibrariesViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
-                    // Checked first: a library made over a folder that isn't there would be left empty.
-                    if (client.folderExists(path.trim())) {
-                        client.addLibrary(trimmed, kind, path.trim())
+                    // Checked first: a path with a comma is added after the library is made, and would leave it empty.
+                    if (client.folderExists(path)) {
+                        client.addLibrary(trimmed, kind, path)
                         client.libraries()
                     } else {
                         null
                     }
                 }.onSuccess { fresh ->
-                    update {
-                        if (fresh ==
-                            null
-                        ) {
-                            copy(saving = false, folderMissing = true)
-                        } else {
-                            copy(libraries = fresh, saving = false, adding = false)
-                        }
+                    if (fresh == null) {
+                        update { copy(saving = false, folderMissing = true) }
+                    } else {
+                        update { copy(libraries = fresh, saving = false, adding = false) }
                     }
                 }.onFailure { error ->
                     update { copy(saving = false, addFailed = error.consoleFailure()) }
-                    // The server may have made part of it: show what it has, so the name counts as taken.
+                    // A library the server made before it failed shows, and its name counts as taken.
                     refresh()
                 }
         }
