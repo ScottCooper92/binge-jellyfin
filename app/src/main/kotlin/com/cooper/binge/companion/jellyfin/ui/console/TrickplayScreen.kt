@@ -34,7 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -207,7 +207,7 @@ private fun ImagesGroup(
     actions: TrickplayActions,
     onPick: (TrickplayPicker) -> Unit,
 ) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     ItemGroup(
         title = stringResource(R.string.trickplay_images),
         rows =
@@ -221,7 +221,7 @@ private fun ImagesGroup(
                 ListItem(
                     icon = Icons.Outlined.AspectRatio,
                     label = stringResource(R.string.trickplay_widths),
-                    detail = settings.widths.joinToString(", ") { context.getString(R.string.trickplay_pixels, it) },
+                    detail = settings.widths.joinToString(", ") { resources.getString(R.string.trickplay_pixels, it) },
                     onClick = { actions.onEdit(TrickplayField.Widths) },
                 ),
                 ListItem(
