@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,7 +10,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
@@ -26,6 +27,7 @@ import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
+import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
@@ -53,7 +55,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class ConsoleScreensTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val stream =
         NowPlaying("tv", "Ana", "Living room", "Web", "Sintel", null, 1, 4, paused = true, PlayMethod.Transcode, listOf("AudioIsExternal"))
@@ -380,6 +382,65 @@ class ConsoleScreensTest {
         assertEquals(2, more)
         state = ActivityUiState.Ready(emptyList(), total = 0)
         compose.onNodeWithText("Nothing has happened on this server yet.").assertExists()
+    }
+
+    @Test
+    fun `logs list the files, open one to read, search it and share it`() {
+        var opened: String? = null
+        var query = ""
+        var shared: Pair<String, String>? = null
+        var closed = 0
+        val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L), LogFile("log_20261030.log", 2048, null))
+        var state by mutableStateOf<LogsUiState>(LogsUiState.Ready(files))
+        compose.setContent {
+            JellyfinTheme {
+                LogsScreen(
+                    state,
+                    LogsActions(
+                        onOpen = { opened = it },
+                        onCloseLog = { closed++ },
+                        onQuery = { query = it },
+                        onShare = { name, text -> shared = name to text },
+                    ),
+                    zone = java.time.ZoneOffset.UTC,
+                )
+            }
+        }
+        compose.onNodeWithText("log_20261030.log").assertExists()
+        compose.onNodeWithText("log_20261031.log").performClick()
+        assertEquals("log_20261031.log", opened)
+        val lines = listOf("[10:00:00] [INF] Server started", "[10:06:00] [ERR] Boom")
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(lines, truncated = true)))
+        compose.onNodeWithText("[10:06:00] [ERR] Boom").assertExists()
+        compose.onNodeWithText("Showing the last 512 KB of this log.").assertExists()
+        compose.onNodeWithText("Share").performClick()
+        assertEquals("log_20261031.log" to lines.joinToString("\n"), shared)
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(lines, truncated = false), query = "zzz"))
+        compose.onNodeWithText("No lines match.").assertExists()
+        state = LogsUiState.Ready(emptyList())
+        compose.onNodeWithText("The server has no log files.").assertExists()
+        state = LogsUiState.Failed(ConsoleFailure.Unreachable)
+        compose.onNodeWithText("Try again").assertExists()
+    }
+
+    @Test
+    fun `system back with a log open closes the log, not the page`() {
+        var closed = 0
+        var left = 0
+        val open = OpenLog("log_20261031.log", LogContent.Ready(listOf("[10:00:00] [INF] Server started"), truncated = false))
+        compose.setContent {
+            JellyfinTheme {
+                LogsScreen(
+                    LogsUiState.Ready(listOf(LogFile("log_20261031.log", 4096, null)), open),
+                    LogsActions(onCloseLog = { closed++ }, onBack = { left++ }),
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+        assertEquals(0, left)
     }
 
     @Test

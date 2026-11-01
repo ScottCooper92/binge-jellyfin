@@ -127,6 +127,23 @@ class FakeJellyfin : Dispatcher() {
                 """"Date":"2026-10-31T1$n:00:00Z","ShortOverview":"IP address: 10.0.0.$n"}"""
         }
 
+    /** `/System/Logs`: the log files, as the server lists them. */
+    var logFiles: List<String> =
+        listOf(
+            """{"Name":"log_20261030.log","Size":2048,"DateModified":"2026-10-30T23:00:00Z"}""",
+            """{"Name":"log_20261031.log","Size":4096,"DateModified":"2026-10-31T11:00:00Z"}""",
+        )
+
+    /** `/System/Logs/Log?name=`: each log's text, by file name. */
+    var logTexts: MutableMap<String, String> =
+        mutableMapOf(
+            "log_20261031.log" to
+                "[10:00:00] [INF] Server started\n[10:05:00] [WRN] Slow query\n" +
+                "[10:06:00] [ERR] Request /Videos/1/stream?api_key=abcdef123456 failed\n" +
+                "[10:07:00] [INF] Logging out access token \"0123456789abcdef0123456789abcdef\"\n",
+            "log_20261030.log" to "[09:00:00] [INF] Yesterday\n",
+        )
+
     /** `/Auth/Keys`: the API keys, each `AccessToken`, `AppName` and `DateCreated`. A POST adds one. */
     var apiKeys: List<String> =
         listOf(
@@ -286,6 +303,16 @@ class FakeJellyfin : Dispatcher() {
             path == "/Library/VirtualFolders" -> json(LIBRARIES)
             path == "/ScheduledTasks" -> json(scheduledTasks)
             path == "/System/ActivityLog/Entries" -> activityPage(request)
+            path == "/System/Logs" -> json("[${logFiles.joinToString(",")}]")
+            path == "/System/Logs/Log" ->
+                logTexts[request.url.queryParameter("name")]?.let { text ->
+                    MockResponse
+                        .Builder()
+                        .code(200)
+                        .addHeader("Content-Type", "text/plain")
+                        .body(text)
+                        .build()
+                } ?: MockResponse(code = 404)
             path == "/Auth/Keys" && request.method == "POST" -> {
                 val n = apiKeys.size + 1
                 val added =
