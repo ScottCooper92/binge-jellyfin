@@ -35,6 +35,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Tasks -> TasksRoute(graph, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
         ConsolePage.Logs -> LogsRoute(graph, close)
+        ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)

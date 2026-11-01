@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
+import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
@@ -464,6 +465,50 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Remove SHIELD?").assertExists()
         compose.onAllNodesWithText("Remove")[0].performClick()
         assertTrue(removed)
+    }
+
+    @Test
+    fun `api keys show only the last four, make one by name, copy it once, and revoke after a confirm`() {
+        val created = mutableListOf<String>()
+        val copied = mutableListOf<String>()
+        val asked = mutableListOf<ApiKey?>()
+        var revoked = false
+        var dismissed = false
+        val sonarr = ApiKey("aaaabbbbccccdddd1111", "Sonarr", null)
+        var state by mutableStateOf(ApiKeysUiState.Ready(listOf(sonarr)))
+        val actions =
+            ApiKeysActions(
+                onAskCreate = { state = state.copy(naming = it) },
+                onCreate = { created += it },
+                onCopy = { copied += it },
+                onDismissCreated = { dismissed = true },
+                onAskRemove = { asked += it },
+                onRemove = { revoked = true },
+            )
+        compose.setContent { JellyfinTheme { ApiKeysScreen(state, actions) } }
+        compose.onNodeWithText("Sonarr").assertExists()
+        compose.onNodeWithText("Ends in 1111", substring = true).assertExists()
+        compose.onNodeWithText("aaaabbbbccccdddd1111", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("New key").performClick()
+        compose.onNodeWithText("App name").performTextInput("Radarr")
+        compose.onNodeWithText("Create key").performClick()
+        assertEquals(listOf("Radarr"), created)
+        state = state.copy(naming = false, created = ApiKey("zzzzyyyyxxxxwwww9999", "Radarr", null))
+        compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertExists()
+        compose.onNodeWithText("Copy").performClick()
+        assertEquals(listOf("zzzzyyyyxxxxwwww9999"), copied)
+        compose.onNodeWithText("Done").performClick()
+        assertTrue(dismissed)
+        state = state.copy(created = null)
+        compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Revoke").performClick()
+        assertEquals(listOf<ApiKey?>(sonarr), asked)
+        state = state.copy(removing = sonarr, actionFailed = ConsoleFailure.Refused)
+        compose.onNodeWithText("Revoke Sonarr?").assertExists()
+        compose.onAllNodesWithText("Revoke")[0].performClick()
+        assertTrue(revoked)
+        state = ApiKeysUiState.Ready(emptyList())
+        compose.onNodeWithText("This server has no API keys.").assertExists()
     }
 
     @Test

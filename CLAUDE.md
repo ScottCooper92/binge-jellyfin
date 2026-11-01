@@ -153,6 +153,20 @@ as binge-seerr's TV is.
 - **Never test an admin call against a real server.** Admin pages are exercised against the fake
   server in the unit tests, and on a device only against a disposable test server, never one whose
   users, devices or uptime matter.
+- **Build a page the way binge-seerr builds its equivalent.** Before writing a console page, open the
+  binge-seerr screen that does the nearest job (its Issues and Requests lists for a list page, its
+  user settings for a settings page) and copy its structure, then change the content. In particular:
+  - loading is a skeleton of the page (`ListRowSkeleton`), not a centred spinner;
+  - a failure that replaces the page is `ErrorScreen`, an empty list is `EmptyScreen`, and a paged list
+    reads its phase through `PagedPhase`;
+  - a settings page that saves as made reports through `SaveAsMade` and `FormSaveStatus` (in a
+    `FormScreen`), with Retry, not a hand-built status `Text`;
+  - rows and groups are `ListItem` and `ItemGroup`, every row has an icon, and a row's detail is one short
+    line only where the row isn't self-explanatory;
+  - text entry goes through one wrapper, not `OutlinedTextField` in each screen.
+  If the design system has a template or component for the job, use it. If it has none and binge-seerr
+  has built its own, say so in the PR and propose moving it into the design system rather than writing
+  a third. A cloud session can't run the full gate, so this is the check it can make by reading.
 - **Out of scope:** browsing the library, editing an item's metadata, and anything that plays media.
   Everything else in Jellyfin's settings is in scope, the server's and the user's: the app means to
   be the best way to manage both. Every feature is gated on the server's version, the user's policy
