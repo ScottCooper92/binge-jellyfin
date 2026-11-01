@@ -103,6 +103,9 @@ class FakeJellyfin : Dispatcher() {
     /** `/Library/VirtualFolders`: the libraries as the server lists them, changed by the calls that add, rename and remove. */
     var libraries: JsonArray = Json.parseToJsonElement(LIBRARIES).jsonArray
 
+    /** Whether a library made or renamed with a refresh is listed with no id, as the server does until it validates its folders. */
+    var withholdIds = false
+
     /** `/Libraries/AvailableOptions`: the providers the server offers a library. */
     var availableOptions =
         """{"MetadataSavers":[{"Name":"Nfo","DefaultEnabled":false}],"MetadataReaders":[{"Name":"Nfo","DefaultEnabled":true}],""" +
@@ -545,9 +548,11 @@ class FakeJellyfin : Dispatcher() {
                     buildJsonObject {
                         put("Name", name.orEmpty())
                         query.queryParameter("collectionType")?.let { put("CollectionType", it) }
-                        put("ItemId", "lib-${name.orEmpty().lowercase()}")
+                        if (!withholdIds) {
+                            put("ItemId", "lib-${name.orEmpty().lowercase()}")
+                            put("LibraryOptions", body?.get("LibraryOptions") ?: JsonObject(emptyMap()))
+                        }
                         put("Locations", JsonArray(paths.map(::JsonPrimitive)))
-                        put("LibraryOptions", body?.get("LibraryOptions") ?: JsonObject(emptyMap()))
                     }
                 libraries = JsonArray(libraries + entry)
                 MockResponse(code = 204)
@@ -558,10 +563,12 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/Library/VirtualFolders/Name" ->
                 changeLibrary(name) {
-                    JsonObject(
-                        it + ("Name" to JsonPrimitive(query.queryParameter("newName"))) +
-                            ("ItemId" to JsonPrimitive("lib-${query.queryParameter("newName").orEmpty().lowercase()}")),
-                    )
+                    val renamed = it + ("Name" to JsonPrimitive(query.queryParameter("newName")))
+                    if (withholdIds) {
+                        JsonObject(renamed - "ItemId" - "LibraryOptions")
+                    } else {
+                        JsonObject(renamed + ("ItemId" to JsonPrimitive("lib-${query.queryParameter("newName").orEmpty().lowercase()}")))
+                    }
                 }
             path == "/Library/VirtualFolders/Paths" && request.method == "POST" ->
                 changeLibrary(body?.get("Name")?.jsonPrimitive?.content) {
@@ -638,8 +645,7 @@ class FakeJellyfin : Dispatcher() {
         const val LIBRARIES =
             """[
             {"Name":"Movies","CollectionType":"movies","ItemId":"lib-movies","Locations":["/media/movies"]},
-            {"Name":"Shows","CollectionType":"tvshows","ItemId":"lib-shows","Locations":["/media/tv","/media/anime"]},
-            {"Name":"Broken"}
+            {"Name":"Shows","CollectionType":"tvshows","ItemId":"lib-shows","Locations":["/media/tv","/media/anime"]}
             ]"""
 
         const val TASKS =

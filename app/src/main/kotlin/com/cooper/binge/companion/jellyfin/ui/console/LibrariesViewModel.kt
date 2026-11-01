@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.addLibrary
 import com.cooper.binge.companion.jellyfin.server.folderExists
 import com.cooper.binge.companion.jellyfin.server.libraries
+import com.cooper.binge.companion.jellyfin.server.librariesWithId
 import com.cooper.binge.companion.jellyfin.server.libraryPushes
 import com.cooper.binge.companion.jellyfin.server.runTask
 import com.cooper.binge.companion.jellyfin.server.scanLibrary
@@ -96,6 +97,7 @@ class LibrariesViewModel(
     }
 
     fun scan(library: ServerLibrary) {
+        if (library.id.isEmpty()) return
         update {
             copy(
                 scanning = scanning + (library.id to LibraryScan()),
@@ -154,7 +156,7 @@ class LibrariesViewModel(
                     // Checked first: a path with a comma is added after the library is made, and would leave it empty.
                     if (client.folderExists(path)) {
                         client.addLibrary(trimmed, kind, path)
-                        client.libraries()
+                        client.librariesWithId(trimmed)
                     } else {
                         null
                     }

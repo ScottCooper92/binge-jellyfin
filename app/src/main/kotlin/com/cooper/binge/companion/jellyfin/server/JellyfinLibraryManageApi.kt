@@ -19,8 +19,8 @@ private const val LIBRARY_PATHS = "Library/VirtualFolders/Paths"
 private const val ENVIRONMENT = "Environment"
 
 /**
- * Makes a library of [kind] over [path], with the server's own default options, and no scan: the new
- * library shows on the page with its own Scan. A path with a comma can't go in the `paths` list the
+ * Makes a library of [kind] over [path], with the server's own default options. The server scans it and
+ * gives it an id, which a library made without that refresh would not have. A path with a comma can't go in the `paths` list the
  * server splits on commas, so it is added to the empty library after.
  */
 suspend fun JellyfinClient.addLibrary(
@@ -33,7 +33,7 @@ suspend fun JellyfinClient.addLibrary(
             put("name", name)
             if (kind != MIXED_LIBRARY) put("collectionType", kind)
             if (',' !in path) put("paths", path)
-            put("refreshLibrary", "false")
+            put("refreshLibrary", "true")
         }
     post("Library/VirtualFolders", buildJsonObject { putJsonObject("LibraryOptions") {} }, query)
     if (',' in path) addLibraryPath(name, path)
@@ -44,11 +44,12 @@ suspend fun JellyfinClient.removeLibrary(name: String) {
     delete("Library/VirtualFolders", mapOf("name" to name, "refreshLibrary" to "false"))
 }
 
+/** Renames the library. The server gives the renamed one a new id, after the call: read it with [librariesWithId]. */
 suspend fun JellyfinClient.renameLibrary(
     name: String,
     newName: String,
 ) {
-    post("Library/VirtualFolders/Name", null, mapOf("name" to name, "newName" to newName, "refreshLibrary" to "false"))
+    post("Library/VirtualFolders/Name", null, mapOf("name" to name, "newName" to newName, "refreshLibrary" to "true"))
 }
 
 suspend fun JellyfinClient.addLibraryPath(

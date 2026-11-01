@@ -16,6 +16,7 @@ import com.cooper.binge.companion.jellyfin.server.countries
 import com.cooper.binge.companion.jellyfin.server.cultures
 import com.cooper.binge.companion.jellyfin.server.folderExists
 import com.cooper.binge.companion.jellyfin.server.libraries
+import com.cooper.binge.companion.jellyfin.server.librariesWithId
 import com.cooper.binge.companion.jellyfin.server.providerOrder
 import com.cooper.binge.companion.jellyfin.server.providersDisabled
 import com.cooper.binge.companion.jellyfin.server.removeLibrary
@@ -124,7 +125,7 @@ class LibraryViewModel(
                 connection
                     .consoleCall(TAG) { _, client ->
                         coroutineScope {
-                            val fresh = async { client.libraries().firstOrNull { it.id == id } ?: start }
+                            val fresh = async { client.libraries().firstOrNull(::isThis) ?: start }
                             // What the server offers to choose from is a nicety: the page works without it.
                             val available = async { attempt { client.availableProviders(start.type) }.getOrDefault(AvailableProviders()) }
                             val cultures = async { attempt { client.cultures() }.getOrDefault(emptyList()) }
@@ -239,7 +240,7 @@ class LibraryViewModel(
                 .consoleCall(TAG) { _, client ->
                     val outcome = call(client, ready.library)
                     val name = (outcome as? Outcome.Renamed)?.name ?: ready.library.name
-                    val fresh = if (outcome == Outcome.Removed) null else client.libraries().firstOrNull { it.name == name }
+                    val fresh = if (outcome == Outcome.Removed) null else client.librariesWithId(name).firstOrNull { it.name == name }
                     outcome to fresh
                 }.onSuccess { (outcome, fresh) -> finished(outcome, fresh) }
                 .onFailure { error -> update { copy(busy = false, failed = error.consoleFailure()) } }
@@ -262,6 +263,9 @@ class LibraryViewModel(
             }
         }
     }
+
+    /** Whether [row] is this library: by id, or by name while the server hasn't given it one. */
+    private fun isThis(row: ServerLibrary) = if (id.isEmpty()) row.name == start.name else row.id == id
 
     private fun update(change: LibraryUiState.Ready.() -> LibraryUiState.Ready) =
         _state.update { (it as? LibraryUiState.Ready)?.change() ?: it }
