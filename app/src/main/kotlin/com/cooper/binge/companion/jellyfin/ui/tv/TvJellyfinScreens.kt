@@ -142,6 +142,8 @@ private fun ColumnScope.TvFoundServers(
         TvOptionRow(
             label = server.name,
             supportingText = if (cleartext) stringResource(R.string.server_detail_cleartext, server.address) else server.address,
+            // The address is what the user judges a discovered server by, so it wraps rather than shrinking at large fonts.
+            supportingLines = ADDRESS_LINES,
             icon = if (cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
             selected = false,
             onClick = { actions.onChooseServer(server) },
@@ -384,3 +386,6 @@ private fun TvStatusLine(
         modifier = Modifier.fillMaxWidth(),
     )
 }
+
+/** Lines a found server's address may take, so it stays readable at large font sizes. */
+private const val ADDRESS_LINES = 2
