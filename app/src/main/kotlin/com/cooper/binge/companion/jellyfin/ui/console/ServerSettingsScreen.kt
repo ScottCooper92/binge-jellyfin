@@ -63,6 +63,9 @@ data class ServerSettingsActions(
 /** Lines a failed save's message takes, so it never moves the rows. */
 private const val SETTINGS_STATUS_LINES = 2
 
+/** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
+private const val SETTINGS_DETAIL_LINES = 3
+
 /** Lines the custom CSS field shows before it scrolls. */
 private const val CSS_LINES = 8
 
@@ -144,6 +147,7 @@ private fun ServerSettingsBody(
                         icon = Icons.Outlined.QrCode2,
                         label = stringResource(R.string.server_settings_quick_connect),
                         detail = stringResource(R.string.server_settings_quick_connect_detail),
+                        supportingMaxLines = SETTINGS_DETAIL_LINES,
                         toggled = settings.quickConnect,
                         onClick = { actions.onQuickConnect(!settings.quickConnect) },
                     ),
@@ -178,6 +182,7 @@ private fun ServerSettingsBody(
                         icon = Icons.Outlined.Wallpaper,
                         label = stringResource(R.string.server_settings_splashscreen),
                         detail = stringResource(R.string.server_settings_splashscreen_detail),
+                        supportingMaxLines = SETTINGS_DETAIL_LINES,
                         toggled = branding.splashscreen,
                         onClick = { actions.onSplashscreen(!branding.splashscreen) },
                     ).takeIf { splashscreenAvailable },
@@ -212,10 +217,12 @@ private fun ServerPickerSheet(
             val locales = LocalConfiguration.current.locales
             val suggested =
                 remember(choices, locales) {
-                    (0 until locales.size())
-                        .mapNotNull { i ->
+                    val device =
+                        (0 until locales.size()).mapNotNull { i ->
                             choices.firstOrNull { it.value.equals(locales[i].language, true) }?.value
-                        }.distinct()
+                        }
+                    val popular = POPULAR_LANGUAGES.mapNotNull { code -> choices.firstOrNull { it.value.equals(code, true) }?.value }
+                    suggestions(device, popular, choices.map { it.value }.toSet())
                 }
             BingeChoiceSheet(
                 title = stringResource(R.string.server_settings_metadata_language),
@@ -231,10 +238,12 @@ private fun ServerPickerSheet(
             val locales = LocalConfiguration.current.locales
             val suggested =
                 remember(choices, locales) {
-                    (0 until locales.size())
-                        .mapNotNull { i ->
+                    val device =
+                        (0 until locales.size()).mapNotNull { i ->
                             choices.firstOrNull { it.value.equals(locales[i].country, true) }?.value
-                        }.distinct()
+                        }
+                    val popular = POPULAR_REGIONS.mapNotNull { code -> choices.firstOrNull { it.value.equals(code, true) }?.value }
+                    suggestions(device, popular, choices.map { it.value }.toSet())
                 }
             BingeChoiceSheet(
                 title = stringResource(R.string.server_settings_metadata_country),
