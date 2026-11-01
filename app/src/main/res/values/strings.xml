@@ -73,7 +73,7 @@
     <string name="playback_default_audio_detail">Even when it isn’t in your language</string>
     <string name="playback_remember_audio">Remember my audio choice</string>
     <string name="playback_remember_subtitles">Remember my subtitle choice</string>
-    <string name="playback_remember_detail">Picks the track closest to your last choice</string>
+    <string name="playback_remember_detail">Picks the closest match next time</string>
     <string name="playback_autoplay">Play the next episode automatically</string>
     <string name="home_layout_title">Home screen</string>
     <string name="console_home_layout_detail">Your libraries’ order, and what shows where</string>

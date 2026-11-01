@@ -74,6 +74,9 @@ enum class LanguagePicker { Audio, Subtitles, SubtitleMode }
 /** The value that stands for "any language" in the user's configuration. */
 private const val ANY = ""
 
+/** Lines a switch's detail may wrap to, so it reads in full at large fonts rather than ending in an ellipsis. */
+private const val SWITCH_DETAIL_LINES = 3
+
 /** Lines a failed save's message takes, so it never moves the rows. */
 private const val STATUS_LINES = 2
 
@@ -134,6 +137,7 @@ private fun PlaybackBody(
                         icon = Icons.Outlined.GraphicEq,
                         label = stringResource(R.string.playback_default_audio),
                         detail = stringResource(R.string.playback_default_audio_detail),
+                        supportingMaxLines = SWITCH_DETAIL_LINES,
                         toggled = preferences.playDefaultAudioTrack,
                         onClick = { actions.onPlayDefaultAudioTrack(!preferences.playDefaultAudioTrack) },
                     ),
@@ -141,6 +145,7 @@ private fun PlaybackBody(
                         icon = Icons.Outlined.History,
                         label = stringResource(R.string.playback_remember_audio),
                         detail = stringResource(R.string.playback_remember_detail),
+                        supportingMaxLines = SWITCH_DETAIL_LINES,
                         toggled = preferences.rememberAudio,
                         onClick = { actions.onRememberAudio(!preferences.rememberAudio) },
                     ),
@@ -166,6 +171,7 @@ private fun PlaybackBody(
                         icon = Icons.Outlined.Restore,
                         label = stringResource(R.string.playback_remember_subtitles),
                         detail = stringResource(R.string.playback_remember_detail),
+                        supportingMaxLines = SWITCH_DETAIL_LINES,
                         toggled = preferences.rememberSubtitles,
                         onClick = { actions.onRememberSubtitles(!preferences.rememberSubtitles) },
                     ),
@@ -227,7 +233,7 @@ private fun LanguageSheet(
     }
 }
 
-/** A pick from every language the server knows, "any" first and the device's own suggested. */
+/** A pick from every language the server knows: "any" first, then the device's own and the popular ones suggested. */
 @Composable
 private fun LanguageChoiceSheet(
     title: Int,
@@ -246,7 +252,7 @@ private fun LanguageChoiceSheet(
                     .sortedBy { it.label.lowercase(locale) }
         }
     val locales = LocalConfiguration.current.locales
-    val suggested = remember(cultures, locales) { deviceLanguages(cultures, locales) }
+    val suggested = remember(cultures, locales) { suggestedLanguages(cultures, locales) }
     BingeChoiceSheet(
         title = stringResource(title),
         choices = BingeChoiceList.Ready(choices),
@@ -302,6 +308,15 @@ internal fun deviceLanguages(
     (0 until locales.size())
         .mapNotNull { index -> locales[index]?.let { locale -> cultures.find(iso3Language(locale))?.code } }
         .distinct()
+
+/** The device's languages, then the popular ones, as the codes the server stores. */
+internal fun suggestedLanguages(
+    cultures: List<Culture>,
+    locales: LocaleList,
+): List<String> {
+    val popular = POPULAR_LANGUAGES.mapNotNull { two -> cultures.firstOrNull { it.twoLetter.equals(two, ignoreCase = true) }?.code }
+    return suggestions(deviceLanguages(cultures, locales), popular, cultures.map { it.code }.toSet())
+}
 
 /** A locale's three-letter language, or empty where Android has none. */
 private fun iso3Language(locale: Locale): String =
