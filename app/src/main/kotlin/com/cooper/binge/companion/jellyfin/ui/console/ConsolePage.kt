@@ -83,6 +83,17 @@ enum class ConsolePage {
     val isAdmin: Boolean get() =
         this in
             setOf(
-                Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, LibraryDisplay, Trickplay, Plugins, Server,
+                Libraries,
+                Tasks,
+                Activity,
+                Logs,
+                ApiKeys,
+                Devices,
+                Users,
+                ServerSettings,
+                LibraryDisplay,
+                Trickplay,
+                Plugins,
+                Server,
             )
 }
