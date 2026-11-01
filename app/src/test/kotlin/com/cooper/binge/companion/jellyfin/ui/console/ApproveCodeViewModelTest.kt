@@ -1,9 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -12,7 +14,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -33,6 +34,10 @@ class ApproveCodeViewModelTest {
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -45,8 +50,7 @@ class ApproveCodeViewModelTest {
     @After
     fun close() {
         listening.cancel()
-        Dispatchers.resetMain()
-        jellyfin.close()
+        teardown.close(jellyfin)
     }
 
     private fun ApproveCodeViewModel.resultAfter(code: String): ApproveUiState {
@@ -57,7 +61,7 @@ class ApproveCodeViewModelTest {
 
     @Test
     fun `the field keeps six digits, and Approve waits for all six`() {
-        val vm = ApproveCodeViewModel(connection)
+        val vm = made(ApproveCodeViewModel(connection))
         vm.onCode("65-43 21 9")
         assertEquals("654321", vm.state.value.code)
         vm.onCode("123")
@@ -69,14 +73,14 @@ class ApproveCodeViewModelTest {
 
     @Test
     fun `a waiting code is approved and the field empties for the next`() {
-        val state = ApproveCodeViewModel(connection).resultAfter("654321")
+        val state = made(ApproveCodeViewModel(connection)).resultAfter("654321")
         assertEquals(ApproveResult.Approved, state.result)
         assertEquals("", state.code)
     }
 
     @Test
     fun `a code the server is not waiting on says so and stays to be corrected`() {
-        val state = ApproveCodeViewModel(connection).resultAfter("111111")
+        val state = made(ApproveCodeViewModel(connection)).resultAfter("111111")
         assertEquals(ApproveResult.WrongCode, state.result)
         assertEquals("111111", state.code)
     }
@@ -84,20 +88,20 @@ class ApproveCodeViewModelTest {
     @Test
     fun `Quick Connect turned off, another failure, an unreachable server and no session each say so`() {
         jellyfin.status["/QuickConnect/Authorize"] = 401
-        assertEquals(ApproveResult.QuickConnectOff, ApproveCodeViewModel(connection).resultAfter("654321").result)
+        assertEquals(ApproveResult.QuickConnectOff, made(ApproveCodeViewModel(connection)).resultAfter("654321").result)
         jellyfin.status["/QuickConnect/Authorize"] = 500
-        assertEquals(ApproveResult.Failed, ApproveCodeViewModel(connection).resultAfter("654321").result)
+        assertEquals(ApproveResult.Failed, made(ApproveCodeViewModel(connection)).resultAfter("654321").result)
         jellyfin.close()
-        assertEquals(ApproveResult.Unreachable, ApproveCodeViewModel(connection).resultAfter("654321").result)
+        assertEquals(ApproveResult.Unreachable, made(ApproveCodeViewModel(connection)).resultAfter("654321").result)
         runBlocking { sessions.clear() }
-        assertEquals(ApproveResult.Unreachable, ApproveCodeViewModel(connection).resultAfter("654321").result)
+        assertEquals(ApproveResult.Unreachable, made(ApproveCodeViewModel(connection)).resultAfter("654321").result)
     }
 
     @Test
     fun `a 401 with the session still good is Quick Connect turned off, and nothing is reported`() {
         jellyfin.status["/QuickConnect/Authorize"] = 401
         val refused = refusals()
-        assertEquals(ApproveResult.QuickConnectOff, ApproveCodeViewModel(connection).resultAfter("654321").result)
+        assertEquals(ApproveResult.QuickConnectOff, made(ApproveCodeViewModel(connection)).resultAfter("654321").result)
         assertEquals(1, jellyfin.hits("/Users/Me"))
         assertTrue(refused.isEmpty())
     }
@@ -107,7 +111,7 @@ class ApproveCodeViewModelTest {
         jellyfin.status["/QuickConnect/Authorize"] = 401
         jellyfin.status["/Users/Me"] = 401
         val refused = refusals()
-        ApproveCodeViewModel(connection).resultAfter("654321")
+        made(ApproveCodeViewModel(connection)).resultAfter("654321")
         runBlocking { withTimeout(TIMEOUT_MILLIS) { while (refused.isEmpty()) delay(POLL_MILLIS) } }
         assertEquals(1, refused.size)
     }

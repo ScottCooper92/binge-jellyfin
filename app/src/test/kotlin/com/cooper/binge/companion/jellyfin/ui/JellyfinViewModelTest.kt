@@ -52,8 +52,8 @@ class JellyfinViewModelTest {
     fun close() {
         // Cancels what the view models still have in flight, so none resumes on Main while it is reset.
         stores.forEach { it.clear() }
-        Dispatchers.resetMain()
         jellyfin.close()
+        Dispatchers.resetMain()
     }
 
     private var found: List<DiscoveredServer> = emptyList()

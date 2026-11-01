@@ -1,15 +1,16 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -29,6 +30,10 @@ class ActivityViewModelTest {
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -36,10 +41,7 @@ class ActivityViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
     private fun ActivityViewModel.settled(check: (ActivityUiState) -> Boolean = { it !is ActivityUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
@@ -49,7 +51,7 @@ class ActivityViewModelTest {
 
     @Test
     fun `reads the newest page, then the next, until the end`() {
-        val vm = ActivityViewModel(connection, pageSize = 2)
+        val vm = made(ActivityViewModel(connection, pageSize = 2))
         val first = vm.ready()
         assertEquals(listOf(5L, 4L), first.entries.map { it.id })
         assertEquals("IP address: 10.0.0.1", first.entries.first().overview)
@@ -65,7 +67,7 @@ class ActivityViewModelTest {
 
     @Test
     fun `entries that arrived meanwhile shift the pages, and the repeats are dropped`() {
-        val vm = ActivityViewModel(connection, pageSize = 2)
+        val vm = made(ActivityViewModel(connection, pageSize = 2))
         vm.ready()
         jellyfin.activityEntries = listOf("""{"Id":6,"Name":"New","Type":"UserCreated","Severity":"Warning"}""") + jellyfin.activityEntries
         vm.loadMore()
@@ -75,7 +77,7 @@ class ActivityViewModelTest {
 
     @Test
     fun `a page that adds nothing new ends the list rather than asking for it again`() {
-        val vm = ActivityViewModel(connection, pageSize = 2)
+        val vm = made(ActivityViewModel(connection, pageSize = 2))
         vm.ready()
         jellyfin.activityEntries = jellyfin.activityEntries.take(4)
         vm.loadMore()
@@ -84,7 +86,7 @@ class ActivityViewModelTest {
 
     @Test
     fun `pulling down reads the newest again, and a failure keeps what's showing`() {
-        val vm = ActivityViewModel(connection, pageSize = 2)
+        val vm = made(ActivityViewModel(connection, pageSize = 2))
         vm.ready()
         jellyfin.activityEntries = listOf("""{"Id":6,"Name":"New","Type":"UserCreated"}""") + jellyfin.activityEntries
         vm.refresh()
@@ -101,7 +103,7 @@ class ActivityViewModelTest {
 
     @Test
     fun `Try again after a failed refresh re-reads the newest when everything fit on one page`() {
-        val vm = ActivityViewModel(connection)
+        val vm = made(ActivityViewModel(connection))
         assertFalse(vm.ready().hasMore)
         jellyfin.status["/System/ActivityLog/Entries"] = 500
         vm.refresh()
@@ -115,7 +117,7 @@ class ActivityViewModelTest {
     @Test
     fun `a critical entry reads as an error`() {
         jellyfin.activityEntries = listOf("""{"Id":9,"Name":"Bad","Type":"X","Severity":"Critical"}""")
-        val vm = ActivityViewModel(connection)
+        val vm = made(ActivityViewModel(connection))
         assertEquals(
             Severity.Error,
             vm
@@ -129,7 +131,7 @@ class ActivityViewModelTest {
     @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/System/ActivityLog/Entries"] = 403
-        val vm = ActivityViewModel(connection)
+        val vm = made(ActivityViewModel(connection))
         assertEquals(ActivityUiState.Failed(ConsoleFailure.Refused), vm.settled())
         jellyfin.status.remove("/System/ActivityLog/Entries")
         vm.load()

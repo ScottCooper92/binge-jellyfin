@@ -1,14 +1,15 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonObject
@@ -31,6 +32,10 @@ class UsersViewModelTest {
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -38,10 +43,7 @@ class UsersViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
     private fun UsersViewModel.settled(check: (UsersUiState) -> Boolean = { it !is UsersUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
@@ -61,7 +63,7 @@ class UsersViewModelTest {
 
     @Test
     fun `reads the users by name and the libraries, knowing which is me`() {
-        val ready = UsersViewModel(connection).ready()
+        val ready = made(UsersViewModel(connection)).ready()
         assertEquals(listOf("Claude", "Sam"), ready.users.map { it.name })
         assertEquals("user-1", ready.me)
         assertEquals(2, ready.libraries.size)
@@ -72,7 +74,7 @@ class UsersViewModelTest {
 
     @Test
     fun `each switch saves the whole policy with that one change, as it's made`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         vm.openSam()
         vm.setAdministrator(true)
         vm.ready { it.openUser?.administrator == true }
@@ -103,7 +105,7 @@ class UsersViewModelTest {
 
     @Test
     fun `a change the server refuses goes back, and says so`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         vm.openSam()
         jellyfin.status["/Users/user-2/Policy"] = 403
         vm.setAdministrator(true)
@@ -114,7 +116,7 @@ class UsersViewModelTest {
 
     @Test
     fun `two library switches made before the first answer are both put back when both are refused`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         vm.openSam()
         jellyfin.status["/Users/user-2/Policy"] = 503
         vm.setAllLibraries(false)
@@ -132,7 +134,7 @@ class UsersViewModelTest {
 
     @Test
     fun `my own sign-in and administrator switches can't be changed, nor can I be deleted`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         vm.open(vm.ready().users.first())
         vm.setAdministrator(false)
         vm.setCanSignIn(false)
@@ -145,7 +147,7 @@ class UsersViewModelTest {
 
     @Test
     fun `a new user is created, added in order and opened`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         vm.ready()
         vm.show(UserDialog.Create)
         vm.create("  Ana ", "secret")
@@ -167,7 +169,7 @@ class UsersViewModelTest {
 
     @Test
     fun `an administrator sets a password without the old one, and deletes a user after a confirm`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         vm.openSam()
         vm.show(UserDialog.Password)
         vm.setPassword("new-one")
@@ -183,7 +185,7 @@ class UsersViewModelTest {
 
     @Test
     fun `the signed-in user's own password is left to the Password page`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         val me = vm.ready().users.first { it.id == "user-1" }
         vm.open(me)
         vm.setPassword("mine")
@@ -193,7 +195,7 @@ class UsersViewModelTest {
 
     @Test
     fun `a create that fails says so, and a page that can't read offers Try again`() {
-        val vm = UsersViewModel(connection)
+        val vm = made(UsersViewModel(connection))
         vm.ready()
         jellyfin.status["/Users/New"] = 400
         vm.create("Ana", "")

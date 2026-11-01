@@ -1,14 +1,15 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -28,6 +29,10 @@ class DevicesViewModelTest {
     private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
     private lateinit var thisDevice: String
 
+    private val teardown = ViewModelTeardown()
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -40,10 +45,7 @@ class DevicesViewModelTest {
     }
 
     @After
-    fun close() {
-        Dispatchers.resetMain()
-        jellyfin.close()
-    }
+    fun close() = teardown.close(jellyfin)
 
     private fun DevicesViewModel.settled(check: (DevicesUiState) -> Boolean = { it !is DevicesUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
@@ -53,7 +55,7 @@ class DevicesViewModelTest {
 
     @Test
     fun `reads the devices most recently seen first, knowing which is this one`() {
-        val ready = DevicesViewModel(connection).ready()
+        val ready = made(DevicesViewModel(connection)).ready()
         assertEquals(listOf("d-tv", "d-web", thisDevice), ready.devices.map { it.id })
         assertEquals(thisDevice, ready.thisDevice)
         assertEquals("Claude", ready.devices.first().user)
@@ -61,7 +63,7 @@ class DevicesViewModelTest {
 
     @Test
     fun `a rename saves the name, trimmed, and the row reads it back`() {
-        val vm = DevicesViewModel(connection)
+        val vm = made(DevicesViewModel(connection))
         val tv = vm.ready().devices.first()
         vm.askRename(tv)
         assertEquals(tv, vm.ready().renaming)
@@ -77,7 +79,7 @@ class DevicesViewModelTest {
 
     @Test
     fun `remove asks first, then removes, and this device can't be`() {
-        val vm = DevicesViewModel(connection)
+        val vm = made(DevicesViewModel(connection))
         val ready = vm.ready()
         vm.askRemove(ready.devices.last())
         assertNull(vm.ready().removing)
@@ -101,7 +103,7 @@ class DevicesViewModelTest {
 
     @Test
     fun `a change that fails says so and leaves the list as it was`() {
-        val vm = DevicesViewModel(connection)
+        val vm = made(DevicesViewModel(connection))
         val tv = vm.ready().devices.first()
         jellyfin.status["/Devices/Options"] = 500
         vm.askRename(tv)
@@ -118,7 +120,7 @@ class DevicesViewModelTest {
         jellyfin.status["/Devices/Info"] = 404
         assertEquals(
             "SHIELD",
-            DevicesViewModel(connection)
+            made(DevicesViewModel(connection))
                 .ready()
                 .devices
                 .first()
@@ -129,7 +131,7 @@ class DevicesViewModelTest {
     @Test
     fun `a page that can't read says why, and Try again reads again`() {
         jellyfin.status["/Devices"] = 403
-        val vm = DevicesViewModel(connection)
+        val vm = made(DevicesViewModel(connection))
         assertEquals(DevicesUiState.Failed(ConsoleFailure.Refused), vm.settled())
         jellyfin.status.remove("/Devices")
         vm.load()
