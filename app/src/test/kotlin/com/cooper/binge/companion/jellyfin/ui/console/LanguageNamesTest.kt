@@ -5,6 +5,7 @@ import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -51,6 +52,21 @@ class LanguageNamesTest {
     fun `the device's languages are suggested in its order, once each`() {
         val locales = LocaleList(Locale.FRANCE, Locale.UK, Locale.CANADA_FRENCH, Locale.forLanguageTag("de"))
         assertEquals(listOf("fre", "eng"), deviceLanguages(cultures, locales))
+    }
+
+    @Test
+    fun `the popular languages follow the device's, each once, only those the server offers`() {
+        val locales = LocaleList(Locale.FRANCE)
+        val suggested = suggestedLanguages(cultures, locales)
+        assertEquals("fre", suggested.first())
+        assertEquals(suggested.distinct(), suggested)
+        assertTrue("eng" in suggested)
+        assertTrue(suggested.all { code -> cultures.any { it.code == code } })
+    }
+
+    @Test
+    fun `suggestions keep the device's order first and drop what isn't offered`() {
+        assertEquals(listOf("GB", "US", "DE"), suggestions(listOf("GB", "XX"), listOf("US", "GB", "DE"), setOf("GB", "US", "DE")))
     }
 
     @Test

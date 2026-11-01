@@ -73,7 +73,7 @@
     <string name="playback_default_audio_detail">Aunque no esté en tu idioma</string>
     <string name="playback_remember_audio">Recordar mi elección de audio</string>
     <string name="playback_remember_subtitles">Recordar mi elección de subtítulos</string>
-    <string name="playback_remember_detail">Elige la pista más parecida a tu última elección</string>
+    <string name="playback_remember_detail">Elige la más parecida la próxima vez</string>
     <string name="playback_autoplay">Reproducir el siguiente episodio automáticamente</string>
     <string name="languages_body">Jellyfin los usa para elegir el audio y los subtítulos cuando reproduces algo, en Binge y en sus propias apps.</string>
     <string name="languages_audio">Idioma del audio</string>
