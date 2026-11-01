@@ -88,7 +88,6 @@ fun LibrariesScreen(
                             names = state.libraries.map { it.name },
                             saving = state.saving,
                             failed = state.addFailed,
-                            folderMissing = state.folderMissing,
                             folders = folders,
                             folderActions = folderActions,
                             onAdd = actions.onAdd,

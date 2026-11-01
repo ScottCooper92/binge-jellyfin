@@ -34,7 +34,6 @@ internal fun AddLibrarySheet(
     names: List<String>,
     saving: Boolean,
     failed: ConsoleFailure?,
-    folderMissing: Boolean,
     folders: FolderBrowseState,
     folderActions: FolderActions,
     onAdd: (name: String, kind: String, path: String) -> Unit,
