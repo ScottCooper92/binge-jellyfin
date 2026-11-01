@@ -122,6 +122,13 @@ class MainActivity : ComponentActivity() {
             val home = rememberSaveableStateHolder()
             val signedIn = state is UiState.SignedIn
             LaunchedEffect(signedIn) { if (!signedIn) page = null }
+            // A page the server or the user lost (Quick Connect turned off, admin rights taken away) closes,
+            // once the refresh has read what they now allow.
+            (state as? UiState.SignedIn)?.let { gated ->
+                LaunchedEffect(gated.profile, gated.account) {
+                    if (gated.account.isRead && page?.available(gated.profile, gated.account) == false) page = null
+                }
+            }
             val openPage = page.takeIf { signedIn }
             LaunchedEffect(openPage) { if (openPage == null) pageStores.close() }
             BackHandler(enabled = openPage != null) { page = null }

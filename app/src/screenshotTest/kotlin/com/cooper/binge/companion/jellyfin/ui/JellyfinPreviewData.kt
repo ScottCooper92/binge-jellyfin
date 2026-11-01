@@ -2,7 +2,10 @@ package com.cooper.binge.companion.jellyfin.ui
 
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 private const val LAN = "http://192.168.1.20:8096"
@@ -67,4 +70,7 @@ val previewQuickConnectGetting = previewSignIn.copy(gettingCode = true)
 
 val previewSignInUnreachable = previewSignIn.copy(password = "hunter2", passwordError = SetupError.Unreachable)
 
-val previewSignedInAdmin = previewSignedIn.copy(isAdministrator = true)
+val previewSignedInAdmin =
+    previewSignedIn.copy(
+        account = JellyfinAccount(previewSignedIn.session.userName, buildJsonObject { put("IsAdministrator", true) }),
+    )
