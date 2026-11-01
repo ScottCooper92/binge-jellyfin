@@ -70,7 +70,7 @@ fun NowPlayingScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 NowPlayingUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is NowPlayingUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is NowPlayingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is NowPlayingUiState.Ready -> Streams(state, administrator, actions, inner)
             }
         }
