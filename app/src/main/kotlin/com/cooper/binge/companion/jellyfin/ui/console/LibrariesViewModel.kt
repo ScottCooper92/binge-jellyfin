@@ -151,15 +151,16 @@ class LibrariesViewModel(
     ) {
         val ready = _state.value as? LibrariesUiState.Ready ?: return
         val trimmed = name.trim()
-        if (trimmed.isEmpty() || path.isBlank()) return
+        val folder = path.trim()
+        if (trimmed.isEmpty() || folder.isEmpty()) return
         if (ready.libraries.any { it.name.equals(trimmed, ignoreCase = true) }) return
         update { copy(saving = true, addFailed = null, folderMissing = false) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
                     // Checked first: a path with a comma is added after the library is made, and would leave it empty.
-                    if (client.folderExists(path)) {
-                        client.addLibrary(trimmed, kind, path)
+                    if (client.folderExists(folder)) {
+                        client.addLibrary(trimmed, kind, folder)
                         client.librariesWithId(trimmed)
                     } else {
                         null

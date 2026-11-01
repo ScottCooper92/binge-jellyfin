@@ -226,6 +226,17 @@ class LibrariesViewModelTest {
     }
 
     @Test
+    fun `a typed path is trimmed before the server is asked`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        vm.add("Anime", "tvshows", " /media/anime ")
+        val added = vm.ready { it.libraries.size == 3 && !it.adding }
+        assertFalse(added.folderMissing)
+    }
+
+    @Test
     fun `a new library is added, and shown with the others`() {
         jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
         val vm = made(LibrariesViewModel(connection))

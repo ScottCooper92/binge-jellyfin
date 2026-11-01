@@ -12,8 +12,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -70,6 +73,14 @@ class UsersViewModelTest {
         val sam = ready.users[1]
         assertFalse(sam.allLibraries)
         assertEquals(setOf("lib-movies"), sam.libraries)
+    }
+
+    @Test
+    fun `a library the server has not given an id yet is not offered`() {
+        jellyfin.libraries = JsonArray(jellyfin.libraries + buildJsonObject { put("Name", "New") })
+        val ready = made(UsersViewModel(connection)).ready()
+        assertEquals(2, ready.libraries.size)
+        assertTrue(ready.libraries.all { it.id.isNotEmpty() })
     }
 
     @Test
