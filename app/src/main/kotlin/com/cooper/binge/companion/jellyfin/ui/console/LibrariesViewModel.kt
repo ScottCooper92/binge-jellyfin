@@ -7,6 +7,7 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.LibraryPush
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.addLibrary
+import com.cooper.binge.companion.jellyfin.server.folderExists
 import com.cooper.binge.companion.jellyfin.server.libraries
 import com.cooper.binge.companion.jellyfin.server.libraryPushes
 import com.cooper.binge.companion.jellyfin.server.runTask
@@ -40,7 +41,7 @@ sealed interface LibrariesUiState {
      * The libraries and their scans; the scheduled tasks, for the scan of everything; how each
      * library's last scan just ended; the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop;
      * the library whose page is open ([opened]); and the new library sheet, when [adding], with the add in flight
-     * ([saving]) or refused ([addFailed]).
+     * ([saving]) or refused ([addFailed]), or its typed folder is one the server hasn't got ([folderMissing]).
      */
     data class Ready(
         val libraries: List<ServerLibrary>,
@@ -53,6 +54,7 @@ sealed interface LibrariesUiState {
         val adding: Boolean = false,
         val saving: Boolean = false,
         val addFailed: ConsoleFailure? = null,
+        val folderMissing: Boolean = false,
     ) : LibrariesUiState
 }
 
@@ -123,7 +125,7 @@ class LibrariesViewModel(
     fun open(id: String?) = update { copy(opened = id) }
 
     /** Opens the new library sheet, or closes it. */
-    fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null) }
+    fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null, folderMissing = false) }
 
     /** Reads the libraries again, quietly: the list stays as it is until the answer comes. */
     fun refresh() {
@@ -145,14 +147,28 @@ class LibrariesViewModel(
         val trimmed = name.trim()
         if (trimmed.isEmpty() || path.isBlank()) return
         if (ready.libraries.any { it.name.equals(trimmed, ignoreCase = true) }) return
-        update { copy(saving = true, addFailed = null) }
+        update { copy(saving = true, addFailed = null, folderMissing = false) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
-                    client.addLibrary(trimmed, kind, path)
-                    client.libraries()
-                }.onSuccess { fresh -> update { copy(libraries = fresh, saving = false, adding = false) } }
-                .onFailure { error -> update { copy(saving = false, addFailed = error.consoleFailure()) } }
+                    // Checked first: a path with a comma is added after the library is made, and would leave it empty.
+                    if (client.folderExists(path)) {
+                        client.addLibrary(trimmed, kind, path)
+                        client.libraries()
+                    } else {
+                        null
+                    }
+                }.onSuccess { fresh ->
+                    if (fresh == null) {
+                        update { copy(saving = false, folderMissing = true) }
+                    } else {
+                        update { copy(libraries = fresh, saving = false, adding = false) }
+                    }
+                }.onFailure { error ->
+                    update { copy(saving = false, addFailed = error.consoleFailure()) }
+                    // A library the server made before it failed shows, and its name counts as taken.
+                    refresh()
+                }
         }
     }
 

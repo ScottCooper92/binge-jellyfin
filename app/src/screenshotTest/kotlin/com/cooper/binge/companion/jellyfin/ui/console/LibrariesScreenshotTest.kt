@@ -175,4 +175,22 @@ class LibrariesScreenshotTest {
             }, {
             }, startStep = 3)
         }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun newLibraryPathMissing() =
+        Surface {
+            AddLibraryForm(
+                emptyList(),
+                saving = false,
+                failed = null,
+                FolderBrowseState.Loading,
+                FolderActions(),
+                { _, _, _ -> },
+                {},
+                startStep = 3,
+                folderMissing = true,
+            )
+        }
 }
