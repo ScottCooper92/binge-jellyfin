@@ -21,7 +21,7 @@ import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
-import com.cooper.binge.companion.jellyfin.server.PlaybackLanguages
+import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
@@ -111,25 +111,44 @@ class ConsoleScreensTest {
     fun `a language row opens its sheet, and a pick reaches the action`() {
         val audio = mutableListOf<String>()
         val modes = mutableListOf<SubtitleMode>()
-        val state = LanguagesUiState.Ready(PlaybackLanguages("eng", "", SubtitleMode.Default), cultures)
+        val state = PlaybackUiState.Ready(PlaybackPreferences("eng", "", SubtitleMode.Default), cultures)
         compose.setContent {
-            JellyfinTheme { LanguagesScreen(state, LanguagesActions(onAudio = { audio += it }, onSubtitleMode = { modes += it })) }
+            JellyfinTheme { PlaybackScreen(state, PlaybackActions(onAudio = { audio += it }, onSubtitleMode = { modes += it })) }
         }
         compose.onNodeWithText("Any language").assertExists()
-        compose.onNodeWithText("Subtitles").performClick()
-        compose.onNodeWithText("Always").performClick()
-        assertEquals(listOf(SubtitleMode.Always), modes)
         compose.onNodeWithText("Audio language").performClick()
         compose.onNodeWithText("French").performClick()
         assertEquals(listOf("fre"), audio)
+        compose.onNodeWithText("Subtitle mode").performScrollTo().performClick()
+        compose.onNodeWithText("Always").performClick()
+        assertEquals(listOf(SubtitleMode.Always), modes)
+    }
+
+    @Test
+    fun `a playback switch hands its new value to the action`() {
+        val switched = mutableListOf<String>()
+        val state = PlaybackUiState.Ready(PlaybackPreferences("eng", "", SubtitleMode.Default, autoplayNextEpisode = false), cultures)
+        val actions =
+            PlaybackActions(
+                onPlayDefaultAudioTrack = { switched += "default:$it" },
+                onRememberAudio = { switched += "audio:$it" },
+                onRememberSubtitles = { switched += "subtitles:$it" },
+                onAutoplayNextEpisode = { switched += "next:$it" },
+            )
+        compose.setContent { JellyfinTheme { PlaybackScreen(state, actions) } }
+        compose.onNodeWithText("Play the default track").performClick()
+        compose.onNodeWithText("Remember my audio choice").performClick()
+        compose.onNodeWithText("Remember my subtitle choice").performScrollTo().performClick()
+        compose.onNodeWithText("Play the next episode automatically").performScrollTo().performClick()
+        assertEquals(listOf("default:false", "audio:false", "subtitles:false", "next:true"), switched)
     }
 
     @Test
     fun `every subtitle mode is offered, with what it does`() {
-        val state = LanguagesUiState.Ready(PlaybackLanguages("", "", SubtitleMode.None), cultures, saveFailed = ConsoleFailure.Refused)
-        compose.setContent { JellyfinTheme { LanguagesScreen(state, LanguagesActions()) } }
+        val state = PlaybackUiState.Ready(PlaybackPreferences("", "", SubtitleMode.None), cultures, saveFailed = ConsoleFailure.Refused)
+        compose.setContent { JellyfinTheme { PlaybackScreen(state, PlaybackActions()) } }
         compose.onNodeWithText("Not saved. Something went wrong. Try again.").assertExists()
-        compose.onNodeWithText("Subtitles").performClick()
+        compose.onNodeWithText("Subtitle mode").performScrollTo().performClick()
         listOf("Follow the file", "Smart", "Only forced", "Always").forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("You can still turn them on while watching").assertExists()
     }

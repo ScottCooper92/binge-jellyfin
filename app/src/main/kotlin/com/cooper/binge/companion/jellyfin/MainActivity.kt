@@ -46,9 +46,6 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageStores
 import com.cooper.binge.companion.jellyfin.ui.console.DevicesActions
 import com.cooper.binge.companion.jellyfin.ui.console.DevicesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.DevicesViewModel
-import com.cooper.binge.companion.jellyfin.ui.console.LanguagesActions
-import com.cooper.binge.companion.jellyfin.ui.console.LanguagesScreen
-import com.cooper.binge.companion.jellyfin.ui.console.LanguagesViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.LibrariesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LibrariesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LibrariesViewModel
@@ -58,6 +55,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.NowPlayingViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordActions
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PasswordViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackScreen
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.ServerActions
 import com.cooper.binge.companion.jellyfin.ui.console.ServerScreen
 import com.cooper.binge.companion.jellyfin.ui.console.ServerViewModel
@@ -194,7 +194,7 @@ class MainActivity : ComponentActivity() {
     ) {
         when (page) {
             ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
-            ConsolePage.Languages -> LanguagesRoute(graph, close)
+            ConsolePage.Playback -> PlaybackRoute(graph, close)
             ConsolePage.Password -> PasswordRoute(graph, close)
             ConsolePage.NowPlaying ->
                 NowPlayingRoute(
@@ -223,22 +223,26 @@ class MainActivity : ComponentActivity() {
         ApproveCodeScreen(state, ApproveActions(onCode = approve::onCode, onApprove = approve::approve, onBack = onBack))
     }
 
-    /** The languages page with its own view model, which reads the user's configuration when it opens. */
+    /** The playback page with its own view model, which reads the user's configuration when it opens. */
     @Composable
-    private fun LanguagesRoute(
+    private fun PlaybackRoute(
         graph: AppGraph,
         onBack: () -> Unit,
     ) {
-        val languages: LanguagesViewModel =
-            viewModel(factory = viewModelFactory { initializer { LanguagesViewModel(graph.connection) } })
-        val state by languages.state.collectAsStateWithLifecycle()
-        LanguagesScreen(
+        val playback: PlaybackViewModel =
+            viewModel(factory = viewModelFactory { initializer { PlaybackViewModel(graph.connection) } })
+        val state by playback.state.collectAsStateWithLifecycle()
+        PlaybackScreen(
             state,
-            LanguagesActions(
-                onAudio = languages::setAudio,
-                onSubtitles = languages::setSubtitles,
-                onSubtitleMode = languages::setSubtitleMode,
-                onRetry = languages::load,
+            PlaybackActions(
+                onAudio = playback::setAudio,
+                onSubtitles = playback::setSubtitles,
+                onSubtitleMode = playback::setSubtitleMode,
+                onPlayDefaultAudioTrack = playback::setPlayDefaultAudioTrack,
+                onRememberAudio = playback::setRememberAudio,
+                onRememberSubtitles = playback::setRememberSubtitles,
+                onAutoplayNextEpisode = playback::setAutoplayNextEpisode,
+                onRetry = playback::load,
                 onBack = onBack,
             ),
         )

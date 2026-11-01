@@ -25,14 +25,20 @@ enum class SubtitleMode(
 }
 
 /**
- * The user's own track choices. Jellyfin picks audio and subtitle tracks with these when it answers
- * PlaybackInfo, so they reach Binge's player through the playback source. A language is a
- * three-letter code as the server stores it; empty means any.
+ * The user's own playback settings. Jellyfin picks audio and subtitle tracks with the languages when
+ * it answers PlaybackInfo, so they reach any player through the server. A language is a three-letter
+ * code as the server stores it; empty means any. The switches are the server's defaults (all on) until
+ * read, and Jellyfin's clients honour them: the default audio track over the language, remembering a
+ * track picked by hand for the rest of the series, and playing the next episode.
  */
-data class PlaybackLanguages(
+data class PlaybackPreferences(
     val audio: String,
     val subtitles: String,
     val subtitleMode: SubtitleMode,
+    val playDefaultAudioTrack: Boolean = true,
+    val rememberAudio: Boolean = true,
+    val rememberSubtitles: Boolean = true,
+    val autoplayNextEpisode: Boolean = true,
 )
 
 /**
@@ -51,6 +57,10 @@ data class Culture(
 internal const val AUDIO_LANGUAGE = "AudioLanguagePreference"
 internal const val SUBTITLE_LANGUAGE = "SubtitleLanguagePreference"
 internal const val SUBTITLE_MODE = "SubtitleMode"
+internal const val PLAY_DEFAULT_AUDIO_TRACK = "PlayDefaultAudioTrack"
+internal const val REMEMBER_AUDIO = "RememberAudioSelections"
+internal const val REMEMBER_SUBTITLES = "RememberSubtitleSelections"
+internal const val AUTOPLAY_NEXT_EPISODE = "EnableNextEpisodeAutoPlay"
 
 /** The signed-in user's whole configuration, kept whole so a save sends back what it didn't change. */
 suspend fun JellyfinClient.userConfiguration(): JsonObject = getObject("Users/Me").obj("Configuration") ?: JsonObject(emptyMap())
@@ -82,18 +92,28 @@ suspend fun JellyfinClient.cultures(): List<Culture> {
 
 private const val CULTURES = "Localization/Cultures"
 
-fun JsonObject.playbackLanguages(): PlaybackLanguages =
-    PlaybackLanguages(
+fun JsonObject.playbackPreferences(): PlaybackPreferences =
+    PlaybackPreferences(
         audio = string(AUDIO_LANGUAGE).orEmpty(),
         subtitles = string(SUBTITLE_LANGUAGE).orEmpty(),
         subtitleMode = SubtitleMode.of(string(SUBTITLE_MODE)),
+        playDefaultAudioTrack = bool(PLAY_DEFAULT_AUDIO_TRACK) != false,
+        rememberAudio = bool(REMEMBER_AUDIO) != false,
+        rememberSubtitles = bool(REMEMBER_SUBTITLES) != false,
+        autoplayNextEpisode = bool(AUTOPLAY_NEXT_EPISODE) != false,
     )
 
 /** This configuration with [key] set to [value], everything else as it was. */
 fun JsonObject.with(
     key: String,
     value: String,
-): JsonObject = JsonObject(this + (key to JsonPrimitive(value)))
+): JsonObject = with(key, JsonPrimitive(value))
+
+/** This configuration with [key] set to [value], everything else as it was. */
+fun JsonObject.with(
+    key: String,
+    value: JsonPrimitive,
+): JsonObject = JsonObject(this + (key to value))
 
 /**
  * Changes [userId]'s password. A wrong [current] password is a 403. Jellyfin then signs the user out

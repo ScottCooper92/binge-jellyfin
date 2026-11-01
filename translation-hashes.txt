@@ -16,8 +16,8 @@ app:console_activity_detail  3487307bf3ea
 app:console_admin_title  4b42c6690ebe
 app:console_approve_detail  8371322fc723
 app:console_devices_detail  fceb76d23a76
-app:console_languages_detail  69f8faf85034
 app:console_libraries_detail  2799454505fe
+app:console_playback_detail  4676d3b03871
 app:console_retry  d8b8392e2c54
 app:console_server_detail  d0f33aeb6e2d
 app:console_tasks_detail  48496ae36269
@@ -57,9 +57,8 @@ app:languages_audio  0be233af17d9
 app:languages_body  749dd2f48ceb
 app:languages_body_plain  01e9818d9b76
 app:languages_not_saved  34bacdd62ff6
-app:languages_subtitle_mode  0ee695bdeb26
+app:languages_subtitle_mode  8e673b8f6b04
 app:languages_subtitles  d67647781e97
-app:languages_title  28446c01863d
 app:libraries_body  ed038b40984d
 app:libraries_group  eaed033c1ad1
 app:libraries_not_started  b2bb600b9fb7
@@ -88,6 +87,16 @@ app:password_mismatch  b75780b4a0a7
 app:password_new  3dd9df4441fb
 app:password_title  3f9c991f63a9
 app:password_wrong  744eb56052cd
+app:playback_audio  bc1b88907d3b
+app:playback_autoplay  22664633ad79
+app:playback_default_audio  641bdd2609fc
+app:playback_default_audio_detail  bd2d2c9b7ce7
+app:playback_episodes  83f9722d9bb2
+app:playback_remember_audio  6ef58ae2c352
+app:playback_remember_detail  b6c9a60f070e
+app:playback_remember_subtitles  03cf8df9d770
+app:playback_subtitles  0ee695bdeb26
+app:playback_title  2db1db07062e
 app:quick_connect_body  8c49a6f5ca88
 app:quick_connect_cancel  cd40fe2dcba7
 app:quick_connect_title  d0dbbcf762fa

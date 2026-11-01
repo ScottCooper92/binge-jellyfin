@@ -12,8 +12,8 @@ enum class ConsolePage {
     /** Approve a Quick Connect code another device shows. For everyone. */
     ApproveCode,
 
-    /** The audio and subtitle languages Jellyfin chooses tracks by. For everyone. */
-    Languages,
+    /** The audio and subtitle languages Jellyfin chooses tracks by, and the playback switches. For everyone. */
+    Playback,
 
     /** Change the user's own password. For everyone. */
     Password,
@@ -50,7 +50,7 @@ enum class ConsolePage {
     ): Boolean =
         when (this) {
             ApproveCode -> profile.quickConnect
-            Languages -> account.canEditPreferences
+            Playback -> account.canEditPreferences
             Password -> account.hasLocalPassword
             NowPlaying -> true
             Libraries, Tasks, Activity, Devices, Users, Server -> account.isAdministrator

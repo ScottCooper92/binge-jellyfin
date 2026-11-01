@@ -15,8 +15,12 @@ import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.ClosedCaptionDisabled
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.PriorityHigh
+import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.MaterialTheme
@@ -51,11 +55,15 @@ import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import java.util.Locale
 import com.binge.designsystem.R as DesR
 
-/** What the languages page can ask of its view model, and of the console. */
-data class LanguagesActions(
+/** What the playback page can ask of its view model, and of the console. */
+data class PlaybackActions(
     val onAudio: (String) -> Unit = {},
     val onSubtitles: (String) -> Unit = {},
     val onSubtitleMode: (SubtitleMode) -> Unit = {},
+    val onPlayDefaultAudioTrack: (Boolean) -> Unit = {},
+    val onRememberAudio: (Boolean) -> Unit = {},
+    val onRememberSubtitles: (Boolean) -> Unit = {},
+    val onAutoplayNextEpisode: (Boolean) -> Unit = {},
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -66,26 +74,30 @@ enum class LanguagePicker { Audio, Subtitles, SubtitleMode }
 /** The value that stands for "any language" in the user's configuration. */
 private const val ANY = ""
 
+/** Lines a switch's detail may wrap to, so it reads in full at large fonts rather than ending in an ellipsis. */
+private const val SWITCH_DETAIL_LINES = 3
+
 /** Lines a failed save's message takes, so it never moves the rows. */
 private const val STATUS_LINES = 2
 
 /**
- * The user's playback languages: the audio and subtitle language Jellyfin prefers when it chooses
- * tracks, and when it turns subtitles on. Each pick saves as it's made.
+ * The user's playback settings: the audio and subtitle language Jellyfin prefers when it chooses
+ * tracks, when it turns subtitles on, whether a track picked by hand is remembered, and whether the
+ * next episode plays. Each change saves as it's made.
  */
 @Composable
-fun LanguagesScreen(
-    state: LanguagesUiState,
-    actions: LanguagesActions,
+fun PlaybackScreen(
+    state: PlaybackUiState,
+    actions: PlaybackActions,
 ) {
     var open by rememberSaveable { mutableStateOf<LanguagePicker?>(null) }
-    BingeScreenScaffold(title = stringResource(R.string.languages_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    BingeScreenScaffold(title = stringResource(R.string.playback_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
         ScreenBody(padding) { _ ->
             when (state) {
-                LanguagesUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is LanguagesUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, padding.screenListPadding())
-                is LanguagesUiState.Ready -> {
-                    LanguagesBody(state, padding.screenListPadding()) { open = it }
+                PlaybackUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                is PlaybackUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, padding.screenListPadding())
+                is PlaybackUiState.Ready -> {
+                    PlaybackBody(state, actions, padding.screenListPadding()) { open = it }
                     open?.let { LanguageSheet(it, state, actions) { open = null } }
                 }
             }
@@ -94,8 +106,9 @@ fun LanguagesScreen(
 }
 
 @Composable
-private fun LanguagesBody(
-    state: LanguagesUiState.Ready,
+private fun PlaybackBody(
+    state: PlaybackUiState.Ready,
+    actions: PlaybackActions,
     inner: PaddingValues,
     onOpen: (LanguagePicker) -> Unit,
 ) {
@@ -103,6 +116,7 @@ private fun LanguagesBody(
     val any = stringResource(R.string.languages_any)
 
     fun named(code: String) = if (code == ANY) any else state.cultures.find(code)?.label(locale) ?: code
+    val preferences = state.preferences
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
@@ -110,26 +124,68 @@ private fun LanguagesBody(
         val body = if (LocalFlags.current.bingePromotion) R.string.languages_body else R.string.languages_body_plain
         Text(stringResource(body), style = MaterialTheme.typography.bodyMedium)
         ItemGroup(
-            title = null,
+            title = stringResource(R.string.playback_audio),
             rows =
                 listOf(
                     ListItem(
                         icon = Icons.Outlined.Audiotrack,
                         label = stringResource(R.string.languages_audio),
-                        detail = named(state.languages.audio),
+                        detail = named(preferences.audio),
                         onClick = { onOpen(LanguagePicker.Audio) },
                     ),
                     ListItem(
+                        icon = Icons.Outlined.GraphicEq,
+                        label = stringResource(R.string.playback_default_audio),
+                        detail = stringResource(R.string.playback_default_audio_detail),
+                        supportingMaxLines = SWITCH_DETAIL_LINES,
+                        toggled = preferences.playDefaultAudioTrack,
+                        onClick = { actions.onPlayDefaultAudioTrack(!preferences.playDefaultAudioTrack) },
+                    ),
+                    ListItem(
+                        icon = Icons.Outlined.History,
+                        label = stringResource(R.string.playback_remember_audio),
+                        detail = stringResource(R.string.playback_remember_detail),
+                        supportingMaxLines = SWITCH_DETAIL_LINES,
+                        toggled = preferences.rememberAudio,
+                        onClick = { actions.onRememberAudio(!preferences.rememberAudio) },
+                    ),
+                ),
+        )
+        ItemGroup(
+            title = stringResource(R.string.playback_subtitles),
+            rows =
+                listOf(
+                    ListItem(
                         icon = Icons.Outlined.Subtitles,
                         label = stringResource(R.string.languages_subtitles),
-                        detail = named(state.languages.subtitles),
+                        detail = named(preferences.subtitles),
                         onClick = { onOpen(LanguagePicker.Subtitles) },
                     ),
                     ListItem(
                         icon = Icons.Outlined.ClosedCaption,
                         label = stringResource(R.string.languages_subtitle_mode),
-                        detail = stringResource(state.languages.subtitleMode.label),
+                        detail = stringResource(preferences.subtitleMode.label),
                         onClick = { onOpen(LanguagePicker.SubtitleMode) },
+                    ),
+                    ListItem(
+                        icon = Icons.Outlined.Restore,
+                        label = stringResource(R.string.playback_remember_subtitles),
+                        detail = stringResource(R.string.playback_remember_detail),
+                        supportingMaxLines = SWITCH_DETAIL_LINES,
+                        toggled = preferences.rememberSubtitles,
+                        onClick = { actions.onRememberSubtitles(!preferences.rememberSubtitles) },
+                    ),
+                ),
+        )
+        ItemGroup(
+            title = stringResource(R.string.playback_episodes),
+            rows =
+                listOf(
+                    ListItem(
+                        icon = Icons.Outlined.SkipNext,
+                        label = stringResource(R.string.playback_autoplay),
+                        toggled = preferences.autoplayNextEpisode,
+                        onClick = { actions.onAutoplayNextEpisode(!preferences.autoplayNextEpisode) },
                     ),
                 ),
         )
@@ -146,8 +202,8 @@ private fun LanguagesBody(
 @Composable
 private fun LanguageSheet(
     picker: LanguagePicker,
-    state: LanguagesUiState.Ready,
-    actions: LanguagesActions,
+    state: PlaybackUiState.Ready,
+    actions: PlaybackActions,
     onDismiss: () -> Unit,
 ) {
     when (picker) {
@@ -155,12 +211,12 @@ private fun LanguageSheet(
             LanguageChoiceSheet(
                 R.string.languages_audio,
                 state.cultures,
-                state.languages.audio,
+                state.preferences.audio,
                 actions.onAudio,
                 onDismiss,
             )
         LanguagePicker.Subtitles ->
-            LanguageChoiceSheet(R.string.languages_subtitles, state.cultures, state.languages.subtitles, actions.onSubtitles, onDismiss)
+            LanguageChoiceSheet(R.string.languages_subtitles, state.cultures, state.preferences.subtitles, actions.onSubtitles, onDismiss)
         LanguagePicker.SubtitleMode ->
             BingeChoiceSheet(
                 title = stringResource(R.string.languages_subtitle_mode),
@@ -170,14 +226,14 @@ private fun LanguageSheet(
                             BingeChoice(it, stringResource(it.label), supportingText = stringResource(it.detail), icon = it.icon)
                         },
                     ),
-                selected = state.languages.subtitleMode,
+                selected = state.preferences.subtitleMode,
                 onSelect = actions.onSubtitleMode,
                 onDismissRequest = onDismiss,
             )
     }
 }
 
-/** A pick from every language the server knows, "any" first and the device's own suggested. */
+/** A pick from every language the server knows: "any" first, then the device's own and the popular ones suggested. */
 @Composable
 private fun LanguageChoiceSheet(
     title: Int,
@@ -196,7 +252,7 @@ private fun LanguageChoiceSheet(
                     .sortedBy { it.label.lowercase(locale) }
         }
     val locales = LocalConfiguration.current.locales
-    val suggested = remember(cultures, locales) { deviceLanguages(cultures, locales) }
+    val suggested = remember(cultures, locales) { suggestedLanguages(cultures, locales) }
     BingeChoiceSheet(
         title = stringResource(title),
         choices = BingeChoiceList.Ready(choices),
@@ -252,6 +308,15 @@ internal fun deviceLanguages(
     (0 until locales.size())
         .mapNotNull { index -> locales[index]?.let { locale -> cultures.find(iso3Language(locale))?.code } }
         .distinct()
+
+/** The device's languages, then the popular ones, as the codes the server stores. */
+internal fun suggestedLanguages(
+    cultures: List<Culture>,
+    locales: LocaleList,
+): List<String> {
+    val popular = POPULAR_LANGUAGES.mapNotNull { two -> cultures.firstOrNull { it.twoLetter.equals(two, ignoreCase = true) }?.code }
+    return suggestions(deviceLanguages(cultures, locales), popular, cultures.map { it.code }.toSet())
+}
 
 /** A locale's three-letter language, or empty where Android has none. */
 private fun iso3Language(locale: Locale): String =
