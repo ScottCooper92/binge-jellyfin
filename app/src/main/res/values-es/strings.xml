@@ -573,4 +573,6 @@
     <string name="repositories_next">Siguiente</string>
     <string name="repositories_back">Atrás</string>
     <string name="repositories_add_submit">Añadir</string>
+    <string name="devices_empty">Ningún dispositivo ha iniciado sesión en este servidor.</string>
+    <string name="tasks_empty">Este servidor no tiene tareas programadas que mostrar.</string>
 </resources>

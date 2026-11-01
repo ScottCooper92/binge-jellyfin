@@ -102,7 +102,7 @@ private fun Keys(
             }
         }
         if (state.keys.isEmpty()) {
-            item { Text(stringResource(R.string.api_keys_empty), style = MaterialTheme.typography.bodyLarge) }
+            item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
         } else {
             item { ItemGroup(title = null, rows = state.keys.map { it.row(state, actions, now) }) }
         }

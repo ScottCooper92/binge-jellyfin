@@ -91,7 +91,11 @@ private fun Devices(
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item { Text(stringResource(R.string.devices_body), style = MaterialTheme.typography.bodyMedium) }
-        item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
+        if (state.devices.isEmpty()) {
+            item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }
+        } else {
+            item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
+        }
         item {
             Text(
                 text = state.actionFailed?.let { stringResource(R.string.devices_not_changed, stringResource(it.message)) }.orEmpty(),
