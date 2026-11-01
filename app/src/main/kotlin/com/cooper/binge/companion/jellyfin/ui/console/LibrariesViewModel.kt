@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.addLibrary
 import com.cooper.binge.companion.jellyfin.server.folderExists
 import com.cooper.binge.companion.jellyfin.server.libraries
+import com.cooper.binge.companion.jellyfin.server.librariesWithId
 import com.cooper.binge.companion.jellyfin.server.libraryPushes
 import com.cooper.binge.companion.jellyfin.server.runTask
 import com.cooper.binge.companion.jellyfin.server.scanLibrary
@@ -96,6 +97,7 @@ class LibrariesViewModel(
     }
 
     fun scan(library: ServerLibrary) {
+        if (library.id.isEmpty()) return
         update {
             copy(
                 scanning = scanning + (library.id to LibraryScan()),
@@ -121,8 +123,12 @@ class LibrariesViewModel(
         }
     }
 
-    /** Opens the page of the library with [id], or the list for null. */
-    fun open(id: String?) = update { copy(opened = id) }
+    /** Opens the page of the library with [id], or the list for null. A blank id opens nothing. */
+    fun open(id: String?) {
+        // A library the server hasn't given an id yet has no page: nothing on it could be saved.
+        if (id?.isEmpty() == true) return
+        update { copy(opened = id) }
+    }
 
     /** Opens the new library sheet, or closes it. */
     fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null, folderMissing = false) }
@@ -154,7 +160,7 @@ class LibrariesViewModel(
                     // Checked first: a path with a comma is added after the library is made, and would leave it empty.
                     if (client.folderExists(path)) {
                         client.addLibrary(trimmed, kind, path)
-                        client.libraries()
+                        client.librariesWithId(trimmed)
                     } else {
                         null
                     }

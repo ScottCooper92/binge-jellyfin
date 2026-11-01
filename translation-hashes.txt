@@ -164,6 +164,7 @@ app:libraries_scan  ea1c510d1ddb
 app:libraries_scan_all  17dd759abb08
 app:libraries_title  62ef6fd92ee1
 app:libraries_unnamed  18d5989da06f
+app:library_add_scan_note  871e746a0a8c
 app:library_add_submit  acacc7f23784
 app:library_back  76900f1bfd16
 app:library_chapter_images  2935a9aabf08

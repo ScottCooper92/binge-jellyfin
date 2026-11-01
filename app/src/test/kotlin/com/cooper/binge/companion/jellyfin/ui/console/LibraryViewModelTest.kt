@@ -236,6 +236,34 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun `a rename the server has not given an id for yet shows the new name, not a refusal`() {
+        jellyfin.withholdIds = true
+        val vm = made(LibraryViewModel(connection, movies))
+        vm.ready()
+        vm.ask(LibraryDialog.Rename)
+        vm.rename("Films")
+        val renamed = vm.ready { it.library.name == "Films" }
+        assertNull(renamed.failed)
+        assertEquals("", renamed.library.id)
+    }
+
+    @Test
+    fun `a library opened with no id takes up the id the server has by now, and saves go to it`() {
+        val vm = made(LibraryViewModel(connection, movies.copy(id = "")))
+        val ready = vm.ready()
+        assertEquals("lib-movies", ready.library.id)
+        vm.set(LIBRARY_REALTIME, JsonPrimitive(true))
+        saves(1)
+        assertEquals(
+            "lib-movies",
+            jellyfin
+                .lastBody(OPTIONS)
+                .getValue("Id")
+                .jsonPrimitive.content,
+        )
+    }
+
+    @Test
     fun `renaming moves to the library's new id, and saves go to it`() {
         val vm = made(LibraryViewModel(connection, movies))
         vm.ready()

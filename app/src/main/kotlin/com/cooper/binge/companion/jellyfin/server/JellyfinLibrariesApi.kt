@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.serialization.json.JsonArray
@@ -35,15 +36,30 @@ suspend fun JellyfinClient.libraries(): List<ServerLibrary> {
     val answer = get(VIRTUAL_FOLDERS) as? JsonArray ?: throw JellyfinUnreadableAnswer(VIRTUAL_FOLDERS)
     return answer.mapNotNull { element ->
         val json = element as? JsonObject ?: return@mapNotNull null
-        val id = json.string("ItemId") ?: return@mapNotNull null
         ServerLibrary(
-            id = id,
+            // A library the server has made or renamed has no id until it validates its top folders.
+            id = json.string("ItemId").orEmpty(),
             name = json.string("Name").orEmpty(),
             type = json.string("CollectionType").orEmpty(),
             folders = json.array("Locations").mapNotNull { (it as? JsonPrimitive)?.content },
             options = json.obj("LibraryOptions") ?: JsonObject(emptyMap()),
         )
     }
+}
+
+/**
+ * The libraries, read until the one named [name] has its id, which the server gives it a moment after
+ * it is made or renamed. A library still without one after the wait is listed as it is.
+ */
+suspend fun JellyfinClient.librariesWithId(name: String): List<ServerLibrary> {
+    var read = libraries()
+    var attempts = 1
+    while (attempts < ID_ATTEMPTS && read.any { it.name == name && it.id.isEmpty() }) {
+        delay(ID_WAIT_MILLIS)
+        read = libraries()
+        attempts++
+    }
+    return read
 }
 
 /** Scans one library for new and changed files, as Jellyfin's own "Scan library" does. */
@@ -83,3 +99,5 @@ private fun JsonObject.libraryProgress(): LibraryPush.Progress? {
 
 internal const val VIRTUAL_FOLDERS = "Library/VirtualFolders"
 private const val FULL = 100
+private const val ID_ATTEMPTS = 5
+private const val ID_WAIT_MILLIS = 400L

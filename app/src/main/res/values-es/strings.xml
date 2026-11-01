@@ -179,6 +179,7 @@
     <string name="library_back">Atrás</string>
     <string name="library_save">Guardar</string>
     <string name="library_add_submit">Añadir biblioteca</string>
+    <string name="library_add_scan_note">Añadir una biblioteca analiza todas las bibliotecas del servidor y detiene un análisis en curso.</string>
     <string name="library_kind_title">¿Qué hay en esta biblioteca?</string>
     <string name="library_kind_movies">Películas</string>
     <string name="library_kind_shows">Series</string>

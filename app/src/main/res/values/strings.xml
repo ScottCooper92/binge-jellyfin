@@ -179,6 +179,7 @@
     <string name="library_back">Back</string>
     <string name="library_save">Save</string>
     <string name="library_add_submit">Add library</string>
+    <string name="library_add_scan_note">Adding a library scans every library on the server, and stops a scan already running.</string>
     <string name="library_kind_title">What is in this library?</string>
     <string name="library_kind_movies">Movies</string>
     <string name="library_kind_shows">Shows</string>

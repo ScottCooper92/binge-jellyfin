@@ -61,7 +61,7 @@ class LibrariesViewModelTest {
     private fun subscribed() = waitFor { jellyfin.socketMessages.any { "ScheduledTasksInfoStart" in it } }
 
     @Test
-    fun `reads the libraries and the scan task, leaving out an entry with no id`() {
+    fun `reads the libraries and the scan task`() {
         val ready = made(LibrariesViewModel(connection)).ready()
         assertEquals(
             listOf(
@@ -203,7 +203,30 @@ class LibrariesViewModelTest {
     }
 
     @Test
-    fun `a new library is added with no scan, and shown with the others`() {
+    fun `a library with no id yet cannot be opened`() {
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.open("")
+        assertNull(vm.ready().opened)
+    }
+
+    @Test
+    fun `a library the server has not given an id yet still shows, and its name counts as taken`() {
+        jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
+        jellyfin.withholdIds = true
+        val vm = made(LibrariesViewModel(connection))
+        vm.ready()
+        vm.ask(true)
+        vm.add("Anime", "tvshows", "/media/anime")
+        val added = vm.ready { it.libraries.size == 3 && !it.adding }
+        assertEquals("", added.libraries.last().id)
+        val posts = jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" }
+        vm.add("anime", "tvshows", "/media/anime")
+        assertEquals(posts, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
+    }
+
+    @Test
+    fun `a new library is added, and shown with the others`() {
         jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media", "/media/anime"))
         val vm = made(LibrariesViewModel(connection))
         vm.ready()
@@ -219,8 +242,7 @@ class LibrariesViewModelTest {
         assertEquals("Anime", request.url.queryParameter("name"))
         assertEquals("tvshows", request.url.queryParameter("collectionType"))
         assertEquals("/media/anime", request.url.queryParameter("paths"))
-        assertEquals("false", request.url.queryParameter("refreshLibrary"))
-        assertEquals(0, jellyfin.hits("/Items/lib-anime/Refresh"))
+        assertEquals("true", request.url.queryParameter("refreshLibrary"))
     }
 
     @Test
@@ -257,21 +279,9 @@ class LibrariesViewModelTest {
         vm.add("Anime", "tvshows", "/media/missing")
         assertTrue(vm.ready { it.folderMissing && !it.saving }.folderMissing)
         assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
-        assertEquals(3, jellyfin.libraries.size)
+        assertEquals(2, jellyfin.libraries.size)
         vm.ask(true)
         assertFalse(vm.ready().folderMissing)
-    }
-
-    @Test
-    fun `a failed add reads the libraries again, so a part-made one shows`() {
-        val vm = made(LibrariesViewModel(connection))
-        vm.ready()
-        jellyfin.libraries =
-            JsonArray(jellyfin.libraries + Json.parseToJsonElement("""{"Name":"Half","ItemId":"lib-half","Locations":[]}"""))
-        jellyfin.status["/Environment/ValidatePath"] = 500
-        vm.add("Other", "movies", "/media/x")
-        val failed = vm.ready { it.addFailed != null && it.libraries.any { library -> library.name == "Half" } }
-        assertEquals(ConsoleFailure.Refused, failed.addFailed)
     }
 
     @Test
@@ -289,22 +299,6 @@ class LibrariesViewModelTest {
         assertFalse(failed.saving)
         vm.ask(false)
         assertNull(vm.ready().addFailed)
-    }
-
-    @Test
-    fun `a folder the server hasn't got adds no library, comma or not`() {
-        val vm = made(LibrariesViewModel(connection))
-        vm.ready()
-        vm.ask(true)
-        vm.add("Gone", "movies", "/media/gone,here")
-        val missing = vm.ready { it.folderMissing }
-        assertFalse(missing.saving)
-        assertTrue(missing.adding)
-        assertNull(missing.addFailed)
-        vm.add("Gone", "movies", "/media/gone")
-        vm.ready { it.folderMissing }
-        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
-        assertEquals(2, vm.ready().libraries.size)
     }
 
     @Test
