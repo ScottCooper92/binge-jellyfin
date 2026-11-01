@@ -73,7 +73,7 @@
     <string name="playback_default_audio_detail">Aunque no esté en tu idioma</string>
     <string name="playback_remember_audio">Recordar mi elección de audio</string>
     <string name="playback_remember_subtitles">Recordar mi elección de subtítulos</string>
-    <string name="playback_remember_detail">Elige la pista más parecida a tu última elección</string>
+    <string name="playback_remember_detail">Elige la más parecida la próxima vez</string>
     <string name="playback_autoplay">Reproducir el siguiente episodio automáticamente</string>
     <string name="home_layout_title">Pantalla de inicio</string>
     <string name="console_home_layout_detail">El orden de tus bibliotecas y qué se muestra dónde</string>

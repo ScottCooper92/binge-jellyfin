@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -59,6 +60,9 @@ data class HomeLayoutActions(
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
+
+/** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
+private const val HOME_DETAIL_LINES = 3
 
 /** Lines a failed save's message takes, so it never moves the rows. */
 private const val HOME_STATUS_LINES = 2
@@ -138,6 +142,7 @@ private fun HomeLayoutBody(
                         icon = Icons.Outlined.HideSource,
                         label = stringResource(R.string.home_layout_missing),
                         detail = stringResource(R.string.home_layout_missing_detail),
+                        supportingMaxLines = HOME_DETAIL_LINES,
                         toggled = layout.displayMissingEpisodes,
                         onClick = { actions.onDisplayMissingEpisodes(!layout.displayMissingEpisodes) },
                     ),
@@ -145,6 +150,7 @@ private fun HomeLayoutBody(
                         icon = Icons.Outlined.CollectionsBookmark,
                         label = stringResource(R.string.home_layout_collections),
                         detail = stringResource(R.string.home_layout_collections_detail),
+                        supportingMaxLines = HOME_DETAIL_LINES,
                         toggled = layout.displayCollectionsView,
                         onClick = { actions.onDisplayCollectionsView(!layout.displayCollectionsView) },
                     ),
@@ -191,6 +197,7 @@ private fun LibraryPage(
                         icon = Icons.Outlined.Workspaces,
                         label = stringResource(R.string.home_layout_grouped),
                         detail = stringResource(R.string.home_layout_grouped_detail),
+                        supportingMaxLines = HOME_DETAIL_LINES,
                         toggled = grouped,
                         onClick = { actions.onGrouped(library.id, !grouped) },
                     ).takeIf { library.id in state.groupable },
@@ -204,12 +211,14 @@ private fun LibraryPage(
                         icon = Icons.Outlined.ArrowUpward,
                         label = stringResource(R.string.home_layout_move_up),
                         enabled = place > 0,
+                        destination = ListItemDestination.Action,
                         onClick = { actions.onMove(library.id, -1) },
                     ),
                     ListItem(
                         icon = Icons.Outlined.ArrowDownward,
                         label = stringResource(R.string.home_layout_move_down),
                         enabled = place < state.libraries.lastIndex,
+                        destination = ListItemDestination.Action,
                         onClick = { actions.onMove(library.id, 1) },
                     ),
                 ),

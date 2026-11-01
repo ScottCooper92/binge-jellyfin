@@ -117,7 +117,7 @@ app:playback_default_audio  641bdd2609fc
 app:playback_default_audio_detail  bd2d2c9b7ce7
 app:playback_episodes  83f9722d9bb2
 app:playback_remember_audio  6ef58ae2c352
-app:playback_remember_detail  77fc1d0165a1
+app:playback_remember_detail  b6c9a60f070e
 app:playback_remember_subtitles  03cf8df9d770
 app:playback_subtitles  0ee695bdeb26
 app:playback_title  2db1db07062e
