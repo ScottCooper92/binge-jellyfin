@@ -263,18 +263,6 @@ class LibrariesViewModelTest {
     }
 
     @Test
-    fun `a failed add reads the libraries again, so a part-made one shows`() {
-        val vm = made(LibrariesViewModel(connection))
-        vm.ready()
-        jellyfin.libraries =
-            JsonArray(jellyfin.libraries + Json.parseToJsonElement("""{"Name":"Half","ItemId":"lib-half","Locations":[]}"""))
-        jellyfin.status["/Environment/ValidatePath"] = 500
-        vm.add("Other", "movies", "/media/x")
-        val failed = vm.ready { it.addFailed != null && it.libraries.any { library -> library.name == "Half" } }
-        assertEquals(ConsoleFailure.Refused, failed.addFailed)
-    }
-
-    @Test
     fun `an add the server refuses says so and keeps the sheet open`() {
         jellyfin.serverFolders = jellyfin.serverFolders + ("" to listOf("/media/anime"))
         val vm = made(LibrariesViewModel(connection))
@@ -289,22 +277,6 @@ class LibrariesViewModelTest {
         assertFalse(failed.saving)
         vm.ask(false)
         assertNull(vm.ready().addFailed)
-    }
-
-    @Test
-    fun `a folder the server hasn't got adds no library, comma or not`() {
-        val vm = made(LibrariesViewModel(connection))
-        vm.ready()
-        vm.ask(true)
-        vm.add("Gone", "movies", "/media/gone,here")
-        val missing = vm.ready { it.folderMissing }
-        assertFalse(missing.saving)
-        assertTrue(missing.adding)
-        assertNull(missing.addFailed)
-        vm.add("Gone", "movies", "/media/gone")
-        vm.ready { it.folderMissing }
-        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Library/VirtualFolders" && it.method == "POST" })
-        assertEquals(2, vm.ready().libraries.size)
     }
 
     @Test

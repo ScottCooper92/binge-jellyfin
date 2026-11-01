@@ -75,6 +75,8 @@ internal fun AddLibraryForm(
     var name by rememberSaveable { mutableStateOf(startName) }
     var kind by rememberSaveable { mutableStateOf(LIBRARY_KINDS.first()) }
     var path by rememberSaveable { mutableStateOf("") }
+    // The folder the server last said it hasn't got; editing the path drops the line.
+    var tried by rememberSaveable { mutableStateOf("") }
     when (step) {
         Step.NAME -> {
             val taken = names.any { it.equals(name.trim(), ignoreCase = true) }
@@ -116,14 +118,17 @@ internal fun AddLibraryForm(
                 title = stringResource(R.string.library_path_title),
                 value = path,
                 onValueChange = { path = it },
-                onSubmit = { onAdd(name, kind, path) },
+                onSubmit = {
+                    tried = path
+                    onAdd(name, kind, path)
+                },
                 onCancel = { step = Step.FOLDER },
                 cancelLabel = stringResource(R.string.library_back),
                 submitLabel = stringResource(R.string.library_add_submit),
                 hint = stringResource(R.string.library_path_hint),
                 isSubmitting = saving,
                 error =
-                    if (folderMissing) {
+                    if (folderMissing && path == tried) {
                         stringResource(R.string.library_path_missing)
                     } else {
                         failed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
