@@ -65,9 +65,9 @@ enum class ConsolePage {
             Playback, HomeLayout -> account.canEditPreferences
             Password -> account.hasLocalPassword
             NowPlaying -> true
-            Libraries, Tasks, Activity, ApiKeys, Logs, Devices, Users, ServerSettings, Server -> account.isAdministrator
+            Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, Server -> account.isAdministrator
         }
 
     /** One of the administrator's pages, listed together on the home. */
-    val isAdmin: Boolean get() = this in setOf(Libraries, Tasks, Activity, ApiKeys, Logs, Devices, Users, ServerSettings, Server)
+    val isAdmin: Boolean get() = this in setOf(Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, Server)
 }
