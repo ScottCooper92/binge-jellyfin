@@ -53,6 +53,11 @@ class JellyfinLogsApiTest {
             """{"AccessToken":"[redacted]","Name":"x"}""",
             redactSecrets("""{"AccessToken":"0123456789abcdef","Name":"x"}"""),
         )
+        assertEquals(
+            """[INF] Logging out access token "[redacted]"""",
+            redactSecrets("""[INF] Logging out access token "0123456789abcdef0123456789abcdef""""),
+        )
+        assertEquals("Revoked token [redacted] for x", redactSecrets("Revoked token 0123456789abcdef0123456789abcdef for x"))
         val plain = "[INF] Server started, a token of thanks, key=short"
         assertEquals(plain, redactSecrets(plain))
     }
