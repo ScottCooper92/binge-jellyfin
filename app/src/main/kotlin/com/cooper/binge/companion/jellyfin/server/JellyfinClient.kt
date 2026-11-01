@@ -144,6 +144,45 @@ class JellyfinClient(
         return json.asObject(path) to from
     }
 
+    /**
+     * [get] for a plain-text answer too long to hold: reads it as it arrives and keeps only the last
+     * [maxBytes], so a log of tens of megabytes costs [maxBytes] of memory. Cancelling the caller
+     * cancels the [Call], closing the socket.
+     */
+    internal suspend fun getTail(
+        path: String,
+        query: Map<String, String>,
+        maxBytes: Int,
+    ): TextTail {
+        val request = Request.Builder().url(url(path, query)).get().header("Authorization", authorization()).build()
+        val call = http.newCall(request)
+        return suspendCancellableCoroutine { cont ->
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(
+                object : Callback {
+                    override fun onFailure(
+                        call: Call,
+                        e: IOException,
+                    ) = cont.resumeWithException(e)
+
+                    override fun onResponse(
+                        call: Call,
+                        response: Response,
+                    ) {
+                        val outcome =
+                            attempt {
+                                response.use {
+                                    if (!it.isSuccessful) throw JellyfinHttpException(it.code, path)
+                                    readTail(it.body.source(), maxBytes)
+                                }
+                            }
+                        outcome.fold(cont::resume, cont::resumeWithException)
+                    }
+                },
+            )
+        }
+    }
+
     private suspend fun call(
         builder: Request.Builder,
         path: String,
