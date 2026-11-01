@@ -53,6 +53,9 @@ data class JellyfinServerProfile(
     /** Audio normalisation's loudness scan, per library. 10.9. */
     val hasLoudnessScan: Boolean get() = atLeast(TEN, NINE)
 
+    /** The user's libraries are read from `/UserViews`; before 10.9, from `/Users/{id}/Views`. 10.9. */
+    val hasUserViewsRoute: Boolean get() = atLeast(TEN, NINE)
+
     /** Media segments (intros, credits) and a library's segment providers. 10.10. */
     val hasMediaSegments: Boolean get() = atLeast(TEN, TEN)
 

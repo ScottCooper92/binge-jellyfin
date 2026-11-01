@@ -15,6 +15,9 @@ enum class ConsolePage {
     /** The audio and subtitle languages Jellyfin chooses tracks by, and the playback switches. For everyone. */
     Playback,
 
+    /** How Jellyfin's apps lay out the user's home: library order, where each shows. For everyone. */
+    HomeLayout,
+
     /** Change the user's own password. For everyone. */
     Password,
 
@@ -50,7 +53,7 @@ enum class ConsolePage {
     ): Boolean =
         when (this) {
             ApproveCode -> profile.quickConnect
-            Playback -> account.canEditPreferences
+            Playback, HomeLayout -> account.canEditPreferences
             Password -> account.hasLocalPassword
             NowPlaying -> true
             Libraries, Tasks, Activity, Devices, Users, Server -> account.isAdministrator

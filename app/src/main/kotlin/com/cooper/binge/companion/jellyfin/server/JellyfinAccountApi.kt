@@ -103,18 +103,6 @@ fun JsonObject.playbackPreferences(): PlaybackPreferences =
         autoplayNextEpisode = bool(AUTOPLAY_NEXT_EPISODE) != false,
     )
 
-/** This configuration with [key] set to [value], everything else as it was. */
-fun JsonObject.with(
-    key: String,
-    value: String,
-): JsonObject = with(key, JsonPrimitive(value))
-
-/** This configuration with [key] set to [value], everything else as it was. */
-fun JsonObject.with(
-    key: String,
-    value: JsonPrimitive,
-): JsonObject = JsonObject(this + (key to value))
-
 /**
  * Changes [userId]'s password. A wrong [current] password is a 403. Jellyfin then signs the user out
  * everywhere but here: every other device's token stops working, and this one's carries on.

@@ -28,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -46,6 +47,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageStores
 import com.cooper.binge.companion.jellyfin.ui.console.DevicesActions
 import com.cooper.binge.companion.jellyfin.ui.console.DevicesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.DevicesViewModel
+import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutActions
+import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutScreen
+import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutViewModel
 import com.cooper.binge.companion.jellyfin.ui.console.LibrariesActions
 import com.cooper.binge.companion.jellyfin.ui.console.LibrariesScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LibrariesViewModel
@@ -174,7 +178,7 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 val close = { page = null }
                                 ConsolePageScope(pageStores.storeFor(opened)) {
-                                    ConsolePageRoute(openPage, graph, (state as? UiState.SignedIn)?.isAdministrator == true, close)
+                                    (state as? UiState.SignedIn)?.let { gated -> ConsolePageRoute(openPage, graph, gated, close) }
                                 }
                             }
                         }
@@ -189,17 +193,18 @@ class MainActivity : ComponentActivity() {
     private fun ConsolePageRoute(
         page: ConsolePage,
         graph: AppGraph,
-        administrator: Boolean,
+        signedIn: UiState.SignedIn,
         close: () -> Unit,
     ) {
         when (page) {
             ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
             ConsolePage.Playback -> PlaybackRoute(graph, close)
+            ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, close)
             ConsolePage.Password -> PasswordRoute(graph, close)
             ConsolePage.NowPlaying ->
                 NowPlayingRoute(
                     graph,
-                    administrator,
+                    signedIn.isAdministrator,
                     close,
                 )
             ConsolePage.Libraries -> LibrariesRoute(graph, close)
@@ -243,6 +248,33 @@ class MainActivity : ComponentActivity() {
                 onRememberSubtitles = playback::setRememberSubtitles,
                 onAutoplayNextEpisode = playback::setAutoplayNextEpisode,
                 onRetry = playback::load,
+                onBack = onBack,
+            ),
+        )
+    }
+
+    /** The home screen page with its own view model, asking the server its own release's way. */
+    @Composable
+    private fun HomeLayoutRoute(
+        graph: AppGraph,
+        profile: JellyfinServerProfile,
+        onBack: () -> Unit,
+    ) {
+        val home: HomeLayoutViewModel =
+            viewModel(factory = viewModelFactory { initializer { HomeLayoutViewModel(graph.connection, profile) } })
+        val state by home.state.collectAsStateWithLifecycle()
+        HomeLayoutScreen(
+            state,
+            HomeLayoutActions(
+                onOpen = home::open,
+                onInMyMedia = home::setInMyMedia,
+                onInLatest = home::setInLatest,
+                onGrouped = home::setGrouped,
+                onMove = home::move,
+                onHidePlayedInLatest = home::setHidePlayedInLatest,
+                onDisplayMissingEpisodes = home::setDisplayMissingEpisodes,
+                onDisplayCollectionsView = home::setDisplayCollectionsView,
+                onRetry = home::load,
                 onBack = onBack,
             ),
         )

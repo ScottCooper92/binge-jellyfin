@@ -9,7 +9,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.Dispatcher
@@ -74,6 +76,29 @@ class FakeJellyfin : Dispatcher() {
     /** The user's configuration, as `/Users/Me` answers it and `/Users/Configuration` replaces it. */
     var userConfiguration =
         """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
+
+    /** The user's libraries, as `/UserViews` (and before 10.9, `/Users/{id}/Views`) lists them. */
+    var userViews =
+        """[{"Id":"lib-movies","Name":"Movies","CollectionType":"movies"},""" +
+            """{"Id":"lib-shows","Name":"Shows","CollectionType":"tvshows"},{"Id":"lib-home","Name":"Home videos"}]"""
+
+    /** [userViews] without the libraries in the configuration's `GroupedFolders`, as the server leaves them out. */
+    private fun ungroupedViews(): String {
+        val grouped =
+            (Json.parseToJsonElement(userConfiguration).jsonObject["GroupedFolders"] as? JsonArray)
+                .orEmpty()
+                .map { it.jsonPrimitive.content }
+        return JsonArray(
+            Json.parseToJsonElement(userViews).jsonArray.filter {
+                it.jsonObject
+                    .getValue("Id")
+                    .jsonPrimitive.content !in grouped
+            },
+        ).toString()
+    }
+
+    /** The libraries `GroupedFolders` may name, as the grouping options list them. */
+    var groupingOptions = """[{"Id":"lib-home","Name":"Home videos"}]"""
 
     /** The user's password, as `/Users/Password` checks and changes it. */
     var password = "old-secret"
@@ -211,6 +236,9 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/Localization/Cultures" -> json(CULTURES)
+            path == "/UserViews" || path.startsWith("/Users/") && path.endsWith("/Views") -> json("""{"Items":${ungroupedViews()}}""")
+            path == "/UserViews/GroupingOptions" || path.startsWith("/Users/") && path.endsWith("/GroupingOptions") ->
+                json(groupingOptions)
             path == "/Users/Password" && "CurrentPw" !in request.body?.utf8().orEmpty() -> adminPassword(request)
             path == "/Users/Password" -> changePassword(request)
             path == "/Users" -> json(serverUsers.values.joinToString(",", "[", "]") { it.toString() })

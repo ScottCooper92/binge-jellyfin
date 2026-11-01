@@ -15,9 +15,7 @@ import com.cooper.binge.companion.jellyfin.server.SUBTITLE_MODE
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.server.cultures
 import com.cooper.binge.companion.jellyfin.server.playbackPreferences
-import com.cooper.binge.companion.jellyfin.server.saveUserConfiguration
 import com.cooper.binge.companion.jellyfin.server.userConfiguration
-import com.cooper.binge.companion.jellyfin.server.with
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 sealed interface PlaybackUiState {
@@ -47,8 +42,7 @@ sealed interface PlaybackUiState {
 
 /**
  * The user's playback settings, read from and saved to their own configuration. Each choice saves
- * as it's made: the last configuration the server accepted, with that one change. A save that fails
- * puts the choice back and says so.
+ * as it's made (see [ConfigurationSaves]); a save that fails puts the choice back and says so.
  */
 class PlaybackViewModel(
     private val connection: Connection,
@@ -56,12 +50,10 @@ class PlaybackViewModel(
     private val _state = MutableStateFlow<PlaybackUiState>(PlaybackUiState.Loading)
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
 
-    /** The configuration as the server last accepted it. Saves take turns, each building on the last. */
-    private var saved = JsonObject(emptyMap())
-    private val saving = Mutex()
-
-    /** The latest pick made for each key, so a failed save only puts back a choice nothing newer replaced. */
-    private val latestPick = mutableMapOf<String, Int>()
+    private val saves =
+        ConfigurationSaves(viewModelScope, connection, TAG) { shown, failure ->
+            _state.update { (it as? PlaybackUiState.Ready)?.copy(preferences = shown.playbackPreferences(), saveFailed = failure) ?: it }
+        }
 
     init {
         load()
@@ -80,7 +72,7 @@ class PlaybackViewModel(
                         }
                     }.fold(
                         onSuccess = { (configuration, cultures) ->
-                            saved = configuration
+                            saves.loaded(configuration)
                             PlaybackUiState.Ready(configuration.playbackPreferences(), cultures.sortedBy { it.displayName })
                         },
                         onFailure = { PlaybackUiState.Failed(it.consoleFailure()) },
@@ -88,83 +80,28 @@ class PlaybackViewModel(
         }
     }
 
-    fun setAudio(code: String) = save(AUDIO_LANGUAGE, code) { copy(audio = code) }
+    fun setAudio(code: String) = save(AUDIO_LANGUAGE, JsonPrimitive(code))
 
-    fun setSubtitles(code: String) = save(SUBTITLE_LANGUAGE, code) { copy(subtitles = code) }
+    fun setSubtitles(code: String) = save(SUBTITLE_LANGUAGE, JsonPrimitive(code))
 
-    fun setSubtitleMode(mode: SubtitleMode) = save(SUBTITLE_MODE, mode.wire) { copy(subtitleMode = mode) }
+    fun setSubtitleMode(mode: SubtitleMode) = save(SUBTITLE_MODE, JsonPrimitive(mode.wire))
 
-    fun setPlayDefaultAudioTrack(on: Boolean) = save(PLAY_DEFAULT_AUDIO_TRACK, on) { copy(playDefaultAudioTrack = on) }
+    fun setPlayDefaultAudioTrack(on: Boolean) = save(PLAY_DEFAULT_AUDIO_TRACK, JsonPrimitive(on))
 
-    fun setRememberAudio(on: Boolean) = save(REMEMBER_AUDIO, on) { copy(rememberAudio = on) }
+    fun setRememberAudio(on: Boolean) = save(REMEMBER_AUDIO, JsonPrimitive(on))
 
-    fun setRememberSubtitles(on: Boolean) = save(REMEMBER_SUBTITLES, on) { copy(rememberSubtitles = on) }
+    fun setRememberSubtitles(on: Boolean) = save(REMEMBER_SUBTITLES, JsonPrimitive(on))
 
-    fun setAutoplayNextEpisode(on: Boolean) = save(AUTOPLAY_NEXT_EPISODE, on) { copy(autoplayNextEpisode = on) }
-
-    private fun save(
-        key: String,
-        value: String,
-        shown: PlaybackPreferences.() -> PlaybackPreferences,
-    ) = save(key, JsonPrimitive(value), shown)
-
-    private fun save(
-        key: String,
-        value: Boolean,
-        shown: PlaybackPreferences.() -> PlaybackPreferences,
-    ) = save(key, JsonPrimitive(value), shown)
+    fun setAutoplayNextEpisode(on: Boolean) = save(AUTOPLAY_NEXT_EPISODE, JsonPrimitive(on))
 
     private fun save(
         key: String,
         value: JsonPrimitive,
-        shown: PlaybackPreferences.() -> PlaybackPreferences,
     ) {
-        if (_state.value !is PlaybackUiState.Ready) return
-        val pick =
-            synchronized(latestPick) {
-                val next = (latestPick[key] ?: 0) + 1
-                latestPick[key] = next
-                updateReady { copy(preferences = preferences.shown(), saveFailed = null) }
-                next
-            }
-        viewModelScope.launch {
-            saving.withLock {
-                val next = saved.with(key, value)
-                connection
-                    .consoleCall(TAG) { session, client -> client.saveUserConfiguration(session.userId, next) }
-                    .onSuccess { saved = next }
-                    .onFailure { error ->
-                        // Only this choice goes back, and only if it is still the one shown: a newer pick
-                        // for the same row is waiting to save, and says how it went itself.
-                        val before = saved.playbackPreferences()
-                        synchronized(latestPick) {
-                            if (latestPick[key] != pick) return@onFailure
-                            updateReady { copy(preferences = preferences.restoring(key, before), saveFailed = error.consoleFailure()) }
-                        }
-                    }
-            }
-        }
+        if (_state.value is PlaybackUiState.Ready) saves.set(key, value)
     }
-
-    private fun updateReady(change: PlaybackUiState.Ready.() -> PlaybackUiState.Ready) =
-        _state.update { (it as? PlaybackUiState.Ready)?.change() ?: it }
 
     private companion object {
         const val TAG = "JellyfinPlayback"
     }
 }
-
-/** These choices with the one [key] names taken from [from]. */
-private fun PlaybackPreferences.restoring(
-    key: String,
-    from: PlaybackPreferences,
-): PlaybackPreferences =
-    when (key) {
-        AUDIO_LANGUAGE -> copy(audio = from.audio)
-        SUBTITLE_LANGUAGE -> copy(subtitles = from.subtitles)
-        SUBTITLE_MODE -> copy(subtitleMode = from.subtitleMode)
-        PLAY_DEFAULT_AUDIO_TRACK -> copy(playDefaultAudioTrack = from.playDefaultAudioTrack)
-        REMEMBER_AUDIO -> copy(rememberAudio = from.rememberAudio)
-        REMEMBER_SUBTITLES -> copy(rememberSubtitles = from.rememberSubtitles)
-        else -> copy(autoplayNextEpisode = from.autoplayNextEpisode)
-    }
