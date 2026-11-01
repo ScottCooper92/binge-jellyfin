@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,7 +9,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -50,7 +51,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class ConsoleScreensTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val stream =
         NowPlaying("tv", "Ana", "Living room", "Web", "Sintel", null, 1, 4, paused = true, PlayMethod.Transcode, listOf("AudioIsExternal"))
@@ -416,6 +417,26 @@ class ConsoleScreensTest {
         compose.onNodeWithText("The server has no log files.").assertExists()
         state = LogsUiState.Failed(ConsoleFailure.Unreachable)
         compose.onNodeWithText("Try again").assertExists()
+    }
+
+    @Test
+    fun `system back with a log open closes the log, not the page`() {
+        var closed = 0
+        var left = 0
+        val open = OpenLog("log_20261031.log", LogContent.Ready(listOf("[10:00:00] [INF] Server started"), truncated = false))
+        compose.setContent {
+            JellyfinTheme {
+                LogsScreen(
+                    LogsUiState.Ready(listOf(LogFile("log_20261031.log", 4096, null)), open),
+                    LogsActions(onCloseLog = { closed++ }, onBack = { left++ }),
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+        assertEquals(0, left)
     }
 
     @Test

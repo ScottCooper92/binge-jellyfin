@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.text.format.Formatter
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +73,7 @@ fun LogsScreen(
     zone: ZoneId = ZoneId.systemDefault(),
 ) {
     val open = (state as? LogsUiState.Ready)?.open
+    BackHandler(enabled = open != null) { actions.onCloseLog() }
     BingeScreenScaffold(
         title = open?.name ?: stringResource(R.string.logs_title),
         bar = ScreenBar.Small,
