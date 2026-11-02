@@ -42,6 +42,22 @@ class DevicesScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @Composable
+    fun renamingSubmitting() = Surface { RenameSheet(previewDevices.first(), DevicesActions(), submitting = true, inWindow = false) }
+
+    /** The form stays open with what was typed, and says why in its own error slot. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun renamingFailed() =
+        Surface {
+            RenameSheet(previewDevices.first(), DevicesActions(), error = "Not changed. Something went wrong. Try again.", inWindow = false)
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun removing() = Surface { RemoveDialog(previewDevices[2], DevicesActions(), inWindow = false) }

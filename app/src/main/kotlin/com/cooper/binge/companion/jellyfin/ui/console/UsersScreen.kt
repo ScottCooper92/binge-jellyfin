@@ -301,9 +301,10 @@ private fun UserDialogs(
     actions: UsersActions,
 ) {
     val user = state.openUser
+    val error = state.formFailure?.let { stringResource(R.string.users_not_changed, stringResource(it.message)) }
     when (state.dialog) {
-        UserDialog.Create -> CreateSheet(actions)
-        UserDialog.Password -> if (user != null) PasswordSheet(user, actions)
+        UserDialog.Create -> CreateSheet(actions, submitting = state.busy, error = error)
+        UserDialog.Password -> if (user != null) PasswordSheet(user, actions, submitting = state.busy, error = error)
         UserDialog.Delete -> if (user != null) DeleteDialog(user, actions)
         null -> Unit
     }
@@ -331,6 +332,8 @@ internal fun DeleteDialog(
 @Composable
 internal fun CreateSheet(
     actions: UsersActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -342,6 +345,8 @@ internal fun CreateSheet(
             submitLabel = stringResource(R.string.users_add_action),
             onSubmit = { actions.onCreate(name, password) },
             onCancel = { actions.onShow(null) },
+            submitting = submitting,
+            error = error,
         ) {
             ConsoleTextField(
                 value = name,
@@ -364,6 +369,8 @@ internal fun CreateSheet(
 internal fun PasswordSheet(
     user: ServerUser,
     actions: UsersActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var password by rememberSaveable { mutableStateOf("") }
@@ -374,6 +381,8 @@ internal fun PasswordSheet(
             submitLabel = stringResource(R.string.users_password_action),
             onSubmit = { actions.onSetPassword(password) },
             onCancel = { actions.onShow(null) },
+            submitting = submitting,
+            error = error,
         ) {
             ConsoleTextField(
                 value = password,

@@ -98,7 +98,17 @@ private fun Devices(
             )
         }
     }
-    state.renaming?.let { RenameSheet(it, actions) }
+    state.renaming?.let {
+        RenameSheet(
+            it,
+            actions,
+            submitting = it.id in state.busy,
+            error =
+                state.formFailure?.let { f ->
+                    stringResource(R.string.devices_not_changed, stringResource(f.message))
+                },
+        )
+    }
     state.removing?.let { RemoveDialog(it, actions) }
 }
 
@@ -158,6 +168,8 @@ private fun ServerDevice.row(
 internal fun RenameSheet(
     device: ServerDevice,
     actions: DevicesActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable(device.id) { mutableStateOf(device.customName.orEmpty()) }
@@ -171,6 +183,8 @@ internal fun RenameSheet(
             onSubmit = { actions.onRename(name) },
             onCancel = { actions.onAskRename(null) },
             hint = device.name,
+            error = error,
+            isSubmitting = submitting,
         )
     }
 }

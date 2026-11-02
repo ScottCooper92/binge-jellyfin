@@ -102,16 +102,35 @@ class DevicesViewModelTest {
     }
 
     @Test
-    fun `a change that fails says so and leaves the list as it was`() {
+    fun `a rename that fails says so in the form, which stays open, and leaves the list as it was`() {
         val vm = made(DevicesViewModel(connection))
         val tv = vm.ready().devices.first()
         jellyfin.status["/Devices/Options"] = 500
         vm.askRename(tv)
         vm.rename("Den")
-        val failed = vm.ready { it.actionFailed != null }
-        assertEquals(ConsoleFailure.Refused, failed.actionFailed)
+        val failed = vm.ready { it.formFailure != null }
+        assertEquals(ConsoleFailure.Refused, failed.formFailure)
+        assertEquals(tv, failed.renaming)
+        assertNull(failed.actionFailed)
         assertEquals("SHIELD", failed.devices.first().name)
         assertEquals(emptySet<String>(), failed.busy)
+        // A retry that works closes the form.
+        jellyfin.status.remove("/Devices/Options")
+        vm.rename("Den")
+        val renamed = vm.ready { it.busy.isEmpty() && it.devices.first().customName != null }
+        assertNull(renamed.renaming)
+        assertNull(renamed.formFailure)
+    }
+
+    @Test
+    fun `a sign-out the server refuses is said on the page, since it has no form`() {
+        val vm = made(DevicesViewModel(connection))
+        val web = vm.ready().devices.first { it.id == "d-web" }
+        jellyfin.status["/Devices"] = 500
+        vm.askRemove(web)
+        vm.remove()
+        val failed = vm.ready { it.actionFailed != null }
+        assertNull(failed.formFailure)
     }
 
     @Test

@@ -32,6 +32,8 @@ sealed interface ApiKeysUiState {
         val removing: ApiKey? = null,
         val busy: Boolean = false,
         val actionFailed: ConsoleFailure? = null,
+        /** Why the new key's form was refused, shown in the form, which stays open with what was typed. */
+        val formFailure: ConsoleFailure? = null,
     ) : ApiKeysUiState
 }
 
@@ -63,18 +65,31 @@ class ApiKeysViewModel(
         }
     }
 
-    fun askCreate(on: Boolean) = update { copy(naming = on, actionFailed = null) }
+    fun askCreate(on: Boolean) = update { copy(naming = on, formFailure = null, actionFailed = null) }
 
     /** Makes a key for [app] (a blank name asks for nothing), then shows it, once. */
     fun create(app: String) {
         val name = app.trim()
         if (name.isEmpty()) return
-        update { copy(naming = false, busy = true) }
+        // The form stays open while the call runs: it closes when the key is made, and keeps what was typed if it isn't.
+        update { copy(busy = true, formFailure = null, actionFailed = null) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> client.createApiKey(name) }
-                .onSuccess { (made, keys) -> update { copy(keys = keys, created = made, busy = false) } }
-                .onFailure { error -> update { copy(busy = false, actionFailed = error.consoleFailure()) } }
+                .onSuccess { (made, keys) -> update { copy(keys = keys, created = made, naming = false, busy = false) } }
+                .onFailure { error ->
+                    // A form left meanwhile has nowhere to say it, so the page does.
+                    update {
+                        if (naming) {
+                            copy(
+                                busy = false,
+                                formFailure = error.consoleFailure(),
+                            )
+                        } else {
+                            copy(busy = false, actionFailed = error.consoleFailure())
+                        }
+                    }
+                }
         }
     }
 

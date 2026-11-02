@@ -54,6 +54,7 @@ internal fun ConsoleTextEntry(
     modifier: Modifier = Modifier,
     hint: String? = null,
     error: String? = null,
+    isSubmitting: Boolean = false,
     singleLine: Boolean = true,
     minLines: Int = 1,
     maxLines: Int = 1,
@@ -70,6 +71,7 @@ internal fun ConsoleTextEntry(
         modifier = modifier,
         hint = hint,
         submitEnabled = true,
+        isSubmitting = isSubmitting,
         error = error,
         singleLine = singleLine,
         minLines = minLines,
@@ -90,6 +92,8 @@ internal fun ConsoleFieldsForm(
     submitLabel: String,
     onSubmit: () -> Unit,
     onCancel: () -> Unit,
+    submitting: Boolean = false,
+    error: String? = null,
     fields: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -101,12 +105,14 @@ internal fun ConsoleFieldsForm(
             Text(text = body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         fields()
+        // A failed submit keeps the form and its values, and says why here.
+        error?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
         ) {
             BingeOutlinedButton(label = stringResource(DesR.string.text_entry_cancel), onClick = onCancel, modifier = Modifier.weight(1f))
-            BingeFilledButton(label = submitLabel, onClick = onSubmit, modifier = Modifier.weight(1f))
+            BingeFilledButton(label = submitLabel, onClick = onSubmit, loading = submitting, modifier = Modifier.weight(1f))
         }
     }
 }
