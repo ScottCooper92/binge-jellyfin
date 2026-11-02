@@ -204,6 +204,15 @@ class FakeJellyfin : Dispatcher() {
             """"ProcessPriority":"BelowNormal","Interval":10000,"WidthResolutions":[320],"TileWidth":10,"TileHeight":10,""" +
             """"Qscale":4,"JpegQuality":90,"ProcessThreads":1}}"""
 
+    /** The network configuration, as `/System/Configuration/network` answers it and a save replaces it. */
+    var networkConfiguration =
+        """{"EnableHttps":false,"RequireHttps":false,"CertificatePath":"","CertificatePassword":"s3cret","InternalHttpPort":8096,""" +
+            """"InternalHttpsPort":8920,"PublicHttpPort":8096,"PublicHttpsPort":8920,"AutoDiscovery":true,"EnableUPnP":false,""" +
+            """"EnableIPv4":true,"EnableIPv6":false,"EnableRemoteAccess":true,"LocalNetworkSubnets":[],"LocalNetworkAddresses":[],""" +
+            """"KnownProxies":[],"IgnoreVirtualInterfaces":true,"VirtualInterfaceNames":["veth"],""" +
+            """"EnablePublishedServerUriByRequest":false,""" +
+            """"PublishedServerUriBySubnet":[],"BaseUrl":"","RemoteIPFilter":[],"IsRemoteIPFilterBlacklist":false,"FutureOption":{"keep":"me"}}"""
+
     /** The encoding configuration, as `/System/Configuration/encoding` answers it and a save replaces it. */
     var encodingConfiguration =
         """{"HardwareAccelerationType":"qsv","VaapiDevice":"/dev/dri/renderD128","QsvDevice":"","EnableHardwareEncoding":true,""" +
@@ -438,6 +447,11 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Info" -> json(systemInfo)
             path == "/Items/Counts" -> json(itemCounts)
+            path == "/System/Configuration/network" && request.method == "POST" -> {
+                networkConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/network" -> json(networkConfiguration)
             path == "/System/Configuration" && request.method == "POST" -> {
                 serverConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
