@@ -3,7 +3,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -62,7 +60,22 @@ fun ApiKeysScreen(
     actions: ApiKeysActions,
     now: Long = System.currentTimeMillis(),
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.api_keys_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val ready = state as? ApiKeysUiState.Ready
+    BingeScreenScaffold(
+        title = stringResource(R.string.api_keys_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.api_keys_new),
+                icon = Icons.Outlined.Key,
+                onClick = { actions.onAskCreate(true) },
+                visible = state !is ApiKeysUiState.Failed,
+                enabled = ready != null,
+                loading = ready?.busy == true,
+            )
+        },
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
@@ -82,18 +95,7 @@ private fun Keys(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                Text(stringResource(R.string.api_keys_body), style = MaterialTheme.typography.bodyMedium)
-                BingeOutlinedButton(
-                    label = stringResource(R.string.api_keys_new),
-                    onClick = { actions.onAskCreate(true) },
-                    leadingIcon = Icons.Outlined.Key,
-                    loading = state.busy,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        item { Text(stringResource(R.string.api_keys_body), style = MaterialTheme.typography.bodyMedium) }
         if (state.keys.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
         } else {
