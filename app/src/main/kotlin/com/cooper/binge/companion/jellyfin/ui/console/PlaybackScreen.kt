@@ -2,7 +2,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,7 +40,6 @@ import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.BingeFilledButton
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -94,7 +92,7 @@ fun PlaybackScreen(
     BingeScreenScaffold(title = stringResource(R.string.playback_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
         ScreenBody(padding) { _ ->
             when (state) {
-                PlaybackUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                PlaybackUiState.Loading -> ConsoleLoading(padding.screenListPadding(), LOADING_ROWS)
                 is PlaybackUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, padding.screenListPadding())
                 is PlaybackUiState.Ready -> {
                     PlaybackBody(state, actions, padding.screenListPadding()) { open = it }
@@ -355,3 +353,5 @@ private val SubtitleMode.icon: ImageVector
             SubtitleMode.Always -> Icons.Outlined.ClosedCaption
             SubtitleMode.None -> Icons.Outlined.ClosedCaptionDisabled
         }
+
+private const val LOADING_ROWS = 9

@@ -51,6 +51,7 @@ app:console_devices_detail  fceb76d23a76
 app:console_display_detail  b44d27a253ab
 app:console_home_layout_detail  4920c5a943a4
 app:console_libraries_detail  529320059abd
+app:console_loading  dc380888c4e2
 app:console_logs_detail  425dcf674ddf
 app:console_playback_detail  4676d3b03871
 app:console_plugins_detail  997de1dcd051

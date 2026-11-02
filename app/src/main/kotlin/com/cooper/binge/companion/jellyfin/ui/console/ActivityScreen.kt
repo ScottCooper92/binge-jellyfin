@@ -78,7 +78,7 @@ fun ActivityScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                ActivityUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                ActivityUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is ActivityUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ActivityUiState.Ready ->
                     BingePullToRefresh(
@@ -199,3 +199,5 @@ internal fun activityIcon(type: String): ImageVector =
         type.contains("Subtitle") -> Icons.Outlined.Subtitles
         else -> Icons.Outlined.Info
     }
+
+private const val LOADING_ROWS = 8

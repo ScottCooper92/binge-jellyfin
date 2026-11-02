@@ -61,6 +61,11 @@ class NowPlayingScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @Composable
+    fun loading() = NowPlayingScreen(NowPlayingUiState.Loading, administrator = true, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @JellyfinScreenStateLightPreview
     @JellyfinSpanishPreviews
     @Composable
