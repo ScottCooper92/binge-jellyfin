@@ -131,9 +131,19 @@ class JellyfinScreenshotTest {
     fun signedInHttps() = JellyfinRoot(previewSignedInHttps, Actions())
 
     @PreviewTest
-    @JellyfinScreenStatePreview
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
+
+    /** An administrator's account, behind the avatar: the rows everyone else has inline on their home. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun account() = AccountScreen(previewSignedInAdmin, Actions(), onBack = {})
 
     /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
     @PreviewTest
