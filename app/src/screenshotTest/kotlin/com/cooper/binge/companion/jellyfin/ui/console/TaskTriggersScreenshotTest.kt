@@ -12,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_MINUTE
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
+import com.cooper.binge.companion.jellyfin.server.TriggerKind
 
 private val previewTriggers =
     listOf(
@@ -74,4 +75,9 @@ class TaskTriggersScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun newTrigger() = Surface { AddTriggerForm(TasksActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun newWeeklyTrigger() = Surface { AddTriggerForm(TasksActions(), TriggerKind.Weekly) }
 }

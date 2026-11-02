@@ -33,8 +33,8 @@ import com.cooper.binge.companion.jellyfin.R
  * @param initiallyRevealed starts a [secret] field showing its value; only a frame needs it.
  * @param supporting a line under the field, in the error colour when [isError]. Empty keeps the slot without text, so a field
  *   that shows an error later does not change height when it appears; null leaves no slot.
- * @param imeAction [ImeAction.Next] moves focus on, so the last field of a form passes [ImeAction.Done]. Done drops the
- *   keyboard and then runs [onDone]. A multi-line field keeps the keyboard's Enter whatever this says.
+ * @param imeAction [ImeAction.Next] moves focus on, so the last field of a form passes [ImeAction.Done]. Done, or Go for a
+ *   field that connects or signs in, drops the keyboard and then runs [onDone]. A multi-line field keeps the keyboard's Enter whatever this says.
  */
 @Composable
 internal fun ConsoleTextField(
@@ -73,6 +73,10 @@ internal fun ConsoleTextField(
             KeyboardActions(
                 onNext = { focus.moveFocus(FocusDirection.Next) },
                 onDone = {
+                    focus.clearFocus()
+                    onDone?.invoke()
+                },
+                onGo = {
                     focus.clearFocus()
                     onDone?.invoke()
                 },
