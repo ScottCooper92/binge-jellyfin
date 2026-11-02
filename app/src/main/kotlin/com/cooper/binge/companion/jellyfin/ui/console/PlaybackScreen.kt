@@ -96,7 +96,7 @@ fun PlaybackScreen(
         notReady =
             when (state) {
                 PlaybackUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
-                is PlaybackUiState.Failed -> { padding -> ConsoleFailed(state.failure, actions.onRetry, padding) }
+                is PlaybackUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is PlaybackUiState.Ready -> null
             },
     ) { _ ->

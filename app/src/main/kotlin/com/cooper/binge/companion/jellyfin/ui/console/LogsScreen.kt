@@ -18,8 +18,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -29,9 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeFilterChip
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeSearchField
-import com.binge.designsystem.component.BingeTextButton
+import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.LogRow
@@ -79,15 +83,16 @@ fun LogsScreen(
     val open = (state as? LogsUiState.Ready)?.open
     BackHandler(enabled = open != null) { actions.onCloseLog() }
     BingeScreenScaffold(
-        title = open?.name ?: stringResource(R.string.logs_title),
+        title = open?.name?.middleEllipsised() ?: stringResource(R.string.logs_title),
         bar = ScreenBar.Small,
         onBack = if (open != null) actions.onCloseLog else actions.onBack,
+        actions = { if (open != null) ShareAction(open, actions.onShare) },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                LogsUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is LogsUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                LogsUiState.Loading -> ConsoleLoading(inner, FILE_ROWS)
+                is LogsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LogsUiState.Ready -> if (open == null) Files(state.files, actions, inner, zone) else Reader(open, actions, inner)
             }
         }
@@ -106,7 +111,7 @@ private fun Files(
     val time = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale).withZone(zone)
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = inner) {
         if (files.isEmpty()) {
-            item { Text(stringResource(R.string.logs_empty), style = MaterialTheme.typography.bodyLarge) }
+            item { ConsoleEmptyScreen(stringResource(R.string.logs_empty), Icons.Outlined.Description) }
         } else {
             item {
                 ItemGroup(
@@ -143,9 +148,10 @@ private fun Reader(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
     ) {
         when (content) {
-            LogContent.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-            is LogContent.Failed -> ConsoleFailed(content.failure, actions.onRetryOpen, PaddingValues())
+            LogContent.Loading -> ConsoleLoading(PaddingValues(), LOG_ROWS)
+            is LogContent.Failed -> ConsoleFailureScreen(content.failure, actions.onRetryOpen)
             is LogContent.Ready -> {
+                LogIntro(open.name)
                 BingeSearchField(
                     query = open.query,
                     onQueryChange = actions.onQuery,
@@ -161,18 +167,42 @@ private fun Reader(
                     )
                 }
                 Entries(open.visible, actions.onCopy, Modifier.weight(1f))
-                BingeTextButton(
-                    label = stringResource(R.string.logs_share),
-                    leadingIcon = Icons.Outlined.Share,
-                    onClick = { actions.onShare(open.name, open.visible.joinToString("\n") { it.text }) },
-                )
-                Text(
-                    stringResource(R.string.logs_share_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
+    }
+}
+
+/** The log's full name, which the bar may have shortened, and what Share promises, next to the action that makes it. */
+@Composable
+private fun LogIntro(name: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
+        Text(name, style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(R.string.logs_share_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Share, in the bar: there once the log is read, off while it loads or if it failed. Its tooltip says what is shared. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ShareAction(
+    open: OpenLog,
+    onShare: (name: String, text: String) -> Unit,
+) {
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+        tooltip = { PlainTooltip { Text(stringResource(R.string.logs_share_note)) } },
+        state = rememberTooltipState(),
+    ) {
+        ExpressiveIconButton(
+            onClick = { onShare(open.name, open.visible.joinToString("\n") { it.text }) },
+            icon = Icons.Outlined.Share,
+            contentDescription = stringResource(R.string.logs_share_action),
+            enabled = open.content is LogContent.Ready,
+        )
     }
 }
 
@@ -215,4 +245,6 @@ private fun Entries(
     }
 }
 
+private const val FILE_ROWS = 6
+private const val LOG_ROWS = 8
 private const val LOG_KEPT_KB = LOG_TAIL_BYTES / 1024
