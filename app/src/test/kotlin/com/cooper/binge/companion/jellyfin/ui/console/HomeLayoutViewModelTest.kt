@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -158,13 +159,28 @@ class HomeLayoutViewModelTest {
     }
 
     @Test
+    fun `a move that can't reach the server stays, and Retry sends it`() {
+        val vm = made(HomeLayoutViewModel(connection, current))
+        vm.ready()
+        jellyfin.dropped += "/Users/Configuration"
+        vm.move("lib-shows", -1)
+        val failed = vm.settled { (it as? HomeLayoutUiState.Ready)?.save?.failed == true } as HomeLayoutUiState.Ready
+        assertEquals(listOf("lib-shows", "lib-movies", "lib-home"), failed.libraries.map { it.id })
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.settled { (it as? HomeLayoutUiState.Ready)?.save?.status == SaveStatus.Saved } as HomeLayoutUiState.Ready
+        assertEquals(false, saved.save.failed)
+        assertEquals(listOf("lib-shows", "lib-movies", "lib-home"), saved.libraries.map { it.id })
+    }
+
+    @Test
     fun `a save that fails puts the change back and says so`() {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.move("lib-shows", -1)
-        val failed = vm.settled { (it as? HomeLayoutUiState.Ready)?.saveFailed != null } as HomeLayoutUiState.Ready
-        assertEquals(ConsoleFailure.Refused, failed.saveFailed)
+        val failed = vm.settled { (it as? HomeLayoutUiState.Ready)?.refused != null } as HomeLayoutUiState.Ready
+        assertEquals(ConsoleFailure.Refused, failed.refused)
         assertEquals(listOf("lib-movies", "lib-shows", "lib-home"), failed.libraries.map { it.id })
     }
 

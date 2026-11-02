@@ -21,6 +21,7 @@ import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
+import mockwebserver3.SocketEffect
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -47,7 +48,7 @@ data class FakeItem(
 
 /**
  * A Jellyfin server in a [MockWebServer], answering the calls this app makes with the shapes the
- * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back.
+ * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back and [dropped] cuts one off.
  */
 class FakeJellyfin : Dispatcher() {
     val server = MockWebServer()
@@ -55,6 +56,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
     val slow = mutableSetOf<String>()
+
+    /** Paths whose connection is cut as the request arrives, as a server that has gone away. */
+    val dropped = mutableSetOf<String>()
     val notJson = mutableSetOf<String>()
 
     /** The event sockets the app opened, and every message it sent on them. */
@@ -293,6 +297,7 @@ class FakeJellyfin : Dispatcher() {
                 .headersDelay(30, TimeUnit.SECONDS)
                 .build()
         }
+        if (path in dropped) return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
         status[path]?.let { return MockResponse(code = it) }
         if (path == "/socket") return socket(request)
         if (path in notJson) {

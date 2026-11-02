@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -54,7 +55,23 @@ class HomeLayoutScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun notSaved() = HomeLayoutScreen(previewHome.copy(saveFailed = ConsoleFailure.Unreachable), HomeLayoutActions())
+    fun saving() = HomeLayoutScreen(previewHome.copy(save = SaveProgress(SaveStatus.Saving)), HomeLayoutActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun saved() = HomeLayoutScreen(previewHome.copy(save = SaveProgress(SaveStatus.Saved)), HomeLayoutActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun notSaved() = HomeLayoutScreen(previewHome.copy(save = SaveProgress(failed = true)), HomeLayoutActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun refused() = HomeLayoutScreen(previewHome.copy(refused = ConsoleFailure.Refused), HomeLayoutActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

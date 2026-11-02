@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,7 +29,7 @@ class Connection(
     private val client: String,
     private val device: String,
     private val version: String,
-    private val io: CoroutineDispatcher,
+    internal val io: CoroutineDispatcher,
 ) {
     private val refusals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
@@ -43,7 +44,7 @@ class Connection(
     }
 
     /** Lives as long as the connection, so a save outlives the page that started it. */
-    private val saveScope = CoroutineScope(SupervisorJob() + io)
+    internal val saveScope = CoroutineScope(SupervisorJob() + io)
     private val pendingSaves: MutableSet<Job> = ConcurrentHashMap.newKeySet()
 
     init {
@@ -66,6 +67,20 @@ class Connection(
         pendingSaves += job
         job.invokeOnCompletion { pendingSaves -= job }
         job.start()
+    }
+
+    /**
+     * Runs [block], a write a save-as-made engine runs on [saveScope], counted with the saves [awaitSaves] waits for and
+     * ended with the session as [launchSave]'s are.
+     */
+    suspend fun <T> tracked(block: suspend () -> T): T {
+        val job = currentCoroutineContext()[Job]
+        if (job != null) pendingSaves += job
+        try {
+            return block()
+        } finally {
+            if (job != null) pendingSaves -= job
+        }
     }
 
     /** Waits for every save started so far, so a page opened next reads what the last one saved. */

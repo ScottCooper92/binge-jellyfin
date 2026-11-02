@@ -36,13 +36,17 @@ sealed interface HomeLayoutUiState {
         val failure: ConsoleFailure,
     ) : HomeLayoutUiState
 
-    /** The user's libraries and home layout as shown, and the last save that failed and was put back, if any. */
+    /**
+     * The user's libraries and home layout as shown; where their saves stand ([save]); and the last save the server
+     * refused, which was put back ([refused]).
+     */
     data class Ready(
         private val views: List<UserView>,
         val layout: HomeLayout,
         /** The libraries that can be grouped into Movies, Shows and the like, grouped or not: not `/UserViews`, which leaves a grouped one out. */
         val groupable: List<UserView> = emptyList(),
-        val saveFailed: ConsoleFailure? = null,
+        val save: SaveProgress = SaveProgress(),
+        val refused: ConsoleFailure? = null,
         /** The library whose own page is open, by id. */
         val openId: String? = null,
     ) : HomeLayoutUiState {
@@ -67,8 +71,18 @@ class HomeLayoutViewModel(
     val state: StateFlow<HomeLayoutUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(connection, TAG) { shown, failure ->
-            _state.update { (it as? HomeLayoutUiState.Ready)?.copy(layout = shown.homeLayout(), saveFailed = failure) ?: it }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            onProgress = { progress -> _state.update { (it as? HomeLayoutUiState.Ready)?.copy(save = progress) ?: it } },
+        ) { shown, failure ->
+            _state.update {
+                (it as? HomeLayoutUiState.Ready)?.copy(
+                    layout = shown.homeLayout(),
+                    refused = failure?.takeIf { refusal -> refusal == ConsoleFailure.Refused },
+                ) ?: it
+            }
         }
 
     init {
@@ -135,6 +149,10 @@ class HomeLayoutViewModel(
 
     /** Opens library [id]'s own page, or closes it for null. */
     fun open(id: String?) = _state.update { (it as? HomeLayoutUiState.Ready)?.copy(openId = id) ?: it }
+
+    fun retrySave() = saves.retry()
+
+    override fun onCleared() = saves.cleared()
 
     private fun ready() = _state.value as? HomeLayoutUiState.Ready
 

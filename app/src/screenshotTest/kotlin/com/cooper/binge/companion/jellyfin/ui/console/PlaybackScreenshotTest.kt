@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -59,7 +60,23 @@ class PlaybackScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun notSaved() = PlaybackScreen(previewReady.copy(saveFailed = ConsoleFailure.Unreachable), PlaybackActions())
+    fun saving() = PlaybackScreen(previewReady.copy(save = SaveProgress(SaveStatus.Saving)), PlaybackActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun saved() = PlaybackScreen(previewReady.copy(save = SaveProgress(SaveStatus.Saved)), PlaybackActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun notSaved() = PlaybackScreen(previewReady.copy(save = SaveProgress(failed = true)), PlaybackActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun refused() = PlaybackScreen(previewReady.copy(refused = ConsoleFailure.Refused), PlaybackActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
