@@ -568,6 +568,7 @@
     <string name="transcoding_preset">Preajuste del codificador</string>
     <string name="transcoding_threads">Hilos de codificación</string>
     <string name="transcoding_auto">Automático</string>
+    <string name="transcoding_threads_max">Máximo</string>
     <string name="transcoding_none">Ninguno</string>
     <string name="transcoding_deinterlace">Método de desentrelazado</string>
     <string name="transcoding_double_rate">Duplicar la tasa de fotogramas</string>

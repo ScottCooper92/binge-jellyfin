@@ -38,8 +38,10 @@ class TranscodingScreenTest {
         type: String,
         version: String,
         actions: TranscodingActions = TranscodingActions(),
+        threads: Int = -1,
     ) {
-        val state = TranscodingUiState.Ready(encoding(type), server)
+        val config = JsonObject(encoding(type) + ("EncodingThreadCount" to JsonPrimitive(threads)))
+        val state = TranscodingUiState.Ready(config, server)
         compose.setContent { JellyfinTheme { TranscodingScreen(state, actions, JellyfinServerProfile.from(version)) } }
     }
 
@@ -123,6 +125,12 @@ class TranscodingScreenTest {
         compose.onNodeWithText("Use hardware encoding").performScrollTo().performClick()
         compose.onNodeWithText("Downmix volume boost").performScrollTo().performClick()
         assertEquals(listOf("codec mpeg4 true", "EnableHardwareEncoding false", "sheet DownmixBoost"), calls)
+    }
+
+    @Test
+    fun `zero threads reads as Max, not as 0`() {
+        show("nvenc", "10.11.6", threads = 0)
+        compose.onNodeWithText("Max").performScrollTo().assertExists()
     }
 
     @Test

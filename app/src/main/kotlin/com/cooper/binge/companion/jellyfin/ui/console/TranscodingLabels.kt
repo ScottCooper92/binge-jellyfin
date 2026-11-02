@@ -48,7 +48,12 @@ internal fun presetLabel(value: String): String = if (value == "auto") stringRes
 internal fun deinterlaceLabel(value: String): String = value.replaceFirstChar { it.uppercase() }
 
 @Composable
-internal fun threadsLabel(threads: Int): String = if (threads < 0) stringResource(R.string.transcoding_auto) else threads.toString()
+internal fun threadsLabel(threads: Int): String =
+    when {
+        threads < 0 -> stringResource(R.string.transcoding_auto)
+        threads == 0 -> stringResource(R.string.transcoding_threads_max)
+        else -> threads.toString()
+    }
 
 @Composable
 internal fun downmixLabel(value: String): String =

@@ -42,6 +42,9 @@ import kotlinx.serialization.json.JsonPrimitive
 
 private const val AUTO_THREADS = -1
 private const val MAX_THREADS = 16
+
+/** The server stores 0 for "Max". */
+private const val MAX_THREAD_COUNT = 0
 private const val PATH_LINES = 2
 
 /** Whichever sheet is open over the page. */
@@ -281,7 +284,7 @@ internal fun TranscodingPickerSheet(
             }
         TranscodingPicker.Threads -> {
             val current = config.int(ENCODING_THREADS) ?: AUTO_THREADS
-            val all = (listOf(AUTO_THREADS) + (1..MAX_THREADS) + current).distinct()
+            val all = (listOf(AUTO_THREADS) + (1..MAX_THREADS) + MAX_THREAD_COUNT + current).distinct()
             BingeChoiceSheet(
                 title = stringResource(R.string.transcoding_threads),
                 choices = BingeChoiceList.Ready(all.map { BingeChoice(it.toString(), threadsLabel(it)) }),
