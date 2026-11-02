@@ -3,11 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CollectionsBookmark
 import androidx.compose.material.icons.outlined.Explore
@@ -22,10 +18,12 @@ import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,10 +35,8 @@ import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.CHAPTER_RESOLUTIONS
 import com.cooper.binge.companion.jellyfin.server.DISPLAY_COLLECTIONS
@@ -75,6 +71,7 @@ data class LibraryDisplayActions(
     val onAdd: (ListEntry) -> Unit = {},
     val onRemove: (Int) -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -100,21 +97,26 @@ fun LibraryDisplayScreen(
     val ready = state as? LibraryDisplayUiState.Ready
     val list = ready?.editing
     BackHandler(enabled = list != null) { actions.onEdit(null) }
-    BingeScreenScaffold(
+    val host = remember { SnackbarHostState() }
+    FormScreen(
         title = list?.let { stringResource(it.title()) } ?: stringResource(R.string.display_title),
         bar = ScreenBar.Small,
         onBack = if (list != null) ({ actions.onEdit(null) }) else actions.onBack,
-    ) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+        snackbarHostState = host,
+        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        notReady =
             when (state) {
-                LibraryDisplayUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is LibraryDisplayUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is LibraryDisplayUiState.Ready -> {
-                    if (list == null) DisplayBody(state, actions, profile, inner) else ListEditor(list, state, actions, inner)
-                    DisplaySheets(state, actions, folders, folderActions)
+                LibraryDisplayUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+                is LibraryDisplayUiState.Failed -> { padding ->
+                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
-            }
+                is LibraryDisplayUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            if (list == null) DisplayBody(ready, actions, profile) else ListEditor(list, ready, actions)
+            DisplaySheets(ready, actions, folders, folderActions)
+            RefusedMessage(ready.refused, host)
         }
     }
 }
@@ -124,13 +126,9 @@ private fun DisplayBody(
     state: LibraryDisplayUiState.Ready,
     actions: LibraryDisplayActions,
     profile: JellyfinServerProfile,
-    inner: PaddingValues,
 ) {
     var picker by rememberSaveable { mutableStateOf<DisplayPicker?>(null) }
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         Text(stringResource(R.string.display_body), style = MaterialTheme.typography.bodyMedium)
         ItemGroup(title = stringResource(R.string.display_group), rows = displayRows(state, actions, profile) { picker = it })
         ItemGroup(title = stringResource(R.string.display_metadata), rows = metadataRows(state, actions, profile) { picker = it })
@@ -139,7 +137,6 @@ private fun DisplayBody(
             rows = listRows(state, actions, listOf(DisplayList.RemoveWords, DisplayList.RemoveCharacters, DisplayList.ReplaceCharacters)),
         )
         ItemGroup(title = stringResource(R.string.display_paths), rows = listRows(state, actions, listOf(DisplayList.Substitutions)))
-        FailureText(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
     }
     picker?.let { DisplayPickerSheet(it, state, actions) { picker = null } }
 }

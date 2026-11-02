@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DISPLAY_FOLDER_VIEW
@@ -102,12 +103,28 @@ class LibraryDisplayViewModelTest {
     }
 
     @Test
+    fun `a save that can't reach the server keeps the setting, says so, and Retry sends it`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += CONFIGURATION
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        val failed = vm.ready { it.save.failed }
+        assertEquals(JsonPrimitive(true), failed.configuration[DISPLAY_FOLDER_VIEW])
+        assertEquals(null, failed.refused)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.ready { it.save.status == SaveStatus.Saved }
+        assertEquals(false, saved.save.failed)
+        assertEquals(JsonPrimitive(true), saved.configuration[DISPLAY_FOLDER_VIEW])
+    }
+
+    @Test
     fun `a refused save puts the setting back and says so`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
         jellyfin.status[CONFIGURATION] = 500
         vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
-        val failed = vm.ready { it.saveFailed != null }
+        val failed = vm.ready { it.refused != null }
         assertEquals(JsonPrimitive(false), failed.configuration[DISPLAY_FOLDER_VIEW])
     }
 
@@ -157,7 +174,7 @@ class LibraryDisplayViewModelTest {
         vm.edit(DisplayList.RemoveWords)
         jellyfin.status[CONFIGURATION] = 500
         vm.remove(0)
-        val failed = vm.ready { it.saveFailed != null }
+        val failed = vm.ready { it.refused != null }
         assertEquals(listOf(ListEntry("the"), ListEntry("a")), failed.draft)
     }
 
