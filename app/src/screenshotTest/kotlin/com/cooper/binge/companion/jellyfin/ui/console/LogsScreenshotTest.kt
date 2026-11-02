@@ -46,9 +46,10 @@ private fun open(
     level: LogLevel = LogLevel.Debug,
     truncated: Boolean = false,
     entries: List<LogEntry> = previewEntries,
+    content: LogContent = LogContent.Ready(entries, truncated),
 ) = LogsUiState.Ready(
     previewFiles,
-    OpenLog("log_20261031.log", LogContent.Ready(entries, truncated), query, level),
+    OpenLog("log_20261031.log", content, query, level),
 )
 
 /** Logs: the file list across the matrix, then a log open, cut short, searched with no match, and the read states. */
@@ -91,6 +92,22 @@ class LogsScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun noMatch() = LogsScreen(open(query = "nothing like this"), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun noFiles() = LogsScreen(LogsUiState.Ready(emptyList()), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun openLogLoading() = LogsScreen(open(content = LogContent.Loading), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun openLogFailed() = LogsScreen(open(content = LogContent.Failed(ConsoleFailure.Unreachable)), LogsActions(), zone = ZoneOffset.UTC)
 
     @PreviewTest
     @JellyfinScreenStatePreview

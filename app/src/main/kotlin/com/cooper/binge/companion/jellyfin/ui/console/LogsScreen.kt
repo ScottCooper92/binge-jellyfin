@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeFilterChip
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
@@ -86,8 +85,8 @@ fun LogsScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                LogsUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is LogsUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                LogsUiState.Loading -> ConsoleLoading(inner, FILE_ROWS)
+                is LogsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LogsUiState.Ready -> if (open == null) Files(state.files, actions, inner, zone) else Reader(open, actions, inner)
             }
         }
@@ -106,7 +105,7 @@ private fun Files(
     val time = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale).withZone(zone)
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = inner) {
         if (files.isEmpty()) {
-            item { Text(stringResource(R.string.logs_empty), style = MaterialTheme.typography.bodyLarge) }
+            item { ConsoleEmptyScreen(stringResource(R.string.logs_empty), Icons.Outlined.Description) }
         } else {
             item {
                 ItemGroup(
@@ -143,8 +142,8 @@ private fun Reader(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
     ) {
         when (content) {
-            LogContent.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-            is LogContent.Failed -> ConsoleFailed(content.failure, actions.onRetryOpen, PaddingValues())
+            LogContent.Loading -> ConsoleLoading(PaddingValues(), LOG_ROWS)
+            is LogContent.Failed -> ConsoleFailureScreen(content.failure, actions.onRetryOpen)
             is LogContent.Ready -> {
                 BingeSearchField(
                     query = open.query,
@@ -215,4 +214,6 @@ private fun Entries(
     }
 }
 
+private const val FILE_ROWS = 6
+private const val LOG_ROWS = 8
 private const val LOG_KEPT_KB = LOG_TAIL_BYTES / 1024
