@@ -29,6 +29,7 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
+import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.ServerBackup
 import com.binge.designsystem.R as DesR
