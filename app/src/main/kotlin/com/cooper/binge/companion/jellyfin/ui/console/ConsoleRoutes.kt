@@ -144,7 +144,7 @@ private fun ProfilePictureRoute(
     val picture: ProfilePictureViewModel =
         viewModel(factory = viewModelFactory { initializer { ProfilePictureViewModel(graph.connection, newRoute) } })
     val state by picture.state.collectAsStateWithLifecycle()
-    val resolver = LocalContext.current.contentResolver
+    val resolver = LocalContext.current.applicationContext.contentResolver
     val picker =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             // Nothing picked is the user backing out, not a failure.

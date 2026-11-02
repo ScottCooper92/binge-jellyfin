@@ -382,7 +382,7 @@ class JellyfinViewModelTest {
     fun `a gates-only refresh picks up a change without reading the library again`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
-        vm.await<UiState.SignedIn> { it.account.isRead && !it.refreshing }
+        vm.await<UiState.SignedIn> { it.account.isRead && !it.refreshing && it.card.tmdb != null }
         val libraryReads = jellyfin.hits("/Items")
         jellyfin.quickConnectEnabled = false
         vm.refresh(gatesOnly = true)

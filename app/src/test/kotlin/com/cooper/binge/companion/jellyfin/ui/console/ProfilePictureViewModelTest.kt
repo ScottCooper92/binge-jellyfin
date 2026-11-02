@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.graphics.Bitmap
+import android.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
@@ -26,6 +27,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.ByteArrayOutputStream
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -165,6 +167,28 @@ class ProfilePictureViewModelTest {
                 .decodeByteArray(small, 0, small!!.size)
                 .width,
         )
+    }
+
+    @Test
+    fun `a photo saved sideways with an EXIF orientation is turned upright`() {
+        val file = File.createTempFile("oriented", ".jpg")
+        try {
+            file.outputStream().use { jpeg().let(it::write) }
+            assertTrue(exifRotation(file.readBytes()).isIdentity)
+            ExifInterface(file.absolutePath).apply {
+                setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_ROTATE_90.toString())
+                saveAttributes()
+            }
+            val turn = exifRotation(file.readBytes())
+            assertFalse(turn.isIdentity)
+            // A quarter turn clockwise takes the point at the right of the origin to below it.
+            val point = floatArrayOf(1f, 0f)
+            turn.mapPoints(point)
+            assertEquals(0f, point[0], 0.01f)
+            assertEquals(1f, point[1], 0.01f)
+        } finally {
+            file.delete()
+        }
     }
 
     private companion object {

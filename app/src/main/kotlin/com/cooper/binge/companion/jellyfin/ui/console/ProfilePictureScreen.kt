@@ -89,13 +89,6 @@ fun ProfilePictureScreen(
                             ),
                         ),
                 )
-                if (ready.unreadable) {
-                    androidx.compose.material3.Text(
-                        stringResource(R.string.profile_picture_unreadable),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
                 if (ready.picture != null) {
                     BingeOutlinedButton(
                         label = stringResource(R.string.profile_picture_remove),
@@ -107,6 +100,7 @@ fun ProfilePictureScreen(
                 }
             }
             RefusedMessage(ready.refused, host, R.string.profile_picture_not_changed)
+            SnackbarMessage(if (ready.unreadable) stringResource(R.string.profile_picture_unreadable) else null, host)
             if (ready.confirmingRemove) RemovePictureDialog(actions)
         }
     }
