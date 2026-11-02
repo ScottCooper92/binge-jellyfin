@@ -82,7 +82,6 @@ private fun RepositoryList(
             PageIntro(stringResource(R.string.repositories_body))
         }
         item(key = "repositories") { ItemGroup(title = null, rows = state.repositories.map { it.row(state, actions) }) }
-        item(key = "failure") { FailureLine(state.actionFailed) }
     }
 }
 

@@ -19,10 +19,12 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -55,9 +57,6 @@ data class PluginsActions(
     val onRestart: () -> Unit = {},
     val onRetry: () -> Unit = {},
 )
-
-/** Lines a failed change's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
 
 internal const val REPOSITORIES_TAB = 2
 
@@ -107,10 +106,12 @@ fun PluginsScreen(
         }
     val leaveDetail: () -> Unit = { if (tab == 0) actions.onOpen(null) else catalogActions.onOpen(null) }
     BackHandler(enabled = detail != null, onBack = leaveDetail)
+    val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = detail ?: stringResource(R.string.plugins_title),
         bar = ScreenBar.Small,
         onBack = if (detail != null) leaveDetail else onBack,
+        snackbarHostState = host,
         bottomBar = {
             // Only the Repositories tab creates anything; the other tabs have no footer.
             CreateFooter(
@@ -138,6 +139,11 @@ fun PluginsScreen(
                 } else {
                     inner
                 }
+            // A change the server didn't take is said once, by the tab that made it. One message per
+            // state, so switching tabs doesn't change a key and say an old refusal again.
+            RefusedMessage((installed as? PluginsUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
+            RefusedMessage((catalog as? CatalogUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
+            RefusedMessage((repositories as? RepositoriesUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
             Column(Modifier.fillMaxSize()) {
                 if (detail == null) {
                     BingeTabRow(
@@ -219,7 +225,6 @@ private fun InstalledList(
             }
         }
         item(key = "plugins") { ItemGroup(title = null, rows = state.plugins.map { it.row(state, actions) }) }
-        item(key = "failure") { FailureLine(state.actionFailed) }
     }
 }
 
@@ -292,7 +297,6 @@ private fun PluginPage(
                     ),
             )
         }
-        item { FailureLine(state.actionFailed) }
         if (plugin.canUninstall) {
             item {
                 BingeOutlinedButton(
@@ -323,17 +327,5 @@ internal fun UninstallDialog(
         onDismissRequest = { actions.onAskUninstall(null) },
         destructive = true,
         inWindow = inWindow,
-    )
-}
-
-/** The last change that didn't go through, in a fixed height so it never moves the rows. */
-@Composable
-internal fun FailureLine(failure: ConsoleFailure?) {
-    Text(
-        text = failure?.let { stringResource(R.string.plugins_not_changed, it.text()) }.orEmpty(),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.error,
-        minLines = STATUS_LINES,
-        maxLines = STATUS_LINES,
     )
 }

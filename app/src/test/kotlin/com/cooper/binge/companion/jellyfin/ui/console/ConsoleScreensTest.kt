@@ -334,7 +334,6 @@ class ConsoleScreensTest {
         compose.onNodeWithContentDescription("Stop").performClick()
         assertTrue(stopped)
         val notStarted = "The scan didn't start. Couldn't reach your Jellyfin server"
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(notStarted))
         compose.onNodeWithText(notStarted).assertExists()
         state = state.copy(board = TaskBoard(listOf(scanTask)), scanning = emptyMap(), outcomes = mapOf("m" to JobOutcome.Succeeded))
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("Done"))

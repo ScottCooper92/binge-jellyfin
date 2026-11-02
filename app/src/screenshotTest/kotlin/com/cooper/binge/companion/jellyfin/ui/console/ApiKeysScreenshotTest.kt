@@ -67,11 +67,6 @@ class ApiKeysScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
-    @Composable
-    fun failed() = ApiKeysScreen(previewReady.copy(actionFailed = ConsoleFailure.Unreachable), ApiKeysActions(), now = NOW)
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
     @JellyfinScreenStateLightPreview
     @JellyfinSpanishPreviews
     @Composable
