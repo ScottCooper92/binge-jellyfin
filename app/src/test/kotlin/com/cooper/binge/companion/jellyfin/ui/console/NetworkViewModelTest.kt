@@ -20,6 +20,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -342,14 +343,20 @@ class NetworkViewModelTest {
         val vm = vm()
         vm.ready()
         // An as-made change is pending (its write waits out a short delay) when Save changes is pressed, and the page is left.
+        // The as-made change is sent first, and held in flight, so Save changes is certain to be waiting behind it when the
+        // page goes. (Without the hold the write can finish before the test looks, and then it is not the case it names.)
+        val flush = jellyfin.hold(NETWORK, method = "POST")
         vm.setSwitch("AutoDiscovery", false, form = false)
         vm.saveNumber(NetworkNumber.PublicHttpPort, "8000")
         vm.save()
+        flush.awaitArrival()
         vm.ready { it.committing }
         vm.viewModelScope.cancel()
-        waitFor(NETWORK, 1)
-        assertEquals(8000, sent().getValue("PublicHttpPort").jsonPrimitive.int)
-        assertEquals(false, sent().getValue("AutoDiscovery").jsonPrimitive.boolean)
+        flush.release()
+        // The confirmed save is the write that carries the new port. The count of writes cannot say which one it is: the
+        // as-made write before it is a write too, and it still has the old port.
+        val confirmed = jellyfin.awaitBody(NETWORK) { it["PublicHttpPort"]?.jsonPrimitive?.intOrNull == 8000 }
+        assertEquals(false, confirmed.getValue("AutoDiscovery").jsonPrimitive.boolean)
     }
 
     @Test
