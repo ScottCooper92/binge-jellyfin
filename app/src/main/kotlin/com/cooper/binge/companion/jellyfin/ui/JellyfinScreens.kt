@@ -318,6 +318,7 @@ private fun SignedIn(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
+        item { ServerHomeCard(state) }
         item { ServerGroup(state, actions) }
         // An administrator's own settings are in the account, behind the avatar. Everyone else has nothing else to
         // show, so their home is their account: the same rows, inline, and Sign out last.
@@ -351,35 +352,19 @@ internal fun SignOutConfirm(
     }
 }
 
-/**
- * Where and who: the server, marked when it is not encrypted, and the user, marked when an admin.
- * Then what's playing on it.
- */
+/** Who is signed in, and what's playing on the server, under the server card. */
 @Composable
 private fun ServerGroup(
     state: UiState.SignedIn,
     actions: Actions,
 ) {
-    val session = state.session
     ItemGroup(
         title = stringResource(R.string.settings_server),
         rows =
             listOfNotNull(
                 ListItem(
-                    icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
-                    label = session.serverName.ifBlank { session.baseUrl },
-                    detail =
-                        if (state.cleartext) {
-                            stringResource(R.string.server_detail_cleartext, session.baseUrl)
-                        } else {
-                            stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
-                        },
-                    supportingMaxLines = ADDRESS_LINES,
-                    clickable = false,
-                ),
-                ListItem(
                     icon = Icons.Outlined.Person,
-                    label = session.userName,
+                    label = state.session.userName,
                     detail =
                         stringResource(
                             if (state.isAdministrator) R.string.settings_signed_in_admin else R.string.settings_signed_in_as,

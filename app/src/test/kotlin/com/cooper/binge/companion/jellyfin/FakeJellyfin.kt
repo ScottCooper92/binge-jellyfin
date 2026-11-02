@@ -241,6 +241,9 @@ class FakeJellyfin : Dispatcher() {
         """{"ServerName":"truenas","Version":"10.11.6","LocalAddress":"http://192.168.1.10:8096","SystemArchitecture":"X64",""" +
             """"OperatingSystemDisplayName":"Linux","HasUpdateAvailable":false,"HasPendingRestart":true,"CanSelfRestart":true}"""
 
+    /** `/Items/Counts`, as the signed-in user's library answers it. */
+    var itemCounts = """{"MovieCount":120,"SeriesCount":14,"EpisodeCount":900,"SongCount":0}"""
+
     /** How many `/System/Info/Public` reads a restart refuses, as the server goes down and comes back. */
     var restartDownPolls = 2
     private var down = 0
@@ -308,6 +311,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 503)
             }
             path == "/System/Info" -> json(systemInfo)
+            path == "/Items/Counts" -> json(itemCounts)
             path == "/System/Configuration" && request.method == "POST" -> {
                 serverConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)

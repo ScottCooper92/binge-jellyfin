@@ -137,6 +137,19 @@ class JellyfinScreenshotTest {
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
 
+    /** The server card with everything it can flag, on an unencrypted address: an administrator's, at every size. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun serverCardAlerts() = JellyfinRoot(previewSignedInAdminAlerts, Actions())
+
+    /** The card before its figures arrive: a placeholder in each, and no Connected. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun serverCardLoading() = JellyfinRoot(previewSignedInCardLoading, Actions())
+
     /** An administrator's account, behind the avatar: the rows everyone else has inline on their home. */
     @PreviewTest
     @JellyfinScreenPreviews

@@ -13,6 +13,8 @@ data class ServerInfo(
     val restartPending: Boolean,
     /** Whether the server can restart itself; one that can't has to be restarted where it runs. */
     val canRestart: Boolean,
+    /** Whether the server is stopping. Absent on a release that doesn't say, which reads as no. */
+    val shuttingDown: Boolean = false,
 )
 
 suspend fun JellyfinClient.serverInfo(): ServerInfo {
@@ -26,6 +28,7 @@ suspend fun JellyfinClient.serverInfo(): ServerInfo {
         updateAvailable = json.bool("HasUpdateAvailable") == true,
         restartPending = json.bool("HasPendingRestart") == true,
         canRestart = json.bool("CanSelfRestart") == true,
+        shuttingDown = json.bool("IsShuttingDown") == true,
     )
 }
 

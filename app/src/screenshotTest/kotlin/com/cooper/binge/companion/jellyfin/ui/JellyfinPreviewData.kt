@@ -58,7 +58,13 @@ private val session =
         token = "not-a-token",
     )
 
-val previewSignedIn = UiState.SignedIn(session = session, titles = 1_284)
+/** What a server card shows once it has read everything a non-administrator may see. */
+private val previewCard = ServerCardState(connected = true, playing = 2, movies = 842, series = 120)
+
+val previewSignedIn = UiState.SignedIn(session = session, titles = 1_284, card = previewCard)
+
+/** The card before any read has come in: a placeholder in each total, and no Connected. */
+val previewSignedInCardLoading = previewSignedIn.copy(card = ServerCardState())
 
 val previewSignedInChecking = UiState.SignedIn(session = session, titles = null, refreshing = true)
 
@@ -73,4 +79,9 @@ val previewSignInUnreachable = previewSignIn.copy(password = "hunter2", password
 val previewSignedInAdmin =
     previewSignedIn.copy(
         account = JellyfinAccount(previewSignedIn.session.userName, buildJsonObject { put("IsAdministrator", true) }),
+        card = previewCard.copy(users = 5),
     )
+
+/** An administrator's card with everything it can flag: an update, a restart waiting and a server on its way down. */
+val previewSignedInAdminAlerts =
+    previewSignedInAdmin.copy(card = previewSignedInAdmin.card.copy(updateAvailable = true, restartPending = true, shuttingDown = true))
