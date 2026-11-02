@@ -232,6 +232,21 @@ class FakeJellyfin : Dispatcher() {
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
     var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""
 
+    /**
+     * The Live TV configuration, as `/System/Configuration/livetv` answers it: an M3U tuner whose address carries its account, an
+     * HDHomeRun, an XMLTV guide and a Schedules Direct one whose `Password` is a stored hash.
+     */
+    var liveTvConfiguration =
+        """{"GuideDays":7,"RecordingPath":"/recordings","TunerHosts":[""" +
+            """{"Id":"t1","Type":"m3u","FriendlyName":"IPTV","Url":"https://iptv.example:8443/get.php?username=bob&password=hunter2"},""" +
+            """{"Id":"t2","Type":"hdhomerun","FriendlyName":"","Url":"http://192.168.1.50"}],"ListingProviders":[""" +
+            """{"Id":"g1","Type":"xmltv","Path":"/config/guide.xml"},""" +
+            """{"Id":"g2","Type":"SchedulesDirect","Username":"alice","Password":"5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8"}]}"""
+
+    /** What `/LiveTv/GuideInfo` answers, or the status code that replaces it. */
+    var guideInfo = """{"StartDate":"2026-11-01T00:00:00.0000000Z","EndDate":"2026-11-08T00:00:00.0000000Z"}"""
+    var guideInfoStatus = 200
+
     /** The user's password, as `/Users/Password` checks and changes it. */
     var password = "old-secret"
 
@@ -494,6 +509,12 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Configuration/branding" -> json(brandingConfiguration)
+            path == "/System/Configuration/livetv" && request.method == "POST" -> {
+                liveTvConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/livetv" -> json(liveTvConfiguration)
+            path == "/LiveTv/GuideInfo" -> if (guideInfoStatus == 200) json(guideInfo) else MockResponse(code = guideInfoStatus)
             path == "/Localization/Countries" ->
                 json(
                     """[{"Name":"GB","DisplayName":"United Kingdom","TwoLetterISORegionName":"GB"},""" +

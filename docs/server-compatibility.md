@@ -80,6 +80,7 @@ older server shows less rather than failing on a call it can't answer.
 | Changing their own password | users of Jellyfin's own provider, not LDAP or another plugin | `hasLocalPassword` |
 | Controlling a stream on someone else's session (pause, seek, next, stop, volume, mute, message) | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers`, and the session in `GET /Sessions?controllableByUserId=` |
 | Controlling a session on a shared device (nobody signed in on it) | users with `EnableSharedDeviceControl`; an administrator has no shortcut | `canControlSharedDevices`, and the same list |
+| Seeing the server's Live TV tuners and guide data | users with `EnableLiveTvManagement`; an administrator whose flag is off is refused, as the server refuses them | `canManageLiveTv`. The guide end also needs `EnableLiveTvAccess` (`canAccessLiveTv`) |
 | Approving a Quick Connect code | everyone, while Quick Connect is on | `profile.quickConnect` |
 
 ### The server does not check who controls a session
@@ -106,3 +107,13 @@ session the user tapped, never one derived from "the current session". A control
    the table above.
 4. Gate the page or the row on the capability. A setting a server doesn't have is hidden, not
    disabled.
+
+## Live TV
+
+Read from Jellyfin's source at 10.8.13, 10.9.11, 10.10.7 and 10.11.0. The endpoint set, each route's verb and its policy, are the same at all four releases, and so are the properties of `LiveTvOptions`.
+
+- **Two policies.** `LiveTvManagement` (`EnableLiveTvManagement`) guards the writes: `POST` and `DELETE TunerHosts`, `POST` and `DELETE ListingProviders`, `POST ChannelMappings`, `POST Tuners/{id}/Reset` and `GET Tuners/Discover`. `LiveTvAccess` (`EnableLiveTvAccess`) guards the lookups an add form needs: `GET TunerHosts/Types`, `ListingProviders/Lineups`, `ListingProviders/SchedulesDirect/Countries`, `ChannelMappingOptions`, `GuideInfo` and `Info`. Neither has an administrator shortcut. A user with management and no access is refused every lookup.
+- **No list endpoint.** The tuner hosts and the listing providers are the `TunerHosts` and `ListingProviders` arrays of `LiveTvOptions`, at `GET /System/Configuration/livetv`, which any signed-in user may read. Writing that configuration (`POST`) is `RequiresElevation`: an administrator.
+- **Secrets in that read.** A Schedules Direct provider's `Password` (a SHA-1 hex) comes back in it, and an M3U tuner's `Url` often carries the provider's account. The page never reads the `Password`, and shows a web address as its scheme, host and port only.
+- **`TunerHostInfo` grows.** `IgnoreDts` from 10.9; `AllowFmp4TranscodingContainer`, `AllowStreamSharing` and `FallbackMaxStreamingBitrate` from 10.10; `ReadAtNativeFramerate` from 10.11.
+- **Refresh Guide** (`RefreshGuide`, category "Live TV") is a scheduled task, on the Tasks page. Adding or deleting a listing provider queues it.
