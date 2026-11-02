@@ -95,7 +95,7 @@ class BackupsViewModel(
         if (ready.creating) return
         update { copy(choosing = null) }
         connection.setBackupCreation(BackupCreation.Creating)
-        connection.launchSave {
+        connection.launchBackup {
             val result = connection.consoleCall(TAG) { _, client -> client.createBackup(options) }
             connection.setBackupCreation(result.fold({ BackupCreation.Created(it) }, { BackupCreation.Failed(it) }))
         }

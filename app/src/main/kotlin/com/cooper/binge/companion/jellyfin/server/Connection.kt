@@ -64,6 +64,7 @@ class Connection(
     /** Lives as long as the connection, so a save outlives the page that started it. */
     internal val saveScope = CoroutineScope(SupervisorJob() + io)
     private val pendingSaves: MutableSet<Job> = ConcurrentHashMap.newKeySet()
+    private val backupJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet()
     private val creations = MutableStateFlow<BackupCreation>(BackupCreation.Idle)
 
     /** The backup being made, or the last one's result until it is dismissed: held here so leaving the page does not lose it. */
@@ -82,6 +83,7 @@ class Connection(
                 .drop(1)
                 .collect {
                     pendingSaves.toList().forEach { it.cancel() }
+                    backupJobs.toList().forEach { it.cancel() }
                     creations.value = BackupCreation.Idle
                 }
         }
@@ -95,6 +97,17 @@ class Connection(
         val job = saveScope.launch(start = CoroutineStart.LAZY) { block() }
         pendingSaves += job
         job.invokeOnCompletion { pendingSaves -= job }
+        job.start()
+    }
+
+    /**
+     * Runs [block], the making of a backup, past the page that started it and until the session changes. It is not a settings
+     * write, so [awaitSaves] does not wait for it: a page opened meanwhile must not sit on its skeleton until the archive is made.
+     */
+    fun launchBackup(block: suspend () -> Unit) {
+        val job = saveScope.launch(start = CoroutineStart.LAZY) { block() }
+        backupJobs += job
+        job.invokeOnCompletion { backupJobs -= job }
         job.start()
     }
 

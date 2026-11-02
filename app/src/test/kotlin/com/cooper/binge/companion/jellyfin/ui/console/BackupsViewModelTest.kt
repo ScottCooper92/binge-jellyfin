@@ -186,6 +186,18 @@ class BackupsViewModelTest {
     }
 
     @Test
+    fun `a backup being made does not hold up the saves other pages wait for`() {
+        jellyfin.backupCreateDelayMillis = 1500
+        val vm = viewModel()
+        vm.ready()
+        vm.askCreate(true)
+        vm.create()
+        assertTrue(vm.ready { it.creating }.creating)
+        runBlocking { withTimeout(500) { connection.awaitSaves() } }
+        assertTrue(connection.backupCreation.value is BackupCreation.Creating)
+    }
+
+    @Test
     fun `a restore asks first, sends the file name, follows the server down and back, and reads the list again`() {
         val vm = viewModel()
         val target = vm.ready().backups.last()
