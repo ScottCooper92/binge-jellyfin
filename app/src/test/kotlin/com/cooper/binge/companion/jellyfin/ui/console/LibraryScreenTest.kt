@@ -159,6 +159,14 @@ class LibraryScreenTest {
     }
 
     @Test
+    fun `the languages page lists the languages under the first letter of their names`() {
+        show("movies", """{"SubtitleDownloadLanguages":[]}""", cultures = languages, page = LibraryPage.Languages)
+        compose.onNodeWithText("E").assertExists()
+        compose.onNodeWithText("F").assertExists()
+        compose.onNodeWithText("S").assertExists()
+    }
+
+    @Test
     fun `the languages page says so when the server listed no languages`() {
         show("movies", """{"SubtitleDownloadLanguages":[]}""", page = LibraryPage.Languages)
         compose.onNodeWithText("The server did not list any languages.").assertExists()

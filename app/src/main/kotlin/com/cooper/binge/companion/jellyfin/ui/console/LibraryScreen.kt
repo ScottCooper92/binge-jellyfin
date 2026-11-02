@@ -88,6 +88,8 @@ fun LibraryScreen(
         bar = ScreenBar.Small,
         onBack = back,
         snackbarHostState = host,
+        // The languages are a long list, so that page lays itself out as a lazy list under the bar instead of in a scrolling form.
+        scrolling = page != LibraryPage.Languages,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
@@ -95,11 +97,11 @@ fun LibraryScreen(
                 is LibraryUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is LibraryUiState.Ready -> null
             },
-    ) { _ ->
+    ) { padding ->
         if (ready != null) {
             when (page) {
                 LibraryPage.Main -> LibraryBody(ready, actions, profile)
-                LibraryPage.Languages -> LanguagesPage(ready, actions)
+                LibraryPage.Languages -> LanguagesPage(ready, actions, padding)
                 is LibraryPage.Providers -> ProvidersPage(page.group, ready, actions)
                 is LibraryPage.One -> ProviderPage(page, ready, actions)
             }
