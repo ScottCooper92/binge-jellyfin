@@ -37,6 +37,7 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.CHAPTER_RESOLUTIONS
 import com.cooper.binge.companion.jellyfin.server.DISPLAY_COLLECTIONS
@@ -103,7 +104,7 @@ fun LibraryDisplayScreen(
         bar = ScreenBar.Small,
         onBack = if (list != null) ({ actions.onEdit(null) }) else actions.onBack,
         snackbarHostState = host,
-        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
                 LibraryDisplayUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
