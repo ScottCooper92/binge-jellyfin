@@ -23,8 +23,7 @@ import com.cooper.binge.companion.jellyfin.server.networkKeys
 import com.cooper.binge.companion.jellyfin.server.networkSettings
 import com.cooper.binge.companion.jellyfin.server.normalBaseUrl
 import com.cooper.binge.companion.jellyfin.server.saveNetworkConfiguration
-import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
-import com.cooper.binge.companion.jellyfin.server.serverConfiguration
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -125,27 +124,18 @@ sealed interface NetworkUiState {
     ) : NetworkUiState
 }
 
-/**
- * The page's unsaved changes, over the configuration the server last accepted. The changes are by their key in the network
- * configuration, [NETWORK_BASE_URL] included, which a release from 10.9 keeps in the server's own configuration ([server]).
- */
+/** The page's unsaved changes, over the configuration the server last accepted. The changes are by their key in the network configuration. */
 internal class NetworkDraft(
     private val names: NetworkKeys,
 ) {
-    /** The server's own configuration, read for the base URL it keeps from 10.9. */
-    var server = JsonObject(emptyMap())
-
     var changes = emptyMap<String, JsonElement>()
         private set
 
     /** The settings as shown: [saved] (what the server has), with the changes over it. */
-    fun shown(saved: JsonObject): NetworkSettings = network(saved).networkSettings(names, baseUrl(changes))
+    fun shown(saved: JsonObject): NetworkSettings = network(saved).networkSettings(names)
 
     /** The settings as the server has them: [saved] alone. */
-    fun settings(saved: JsonObject): NetworkSettings = saved.networkSettings(names, baseUrl(emptyMap()))
-
-    private fun baseUrl(over: Map<String, JsonElement>): String? =
-        if (names.baseUrlInServer) ((over[NETWORK_BASE_URL] ?: server[NETWORK_BASE_URL]) as? JsonPrimitive)?.content.orEmpty() else null
+    fun settings(saved: JsonObject): NetworkSettings = saved.networkSettings(names)
 
     /** Keeps [value] for [key] until Save changes, or drops it if [saved] already has it. */
     fun put(
@@ -153,43 +143,25 @@ internal class NetworkDraft(
         value: JsonElement,
         saved: JsonObject,
     ) {
-        val has = if (key == NETWORK_BASE_URL && names.baseUrlInServer) server[key] else saved[key]
-        changes = if (has == value) changes - key else changes + (key to value)
+        changes = if (saved[key] == value) changes - key else changes + (key to value)
     }
 
-    /** The network configuration to write: [saved] with the changes over it, the base URL aside when the server keeps it elsewhere. */
-    fun network(saved: JsonObject): JsonObject = JsonObject(saved + networkChanges())
+    /** The network configuration to write: [saved] with the changes over it. */
+    fun network(saved: JsonObject): JsonObject = JsonObject(saved + changes)
 
     /** A new certificate password with HTTPS on is a change that can leave the server unable to serve it. */
     fun passwordImpact(saved: JsonObject): Set<NetworkImpact> =
         if (NETWORK_CERTIFICATE_PASSWORD in changes && shown(saved).enableHttps) setOf(NetworkImpact.Certificate) else emptySet()
 
-    fun hasNetworkChanges(): Boolean = networkChanges().isNotEmpty()
-
-    /** The changes that go in the network configuration: all of them, but the base URL when the server keeps that elsewhere. */
-    private fun networkChanges(): Map<String, JsonElement> = if (names.baseUrlInServer) changes - NETWORK_BASE_URL else changes
-
-    /** The server's configuration with the new base URL, or null if there is none to write. */
-    fun serverWithBaseUrl(): JsonObject? =
-        changes[NETWORK_BASE_URL]?.takeIf { names.baseUrlInServer }?.let {
-            JsonObject(
-                server + (NETWORK_BASE_URL to it),
-            )
-        }
+    fun hasNetworkChanges(): Boolean = changes.isNotEmpty()
 
     fun clear() {
         changes = emptyMap()
     }
 
-    /** The network changes were saved: they are the server's now. */
+    /** The changes were saved: they are the server's now. */
     fun networkSaved() {
-        changes = changes - networkChanges().keys
-    }
-
-    /** The base URL was saved into [configuration]. */
-    fun serverSaved(configuration: JsonObject) {
-        server = configuration
-        changes = changes - NETWORK_BASE_URL
+        changes = emptyMap()
     }
 }
 
@@ -237,13 +209,10 @@ class NetworkViewModel(
             unsaved.clear()
             _state.value =
                 connection
-                    .consoleCall(TAG) { _, client ->
-                        val network = client.networkConfiguration()
-                        network to if (names.baseUrlInServer) client.serverConfiguration() else JsonObject(emptyMap())
-                    }.fold(
-                        onSuccess = { (network, configuration) ->
+                    .consoleCall(TAG) { _, client -> client.networkConfiguration() }
+                    .fold(
+                        onSuccess = { network ->
                             saves.loaded(network)
-                            unsaved.server = configuration
                             NetworkUiState.Ready(unsaved.shown(network), names)
                         },
                         onFailure = { NetworkUiState.Failed(it.consoleFailure()) },
@@ -282,7 +251,7 @@ class NetworkViewModel(
     ) {
         val value = JsonArray(parseHosts(text).map(::JsonPrimitive))
         update { copy(sheet = null) }
-        if (field.form) drafted(field.key, value) else saves.set(field.key, value)
+        if (field.form) drafted(field.key, value) else asMade(field.key, value)
     }
 
     /** A switch. One of the page's form, whose wrong value can lock a client out, waits for Save changes; the others save as made. */
@@ -290,7 +259,12 @@ class NetworkViewModel(
         key: String,
         on: Boolean,
         form: Boolean,
-    ) = if (form) drafted(key, JsonPrimitive(on)) else saves.set(key, JsonPrimitive(on))
+    ) = if (form) drafted(key, JsonPrimitive(on)) else asMade(key, JsonPrimitive(on))
+
+    /** A change that saves as made waits out a Save changes in flight: both write this configuration, and one would overwrite the other. */
+    private val asMade: (String, JsonElement) -> Unit = { key, value ->
+        if ((_state.value as? NetworkUiState.Ready)?.committing != true) saves.set(key, value)
+    }
 
     private fun drafted(
         key: String,
@@ -322,46 +296,36 @@ class NetworkViewModel(
     }
 
     /**
-     * Writes the changes. Whole configurations go back, with only these keys changed, so the certificate password and any
-     * option this app doesn't know go back as they came. It runs on the connection's scope, so leaving the page doesn't cancel it.
+     * Writes the changes. The whole configuration goes back, with only these keys changed, so the certificate password and any
+     * option this app doesn't know go back as they came. A save-as-made change still waiting is sent first, so the two writes
+     * don't overwrite each other. It runs on the connection's scope, so leaving the page doesn't cancel it.
      */
     private fun commit() {
-        val network = unsaved.network(saves.shown)
-        val configuration = unsaved.serverWithBaseUrl()
-        val writeNetwork = unsaved.hasNetworkChanges()
+        if (!unsaved.hasNetworkChanges()) return
+        val owed = saves.settle()
         update { copy(committing = true, formFailed = null) }
         connection.launchSave {
+            owed.await()
+            val network = viewModelScope.async { unsaved.network(saves.shown) }.await()
             val result =
-                attempt {
-                    if (writeNetwork) connection.consoleCall(TAG) { _, client -> client.saveNetworkConfiguration(network) }.getOrThrow()
-                    if (writeNetwork) viewModelScope.launch { adopt(network, null) }
-                    if (configuration != null) {
-                        connection.consoleCall(TAG) { _, client -> client.saveServerConfiguration(configuration) }.getOrThrow()
-                    }
-                }
+                attempt { connection.consoleCall(TAG) { _, client -> client.saveNetworkConfiguration(network) }.getOrThrow() }
             viewModelScope.launch {
                 result
-                    .onSuccess { adopt(null, configuration) }
+                    .onSuccess { adopt(network) }
                     .onFailure { error -> update { copy(committing = false, formFailed = error.consoleFailure()) } }
             }
         }
     }
 
     /** What was saved is the server's now: its changes are no longer changes, and the server needs a restart to apply them. */
-    private fun adopt(
-        network: JsonObject?,
-        configuration: JsonObject?,
-    ) {
-        network?.let {
-            saves.loaded(it)
-            unsaved.networkSaved()
-        }
-        configuration?.let(unsaved::serverSaved)
+    private fun adopt(network: JsonObject) {
+        saves.loaded(network)
+        unsaved.networkSaved()
         update {
             copy(
                 settings = unsaved.shown(saves.shown),
                 draft = unsaved.changes.keys,
-                committing = network != null && committing,
+                committing = false,
                 restartNeeded = true,
                 reconnect = cutOff,
             )

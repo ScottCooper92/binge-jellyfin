@@ -142,7 +142,7 @@ class FakeJellyfin : Dispatcher() {
             """"EnableIPv4":true,"EnableIPv6":false,"EnableRemoteAccess":true,"LocalNetworkSubnets":[],"LocalNetworkAddresses":[],""" +
             """"KnownProxies":[],"IgnoreVirtualInterfaces":true,"VirtualInterfaceNames":["veth"],""" +
             """"EnablePublishedServerUriByRequest":false,""" +
-            """"PublishedServerUriBySubnet":[],"RemoteIPFilter":[],"IsRemoteIPFilterBlacklist":false,"FutureOption":{"keep":"me"}}"""
+            """"PublishedServerUriBySubnet":[],"BaseUrl":"","RemoteIPFilter":[],"IsRemoteIPFilterBlacklist":false,"FutureOption":{"keep":"me"}}"""
 
     /** The encoding configuration, as `/System/Configuration/encoding` answers it and a save replaces it. */
     var encodingConfiguration =

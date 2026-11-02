@@ -8,7 +8,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * The names the server's network configuration (`/System/Configuration/network`) uses, which differ by release: 10.8 calls the
  * ports `HttpServerPortNumber`, `HttpsPortNumber` and `PublicPort`, and IPv4 and IPv6 `EnableIPV4` and `EnableIPV6`; from 10.9 they are
  * `InternalHttpPort`, `InternalHttpsPort`, `PublicHttpPort`, `EnableIPv4` and `EnableIPv6`. The base URL is in this document
- * on 10.8 and in the server's own configuration from 10.9 ([baseUrlInServer]).
+ * on every release.
  */
 data class NetworkKeys(
     val httpPort: String,
@@ -17,7 +17,6 @@ data class NetworkKeys(
     val publicHttpsPort: String,
     val ipv4: String,
     val ipv6: String,
-    val baseUrlInServer: Boolean,
     /** Whether this release has the UPnP port mapping switch, which 10.11 marks no longer supported. */
     val upnp: Boolean,
 )
@@ -31,11 +30,10 @@ fun networkKeys(profile: JellyfinServerProfile): NetworkKeys =
             "PublicHttpsPort",
             "EnableIPv4",
             "EnableIPv6",
-            true,
             profile.hasUpnpOption,
         )
     } else {
-        NetworkKeys("HttpServerPortNumber", "HttpsPortNumber", "PublicPort", "PublicHttpsPort", "EnableIPV4", "EnableIPV6", false, true)
+        NetworkKeys("HttpServerPortNumber", "HttpsPortNumber", "PublicPort", "PublicHttpsPort", "EnableIPV4", "EnableIPV6", true)
     }
 
 /** The keys the two releases share. */
@@ -95,18 +93,15 @@ data class NetworkSettings(
 internal const val DEFAULT_HTTP_PORT = 8096
 internal const val DEFAULT_HTTPS_PORT = 8920
 
-/** The network configuration [this], read with [keys]'s names; [baseUrl] is the server configuration's, where the release keeps it there. */
-fun JsonObject.networkSettings(
-    keys: NetworkKeys,
-    baseUrl: String? = null,
-): NetworkSettings =
+/** The network configuration [this], read with [keys]'s names. */
+fun JsonObject.networkSettings(keys: NetworkKeys): NetworkSettings =
     NetworkSettings(
-        present = this.keys + listOfNotNull(NETWORK_BASE_URL.takeIf { baseUrl != null }),
+        present = this.keys,
         httpPort = int(keys.httpPort) ?: DEFAULT_HTTP_PORT,
         httpsPort = int(keys.httpsPort) ?: DEFAULT_HTTPS_PORT,
         publicHttpPort = int(keys.publicHttpPort) ?: DEFAULT_HTTP_PORT,
         publicHttpsPort = int(keys.publicHttpsPort) ?: DEFAULT_HTTPS_PORT,
-        baseUrl = baseUrl ?: string(NETWORK_BASE_URL).orEmpty(),
+        baseUrl = string(NETWORK_BASE_URL).orEmpty(),
         enableHttps = bool(NETWORK_ENABLE_HTTPS) == true,
         requireHttps = bool(NETWORK_REQUIRE_HTTPS) == true,
         certificatePath = string(NETWORK_CERTIFICATE_PATH).orEmpty(),
