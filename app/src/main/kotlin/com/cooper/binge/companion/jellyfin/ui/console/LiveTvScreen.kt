@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -27,16 +28,17 @@ import com.cooper.binge.companion.jellyfin.server.LiveTvSummary
 import com.cooper.binge.companion.jellyfin.server.TunerHostSummary
 import com.binge.designsystem.R as DesR
 
-/** What the Live TV page can ask of the console. [onOpenTasks] is null where the user cannot open the Scheduled tasks page. */
+/** What the Live TV page can ask of the console. [onOpenTasks] and [onOpenRecording] are null where the user cannot open the Scheduled tasks or Recording page. */
 data class LiveTvActions(
     val onOpenTasks: (() -> Unit)? = null,
+    val onOpenRecording: (() -> Unit)? = null,
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
 /**
  * The server's Live TV setup: its tuners, its guide data, when the guide ends, and a way to Scheduled tasks, where Refresh Guide is.
- * It reads and does not change anything yet. A web address shows as its host only, since a playlist's address often carries the
+ * Its Recording page, for an administrator, changes how it records. A web address shows as its host only, since a playlist's address often carries the
  * provider's account in it.
  */
 @Composable
@@ -75,6 +77,23 @@ private fun LiveTvContent(
                 title = stringResource(R.string.live_tv_tuners),
                 rows = summary.tuners.map { it.row() }.ifEmpty { listOf(emptyRow(R.string.live_tv_no_tuners)) },
             )
+        }
+        actions.onOpenRecording?.let { open ->
+            item(key = "recording") {
+                ItemGroup(
+                    title = stringResource(R.string.live_tv_recording_title),
+                    rows =
+                        listOf(
+                            ListItem(
+                                icon = Icons.Outlined.Videocam,
+                                label = stringResource(R.string.live_tv_recording_row),
+                                detail = stringResource(R.string.live_tv_recording_row_detail),
+                                supportingMaxLines = ADDRESS_LINES,
+                                onClick = open,
+                            ),
+                        ),
+                )
+            }
         }
         item(key = "guide") {
             ItemGroup(
