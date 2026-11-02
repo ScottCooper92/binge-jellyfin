@@ -265,6 +265,12 @@ app:library_trickplay_extract  2c5e1368cefa
 app:library_trickplay_with_media  528c66fbd71d
 app:logs_empty  79c3f81612f5
 app:logs_no_match  9a93865e5721
+app:logs_retention_body  50a7e68f478e
+app:logs_retention_days  46c413dbbb13
+app:logs_retention_invalid  df9c7e70202d
+app:logs_retention_save  1509f561f241
+app:logs_retention_title  535626b79aaf
+app:logs_retention_unsent  f969d4766f68
 app:logs_search  5b02ad313952
 app:logs_share  29887a5ff984
 app:logs_share_note  768f736f4c21
