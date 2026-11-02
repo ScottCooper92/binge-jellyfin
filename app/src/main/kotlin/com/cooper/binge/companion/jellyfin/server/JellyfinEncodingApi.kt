@@ -107,14 +107,20 @@ fun decodingCodecs(type: String): List<String> =
 /** Whether [type] does the work in hardware: the options for it show for anything but `none`. */
 fun isAccelerated(type: String): Boolean = type != "none" && type.isNotBlank()
 
-/** Whether the tone mapping options show for [type]: every hardware type that has them, and software from 10.10. */
+/**
+ * Whether the tone mapping options show for [type]: every hardware type that has them (VideoToolbox from 10.9),
+ * and software from 10.10.
+ */
 fun hasToneMapping(
     type: String,
     profile: JellyfinServerProfile,
-): Boolean = type in TONEMAPPING_TYPES || (type == "none" && profile.hasNamedEncodingDefaults)
+): Boolean = hasToneMappingMode(type, profile) || (type == "none" && profile.hasNamedEncodingDefaults)
 
 /** The tone mapping mode is for hardware only. */
-fun hasToneMappingMode(type: String): Boolean = type in TONEMAPPING_TYPES
+fun hasToneMappingMode(
+    type: String,
+    profile: JellyfinServerProfile,
+): Boolean = type in TONEMAPPING_TYPES && (type != "videotoolbox" || profile.hasAdvancedEncoding)
 
 /** The extra Intel switch (low power HEVC encoding) is for Quick Sync and VAAPI. */
 fun hasIntelOptions(type: String): Boolean = type == "qsv" || type == "vaapi"

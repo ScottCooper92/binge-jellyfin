@@ -28,9 +28,13 @@ class JellyfinEncodingApiTest {
         val nine = JellyfinServerProfile.from("10.9.0")
         assertTrue(hasToneMapping("none", ten))
         assertFalse(hasToneMapping("none", nine))
-        assertFalse(hasToneMappingMode("none"))
-        assertTrue(hasToneMapping("nvenc", nine) && hasToneMappingMode("nvenc"))
+        assertFalse(hasToneMappingMode("none", ten))
+        assertTrue(hasToneMapping("nvenc", nine) && hasToneMappingMode("nvenc", nine))
         assertFalse(hasToneMapping("v4l2m2m", ten))
+        // VideoToolbox tone mapping arrived in 10.9.
+        val eight = JellyfinServerProfile.from("10.8.13")
+        assertFalse(hasToneMapping("videotoolbox", eight) || hasToneMappingMode("videotoolbox", eight))
+        assertTrue(hasToneMapping("videotoolbox", nine) && hasToneMappingMode("videotoolbox", nine))
         assertTrue(hasIntelOptions("qsv") && hasIntelOptions("vaapi"))
         assertFalse(hasIntelOptions("nvenc"))
     }

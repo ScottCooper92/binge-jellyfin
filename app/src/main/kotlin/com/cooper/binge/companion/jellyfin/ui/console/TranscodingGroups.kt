@@ -247,7 +247,7 @@ internal fun ToneMappingGroup(
 ) {
     if (!hasToneMapping(type, profile)) return
     val config = state.encoding
-    val hardware = hasToneMappingMode(type)
+    val hardware = hasToneMappingMode(type, profile)
     ItemGroup(
         title = stringResource(R.string.transcoding_tonemapping),
         rows =
