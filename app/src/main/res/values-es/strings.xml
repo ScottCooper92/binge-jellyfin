@@ -245,6 +245,15 @@
     <string name="library_embedded_subtitles_text">Solo texto</string>
     <string name="library_embedded_subtitles_image">Solo imagen</string>
     <string name="library_embedded_subtitles_none">Ninguno</string>
+    <string name="library_download_languages">Idiomas de descarga</string>
+    <string name="library_download_languages_none">Ninguno</string>
+    <string name="library_download_languages_body">Los idiomas en los que el servidor busca subtítulos al descargarlos.</string>
+    <string name="library_download_languages_unknown">El servidor no indicó ningún idioma.</string>
+    <plurals name="library_languages_count">
+        <item quantity="one">%1$d idioma</item>
+        <item quantity="many">%1$d idiomas</item>
+        <item quantity="other">%1$d idiomas</item>
+    </plurals>
     <string name="library_skip_audio">Omitir si el audio coincide con el idioma</string>
     <string name="library_perfect_match">Solo coincidencias perfectas</string>
     <string name="library_save_subtitles">Guardar subtítulos con los archivos</string>

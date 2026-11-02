@@ -37,6 +37,7 @@ const val LIBRARY_METADATA_SAVERS = "MetadataSavers"
 
 /** The kinds of embedded subtitle a library can offer, as the server names them: all of them, only text, only image, or none. */
 val EMBEDDED_SUBTITLE_CHOICES = listOf("AllowAll", "AllowText", "AllowImage", "AllowNone")
+const val LIBRARY_DOWNLOAD_LANGUAGES = "SubtitleDownloadLanguages"
 
 /** A list of providers a library can use: the ones switched off, and the order of the rest. */
 enum class ProviderGroup(
@@ -120,6 +121,18 @@ fun JsonObject.saversWith(
 fun libraryHasEmbeddedSubtitleChoice(kind: String): Boolean = kind in EMBEDDED_SUBTITLE_KINDS
 
 private val EMBEDDED_SUBTITLE_KINDS = setOf("movies", "tvshows", "musicvideos", MIXED_LIBRARY)
+
+/** The languages a library downloads subtitles in, as the three-letter codes the server stores. */
+fun JsonObject.downloadLanguages(): List<String> = names(LIBRARY_DOWNLOAD_LANGUAGES)
+
+/** The download languages with [code] switched to [on], stored in lower case as jellyfin-web does; a code the server doesn't list stays. */
+fun JsonObject.languagesWith(
+    code: String,
+    on: Boolean,
+): JsonArray {
+    val rest = downloadLanguages().filterNot { it.equals(code, ignoreCase = true) }
+    return JsonArray((if (on) rest + code.lowercase() else rest).map(::JsonPrimitive))
+}
 
 /** Whether the library's kind has video: its chapter images, subtitles and trickplay mean something. */
 fun libraryHasVideo(kind: String): Boolean = kind in VIDEO_KINDS

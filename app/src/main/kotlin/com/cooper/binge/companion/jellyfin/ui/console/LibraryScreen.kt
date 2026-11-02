@@ -99,6 +99,7 @@ fun LibraryScreen(
         if (ready != null) {
             when (page) {
                 LibraryPage.Main -> LibraryBody(ready, actions, profile)
+                LibraryPage.Languages -> LanguagesPage(ready, actions)
                 is LibraryPage.Providers -> ProvidersPage(page.group, ready, actions)
                 is LibraryPage.One -> ProviderPage(page, ready, actions)
             }
@@ -112,6 +113,7 @@ fun LibraryScreen(
 private fun LibraryPage.parent(): LibraryPage =
     when (this) {
         LibraryPage.Main -> LibraryPage.Main
+        LibraryPage.Languages -> LibraryPage.Main
         is LibraryPage.Providers -> LibraryPage.Main
         is LibraryPage.One -> LibraryPage.Providers(group)
     }
@@ -120,6 +122,7 @@ private fun LibraryPage.parent(): LibraryPage =
 private fun LibraryPage.title(ready: LibraryUiState.Ready?): String =
     when (this) {
         LibraryPage.Main -> ready?.library?.name?.ifBlank { null } ?: stringResource(R.string.libraries_unnamed)
+        LibraryPage.Languages -> stringResource(R.string.library_download_languages)
         is LibraryPage.Providers -> stringResource(group.title())
         is LibraryPage.One -> name
     }

@@ -245,6 +245,14 @@
     <string name="library_embedded_subtitles_text">Text only</string>
     <string name="library_embedded_subtitles_image">Image only</string>
     <string name="library_embedded_subtitles_none">None</string>
+    <string name="library_download_languages">Download languages</string>
+    <string name="library_download_languages_none">None</string>
+    <string name="library_download_languages_body">The languages the server looks for subtitles in when it downloads them.</string>
+    <string name="library_download_languages_unknown">The server did not list any languages.</string>
+    <plurals name="library_languages_count">
+        <item quantity="one">%1$d language</item>
+        <item quantity="other">%1$d languages</item>
+    </plurals>
     <string name="library_skip_audio">Skip if the audio matches the language</string>
     <string name="library_perfect_match">Perfect matches only</string>
     <string name="library_save_subtitles">Save subtitles with the media</string>
