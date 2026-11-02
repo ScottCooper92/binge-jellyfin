@@ -103,6 +103,10 @@
     <string name="home_layout_order">Order</string>
     <string name="home_layout_move_up">Move up</string>
     <string name="home_layout_move_down">Move down</string>
+    <string name="home_layout_position">Position %1$d of %2$d on your home</string>
+    <string name="home_layout_order_detail">The order your libraries appear in, on every device you sign in to. Each tap moves one place and saves.</string>
+    <string name="home_layout_already_first">Already first</string>
+    <string name="home_layout_already_last">Already last</string>
     <string name="home_layout_hide_played">Hide played items in Latest</string>
     <string name="home_layout_missing">Show missing episodes</string>
     <string name="home_layout_missing_detail">Gaps in a season show as placeholders</string>

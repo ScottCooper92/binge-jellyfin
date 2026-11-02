@@ -220,6 +220,8 @@ app:error_quick_connect_off  045782322966
 app:error_signed_out  827096b0fbe6
 app:error_unreachable  8224327e4cec
 app:error_wrong_credentials  c16954ee58f2
+app:home_layout_already_first  764ba245abe6
+app:home_layout_already_last  71c74b973a38
 app:home_layout_body  5b830087e38e
 app:home_layout_collections  1667416a133a
 app:home_layout_collections_detail  b423e46e3340
@@ -236,6 +238,8 @@ app:home_layout_move_down  40bb50da160c
 app:home_layout_move_up  c66feb5eb8f2
 app:home_layout_no_libraries  fca5038510e7
 app:home_layout_order  6be090825c99
+app:home_layout_order_detail  d41944ffeeed
+app:home_layout_position  70c724f0dd6f
 app:home_layout_shown_both  d28774c778b3
 app:home_layout_shown_latest  21cd45b3fc25
 app:home_layout_shown_my_media  ed36607fbd6c

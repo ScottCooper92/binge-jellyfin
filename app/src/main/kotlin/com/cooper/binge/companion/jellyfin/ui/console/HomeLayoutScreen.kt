@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.CollectionsBookmark
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.HideSource
 import androidx.compose.material.icons.outlined.LiveTv
@@ -57,6 +58,9 @@ data class HomeLayoutActions(
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
 private const val HOME_DETAIL_LINES = 3
+
+/** Lines the order note may wrap to: it is the one place that says what the Move rows move, so it is never cut. */
+private const val ORDER_DETAIL_LINES = 8
 
 /**
  * How Jellyfin's apps lay out the user's home: their libraries in order, each with its own page for
@@ -209,8 +213,16 @@ private fun LibraryPage(
             rows =
                 listOf(
                     ListItem(
+                        icon = Icons.Outlined.FormatListNumbered,
+                        label = stringResource(R.string.home_layout_position, place + 1, state.libraries.size),
+                        detail = stringResource(R.string.home_layout_order_detail),
+                        supportingMaxLines = ORDER_DETAIL_LINES,
+                        clickable = false,
+                    ),
+                    ListItem(
                         icon = Icons.Outlined.ArrowUpward,
                         label = stringResource(R.string.home_layout_move_up),
+                        detail = stringResource(R.string.home_layout_already_first).takeIf { place == 0 },
                         enabled = place > 0,
                         destination = ListItemDestination.Action,
                         onClick = { actions.onMove(library.id, -1) },
@@ -218,6 +230,7 @@ private fun LibraryPage(
                     ListItem(
                         icon = Icons.Outlined.ArrowDownward,
                         label = stringResource(R.string.home_layout_move_down),
+                        detail = stringResource(R.string.home_layout_already_last).takeIf { place == state.libraries.lastIndex },
                         enabled = place < state.libraries.lastIndex,
                         destination = ListItemDestination.Action,
                         onClick = { actions.onMove(library.id, 1) },

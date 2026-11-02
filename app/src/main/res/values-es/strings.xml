@@ -103,6 +103,10 @@
     <string name="home_layout_order">Orden</string>
     <string name="home_layout_move_up">Subir</string>
     <string name="home_layout_move_down">Bajar</string>
+    <string name="home_layout_position">Posición %1$d de %2$d en tu inicio</string>
+    <string name="home_layout_order_detail">El orden en que aparecen tus bibliotecas, en todos los dispositivos donde inicies sesión. Cada toque mueve un lugar y se guarda.</string>
+    <string name="home_layout_already_first">Ya es la primera</string>
+    <string name="home_layout_already_last">Ya es la última</string>
     <string name="home_layout_hide_played">Ocultar lo ya visto en Últimos</string>
     <string name="home_layout_missing">Mostrar episodios que faltan</string>
     <string name="home_layout_missing_detail">Los huecos de una temporada se muestran como marcadores</string>
