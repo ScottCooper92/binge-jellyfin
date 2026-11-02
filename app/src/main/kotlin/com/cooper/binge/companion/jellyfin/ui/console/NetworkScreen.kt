@@ -153,7 +153,6 @@ private fun NetworkUiState.Ready.formRow(
     icon: ImageVector,
     label: Int,
     detail: String,
-    enabled: Boolean = true,
     onClick: () -> Unit,
 ): ListItem? =
     ListItem(
@@ -162,7 +161,8 @@ private fun NetworkUiState.Ready.formRow(
         detail = detail,
         supportingMaxLines = NETWORK_DETAIL_LINES,
         note = if (key in draft) ListItemNote(stringResource(R.string.network_unsaved), icon = Icons.Outlined.Info) else null,
-        enabled = enabled,
+        // Not while Save changes is writing: a change made then would skip the confirm, or be cleared by the write's result.
+        enabled = !committing,
         onClick = onClick,
     ).takeIf { settings.has(key) }
 
@@ -182,6 +182,7 @@ private fun NetworkUiState.Ready.formSwitch(
         supportingMaxLines = NETWORK_DETAIL_LINES,
         note = if (key in draft) ListItemNote(stringResource(R.string.network_unsaved), icon = Icons.Outlined.Info) else null,
         toggled = on,
+        enabled = !committing,
         onClick = { actions.onFormSwitch(key, !on) },
     ).takeIf { settings.has(key) }
 
@@ -218,7 +219,7 @@ private fun NetworkUiState.Ready.listRow(
     value: List<String>,
     actions: NetworkActions,
 ): ListItem? =
-    formRow(field.key, Icons.Outlined.Router, label, entries(value), enabled = field.form || !committing) {
+    formRow(field.key, Icons.Outlined.Router, label, entries(value)) {
         actions.onSheet(NetworkSheet.Items(field))
     }
 

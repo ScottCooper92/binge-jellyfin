@@ -275,6 +275,8 @@ class NetworkViewModel(
         key: String,
         value: JsonElement,
     ) {
+        // Not while Save changes is writing: the draft was read for the write, and its result clears every change.
+        if ((_state.value as? NetworkUiState.Ready)?.committing == true) return
         unsaved.put(key, value, saves.shown)
         update { copy(settings = unsaved.shown(saves.shown), draft = unsaved.changes.keys, formFailed = null) }
     }

@@ -372,6 +372,22 @@ class NetworkViewModelTest {
     }
 
     @Test
+    fun `a form change made while Save changes is writing is neither written nor kept`() {
+        val vm = vm()
+        vm.ready()
+        jellyfin.slow += NETWORK
+        vm.saveNumber(NetworkNumber.PublicHttpPort, "8000")
+        vm.save()
+        vm.ready { it.committing }
+        vm.setSwitch("EnableIPv6", false, form = true)
+        vm.saveNumber(NetworkNumber.PublicHttpsPort, "9443")
+        val during = vm.ready()
+        assertTrue(during.draft.none { it == "EnableIPv6" || it.contains("Https", ignoreCase = true) && it.contains("Public") })
+        Thread.sleep(SETTLE_MILLIS)
+        assertEquals(1, posts(NETWORK))
+    }
+
+    @Test
     fun `a port out of range is never kept`() {
         val vm = vm()
         vm.ready()
