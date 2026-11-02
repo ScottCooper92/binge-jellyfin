@@ -17,9 +17,7 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +33,7 @@ import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -130,7 +129,7 @@ private fun DisplayBody(
 ) {
     var picker by rememberSaveable { mutableStateOf<DisplayPicker?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        Text(stringResource(R.string.display_body), style = MaterialTheme.typography.bodyMedium)
+        PageIntro(stringResource(R.string.display_body))
         ItemGroup(title = stringResource(R.string.display_group), rows = displayRows(state, actions, profile) { picker = it })
         ItemGroup(title = stringResource(R.string.display_metadata), rows = metadataRows(state, actions, profile) { picker = it })
         ItemGroup(

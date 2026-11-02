@@ -16,6 +16,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeFilledButton
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -53,7 +54,7 @@ fun ApproveCodeScreen(
                         .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
             ) {
-                Text(stringResource(R.string.approve_body), style = MaterialTheme.typography.bodyMedium)
+                PageIntro(stringResource(R.string.approve_body))
                 ConsoleTextField(
                     value = state.code,
                     onValueChange = actions.onCode,

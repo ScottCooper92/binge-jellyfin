@@ -476,7 +476,7 @@
     <string name="languages_body_plain">Jellyfin los usa para elegir el audio y los subtítulos cuando reproduces algo.</string>
     <string name="api_keys_title">Claves de API</string>
     <string name="console_api_keys_detail">Claves para las apps que usan este servidor</string>
-    <string name="api_keys_body">Una clave de API permite que una app use este servidor sin iniciar sesión como usuario. Trata cada una como una contraseña.</string>
+    <string name="api_keys_body">Una clave de API permite que una app use este servidor sin iniciar sesión. Trata cada una como una contraseña.</string>
     <string name="api_keys_new">Nueva clave</string>
     <string name="api_keys_empty">Este servidor no tiene claves de API.</string>
     <string name="api_keys_unnamed">App sin nombre</string>
@@ -674,7 +674,7 @@
     <string name="catalog_cancelled">Se ha cancelado la instalación.</string>
     <string name="repositories_empty_title">Sin repositorios</string>
     <string name="repositories_empty">Este servidor no tiene repositorios, así que no tiene catálogo.</string>
-    <string name="repositories_body">Los lugares de los que este servidor obtiene su catálogo de plugins.</string>
+    <string name="repositories_body">De dónde obtiene este servidor su catálogo de plugins.</string>
     <string name="repositories_add">Añadir repositorio</string>
     <string name="repositories_remove">Quitar</string>
     <string name="repositories_remove_title">¿Quitar %1$s?</string>
