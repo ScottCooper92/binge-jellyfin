@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.annotation.StringRes
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,12 +21,15 @@ internal fun SaveProgress.formStatus(onRetry: () -> Unit): FormSaveStatus =
 /**
  * Says so when the server refused a write, which put the change back: Retry would only be refused again, so this is a
  * message and no more. [failure] goes back to null with the page's next change, so a second refusal says so again.
+ * [text] is the sentence, with the failure's own reason as its one argument; a page whose change is not a setting
+ * ("Triggers not changed") gives its own.
  */
 @Composable
 internal fun RefusedMessage(
     failure: ConsoleFailure?,
     host: SnackbarHostState,
+    @StringRes text: Int = R.string.settings_not_saved,
 ) {
-    val message = failure?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
+    val message = failure?.let { stringResource(text, stringResource(it.message)) }
     LaunchedEffect(message) { if (message != null) host.showSnackbar(message) }
 }

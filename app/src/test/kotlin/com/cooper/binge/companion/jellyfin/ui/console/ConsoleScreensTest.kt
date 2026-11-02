@@ -341,9 +341,8 @@ class ConsoleScreensTest {
         assertEquals(listOf("a"), ran)
         assertEquals(listOf("b"), stopped)
         state = state.copy(actionFailed = ConsoleFailure.Refused)
-        val notSent = "That didn't reach the server. Something went wrong. Try again."
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(notSent))
-        compose.onNodeWithText(notSent).assertExists()
+        // Said in a message over the list, not in a space the list keeps for it.
+        compose.onNodeWithText("That didn't reach the server. Something went wrong. Try again.").assertExists()
     }
 
     @Test
@@ -740,14 +739,16 @@ class ConsoleScreensTest {
         assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
         state = state.copy(saving = true, actionFailed = ConsoleFailure.Refused, adding = false)
         compose.onAllNodesWithContentDescription("Remove").assertCountEquals(0)
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
         state = TasksUiState.Ready(TaskBoard(emptyList()), open = "gone")
         compose.onNodeWithText("Scan Media Library").assertDoesNotExist()
-        // A task with none says so, with Add trigger as its one action; a failed change says so in its place.
+        // A task with none says so, with Add trigger as its one action; a failed change says so in a message, and the page stays.
         state = TasksUiState.Ready(TaskBoard(listOf(scan.copy(triggers = emptyList()))), open = "t")
         compose.onNodeWithText("No triggers").assertExists()
         compose.onNodeWithText("This task only runs when you start it.").assertExists()
         state = state.copy(actionFailed = ConsoleFailure.Refused)
-        compose.onNodeWithText("This task only runs when you start it.").assertDoesNotExist()
+        compose.onNodeWithText("This task only runs when you start it.").assertExists()
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
         compose.onNodeWithText("Add trigger").performClick()
         assertTrue(state.adding)
     }
