@@ -251,6 +251,21 @@
     <string name="library_readers">Lectores de metadatos locales</string>
     <string name="library_subtitles">Subtítulos</string>
     <string name="library_skip_embedded">Omitir si el archivo ya tiene subtítulos</string>
+    <string name="library_audio_tags">Etiquetas de audio</string>
+    <string name="library_audio_tags_none">Ninguno</string>
+    <string name="library_artists_tag">Preferir la etiqueta ARTISTS</string>
+    <string name="library_artists_tag_detail">Usa la etiqueta no estándar ARTISTS en lugar de ARTIST cuando un archivo la tiene.</string>
+    <string name="library_custom_delimiters">Delimitadores de etiquetas propios</string>
+    <string name="library_custom_delimiters_detail">Divide las etiquetas de artista y género por los caracteres que elijas.</string>
+    <string name="library_delimiters">Caracteres delimitadores</string>
+    <string name="library_delimiters_hint">Los caracteres por los que dividir, uno tras otro, como /|;</string>
+    <string name="library_whitelist">Lista de excepciones</string>
+    <string name="library_whitelist_hint">Nombres que el servidor nunca divide, uno en cada línea.</string>
+    <plurals name="library_whitelist_count">
+        <item quantity="one">%1$d nombre</item>
+        <item quantity="many">%1$d nombres</item>
+        <item quantity="other">%1$d nombres</item>
+    </plurals>
     <string name="library_embedded_subtitles">Subtítulos incrustados</string>
     <string name="library_embedded_subtitles_all">Todos los tipos</string>
     <string name="library_embedded_subtitles_text">Solo texto</string>

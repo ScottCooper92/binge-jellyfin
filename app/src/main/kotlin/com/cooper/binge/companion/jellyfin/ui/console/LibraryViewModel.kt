@@ -60,6 +60,12 @@ sealed interface LibraryDialog {
 
     data object SeasonZero : LibraryDialog
 
+    /** The characters a music library splits artist and genre tags at. */
+    data object TagDelimiters : LibraryDialog
+
+    /** The names a music library does not split its tags at. */
+    data object DelimiterWhitelist : LibraryDialog
+
     data class RemoveFolder(
         val path: String,
     ) : LibraryDialog

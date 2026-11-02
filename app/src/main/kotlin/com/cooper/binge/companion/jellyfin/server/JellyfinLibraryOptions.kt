@@ -34,6 +34,10 @@ const val LIBRARY_LYRICS_WITH_MEDIA = "SaveLyricsWithMedia"
 const val LIBRARY_EMBEDDED_EXTRAS_TITLES = "EnableEmbeddedExtrasTitles"
 const val LIBRARY_ALLOW_EMBEDDED_SUBTITLES = "AllowEmbeddedSubtitles"
 const val LIBRARY_METADATA_SAVERS = "MetadataSavers"
+const val LIBRARY_PREFER_ARTISTS_TAG = "PreferNonstandardArtistsTag"
+const val LIBRARY_CUSTOM_DELIMITERS = "UseCustomTagDelimiters"
+const val LIBRARY_TAG_DELIMITERS = "CustomTagDelimiters"
+const val LIBRARY_DELIMITER_WHITELIST = "DelimiterWhitelist"
 
 /** The kinds of embedded subtitle a library can offer, as the server names them: all of them, only text, only image, or none. */
 val EMBEDDED_SUBTITLE_CHOICES = listOf("AllowAll", "AllowText", "AllowImage", "AllowNone")
@@ -117,10 +121,24 @@ fun JsonObject.saversWith(
     return JsonArray((if (enabled) rest + name else rest).map(::JsonPrimitive))
 }
 
-/** Whether a library of [kind] chooses which embedded subtitles it offers: the kinds jellyfin-web shows the choice for. */
-fun libraryHasEmbeddedSubtitleChoice(kind: String): Boolean = kind in EMBEDDED_SUBTITLE_KINDS
+/** The custom tag delimiters as they are typed: the characters one after another. */
+fun JsonObject.tagDelimiters(): String = names(LIBRARY_TAG_DELIMITERS).joinToString("")
 
-private val EMBEDDED_SUBTITLE_KINDS = setOf("movies", "tvshows", "musicvideos", MIXED_LIBRARY)
+/** [typed] as the list the server stores, one element for each character (a character outside the basic plane stays whole). */
+fun delimiterList(typed: String): JsonArray = JsonArray(typed.codePoints().toArray().map { JsonPrimitive(String(Character.toChars(it))) })
+
+/** The names the server must not split a tag at, as they are typed: one a line. */
+fun JsonObject.delimiterWhitelist(): List<String> = names(LIBRARY_DELIMITER_WHITELIST).filter { it.isNotBlank() }
+
+/** [typed] as the whitelist the server stores: each line, trimmed, and none that is blank. */
+fun whitelistList(typed: String): JsonArray =
+    JsonArray(
+        typed
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map(::JsonPrimitive),
+    )
 
 /** The languages a library downloads subtitles in, as the three-letter codes the server stores. */
 fun JsonObject.downloadLanguages(): List<String> = names(LIBRARY_DOWNLOAD_LANGUAGES)
@@ -133,13 +151,3 @@ fun JsonObject.languagesWith(
     val rest = downloadLanguages().filterNot { it.equals(code, ignoreCase = true) }
     return JsonArray((if (on) rest + code.lowercase() else rest).map(::JsonPrimitive))
 }
-
-/** Whether the library's kind has video: its chapter images, subtitles and trickplay mean something. */
-fun libraryHasVideo(kind: String): Boolean = kind in VIDEO_KINDS
-
-/** Whether the library is of shows, or mixed content that can hold them. */
-fun libraryHasShows(kind: String): Boolean = kind == "tvshows" || kind == MIXED_LIBRARY
-
-fun libraryHasMovies(kind: String): Boolean = kind == "movies" || kind == MIXED_LIBRARY
-
-private val VIDEO_KINDS = setOf("movies", "tvshows", "musicvideos", "homevideos", MIXED_LIBRARY)

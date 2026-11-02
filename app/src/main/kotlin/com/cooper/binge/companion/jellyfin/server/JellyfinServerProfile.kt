@@ -77,6 +77,9 @@ data class JellyfinServerProfile(
     /** The Quick Sync device and two more stereo downmix algorithms (RFC 7845, AC-4), in the encoding options. 10.10. */
     val hasQsvDeviceAndDownmix: Boolean get() = atLeast(TEN, TEN)
 
+    /** The audio tag options of a music library: the ARTISTS tag, custom tag delimiters and a whitelist for them. 10.10. */
+    val hasMusicTagOptions: Boolean get() = atLeast(TEN, TEN)
+
     /** Preferring an extra's embedded title over its file name, in a library's options. 10.9. */
     val hasEmbeddedExtrasTitles: Boolean get() = atLeast(TEN, NINE)
 
