@@ -146,7 +146,7 @@ private fun statusRows(
                         detail =
                             (creation.error as? JellyfinHttpException)?.let { it.reason ?: stringResource(R.string.backups_create_refused) }
                                 ?: stringResource(creation.error.consoleFailure().message),
-                        supportingMaxLines = STATUS_LINES,
+                        supportingMaxLines = FAILURE_LINES,
                         trailingContent = { DismissButton(actions.onDismissCreation) },
                         clickable = false,
                     )
@@ -214,3 +214,6 @@ internal fun BackupOptions.summary(): String =
 
 private const val LOADING_ROWS = 5
 private const val STATUS_LINES = 3
+
+/** The failed-create row carries a server reason or a hint the admin has to be able to read whole, at any font size. */
+private const val FAILURE_LINES = 8

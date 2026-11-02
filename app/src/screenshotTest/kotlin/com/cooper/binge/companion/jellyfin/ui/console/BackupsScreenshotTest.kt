@@ -66,6 +66,8 @@ class BackupsScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun notMadeRefused() =
         BackupsScreen(
