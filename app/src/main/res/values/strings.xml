@@ -613,6 +613,7 @@
     <string name="plugins_tab_catalog">Catalog</string>
     <string name="plugins_tab_repositories">Repositories</string>
     <string name="plugins_loading">Loading plugins</string>
+    <string name="console_loading">Loading</string>
     <string name="plugins_empty_title">No plugins</string>
     <string name="plugins_empty">This server has no plugins installed. Find some in the catalog.</string>
     <string name="plugins_restart_needed">Restart needed</string>
