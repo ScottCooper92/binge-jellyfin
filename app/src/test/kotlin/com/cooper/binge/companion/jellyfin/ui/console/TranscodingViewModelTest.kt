@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODING_CODECS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_HARDWARE_ENCODING
+import com.cooper.binge.companion.jellyfin.server.ENCODING_TEMP_PATH
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -141,6 +142,26 @@ class TranscodingViewModelTest {
             jellyfin
                 .lastBody(ENCODING)
                 .getValue(ENCODING_ACCELERATION)
+                .jsonPrimitive.content,
+        )
+    }
+
+    @Test
+    fun `a folder the server never had is added by the save, the rest as it was`() {
+        jellyfin.encodingConfiguration =
+            """{"HardwareAccelerationType":"none","VaapiDevice":"","QsvDevice":"","FutureOption":{"keep":"me"}}"""
+        val vm = made(TranscodingViewModel(connection))
+        vm.ready()
+        vm.setEncoding(ENCODING_TEMP_PATH, JsonPrimitive("/cache/transcodes"))
+        saves(ENCODING, 1)
+        val sent = jellyfin.lastBody(ENCODING)
+        assertEquals("/cache/transcodes", sent.getValue(ENCODING_TEMP_PATH).jsonPrimitive.content)
+        assertEquals(
+            "me",
+            sent
+                .getValue("FutureOption")
+                .jsonObject
+                .getValue("keep")
                 .jsonPrimitive.content,
         )
     }

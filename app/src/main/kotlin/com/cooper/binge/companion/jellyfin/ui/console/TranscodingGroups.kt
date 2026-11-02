@@ -423,27 +423,24 @@ internal fun StreamingGroups(
                                 ENCODING_FALLBACK_FONT_PATH,
                             )?.ifBlank { null } ?: stringResource(R.string.transcoding_not_set),
                     onClick = { actions.onSheet(TranscodingSheet.Text(TextField.FallbackFont)) },
-                ).takeIf { state.encoding.sent(ENCODING_FALLBACK_FONT_PATH) },
+                ),
             ),
     )
-    if (state.encoding.sent(ENCODING_TEMP_PATH)) {
-        ItemGroup(
-            title = stringResource(R.string.transcoding_paths),
-            rows =
-                listOf(
-                    ListItem(
-                        icon = Icons.Outlined.Folder,
-                        label = stringResource(R.string.transcoding_temp_path),
-                        detail =
-                            state.encoding
-                                .string(
-                                    ENCODING_TEMP_PATH,
-                                )?.ifBlank { null } ?: stringResource(R.string.transcoding_path_default),
-                        onClick = { actions.onSheet(TranscodingSheet.TempFolder) },
-                    ),
+    // Neither is in the configuration of a server whose page was never saved: Jellyfin leaves a null out. A missing one
+    // reads as blank, and choosing a value adds the key.
+    ItemGroup(
+        title = stringResource(R.string.transcoding_paths),
+        rows =
+            listOf(
+                ListItem(
+                    icon = Icons.Outlined.Folder,
+                    label = stringResource(R.string.transcoding_temp_path),
+                    detail =
+                        state.encoding.string(ENCODING_TEMP_PATH)?.ifBlank { null } ?: stringResource(R.string.transcoding_path_default),
+                    onClick = { actions.onSheet(TranscodingSheet.TempFolder) },
                 ),
-        )
-    }
+            ),
+    )
     ItemGroup(
         title = stringResource(R.string.transcoding_resume),
         rows =

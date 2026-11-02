@@ -138,4 +138,22 @@ class TranscodingScreenTest {
         show("none", "10.11.6")
         compose.onNodeWithText("The wrong type breaks every transcode.").assertExists()
     }
+
+    @Test
+    fun `a server that never saved the page leaves out the folders, and both rows still show`() {
+        val fresh = JsonObject(encoding("none") - "TranscodingTempPath" - "FallbackFontPath")
+        compose.setContent {
+            JellyfinTheme {
+                TranscodingScreen(
+                    TranscodingUiState.Ready(fresh, server),
+                    TranscodingActions(),
+                    JellyfinServerProfile.from("10.10.7"),
+                )
+            }
+        }
+        compose.onNodeWithText("Fallback font folder").performScrollTo().assertExists()
+        compose.onNodeWithText("Not set").performScrollTo().assertExists()
+        compose.onNodeWithText("Transcoding temporary files").performScrollTo().assertExists()
+        compose.onNodeWithText("Server default").performScrollTo().assertExists()
+    }
 }
