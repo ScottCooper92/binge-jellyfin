@@ -98,7 +98,7 @@ class CreateFooterTest {
                     CatalogActions(),
                     RepositoriesActions(onAskAdd = { adding = it }),
                     onBack = {},
-                    initialTab = 2,
+                    initialTab = REPOSITORIES_TAB,
                 )
             }
         }

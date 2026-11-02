@@ -57,7 +57,7 @@ data class PluginsActions(
 /** Lines a failed change's message takes, so it never moves the list. */
 private const val STATUS_LINES = 2
 
-private const val REPOSITORIES_TAB = 2
+internal const val REPOSITORIES_TAB = 2
 
 private val TABS = listOf(R.string.plugins_tab_installed, R.string.plugins_tab_catalog, R.string.plugins_tab_repositories)
 
