@@ -78,7 +78,7 @@ class ServerSettingsViewModelTest {
         vm.setMetadataCountry("GB")
         saves("/System/Configuration", 1)
         vm.setQuickConnect(false)
-        saves("/System/Configuration", 2)
+        jellyfin.awaitBody("/System/Configuration") { it["QuickConnectAvailable"]?.jsonPrimitive?.booleanOrNull == false }
         val body = jellyfin.lastBody("/System/Configuration")
         assertEquals("GB", body.getValue("MetadataCountryCode").jsonPrimitive.content)
         assertEquals(false, body.getValue("QuickConnectAvailable").jsonPrimitive.booleanOrNull)
