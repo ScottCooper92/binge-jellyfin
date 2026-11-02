@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTabRow
 import com.binge.designsystem.component.ItemGroup
@@ -139,19 +140,7 @@ fun PluginsScreen(
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
-            val direction = LocalLayoutDirection.current
-            // Under the tab row the bar is already above, so the lists keep the sides and the bottom only.
-            val content =
-                if (detail == null) {
-                    PaddingValues(
-                        start = inner.calculateStartPadding(direction),
-                        top = dimensionResource(DesR.dimen.padding_m),
-                        end = inner.calculateEndPadding(direction),
-                        bottom = inner.calculateBottomPadding(),
-                    )
-                } else {
-                    inner
-                }
+            val content = if (detail == null) inner.belowTabRow(LocalLayoutDirection.current) else inner
             // A change the server didn't take is said once, by the tab that made it. One message per
             // state, so switching tabs doesn't change a key and say an old refusal again.
             RefusedMessage((installed as? PluginsUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
@@ -204,6 +193,16 @@ fun PluginsScreen(
         }
     }
 }
+
+/** Under the tab row the bar is already above, so the lists keep the sides and the bottom only. */
+@Composable
+private fun PaddingValues.belowTabRow(direction: LayoutDirection) =
+    PaddingValues(
+        start = calculateStartPadding(direction),
+        top = dimensionResource(DesR.dimen.padding_m),
+        end = calculateEndPadding(direction),
+        bottom = calculateBottomPadding(),
+    )
 
 /** One tab's page, by index. */
 @Composable
