@@ -103,6 +103,71 @@ class TranscodingScreenTest {
     }
 
     @Test
+    fun `10-bit decoding is for the types that have it, and the range extensions for three of them from 10_10`() {
+        show("nvenc", "10.10.7")
+        compose.onNodeWithText("HEVC 10-bit").performScrollTo().assertExists()
+        compose.onNodeWithText("VP9 10-bit").assertExists()
+        compose.onNodeWithText("HEVC RExt 8/10-bit").assertExists()
+        compose.onNodeWithText("HEVC RExt 12-bit").assertExists()
+    }
+
+    @Test
+    fun `AMF and RKMPP decode 10-bit but not the range extensions`() {
+        show("amf", "10.10.7")
+        compose.onNodeWithText("HEVC 10-bit").performScrollTo().assertExists()
+        compose.onAllNodesWithText("HEVC RExt 8/10-bit").assertCountEquals(0)
+        compose.onAllNodesWithText("HEVC RExt 12-bit").assertCountEquals(0)
+    }
+
+    @Test
+    fun `the range extensions are not on 10_9, and V4L2 has no 10-bit decoding`() {
+        show("vaapi", "10.9.0")
+        compose.onNodeWithText("HEVC 10-bit").performScrollTo().assertExists()
+        compose.onAllNodesWithText("HEVC RExt 8/10-bit").assertCountEquals(0)
+        compose.onAllNodesWithText("HEVC RExt 12-bit").assertCountEquals(0)
+    }
+
+    @Test
+    fun `V4L2 has no 10-bit decoding`() {
+        show("v4l2m2m", "10.11.6")
+        compose.onAllNodesWithText("HEVC 10-bit").assertCountEquals(0)
+        compose.onAllNodesWithText("VP9 10-bit").assertCountEquals(0)
+    }
+
+    @Test
+    fun `AV1 encoding is not on 10_8, and neither is the low power H_264 encoder on a type that isn't Intel`() {
+        show("nvenc", "10.8.13")
+        compose.onAllNodesWithText("Allow AV1 encoding").assertCountEquals(0)
+        compose.onAllNodesWithText("Low power H.264 encoder").assertCountEquals(0)
+    }
+
+    @Test
+    fun `AV1 encoding shows from 10_9`() {
+        show("nvenc", "10.9.0")
+        compose.onNodeWithText("Allow AV1 encoding").performScrollTo().assertExists()
+        compose.onAllNodesWithText("Low power H.264 encoder").assertCountEquals(0)
+    }
+
+    @Test
+    fun `Quick Sync has both low power encoders`() {
+        show("qsv", "10.11.6")
+        compose.onNodeWithText("Low power HEVC encoder").performScrollTo().assertExists()
+        compose.onNodeWithText("Low power H.264 encoder").performScrollTo().assertExists()
+    }
+
+    @Test
+    fun `the quality numbers show their values, and a tap opens the sheet`() {
+        val calls = mutableListOf<String>()
+        show("none", "10.11.6", TranscodingActions(onSheet = { calls += "sheet ${(it as? TranscodingSheet.Number)?.field}" }))
+        compose.onNodeWithText("H.264 quality (CRF)").performScrollTo().assertExists()
+        compose.onNodeWithText("23").assertExists()
+        compose.onNodeWithText("28").assertExists()
+        compose.onNodeWithText("2048").performScrollTo().assertExists()
+        compose.onNodeWithText("Max muxing queue size").performScrollTo().performClick()
+        assertEquals(listOf("sheet MuxingQueue"), calls)
+    }
+
+    @Test
     fun `V4L2 has no tone mapping`() {
         show("v4l2m2m", "10.11.6")
         compose.onAllNodesWithText("TONE MAPPING").assertCountEquals(0)

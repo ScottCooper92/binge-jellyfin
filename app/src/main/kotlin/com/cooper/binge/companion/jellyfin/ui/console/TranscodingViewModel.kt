@@ -7,6 +7,9 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODING_CODECS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DOWNMIX_BOOST
 import com.cooper.binge.companion.jellyfin.server.ENCODING_FALLBACK_FONT_PATH
+import com.cooper.binge.companion.jellyfin.server.ENCODING_H264_CRF
+import com.cooper.binge.companion.jellyfin.server.ENCODING_H265_CRF
+import com.cooper.binge.companion.jellyfin.server.ENCODING_MUXING_QUEUE
 import com.cooper.binge.companion.jellyfin.server.ENCODING_QSV_DEVICE
 import com.cooper.binge.companion.jellyfin.server.ENCODING_SEGMENT_KEEP
 import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLE_DELAY
@@ -70,6 +73,9 @@ enum class NumberField(
     ToneMappingParam(ConfigurationKind.Encoding, ENCODING_TONEMAPPING_PARAM, 0.0, 1000.0, false, NumberUnit.None),
     VppBrightness(ConfigurationKind.Encoding, ENCODING_VPP_BRIGHTNESS, 0.0, 100.0, false, NumberUnit.None),
     VppContrast(ConfigurationKind.Encoding, ENCODING_VPP_CONTRAST, 1.0, 2.0, false, NumberUnit.None),
+    H264Crf(ConfigurationKind.Encoding, ENCODING_H264_CRF, 0.0, 51.0, true, NumberUnit.None),
+    H265Crf(ConfigurationKind.Encoding, ENCODING_H265_CRF, 0.0, 51.0, true, NumberUnit.None),
+    MuxingQueue(ConfigurationKind.Encoding, ENCODING_MUXING_QUEUE, 128.0, 2_147_483_647.0, true, NumberUnit.None),
     MinResumePercent(ConfigurationKind.Server, SERVER_MIN_RESUME_PERCENT, 0.0, 100.0, true, NumberUnit.Percent),
     MaxResumePercent(ConfigurationKind.Server, SERVER_MAX_RESUME_PERCENT, 0.0, 100.0, true, NumberUnit.Percent),
     MinResumeSeconds(ConfigurationKind.Server, SERVER_MIN_RESUME_SECONDS, 0.0, 86_400.0, true, NumberUnit.Seconds),

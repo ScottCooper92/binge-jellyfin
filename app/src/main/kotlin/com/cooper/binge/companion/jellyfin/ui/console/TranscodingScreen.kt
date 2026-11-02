@@ -119,7 +119,7 @@ private fun TranscodingBody(
                     ),
                 ) + hardwareRows(state, type, profile, actions),
         )
-        HardwareGroups(state, type, actions)
+        HardwareGroups(state, type, profile, actions)
         ToneMappingGroup(state, type, profile, actions) { picker = it }
         QualityGroup(state, actions) { picker = it }
         AudioGroup(state, profile, actions) { picker = it }
