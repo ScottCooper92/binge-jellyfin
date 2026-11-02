@@ -36,3 +36,13 @@ internal fun LogLevel.labelRes() =
         LogLevel.Warn -> DesR.string.log_level_warn
         LogLevel.Error -> DesR.string.log_level_error
     }
+
+/**
+ * A long log name cut in the middle, so its end, the time and the extension, stays in the bar; the page's intro
+ * has the whole name.
+ */
+internal fun String.middleEllipsised(limit: Int = BAR_NAME_LIMIT): String =
+    if (length <= limit) this else take(BAR_NAME_HEAD) + "…" + takeLast(limit - BAR_NAME_HEAD - 1)
+
+private const val BAR_NAME_LIMIT = 26
+private const val BAR_NAME_HEAD = 6

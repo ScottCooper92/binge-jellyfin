@@ -320,7 +320,7 @@ app:library_trickplay_with_media  528c66fbd71d
 app:logs_empty  79c3f81612f5
 app:logs_no_match  9a93865e5721
 app:logs_search  5b02ad313952
-app:logs_share  29887a5ff984
+app:logs_share_action  1dfd6096241c
 app:logs_share_note  768f736f4c21
 app:logs_share_title  7c5f2c793f1c
 app:logs_title  ea2100dc89ae
