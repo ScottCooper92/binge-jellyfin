@@ -26,6 +26,14 @@ data class NowPlaying(
     val paused: Boolean,
     val method: PlayMethod,
     val transcodeReasons: List<String>,
+    /** The session's owner, or null for a shared device nobody has signed in on. */
+    val userId: String? = null,
+    val deviceId: String = "",
+    val supportsMediaControl: Boolean = false,
+    val supportsRemoteControl: Boolean = false,
+    val canSeek: Boolean = false,
+    /** What the client says it takes, as `GeneralCommandType` names (`Mute`, `SetVolume`, `DisplayMessage`, ...). */
+    val supportedCommands: Set<String> = emptySet(),
 ) {
     /** How far through, from 0 to 1, or null with no runtime to measure against. */
     val progress: Float? get() = runtimeTicks?.takeIf { it > 0 }?.let { (positionTicks.toFloat() / it).coerceIn(0f, 1f) }
@@ -46,6 +54,35 @@ fun JellyfinClient.nowPlayingFeed(): Flow<List<NowPlaying>> =
     socketMessages(subscribe = listOf(SESSIONS_START))
         .filter { it.string("MessageType") == "Sessions" }
         .map { (it["Data"] as? JsonArray ?: JsonArray(emptyList())).toNowPlaying() }
+
+/**
+ * The ids of the sessions the server would let the signed-in user control: `GET /Sessions?controllableByUserId=`, which
+ * applies the user's remote-control and shared-device settings and drops sessions that take no remote control. It is the
+ * only place the server applies them: the endpoints that send a command check nothing (`AssertCanControl` is empty in
+ * 10.11), so the app asks here and never trusts a send to refuse.
+ */
+suspend fun JellyfinClient.controllableSessionIds(userId: String): Set<String> {
+    val answer =
+        get(SESSIONS, mapOf("activeWithinSeconds" to ACTIVE_WITHIN_SECONDS, "controllableByUserId" to userId)) as? JsonArray
+            ?: throw JellyfinUnreadableAnswer(SESSIONS)
+    return answer.mapNotNull { (it as? JsonObject)?.string("Id") }.toSet()
+}
+
+/** The playstate commands a session takes, as `POST /Sessions/{id}/Playing/{command}` names them. */
+enum class PlaystateCommand { Pause, Unpause, PlayPause, Seek, NextTrack, PreviousTrack }
+
+/** Sends [command] to the session [sessionId], and only it. [seekPositionTicks] is for [PlaystateCommand.Seek]. */
+suspend fun JellyfinClient.sendPlaystate(
+    sessionId: String,
+    command: PlaystateCommand,
+    seekPositionTicks: Long? = null,
+) {
+    post(
+        "Sessions/$sessionId/Playing/${command.name}",
+        null,
+        seekPositionTicks?.let { mapOf("seekPositionTicks" to it.toString()) }.orEmpty(),
+    )
+}
 
 /** Asks the session's client to stop playing. The client stops; the session stays. */
 suspend fun JellyfinClient.stopPlaying(sessionId: String) {
@@ -72,6 +109,12 @@ internal fun JsonObject.nowPlayingOrNull(): NowPlaying? {
         paused = state?.bool("IsPaused") == true,
         method = PlayMethod.entries.firstOrNull { it.name == state?.string("PlayMethod") } ?: PlayMethod.DirectPlay,
         transcodeReasons = obj("TranscodingInfo")?.array("TranscodeReasons")?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty(),
+        userId = string("UserId")?.takeUnless { it.isBlank() || it.all { c -> c == '0' || c == '-' } },
+        deviceId = string("DeviceId").orEmpty(),
+        supportsMediaControl = bool("SupportsMediaControl") == true,
+        supportsRemoteControl = bool("SupportsRemoteControl") == true,
+        canSeek = state?.bool("CanSeek") == true,
+        supportedCommands = array("SupportedCommands").mapNotNull { (it as? JsonPrimitive)?.content }.toSet(),
     )
 }
 
