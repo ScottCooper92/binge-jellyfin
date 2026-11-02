@@ -46,4 +46,18 @@ class JellyfinEncodingApiTest {
         assertEquals("none", ACCELERATION_TYPES.first())
         assertEquals(ACCELERATION_TYPES.size, ACCELERATION_TYPES.toSet().size)
     }
+
+    @Test
+    fun `before 10_10 none and auto are stored as blank, and blank reads as them`() {
+        val nine = JellyfinServerProfile(JellyfinVersion(10, 9, 0))
+        val ten = JellyfinServerProfile(JellyfinVersion(10, 10, 0))
+        assertEquals("none", encodingChoice("", "none"))
+        assertEquals("auto", encodingChoice(null, "auto"))
+        assertEquals("slow", encodingChoice("slow", "auto"))
+        assertEquals("", encodingStored("auto", "auto", nine))
+        assertEquals("", encodingStored("none", "none", nine))
+        assertEquals("vaapi", encodingStored("vaapi", "none", nine))
+        assertEquals("auto", encodingStored("auto", "auto", ten))
+        assertEquals("none", encodingStored("none", "none", ten))
+    }
 }

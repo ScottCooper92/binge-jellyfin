@@ -56,6 +56,7 @@ import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.decodingCodecs
+import com.cooper.binge.companion.jellyfin.server.encodingChoice
 import com.cooper.binge.companion.jellyfin.server.hasIntelOptions
 import com.cooper.binge.companion.jellyfin.server.hasToneMapping
 import com.cooper.binge.companion.jellyfin.server.hasToneMappingSwitch
@@ -318,7 +319,7 @@ internal fun QualityGroup(
                 ListItem(
                     icon = Icons.Outlined.VideoSettings,
                     label = stringResource(R.string.transcoding_preset),
-                    detail = presetLabel(config.string(ENCODING_PRESET) ?: "auto"),
+                    detail = presetLabel(encodingChoice(config.string(ENCODING_PRESET), "auto")),
                     onClick = { onPick(TranscodingPicker.Preset) },
                 ).takeIf { config.sent(ENCODING_PRESET) },
                 ListItem(

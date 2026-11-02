@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODING_CODECS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DOWNMIX_BOOST
+import com.cooper.binge.companion.jellyfin.server.ENCODING_FALLBACK_FONT_PATH
+import com.cooper.binge.companion.jellyfin.server.ENCODING_QSV_DEVICE
 import com.cooper.binge.companion.jellyfin.server.ENCODING_SEGMENT_KEEP
 import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLE_DELAY
 import com.cooper.binge.companion.jellyfin.server.ENCODING_TONEMAPPING_DESAT
 import com.cooper.binge.companion.jellyfin.server.ENCODING_TONEMAPPING_PARAM
 import com.cooper.binge.companion.jellyfin.server.ENCODING_TONEMAPPING_PEAK
+import com.cooper.binge.companion.jellyfin.server.ENCODING_VAAPI_DEVICE
 import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_BRIGHTNESS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_CONTRAST
 import com.cooper.binge.companion.jellyfin.server.SERVER_BITRATE_LIMIT
@@ -90,9 +93,9 @@ enum class NumberField(
 enum class TextField(
     val key: String,
 ) {
-    VaapiDevice("VaapiDevice"),
-    QsvDevice("QsvDevice"),
-    FallbackFont("FallbackFontPath"),
+    VaapiDevice(ENCODING_VAAPI_DEVICE),
+    QsvDevice(ENCODING_QSV_DEVICE),
+    FallbackFont(ENCODING_FALLBACK_FONT_PATH),
 }
 
 /** The sheet open over the page: a number, a text, or the temporary files folder. */

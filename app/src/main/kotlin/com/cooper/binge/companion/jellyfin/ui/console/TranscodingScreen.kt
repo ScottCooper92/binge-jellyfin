@@ -31,6 +31,7 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.encodingChoice
 import com.cooper.binge.companion.jellyfin.server.string
 import kotlinx.serialization.json.JsonElement
 import com.binge.designsystem.R as DesR
@@ -88,7 +89,7 @@ private fun TranscodingBody(
     inner: PaddingValues,
 ) {
     var picker by rememberSaveable { mutableStateOf<TranscodingPicker?>(null) }
-    val type = state.encoding.string(ENCODING_ACCELERATION) ?: "none"
+    val type = encodingChoice(state.encoding.string(ENCODING_ACCELERATION), "none")
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
@@ -117,14 +118,7 @@ private fun TranscodingBody(
         QualityGroup(state, actions) { picker = it }
         AudioGroup(state, profile, actions) { picker = it }
         StreamingGroups(state, profile, actions)
-        PolicyFailure(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
+        FailureText(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
     }
     picker?.let { TranscodingPickerSheet(it, state, profile, actions) { picker = null } }
-}
-
-/** A failed save's message, in the error colour. */
-@Composable
-internal fun PolicyFailure(text: String?) {
-    if (text == null) return
-    Text(text = text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
 }

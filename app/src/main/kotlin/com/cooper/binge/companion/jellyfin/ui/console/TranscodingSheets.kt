@@ -34,6 +34,8 @@ import com.cooper.binge.companion.jellyfin.server.TONEMAPPING_ALGORITHMS
 import com.cooper.binge.companion.jellyfin.server.TONEMAPPING_MODES
 import com.cooper.binge.companion.jellyfin.server.TONEMAPPING_RANGES
 import com.cooper.binge.companion.jellyfin.server.downmixAlgorithms
+import com.cooper.binge.companion.jellyfin.server.encodingChoice
+import com.cooper.binge.companion.jellyfin.server.encodingStored
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.string
 import kotlinx.serialization.json.JsonPrimitive
@@ -216,10 +218,10 @@ internal fun TranscodingPickerSheet(
     val config = state.encoding
     when (picker) {
         TranscodingPicker.Acceleration ->
-            Choices(R.string.transcoding_acceleration, ACCELERATION_TYPES, config.string(ENCODING_ACCELERATION) ?: "none", {
+            Choices(R.string.transcoding_acceleration, ACCELERATION_TYPES, encodingChoice(config.string(ENCODING_ACCELERATION), "none"), {
                 accelerationLabel(it)
             }, onDismiss) {
-                actions.onEncoding(ENCODING_ACCELERATION, JsonPrimitive(it))
+                actions.onEncoding(ENCODING_ACCELERATION, JsonPrimitive(encodingStored(it, "none", profile)))
             }
         TranscodingPicker.Algorithm ->
             Choices(R.string.transcoding_algorithm, TONEMAPPING_ALGORITHMS, config.string(ENCODING_TONEMAPPING_ALGORITHM) ?: "none", {
@@ -251,11 +253,11 @@ internal fun TranscodingPickerSheet(
             Choices(
                 R.string.transcoding_preset,
                 ENCODER_PRESETS,
-                config.string(ENCODING_PRESET) ?: "auto",
+                encodingChoice(config.string(ENCODING_PRESET), "auto"),
                 { presetLabel(it) },
                 onDismiss,
             ) {
-                actions.onEncoding(ENCODING_PRESET, JsonPrimitive(it))
+                actions.onEncoding(ENCODING_PRESET, JsonPrimitive(encodingStored(it, "auto", profile)))
             }
         TranscodingPicker.Deinterlace ->
             Choices(R.string.transcoding_deinterlace, DEINTERLACE_METHODS, config.string(ENCODING_DEINTERLACE) ?: "yadif", {

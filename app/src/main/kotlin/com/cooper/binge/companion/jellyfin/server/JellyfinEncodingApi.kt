@@ -59,6 +59,19 @@ const val SERVER_MIN_AUDIOBOOK_RESUME = "MinAudiobookResume"
 const val SERVER_MAX_AUDIOBOOK_RESUME = "MaxAudiobookResume"
 const val SERVER_BITRATE_LIMIT = "RemoteClientBitrateLimit"
 
+/** A stored choice as shown: blank (what 10.8 and 10.9 store for "none" and "auto") reads as [default]. */
+fun encodingChoice(
+    stored: String?,
+    default: String,
+): String = stored?.takeIf { it.isNotBlank() } ?: default
+
+/** A chosen value as the server stores it: before 10.10 its default, "none" or "auto", is `""`. */
+fun encodingStored(
+    choice: String,
+    default: String,
+    profile: JellyfinServerProfile,
+): String = if (choice == default && !profile.hasNamedEncodingDefaults) "" else choice
+
 /** The hardware acceleration types the server has, as jellyfin-web lists them: `none` first. */
 val ACCELERATION_TYPES = listOf("none", "amf", "nvenc", "qsv", "vaapi", "rkmpp", "videotoolbox", "v4l2m2m")
 

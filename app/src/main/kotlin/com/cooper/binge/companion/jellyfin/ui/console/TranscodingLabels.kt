@@ -18,7 +18,8 @@ internal fun accelerationLabel(type: String): String =
             "vaapi" -> R.string.transcoding_type_vaapi
             "rkmpp" -> R.string.transcoding_type_rkmpp
             "videotoolbox" -> R.string.transcoding_type_videotoolbox
-            else -> R.string.transcoding_type_v4l2
+            "v4l2m2m" -> R.string.transcoding_type_v4l2
+            else -> return type
         },
     )
 
