@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsApplications
 import androidx.compose.material.icons.outlined.Tune
@@ -376,6 +377,7 @@ private fun ServerGroup(
     )
 }
 
+/** One of the administrator's pages as the home lists it: its icon, name and the line under it. */
 private class AdminPage(
     val page: ConsolePage,
     val icon: ImageVector,
@@ -393,6 +395,7 @@ private val adminPages =
         AdminPage(ConsolePage.Devices, Icons.Outlined.Devices, R.string.devices_title, R.string.console_devices_detail),
         AdminPage(ConsolePage.Users, Icons.Outlined.Group, R.string.users_title, R.string.console_users_detail),
         AdminPage(ConsolePage.ServerSettings, Icons.Outlined.Tune, R.string.server_settings_title, R.string.console_server_settings_detail),
+        AdminPage(ConsolePage.Network, Icons.Outlined.Router, R.string.network_title, R.string.console_network_detail),
         AdminPage(ConsolePage.Advanced, Icons.Outlined.Build, R.string.advanced_title, R.string.console_advanced_detail),
         AdminPage(ConsolePage.Trickplay, Icons.Outlined.Image, R.string.trickplay_title, R.string.console_trickplay_detail),
         AdminPage(ConsolePage.LibraryDisplay, Icons.Outlined.ViewModule, R.string.display_title, R.string.console_display_detail),

@@ -57,6 +57,9 @@ enum class ConsolePage {
     /** The server's trickplay (seek thumbnail) options. Admin only, on a server that has trickplay. */
     Trickplay,
 
+    /** The server's network options: ports, HTTPS, addresses, remote access. Admin only. */
+    Network,
+
     /** The server's advanced options: scanning, caches, log retention, CORS. Admin only. */
     Advanced,
 
@@ -90,7 +93,7 @@ enum class ConsolePage {
             Plugins -> account.isAdministrator
             Backups -> account.isAdministrator && profile.hasBackups
             Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
-            ServerSettings, LibraryDisplay, Transcoding, Server,
+            ServerSettings, Network, LibraryDisplay, Transcoding, Server,
             -> account.isAdministrator
         }
 
@@ -106,6 +109,7 @@ enum class ConsolePage {
                 Devices,
                 Users,
                 ServerSettings,
+                Network,
                 Advanced,
                 LibraryDisplay,
                 Transcoding,

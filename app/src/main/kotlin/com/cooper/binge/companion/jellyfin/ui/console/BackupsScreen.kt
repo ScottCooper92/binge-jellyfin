@@ -7,11 +7,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -84,6 +85,7 @@ fun BackupsScreen(
                 is BackupsUiState.Ready -> {
                     Backups(state, actions, inner, now)
                     SnackbarMessage(state.restore.refusal()?.let { stringResource(it) }, host)
+                    CreationMessage(state.creation, host, actions.onDismissCreation)
                 }
             }
         }
@@ -110,7 +112,7 @@ private fun Backups(
     }
 }
 
-/** What the page is doing or has just done, as rows above the list: a backup being made or finished, a restore going on or done. */
+/** What the page is doing, as rows above the list: a backup being made, a restore going on or done. A backup made or refused is a message over the page, not a row. */
 @Composable
 private fun statusRows(
     state: BackupsUiState.Ready,
@@ -118,7 +120,7 @@ private fun statusRows(
 ): List<ListItem>? {
     val rows =
         listOfNotNull(
-            when (val creation = state.creation) {
+            when (state.creation) {
                 BackupCreation.Idle -> null
                 BackupCreation.Creating ->
                     ListItem(
@@ -129,25 +131,7 @@ private fun statusRows(
                         trailingContent = { BingeLoadingIndicator() },
                         clickable = false,
                     )
-                is BackupCreation.Created ->
-                    ListItem(
-                        icon = Icons.Outlined.CheckCircle,
-                        label = stringResource(R.string.backups_created),
-                        detail = stringResource(R.string.backups_created_detail),
-                        supportingMaxLines = STATUS_LINES,
-                        trailingContent = { DismissButton(actions.onDismissCreation) },
-                        clickable = false,
-                    )
-                is BackupCreation.Failed ->
-                    ListItem(
-                        icon = Icons.Outlined.ErrorOutline,
-                        label = stringResource(R.string.backups_create_failed),
-                        // The server's own reason, as on every page; a refusal with none has this page's hint.
-                        detail = creation.error.consoleFailure().let { it.reason ?: stringResource(backupsFailureHint(it)) },
-                        supportingMaxLines = FAILURE_LINES,
-                        trailingContent = { DismissButton(actions.onDismissCreation) },
-                        clickable = false,
-                    )
+                is BackupCreation.Created, is BackupCreation.Failed -> null
             },
             when (state.restore) {
                 Restore.Restoring ->
@@ -173,6 +157,37 @@ private fun statusRows(
         )
     return rows.ifEmpty { null }
 }
+
+/**
+ * A backup that was made, or refused, as a message over the page, so the list never moves for it. It carries a dismiss action
+ * and clears the creation when it ends, by the action or by running out of time; a refusal stays until it is dismissed.
+ */
+@Composable
+private fun CreationMessage(
+    creation: BackupCreation,
+    host: SnackbarHostState,
+    onDismiss: () -> Unit,
+) {
+    val message =
+        when (creation) {
+            is BackupCreation.Created -> stringResource(R.string.backups_created_message)
+            is BackupCreation.Failed -> stringResource(R.string.backups_create_failed_message, creation.reason())
+            else -> null
+        }
+    val duration = if (creation is BackupCreation.Failed) SnackbarDuration.Indefinite else SnackbarDuration.Long
+    LaunchedEffect(creation) {
+        if (message != null) {
+            host.showSnackbar(message, withDismissAction = true, duration = duration)
+            onDismiss()
+        }
+    }
+}
+
+/** Why a backup was not made: the server's own reason, the free-space hint for a refusal, or the failure's plain sentence. */
+@Composable
+private fun BackupCreation.Failed.reason(): String =
+    (error as? JellyfinHttpException)?.let { it.reason ?: stringResource(R.string.backups_create_refused) }
+        ?: stringResource(error.consoleFailure().message)
 
 @Composable
 private fun DismissButton(onClick: () -> Unit) = BingeTextButton(label = stringResource(R.string.backups_done), onClick = onClick)
@@ -212,9 +227,3 @@ internal fun BackupOptions.summary(): String =
 
 private const val LOADING_ROWS = 5
 private const val STATUS_LINES = 3
-
-private fun backupsFailureHint(failure: ConsoleFailure): Int =
-    if (failure == ConsoleFailure.Refused) R.string.backups_create_refused else failure.message
-
-/** The failed-create row carries a server reason or a hint the admin has to be able to read whole, at any font size. */
-private const val FAILURE_LINES = 8

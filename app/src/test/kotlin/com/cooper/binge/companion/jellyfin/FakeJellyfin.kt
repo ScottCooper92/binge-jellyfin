@@ -27,8 +27,11 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.File
 import java.nio.file.Files
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** One title or episode on the fake server. Ticks are Jellyfin's: 10,000 to the millisecond. */
 data class FakeItem(
@@ -48,7 +51,7 @@ data class FakeItem(
 
 /**
  * A Jellyfin server in a [MockWebServer], answering the calls this app makes with the shapes the
- * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back and [dropped] cuts one off.
+ * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back for good, [dropped] cuts one off, and [hold] holds one in flight until a test ends it.
  */
 class FakeJellyfin : Dispatcher() {
     val server = MockWebServer()
@@ -63,6 +66,72 @@ class FakeJellyfin : Dispatcher() {
     /** Paths whose connection is cut as the request arrives, as a server that has gone away. */
     val dropped = mutableSetOf<String>()
     val notJson = mutableSetOf<String>()
+
+    /** The requests a test is holding in flight, each until the test chooses how it ends (see [hold]). */
+    private val holds = CopyOnWriteArrayList<Hold>()
+
+    /**
+     * Holds the next request to [path] (to a [method], if given) in flight: the server has the request and does not answer it
+     * until the test calls [Hold.release], [Hold.refuse] or [Hold.cut]. Only that one request is held; the ones after it are
+     * answered as usual. This is for a call that is still running when the screen changes under it.
+     */
+    fun hold(
+        path: String,
+        method: String? = null,
+    ): Hold = Hold(path, method).also { holds += it }
+
+    /** One held request, and how the test ends it. */
+    class Hold internal constructor(
+        internal val path: String,
+        internal val method: String?,
+    ) {
+        private val arrived = CountDownLatch(1)
+        private val outcome = CompletableFuture<HoldOutcome>()
+        private val taken = AtomicBoolean(false)
+
+        /** Whether the held request was cut: OkHttp then tries it again, on each route it has, so every later one is cut too. */
+        private val cutOff = AtomicBoolean(false)
+
+        internal fun takes(request: RecordedRequest): Boolean {
+            if (request.url.encodedPath != path || (method != null && request.method != method)) return false
+            return taken.compareAndSet(false, true) || cutOff.get()
+        }
+
+        /** Called on the server's thread: the request is in, and waits for the test's decision. */
+        internal fun await(): HoldOutcome {
+            arrived.countDown()
+            return outcome.get(HOLD_LIMIT_SECONDS, TimeUnit.SECONDS)
+        }
+
+        /** Blocks until the held request has reached the server, so the test knows the call is in flight. */
+        fun awaitArrival() = check(arrived.await(HOLD_LIMIT_SECONDS, TimeUnit.SECONDS)) { "No request to $path arrived to be held" }
+
+        /** Answers the held request as the server would have without the hold. */
+        fun release() = outcome.complete(HoldOutcome.Answer)
+
+        /** Answers the held request with [code] and [body], as a server that refuses it. */
+        fun refuse(
+            code: Int = 500,
+            body: String = "",
+        ) = outcome.complete(HoldOutcome.Refuse(code, body))
+
+        /** Cuts the held request's connection, and the client's retries of it, as a server that has gone away. */
+        fun cut(): Boolean {
+            cutOff.set(true)
+            return outcome.complete(HoldOutcome.Cut)
+        }
+    }
+
+    internal sealed interface HoldOutcome {
+        data object Answer : HoldOutcome
+
+        data class Refuse(
+            val code: Int,
+            val body: String,
+        ) : HoldOutcome
+
+        data object Cut : HoldOutcome
+    }
 
     /** The event sockets the app opened, and every message it sent on them. */
     val sockets = CopyOnWriteArrayList<WebSocket>()
@@ -134,6 +203,15 @@ class FakeJellyfin : Dispatcher() {
             """"EnableHwEncoding":false,"EnableKeyFrameOnlyExtraction":false,"ScanBehavior":"NonBlocking",""" +
             """"ProcessPriority":"BelowNormal","Interval":10000,"WidthResolutions":[320],"TileWidth":10,"TileHeight":10,""" +
             """"Qscale":4,"JpegQuality":90,"ProcessThreads":1}}"""
+
+    /** The network configuration, as `/System/Configuration/network` answers it and a save replaces it. */
+    var networkConfiguration =
+        """{"EnableHttps":false,"RequireHttps":false,"CertificatePath":"","CertificatePassword":"s3cret","InternalHttpPort":8096,""" +
+            """"InternalHttpsPort":8920,"PublicHttpPort":8096,"PublicHttpsPort":8920,"AutoDiscovery":true,"EnableUPnP":false,""" +
+            """"EnableIPv4":true,"EnableIPv6":false,"EnableRemoteAccess":true,"LocalNetworkSubnets":[],"LocalNetworkAddresses":[],""" +
+            """"KnownProxies":[],"IgnoreVirtualInterfaces":true,"VirtualInterfaceNames":["veth"],""" +
+            """"EnablePublishedServerUriByRequest":false,""" +
+            """"PublishedServerUriBySubnet":[],"BaseUrl":"","RemoteIPFilter":[],"IsRemoteIPFilterBlacklist":false,"FutureOption":{"keep":"me"}}"""
 
     /** The encoding configuration, as `/System/Configuration/encoding` answers it and a save replaces it. */
     var encodingConfiguration =
@@ -323,9 +401,45 @@ class FakeJellyfin : Dispatcher() {
 
     fun hits(path: String): Int = requests.count { it.url.encodedPath == path }
 
+    /**
+     * Waits for a write to [path] whose JSON body satisfies [check], and answers that body (the latest such). A test asserts on
+     * a body by waiting for it, not by counting requests and reading the last: the view model tests run with their Main on
+     * `Unconfined`, so a save's answer can be handled on another thread while the test changes the draft, and the save engine
+     * (main-thread only) may then send one write twice. The count reaches its number on the repeat, and the last body is one
+     * written before the change the test is waiting for.
+     */
+    fun awaitBody(
+        path: String,
+        timeoutMillis: Long = AWAIT_BODY_MILLIS,
+        check: (JsonObject) -> Boolean,
+    ): JsonObject {
+        val until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
+        while (true) {
+            requests
+                .filter { it.url.encodedPath == path && it.method != "GET" }
+                .mapNotNull { runCatching { Json.parseToJsonElement(it.body?.utf8().orEmpty()).jsonObject }.getOrNull() }
+                .lastOrNull(check)
+                ?.let { return it }
+            check(System.nanoTime() < until) { "No write to $path matched, in $timeoutMillis ms" }
+            Thread.sleep(AWAIT_BODY_POLL_MILLIS)
+        }
+    }
+
     override fun dispatch(request: RecordedRequest): MockResponse {
         requests += request
         val path = request.url.encodedPath
+        holds.firstOrNull { it.takes(request) }?.let { hold ->
+            when (val outcome = hold.await()) {
+                HoldOutcome.Answer -> Unit
+                is HoldOutcome.Refuse ->
+                    return MockResponse
+                        .Builder()
+                        .code(outcome.code)
+                        .body(outcome.body)
+                        .build()
+                HoldOutcome.Cut -> return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
+            }
+        }
         if (path in slow) {
             return MockResponse
                 .Builder()
@@ -357,6 +471,11 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Info" -> json(systemInfo)
             path == "/Items/Counts" -> json(itemCounts)
+            path == "/System/Configuration/network" && request.method == "POST" -> {
+                networkConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/network" -> json(networkConfiguration)
             path == "/System/Configuration" && request.method == "POST" -> {
                 serverConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
@@ -950,3 +1069,9 @@ fun FakeJellyfin.session(): JellyfinSession =
         userName = "Claude",
         token = "token-1",
     )
+
+/** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
+private const val HOLD_LIMIT_SECONDS = 20L
+
+private const val AWAIT_BODY_MILLIS = 10_000L
+private const val AWAIT_BODY_POLL_MILLIS = 10L
