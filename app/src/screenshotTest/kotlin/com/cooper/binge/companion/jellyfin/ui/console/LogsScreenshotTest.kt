@@ -116,6 +116,12 @@ class LogsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @Composable
+    fun noFiles() = LogsScreen(LogsUiState.Ready(emptyList()), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
     @JellyfinFontScalePreviews
     @Composable
     fun retention() = LogsScreen(LogsUiState.Ready(previewFiles, retention = 3), LogsActions(), zone = ZoneOffset.UTC)
