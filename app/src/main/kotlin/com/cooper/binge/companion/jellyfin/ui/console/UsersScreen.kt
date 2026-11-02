@@ -31,6 +31,7 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
@@ -359,7 +360,7 @@ internal fun CreateSheet(
     }
 }
 
-/** A new password for a user, with the console's show/hide toggle. [inWindow] false draws the form for a frame. */
+/** A new password for a user, on the design system's secret text entry. [inWindow] false draws the form for a frame. */
 @Composable
 internal fun PasswordSheet(
     user: ServerUser,
@@ -368,21 +369,19 @@ internal fun PasswordSheet(
 ) {
     var password by rememberSaveable { mutableStateOf("") }
     ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
-        ConsoleFieldsForm(
+        TextEntrySurface(
             title = stringResource(R.string.users_password_title, user.name),
-            body = stringResource(R.string.users_password_body),
-            submitLabel = stringResource(R.string.users_password_action),
+            supportingText = stringResource(R.string.users_password_body),
+            value = password,
+            onValueChange = { password = it },
             onSubmit = { actions.onSetPassword(password) },
             onCancel = { actions.onShow(null) },
-        ) {
-            ConsoleTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = stringResource(R.string.password_new),
-                secret = true,
-                onDone = { actions.onSetPassword(password) },
-            )
-        }
+            submitLabel = stringResource(R.string.users_password_action),
+            hint = stringResource(R.string.password_new),
+            submitEnabled = true,
+            singleLine = true,
+            secret = true,
+        )
     }
 }
 

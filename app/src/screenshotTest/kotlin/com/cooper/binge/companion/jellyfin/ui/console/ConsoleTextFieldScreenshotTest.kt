@@ -47,5 +47,14 @@ class ConsoleTextFieldScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun secretRevealed() =
-        Fields { ConsoleTextField(value = "hunter2", onValueChange = {}, label = "Password", secret = true, initiallyRevealed = true) }
+        Fields {
+            ConsoleTextField(
+                value = "hunter2",
+                onValueChange = {},
+                label = "Password",
+                secret = true,
+                revealed = true,
+                onToggleReveal = {},
+            )
+        }
 }
