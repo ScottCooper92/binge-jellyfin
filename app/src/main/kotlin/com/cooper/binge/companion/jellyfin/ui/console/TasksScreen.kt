@@ -101,6 +101,7 @@ private fun Tasks(
 ) {
     val board = state.board
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+        if (board.tasks.isEmpty()) item { ConsoleEmptyScreen(stringResource(R.string.tasks_empty), Icons.Outlined.Schedule) }
         board.tasks.groupBy { it.category }.forEach { (category, tasks) ->
             item(key = category) {
                 ItemGroup(

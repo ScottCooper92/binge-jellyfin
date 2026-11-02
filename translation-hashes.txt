@@ -61,6 +61,7 @@ app:console_tasks_detail  48496ae36269
 app:console_trickplay_detail  bd775a28fd5a
 app:console_users_detail  eac7a7a1e6e7
 app:devices_body  0b3190952ff8
+app:devices_empty  87581bfed7c9
 app:devices_not_changed  f770f37ad5b3
 app:devices_remove  c3812fc4acb8
 app:devices_remove_body  53f8b777dbbf
@@ -422,6 +423,7 @@ app:subtitle_mode_none  ca7981b46ecf
 app:subtitle_mode_none_detail  1547386ff931
 app:subtitle_mode_smart  9e6ad6db21db
 app:subtitle_mode_smart_detail  319b67f1f5af
+app:tasks_empty  cbb850a0f5d7
 app:tasks_not_sent  ca0afa8ce6b6
 app:tasks_title  21c4a0a31b6a
 app:tasks_trigger_add  58fd308928dd

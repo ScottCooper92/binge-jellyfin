@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.GppBad
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Person
@@ -105,7 +106,7 @@ private fun Entries(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        if (state.entries.isEmpty()) item { Text(stringResource(R.string.activity_empty), style = MaterialTheme.typography.bodyLarge) }
+        if (state.entries.isEmpty()) item { ConsoleEmptyScreen(stringResource(R.string.activity_empty), Icons.Outlined.History) }
         state.entries.groupBy { day(it.dateMillis, zone) }.forEach { (day, entries) ->
             item(key = "day-$day") {
                 ItemGroup(title = dayTitle(day, now), rows = entries.map { it.row(time) })

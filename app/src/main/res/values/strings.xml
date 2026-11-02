@@ -565,4 +565,6 @@
     <string name="repositories_next">Next</string>
     <string name="repositories_back">Back</string>
     <string name="repositories_add_submit">Add</string>
+    <string name="devices_empty">No devices are signed in to this server.</string>
+    <string name="tasks_empty">This server has no scheduled tasks to show.</string>
 </resources>
