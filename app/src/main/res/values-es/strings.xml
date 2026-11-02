@@ -867,9 +867,8 @@
     <string name="backups_create_action">Hacer copia</string>
     <string name="backups_creating">Haciendo una copia de seguridad</string>
     <string name="backups_creating_detail">El servidor la está escribiendo. Puedes salir de esta página.</string>
-    <string name="backups_created">Copia de seguridad hecha</string>
-    <string name="backups_created_detail">Es la primera de la lista de abajo.</string>
-    <string name="backups_create_failed">No se hizo la copia de seguridad</string>
+    <string name="backups_created_message">Copia de seguridad hecha. Es la primera de la lista de abajo.</string>
+    <string name="backups_create_failed_message">No se hizo la copia de seguridad. %1$s</string>
     <string name="backups_create_refused">Puede que el servidor necesite 5 GiB libres donde guarda las copias. Libera espacio antes de reintentar.</string>
     <string name="backups_done">Listo</string>
     <string name="backups_sheet_title">Copia de seguridad</string>
