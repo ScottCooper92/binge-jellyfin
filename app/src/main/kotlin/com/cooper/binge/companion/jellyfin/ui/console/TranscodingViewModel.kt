@@ -141,11 +141,16 @@ class TranscodingViewModel(
     val state: StateFlow<TranscodingUiState> = _state.asStateFlow()
 
     private val encoding =
-        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveEncodingConfiguration(json) }) { shown, failure ->
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveEncodingConfiguration(json) },
+        ) { shown, failure ->
             update { copy(encoding = shown, saveFailed = failure) }
         }
     private val server =
-        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
+        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
             update { copy(server = shown, saveFailed = failure) }
         }
 
