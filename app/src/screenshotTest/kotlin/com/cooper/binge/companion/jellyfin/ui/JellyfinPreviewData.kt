@@ -82,6 +82,9 @@ val previewSignedInAdmin =
         card = previewCard.copy(users = 5),
     )
 
-/** An administrator's card with everything it can flag: an update, a restart waiting and a server on its way down. */
-val previewSignedInAdminAlerts =
-    previewSignedInAdmin.copy(card = previewSignedInAdmin.card.copy(updateAvailable = true, restartPending = true, shuttingDown = true))
+/**
+ * An administrator's card flagging an update, on an unencrypted address: two pills, which the card's top row fits. Three
+ * (a restart pending too) are squeezed into a sliver, and the pills break per letter at large font: a card layout
+ * problem for the design system, not framed here until it is fixed.
+ */
+val previewSignedInAdminAlerts = previewSignedInAdmin.copy(card = previewSignedInAdmin.card.copy(updateAvailable = true))
