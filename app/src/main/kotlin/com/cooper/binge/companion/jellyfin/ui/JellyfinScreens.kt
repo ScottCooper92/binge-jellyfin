@@ -15,8 +15,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
@@ -34,7 +32,6 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsApplications
-import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material.icons.outlined.ViewModule
@@ -97,7 +94,12 @@ fun JellyfinRoot(
     state: UiState,
     actions: Actions,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.app_label), bar = ScreenBar.Small) { padding ->
+    BingeScreenScaffold(
+        title = stringResource(R.string.app_label),
+        bar = ScreenBar.Small,
+        // An administrator's own settings are one tap away, in the account: avatar, as binge-seerr has it.
+        actions = { if (state is UiState.SignedIn && state.isAdministrator) AccountAction(state, actions) },
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
@@ -317,21 +319,15 @@ private fun SignedIn(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { ServerGroup(state, actions) }
-        item { AccountGroup(state, actions) }
+        // An administrator's own settings are in the account, behind the avatar. Everyone else has nothing else to
+        // show, so their home is their account: the same rows, inline, and Sign out last.
+        if (!state.isAdministrator) item { AccountGroup(state, actions) }
         if (ConsolePage.entries.any { it.isAdmin && it.available(state.profile, state.account) }) {
             item { AdminGroup(state, actions) }
         }
         // What Binge can find in the library is Binge's to show; without the flag the app names no Binge.
         if (promoted) item { LibraryGroup(state, actions) }
-        item {
-            BingeTextButton(
-                label = stringResource(R.string.settings_sign_out),
-                onClick = actions.onAskSignOut,
-                leadingIcon = Icons.AutoMirrored.Outlined.Logout,
-                destructive = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        if (!state.isAdministrator) item { SignOutButton(actions) }
     }
     if (state.confirmingSignOut) SignOutConfirm(actions)
 }
@@ -481,43 +477,6 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_server_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Server) },
                 ).takeIf { ConsolePage.Server.available(state.profile, state.account) },
-            ),
-    )
-}
-
-/** The console's pages for everyone. */
-@Composable
-private fun AccountGroup(
-    state: UiState.SignedIn,
-    actions: Actions,
-) {
-    ItemGroup(
-        title = stringResource(R.string.console_account_title),
-        rows =
-            listOfNotNull(
-                ListItem(
-                    icon = Icons.Outlined.QrCode2,
-                    label = stringResource(R.string.approve_title),
-                    detail = stringResource(R.string.console_approve_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.ApproveCode) },
-                ).takeIf { ConsolePage.ApproveCode.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Translate,
-                    label = stringResource(R.string.playback_title),
-                    detail = stringResource(R.string.console_playback_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Playback) },
-                ).takeIf { ConsolePage.Playback.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Dashboard,
-                    label = stringResource(R.string.home_layout_title),
-                    detail = stringResource(R.string.console_home_layout_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.HomeLayout) },
-                ).takeIf { ConsolePage.HomeLayout.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Password,
-                    label = stringResource(R.string.password_title),
-                    onClick = { actions.onOpenPage(ConsolePage.Password) },
-                ).takeIf { ConsolePage.Password.available(state.profile, state.account) },
             ),
     )
 }

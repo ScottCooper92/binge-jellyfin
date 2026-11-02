@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
                                 val close = { stack = stack.back() }
                                 ConsolePageScope(pageStores.storeFor(openPage.opening)) {
                                     (state as? UiState.SignedIn)?.let { gated ->
-                                        ConsolePageRoute(openPage.page, graph, gated, close, actions.onOpenPage)
+                                        ConsolePageRoute(openPage.page, graph, gated, close, actions.onOpenPage, actions)
                                     }
                                 }
                             }
