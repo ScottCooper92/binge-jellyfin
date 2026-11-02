@@ -265,6 +265,70 @@ class UsersViewModelTest {
         assertEquals(2, vm.ready().users.size)
     }
 
+    @Test
+    fun `a password that fails after its form was left is said on the page, and the form is gone`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        vm.show(UserDialog.Password)
+        val held = jellyfin.hold("/Users/Password", method = "POST")
+        vm.setPassword("new-one")
+        held.awaitArrival()
+        // The form is dismissed while the call is still running, then the call fails.
+        vm.show(null)
+        held.refuse(500)
+        val failed = vm.ready { it.actionFailed != null }
+        assertEquals(ConsoleFailure.Refused, failed.actionFailed)
+        assertNull(failed.formFailure)
+        assertNull(failed.dialog)
+        assertFalse(failed.busy)
+    }
+
+    @Test
+    fun `a password that fails after another user's Password form opened is said on the page, not in that form`() {
+        // A third user, beside Claude (who is signed in) and Sam.
+        val sam2 = jellyfin.serverUsers.getValue("user-2")
+        jellyfin.serverUsers["user-3"] =
+            kotlinx.serialization.json.JsonObject(
+                sam2 +
+                    mapOf(
+                        "Id" to kotlinx.serialization.json.JsonPrimitive("user-3"),
+                        "Name" to kotlinx.serialization.json.JsonPrimitive("Tess"),
+                    ),
+            )
+        val vm = made(UsersViewModel(connection))
+        val sam = vm.openSam()
+        vm.show(UserDialog.Password)
+        val held = jellyfin.hold("/Users/Password", method = "POST")
+        vm.setPassword("new-one")
+        held.awaitArrival()
+        // Another user is opened and their own Password form shown, then Sam's call fails.
+        val other = vm.ready().users.first { it.id != sam.id && it.id != vm.ready().me }
+        vm.open(other)
+        vm.show(UserDialog.Password)
+        held.refuse(500)
+        val failed = vm.ready { it.actionFailed != null }
+        assertEquals(ConsoleFailure.Refused, failed.actionFailed)
+        assertNull(failed.formFailure)
+        assertEquals(UserDialog.Password, failed.dialog)
+        assertEquals(other.id, failed.open)
+    }
+
+    @Test
+    fun `a create that fails after its form was left is said on the page`() {
+        val vm = made(UsersViewModel(connection))
+        vm.ready()
+        vm.show(UserDialog.Create)
+        val held = jellyfin.hold("/Users/New", method = "POST")
+        vm.create("Ana", "")
+        held.awaitArrival()
+        vm.show(null)
+        held.cut()
+        val failed = vm.ready { it.actionFailed != null }
+        assertEquals(ConsoleFailure.Unreachable, failed.actionFailed)
+        assertNull(failed.formFailure)
+        assertNull(failed.dialog)
+    }
+
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
         const val POLL_MILLIS = 10L
