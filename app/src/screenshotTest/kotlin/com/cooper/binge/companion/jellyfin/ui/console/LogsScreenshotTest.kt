@@ -114,6 +114,12 @@ class LogsScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun noFiles() = LogsScreen(LogsUiState.Ready(emptyList()), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun loading() = LogsScreen(LogsUiState.Loading, LogsActions())
 
