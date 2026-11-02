@@ -111,7 +111,16 @@ private fun Keys(
             )
         }
     }
-    if (state.naming) NewKeySheet(actions)
+    if (state.naming) {
+        NewKeySheet(
+            actions,
+            submitting = state.busy,
+            error =
+                state.formFailure?.let {
+                    stringResource(R.string.api_keys_not_changed, stringResource(it.message))
+                },
+        )
+    }
     state.created?.let { CreatedKeyDialog(it, actions) }
     state.removing?.let { RevokeDialog(it, actions) }
 }
@@ -166,6 +175,8 @@ internal fun RevokeDialog(
 @Composable
 internal fun NewKeySheet(
     actions: ApiKeysActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -179,6 +190,8 @@ internal fun NewKeySheet(
             onSubmit = { actions.onCreate(name) },
             onCancel = { actions.onAskCreate(false) },
             hint = stringResource(R.string.api_keys_app_field),
+            error = error,
+            isSubmitting = submitting,
         )
     }
 }

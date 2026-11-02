@@ -92,14 +92,24 @@ class ApiKeysViewModelTest {
     }
 
     @Test
-    fun `a key that can't be made says why and shows no key`() {
+    fun `a key that can't be made says why in the form, which stays open, and shows no key`() {
         val vm = made(ApiKeysViewModel(connection))
         vm.ready()
+        vm.askCreate(true)
         jellyfin.status["/Auth/Keys"] = 500
         vm.create("Radarr")
-        val failed = vm.ready { it.actionFailed != null }
+        val failed = vm.ready { it.formFailure != null }
         assertNull(failed.created)
-        assertEquals(ConsoleFailure.Refused, failed.actionFailed)
+        assertEquals(ConsoleFailure.Refused, failed.formFailure)
+        assertTrue(failed.naming)
+        assertFalse(failed.busy)
+        assertNull(failed.actionFailed)
+        // Asking again clears it, and a retry that works closes the form.
+        jellyfin.status.remove("/Auth/Keys")
+        vm.create("Radarr")
+        val made = vm.ready { it.created != null && !it.busy }
+        assertFalse(made.naming)
+        assertNull(made.formFailure)
     }
 
     @Test
