@@ -23,11 +23,14 @@ class JellyfinEncodingApiTest {
         assertFalse(isAccelerated("none"))
         assertFalse(isAccelerated(""))
         assertTrue(isAccelerated("v4l2m2m"))
-        // Software tone mapping has its options and no switch; hardware has both; V4L2 has neither.
-        assertTrue(hasToneMapping("none"))
-        assertFalse(hasToneMappingSwitch("none"))
-        assertTrue(hasToneMapping("nvenc") && hasToneMappingSwitch("nvenc"))
-        assertFalse(hasToneMapping("v4l2m2m"))
+        // Software tone mapping is 10.10's, without a mode; hardware has the mode; V4L2 has none.
+        val ten = JellyfinServerProfile.from("10.10.0")
+        val nine = JellyfinServerProfile.from("10.9.0")
+        assertTrue(hasToneMapping("none", ten))
+        assertFalse(hasToneMapping("none", nine))
+        assertFalse(hasToneMappingMode("none"))
+        assertTrue(hasToneMapping("nvenc", nine) && hasToneMappingMode("nvenc"))
+        assertFalse(hasToneMapping("v4l2m2m", ten))
         assertTrue(hasIntelOptions("qsv") && hasIntelOptions("vaapi"))
         assertFalse(hasIntelOptions("nvenc"))
     }
@@ -39,6 +42,12 @@ class JellyfinEncodingApiTest {
             listOf("None", "Dave750", "NightmodeDialogue", "Rfc7845", "Ac4"),
             downmixAlgorithms(JellyfinServerProfile.from("10.10.0")),
         )
+    }
+
+    @Test
+    fun `rkmpp is offered from 10_9`() {
+        assertFalse("rkmpp" in accelerationTypes(JellyfinServerProfile.from("10.8.13")))
+        assertTrue("rkmpp" in accelerationTypes(JellyfinServerProfile.from("10.9.0")))
     }
 
     @Test

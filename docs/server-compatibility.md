@@ -46,6 +46,7 @@ older server shows less rather than failing on a call it can't answer.
 | Splash screen in branding | 10.9 | `hasSplashscreen` |
 | Turning a library off without removing it | 10.9 | `canDisableLibraries` |
 | Collection, subtitle and lyric management permissions | 10.9 | `hasContentManagementPermissions` |
+| A user's allowed tags | 10.9 | `hasAllowedTags` |
 | Loudness (LUFS) scanning for music libraries | 10.9 | `hasLoudnessScan` |
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
 | Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |

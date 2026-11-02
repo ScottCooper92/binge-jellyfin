@@ -59,7 +59,7 @@ import com.cooper.binge.companion.jellyfin.server.decodingCodecs
 import com.cooper.binge.companion.jellyfin.server.encodingChoice
 import com.cooper.binge.companion.jellyfin.server.hasIntelOptions
 import com.cooper.binge.companion.jellyfin.server.hasToneMapping
-import com.cooper.binge.companion.jellyfin.server.hasToneMappingSwitch
+import com.cooper.binge.companion.jellyfin.server.hasToneMappingMode
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.isAccelerated
 import com.cooper.binge.companion.jellyfin.server.string
@@ -170,7 +170,7 @@ internal fun hardwareRows(
             label = stringResource(R.string.transcoding_vaapi_device),
             detail = state.encoding.string(ENCODING_VAAPI_DEVICE)?.ifBlank { null } ?: stringResource(R.string.transcoding_not_set),
             onClick = { actions.onSheet(TranscodingSheet.Text(TextField.VaapiDevice)) },
-        ).takeIf { type == "vaapi" },
+        ).takeIf { type == "vaapi" && state.encoding.sent(ENCODING_VAAPI_DEVICE) },
         ListItem(
             icon = Icons.Outlined.Settings,
             label = stringResource(R.string.transcoding_qsv_device),
@@ -245,9 +245,9 @@ internal fun ToneMappingGroup(
     actions: TranscodingActions,
     onPick: (TranscodingPicker) -> Unit,
 ) {
-    if (!hasToneMapping(type)) return
+    if (!hasToneMapping(type, profile)) return
     val config = state.encoding
-    val hardware = hasToneMappingSwitch(type)
+    val hardware = hasToneMappingMode(type)
     ItemGroup(
         title = stringResource(R.string.transcoding_tonemapping),
         rows =
@@ -258,7 +258,7 @@ internal fun ToneMappingGroup(
                         Icons.Outlined.Palette,
                         R.string.transcoding_tonemapping_enable,
                         actions,
-                    ).takeIf { hardware },
+                    ),
                 state
                     .switch(
                         ENCODING_VPP_TONEMAPPING,

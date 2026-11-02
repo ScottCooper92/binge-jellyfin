@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
@@ -48,6 +49,14 @@ class DevicesScreenshotTest {
     @Composable
     fun changing() =
         DevicesScreen(previewReady.copy(busy = setOf("kodi"), actionFailed = ConsoleFailure.Unreachable), DevicesActions(), now = NOW)
+
+    /** The server listed no devices, which it can when every item it sent was one this app could not read. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun empty() = DevicesScreen(previewReady.copy(devices = emptyList()), DevicesActions(), now = NOW)
 
     @PreviewTest
     @JellyfinScreenStatePreview

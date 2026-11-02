@@ -918,8 +918,18 @@ class ConsoleScreensTest {
                 onShow = { state = state.copy(dialog = it) },
                 onAdministrator = { calls += "admin $it" },
                 onCanSignIn = { calls += "signin $it" },
-                onAllLibraries = { calls += "all $it" },
-                onLibrary = { id, on -> calls += "lib $id $on" },
+                onPolicy = { key, value ->
+                    if (key ==
+                        "EnableAllFolders"
+                    ) {
+                        calls += "all ${(value as kotlinx.serialization.json.JsonPrimitive).content}"
+                    }
+                },
+                onList = { key, change ->
+                    // The change takes an id in or out of the list; the shows library is what it was asked about.
+                    val after = change(emptyList()).map { (it as kotlinx.serialization.json.JsonPrimitive).content }
+                    if (key == "EnabledFolders") calls += "lib ${after.single()} true"
+                },
                 onCreate = { name, _ -> calls += "create $name" },
                 onSetPassword = { calls += "password $it" },
                 onDelete = { calls += "delete" },

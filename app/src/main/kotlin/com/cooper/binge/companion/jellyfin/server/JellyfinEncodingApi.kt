@@ -72,8 +72,12 @@ fun encodingStored(
     profile: JellyfinServerProfile,
 ): String = if (choice == default && !profile.hasNamedEncodingDefaults) "" else choice
 
-/** The hardware acceleration types the server has, as jellyfin-web lists them: `none` first. */
+/** The hardware acceleration types any supported server has, as jellyfin-web lists them: `none` first. */
 val ACCELERATION_TYPES = listOf("none", "amf", "nvenc", "qsv", "vaapi", "rkmpp", "videotoolbox", "v4l2m2m")
+
+/** The types this server has: RKMPP arrived in 10.9. */
+fun accelerationTypes(profile: JellyfinServerProfile): List<String> =
+    if (profile.hasAdvancedEncoding) ACCELERATION_TYPES else ACCELERATION_TYPES - "rkmpp"
 
 val TONEMAPPING_ALGORITHMS = listOf("none", "clip", "linear", "gamma", "reinhard", "hable", "mobius", "bt2390")
 val TONEMAPPING_MODES = listOf("auto", "max", "rgb", "lum", "itp")
@@ -103,10 +107,14 @@ fun decodingCodecs(type: String): List<String> =
 /** Whether [type] does the work in hardware: the options for it show for anything but `none`. */
 fun isAccelerated(type: String): Boolean = type != "none" && type.isNotBlank()
 
-/** Whether the tone mapping options show for [type]: software (`none`) and every type that has them; their switch only for hardware. */
-fun hasToneMapping(type: String): Boolean = type == "none" || type in TONEMAPPING_TYPES
+/** Whether the tone mapping options show for [type]: every hardware type that has them, and software from 10.10. */
+fun hasToneMapping(
+    type: String,
+    profile: JellyfinServerProfile,
+): Boolean = type in TONEMAPPING_TYPES || (type == "none" && profile.hasNamedEncodingDefaults)
 
-fun hasToneMappingSwitch(type: String): Boolean = type in TONEMAPPING_TYPES
+/** The tone mapping mode is for hardware only. */
+fun hasToneMappingMode(type: String): Boolean = type in TONEMAPPING_TYPES
 
 /** The extra Intel switch (low power HEVC encoding) is for Quick Sync and VAAPI. */
 fun hasIntelOptions(type: String): Boolean = type == "qsv" || type == "vaapi"
