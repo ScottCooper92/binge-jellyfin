@@ -71,7 +71,7 @@ fun TranscodingScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 TranscodingUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is TranscodingUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is TranscodingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is TranscodingUiState.Ready -> {
                     TranscodingBody(state, actions, profile, inner)
                     TranscodingSheets(state, actions, folders, folderActions)
