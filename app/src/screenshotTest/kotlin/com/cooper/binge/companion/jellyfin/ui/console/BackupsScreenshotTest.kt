@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
+import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.ServerBackup
 import java.io.IOException
@@ -62,6 +63,22 @@ class BackupsScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun notMade() = BackupsScreen(previewReady.copy(creation = BackupCreation.Failed(IOException("down"))), BackupsActions(), running, NOW)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun notMadeWithReason() =
+        BackupsScreen(
+            previewReady.copy(
+                creation =
+                    BackupCreation.Failed(
+                        JellyfinHttpException(500, "Backup/Create", "The backup directory does not have at least 5GiB free space"),
+                    ),
+            ),
+            BackupsActions(),
+            running,
+            NOW,
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview

@@ -55,6 +55,9 @@ class FakeJellyfin : Dispatcher() {
     val items = CopyOnWriteArrayList<FakeItem>()
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
+
+    /** The body a [status] override answers with, by path. */
+    val statusBody = mutableMapOf<String, String>()
     val slow = mutableSetOf<String>()
 
     /** Paths whose connection is cut as the request arrives, as a server that has gone away. */
@@ -315,7 +318,13 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         if (path in dropped) return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
-        status[path]?.let { return MockResponse(code = it) }
+        status[path]?.let { code ->
+            return MockResponse
+                .Builder()
+                .code(code)
+                .apply { statusBody[path]?.let { body(it) } }
+                .build()
+        }
         if (path == "/socket") return socket(request)
         if (path in notJson) {
             return MockResponse

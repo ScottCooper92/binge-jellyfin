@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -125,6 +126,18 @@ class BackupsViewModelTest {
         assertEquals(2, failed.backups.size)
         vm.dismissCreation()
         vm.ready { it.creation == BackupCreation.Idle }
+    }
+
+    @Test
+    fun `a backup the server refuses with a reason carries it`() {
+        jellyfin.status["/Backup/Create"] = 500
+        jellyfin.statusBody["/Backup/Create"] = """{"title":"The backup directory does not have at least '5GiB' free space"}"""
+        val vm = viewModel()
+        vm.ready()
+        vm.askCreate(true)
+        vm.create()
+        val failed = vm.ready { it.creation is BackupCreation.Failed }.creation as BackupCreation.Failed
+        assertEquals("The backup directory does not have at least '5GiB' free space", (failed.error as JellyfinHttpException).reason)
     }
 
     @Test

@@ -28,6 +28,7 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
+import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.ServerBackup
 import com.binge.designsystem.R as DesR
@@ -142,7 +143,9 @@ private fun statusRows(
                     ListItem(
                         icon = Icons.Outlined.ErrorOutline,
                         label = stringResource(R.string.backups_create_failed),
-                        detail = stringResource(creation.error.consoleFailure().message),
+                        detail =
+                            (creation.error as? JellyfinHttpException)?.reason
+                                ?: stringResource(creation.error.consoleFailure().message),
                         supportingMaxLines = STATUS_LINES,
                         trailingContent = { DismissButton(actions.onDismissCreation) },
                         clickable = false,

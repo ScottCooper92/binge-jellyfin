@@ -9,6 +9,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -26,10 +28,14 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/** A Jellyfin answer other than 2xx. 401 is a broken session; 404 an item the server does not have. */
+/**
+ * A Jellyfin answer other than 2xx. 401 is a broken session; 404 an item the server does not have. [reason] is the
+ * server's own words for a refusal, when its body gave any; it is not in the message, which is logged.
+ */
 class JellyfinHttpException(
     val code: Int,
     path: String,
+    val reason: String? = null,
 ) : IOException("Jellyfin answered $code for $path")
 
 /**
@@ -241,7 +247,7 @@ class JellyfinClient(
                         val outcome =
                             attempt {
                                 response.use {
-                                    if (!it.isSuccessful) throw JellyfinHttpException(it.code, path)
+                                    if (!it.isSuccessful) throw JellyfinHttpException(it.code, path, it.reasonGiven())
                                     it.body.string() to it.request.url
                                 }
                             }
@@ -264,6 +270,26 @@ class JellyfinClient(
         }
     }
 }
+
+/**
+ * The server's reason in an error answer: a problem document's `detail` or `title`, or a short plain-text body. Null
+ * when there is none, or the body is HTML or too long to be a sentence.
+ */
+private fun Response.reasonGiven(): String? {
+    val text = attempt { peekBody(REASON_PEEK_BYTES).string().trim() }.getOrNull()?.takeIf { it.isNotEmpty() } ?: return null
+    val parsed = attempt { Json.parseToJsonElement(text) }.getOrNull()
+    val reason =
+        when (parsed) {
+            null -> text.takeUnless { it.startsWith("<") }
+            is JsonObject -> listOf("detail", "title", "message").firstNotNullOfOrNull { (parsed[it] as? JsonPrimitive)?.contentOrNull }
+            is JsonPrimitive -> parsed.contentOrNull
+            else -> null
+        }
+    return reason?.trim()?.takeIf { it.isNotEmpty() && it.length <= REASON_MAX_CHARS }
+}
+
+private const val REASON_PEEK_BYTES = 2048L
+private const val REASON_MAX_CHARS = 300
 
 /** Percent-encoded as a URI component: `%20` for a space, not the form encoding's `+`. */
 private fun String.encoded(): String = URLEncoder.encode(this, "UTF-8").replace("+", "%20")
