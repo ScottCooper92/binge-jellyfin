@@ -85,9 +85,9 @@ enum class ConsolePage {
             NowPlaying -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
-            Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced ->
-                account.isAdministrator
-            ServerSettings, LibraryDisplay, Transcoding, Server -> account.isAdministrator
+            Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
+            ServerSettings, LibraryDisplay, Transcoding, Server,
+            -> account.isAdministrator
         }
 
     /** One of the administrator's pages, listed together on the home. */
@@ -104,6 +104,7 @@ enum class ConsolePage {
                 ServerSettings,
                 Advanced,
                 LibraryDisplay,
+                Transcoding,
                 Trickplay,
                 Plugins,
                 Server,

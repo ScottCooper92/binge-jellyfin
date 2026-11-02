@@ -158,6 +158,12 @@ class TranscodingViewModel(
         load()
     }
 
+    /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
+    override fun onCleared() {
+        encoding.cleared()
+        server.cleared()
+    }
+
     fun load() {
         _state.value = TranscodingUiState.Loading
         viewModelScope.launch {

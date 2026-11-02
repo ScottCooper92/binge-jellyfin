@@ -1,6 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
@@ -114,6 +116,31 @@ class TranscodingViewModelTest {
                 .jsonPrimitive.content,
         )
         assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/System/Configuration" && it.method == "POST" })
+    }
+
+    @Test
+    fun `leaving the page at once still sends the change`() {
+        val store = ViewModelStore()
+        val vm =
+            ViewModelProvider(
+                store,
+                object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                        checkNotNull(modelClass.cast(TranscodingViewModel(connection)))
+                },
+            )[TranscodingViewModel::class.java]
+        vm.ready()
+        vm.setEncoding(ENCODING_ACCELERATION, JsonPrimitive("vaapi"))
+        // Back before the delay is out: the page's scope goes, and the change must already be on its way.
+        store.clear()
+        saves(ENCODING, 1)
+        assertEquals(
+            "vaapi",
+            jellyfin
+                .lastBody(ENCODING)
+                .getValue(ENCODING_ACCELERATION)
+                .jsonPrimitive.content,
+        )
     }
 
     @Test
