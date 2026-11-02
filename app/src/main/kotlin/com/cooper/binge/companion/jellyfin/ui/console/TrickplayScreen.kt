@@ -38,6 +38,7 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_PRIORITIES
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_SCAN_BEHAVIORS
@@ -91,7 +92,7 @@ fun TrickplayScreen(
         bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
-        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
                 TrickplayUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
