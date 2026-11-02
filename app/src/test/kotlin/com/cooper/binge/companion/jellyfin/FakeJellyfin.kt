@@ -137,7 +137,8 @@ class FakeJellyfin : Dispatcher() {
         """{"EnableHttps":false,"RequireHttps":false,"CertificatePath":"","CertificatePassword":"s3cret","InternalHttpPort":8096,""" +
             """"InternalHttpsPort":8920,"PublicHttpPort":8096,"PublicHttpsPort":8920,"AutoDiscovery":true,"EnableUPnP":false,""" +
             """"EnableIPv4":true,"EnableIPv6":false,"EnableRemoteAccess":true,"LocalNetworkSubnets":[],"LocalNetworkAddresses":[],""" +
-            """"KnownProxies":[],"IgnoreVirtualInterfaces":true,"VirtualInterfaceNames":["veth"],"EnablePublishedServerUriByRequest":false,""" +
+            """"KnownProxies":[],"IgnoreVirtualInterfaces":true,"VirtualInterfaceNames":["veth"],""" +
+            """"EnablePublishedServerUriByRequest":false,""" +
             """"PublishedServerUriBySubnet":[],"RemoteIPFilter":[],"IsRemoteIPFilterBlacklist":false,"FutureOption":{"keep":"me"}}"""
 
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
