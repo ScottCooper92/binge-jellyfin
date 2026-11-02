@@ -77,6 +77,9 @@ data class JellyfinServerProfile(
     /** The Quick Sync device and two more stereo downmix algorithms (RFC 7845, AC-4), in the encoding options. 10.10. */
     val hasQsvDeviceAndDownmix: Boolean get() = atLeast(TEN, TEN)
 
+    /** Preferring an extra's embedded title over its file name, in a library's options. 10.9. */
+    val hasEmbeddedExtrasTitles: Boolean get() = atLeast(TEN, NINE)
+
     /** Hardware decoding of HEVC range extensions (8/10-bit and 12-bit), in the encoding options. 10.10. */
     val hasHevcRext: Boolean get() = atLeast(TEN, TEN)
 

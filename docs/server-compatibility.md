@@ -48,6 +48,7 @@ older server shows less rather than failing on a call it can't answer.
 | Collection, subtitle and lyric management permissions | 10.9 | `hasContentManagementPermissions` |
 | A user's allowed tags | 10.9 | `hasAllowedTags` |
 | Loudness (LUFS) scanning for music libraries | 10.9 | `hasLoudnessScan` |
+| Preferring an extra's embedded title over its file name (library options) | 10.9 | `hasEmbeddedExtrasTitles` |
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
 | Advanced options: library update duration, parallel image encoding, inactive session threshold, cast receivers (server configuration) | 10.9 | `hasAdvancedPerformance` |
 | Advanced options: user-data cache size, legacy authorization (server configuration) | 10.11 | `hasCacheAndLegacyAuth` |

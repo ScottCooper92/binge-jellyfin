@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_REALTIME
+import com.cooper.binge.companion.jellyfin.server.MetadataSaver
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.session
@@ -88,6 +89,7 @@ class LibraryViewModelTest {
         assertEquals(listOf("Open Subtitles", "Podnapisi"), ready.available.subtitleFetchers)
         assertEquals(listOf("LrcLib"), ready.available.lyricFetchers)
         assertEquals(listOf("Nfo"), ready.available.metadataReaders)
+        assertEquals(listOf(MetadataSaver("Nfo", false)), ready.available.metadataSavers)
         assertEquals(listOf("Chapter Segments"), ready.available.segmentProviders)
         // The server's language and country lists are read for the pickers.
         assertTrue(ready.cultures.isNotEmpty())

@@ -226,6 +226,9 @@
     <string name="library_save_local">Guardar metadatos con los archivos</string>
     <string name="library_save_local_detail">Escribe las carátulas y los metadatos en las carpetas de los archivos.</string>
     <string name="library_embedded_titles">Preferir títulos incrustados</string>
+    <string name="library_embedded_extras">Títulos incrustados para extras</string>
+    <string name="library_embedded_extras_detail">Usa el título incrustado de un extra aunque coincida con el de su elemento principal.</string>
+    <string name="library_saver_detail">Escribe los metadatos de esta biblioteca en archivos junto a los medios.</string>
     <string name="library_embedded_episodes">Preferir datos de episodio incrustados</string>
     <string name="library_series_grouping">Unir series de varias carpetas</string>
     <string name="library_series_grouping_detail">Trata como una sola una serie repartida en varias carpetas.</string>
@@ -237,6 +240,11 @@
     <string name="library_readers">Lectores de metadatos locales</string>
     <string name="library_subtitles">Subtítulos</string>
     <string name="library_skip_embedded">Omitir si el archivo ya tiene subtítulos</string>
+    <string name="library_embedded_subtitles">Subtítulos incrustados</string>
+    <string name="library_embedded_subtitles_all">Todos los tipos</string>
+    <string name="library_embedded_subtitles_text">Solo texto</string>
+    <string name="library_embedded_subtitles_image">Solo imagen</string>
+    <string name="library_embedded_subtitles_none">Ninguno</string>
     <string name="library_skip_audio">Omitir si el audio coincide con el idioma</string>
     <string name="library_perfect_match">Solo coincidencias perfectas</string>
     <string name="library_save_subtitles">Guardar subtítulos con los archivos</string>
