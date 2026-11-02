@@ -180,7 +180,7 @@ private fun ServerSettingsBody(
                 ),
         )
         Text(
-            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }.orEmpty(),
+            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, it.text()) }.orEmpty(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
             minLines = SETTINGS_STATUS_LINES,
@@ -266,7 +266,7 @@ internal fun TextSheet(
             ServerText.CustomCss -> state.branding.customCss
         }
     var value by rememberSaveable(text) { mutableStateOf(current) }
-    val error = state.sheetFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
+    val error = state.sheetFailed?.let { stringResource(R.string.settings_not_saved, it.text()) }
     val (title, body) =
         when (text) {
             ServerText.Name -> R.string.server_settings_name to R.string.server_settings_name_body

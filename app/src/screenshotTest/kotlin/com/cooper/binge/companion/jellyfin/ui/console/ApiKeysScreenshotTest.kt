@@ -81,4 +81,11 @@ class ApiKeysScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun readFailed() = ApiKeysScreen(ApiKeysUiState.Failed(ConsoleFailure.Refused), ApiKeysActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun readFailedWithReason() =
+        ApiKeysScreen(ApiKeysUiState.Failed(ConsoleFailure.refused("The database is locked by another process.")), ApiKeysActions())
 }

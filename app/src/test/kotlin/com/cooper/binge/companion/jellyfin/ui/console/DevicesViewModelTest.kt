@@ -157,6 +157,42 @@ class DevicesViewModelTest {
         assertEquals(3, vm.ready().devices.size)
     }
 
+    @Test
+    fun `a rename that fails after its form was left is said on the page, not lost`() {
+        val vm = made(DevicesViewModel(connection))
+        val tv = vm.ready().devices.first()
+        vm.askRename(tv)
+        val held = jellyfin.hold("/Devices/Options", method = "POST")
+        vm.rename("Den")
+        held.awaitArrival()
+        // The form is dismissed while the call is still running, then the call fails.
+        vm.askRename(null)
+        held.refuse(500)
+        val failed = vm.ready { it.actionFailed != null }
+        assertEquals(ConsoleFailure.Refused, failed.actionFailed)
+        assertNull(failed.formFailure)
+        assertNull(failed.renaming)
+        assertEquals(emptySet<String>(), failed.busy)
+    }
+
+    @Test
+    fun `a rename that fails after another device's form opened is said on the page, and leaves that form alone`() {
+        val vm = made(DevicesViewModel(connection))
+        val devices = vm.ready().devices
+        val first = devices[0]
+        val second = devices[1]
+        vm.askRename(first)
+        val held = jellyfin.hold("/Devices/Options", method = "POST")
+        vm.rename("Den")
+        held.awaitArrival()
+        vm.askRename(second)
+        held.cut()
+        val failed = vm.ready { it.actionFailed != null }
+        assertEquals(ConsoleFailure.Unreachable, failed.actionFailed)
+        assertNull(failed.formFailure)
+        assertEquals(second, failed.renaming)
+    }
+
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
     }

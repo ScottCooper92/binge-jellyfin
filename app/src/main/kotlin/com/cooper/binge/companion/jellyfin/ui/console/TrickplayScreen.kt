@@ -335,7 +335,7 @@ internal fun FieldSheet(
     var value by rememberSaveable(field) { mutableStateOf(current) }
     var tried by rememberSaveable(field) { mutableStateOf(false) }
     val valid = if (field == TrickplayField.Widths) parseWidths(value) != null else field.parse(value) != null
-    val failed = failure?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
+    val failed = failure?.let { stringResource(R.string.settings_not_saved, it.text()) }
     val (title, body) =
         when (field) {
             TrickplayField.Interval -> R.string.trickplay_interval to R.string.trickplay_interval_body

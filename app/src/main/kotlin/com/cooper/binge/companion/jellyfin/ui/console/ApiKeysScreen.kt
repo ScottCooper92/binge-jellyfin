@@ -113,7 +113,7 @@ private fun Keys(
             submitting = state.busy,
             error =
                 state.formFailure?.let {
-                    stringResource(R.string.api_keys_not_changed, stringResource(it.message))
+                    stringResource(R.string.api_keys_not_changed, it.text())
                 },
         )
     }

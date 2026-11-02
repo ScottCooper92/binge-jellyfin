@@ -11,12 +11,12 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
@@ -56,15 +56,21 @@ class HomeLayoutViewModelTest {
 
     private fun HomeLayoutViewModel.ready() = settled() as HomeLayoutUiState.Ready
 
-    private fun saves(count: Int) {
-        runBlocking {
-            withTimeout(TIMEOUT_MILLIS) {
-                while (jellyfin.hits("/Users/Configuration") < count) delay(POLL_MILLIS)
-            }
-        }
+    /** The last body [written] waited for: what a test reads its keys from. */
+    private var lastWritten = JsonObject(emptyMap())
+
+    /**
+     * Waits for a write whose body satisfies [check], not for a count of writes: the count can be reached by a repeat of an
+     * earlier write (see [FakeJellyfin.awaitBody]), whose body lacks the change the test is waiting for.
+     */
+    private fun written(check: (JsonObject) -> Boolean) {
+        lastWritten = jellyfin.awaitBody("/Users/Configuration", check = check)
     }
 
-    private fun ids(key: String) = (jellyfin.lastBody("/Users/Configuration").getValue(key) as JsonArray).map { it.jsonPrimitive.content }
+    /** A key an earlier write does not carry yet reads as empty, so a predicate can be tried against any write. */
+    private fun JsonObject.ids(key: String) = (get(key) as? JsonArray).orEmpty().map { it.jsonPrimitive.content }
+
+    private fun ids(key: String) = lastWritten.ids(key)
 
     @Test
     fun `reads the libraries in the saved order, the rest after, and the server's defaults`() {
@@ -91,20 +97,14 @@ class HomeLayoutViewModelTest {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.setInMyMedia("lib-movies", false)
-        saves(1)
+        written { it.ids("MyMediaExcludes") == listOf("lib-movies") }
         vm.setInLatest("lib-movies", false)
-        saves(2)
+        written { it.ids("MyMediaExcludes") == listOf("lib-movies") && it.ids("LatestItemsExcludes") == listOf("lib-movies") }
         assertEquals(listOf("lib-movies"), ids("MyMediaExcludes"))
         assertEquals(listOf("lib-movies"), ids("LatestItemsExcludes"))
-        assertEquals(
-            "eng",
-            jellyfin
-                .lastBody("/Users/Configuration")
-                .getValue("AudioLanguagePreference")
-                .jsonPrimitive.content,
-        )
+        assertEquals("eng", lastWritten.getValue("AudioLanguagePreference").jsonPrimitive.content)
         vm.setInMyMedia("lib-movies", true)
-        saves(3)
+        written { it.ids("MyMediaExcludes").isEmpty() && it.ids("LatestItemsExcludes") == listOf("lib-movies") }
         assertEquals(emptyList<String>(), ids("MyMediaExcludes"))
     }
 
@@ -113,7 +113,7 @@ class HomeLayoutViewModelTest {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.move("lib-home", -1)
-        saves(1)
+        written { it.ids("OrderedViews") == listOf("lib-movies", "lib-home", "lib-shows") }
         assertEquals(listOf("lib-movies", "lib-home", "lib-shows"), ids("OrderedViews"))
         assertEquals(listOf("lib-movies", "lib-home", "lib-shows"), vm.ready().libraries.map { it.id })
         vm.move("lib-movies", -1)
@@ -126,15 +126,15 @@ class HomeLayoutViewModelTest {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.setGrouped("lib-home", true)
-        saves(1)
+        written { it.ids("GroupedFolders") == listOf("lib-home") }
         assertEquals(listOf("lib-home"), ids("GroupedFolders"))
         vm.setDisplayMissingEpisodes(true)
-        saves(2)
+        written { it["DisplayMissingEpisodes"]?.jsonPrimitive?.booleanOrNull == true }
         vm.setHidePlayedInLatest(false)
-        saves(3)
+        written { it["HidePlayedInLatest"]?.jsonPrimitive?.booleanOrNull == false }
         vm.setDisplayCollectionsView(true)
-        saves(4)
-        val body = jellyfin.lastBody("/Users/Configuration")
+        written { it["DisplayCollectionsView"]?.jsonPrimitive?.booleanOrNull == true }
+        val body = lastWritten
         assertEquals(true, body.getValue("DisplayMissingEpisodes").jsonPrimitive.booleanOrNull)
         assertEquals(false, body.getValue("HidePlayedInLatest").jsonPrimitive.booleanOrNull)
         assertEquals(true, body.getValue("DisplayCollectionsView").jsonPrimitive.booleanOrNull)
@@ -145,14 +145,14 @@ class HomeLayoutViewModelTest {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
         vm.setGrouped("lib-home", true)
-        saves(1)
+        written { it.ids("GroupedFolders") == listOf("lib-home") }
         vm.load()
         val grouped = vm.ready()
         assertEquals(listOf("lib-movies", "lib-shows"), grouped.libraries.map { it.id })
         assertEquals(listOf("lib-home"), grouped.groupable.map { it.id })
         assertEquals(setOf("lib-home"), grouped.layout.grouped)
         vm.setGrouped("lib-home", false)
-        saves(2)
+        written { it.ids("GroupedFolders").isEmpty() }
         assertEquals(emptyList<String>(), ids("GroupedFolders"))
         vm.load()
         assertEquals(listOf("lib-movies", "lib-shows", "lib-home"), vm.ready().libraries.map { it.id })

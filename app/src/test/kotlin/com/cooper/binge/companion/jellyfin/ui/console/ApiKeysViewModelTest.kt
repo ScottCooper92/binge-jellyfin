@@ -161,6 +161,40 @@ class ApiKeysViewModelTest {
         Log.i("test", key.toString())
     }
 
+    @Test
+    fun `a key that fails after its form was left is said on the page, not lost`() {
+        val vm = made(ApiKeysViewModel(connection))
+        vm.ready()
+        vm.askCreate(true)
+        val held = jellyfin.hold("/Auth/Keys", method = "POST")
+        vm.create("Radarr")
+        held.awaitArrival()
+        // The form is dismissed while the call is still running, then the call fails.
+        vm.askCreate(false)
+        held.refuse(500)
+        val failed = vm.ready { it.actionFailed != null }
+        assertEquals(ConsoleFailure.Refused, failed.actionFailed)
+        assertNull(failed.formFailure)
+        assertFalse(failed.naming)
+        assertFalse(failed.busy)
+        assertNull(failed.created)
+    }
+
+    @Test
+    fun `a key made after its form was left still shows, once`() {
+        val vm = made(ApiKeysViewModel(connection))
+        vm.ready()
+        vm.askCreate(true)
+        val held = jellyfin.hold("/Auth/Keys", method = "POST")
+        vm.create("Radarr")
+        held.awaitArrival()
+        vm.askCreate(false)
+        held.release()
+        val made = vm.ready { it.created != null && !it.busy }
+        assertFalse(made.naming)
+        assertNull(made.actionFailed)
+    }
+
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
     }

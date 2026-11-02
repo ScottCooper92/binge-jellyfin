@@ -287,7 +287,7 @@ private fun UserDialogs(
     actions: UsersActions,
 ) {
     val user = state.openUser
-    val error = state.formFailure?.let { stringResource(R.string.users_not_changed, stringResource(it.message)) }
+    val error = state.formFailure?.let { stringResource(R.string.users_not_changed, it.text()) }
     when (state.dialog) {
         UserDialog.Create -> CreateSheet(actions, submitting = state.busy, error = error)
         UserDialog.Password -> if (user != null) PasswordSheet(user, actions, submitting = state.busy, error = error)

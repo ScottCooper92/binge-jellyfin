@@ -2,7 +2,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.component.ItemGroup
+import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -28,7 +31,10 @@ private fun encoding(type: String): JsonObject =
                 "EncoderPreset":"auto","EncodingThreadCount":-1,"DeinterlaceMethod":"yadif","DeinterlaceDoubleRate":false,
                 "DownMixAudioBoost":2,"DownMixStereoAlgorithm":"Dave750","EnableAudioVbr":true,"EnableThrottling":true,
                 "ThrottleDelaySeconds":180,"EnableSegmentDeletion":true,"SegmentKeepSeconds":720,"EnableSubtitleExtraction":true,
-                "EnableFallbackFont":false,"FallbackFontPath":"","TranscodingTempPath":"/config/transcodes"}""",
+                "EnableFallbackFont":false,"FallbackFontPath":"","TranscodingTempPath":"/config/transcodes",
+                "AllowAv1Encoding":true,"EnableIntelLowPowerH264HwEncoder":false,"EnableDecodingColorDepth10Hevc":true,
+                "EnableDecodingColorDepth10Vp9":true,"EnableDecodingColorDepth10HevcRext":true,
+                "EnableDecodingColorDepth12HevcRext":false,"H264Crf":23,"H265Crf":28,"MaxMuxingQueueSize":2048}""",
             ).jsonObject + ("HardwareAccelerationType" to JsonPrimitive(type)),
     )
 
@@ -54,6 +60,38 @@ class TranscodingScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun quickSync() = TranscodingScreen(ready("qsv"), TranscodingActions(), newest)
+
+    /** The colour depths a hardware decoder may take, which sit under the codec rows and so below the page frame's first screen. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun colorDepth() =
+        Surface {
+            ItemGroup(
+                title = stringResource(R.string.transcoding_decoding),
+                rows = colorDepthRows(ready("nvenc"), "nvenc", newest, TranscodingActions()),
+            )
+        }
+
+    /** The hardware encoding switches for Quick Sync: AV1 and both low power encoders. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun encodingSwitches() =
+        Surface {
+            ItemGroup(
+                title = stringResource(R.string.transcoding_encoding),
+                rows = encodingRows(ready("qsv"), "qsv", newest, TranscodingActions()),
+            )
+        }
+
+    /** The quality group with its CRFs and the muxing queue, which sit below the page frame's first screen. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun quality() = Surface { QualityGroup(ready("none"), TranscodingActions()) {} }
 
     @PreviewTest
     @JellyfinScreenStatePreview

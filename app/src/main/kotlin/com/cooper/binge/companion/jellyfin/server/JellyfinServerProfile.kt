@@ -77,6 +77,9 @@ data class JellyfinServerProfile(
     /** The Quick Sync device and two more stereo downmix algorithms (RFC 7845, AC-4), in the encoding options. 10.10. */
     val hasQsvDeviceAndDownmix: Boolean get() = atLeast(TEN, TEN)
 
+    /** Hardware decoding of HEVC range extensions (8/10-bit and 12-bit), in the encoding options. 10.10. */
+    val hasHevcRext: Boolean get() = atLeast(TEN, TEN)
+
     /** A library's lyric providers: which, and in what order, listed by the server. 10.10. */
     val hasLibraryLyricFetchers: Boolean get() = atLeast(TEN, TEN)
 
@@ -94,6 +97,12 @@ data class JellyfinServerProfile(
 
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
+
+    /** The network configuration's ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`). 10.9. */
+    val hasInternalPortNames: Boolean get() = atLeast(TEN, NINE)
+
+    /** UPnP port mapping: in the network configuration until 10.11 marks it no longer supported. */
+    val hasUpnpOption: Boolean get() = version?.let { it < JellyfinVersion(TEN, ELEVEN, 0) } ?: true
 
     /** Library update duration, parallel image encoding, the inactive session threshold and cast receivers, in the server's configuration. 10.9. */
     val hasAdvancedPerformance: Boolean get() = atLeast(TEN, NINE)
