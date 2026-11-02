@@ -13,7 +13,6 @@ import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +27,7 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
@@ -91,7 +91,7 @@ private fun Devices(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item { Text(stringResource(R.string.devices_body), style = MaterialTheme.typography.bodyMedium) }
+        item { PageIntro(stringResource(R.string.devices_body)) }
         if (state.devices.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }
         } else {

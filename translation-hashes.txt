@@ -58,7 +58,7 @@ app:advanced_title  9f088dbebd6c
 app:advanced_update_duration  2219633171fc
 app:advanced_update_duration_body  d4683e005979
 app:api_keys_app_field  e6ad39968537
-app:api_keys_body  b956e080cc05
+app:api_keys_body  1fc8ee6e2ee9
 app:api_keys_copy  e21f935f11d7
 app:api_keys_create  b6cde9030cef
 app:api_keys_created  dfb6ab2fc302
@@ -385,7 +385,7 @@ app:quick_connect_title  d0dbbcf762fa
 app:repositories_add  2eda4d8210b2
 app:repositories_add_submit  9fd728c66c9a
 app:repositories_back  76900f1bfd16
-app:repositories_body  8dc45d1149b8
+app:repositories_body  e690c9a6b13c
 app:repositories_empty  ec3195a84305
 app:repositories_empty_title  e876f35678b1
 app:repositories_name_hint  44224ac50fb0

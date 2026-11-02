@@ -16,9 +16,7 @@ import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Transform
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -28,6 +26,7 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -93,10 +92,7 @@ private fun Streams(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item {
-            Text(
-                stringResource(if (administrator) R.string.now_playing_body_admin else R.string.now_playing_body),
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            PageIntro(stringResource(if (administrator) R.string.now_playing_body_admin else R.string.now_playing_body))
         }
         if (state.sessions.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.now_playing_empty), Icons.Outlined.PlayCircle) }

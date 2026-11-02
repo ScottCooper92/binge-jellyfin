@@ -31,6 +31,7 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -132,7 +133,7 @@ private fun UserList(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item { Text(stringResource(R.string.users_body), style = MaterialTheme.typography.bodyMedium) }
+        item { PageIntro(stringResource(R.string.users_body)) }
         item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
         item { Status(state) }
     }
