@@ -139,14 +139,11 @@ fun PluginsScreen(
                 } else {
                     inner
                 }
-            // A change the server didn't take is said in a message, for whichever tab made it.
-            val failed =
-                when (tab) {
-                    0 -> (installed as? PluginsUiState.Ready)?.actionFailed
-                    1 -> (catalog as? CatalogUiState.Ready)?.actionFailed
-                    else -> (repositories as? RepositoriesUiState.Ready)?.actionFailed
-                }
-            RefusedMessage(failed, host, R.string.plugins_not_changed)
+            // A change the server didn't take is said once, by the tab that made it. One message per
+            // state, so switching tabs doesn't change a key and say an old refusal again.
+            RefusedMessage((installed as? PluginsUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
+            RefusedMessage((catalog as? CatalogUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
+            RefusedMessage((repositories as? RepositoriesUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
             Column(Modifier.fillMaxSize()) {
                 if (detail == null) {
                     BingeTabRow(

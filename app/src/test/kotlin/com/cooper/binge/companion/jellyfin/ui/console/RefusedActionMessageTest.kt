@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
@@ -118,7 +119,33 @@ class RefusedActionMessageTest {
     }
 
     @Test
-    fun `a user change the server refused says so, and one it took is said too`() {
+    fun `a plugin refusal already said is not said again when the user returns to its tab`() {
+        val plugin = ServerPlugin("a", "AniDB", "1.2.3.4", "", PluginStatus.Active, canUninstall = true, hasSettings = false)
+        compose.setContent {
+            JellyfinTheme {
+                PluginsScreen(
+                    PluginsUiState.Ready(listOf(plugin), actionFailed = ConsoleFailure.Refused),
+                    CatalogUiState.Loading,
+                    RepositoriesUiState.Loading,
+                    PluginsActions(),
+                    CatalogActions(),
+                    RepositoriesActions(),
+                    onBack = {},
+                )
+            }
+        }
+        val sentence = "Not changed. Something went wrong. Try again."
+        compose.onNodeWithText(sentence).assertExists()
+        compose.mainClock.advanceTimeBy(SNACKBAR_GONE_MILLIS)
+        compose.onAllNodesWithText(sentence).assertCountEquals(0)
+        compose.onNodeWithText("Catalog").performClick()
+        compose.onNodeWithText("Installed").performClick()
+        compose.mainClock.advanceTimeBy(SNACKBAR_SHOWN_MILLIS)
+        compose.onAllNodesWithText(sentence).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a user change the server refused says so`() {
         val ana = ServerUser("ana", "Ana", true, null, kotlinx.serialization.json.JsonObject(emptyMap()))
         compose.setContent {
             JellyfinTheme {
@@ -135,5 +162,10 @@ class RefusedActionMessageTest {
             JellyfinTheme { UsersScreen(UsersUiState.Ready(listOf(ana), emptyList(), me = "me", done = UserDone.Created), UsersActions()) }
         }
         compose.onNodeWithText("User added.").assertExists()
+    }
+
+    private companion object {
+        const val SNACKBAR_GONE_MILLIS = 10_000L
+        const val SNACKBAR_SHOWN_MILLIS = 1_000L
     }
 }
