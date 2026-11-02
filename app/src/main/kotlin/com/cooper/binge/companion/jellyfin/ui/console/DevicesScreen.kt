@@ -12,10 +12,12 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -48,9 +50,6 @@ data class DevicesActions(
 /** Lines a device's detail may take: who, which app, and when it was last seen. */
 private const val DETAIL_LINES = 3
 
-/** Lines a failed change's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
-
 /**
  * The devices signed in to the server, most recently seen first: who used each last, with which app,
  * and when. A tap renames one; Remove, at the row's end and red, signs one out after a confirm. This
@@ -62,13 +61,23 @@ fun DevicesScreen(
     actions: DevicesActions,
     now: Long = System.currentTimeMillis(),
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.devices_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = stringResource(R.string.devices_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
                 DevicesUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is DevicesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is DevicesUiState.Ready -> Devices(state, actions, inner, now)
+                is DevicesUiState.Ready -> {
+                    Devices(state, actions, inner, now)
+                    // A change the server didn't take is said in a message, not in a space the list keeps for it.
+                    RefusedMessage(state.actionFailed, host, R.string.devices_not_changed)
+                }
             }
         }
     }
@@ -87,15 +96,6 @@ private fun Devices(
             item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }
         } else {
             item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
-        }
-        item {
-            Text(
-                text = state.actionFailed?.let { stringResource(R.string.devices_not_changed, stringResource(it.message)) }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
-            )
         }
     }
     state.renaming?.let {

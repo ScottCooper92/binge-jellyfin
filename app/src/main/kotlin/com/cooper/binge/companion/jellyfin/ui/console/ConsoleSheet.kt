@@ -81,9 +81,9 @@ internal fun ConsoleTextEntry(
 }
 
 /**
- * A form sheet built from [ConsoleTextField]s, for the ones that hold a secret: the design system's text-entry surface has
- * no show/hide toggle, so these draw its chrome (title, the page's [body], Cancel and the submit button) around the
- * console's own fields.
+ * A form sheet built from [ConsoleTextField]s, for a form of more than one labelled field, which the design system's
+ * single-value text-entry surface cannot hold: it draws that surface's chrome (title, the page's [body], Cancel and the submit
+ * button) around the console's own fields.
  */
 @Composable
 internal fun ConsoleFieldsForm(
