@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_HW_ACCELERATION
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_HW_ENCODING
@@ -21,6 +22,7 @@ import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_WIDTHS
 import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
 import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
 import com.cooper.binge.companion.jellyfin.server.serverConfiguration
+import com.cooper.binge.companion.jellyfin.server.trickplayOptions
 import com.cooper.binge.companion.jellyfin.server.trickplaySettings
 import com.cooper.binge.companion.jellyfin.server.withTrickplayOption
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,14 +71,17 @@ sealed interface TrickplayUiState {
     ) : TrickplayUiState
 
     /**
-     * The options as shown, the field being edited in a dialog, where the saves stand ([save]), and the last save the
-     * server refused, which was put back ([refused]).
+     * The options as shown, the field being edited in a sheet, where the saves stand ([save]), and the last save the
+     * server refused, which was put back ([refused]). A sheet that is [submitting] stays open while its save runs; if the
+     * server refuses it, [sheetFailed] says why in the sheet.
      */
     data class Ready(
         val settings: TrickplaySettings,
         val editing: TrickplayField? = null,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
+        val submitting: Boolean = false,
+        val sheetFailed: ConsoleFailure? = null,
     ) : TrickplayUiState
 }
 
@@ -97,9 +102,18 @@ class TrickplayViewModel(
             viewModelScope,
             TAG,
             { _, client, json -> client.saveServerConfiguration(json) },
-            onProgress = { progress -> update { copy(save = progress) } },
+            onProgress = { progress ->
+                update {
+                    // A save that landed closes the sheet that was waiting on it.
+                    if (progress.status == SaveStatus.Saved && submitting) {
+                        copy(save = progress, submitting = false, editing = null)
+                    } else {
+                        copy(save = progress)
+                    }
+                }
+            },
         ) { shown, failure ->
-            update { copy(settings = shown.trickplaySettings(), refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
+            update { copy(settings = shown.trickplaySettings()).routed(failure) }
         }
 
     init {
@@ -123,10 +137,15 @@ class TrickplayViewModel(
         }
     }
 
-    /** Opens the dialog for [field], or closes it for null. */
-    fun edit(field: TrickplayField?) = update { copy(editing = field) }
+    /** Opens the sheet for [field], or closes it for null. A save the closed sheet was waiting on reports on the page. */
+    fun edit(field: TrickplayField?) = update { copy(editing = field, submitting = false, sheetFailed = null) }
 
-    /** Saves what the dialog for [field] holds and closes it; text that isn't in range keeps it open and saves nothing. */
+    /**
+     * Saves what the sheet for [field] holds; text that isn't in range keeps it open and saves nothing. The sheet stays
+     * open while the save runs: it closes when the server takes it, stays open with what was typed and says why if the
+     * server refuses it, and closes if the server can't be reached, the change then waiting unsent on the page. A value
+     * that is unchanged closes it.
+     */
     fun save(
         field: TrickplayField,
         text: String,
@@ -137,9 +156,26 @@ class TrickplayViewModel(
             } else {
                 field.parse(text)?.let(::JsonPrimitive)
             } ?: return
-        update { copy(editing = null) }
+        if (saves.shown.trickplayOptions()[field.key] == value) {
+            update { copy(editing = null) }
+            return
+        }
+        update { copy(submitting = true, sheetFailed = null, refused = null) }
         change(field.key, value)
     }
+
+    /**
+     * Where [failure] shows. A refusal of what an open sheet submitted shows in the sheet, which keeps what was typed; an
+     * unreachable server closes it, the change unsent with Retry on the page. Anything else, or a sheet already
+     * dismissed, shows on the page.
+     */
+    private fun TrickplayUiState.Ready.routed(failure: ConsoleFailure?): TrickplayUiState.Ready =
+        when {
+            submitting && editing != null && failure == ConsoleFailure.Refused ->
+                copy(submitting = false, sheetFailed = failure, refused = null)
+            submitting && failure == ConsoleFailure.Unreachable -> copy(submitting = false, editing = null)
+            else -> copy(refused = failure?.takeIf { it == ConsoleFailure.Refused })
+        }
 
     fun setHwAcceleration(on: Boolean) = change(TRICKPLAY_HW_ACCELERATION, JsonPrimitive(on))
 

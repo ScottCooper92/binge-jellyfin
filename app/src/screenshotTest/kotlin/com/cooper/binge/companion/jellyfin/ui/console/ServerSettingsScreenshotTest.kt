@@ -55,6 +55,35 @@ class ServerSettingsScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun editingNameFailed() =
+        Surface {
+            TextSheet(
+                ServerText.Name,
+                previewSettings.copy(sheetFailed = ConsoleFailure.Refused),
+                ServerSettingsActions(),
+                inWindow = false,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun editingNameSubmitting() =
+        Surface {
+            TextSheet(
+                ServerText.Name,
+                previewSettings.copy(submitting = ServerText.Name),
+                ServerSettingsActions(),
+                inWindow = false,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @JellyfinScreenStateLightPreview
     @JellyfinFontScalePreviews
     @Composable

@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.VolumeOff
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Forward10
+import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Replay10
@@ -21,12 +24,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -34,6 +43,7 @@ import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.SessionControls
+import com.cooper.binge.companion.jellyfin.server.TICKS_PER_SECOND
 import java.util.Locale
 import com.binge.designsystem.R as DesR
 
@@ -74,6 +84,17 @@ internal fun SessionPage(
         }
         item { Position(session, controls, state.sending, actions) }
         if (controls.playPause || controls.seek || controls.skip) item { Transport(session, controls, state.sending, actions) }
+        if (controls.volume || controls.mute) item { Volume(session, controls, state.sending, actions) }
+        if (controls.message) {
+            item {
+                BingeOutlinedButton(
+                    label = stringResource(R.string.now_playing_message),
+                    onClick = { actions.onAskMessage(session) },
+                    leadingIcon = Icons.Outlined.Message,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
         if (controls.stop) {
             item {
                 BingeTextButton(
@@ -176,6 +197,87 @@ private fun Transport(
     }
 }
 
+/** The volume bar and the mute button, each only where the session takes its command. */
+@Composable
+private fun Volume(
+    session: NowPlaying,
+    controls: SessionControls,
+    sending: Boolean,
+    actions: NowPlayingActions,
+) {
+    var dragging by remember(session.sessionId) { mutableFloatStateOf(-1f) }
+    val level = (if (dragging >= 0f) dragging else (session.volumeLevel ?: 0).toFloat()).coerceIn(0f, MAX_VOLUME)
+    val volumeLabel = stringResource(R.string.now_playing_volume)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
+    ) {
+        if (controls.mute) {
+            ExpressiveIconButton(
+                onClick = { actions.onToggleMute(session) },
+                icon = if (session.muted) Icons.AutoMirrored.Outlined.VolumeOff else Icons.AutoMirrored.Outlined.VolumeUp,
+                contentDescription = stringResource(if (session.muted) R.string.now_playing_unmute else R.string.now_playing_mute),
+                enabled = !sending,
+            )
+        }
+        if (controls.volume) {
+            Slider(
+                value = level,
+                onValueChange = { dragging = it },
+                onValueChangeFinished = {
+                    if (dragging >= 0f) actions.onVolume(session, dragging.toInt())
+                    dragging = -1f
+                },
+                valueRange = 0f..MAX_VOLUME,
+                enabled = !sending,
+                modifier = Modifier.weight(1f).semantics { contentDescription = volumeLabel },
+            )
+        }
+    }
+}
+
+/** What goes on a session's screen: a title, which may be left empty, and the text. [inWindow] false draws the form for a frame. */
+@Composable
+internal fun MessageSheet(
+    session: NowPlaying,
+    state: NowPlayingUiState.Ready,
+    actions: NowPlayingActions,
+    inWindow: Boolean = true,
+) {
+    var header by rememberSaveable { mutableStateOf("") }
+    var text by rememberSaveable { mutableStateOf("") }
+    val submitting = state.messageSending
+    ConsoleSheet(onDismissRequest = actions.onCancelMessage, inWindow = inWindow) {
+        ConsoleFieldsForm(
+            title = stringResource(R.string.now_playing_message),
+            body = stringResource(R.string.now_playing_message_body, session.userName, session.deviceName),
+            submitLabel = stringResource(R.string.now_playing_message_send),
+            onSubmit = { if (validMessage(header, text)) actions.onSendMessage(session, header, text) },
+            onCancel = actions.onCancelMessage,
+            submitting = submitting,
+            error = state.messageFailed?.let { stringResource(R.string.now_playing_not_sent, stringResource(it.message)) },
+        ) {
+            ConsoleTextField(
+                value = header,
+                onValueChange = { header = it.take(MESSAGE_HEADER_MAX) },
+                label = stringResource(R.string.now_playing_message_header),
+                enabled = !submitting,
+                imeAction = ImeAction.Next,
+            )
+            ConsoleTextField(
+                value = text,
+                onValueChange = { text = it.take(MESSAGE_TEXT_MAX) },
+                label = stringResource(R.string.now_playing_message_text),
+                enabled = !submitting,
+                singleLine = false,
+                minLines = 3,
+            )
+        }
+    }
+}
+
+private const val MAX_VOLUME = 100f
+
 /** Ticks (100 ns) as `h:mm:ss`, or `m:ss` under an hour. */
 internal fun formatTicks(ticks: Long): String {
     val seconds = (ticks.coerceAtLeast(0) / TICKS_PER_SECOND)
@@ -191,6 +293,5 @@ internal fun formatTicks(ticks: Long): String {
     }
 }
 
-private const val TICKS_PER_SECOND = 10_000_000L
 private const val SECONDS_PER_HOUR = 3600L
 private const val SECONDS_PER_MINUTE = 60L

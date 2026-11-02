@@ -10,9 +10,12 @@ data class SessionControls(
     val seek: Boolean = false,
     val skip: Boolean = false,
     val stop: Boolean = false,
+    val volume: Boolean = false,
+    val mute: Boolean = false,
+    val message: Boolean = false,
 ) {
     /** Whether anything at all is offered. */
-    val any: Boolean get() = playPause || seek || skip || stop
+    val any: Boolean get() = playPause || seek || skip || stop || volume || mute || message
 
     companion object {
         /**
@@ -41,6 +44,9 @@ data class SessionControls(
                 seek = session.supportsMediaControl && session.canSeek,
                 skip = session.supportsMediaControl,
                 stop = session.supportsMediaControl,
+                volume = "SetVolume" in session.supportedCommands,
+                mute = "Mute" in session.supportedCommands && "Unmute" in session.supportedCommands,
+                message = "DisplayMessage" in session.supportedCommands,
             )
         }
     }

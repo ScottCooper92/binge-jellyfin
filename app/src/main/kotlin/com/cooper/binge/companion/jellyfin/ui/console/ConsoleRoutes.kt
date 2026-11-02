@@ -55,6 +55,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
+        ConsolePage.Backups -> BackupsRoute(graph, signedIn.profile.version, close)
         ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
         ConsolePage.Server -> ServerRoute(graph, close)
     }
@@ -269,10 +270,15 @@ private fun NowPlayingRoute(
         NowPlayingActions(
             onSelect = nowPlaying::select,
             onDeselect = nowPlaying::deselect,
-            onPlayPause = nowPlaying::playPause,
-            onSkip = nowPlaying::skip,
-            onSeekBy = nowPlaying::seekBy,
-            onSeekTo = nowPlaying::seekTo,
+            onPlayPause = nowPlaying.remote::playPause,
+            onSkip = nowPlaying.remote::skip,
+            onSeekBy = nowPlaying.remote::seekBy,
+            onSeekTo = nowPlaying.remote::seekTo,
+            onVolume = nowPlaying.remote::setVolume,
+            onToggleMute = nowPlaying.remote::toggleMute,
+            onAskMessage = nowPlaying.remote::askMessage,
+            onCancelMessage = nowPlaying.remote::cancelMessage,
+            onSendMessage = nowPlaying.remote::sendMessage,
             onStop = nowPlaying::askStop,
             onConfirmStop = nowPlaying::stop,
             onCancelStop = nowPlaying::cancelStop,

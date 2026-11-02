@@ -25,6 +25,7 @@ private fun session(
     remoteControl: Boolean = true,
     mediaControl: Boolean = true,
     seek: Boolean = true,
+    commands: Set<String> = emptySet(),
 ) = NowPlaying(
     sessionId = id,
     userName = "u",
@@ -42,6 +43,7 @@ private fun session(
     supportsMediaControl = mediaControl,
     supportsRemoteControl = remoteControl,
     canSeek = seek,
+    supportedCommands = commands,
 )
 
 private fun controls(
@@ -103,6 +105,26 @@ class SessionControlsTest {
     fun `a user id is the same user with or without dashes`() {
         val dashed = "11111111-2222-3333-4444-555555555555"
         assertTrue(controls(session(userId = dashed.uppercase()), user).stop)
+    }
+
+    @Test
+    fun `volume, mute and message are offered only for the commands the session names`() {
+        assertFalse(controls(session(), admin).let { it.volume || it.mute || it.message })
+        val all = controls(session(commands = setOf("SetVolume", "Mute", "Unmute", "DisplayMessage")), admin)
+        assertTrue(all.volume && all.mute && all.message)
+        val half = controls(session(commands = setOf("Mute")), admin)
+        assertFalse("Mute without Unmute is not a toggle", half.mute)
+        assertTrue(controls(session(commands = setOf("DisplayMessage")), admin).message)
+    }
+
+    @Test
+    fun `a message to someone else's session needs the same gates as any control`() {
+        val msg = setOf("DisplayMessage")
+        assertFalse(controls(session(userId = OTHER, commands = msg), user).message)
+        assertTrue(controls(session(userId = OTHER, commands = msg), remote).message)
+        assertFalse(controls(session(userId = null, commands = msg), remote).message)
+        assertFalse(controls(session(deviceId = OWN_DEVICE, commands = msg), admin).message)
+        assertFalse(controls(session(commands = msg), admin, controllable = emptySet()).message)
     }
 
     @Test

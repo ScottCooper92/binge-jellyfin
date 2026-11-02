@@ -55,6 +55,9 @@ class FakeJellyfin : Dispatcher() {
     val items = CopyOnWriteArrayList<FakeItem>()
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
+
+    /** The body a [status] override answers with, by path. */
+    val statusBody = mutableMapOf<String, String>()
     val slow = mutableSetOf<String>()
 
     /** Paths whose connection is cut as the request arrives, as a server that has gone away. */
@@ -264,6 +267,20 @@ class FakeJellyfin : Dispatcher() {
     /** `/Items/Counts`, as the signed-in user's library answers it. */
     var itemCounts = """{"MovieCount":120,"SeriesCount":14,"EpisodeCount":900,"SongCount":0}"""
 
+    /** `/Backup`: the backups, each a manifest with its `Path`. A create adds one, which a restore can then name. */
+    var backups: List<String> =
+        listOf(
+            backupManifest("jellyfin-backup-20261020090000.zip", "2026-10-20T09:00:00Z", "10.11.5.0", metadata = true),
+            backupManifest("jellyfin-backup-20261030090000.zip", "2026-10-30T09:00:00Z", "10.11.6.0"),
+        )
+
+    /** How long a create holds its answer back, as the server writes the archive before it answers. */
+    var backupCreateDelayMillis = 0L
+
+    /** Whether a restore leaves this session's token unknown to the restored database, as one made after the backup is. */
+    var restoreEndsSession = false
+    private var sessionEnded = false
+
     /** How many `/System/Info/Public` reads a restart refuses, as the server goes down and comes back. */
     var restartDownPolls = 2
     private var down = 0
@@ -317,7 +334,13 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         if (path in dropped) return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
-        status[path]?.let { return MockResponse(code = it) }
+        status[path]?.let { code ->
+            return MockResponse
+                .Builder()
+                .code(code)
+                .apply { statusBody[path]?.let { body(it) } }
+                .build()
+        }
         if (path == "/socket") return socket(request)
         if (path in notJson) {
             return MockResponse
@@ -327,6 +350,7 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         return when {
+            sessionEnded && (path == "/Backup" || path == "/Users/Me") -> MockResponse(code = 401)
             path == "/System/Info/Public" && down > 0 -> {
                 down--
                 MockResponse(code = 503)
@@ -431,6 +455,43 @@ class FakeJellyfin : Dispatcher() {
                 apiKeys = apiKeys.filterNot { "\"${path.removePrefix("/Auth/Keys/")}\"" in it }
                 MockResponse(code = 204)
             }
+            path == "/Backup/Create" && request.method == "POST" -> {
+                val options = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
+                val made =
+                    backupManifest(
+                        "jellyfin-backup-20261102100000.zip",
+                        "2026-11-02T10:00:00Z",
+                        "10.11.6.0",
+                        database = options["Database"]?.jsonPrimitive?.content == "true",
+                        metadata = options["Metadata"]?.jsonPrimitive?.content == "true",
+                        subtitles = options["Subtitles"]?.jsonPrimitive?.content == "true",
+                        trickplay = options["Trickplay"]?.jsonPrimitive?.content == "true",
+                    )
+                backups = backups + made
+                MockResponse
+                    .Builder()
+                    .code(200)
+                    .addHeader("Content-Type", "application/json")
+                    .headersDelay(backupCreateDelayMillis, TimeUnit.MILLISECONDS)
+                    .body(made)
+                    .build()
+            }
+            path == "/Backup/Restore" && request.method == "POST" -> {
+                val file =
+                    Json
+                        .parseToJsonElement(request.body?.utf8().orEmpty())
+                        .jsonObject["ArchiveFileName"]
+                        ?.jsonPrimitive
+                        ?.content
+                if (backups.none { file != null && it.contains("/$file\"") }) {
+                    MockResponse(code = 404)
+                } else {
+                    down = restartDownPolls
+                    sessionEnded = restoreEndsSession
+                    MockResponse(code = 204)
+                }
+            }
+            path == "/Backup" -> json("[${backups.joinToString(",")}]")
             path == "/Plugins" -> json("[${plugins.joinToString(",")}]")
             path.startsWith("/Plugins/") && path.endsWith("/Enable") && request.method == "POST" -> setPluginStatus(path, "Active")
             path.startsWith("/Plugins/") && path.endsWith("/Disable") && request.method == "POST" -> setPluginStatus(path, "Disabled")
@@ -457,7 +518,10 @@ class FakeJellyfin : Dispatcher() {
             path == "/Devices/Info" -> deviceInfo(request.url.queryParameter("id").orEmpty())
             path.startsWith("/ScheduledTasks/Running/") -> MockResponse(code = 204)
             path.startsWith("/Items/") && path.endsWith("/Refresh") -> MockResponse(code = 204)
-            path.startsWith("/Sessions/") && "/Playing/" in path -> MockResponse(code = 204)
+            path.startsWith(
+                "/Sessions/",
+            ) &&
+                ("/Playing/" in path || "/Command" in path || path.endsWith("/Message")) -> MockResponse(code = 204)
             path == "/QuickConnect/Authorize" ->
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
@@ -765,6 +829,18 @@ class FakeJellyfin : Dispatcher() {
         return MockResponse(code = 204)
     }
 
+    private fun backupManifest(
+        fileName: String,
+        created: String,
+        serverVersion: String,
+        database: Boolean = true,
+        metadata: Boolean = false,
+        subtitles: Boolean = false,
+        trickplay: Boolean = false,
+    ) = """{"ServerVersion":"$serverVersion","BackupEngineVersion":"0.2.0.0","DateCreated":"$created",""" +
+        """"Path":"/config/data/backups/$fileName","Options":{"Metadata":$metadata,"Trickplay":$trickplay,""" +
+        """"Subtitles":$subtitles,"Database":$database}}"""
+
     private fun json(body: String): MockResponse =
         MockResponse
             .Builder()
@@ -772,6 +848,9 @@ class FakeJellyfin : Dispatcher() {
             .addHeader("Content-Type", "application/json")
             .body(body)
             .build()
+
+    /** A command sent to a session: playstate, general command or message. */
+    private fun isSessionCommand(path: String) = "/Playing/" in path || "/Command" in path || path.endsWith("/Message")
 
     /** [this] sessions JSON, narrowed to [controllableSessionIds] when the request asks which ones the user can control. */
     private fun String.forQuery(controllable: Boolean): String {

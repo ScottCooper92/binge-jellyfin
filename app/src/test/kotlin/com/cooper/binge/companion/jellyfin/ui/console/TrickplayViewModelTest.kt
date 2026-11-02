@@ -220,6 +220,76 @@ class TrickplayViewModelTest {
         assertEquals(TrickplaySettings(), vm.ready().settings)
     }
 
+    @Test
+    fun `a number sheet stays open while its save runs and closes when the server takes it`() {
+        val vm = made(TrickplayViewModel(connection))
+        vm.ready()
+        vm.edit(TrickplayField.JpegQuality)
+        vm.save(TrickplayField.JpegQuality, "75")
+        assertTrue(vm.ready().submitting)
+        assertEquals(TrickplayField.JpegQuality, vm.ready().editing)
+        val closed = vm.ready { it.editing == null }
+        assertFalse(closed.submitting)
+        assertNull(closed.sheetFailed)
+        assertEquals(75, closed.settings.jpegQuality)
+    }
+
+    @Test
+    fun `a number the server refuses stays in its sheet with the reason, and the page doesn't repeat it`() {
+        val vm = made(TrickplayViewModel(connection))
+        vm.ready()
+        jellyfin.status[CONFIGURATION] = 500
+        vm.edit(TrickplayField.JpegQuality)
+        vm.save(TrickplayField.JpegQuality, "75")
+        val failed = vm.ready { it.sheetFailed != null }
+        assertEquals(ConsoleFailure.Refused, failed.sheetFailed)
+        assertEquals(TrickplayField.JpegQuality, failed.editing)
+        assertFalse(failed.submitting)
+        assertNull(failed.refused)
+        assertEquals(90, failed.settings.jpegQuality)
+    }
+
+    @Test
+    fun `a number the server can't be reached for closes its sheet and waits unsent, with Retry on the page`() {
+        val vm = made(TrickplayViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += CONFIGURATION
+        vm.edit(TrickplayField.JpegQuality)
+        vm.save(TrickplayField.JpegQuality, "75")
+        val waiting = vm.ready { it.save.failed && it.editing == null }
+        assertNull(waiting.editing)
+        assertFalse(waiting.submitting)
+        assertNull(waiting.sheetFailed)
+        assertEquals(75, waiting.settings.jpegQuality)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        assertFalse(vm.ready { it.save.status == SaveStatus.Saved }.save.failed)
+    }
+
+    @Test
+    fun `a sheet dismissed before its save is refused reports the refusal on the page`() {
+        val vm = made(TrickplayViewModel(connection))
+        vm.ready()
+        jellyfin.status[CONFIGURATION] = 500
+        vm.edit(TrickplayField.JpegQuality)
+        vm.save(TrickplayField.JpegQuality, "75")
+        vm.edit(null)
+        val failed = vm.ready { it.refused != null }
+        assertEquals(ConsoleFailure.Refused, failed.refused)
+        assertNull(failed.sheetFailed)
+    }
+
+    @Test
+    fun `an unchanged number closes its sheet without a save`() {
+        val vm = made(TrickplayViewModel(connection))
+        vm.ready()
+        vm.edit(TrickplayField.JpegQuality)
+        vm.save(TrickplayField.JpegQuality, "90")
+        assertNull(vm.ready().editing)
+        assertFalse(vm.ready().submitting)
+        assertEquals(0, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == CONFIGURATION })
+    }
+
     private companion object {
         const val CONFIGURATION = "/System/Configuration"
         const val TIMEOUT_MILLIS = 10_000L
