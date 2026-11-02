@@ -248,8 +248,11 @@ internal fun AddTriggerSheet(actions: TasksActions) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun AddTriggerForm(actions: TasksActions) {
-    var kindIndex by rememberSaveable { mutableIntStateOf(0) }
+internal fun AddTriggerForm(
+    actions: TasksActions,
+    startKind: TriggerKind = TriggerKind.Daily,
+) {
+    var kindIndex by rememberSaveable { mutableIntStateOf(startKind.ordinal) }
     val context = LocalContext.current
     val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, DateFormat.is24HourFormat(context))
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -262,9 +265,14 @@ internal fun AddTriggerForm(actions: TasksActions) {
             title = stringResource(R.string.tasks_trigger_new_title),
             subtitle = stringResource(R.string.tasks_trigger_new_body),
         )
-        // The form can be taller than the sheet (a small screen, a large font), so it scrolls.
+        // The form can be taller than the sheet (a small screen, a large font, the keyboard), so the fields scroll
+        // and Add stays under them, in view.
         Column(
-            modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+            modifier =
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
         ) {
             KindChips(kind) { kindIndex = it.ordinal }
@@ -272,22 +280,25 @@ internal fun AddTriggerForm(actions: TasksActions) {
             if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
             if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
             LimitChips(limitHours) { limitHours = it }
-            BingeFilledButton(
-                label = stringResource(R.string.tasks_trigger_create),
-                onClick = {
-                    val timeTicks = { (timeState.hour * MINUTES_PER_HOUR + timeState.minute) * TICKS_PER_MINUTE }
-                    actions.onAddTrigger(
-                        when (kind) {
-                            TriggerKind.Daily -> TaskTrigger.daily(timeTicks(), limit)
-                            TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks(), limit)
-                            TriggerKind.Interval -> TaskTrigger.interval(intervalTicks, limit)
-                            TriggerKind.Startup -> TaskTrigger.startup(limit)
-                        },
-                    )
-                },
-                modifier = Modifier.fillMaxWidth().padding(bottom = dimensionResource(DesR.dimen.padding_m)),
-            )
         }
+        BingeFilledButton(
+            label = stringResource(R.string.tasks_trigger_create),
+            onClick = {
+                val timeTicks = { (timeState.hour * MINUTES_PER_HOUR + timeState.minute) * TICKS_PER_MINUTE }
+                actions.onAddTrigger(
+                    when (kind) {
+                        TriggerKind.Daily -> TaskTrigger.daily(timeTicks(), limit)
+                        TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks(), limit)
+                        TriggerKind.Interval -> TaskTrigger.interval(intervalTicks, limit)
+                        TriggerKind.Startup -> TaskTrigger.startup(limit)
+                    },
+                )
+            },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(DesR.dimen.padding_m), vertical = dimensionResource(DesR.dimen.padding_m)),
+        )
     }
 }
 
