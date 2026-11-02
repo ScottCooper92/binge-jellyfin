@@ -145,7 +145,7 @@ private fun <T> PickList(
             }
         is Loaded.Failed ->
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                Text(stringResource(loaded.failure.message), style = MaterialTheme.typography.bodyMedium)
+                Text(loaded.failure.text(), style = MaterialTheme.typography.bodyMedium)
                 BingeFilledButton(label = stringResource(R.string.console_retry), onClick = { actions.onChoicesRetry(section) })
             }
         is Loaded.Ready ->
@@ -255,7 +255,7 @@ internal fun ParentalSection(
             ),
     )
     if (choices.ratings is Loaded.Failed) {
-        PolicyStatus(stringResource(choices.ratings.failure.message))
+        PolicyStatus(choices.ratings.failure.text())
         BingeFilledButton(label = stringResource(R.string.console_retry), onClick = { actions.onChoicesRetry(UserSection.Parental) })
     }
     if (policy.has(POLICY_BLOCK_UNRATED)) {

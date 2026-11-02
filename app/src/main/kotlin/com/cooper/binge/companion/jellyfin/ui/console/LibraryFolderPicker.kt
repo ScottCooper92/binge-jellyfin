@@ -77,14 +77,14 @@ internal fun FolderPicker(
                 }
             is FolderBrowseState.Failed ->
                 Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                    Text(stringResource(state.failure.message), style = MaterialTheme.typography.bodyLarge)
+                    Text(state.failure.text(), style = MaterialTheme.typography.bodyLarge)
                     BingeOutlinedButton(label = stringResource(R.string.console_retry), onClick = actions.onRetry)
                 }
             is FolderBrowseState.Ready -> FolderList(state, actions)
         }
         failed?.let {
             Text(
-                text = stringResource(R.string.settings_not_saved, stringResource(it.message)),
+                text = stringResource(R.string.settings_not_saved, it.text()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
             )

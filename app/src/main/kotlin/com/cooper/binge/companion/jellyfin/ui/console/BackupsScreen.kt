@@ -28,7 +28,6 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
-import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.ServerBackup
 import com.binge.designsystem.R as DesR
@@ -143,9 +142,8 @@ private fun statusRows(
                     ListItem(
                         icon = Icons.Outlined.ErrorOutline,
                         label = stringResource(R.string.backups_create_failed),
-                        detail =
-                            (creation.error as? JellyfinHttpException)?.let { it.reason ?: stringResource(R.string.backups_create_refused) }
-                                ?: stringResource(creation.error.consoleFailure().message),
+                        // The server's own reason, as on every page; a refusal with none has this page's hint.
+                        detail = creation.error.consoleFailure().let { it.reason ?: stringResource(backupsFailureHint(it)) },
                         supportingMaxLines = FAILURE_LINES,
                         trailingContent = { DismissButton(actions.onDismissCreation) },
                         clickable = false,
@@ -214,6 +212,9 @@ internal fun BackupOptions.summary(): String =
 
 private const val LOADING_ROWS = 5
 private const val STATUS_LINES = 3
+
+private fun backupsFailureHint(failure: ConsoleFailure): Int =
+    if (failure == ConsoleFailure.Refused) R.string.backups_create_refused else failure.message
 
 /** The failed-create row carries a server reason or a hint the admin has to be able to read whole, at any font size. */
 private const val FAILURE_LINES = 8

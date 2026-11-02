@@ -19,7 +19,7 @@ internal fun RefusedMessage(
     host: SnackbarHostState,
     @StringRes text: Int = R.string.settings_not_saved,
 ) {
-    SnackbarMessage(failure?.let { stringResource(text, stringResource(it.message)) }, host)
+    SnackbarMessage(failure?.let { stringResource(text, it.text()) }, host)
 }
 
 /** Shows [message] in a snackbar when there is one, and again when it changes. A page's own sentence for what went wrong. */

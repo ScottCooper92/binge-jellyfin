@@ -307,7 +307,7 @@ internal fun UninstallDialog(
 @Composable
 internal fun FailureLine(failure: ConsoleFailure?) {
     Text(
-        text = failure?.let { stringResource(R.string.plugins_not_changed, stringResource(it.message)) }.orEmpty(),
+        text = failure?.let { stringResource(R.string.plugins_not_changed, it.text()) }.orEmpty(),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.error,
         minLines = STATUS_LINES,

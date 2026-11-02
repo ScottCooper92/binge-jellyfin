@@ -131,7 +131,7 @@ internal fun AddLibraryForm(
                     if (folderMissing && path == tried) {
                         stringResource(R.string.library_path_missing)
                     } else {
-                        failed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
+                        failed?.let { stringResource(R.string.settings_not_saved, it.text()) }
                     },
                 minLines = 1,
                 maxLines = 2,

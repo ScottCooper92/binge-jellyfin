@@ -156,7 +156,7 @@ internal fun PolicySection(
             UserSection.Devices -> DevicesSection(policy, choices, actions, section)
             UserSection.Parental -> ParentalSection(policy, choices, profile, actions, { picker = it }) { adding = it }
         }
-        PolicyStatus(state.actionFailed?.let { stringResource(R.string.users_not_changed, stringResource(it.message)) })
+        PolicyStatus(state.actionFailed?.let { stringResource(R.string.users_not_changed, it.text()) })
     }
     picker?.let { PolicyPickerSheet(it, policy, choices, actions) { picker = null } }
     adding?.let { PolicyAddSheet(it, actions) { adding = null } }

@@ -255,7 +255,7 @@ internal fun MessageSheet(
             onSubmit = { if (validMessage(header, text)) actions.onSendMessage(session, header, text) },
             onCancel = actions.onCancelMessage,
             submitting = submitting,
-            error = state.messageFailed?.let { stringResource(R.string.now_playing_not_sent, stringResource(it.message)) },
+            error = state.messageFailed?.let { stringResource(R.string.now_playing_not_sent, it.text()) },
         ) {
             ConsoleTextField(
                 value = header,
