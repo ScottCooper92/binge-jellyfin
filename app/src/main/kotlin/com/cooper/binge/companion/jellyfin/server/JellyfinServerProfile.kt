@@ -98,6 +98,12 @@ data class JellyfinServerProfile(
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
 
+    /** The network configuration's ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`). 10.9. */
+    val hasInternalPortNames: Boolean get() = atLeast(TEN, NINE)
+
+    /** UPnP port mapping: in the network configuration until 10.11 marks it no longer supported. */
+    val hasUpnpOption: Boolean get() = version?.let { it < JellyfinVersion(TEN, ELEVEN, 0) } ?: true
+
     /** Library update duration, parallel image encoding, the inactive session threshold and cast receivers, in the server's configuration. 10.9. */
     val hasAdvancedPerformance: Boolean get() = atLeast(TEN, NINE)
 

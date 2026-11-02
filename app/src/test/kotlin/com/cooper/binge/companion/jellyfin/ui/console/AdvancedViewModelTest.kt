@@ -10,11 +10,12 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -61,15 +62,26 @@ class AdvancedViewModelTest {
     private fun AdvancedViewModel.ready(check: (AdvancedUiState.Ready) -> Boolean = { true }) =
         settled { it is AdvancedUiState.Ready && check(it) } as AdvancedUiState.Ready
 
-    private fun saves(count: Int) {
-        runBlocking {
-            withTimeout(TIMEOUT_MILLIS) {
-                while (jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" } < count) delay(POLL_MILLIS)
-            }
-        }
+    /** The last body [written] waited for: what a test reads its other keys from. */
+    private var lastWritten = JsonObject(emptyMap())
+
+    /**
+     * Waits for a write that holds [key] as [value], not for a count of writes: the count can be reached by a repeat of an
+     * earlier write (see [FakeJellyfin.awaitBody]), whose body lacks the change the test is waiting for.
+     */
+    private fun written(
+        key: String,
+        value: JsonElement,
+    ) = written(key) { it == value }
+
+    private fun written(
+        key: String,
+        check: (JsonElement?) -> Boolean,
+    ) {
+        lastWritten = jellyfin.awaitBody(CONFIGURATION) { check(it[key]) }
     }
 
-    private fun sent(): JsonObject = jellyfin.lastBody(CONFIGURATION)
+    private fun sent(): JsonObject = lastWritten
 
     @Test
     fun `reads every option the server sent`() {
@@ -102,16 +114,16 @@ class AdvancedViewModelTest {
         val vm = made(AdvancedViewModel(connection))
         vm.ready()
         vm.setSlowResponseWarning(true)
-        saves(1)
+        written("EnableSlowResponseWarning", JsonPrimitive(true))
         assertEquals(true, sent().getValue("EnableSlowResponseWarning").jsonPrimitive.boolean)
         vm.setMetrics(true)
-        saves(2)
+        written("EnableMetrics", JsonPrimitive(true))
         assertEquals(true, sent().getValue("EnableMetrics").jsonPrimitive.boolean)
         vm.setAllowClientLogUpload(true)
-        saves(3)
+        written("AllowClientLogUpload", JsonPrimitive(true))
         assertEquals(true, sent().getValue("AllowClientLogUpload").jsonPrimitive.boolean)
         vm.setLegacyAuthorization(false)
-        saves(4)
+        written("EnableLegacyAuthorization", JsonPrimitive(false))
         assertEquals(false, sent().getValue("EnableLegacyAuthorization").jsonPrimitive.boolean)
         assertEquals(true, sent().getValue("EnableSlowResponseWarning").jsonPrimitive.boolean)
         assertEquals("truenas", sent().getValue("ServerName").jsonPrimitive.content)
@@ -122,13 +134,13 @@ class AdvancedViewModelTest {
         val vm = made(AdvancedViewModel(connection))
         vm.ready()
         vm.save(AdvancedNumber.RetentionDays, " 14 ")
-        saves(1)
+        written("ActivityLogRetentionDays", JsonPrimitive(14))
         assertEquals(14, sent().getValue("ActivityLogRetentionDays").jsonPrimitive.int)
         vm.save(AdvancedNumber.SlowThreshold, "2500")
-        saves(2)
+        written("SlowResponseThresholdMs", JsonPrimitive(2500))
         assertEquals(2500L, sent().getValue("SlowResponseThresholdMs").jsonPrimitive.long)
         vm.save(AdvancedNumber.CacheSize, "5000")
-        saves(3)
+        written("CacheSize", JsonPrimitive(5000))
         assertEquals(5000, sent().getValue("CacheSize").jsonPrimitive.int)
         assertEquals(14, vm.ready().settings.activityLogRetentionDays)
     }
@@ -150,7 +162,7 @@ class AdvancedViewModelTest {
         assertTrue(settings.has("ActivityLogRetentionDays"))
         assertNull(settings.activityLogRetentionDays)
         vm.save(AdvancedNumber.RetentionDays, "30")
-        saves(1)
+        written("ActivityLogRetentionDays", JsonPrimitive(30))
         assertEquals(30, sent().getValue("ActivityLogRetentionDays").jsonPrimitive.int)
     }
 
@@ -185,7 +197,7 @@ class AdvancedViewModelTest {
         val vm = made(AdvancedViewModel(connection))
         vm.ready()
         vm.saveList(AdvancedList.CorsHosts, "https://a.example\nhttps://b.example")
-        saves(1)
+        written("CorsHosts") { (it as? JsonArray)?.size == 2 }
         assertEquals(
             listOf("https://a.example", "https://b.example"),
             sent().getValue("CorsHosts").jsonArray.map { it.jsonPrimitive.content },
@@ -206,7 +218,7 @@ class AdvancedViewModelTest {
         assertEquals(AdvancedList.CastReceivers, vm.ready().editingList)
         assertEquals(0, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == CONFIGURATION })
         vm.saveList(AdvancedList.CastReceivers, "A1, One")
-        saves(1)
+        written("CastReceiverApplications") { (it as? JsonArray)?.size == 1 }
         val receiver =
             sent()
                 .getValue("CastReceiverApplications")
@@ -224,7 +236,7 @@ class AdvancedViewModelTest {
         val vm = made(AdvancedViewModel(connection))
         vm.ready()
         vm.save(AdvancedNumber.MonitorDelay, "90")
-        saves(1)
+        written("LibraryMonitorDelay", JsonPrimitive(90))
         assertEquals(90, sent().getValue("LibraryMonitorDelay").jsonPrimitive.int)
         assertEquals(
             2,

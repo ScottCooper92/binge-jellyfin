@@ -51,6 +51,8 @@ older server shows less rather than failing on a call it can't answer.
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
 | Advanced options: library update duration, parallel image encoding, inactive session threshold, cast receivers (server configuration) | 10.9 | `hasAdvancedPerformance` |
 | Advanced options: user-data cache size, legacy authorization (server configuration) | 10.11 | `hasCacheAndLegacyAuth` |
+| Network: the ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`, `EnableIPv4`) | 10.9 | `hasInternalPortNames` |
+| Network: the UPnP port mapping switch, which 10.11 marks no longer supported (so it shows before 10.11) | until 10.10 | `hasUpnpOption` |
 | Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |
 | Chapter image resolution and dummy chapter duration (server configuration) | 10.9 | `hasChapterImageSettings` |
@@ -70,6 +72,7 @@ older server shows less rather than failing on a call it can't answer.
 |---|---|---|
 | The server's pages (libraries, tasks, activity, logs, API keys, plugins, devices, users, server) | administrators | `isAdministrator` |
 | Trickplay settings (its own page) | administrators, on a server that has trickplay | `isAdministrator` and `hasTrickplay` |
+| Networking (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasInternalPortNames` and `hasUpnpOption` |
 | Advanced options (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasAdvancedPerformance` and `hasCacheAndLegacyAuth` per row |
 | Their own preferences (languages, playback, the home screen) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |
 | Changing their own password | users of Jellyfin's own provider, not LDAP or another plugin | `hasLocalPassword` |
