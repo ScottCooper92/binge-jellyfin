@@ -20,5 +20,21 @@ internal fun LiveTvRoute(
     val liveTv: LiveTvViewModel =
         viewModel(factory = viewModelFactory { initializer { LiveTvViewModel(graph.connection, withGuide = account.canAccessLiveTv) } })
     val state by liveTv.state.collectAsStateWithLifecycle()
-    LiveTvScreen(state, LiveTvActions(onOpenTasks = onOpenTasks, onRetry = liveTv::load, onBack = onBack))
+    LiveTvScreen(
+        state,
+        LiveTvActions(
+            onOpenTasks = onOpenTasks,
+            onRetry = liveTv::load,
+            onBack = onBack,
+            onSheet = liveTv::sheet,
+            onDiscover = liveTv::discover,
+            onForm = liveTv::form,
+            onEdit = liveTv::edit,
+            onSave = liveTv::save,
+            onAskRemove = liveTv::askRemove,
+            onCancelRemove = liveTv::cancelRemove,
+            onRemove = liveTv::remove,
+            onDismissProblem = liveTv::dismissProblem,
+        ),
+    )
 }
