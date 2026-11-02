@@ -137,6 +137,7 @@ private fun LibraryBody(
         MetadataGroup(state, actions, profile) { picker = it }
         VideoGroups(state, actions, profile) { picker = it }
         MusicGroups(state, actions, profile)
+        AudioTagsGroup(state, actions, profile)
         SegmentsGroup(state, actions, profile)
         // Remove is last, red, and behind a confirm that opens on Cancel.
         Text(stringResource(R.string.library_remove_detail), style = MaterialTheme.typography.bodyMedium)

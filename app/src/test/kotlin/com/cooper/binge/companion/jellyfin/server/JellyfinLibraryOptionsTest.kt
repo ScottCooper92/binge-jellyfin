@@ -71,6 +71,22 @@ class JellyfinLibraryOptionsTest {
     }
 
     @Test
+    fun `tag delimiters are stored one character to an element, and read back as they were typed`() {
+        assertEquals(names("/", "|", ";", "\\"), delimiterList("/|;\\"))
+        assertEquals("/|;\\", options("""{"CustomTagDelimiters":["/","|",";","\\"]}""").tagDelimiters())
+        // A character outside the basic plane is one element, not two halves.
+        assertEquals(names("a", "\uD83D\uDE00"), delimiterList("a\uD83D\uDE00"))
+        assertEquals(names(), delimiterList(""))
+    }
+
+    @Test
+    fun `the delimiter whitelist is one name a line, trimmed, with no blank line`() {
+        assertEquals(names("AC/DC", "Back in Black"), whitelistList("AC/DC\n  \n Back in Black "))
+        assertEquals(names(), whitelistList("\n"))
+        assertEquals(listOf("AC/DC"), options("""{"DelimiterWhitelist":["AC/DC"," "]}""").delimiterWhitelist())
+    }
+
+    @Test
     fun `the embedded subtitle choice is for the kinds of video library jellyfin-web shows it for`() {
         assertTrue(libraryHasEmbeddedSubtitleChoice("movies"))
         assertTrue(libraryHasEmbeddedSubtitleChoice("tvshows"))

@@ -240,6 +240,20 @@
     <string name="library_readers">Local metadata readers</string>
     <string name="library_subtitles">Subtitles</string>
     <string name="library_skip_embedded">Skip if the file has subtitles</string>
+    <string name="library_audio_tags">Audio tags</string>
+    <string name="library_audio_tags_none">None</string>
+    <string name="library_artists_tag">Prefer the ARTISTS tag</string>
+    <string name="library_artists_tag_detail">Use the non-standard ARTISTS tag instead of ARTIST when a file has it.</string>
+    <string name="library_custom_delimiters">Custom tag delimiters</string>
+    <string name="library_custom_delimiters_detail">Split artist and genre tags at your own characters.</string>
+    <string name="library_delimiters">Delimiter characters</string>
+    <string name="library_delimiters_hint">The characters to split at, one after another, such as /|;</string>
+    <string name="library_whitelist">Delimiter whitelist</string>
+    <string name="library_whitelist_hint">Names the server never splits, one on each line.</string>
+    <plurals name="library_whitelist_count">
+        <item quantity="one">%1$d name</item>
+        <item quantity="other">%1$d names</item>
+    </plurals>
     <string name="library_embedded_subtitles">Embedded subtitles</string>
     <string name="library_embedded_subtitles_all">All types</string>
     <string name="library_embedded_subtitles_text">Text only</string>

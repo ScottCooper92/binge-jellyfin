@@ -10,8 +10,14 @@ import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_DELIMITER_WHITELIST
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SEASON_ZERO
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_TAG_DELIMITERS
+import com.cooper.binge.companion.jellyfin.server.delimiterList
+import com.cooper.binge.companion.jellyfin.server.delimiterWhitelist
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.binge.companion.jellyfin.server.tagDelimiters
+import com.cooper.binge.companion.jellyfin.server.whitelistList
 
 /** Whatever is open over a library's page: a sheet to type in or pick from, or a confirm. */
 @Composable
@@ -31,6 +37,14 @@ internal fun LibraryDialogs(
         LibraryDialog.SeasonZero ->
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
                 SeasonZeroForm(state.options.string(LIBRARY_SEASON_ZERO).orEmpty(), actions)
+            }
+        LibraryDialog.TagDelimiters ->
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                TagDelimitersForm(state.options.tagDelimiters(), actions)
+            }
+        LibraryDialog.DelimiterWhitelist ->
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                DelimiterWhitelistForm(state.options.delimiterWhitelist().joinToString("\n"), actions)
             }
         LibraryDialog.AddFolder ->
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
@@ -89,6 +103,55 @@ internal fun SeasonZeroForm(
         maxLength = NAME_LENGTH,
     )
 }
+
+/** The characters a music library splits artist and genre tags at, typed one after another. Saves with its button, and closes. */
+@Composable
+internal fun TagDelimitersForm(
+    current: String,
+    actions: LibraryActions,
+) {
+    var typed by rememberSaveable { mutableStateOf(current) }
+    TextEntrySurface(
+        title = stringResource(R.string.library_delimiters),
+        value = typed,
+        onValueChange = { typed = it },
+        onSubmit = {
+            actions.onJson(LIBRARY_TAG_DELIMITERS, delimiterList(typed))
+            actions.onAsk(null)
+        },
+        onCancel = { actions.onAsk(null) },
+        submitLabel = stringResource(R.string.library_save),
+        hint = stringResource(R.string.library_delimiters_hint),
+        minLines = 1,
+        maxLines = 1,
+    )
+}
+
+/** The names a music library does not split its tags at, one on each line. Saves with its button, and closes. */
+@Composable
+internal fun DelimiterWhitelistForm(
+    current: String,
+    actions: LibraryActions,
+) {
+    var typed by rememberSaveable { mutableStateOf(current) }
+    TextEntrySurface(
+        title = stringResource(R.string.library_whitelist),
+        value = typed,
+        onValueChange = { typed = it },
+        onSubmit = {
+            actions.onJson(LIBRARY_DELIMITER_WHITELIST, whitelistList(typed))
+            actions.onAsk(null)
+        },
+        onCancel = { actions.onAsk(null) },
+        submitLabel = stringResource(R.string.library_save),
+        hint = stringResource(R.string.library_whitelist_hint),
+        minLines = WHITELIST_MIN_LINES,
+        maxLines = WHITELIST_MAX_LINES,
+    )
+}
+
+private const val WHITELIST_MIN_LINES = 3
+private const val WHITELIST_MAX_LINES = 8
 
 /** Adding a folder: chosen from the server's own, or typed, and checked on the server before it is added. */
 @Composable
