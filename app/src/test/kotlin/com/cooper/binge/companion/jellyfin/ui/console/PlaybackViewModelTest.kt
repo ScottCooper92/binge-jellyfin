@@ -82,7 +82,8 @@ class PlaybackViewModelTest {
         vm.setSubtitles("fre")
         saves(1)
         vm.setSubtitleMode(SubtitleMode.Smart)
-        saves(2)
+        // The write that carries the second pick, not a count of writes: a repeat of the first write reaches the count too.
+        jellyfin.awaitBody("/Users/Configuration") { it["SubtitleMode"]?.jsonPrimitive?.content == "Smart" }
         val body = jellyfin.lastBody("/Users/Configuration")
         assertEquals("fre", body.getValue("SubtitleLanguagePreference").jsonPrimitive.content)
         assertEquals("Smart", body.getValue("SubtitleMode").jsonPrimitive.content)
@@ -190,7 +191,8 @@ class PlaybackViewModelTest {
         vm.settled { (it as? PlaybackUiState.Ready)?.refused != null }
         jellyfin.status.remove("/Users/Configuration")
         vm.setAudio("fra")
-        saves(2)
+        // The write that carries "fra": the refused write before it is a request too, and carries "spa".
+        jellyfin.awaitBody("/Users/Configuration") { it["AudioLanguagePreference"]?.jsonPrimitive?.content == "fra" }
         assertEquals("fra", vm.ready().preferences.audio)
         assertEquals(
             "fra",
@@ -235,7 +237,7 @@ class PlaybackViewModelTest {
         vm.setAutoplayNextEpisode(false)
         saves(1)
         vm.setRememberAudio(false)
-        saves(2)
+        jellyfin.awaitBody("/Users/Configuration") { it["RememberAudioSelections"]?.jsonPrimitive?.booleanOrNull == false }
         val body = jellyfin.lastBody("/Users/Configuration")
         assertEquals(false, body.getValue("EnableNextEpisodeAutoPlay").jsonPrimitive.booleanOrNull)
         assertEquals(false, body.getValue("RememberAudioSelections").jsonPrimitive.booleanOrNull)

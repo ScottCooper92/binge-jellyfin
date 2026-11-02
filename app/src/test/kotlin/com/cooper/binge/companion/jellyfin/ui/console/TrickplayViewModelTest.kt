@@ -18,6 +18,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -107,7 +108,13 @@ class TrickplayViewModelTest {
         saves(1)
         assertFalse("EnableKeyFrameOnlyExtraction" in options())
         vm.setKeyFrameOnly(true)
-        saves(2)
+        jellyfin.awaitBody(CONFIGURATION) {
+            it["TrickplayOptions"]
+                ?.jsonObject
+                ?.get("EnableKeyFrameOnlyExtraction")
+                ?.jsonPrimitive
+                ?.booleanOrNull == true
+        }
         assertEquals(true, options().getValue("EnableKeyFrameOnlyExtraction").jsonPrimitive.boolean)
     }
 
@@ -121,7 +128,13 @@ class TrickplayViewModelTest {
         vm.setScanBehavior("Blocking")
         saves(1)
         vm.setProcessPriority("Idle")
-        saves(2)
+        jellyfin.awaitBody(CONFIGURATION) {
+            it["TrickplayOptions"]
+                ?.jsonObject
+                ?.get("ProcessPriority")
+                ?.jsonPrimitive
+                ?.content == "Idle"
+        }
         assertEquals("Blocking", options().getValue("ScanBehavior").jsonPrimitive.content)
         assertEquals("Idle", options().getValue("ProcessPriority").jsonPrimitive.content)
     }
@@ -270,10 +283,13 @@ class TrickplayViewModelTest {
     fun `a sheet dismissed before its save is refused reports the refusal on the page`() {
         val vm = made(TrickplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        val held = jellyfin.hold(CONFIGURATION, method = "POST")
         vm.edit(TrickplayField.JpegQuality)
         vm.save(TrickplayField.JpegQuality, "75")
+        held.awaitArrival()
+        // The sheet is closed while the call is still running, then the call is refused.
         vm.edit(null)
+        held.refuse(500)
         val failed = vm.ready { it.refused != null }
         assertEquals(ConsoleFailure.Refused, failed.refused)
         assertNull(failed.sheetFailed)

@@ -173,7 +173,16 @@ class LibraryViewModelTest {
         saves(1)
         assertEquals(listOf("Podnapisi"), savedOptions().getValue("DisabledSubtitleFetchers").jsonArray.map { it.jsonPrimitive.content })
         vm.moveProvider(ProviderGroup.Subtitles, "Podnapisi", 1)
-        saves(2)
+        // The write that carries the move, not a count of writes: a repeat of the earlier write reaches the count too.
+        jellyfin.awaitBody(OPTIONS) { body ->
+            val order =
+                body["LibraryOptions"]
+                    ?.jsonObject
+                    ?.get("SubtitleFetcherOrder")
+                    ?.jsonArray
+                    ?.map { it.jsonPrimitive.content }
+            order == listOf("Open Subtitles", "Podnapisi")
+        }
         assertEquals(
             listOf("Open Subtitles", "Podnapisi"),
             savedOptions().getValue("SubtitleFetcherOrder").jsonArray.map { it.jsonPrimitive.content },

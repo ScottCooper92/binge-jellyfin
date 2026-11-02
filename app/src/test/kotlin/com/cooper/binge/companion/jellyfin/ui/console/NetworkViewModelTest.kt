@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -276,7 +277,7 @@ class NetworkViewModelTest {
         assertEquals(listOf("10.0.0.1", "10.0.0.2"), sent().getValue("KnownProxies").jsonArray.map { it.jsonPrimitive.content })
         assertEquals("s3cret", sent().getValue("CertificatePassword").jsonPrimitive.content)
         vm.setSwitch("AutoDiscovery", false, form = false)
-        waitFor(NETWORK, 2)
+        jellyfin.awaitBody(NETWORK) { it["AutoDiscovery"]?.jsonPrimitive?.booleanOrNull == false }
         assertEquals(false, sent().getValue("AutoDiscovery").jsonPrimitive.boolean)
         assertTrue(vm.ready().draft.isEmpty())
     }

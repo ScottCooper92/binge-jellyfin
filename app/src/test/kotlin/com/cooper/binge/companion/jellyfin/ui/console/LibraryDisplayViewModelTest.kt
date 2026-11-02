@@ -140,7 +140,10 @@ class LibraryDisplayViewModelTest {
         vm.add(ListEntry("an"))
         vm.add(ListEntry("   "))
         vm.remove(0)
-        saves(2)
+        // The write that carries the removal, not a count of writes: a repeat of the earlier write reaches the count too.
+        jellyfin.awaitBody(CONFIGURATION) { body ->
+            body[SORT_REMOVE_WORDS]?.jsonArray?.map { it.jsonPrimitive.content } == listOf("a", "an")
+        }
         val ready = vm.ready { it.draft.size == 2 }
         assertNull(ready.sheet)
         assertEquals(listOf(ListEntry("a"), ListEntry("an")), ready.draft)

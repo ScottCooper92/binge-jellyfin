@@ -292,7 +292,7 @@ class TranscodingViewModelTest {
                 .jsonPrimitive.int,
         )
         vm.saveNumber(NumberField.BitrateLimit, "2.5")
-        saves(SERVER, 2)
+        jellyfin.awaitBody(SERVER) { it["RemoteClientBitrateLimit"]?.jsonPrimitive?.content == "2500000" }
         assertEquals(
             2_500_000,
             jellyfin
