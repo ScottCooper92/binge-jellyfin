@@ -215,6 +215,20 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `a second password while the first is on the wire is ignored`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        vm.show(UserDialog.Password)
+        jellyfin.slow += "/Users/Password"
+        vm.setPassword("first")
+        vm.ready { it.busy }
+        vm.setPassword("second")
+        vm.create("Ana", "")
+        assertEquals(1, jellyfin.hits("/Users/Password"))
+        assertEquals(0, jellyfin.hits("/Users/New"))
+    }
+
+    @Test
     fun `the signed-in user's own password is left to the Password page`() {
         val vm = made(UsersViewModel(connection))
         val me = vm.ready().users.first { it.id == "user-1" }

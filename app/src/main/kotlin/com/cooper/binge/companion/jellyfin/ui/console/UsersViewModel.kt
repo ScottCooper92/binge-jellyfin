@@ -137,7 +137,7 @@ class UsersViewModel(
         password: String,
     ) {
         if (name.isBlank()) return
-        act(UserDone.Created, form = UserDialog.Create) { client ->
+        act(UserDone.Created, form = { dialog == UserDialog.Create }) { client ->
             val user = client.createUser(name.trim(), password)
             saved[user.id] = user.policy
             update { copy(users = (users + user).sortedBy { it.name.lowercase() }, open = user.id) }
@@ -148,7 +148,7 @@ class UsersViewModel(
         val ready = _state.value as? UsersUiState.Ready ?: return
         // The server asks the signed-in user for their current password, which the Password page does.
         val user = ready.openUser?.takeUnless { it.id == ready.me } ?: return
-        act(UserDone.PasswordSet, form = UserDialog.Password) { client ->
+        act(UserDone.PasswordSet, form = { dialog == UserDialog.Password && open == user.id }) { client ->
             client.setPassword(user.id, password)
             update { copy(users = users.map { if (it.id == user.id) it.copy(hasPassword = password.isNotEmpty()) else it }) }
         }
@@ -166,12 +166,12 @@ class UsersViewModel(
     /**
      * A create, password or delete, and the page says what happened. A delete's confirm closes as it is answered; a form
      * ([form]) stays open while the call runs, closes when it works, and keeps what was typed, with the reason in the
-     * form, when it doesn't. Only that same form counts: if it was left and another opened, the result goes to the page.
+     * form, when it doesn't. Only that same form counts (the same dialog, for the same user): if it was left and another opened, the result goes to the page.
      * One call at a time: a second while one is running is ignored.
      */
     private fun act(
         done: UserDone,
-        form: UserDialog?,
+        form: (UsersUiState.Ready.() -> Boolean)?,
         call: suspend (JellyfinClient) -> Unit,
     ) {
         if ((_state.value as? UsersUiState.Ready)?.busy != false) return
@@ -179,11 +179,11 @@ class UsersViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> call(client) }
-                .onSuccess { update { copy(busy = false, done = done, dialog = if (form != null && dialog == form) null else dialog) } }
+                .onSuccess { update { copy(busy = false, done = done, dialog = if (form != null && form()) null else dialog) } }
                 .onFailure { error ->
                     // A form left meanwhile has nowhere to say it, so the page does.
                     update {
-                        if (form != null && dialog == form) {
+                        if (form != null && form()) {
                             copy(busy = false, formFailure = error.consoleFailure())
                         } else {
                             copy(busy = false, actionFailed = error.consoleFailure())
