@@ -17,7 +17,6 @@ import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.server.ACCELERATION_TYPES
 import com.cooper.binge.companion.jellyfin.server.DEINTERLACE_METHODS
 import com.cooper.binge.companion.jellyfin.server.ENCODER_PRESETS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
@@ -33,6 +32,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.TONEMAPPING_ALGORITHMS
 import com.cooper.binge.companion.jellyfin.server.TONEMAPPING_MODES
 import com.cooper.binge.companion.jellyfin.server.TONEMAPPING_RANGES
+import com.cooper.binge.companion.jellyfin.server.accelerationTypes
 import com.cooper.binge.companion.jellyfin.server.downmixAlgorithms
 import com.cooper.binge.companion.jellyfin.server.encodingChoice
 import com.cooper.binge.companion.jellyfin.server.encodingStored
@@ -218,9 +218,17 @@ internal fun TranscodingPickerSheet(
     val config = state.encoding
     when (picker) {
         TranscodingPicker.Acceleration ->
-            Choices(R.string.transcoding_acceleration, ACCELERATION_TYPES, encodingChoice(config.string(ENCODING_ACCELERATION), "none"), {
-                accelerationLabel(it)
-            }, onDismiss) {
+            Choices(
+                R.string.transcoding_acceleration,
+                accelerationTypes(
+                    profile,
+                ),
+                encodingChoice(config.string(ENCODING_ACCELERATION), "none"),
+                {
+                    accelerationLabel(it)
+                },
+                onDismiss,
+            ) {
                 actions.onEncoding(ENCODING_ACCELERATION, JsonPrimitive(encodingStored(it, "none", profile)))
             }
         TranscodingPicker.Algorithm ->

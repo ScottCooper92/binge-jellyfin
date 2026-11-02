@@ -206,6 +206,11 @@ class TranscodingViewModelTest {
     }
 
     @Test
+    fun `a bitrate in Mbps rounds to the nearest bit rather than truncating`() {
+        assertEquals(JsonPrimitive(2_010_000), NumberField.BitrateLimit.parse("2.01"))
+    }
+
+    @Test
     fun `each number has the range jellyfin-web sets, and a whole one takes no fraction`() {
         assertEquals(JsonPrimitive(10), NumberField.ThrottleDelay.parse("10"))
         assertNull(NumberField.ThrottleDelay.parse("9"))

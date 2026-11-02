@@ -37,6 +37,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.math.roundToInt
 
 /** Which of the server's two configurations a setting is in. */
 enum class ConfigurationKind { Encoding, Server }
@@ -85,7 +86,7 @@ enum class NumberField(
                 .toDoubleOrNull()
                 ?.takeIf { it in min..max } ?: return null
         if (whole) return shown.takeIf { it % 1.0 == 0.0 }?.let { JsonPrimitive(it.toInt()) }
-        return if (scale == 1) JsonPrimitive(shown) else JsonPrimitive((shown * scale).toInt())
+        return if (scale == 1) JsonPrimitive(shown) else JsonPrimitive((shown * scale).roundToInt())
     }
 }
 

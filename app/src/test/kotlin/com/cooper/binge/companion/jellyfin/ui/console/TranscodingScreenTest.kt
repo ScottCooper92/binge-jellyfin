@@ -74,13 +74,19 @@ class TranscodingScreenTest {
     }
 
     @Test
-    fun `no hardware means no hardware decoding or encoding, and software tone mapping has no switch`() {
+    fun `no hardware means no hardware decoding or encoding, and software tone mapping has its switch but no mode`() {
         show("none", "10.11.6")
         compose.onAllNodesWithText("HARDWARE DECODING").assertCountEquals(0)
         compose.onAllNodesWithText("HARDWARE ENCODING").assertCountEquals(0)
         compose.onNodeWithText("TONE MAPPING").performScrollTo().assertExists()
-        compose.onAllNodesWithText("Enable tone mapping").assertCountEquals(0)
+        compose.onNodeWithText("Enable tone mapping").performScrollTo().assertExists()
         compose.onAllNodesWithText("Mode").assertCountEquals(0)
+    }
+
+    @Test
+    fun `software tone mapping is not on 10_9`() {
+        show("none", "10.9.0")
+        compose.onAllNodesWithText("TONE MAPPING").assertCountEquals(0)
     }
 
     @Test
