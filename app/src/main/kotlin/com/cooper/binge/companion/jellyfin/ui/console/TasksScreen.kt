@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CleaningServices
@@ -83,7 +84,7 @@ fun TasksScreen(
                         Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) { BingeLoadingIndicator() }
-                state is TasksUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                state is TasksUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 ready != null && open != null -> TaskTriggers(open, ready, actions, inner)
                 ready != null -> Tasks(ready, actions, inner, now)
             }
