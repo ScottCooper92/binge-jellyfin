@@ -44,6 +44,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, signedIn.profile, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
+        ConsolePage.Network -> NetworkRoute(graph, signedIn.profile, { open(ConsolePage.Server) }, close)
         ConsolePage.Advanced ->
             AdvancedRoute(
                 graph,
