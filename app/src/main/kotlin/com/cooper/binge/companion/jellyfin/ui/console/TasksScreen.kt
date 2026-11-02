@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.GraphicEq
@@ -70,6 +71,16 @@ fun TasksScreen(
         bar = ScreenBar.Small,
         onBack = if (open != null) actions.onCloseTask else actions.onBack,
         snackbarHostState = host,
+        bottomBar = {
+            // A task's triggers page creates triggers; the task list creates nothing.
+            CreateFooter(
+                label = stringResource(R.string.tasks_trigger_add),
+                icon = Icons.Outlined.Add,
+                onClick = { actions.onAskAdd(true) },
+                visible = ready != null && open != null,
+                loading = ready?.saving == true,
+            )
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
