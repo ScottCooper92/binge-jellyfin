@@ -7,6 +7,37 @@ data class ItemCounts(
 )
 
 /**
+ * How many movies and series a user can see, and how many of those carry no TMDB id. [LibraryIndex] finds a title only
+ * by its TMDB id, so those [withoutTmdbId] can never be matched, whatever the file is called.
+ */
+data class TmdbCoverage(
+    val titles: Int,
+    val withoutTmdbId: Int,
+)
+
+/**
+ * The user's [TmdbCoverage], from two reads of `/Items` that ask for one record each and take the server's total: the movies
+ * and series, and those with no TMDB id (`hasTmdbId` off). It only reads: it never starts a scan or a refresh. Null when the
+ * server does not send a total.
+ */
+suspend fun JellyfinClient.tmdbCoverage(userId: String): TmdbCoverage? {
+    suspend fun total(withoutTmdbId: Boolean): Int? {
+        val query =
+            mapOf(
+                "userId" to userId,
+                "recursive" to "true",
+                "includeItemTypes" to "Movie,Series",
+                "enableImages" to "false",
+                "limit" to "1",
+            )
+        return getObject("Items", if (withoutTmdbId) query + ("hasTmdbId" to "false") else query).int("TotalRecordCount")
+    }
+    val titles = total(withoutTmdbId = false) ?: return null
+    val without = total(withoutTmdbId = true) ?: return null
+    return TmdbCoverage(titles, without)
+}
+
+/**
  * The movies and series [userId]'s access lets them see, from `/Items/Counts`. The server counts per user
  * (`IsVirtualItem` off, so a missing episode doesn't add to it), and sends every kind in one answer, so this
  * is one call, not one query per kind.

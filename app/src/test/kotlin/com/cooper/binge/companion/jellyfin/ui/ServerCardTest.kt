@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
+import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
@@ -112,6 +114,52 @@ class ServerCardTest {
         assertEquals(0, jellyfin.hits("/System/Info"))
         assertEquals(0, jellyfin.hits("/Users"))
         assertEquals(120, card.movies)
+    }
+
+    private fun JellyfinViewModel.coverage(): TmdbCoverage = signedIn { it.card.tmdb != null }.card.tmdb!!
+
+    @Test
+    fun `the titles with no TMDB id are counted among the movies and series the user can see, and episodes are not`() {
+        jellyfin.items += FakeItem("m-1", "Matched film", "Movie", tmdbId = 1)
+        jellyfin.items += FakeItem("m-2", "Big Buck Bunny", "Movie")
+        jellyfin.items += FakeItem("s-1", "Matched show", "Series", tmdbId = 2)
+        jellyfin.items += FakeItem("s-2", "Unmatched show", "Series")
+        jellyfin.items += FakeItem("e-1", "An episode", "Episode", seriesId = "s-2")
+        assertEquals(TmdbCoverage(titles = 4, withoutTmdbId = 2), viewModel().coverage())
+    }
+
+    @Test
+    fun `a library where every title has an id has none without`() {
+        jellyfin.items += FakeItem("m-1", "Matched film", "Movie", tmdbId = 1)
+        assertEquals(TmdbCoverage(titles = 1, withoutTmdbId = 0), viewModel().coverage())
+    }
+
+    @Test
+    fun `counting only reads, so nothing is scanned or refreshed, and each read asks for one record`() {
+        jellyfin.items += FakeItem("m-2", "Big Buck Bunny", "Movie")
+        viewModel().coverage()
+        assertTrue(jellyfin.requests.all { it.method == "GET" })
+        // The library index reads the titles that have an id, in pages; the coverage reads are the other two.
+        val reads =
+            jellyfin.requests.filter {
+                it.url.encodedPath == "/Items" &&
+                    it.url.queryParameter("includeItemTypes") == "Movie,Series" &&
+                    it.url.queryParameter("hasTmdbId") != "true"
+            }
+        assertEquals(setOf("1"), reads.map { it.url.queryParameter("limit") }.toSet())
+        assertEquals(setOf("false", null), reads.map { it.url.queryParameter("hasTmdbId") }.toSet())
+    }
+
+    @Test
+    fun `a coverage read that fails leaves it empty and the rest of the card in place`() {
+        jellyfin.administrator = true
+        jellyfin.status["/Items"] = 500
+        val vm = viewModel()
+        val card = vm.signedIn { it.card.playing != null && it.card.movies != null }.card
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertNull(card.tmdb)
+        assertNull(vm.signedIn { true }.card.tmdb)
+        assertTrue(card.connected)
     }
 
     @Test

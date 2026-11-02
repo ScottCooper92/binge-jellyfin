@@ -145,6 +145,21 @@ class JellyfinScreenshotTest {
     @Composable
     fun serverCardAlerts() = JellyfinRoot(previewSignedInAdminAlerts, Actions())
 
+    /** The note under the server card for the titles with no TMDB id: plain, at every size and in Spanish. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun noTmdbIds() = JellyfinRoot(previewSignedInNoTmdb, Actions())
+
+    /** The same note with the Binge flag on, which names Binge. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun noTmdbIdsPromoted() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInNoTmdb, Actions()) }
+
     /** The card before its figures arrive: a placeholder in each, and no Connected. */
     @PreviewTest
     @JellyfinScreenStatePreview

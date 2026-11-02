@@ -4,9 +4,11 @@ import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
+import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
 import com.cooper.binge.companion.jellyfin.server.itemCounts
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.serverInfo
+import com.cooper.binge.companion.jellyfin.server.tmdbCoverage
 import com.cooper.binge.companion.jellyfin.server.users
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -29,6 +31,7 @@ data class ServerCardState(
     val users: Int? = null,
     val movies: Int? = null,
     val series: Int? = null,
+    val tmdb: TmdbCoverage? = null,
 )
 
 /** How long the figures stand before the home asks again, so reopening it doesn't re-ask. */
@@ -72,6 +75,7 @@ class ServerCardLoader(
             }
             launchRead({ client.nowPlaying().size }, update) { copy(connected = true, playing = it) }
             launchRead({ client.itemCounts(userId) }, update) { copy(connected = true, movies = it.movies, series = it.series) }
+            launchRead({ client.tmdbCoverage(userId) }, update) { copy(connected = true, tmdb = it) }
         }
     }
 
