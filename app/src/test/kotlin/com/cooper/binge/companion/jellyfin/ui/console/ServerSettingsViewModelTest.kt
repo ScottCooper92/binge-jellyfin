@@ -208,10 +208,13 @@ class ServerSettingsViewModelTest {
     fun `a sheet dismissed before its save is refused reports the refusal on the page`() {
         val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
-        jellyfin.status["/System/Configuration"] = 500
+        val held = jellyfin.hold("/System/Configuration", method = "POST")
         vm.edit(ServerText.Name)
         vm.saveText(ServerText.Name, "Den")
+        held.awaitArrival()
+        // The sheet is closed while the call is still running, then the call is refused.
         vm.edit(null)
+        held.refuse(500)
         val failed = vm.sheet { it.saveFailed != null }
         assertEquals(ConsoleFailure.Refused, failed.saveFailed)
         assertNull(failed.sheetFailed)

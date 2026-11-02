@@ -270,10 +270,13 @@ class TrickplayViewModelTest {
     fun `a sheet dismissed before its save is refused reports the refusal on the page`() {
         val vm = made(TrickplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        val held = jellyfin.hold(CONFIGURATION, method = "POST")
         vm.edit(TrickplayField.JpegQuality)
         vm.save(TrickplayField.JpegQuality, "75")
+        held.awaitArrival()
+        // The sheet is closed while the call is still running, then the call is refused.
         vm.edit(null)
+        held.refuse(500)
         val failed = vm.ready { it.refused != null }
         assertEquals(ConsoleFailure.Refused, failed.refused)
         assertNull(failed.sheetFailed)
