@@ -2,11 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AspectRatio
 import androidx.compose.material.icons.outlined.Bolt
@@ -21,10 +17,12 @@ import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.outlined.ViewColumn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,10 +35,8 @@ import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_PRIORITIES
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_SCAN_BEHAVIORS
@@ -58,14 +54,12 @@ data class TrickplayActions(
     val onProcessPriority: (String) -> Unit = {},
     val onInterval: (Int) -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
 /** The picker open over the page. */
 private enum class TrickplayPicker { Scan, Priority, Interval }
-
-/** Lines a failed save's message takes, so it never moves the rows. */
-private const val STATUS_LINES = 2
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
 private const val DETAIL_LINES = 6
@@ -89,18 +83,26 @@ fun TrickplayScreen(
     keyFrameOnlyAvailable: Boolean = true,
 ) {
     var picker by rememberSaveable { mutableStateOf<TrickplayPicker?>(null) }
-    BingeScreenScaffold(title = stringResource(R.string.trickplay_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+    val host = remember { SnackbarHostState() }
+    val ready = state as? TrickplayUiState.Ready
+    FormScreen(
+        title = stringResource(R.string.trickplay_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        notReady =
             when (state) {
-                TrickplayUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
-                is TrickplayUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is TrickplayUiState.Ready -> {
-                    TrickplayBody(state, actions, keyFrameOnlyAvailable, inner) { picker = it }
-                    picker?.let { TrickplayPickerSheet(it, state.settings, actions) { picker = null } }
-                    state.editing?.let { FieldDialog(it, state.settings, actions) }
-                }
-            }
+                TrickplayUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is TrickplayUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
+                is TrickplayUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            TrickplayBody(ready, actions, keyFrameOnlyAvailable) { picker = it }
+            picker?.let { TrickplayPickerSheet(it, ready.settings, actions) { picker = null } }
+            ready.editing?.let { FieldDialog(it, ready.settings, actions) }
+            RefusedMessage(ready.refused, host)
         }
     }
 }
@@ -110,24 +112,15 @@ private fun TrickplayBody(
     state: TrickplayUiState.Ready,
     actions: TrickplayActions,
     keyFrameOnlyAvailable: Boolean,
-    inner: PaddingValues,
     onPick: (TrickplayPicker) -> Unit,
 ) {
     val settings = state.settings
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         Text(stringResource(R.string.trickplay_body), style = MaterialTheme.typography.bodyMedium)
         ProcessingGroup(settings, actions, keyFrameOnlyAvailable, onPick)
         ImagesGroup(settings, actions, onPick)
-        Text(
-            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }.orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            minLines = STATUS_LINES,
-            maxLines = STATUS_LINES,
-        )
     }
 }
 

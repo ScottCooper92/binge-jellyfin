@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -48,7 +49,7 @@ class TrickplayScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun saveFailed() = TrickplayScreen(previewReady.copy(saveFailed = ConsoleFailure.Unreachable), TrickplayActions())
+    fun saving() = TrickplayScreen(previewReady.copy(save = SaveProgress(SaveStatus.Saving)), TrickplayActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
