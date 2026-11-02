@@ -33,6 +33,8 @@ sealed interface DevicesUiState {
         val removing: ServerDevice? = null,
         val busy: Set<String> = emptySet(),
         val actionFailed: ConsoleFailure? = null,
+        /** Why the rename form was refused, shown in the form, which stays open with what was typed. */
+        val formFailure: ConsoleFailure? = null,
     ) : DevicesUiState
 }
 
@@ -64,7 +66,7 @@ class DevicesViewModel(
         }
     }
 
-    fun askRename(device: ServerDevice?) = update { copy(renaming = device, actionFailed = null) }
+    fun askRename(device: ServerDevice?) = update { copy(renaming = device, formFailure = null, actionFailed = null) }
 
     fun askRemove(device: ServerDevice?) = update { copy(removing = device?.takeUnless { it.id == thisDevice }, actionFailed = null) }
 
@@ -72,20 +74,22 @@ class DevicesViewModel(
     fun rename(name: String) {
         val device = (_state.value as? DevicesUiState.Ready)?.renaming ?: return
         val trimmed = name.trim()
-        update { copy(renaming = null, busy = busy + device.id) }
-        change(device) { client -> client.renameDevice(device.id, trimmed) }
+        // The form stays open while the call runs: it closes when the name is saved, and keeps what was typed if it isn't.
+        update { copy(busy = busy + device.id, formFailure = null, actionFailed = null) }
+        change(device, fromForm = true) { client -> client.renameDevice(device.id, trimmed) }
     }
 
     fun remove() {
         val ready = _state.value as? DevicesUiState.Ready ?: return
         val device = ready.removing?.takeUnless { it.id == ready.thisDevice } ?: return
         update { copy(removing = null, busy = busy + device.id) }
-        change(device) { client -> client.removeDevice(device.id) }
+        change(device, fromForm = false) { client -> client.removeDevice(device.id) }
     }
 
     /** Runs a change, then reads the list again, so the row shows what the server now holds. */
     private fun change(
         device: ServerDevice,
+        fromForm: Boolean,
         call: suspend (JellyfinClient) -> Unit,
     ) {
         viewModelScope.launch {
@@ -93,8 +97,31 @@ class DevicesViewModel(
                 .consoleCall(TAG) { _, client ->
                     call(client)
                     client.devices()
-                }.onSuccess { devices -> update { copy(devices = devices, busy = busy - device.id) } }
-                .onFailure { error -> update { copy(busy = busy - device.id, actionFailed = error.consoleFailure()) } }
+                }.onSuccess { devices ->
+                    update {
+                        copy(
+                            devices = devices,
+                            busy = busy - device.id,
+                            renaming =
+                                if (fromForm &&
+                                    renaming?.id == device.id
+                                ) {
+                                    null
+                                } else {
+                                    renaming
+                                },
+                        )
+                    }
+                }.onFailure { error ->
+                    // A form left meanwhile has nowhere to say it, so the page does.
+                    update {
+                        if (fromForm && renaming?.id == device.id) {
+                            copy(busy = busy - device.id, formFailure = error.consoleFailure())
+                        } else {
+                            copy(busy = busy - device.id, actionFailed = error.consoleFailure())
+                        }
+                    }
+                }
         }
     }
 

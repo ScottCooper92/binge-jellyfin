@@ -3,17 +3,24 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.LOG_FILE_RETENTION_DAYS
+import com.cooper.binge.companion.jellyfin.server.LOG_RETENTION_MAX_DAYS
+import com.cooper.binge.companion.jellyfin.server.LOG_RETENTION_MIN_DAYS
 import com.cooper.binge.companion.jellyfin.server.LogEntry
 import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.LogLevel
 import com.cooper.binge.companion.jellyfin.server.logFiles
+import com.cooper.binge.companion.jellyfin.server.logRetentionDays
 import com.cooper.binge.companion.jellyfin.server.logTail
+import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
+import com.cooper.binge.companion.jellyfin.server.serverConfiguration
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonPrimitive
 
 sealed interface LogsUiState {
     data object Loading : LogsUiState
@@ -22,10 +29,17 @@ sealed interface LogsUiState {
         val failure: ConsoleFailure,
     ) : LogsUiState
 
-    /** The server's log files, newest first, and the one open, if any. */
+    /**
+     * The server's log files, newest first, and the one open, if any. [retention] is null when the server sent no
+     * retention setting; [save] says where its saves stand, and [refused] the last one the server refused.
+     */
     data class Ready(
         val files: List<LogFile>,
         val open: OpenLog? = null,
+        val retention: Int? = null,
+        val editingRetention: Boolean = false,
+        val save: SaveProgress = SaveProgress(),
+        val refused: ConsoleFailure? = null,
     ) : LogsUiState
 }
 
@@ -72,6 +86,17 @@ class LogsViewModel(
     val state: StateFlow<LogsUiState> = _state.asStateFlow()
     private var reading: Job? = null
 
+    private val saves =
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveServerConfiguration(json) },
+            onProgress = { progress -> update { copy(save = progress) } },
+        ) { shown, failure ->
+            update { copy(retention = shown.logRetentionDays(), refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
+        }
+
     init {
         load()
     }
@@ -79,11 +104,14 @@ class LogsViewModel(
     fun load() {
         _state.value = LogsUiState.Loading
         viewModelScope.launch {
+            connection.awaitSaves()
+            val configuration = connection.consoleCall(TAG) { _, client -> client.serverConfiguration() }.getOrNull()
+            configuration?.let(saves::loaded)
             _state.value =
                 connection
                     .consoleCall(TAG) { _, client -> client.logFiles() }
                     .fold(
-                        onSuccess = { LogsUiState.Ready(it) },
+                        onSuccess = { LogsUiState.Ready(it, retention = configuration?.logRetentionDays()) },
                         onFailure = { LogsUiState.Failed(it.consoleFailure()) },
                     )
         }
@@ -105,6 +133,23 @@ class LogsViewModel(
     fun closeLog() {
         reading?.cancel()
         update { copy(open = null) }
+    }
+
+    /** Opens the retention sheet, or closes it. */
+    fun editRetention(editing: Boolean) = update { copy(editingRetention = editing) }
+
+    /** Saves [text] as the retention in days and closes the sheet; text that isn't a whole number in range keeps it open and saves nothing. */
+    fun saveRetention(text: String) {
+        val days = text.trim().toIntOrNull()?.takeIf { it in LOG_RETENTION_MIN_DAYS..LOG_RETENTION_MAX_DAYS } ?: return
+        update { copy(editingRetention = false) }
+        saves.set(LOG_FILE_RETENTION_DAYS, JsonPrimitive(days))
+    }
+
+    fun retrySave() = saves.retry()
+
+    /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
+    override fun onCleared() {
+        saves.cleared()
     }
 
     fun setQuery(query: String) = updateOpen { copy(query = query) }

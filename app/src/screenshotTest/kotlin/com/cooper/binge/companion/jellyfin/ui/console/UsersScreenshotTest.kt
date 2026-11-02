@@ -74,6 +74,35 @@ class UsersScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @Composable
+    fun addingSubmitting() = Surface { CreateSheet(UsersActions(), submitting = true, inWindow = false) }
+
+    /** The form stays open with what was typed, and says why in its own error slot. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun addingFailed() = Surface { CreateSheet(UsersActions(), error = "Not changed. Something went wrong. Try again.", inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun settingPasswordSubmitting() = Surface { PasswordSheet(previewUsers.first(), UsersActions(), submitting = true, inWindow = false) }
+
+    /** The form stays open with what was typed, and says why in its own error slot. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun settingPasswordFailed() =
+        Surface {
+            PasswordSheet(previewUsers.first(), UsersActions(), error = "Not changed. Something went wrong. Try again.", inWindow = false)
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @JellyfinScreenStateLightPreview
     @JellyfinFontScalePreviews
     @Composable

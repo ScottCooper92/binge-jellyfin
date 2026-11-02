@@ -22,9 +22,7 @@ import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.Workspaces
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -34,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -103,7 +102,7 @@ private fun HomeLayoutBody(
     Column(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        Text(stringResource(R.string.home_layout_body), style = MaterialTheme.typography.bodyMedium)
+        PageIntro(stringResource(R.string.home_layout_body))
         ItemGroup(
             title = stringResource(R.string.home_layout_libraries),
             rows =

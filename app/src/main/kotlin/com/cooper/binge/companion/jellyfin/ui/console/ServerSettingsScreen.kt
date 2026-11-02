@@ -33,6 +33,7 @@ import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -106,7 +107,7 @@ private fun ServerSettingsBody(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        Text(stringResource(R.string.server_settings_body), style = MaterialTheme.typography.bodyMedium)
+        PageIntro(stringResource(R.string.server_settings_body))
         ItemGroup(
             title = stringResource(R.string.server_settings_general),
             rows =

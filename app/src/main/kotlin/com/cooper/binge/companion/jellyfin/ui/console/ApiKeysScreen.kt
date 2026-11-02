@@ -26,6 +26,7 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
@@ -99,14 +100,23 @@ private fun Keys(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item { Text(stringResource(R.string.api_keys_body), style = MaterialTheme.typography.bodyMedium) }
+        item { PageIntro(stringResource(R.string.api_keys_body)) }
         if (state.keys.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
         } else {
             item { ItemGroup(title = null, rows = state.keys.map { it.row(state, actions, now) }) }
         }
     }
-    if (state.naming) NewKeySheet(actions)
+    if (state.naming) {
+        NewKeySheet(
+            actions,
+            submitting = state.busy,
+            error =
+                state.formFailure?.let {
+                    stringResource(R.string.api_keys_not_changed, stringResource(it.message))
+                },
+        )
+    }
     state.created?.let { CreatedKeyDialog(it, actions) }
     state.removing?.let { RevokeDialog(it, actions) }
 }
@@ -161,6 +171,8 @@ internal fun RevokeDialog(
 @Composable
 internal fun NewKeySheet(
     actions: ApiKeysActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -174,6 +186,8 @@ internal fun NewKeySheet(
             onSubmit = { actions.onCreate(name) },
             onCancel = { actions.onAskCreate(false) },
             hint = stringResource(R.string.api_keys_app_field),
+            error = error,
+            isSubmitting = submitting,
         )
     }
 }

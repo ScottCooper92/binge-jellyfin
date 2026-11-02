@@ -29,6 +29,12 @@ data class JellyfinAccount(
     /** Stopping a stream on someone else's session, not only their own. */
     val canControlOthers: Boolean get() = isAdministrator || policy.bool("EnableRemoteControlOfOtherUsers") == true
 
+    /**
+     * Controlling a session on a shared device (one nobody is signed in on). Off unless the policy says so: the server
+     * reads this flag on the controlling user and gives an administrator no shortcut, so neither does this.
+     */
+    val canControlSharedDevices: Boolean get() = policy.bool("EnableSharedDeviceControl") == true
+
     private companion object {
         const val DEFAULT_PROVIDER = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider"
     }

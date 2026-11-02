@@ -7,14 +7,13 @@ import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.PowerSettingsNew
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
+import com.binge.designsystem.component.PageIntro
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.providers
@@ -38,7 +37,7 @@ internal fun ProvidersPage(
 ) {
     val all = state.options.providers(group, group.available(state.available))
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        Text(stringResource(R.string.library_providers_body), style = MaterialTheme.typography.bodyMedium)
+        PageIntro(stringResource(R.string.library_providers_body))
         ItemGroup(
             title = null,
             rows =

@@ -3,9 +3,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import android.os.LocaleList
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Audiotrack
@@ -20,16 +17,13 @@ import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Translate
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
@@ -38,9 +32,9 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
-import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -121,7 +115,7 @@ private fun PlaybackBody(
     val preferences = state.preferences
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         val body = if (LocalFlags.current.bingePromotion) R.string.languages_body else R.string.languages_body_plain
-        Text(stringResource(body), style = MaterialTheme.typography.bodyMedium)
+        PageIntro(stringResource(body))
         ItemGroup(
             title = stringResource(R.string.playback_audio),
             rows =
@@ -255,23 +249,6 @@ private fun LanguageChoiceSheet(
         suggested = suggested,
         pinned = listOf(ANY),
     )
-}
-
-/** A console page that couldn't read: what went wrong, and Try again, where focus can land. */
-@Composable
-internal fun ConsoleFailed(
-    failure: ConsoleFailure,
-    onRetry: () -> Unit,
-    inner: PaddingValues,
-) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l), Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(stringResource(failure.message), style = MaterialTheme.typography.bodyLarge)
-        BingeFilledButton(label = stringResource(R.string.console_retry), onClick = onRetry, modifier = Modifier.fillMaxWidth())
-    }
 }
 
 @Composable

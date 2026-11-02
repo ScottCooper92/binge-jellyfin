@@ -54,6 +54,9 @@ older server shows less rather than failing on a call it can't answer.
 | Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |
 | Chapter image resolution and dummy chapter duration (server configuration) | 10.9 | `hasChapterImageSettings` |
+| Segment deletion, stereo downmix algorithm, audio VBR and VideoToolbox tone mapping (encoding options) | 10.9 | `hasAdvancedEncoding` |
+| `none` and `auto` stored as named values for no acceleration and the default preset (before, `""`); software tone mapping (encoding options) | 10.10 | `hasNamedEncodingDefaults` |
+| The Quick Sync device, and the RFC 7845 and AC-4 downmix algorithms (encoding options) | 10.10 | `hasQsvDeviceAndDownmix` |
 | A library's lyric providers, and saving its trickplay images with the media | 10.10 | `hasLibraryLyricFetchers`, `hasLibraryTrickplayWithMedia` |
 | A library's media segment providers (the server lists them from 10.11, and 10.10 misspells the order option) | 10.11 | `hasLibrarySegmentProviders` |
 | Backups | 10.11 | `hasBackups` |
@@ -69,8 +72,23 @@ older server shows less rather than failing on a call it can't answer.
 | Advanced options (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasAdvancedPerformance` and `hasCacheAndLegacyAuth` per row |
 | Their own preferences (languages, playback, the home screen) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |
 | Changing their own password | users of Jellyfin's own provider, not LDAP or another plugin | `hasLocalPassword` |
-| Stopping someone else's stream | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers` |
+| Controlling a stream on someone else's session (pause, seek, next, stop) | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers`, and the session in `GET /Sessions?controllableByUserId=` |
+| Controlling a session on a shared device (nobody signed in on it) | users with `EnableSharedDeviceControl`; an administrator has no shortcut | `canControlSharedDevices`, and the same list |
 | Approving a Quick Connect code | everyone, while Quick Connect is on | `profile.quickConnect` |
+
+### The server does not check who controls a session
+
+Read from Jellyfin's source at 10.8.13 and 10.11.0. The endpoints that send a command to a session
+(`POST /Sessions/{id}/Playing/{command}`, `/Command`, `/Message`) check that the session exists and nothing
+else: `SessionManager.AssertCanControl` is an empty method. A user's remote-control and shared-device policy is
+applied in one place only, when sessions are listed with `GET /Sessions?controllableByUserId=`, which also drops
+sessions that take no remote control.
+
+So a page that controls a session never leaves the policy to a refusal. It offers a control only when **both**
+the server's controllable list includes the session **and** the account's own gate allows it
+(`SessionControls.of`), it never targets the session of this install's own device, and it sends the id of the
+session the user tapped, never one derived from "the current session". A control the session does not declare
+(`SupportsMediaControl`, `PlayState.CanSeek`, a name in `SupportedCommands`) is not drawn.
 
 ## Adding a feature
 

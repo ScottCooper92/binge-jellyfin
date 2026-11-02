@@ -23,6 +23,7 @@ import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.template.EmptyScreen
 import com.cooper.binge.companion.jellyfin.R
@@ -71,7 +72,7 @@ private fun RepositoryList(
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item {
-            Text(stringResource(R.string.repositories_body), style = MaterialTheme.typography.bodyMedium)
+            PageIntro(stringResource(R.string.repositories_body))
         }
         item { ItemGroup(title = null, rows = state.repositories.map { it.row(state, actions) }) }
     }

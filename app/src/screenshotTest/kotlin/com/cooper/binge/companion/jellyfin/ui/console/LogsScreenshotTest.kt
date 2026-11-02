@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -117,6 +118,35 @@ class LogsScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun noFiles() = LogsScreen(LogsUiState.Ready(emptyList()), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun retention() = LogsScreen(LogsUiState.Ready(previewFiles, retention = 3), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun retentionOneDay() = LogsScreen(LogsUiState.Ready(previewFiles, retention = 1), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun retentionUnsent() =
+        LogsScreen(
+            LogsUiState.Ready(previewFiles, retention = 7, save = SaveProgress(failed = true)),
+            LogsActions(),
+            zone = ZoneOffset.UTC,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun retentionSheet() = Surface { RetentionSheet(3, LogsActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
