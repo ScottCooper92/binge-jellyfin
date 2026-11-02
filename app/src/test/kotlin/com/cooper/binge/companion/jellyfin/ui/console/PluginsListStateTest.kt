@@ -5,14 +5,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.PackageVersion
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -84,8 +94,44 @@ class PluginsListStateTest {
         compose.onNodeWithText(far).assertIsDisplayed()
     }
 
+    @Test
+    fun `swiping moves between the tabs and the tab row follows, and a tap on a tab moves the pager`() {
+        show()
+        compose.onNodeWithText("Catalog").assertIsSelected()
+        compose.onRoot().performTouchInput { swipeLeft() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Repositories").assertIsSelected()
+        compose.onNodeWithText("Package 0").assertDoesNotExist()
+        compose.onRoot().performTouchInput { swipeRight() }
+        compose.waitForIdle()
+        compose.onNodeWithText("Catalog").assertIsSelected()
+        compose.onNodeWithText("Installed").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Installed").assertIsSelected()
+        compose.onNodeWithText("Package 0").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a tap on a tab that a swipe back interrupts leaves the tab row and the footer agreeing`() {
+        show()
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithText("Repositories").performClick()
+        compose.mainClock.advanceTimeBy(50)
+        compose.onRoot().performTouchInput { swipeRight() }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        // Wherever the pager landed, the footer follows the selected tab.
+        val onRepositories = compose.onAllNodes(isSelected() and hasText("Repositories")).fetchSemanticsNodes().isNotEmpty()
+        compose
+            .onAllNodesWithText("Add repository")
+            .fetchSemanticsNodes()
+            .isNotEmpty()
+            .let { assertEquals(onRepositories, it) }
+    }
+
     private fun scrollFar() {
-        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(FAR)
+        // The pager scrolls to an index too, so the list is the innermost one.
+        compose.onAllNodes(hasScrollToIndexAction()).onLast().performScrollToIndex(FAR)
         compose.waitForIdle()
     }
 

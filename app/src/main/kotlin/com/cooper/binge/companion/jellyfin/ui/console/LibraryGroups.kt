@@ -1,6 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.CallSplit
 import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.ClosedCaptionOff
 import androidx.compose.material.icons.outlined.CloudDownload
@@ -8,6 +10,7 @@ import androidx.compose.material.icons.outlined.CollectionsBookmark
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Hearing
+import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Lyrics
 import androidx.compose.material.icons.outlined.MergeType
@@ -45,6 +48,8 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_CHAPTER_IMAGES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_CHAPTER_IMAGES_ON_SCAN
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_COLLECTIONS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_COUNTRY
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_CUSTOM_DELIMITERS
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_DELIMITER_WHITELIST
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_EPISODES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_EXTRAS_TITLES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_TITLES
@@ -54,6 +59,7 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_LYRICS_WITH_MEDIA
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_METADATA_SAVERS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_PERFECT_MATCH
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_PHOTOS
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_PREFER_ARTISTS_TAG
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_REALTIME
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_REFRESH_DAYS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SAVE_LOCAL
@@ -62,11 +68,13 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_SEASON_ZERO
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SERIES_GROUPING
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SKIP_AUDIO_MATCH
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SKIP_EMBEDDED_SUBTITLES
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_TAG_DELIMITERS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TRICKPLAY
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TRICKPLAY_ON_SCAN
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TRICKPLAY_WITH_MEDIA
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.bool
+import com.cooper.binge.companion.jellyfin.server.delimiterWhitelist
 import com.cooper.binge.companion.jellyfin.server.downloadLanguages
 import com.cooper.binge.companion.jellyfin.server.enabledSavers
 import com.cooper.binge.companion.jellyfin.server.int
@@ -77,6 +85,7 @@ import com.cooper.binge.companion.jellyfin.server.libraryHasVideo
 import com.cooper.binge.companion.jellyfin.server.providers
 import com.cooper.binge.companion.jellyfin.server.saversWith
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.binge.companion.jellyfin.server.tagDelimiters
 
 /** The choices a library's page opens in a sheet. */
 internal enum class LibraryPicker { Language, Country, Refresh, EmbeddedSubtitles }
@@ -321,6 +330,55 @@ internal fun MusicGroups(
             state.providersRow(ProviderGroup.Lyrics, Icons.Outlined.CloudDownload, actions).takeIf { profile.hasLibraryLyricFetchers },
         )
     if (rows.isNotEmpty()) ItemGroup(title = stringResource(R.string.library_music), rows = rows)
+}
+
+/** How a music library reads its tags: the ARTISTS tag, and the characters and names it splits artist and genre tags by. 10.10. */
+@Composable
+internal fun AudioTagsGroup(
+    state: LibraryUiState.Ready,
+    actions: LibraryActions,
+    profile: JellyfinServerProfile,
+) {
+    if (state.library.type != "music" || !profile.hasMusicTagOptions) return
+    val options = state.options
+    val whitelist = options.delimiterWhitelist()
+    val rows =
+        listOfNotNull(
+            state
+                .switch(
+                    LIBRARY_PREFER_ARTISTS_TAG,
+                    Icons.Outlined.Tag,
+                    R.string.library_artists_tag,
+                    actions,
+                    R.string.library_artists_tag_detail,
+                ).takeIf { LIBRARY_PREFER_ARTISTS_TAG in options },
+            state
+                .switch(
+                    LIBRARY_CUSTOM_DELIMITERS,
+                    Icons.Outlined.CallSplit,
+                    R.string.library_custom_delimiters,
+                    actions,
+                    R.string.library_custom_delimiters_detail,
+                ).takeIf { LIBRARY_CUSTOM_DELIMITERS in options },
+            ListItem(
+                icon = Icons.Outlined.Keyboard,
+                label = stringResource(R.string.library_delimiters),
+                detail = options.tagDelimiters().ifEmpty { null } ?: stringResource(R.string.library_audio_tags_none),
+                onClick = { actions.onAsk(LibraryDialog.TagDelimiters) },
+            ).takeIf { options.bool(LIBRARY_CUSTOM_DELIMITERS) == true && LIBRARY_TAG_DELIMITERS in options },
+            ListItem(
+                icon = Icons.Outlined.Block,
+                label = stringResource(R.string.library_whitelist),
+                detail =
+                    if (whitelist.isEmpty()) {
+                        stringResource(R.string.library_audio_tags_none)
+                    } else {
+                        pluralStringResource(R.plurals.library_whitelist_count, whitelist.size, whitelist.size)
+                    },
+                onClick = { actions.onAsk(LibraryDialog.DelimiterWhitelist) },
+            ).takeIf { LIBRARY_DELIMITER_WHITELIST in options },
+        )
+    if (rows.isNotEmpty()) ItemGroup(title = stringResource(R.string.library_audio_tags), rows = rows)
 }
 
 @Composable

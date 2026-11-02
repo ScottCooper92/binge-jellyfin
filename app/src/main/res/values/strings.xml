@@ -113,6 +113,7 @@
     <string name="home_layout_order_detail">The order your libraries appear in, on every device you sign in to. Each tap moves one place and saves.</string>
     <string name="home_layout_already_first">Already first</string>
     <string name="home_layout_already_last">Already last</string>
+    <string name="home_layout_moved">Moved to position %1$d of %2$d</string>
     <string name="home_layout_hide_played">Hide played items in Latest</string>
     <string name="home_layout_missing">Show missing episodes</string>
     <string name="home_layout_missing_detail">Gaps in a season show as placeholders</string>
@@ -260,6 +261,20 @@
     <string name="library_readers">Local metadata readers</string>
     <string name="library_subtitles">Subtitles</string>
     <string name="library_skip_embedded">Skip if the file has subtitles</string>
+    <string name="library_audio_tags">Audio tags</string>
+    <string name="library_audio_tags_none">None</string>
+    <string name="library_artists_tag">Prefer the ARTISTS tag</string>
+    <string name="library_artists_tag_detail">Use the non-standard ARTISTS tag instead of ARTIST when a file has it.</string>
+    <string name="library_custom_delimiters">Custom tag delimiters</string>
+    <string name="library_custom_delimiters_detail">Split artist and genre tags at your own characters.</string>
+    <string name="library_delimiters">Delimiter characters</string>
+    <string name="library_delimiters_hint">The characters to split at, one after another, such as /|;</string>
+    <string name="library_whitelist">Delimiter whitelist</string>
+    <string name="library_whitelist_hint">Names the server never splits, one on each line.</string>
+    <plurals name="library_whitelist_count">
+        <item quantity="one">%1$d name</item>
+        <item quantity="other">%1$d names</item>
+    </plurals>
     <string name="library_embedded_subtitles">Embedded subtitles</string>
     <string name="library_embedded_subtitles_all">All types</string>
     <string name="library_embedded_subtitles_text">Text only</string>
@@ -586,6 +601,10 @@
     <plurals name="trigger_limit_hours">
         <item quantity="one">Stops after %1$d hour</item>
         <item quantity="other">Stops after %1$d hours</item>
+    </plurals>
+    <plurals name="trigger_limit_value">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
     </plurals>
     <plurals name="trigger_limit_minutes">
         <item quantity="one">Stops after %1$d minute</item>
@@ -1022,4 +1041,18 @@
     <string name="backups_restore_not_back_title">The server didn\'t come back in time</string>
     <string name="backups_restore_not_back_body">Check it, then try again.</string>
     <string name="backups_restore_failed">The restore didn\'t go through.</string>
+    <string name="live_tv_title">Live TV</string>
+    <string name="console_live_tv_detail">Tuners and guide data</string>
+    <string name="live_tv_body">The tuners and guide data this server uses for Live TV. This page only shows them for now.</string>
+    <string name="live_tv_tuners">Tuners</string>
+    <string name="live_tv_no_tuners">No tuners</string>
+    <string name="live_tv_guide">Guide data</string>
+    <string name="live_tv_no_guide">No guide data</string>
+    <string name="live_tv_guide_ends">Guide runs until</string>
+    <string name="live_tv_refresh_guide">Refresh guide</string>
+    <string name="live_tv_refresh_guide_detail">Run it from Scheduled tasks</string>
+    <string name="live_tv_type_hdhomerun" translatable="false">HDHomeRun</string>
+    <string name="live_tv_type_m3u">M3U playlist</string>
+    <string name="live_tv_type_xmltv" translatable="false">XMLTV</string>
+    <string name="live_tv_type_schedules_direct" translatable="false">Schedules Direct</string>
 </resources>
