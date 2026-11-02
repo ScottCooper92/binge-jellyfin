@@ -392,6 +392,30 @@ class FakeJellyfin : Dispatcher() {
 
     fun hits(path: String): Int = requests.count { it.url.encodedPath == path }
 
+    /**
+     * Waits for a write to [path] whose JSON body satisfies [check], and answers that body (the latest such). A test asserts on
+     * a body by waiting for it, not by counting requests and reading the last: the view model tests run with their Main on
+     * `Unconfined`, so a save's answer can be handled on another thread while the test changes the draft, and the save engine
+     * (main-thread only) may then send one write twice. The count reaches its number on the repeat, and the last body is one
+     * written before the change the test is waiting for.
+     */
+    fun awaitBody(
+        path: String,
+        timeoutMillis: Long = AWAIT_BODY_MILLIS,
+        check: (JsonObject) -> Boolean,
+    ): JsonObject {
+        val until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
+        while (true) {
+            requests
+                .filter { it.url.encodedPath == path && it.method != "GET" }
+                .mapNotNull { runCatching { Json.parseToJsonElement(it.body?.utf8().orEmpty()).jsonObject }.getOrNull() }
+                .lastOrNull(check)
+                ?.let { return it }
+            check(System.nanoTime() < until) { "No write to $path matched, in $timeoutMillis ms" }
+            Thread.sleep(AWAIT_BODY_POLL_MILLIS)
+        }
+    }
+
     override fun dispatch(request: RecordedRequest): MockResponse {
         requests += request
         val path = request.url.encodedPath
@@ -1034,3 +1058,6 @@ fun FakeJellyfin.session(): JellyfinSession =
 
 /** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
 private const val HOLD_LIMIT_SECONDS = 20L
+
+private const val AWAIT_BODY_MILLIS = 10_000L
+private const val AWAIT_BODY_POLL_MILLIS = 10L
