@@ -2,11 +2,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
@@ -15,7 +10,6 @@ import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
@@ -41,13 +35,9 @@ internal fun ProvidersPage(
     group: ProviderGroup,
     state: LibraryUiState.Ready,
     actions: LibraryActions,
-    inner: PaddingValues,
 ) {
     val all = state.options.providers(group, group.available(state.available))
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         Text(stringResource(R.string.library_providers_body), style = MaterialTheme.typography.bodyMedium)
         ItemGroup(
             title = null,
@@ -61,7 +51,6 @@ internal fun ProvidersPage(
                     )
                 },
         )
-        FailureText(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
     }
 }
 
@@ -71,15 +60,11 @@ internal fun ProviderPage(
     page: LibraryPage.One,
     state: LibraryUiState.Ready,
     actions: LibraryActions,
-    inner: PaddingValues,
 ) {
     val all = state.options.providers(page.group, page.group.available(state.available))
     val place = all.indexOfFirst { it.name.equals(page.name, ignoreCase = true) }
     val provider = all.getOrNull(place)
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         if (provider != null) {
             ItemGroup(
                 title = null,
@@ -114,6 +99,5 @@ internal fun ProviderPage(
                     ),
             )
         }
-        FailureText(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
     }
 }

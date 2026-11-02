@@ -1,10 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,19 +11,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Transform
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -48,9 +46,6 @@ data class NowPlayingActions(
     val onBack: () -> Unit = {},
 )
 
-/** Lines a failed stop's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
-
 /** Two lines under a title: the episode, then who and where. */
 private const val DETAIL_LINES = 2
 
@@ -65,13 +60,22 @@ fun NowPlayingScreen(
     administrator: Boolean,
     actions: NowPlayingActions,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.now_playing_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = stringResource(R.string.now_playing_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                NowPlayingUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is NowPlayingUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is NowPlayingUiState.Ready -> Streams(state, administrator, actions, inner)
+                NowPlayingUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                is NowPlayingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                is NowPlayingUiState.Ready -> {
+                    Streams(state, administrator, actions, inner)
+                    RefusedMessage(state.stopFailed, host, R.string.now_playing_not_stopped)
+                }
             }
         }
     }
@@ -95,26 +99,10 @@ private fun Streams(
             )
         }
         if (state.sessions.isEmpty()) {
-            item {
-                Text(
-                    stringResource(R.string.now_playing_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = dimensionResource(DesR.dimen.padding_l)),
-                )
-            }
+            item { ConsoleEmptyScreen(stringResource(R.string.now_playing_empty), Icons.Outlined.PlayCircle) }
         }
         items(state.sessions, key = { it.sessionId }) { session ->
             Stream(session, stopping = state.stopping == session.sessionId) { actions.onStop(session) }
-        }
-        item {
-            Text(
-                text = state.stopFailed?.let { stringResource(R.string.now_playing_not_stopped, stringResource(it.message)) }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
-            )
         }
     }
     state.confirming?.let { StopDialog(it, actions) }
@@ -236,3 +224,5 @@ private val AUDIO_REASONS =
     )
 
 private val BITRATE_REASONS = setOf("ContainerBitrateExceedsLimit", "VideoBitrateNotSupported", "AudioBitrateNotSupported")
+
+private const val LOADING_ROWS = 3

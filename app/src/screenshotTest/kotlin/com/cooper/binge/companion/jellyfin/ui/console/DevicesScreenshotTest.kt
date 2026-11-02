@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
@@ -34,8 +35,10 @@ class DevicesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun renaming() = Surface { RenameDialog(previewDevices.first(), DevicesActions(), inWindow = false) }
+    fun renaming() = Surface { RenameSheet(previewDevices.first(), DevicesActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -46,8 +49,15 @@ class DevicesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun changing() =
-        DevicesScreen(previewReady.copy(busy = setOf("kodi"), actionFailed = ConsoleFailure.Unreachable), DevicesActions(), now = NOW)
+    fun changing() = DevicesScreen(previewReady.copy(busy = setOf("kodi")), DevicesActions(), now = NOW)
+
+    /** The server listed no devices, which it can when every item it sent was one this app could not read. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun empty() = DevicesScreen(previewReady.copy(devices = emptyList()), DevicesActions(), now = NOW)
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -58,4 +68,10 @@ class DevicesScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = DevicesScreen(DevicesUiState.Failed(ConsoleFailure.Refused), DevicesActions())
+
+    /** The failure screen at 1.5x and 2x font. Its layout is the design system's, so one page stands for all of them. */
+    @PreviewTest
+    @JellyfinFontScalePreviews
+    @Composable
+    fun failedLargeText() = DevicesScreen(DevicesUiState.Failed(ConsoleFailure.Refused), DevicesActions())
 }

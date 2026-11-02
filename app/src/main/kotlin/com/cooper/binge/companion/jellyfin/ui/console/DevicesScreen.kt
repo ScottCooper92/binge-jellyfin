@@ -1,13 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Devices
@@ -16,20 +12,18 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -56,9 +50,6 @@ data class DevicesActions(
 /** Lines a device's detail may take: who, which app, and when it was last seen. */
 private const val DETAIL_LINES = 3
 
-/** Lines a failed change's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
-
 /**
  * The devices signed in to the server, most recently seen first: who used each last, with which app,
  * and when. A tap renames one; Remove, at the row's end and red, signs one out after a confirm. This
@@ -70,13 +61,23 @@ fun DevicesScreen(
     actions: DevicesActions,
     now: Long = System.currentTimeMillis(),
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.devices_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = stringResource(R.string.devices_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                DevicesUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is DevicesUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is DevicesUiState.Ready -> Devices(state, actions, inner, now)
+                DevicesUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                is DevicesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                is DevicesUiState.Ready -> {
+                    Devices(state, actions, inner, now)
+                    // A change the server didn't take is said in a message, not in a space the list keeps for it.
+                    RefusedMessage(state.actionFailed, host, R.string.devices_not_changed)
+                }
             }
         }
     }
@@ -91,18 +92,13 @@ private fun Devices(
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item { Text(stringResource(R.string.devices_body), style = MaterialTheme.typography.bodyMedium) }
-        item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
-        item {
-            Text(
-                text = state.actionFailed?.let { stringResource(R.string.devices_not_changed, stringResource(it.message)) }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
-            )
+        if (state.devices.isEmpty()) {
+            item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }
+        } else {
+            item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
         }
     }
-    state.renaming?.let { RenameDialog(it, actions) }
+    state.renaming?.let { RenameSheet(it, actions) }
     state.removing?.let { RemoveDialog(it, actions) }
 }
 
@@ -157,34 +153,26 @@ private fun ServerDevice.row(
     )
 }
 
-/** A name for the device; left empty, it goes back to the name the device gives itself. */
+/** A name for the device; left empty, it goes back to the name the device gives itself. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun RenameDialog(
+internal fun RenameSheet(
     device: ServerDevice,
     actions: DevicesActions,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable(device.id) { mutableStateOf(device.customName.orEmpty()) }
-    ConsoleConfirm(
-        title = stringResource(R.string.devices_rename_title),
-        message = stringResource(R.string.devices_rename_body),
-        confirmLabel = stringResource(R.string.devices_rename_save),
-        onConfirm = { actions.onRename(name) },
-        onDismissRequest = { actions.onAskRename(null) },
-        inWindow = inWindow,
-        extraContent = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.devices_rename_field)) },
-                placeholder = { Text(device.name) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { actions.onRename(name) }),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onAskRename(null) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(R.string.devices_rename_title),
+            body = stringResource(R.string.devices_rename_body),
+            value = name,
+            onValueChange = { name = it },
+            submitLabel = stringResource(R.string.devices_rename_save),
+            onSubmit = { actions.onRename(name) },
+            onCancel = { actions.onAskRename(null) },
+            hint = device.name,
+        )
+    }
 }
 
 /** A device's icon, from its app's or its own name: a TV, a browser, a phone, or devices in general. */
@@ -200,3 +188,5 @@ internal fun deviceIcon(
         else -> Icons.Outlined.Devices
     }
 }
+
+private const val LOADING_ROWS = 5

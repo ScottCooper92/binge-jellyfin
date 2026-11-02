@@ -3,12 +3,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
@@ -16,10 +12,12 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.Power
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -31,10 +29,9 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.ListRowSkeletonColumn
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
@@ -56,6 +53,7 @@ data class LibraryActions(
     val onProvider: (ProviderGroup, String, Boolean) -> Unit = { _, _, _ -> },
     val onMove: (ProviderGroup, String, Int) -> Unit = { _, _, _ -> },
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -64,9 +62,6 @@ private const val LOADING_ROWS = 8
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
 internal const val LIBRARY_DETAIL_LINES = 4
-
-/** Lines a failed save's message takes, so it never moves the rows. */
-private const val STATUS_LINES = 2
 
 /**
  * One library's page, after jellyfin-web's library editor: its name and folders, then the options its kind
@@ -85,21 +80,29 @@ fun LibraryScreen(
     val page = ready?.page ?: LibraryPage.Main
     val back = if (page == LibraryPage.Main) actions.onBack else ({ actions.onPage(page.parent()) })
     BackHandler(onBack = back)
-    BingeScreenScaffold(title = page.title(ready), bar = ScreenBar.Small, onBack = back) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+    val host = remember { SnackbarHostState() }
+    FormScreen(
+        title = page.title(ready),
+        bar = ScreenBar.Small,
+        onBack = back,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady =
             when (state) {
-                LibraryUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is LibraryUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is LibraryUiState.Ready -> {
-                    when (page) {
-                        LibraryPage.Main -> LibraryBody(state, actions, profile, inner)
-                        is LibraryPage.Providers -> ProvidersPage(page.group, state, actions, inner)
-                        is LibraryPage.One -> ProviderPage(page, state, actions, inner)
-                    }
-                    LibraryDialogs(state, actions, folders, folderActions)
-                }
+                LibraryUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+                is LibraryUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
+                is LibraryUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            when (page) {
+                LibraryPage.Main -> LibraryBody(ready, actions, profile)
+                is LibraryPage.Providers -> ProvidersPage(page.group, ready, actions)
+                is LibraryPage.One -> ProviderPage(page, ready, actions)
             }
+            LibraryDialogs(ready, actions, folders, folderActions)
+            RefusedMessage(ready.refused, host)
+            RefusedMessage(ready.failed, host)
         }
     }
 }
@@ -124,21 +127,15 @@ private fun LibraryBody(
     state: LibraryUiState.Ready,
     actions: LibraryActions,
     profile: JellyfinServerProfile,
-    inner: PaddingValues,
 ) {
     var picker by rememberSaveable { mutableStateOf<LibraryPicker?>(null) }
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         ItemGroup(title = null, rows = libraryRows(state, actions, profile))
         FoldersGroup(state, actions)
         MetadataGroup(state, actions) { picker = it }
         VideoGroups(state, actions, profile)
         MusicGroups(state, actions, profile)
         SegmentsGroup(state, actions, profile)
-        FailureText(state.failed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
-        FailureText(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
         // Remove is last, red, and behind a confirm that opens on Cancel.
         Text(stringResource(R.string.library_remove_detail), style = MaterialTheme.typography.bodyMedium)
         BingeTextButton(
@@ -210,18 +207,5 @@ private fun FoldersGroup(
                     enabled = !state.busy,
                     onClick = { actions.onAsk(LibraryDialog.AddFolder) },
                 ),
-    )
-}
-
-/** A failed save's message, in a space kept for it so the rows never move. */
-@Composable
-internal fun FailureText(text: String?) {
-    if (text == null) return
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.error,
-        minLines = 1,
-        maxLines = STATUS_LINES,
     )
 }

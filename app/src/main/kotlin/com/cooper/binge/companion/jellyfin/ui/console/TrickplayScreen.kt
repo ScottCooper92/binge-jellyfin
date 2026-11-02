@@ -1,16 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AspectRatio
 import androidx.compose.material.icons.outlined.Bolt
@@ -25,30 +18,27 @@ import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.outlined.ViewColumn
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_PRIORITIES
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_SCAN_BEHAVIORS
@@ -66,14 +56,12 @@ data class TrickplayActions(
     val onProcessPriority: (String) -> Unit = {},
     val onInterval: (Int) -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
 /** The picker open over the page. */
 private enum class TrickplayPicker { Scan, Priority, Interval }
-
-/** Lines a failed save's message takes, so it never moves the rows. */
-private const val STATUS_LINES = 2
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
 private const val DETAIL_LINES = 6
@@ -97,18 +85,26 @@ fun TrickplayScreen(
     keyFrameOnlyAvailable: Boolean = true,
 ) {
     var picker by rememberSaveable { mutableStateOf<TrickplayPicker?>(null) }
-    BingeScreenScaffold(title = stringResource(R.string.trickplay_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+    val host = remember { SnackbarHostState() }
+    val ready = state as? TrickplayUiState.Ready
+    FormScreen(
+        title = stringResource(R.string.trickplay_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady =
             when (state) {
-                TrickplayUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is TrickplayUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is TrickplayUiState.Ready -> {
-                    TrickplayBody(state, actions, keyFrameOnlyAvailable, inner) { picker = it }
-                    picker?.let { TrickplayPickerSheet(it, state.settings, actions) { picker = null } }
-                    state.editing?.let { FieldDialog(it, state.settings, actions) }
-                }
-            }
+                TrickplayUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is TrickplayUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
+                is TrickplayUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            TrickplayBody(ready, actions, keyFrameOnlyAvailable) { picker = it }
+            picker?.let { TrickplayPickerSheet(it, ready.settings, actions) { picker = null } }
+            ready.editing?.let { FieldSheet(it, ready.settings, actions) }
+            RefusedMessage(ready.refused, host)
         }
     }
 }
@@ -118,24 +114,15 @@ private fun TrickplayBody(
     state: TrickplayUiState.Ready,
     actions: TrickplayActions,
     keyFrameOnlyAvailable: Boolean,
-    inner: PaddingValues,
     onPick: (TrickplayPicker) -> Unit,
 ) {
     val settings = state.settings
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         Text(stringResource(R.string.trickplay_body), style = MaterialTheme.typography.bodyMedium)
         ProcessingGroup(settings, actions, keyFrameOnlyAvailable, onPick)
         ImagesGroup(settings, actions, onPick)
-        Text(
-            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }.orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            minLines = STATUS_LINES,
-            maxLines = STATUS_LINES,
-        )
     }
 }
 
@@ -323,10 +310,10 @@ private fun TrickplayPickerSheet(
 
 /**
  * A number's (or the widths') dialog: Save keeps what's typed if it is in range, and says so if it isn't;
- * Cancel leaves the setting as it was. [inWindow] false draws its body for a frame.
+ * Cancel leaves the setting as it was. [inWindow] false draws the form for a frame.
  */
 @Composable
-internal fun FieldDialog(
+internal fun FieldSheet(
     field: TrickplayField,
     settings: TrickplaySettings,
     actions: TrickplayActions,
@@ -359,39 +346,29 @@ internal fun FieldDialog(
         tried = true
         if (valid) actions.onSave(field, value)
     }
-    ConsoleConfirm(
-        title = stringResource(title),
-        message = stringResource(body),
-        confirmLabel = stringResource(R.string.trickplay_save),
-        onConfirm = save,
-        onDismissRequest = { actions.onEdit(null) },
-        inWindow = inWindow,
-        extraContent = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it },
-                label = { Text(stringResource(title)) },
-                singleLine = true,
-                isError = tried && !valid,
-                supportingText = {
-                    if (tried && !valid) {
-                        Text(
-                            if (field == TrickplayField.Widths) {
-                                stringResource(R.string.trickplay_widths_invalid, field.min, field.max)
-                            } else {
-                                stringResource(R.string.trickplay_number_invalid, field.min, field.max)
-                            },
-                        )
+    ConsoleSheet(onDismissRequest = { actions.onEdit(null) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(title),
+            body = stringResource(body),
+            value = value,
+            onValueChange = { value = it },
+            submitLabel = stringResource(R.string.trickplay_save),
+            onSubmit = save,
+            onCancel = { actions.onEdit(null) },
+            error =
+                if (tried && !valid) {
+                    if (field == TrickplayField.Widths) {
+                        stringResource(R.string.trickplay_widths_invalid, field.min, field.max)
+                    } else {
+                        stringResource(R.string.trickplay_number_invalid, field.min, field.max)
                     }
+                } else {
+                    null
                 },
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType = if (field == TrickplayField.Widths) KeyboardType.Text else KeyboardType.Number,
-                        imeAction = ImeAction.Done,
-                    ),
-                keyboardActions = KeyboardActions(onDone = { save() }),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-    )
+            keyboardOptions =
+                KeyboardOptions(keyboardType = if (field == TrickplayField.Widths) KeyboardType.Text else KeyboardType.Number),
+        )
+    }
 }
+
+private const val LOADING_ROWS = 10

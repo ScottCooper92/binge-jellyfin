@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
@@ -116,7 +117,8 @@ class PlaybackViewModelTest {
             setSubtitles("fre")
         }
         store.clear()
-        saves(2)
+        // Both picks went out as one write: they were made inside the save delay.
+        saves(1)
         val body = jellyfin.lastBody("/Users/Configuration")
         assertEquals("spa", body.getValue("AudioLanguagePreference").jsonPrimitive.content)
         assertEquals("fre", body.getValue("SubtitleLanguagePreference").jsonPrimitive.content)
@@ -147,13 +149,36 @@ class PlaybackViewModelTest {
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.setAudio("spa")
-        val failed = vm.settled { (it as? PlaybackUiState.Ready)?.saveFailed != null } as PlaybackUiState.Ready
-        assertEquals(ConsoleFailure.Refused, failed.saveFailed)
+        val failed = vm.settled { (it as? PlaybackUiState.Ready)?.refused != null } as PlaybackUiState.Ready
+        assertEquals(ConsoleFailure.Refused, failed.refused)
         assertEquals("eng", failed.preferences.audio)
         // The next pick clears it.
         jellyfin.status.remove("/Users/Configuration")
         vm.setAudio("spa")
-        assertEquals(null, vm.ready().saveFailed)
+        assertEquals(null, vm.ready().refused)
+    }
+
+    @Test
+    fun `a save that can't reach the server keeps the choice, says so, and Retry sends it`() {
+        val vm = made(PlaybackViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += "/Users/Configuration"
+        vm.setAudio("spa")
+        val failed = vm.settled { (it as? PlaybackUiState.Ready)?.save?.failed == true } as PlaybackUiState.Ready
+        assertEquals("spa", failed.preferences.audio)
+        assertEquals(null, failed.refused)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.settled { (it as? PlaybackUiState.Ready)?.save?.status == SaveStatus.Saved } as PlaybackUiState.Ready
+        assertFalse(saved.save.failed)
+        assertEquals("spa", saved.preferences.audio)
+        assertEquals(
+            "spa",
+            jellyfin
+                .lastBody("/Users/Configuration")
+                .getValue("AudioLanguagePreference")
+                .jsonPrimitive.content,
+        )
     }
 
     @Test
@@ -162,7 +187,7 @@ class PlaybackViewModelTest {
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.setAudio("spa")
-        saves(1)
+        vm.settled { (it as? PlaybackUiState.Ready)?.refused != null }
         jellyfin.status.remove("/Users/Configuration")
         vm.setAudio("fra")
         saves(2)
@@ -174,7 +199,7 @@ class PlaybackViewModelTest {
                 .getValue("AudioLanguagePreference")
                 .jsonPrimitive.content,
         )
-        assertEquals(null, vm.ready().saveFailed)
+        assertEquals(null, vm.ready().refused)
     }
 
     @Test
@@ -226,10 +251,10 @@ class PlaybackViewModelTest {
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 500
         vm.setPlayDefaultAudioTrack(false)
-        val failed = vm.settled { (it as? PlaybackUiState.Ready)?.saveFailed != null } as PlaybackUiState.Ready
+        val failed = vm.settled { (it as? PlaybackUiState.Ready)?.refused != null } as PlaybackUiState.Ready
         assertTrue(failed.preferences.playDefaultAudioTrack)
         vm.setRememberSubtitles(false)
-        val again = vm.settled { (it as? PlaybackUiState.Ready)?.preferences?.rememberSubtitles == true && it.saveFailed != null }
+        val again = vm.settled { (it as? PlaybackUiState.Ready)?.preferences?.rememberSubtitles == true && it.refused != null }
         assertTrue((again as PlaybackUiState.Ready).preferences.rememberSubtitles)
     }
 

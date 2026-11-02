@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PowerSettingsNew
@@ -41,7 +40,6 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeFilterChip
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ExpressiveIconButton
@@ -49,7 +47,6 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.WrappingRow
 import com.binge.designsystem.template.EmptyScreen
-import com.binge.designsystem.template.ScreenAction
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
@@ -64,9 +61,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import com.binge.designsystem.R as DesR
-
-/** Lines a failed change's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
 
 private const val MILLIS_PER_TICK = 10_000L
 private const val MINUTES_PER_HOUR = 60
@@ -91,15 +85,12 @@ internal fun TaskTriggers(
 ) {
     val timeLabel = rememberTimeLabel()
     if (task.triggers.isEmpty()) {
-        // Nothing yet: one screen that says so, with the one thing to do about it. A failed change says so here instead.
+        // Nothing yet: one screen that says so, with the one thing to do about it.
         Box(Modifier.fillMaxSize().padding(inner)) {
             EmptyScreen(
-                message =
-                    state.actionFailed?.let { stringResource(R.string.tasks_trigger_not_saved, stringResource(it.message)) }
-                        ?: stringResource(R.string.tasks_triggers_empty),
+                message = stringResource(R.string.tasks_triggers_empty),
                 title = stringResource(R.string.tasks_triggers_empty_title),
                 icon = Icons.Outlined.Schedule,
-                action = ScreenAction(stringResource(R.string.tasks_trigger_add), { actions.onAskAdd(true) }, Icons.Outlined.Add),
             )
         }
         if (state.adding) AddTriggerSheet(actions)
@@ -108,27 +99,9 @@ internal fun TaskTriggers(
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         if (task.description.isNotBlank()) item { Text(task.description, style = MaterialTheme.typography.bodyMedium) }
         item {
-            BingeOutlinedButton(
-                label = stringResource(R.string.tasks_trigger_add),
-                onClick = { actions.onAskAdd(true) },
-                leadingIcon = Icons.Outlined.Add,
-                loading = state.saving,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
             ItemGroup(
                 title = stringResource(R.string.tasks_triggers),
                 rows = task.triggers.mapIndexed { index, trigger -> trigger.row(index, state.saving, actions, timeLabel) },
-            )
-        }
-        item {
-            Text(
-                text = state.actionFailed?.let { stringResource(R.string.tasks_trigger_not_saved, stringResource(it.message)) }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
             )
         }
     }
@@ -248,8 +221,11 @@ internal fun AddTriggerSheet(actions: TasksActions) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun AddTriggerForm(actions: TasksActions) {
-    var kindIndex by rememberSaveable { mutableIntStateOf(0) }
+internal fun AddTriggerForm(
+    actions: TasksActions,
+    startKind: TriggerKind = TriggerKind.Daily,
+) {
+    var kindIndex by rememberSaveable { mutableIntStateOf(startKind.ordinal) }
     val context = LocalContext.current
     val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, DateFormat.is24HourFormat(context))
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -262,9 +238,14 @@ internal fun AddTriggerForm(actions: TasksActions) {
             title = stringResource(R.string.tasks_trigger_new_title),
             subtitle = stringResource(R.string.tasks_trigger_new_body),
         )
-        // The form can be taller than the sheet (a small screen, a large font), so it scrolls.
+        // The form can be taller than the sheet (a small screen, a large font, the keyboard), so the fields scroll
+        // and Add stays under them, in view.
         Column(
-            modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+            modifier =
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
         ) {
             KindChips(kind) { kindIndex = it.ordinal }
@@ -272,22 +253,25 @@ internal fun AddTriggerForm(actions: TasksActions) {
             if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
             if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
             LimitChips(limitHours) { limitHours = it }
-            BingeFilledButton(
-                label = stringResource(R.string.tasks_trigger_create),
-                onClick = {
-                    val timeTicks = { (timeState.hour * MINUTES_PER_HOUR + timeState.minute) * TICKS_PER_MINUTE }
-                    actions.onAddTrigger(
-                        when (kind) {
-                            TriggerKind.Daily -> TaskTrigger.daily(timeTicks(), limit)
-                            TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks(), limit)
-                            TriggerKind.Interval -> TaskTrigger.interval(intervalTicks, limit)
-                            TriggerKind.Startup -> TaskTrigger.startup(limit)
-                        },
-                    )
-                },
-                modifier = Modifier.fillMaxWidth().padding(bottom = dimensionResource(DesR.dimen.padding_m)),
-            )
         }
+        BingeFilledButton(
+            label = stringResource(R.string.tasks_trigger_create),
+            onClick = {
+                val timeTicks = { (timeState.hour * MINUTES_PER_HOUR + timeState.minute) * TICKS_PER_MINUTE }
+                actions.onAddTrigger(
+                    when (kind) {
+                        TriggerKind.Daily -> TaskTrigger.daily(timeTicks(), limit)
+                        TriggerKind.Weekly -> TaskTrigger.weekly(TRIGGER_DAYS[dayIndex], timeTicks(), limit)
+                        TriggerKind.Interval -> TaskTrigger.interval(intervalTicks, limit)
+                        TriggerKind.Startup -> TaskTrigger.startup(limit)
+                    },
+                )
+            },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(DesR.dimen.padding_m), vertical = dimensionResource(DesR.dimen.padding_m)),
+        )
     }
 }
 

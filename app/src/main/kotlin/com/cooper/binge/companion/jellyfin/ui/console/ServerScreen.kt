@@ -1,7 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,13 +16,13 @@ import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -46,9 +45,6 @@ data class ServerActions(
     val onBack: () -> Unit = {},
 )
 
-/** Lines the restart's progress takes, so it never moves the button. */
-private const val STATUS_LINES = 2
-
 /**
  * The server itself: its name, version, address and system, marked when an update or a restart is
  * waiting. Restart and Shut down are last, red, and behind a confirm, and how each is going shows above
@@ -59,13 +55,23 @@ fun ServerScreen(
     state: ServerUiState,
     actions: ServerActions,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.server_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = stringResource(R.string.server_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                ServerUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is ServerUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is ServerUiState.Ready -> Server(state, actions, inner)
+                ServerUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                is ServerUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                is ServerUiState.Ready -> {
+                    Server(state, actions, inner)
+                    // A restart or shutdown the server didn't take, or a restart that never came back, is a message.
+                    SnackbarMessage(state.refusal()?.let { stringResource(it) }, host)
+                }
             }
         }
     }
@@ -110,6 +116,14 @@ internal fun RestartDialog(
     )
 }
 
+/** The message of a restart or shutdown that failed, or a restart the server never came back from; null when none did. */
+private fun ServerUiState.Ready.refusal(): Int? =
+    when {
+        shutdown == Shutdown.Failed -> shutdown.message
+        restart == Restart.Failed || restart == Restart.NotBack -> restart.message
+        else -> null
+    }
+
 @Composable
 private fun Server(
     state: ServerUiState.Ready,
@@ -121,14 +135,12 @@ private fun Server(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         ItemGroup(title = null, rows = state.info.rows())
-        val failed = state.restart == Restart.Failed || state.restart == Restart.NotBack || state.shutdown == Shutdown.Failed
-        Text(
-            text = (state.shutdown?.let { stringResource(it.message) } ?: state.restart?.let { stringResource(it.message) }).orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            minLines = STATUS_LINES,
-            maxLines = STATUS_LINES,
-        )
+        // Where a restart or shutdown has got to, while it is going on or done. A failure is a message instead.
+        if (state.refusal() == null) {
+            (state.shutdown?.message ?: state.restart?.message)?.let {
+                Text(text = stringResource(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+            }
+        }
         if (state.info.canRestart) {
             BingeTextButton(
                 label = stringResource(R.string.server_restart),
@@ -207,3 +219,5 @@ private val Restart.message: Int
             Restart.NotBack -> R.string.server_not_back
             Restart.Failed -> R.string.server_restart_failed
         }
+
+private const val LOADING_ROWS = 5

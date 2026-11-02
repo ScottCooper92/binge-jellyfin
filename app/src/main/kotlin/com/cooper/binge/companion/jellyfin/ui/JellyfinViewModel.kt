@@ -79,6 +79,8 @@ sealed interface UiState {
         val profile: JellyfinServerProfile = JellyfinServerProfile.from(session.serverVersion),
         /** What the signed-in user may do, from their own policy: the account gate. Read with each refresh. */
         val account: JellyfinAccount = JellyfinAccount(session.userName),
+        /** What the server card says of the server and its library, as far as it has been read. */
+        val card: ServerCardState = ServerCardState(),
     ) : UiState {
         val cleartext: Boolean get() = session.baseUrl.startsWith("http://")
         val isAdministrator: Boolean get() = account.isAdministrator
@@ -93,6 +95,7 @@ class JellyfinViewModel(
     /** The servers that answer a broadcast on the local network; empty when none does. */
     private val discover: suspend () -> List<DiscoveredServer>,
     private val quickConnectPollMillis: Long = QUICK_CONNECT_POLL_MILLIS,
+    private val card: ServerCardLoader = ServerCardLoader(),
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -258,6 +261,7 @@ class JellyfinViewModel(
                 val (session, client) = connection.signedIn() ?: return@launch
                 attempt { client.readGates(session.serverVersion) }.onSuccess { (profile, account) ->
                     _state.update { (it as? UiState.SignedIn)?.copy(profile = profile, account = account) ?: it }
+                    card.refresh(viewModelScope, _state, session, client, account, force = false)
                 }
             }
             return
@@ -274,6 +278,7 @@ class JellyfinViewModel(
                     // The gates first, so a library index that fails can't leave them unread.
                     val gates = signedIn.second.readGates(signedIn.first.serverVersion)
                     _state.update { (it as? UiState.SignedIn)?.copy(profile = gates.first, account = gates.second) ?: it }
+                    card.refresh(viewModelScope, _state, signedIn.first, signedIn.second, gates.second, force = true)
                     index.refresh(signedIn.second, signedIn.first.userId)
                     false
                 } catch (e: CancellationException) {

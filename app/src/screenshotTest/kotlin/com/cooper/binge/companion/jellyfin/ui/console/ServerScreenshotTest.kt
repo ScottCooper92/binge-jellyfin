@@ -57,11 +57,6 @@ class ServerScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
-    @Composable
-    fun notBack() = ServerScreen(previewReady.copy(restart = Restart.NotBack), ServerActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun confirmingShutdown() = Surface { ShutdownDialog(previewInfo, ServerActions(), inWindow = false) }
@@ -71,11 +66,6 @@ class ServerScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun shutDown() = ServerScreen(previewReady.copy(shutdown = Shutdown.ShutDown), ServerActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun shutdownFailed() = ServerScreen(previewReady.copy(shutdown = Shutdown.Failed), ServerActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

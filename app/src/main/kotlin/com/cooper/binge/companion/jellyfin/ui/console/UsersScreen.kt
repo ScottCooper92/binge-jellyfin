@@ -2,13 +2,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AdminPanelSettings
@@ -20,32 +17,33 @@ import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import com.binge.designsystem.component.BingeLoadingIndicator
-import com.binge.designsystem.component.BingeOutlinedButton
+import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.ENABLED_FOLDERS
+import com.cooper.binge.companion.jellyfin.server.ENABLE_ALL_FOLDERS
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.ServerUser
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import com.binge.designsystem.R as DesR
 
 /** What the users page can ask of its view model, and of the console. */
@@ -54,8 +52,10 @@ data class UsersActions(
     val onShow: (UserDialog?) -> Unit = {},
     val onAdministrator: (Boolean) -> Unit = {},
     val onCanSignIn: (Boolean) -> Unit = {},
-    val onAllLibraries: (Boolean) -> Unit = {},
-    val onLibrary: (String, Boolean) -> Unit = { _, _ -> },
+    val onPolicy: (key: String, value: JsonElement) -> Unit = { _, _ -> },
+    val onList: (key: String, change: (List<JsonElement>) -> List<JsonElement>) -> Unit = { _, _ -> },
+    val onSection: (UserSection?) -> Unit = {},
+    val onChoicesRetry: (UserSection) -> Unit = {},
     val onCreate: (String, String) -> Unit = { _, _ -> },
     val onSetPassword: (String) -> Unit = {},
     val onDelete: () -> Unit = {},
@@ -76,20 +76,48 @@ fun UsersScreen(
     state: UsersUiState,
     actions: UsersActions,
     now: Long = System.currentTimeMillis(),
+    choices: UserChoices = UserChoices(),
+    profile: JellyfinServerProfile = JellyfinServerProfile.from(null),
 ) {
     val user = (state as? UsersUiState.Ready)?.openUser
-    BackHandler(enabled = user != null) { actions.onOpen(null) }
+    val section = (state as? UsersUiState.Ready)?.section.takeIf { user != null }
+    val back =
+        if (section != null) {
+            ({ actions.onSection(null) })
+        } else if (user != null) {
+            ({ actions.onOpen(null) })
+        } else {
+            actions.onBack
+        }
+    BackHandler(enabled = user != null, onBack = back)
+    val ready = state as? UsersUiState.Ready
     BingeScreenScaffold(
-        title = user?.name ?: stringResource(R.string.users_title),
+        title = section?.let { stringResource(it.title()) } ?: user?.name ?: stringResource(R.string.users_title),
         bar = ScreenBar.Small,
-        onBack = if (user != null) ({ actions.onOpen(null) }) else actions.onBack,
+        onBack = back,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.users_add),
+                icon = Icons.Outlined.PersonAdd,
+                onClick = { actions.onShow(UserDialog.Create) },
+                // On the list only: a user's own page and its sections have nothing to create.
+                visible = state !is UsersUiState.Failed && user == null,
+                enabled = ready != null,
+                loading = ready?.busy == true,
+            )
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                UsersUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is UsersUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is UsersUiState.Ready -> if (user == null) UserList(state, actions, inner, now) else UserPage(state, user, actions, inner)
+                UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                is UsersUiState.Ready ->
+                    when {
+                        user == null -> UserList(state, actions, inner, now)
+                        section == null -> UserPage(state, user, actions, inner)
+                        else -> PolicySection(section, state, user, choices, profile, actions, inner)
+                    }
             }
         }
     }
@@ -104,18 +132,7 @@ private fun UserList(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                Text(stringResource(R.string.users_body), style = MaterialTheme.typography.bodyMedium)
-                BingeOutlinedButton(
-                    label = stringResource(R.string.users_add),
-                    onClick = { actions.onShow(UserDialog.Create) },
-                    leadingIcon = Icons.Outlined.PersonAdd,
-                    loading = state.busy,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        item { Text(stringResource(R.string.users_body), style = MaterialTheme.typography.bodyMedium) }
         item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
         item { Status(state) }
     }
@@ -189,6 +206,7 @@ private fun UserPage(
             )
         }
         item { LibraryAccess(state, user, actions) }
+        item { ItemGroup(title = stringResource(R.string.users_settings), rows = sectionRows(user, actions)) }
         if (!mine) {
             item {
                 ItemGroup(
@@ -233,7 +251,7 @@ private fun LibraryAccess(
             icon = Icons.Outlined.VideoLibrary,
             label = stringResource(R.string.users_all_libraries),
             toggled = user.allLibraries,
-            onClick = { actions.onAllLibraries(!user.allLibraries) },
+            onClick = { actions.onPolicy(ENABLE_ALL_FOLDERS, JsonPrimitive(!user.allLibraries)) },
         )
     val each =
         if (user.allLibraries) {
@@ -245,7 +263,7 @@ private fun LibraryAccess(
                     icon = typeIcon(library.type),
                     label = library.name,
                     toggled = on,
-                    onClick = { actions.onLibrary(library.id, !on) },
+                    onClick = { actions.onList(ENABLED_FOLDERS, memberChange(library.id, !on)) },
                 )
             }
         }
@@ -285,8 +303,8 @@ private fun UserDialogs(
 ) {
     val user = state.openUser
     when (state.dialog) {
-        UserDialog.Create -> CreateDialog(actions)
-        UserDialog.Password -> if (user != null) PasswordDialog(user, actions)
+        UserDialog.Create -> CreateSheet(actions)
+        UserDialog.Password -> if (user != null) PasswordSheet(user, actions)
         UserDialog.Delete -> if (user != null) DeleteDialog(user, actions)
         null -> Unit
     }
@@ -310,66 +328,61 @@ internal fun DeleteDialog(
     )
 }
 
+/** A new user: a name and a password. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun CreateDialog(
+internal fun CreateSheet(
     actions: UsersActions,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    ConsoleConfirm(
-        title = stringResource(R.string.users_add),
-        message = stringResource(R.string.users_add_body),
-        confirmLabel = stringResource(R.string.users_add_action),
-        onConfirm = { actions.onCreate(name, password) },
-        onDismissRequest = { actions.onShow(null) },
-        inWindow = inWindow,
-        extraContent = {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.setup_username)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                PasswordField(password, { password = it }, R.string.setup_password)
-            }
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
+        ConsoleFieldsForm(
+            title = stringResource(R.string.users_add),
+            body = stringResource(R.string.users_add_body),
+            submitLabel = stringResource(R.string.users_add_action),
+            onSubmit = { actions.onCreate(name, password) },
+            onCancel = { actions.onShow(null) },
+        ) {
+            ConsoleTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = stringResource(R.string.setup_username),
+                imeAction = ImeAction.Next,
+            )
+            ConsoleTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = stringResource(R.string.setup_password),
+                secret = true,
+            )
+        }
+    }
 }
 
+/** A new password for a user, on the design system's secret text entry. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun PasswordDialog(
+internal fun PasswordSheet(
     user: ServerUser,
     actions: UsersActions,
     inWindow: Boolean = true,
 ) {
     var password by rememberSaveable { mutableStateOf("") }
-    ConsoleConfirm(
-        title = stringResource(R.string.users_password_title, user.name),
-        message = stringResource(R.string.users_password_body),
-        confirmLabel = stringResource(R.string.users_password_action),
-        onConfirm = { actions.onSetPassword(password) },
-        onDismissRequest = { actions.onShow(null) },
-        inWindow = inWindow,
-        extraContent = { PasswordField(password, { password = it }, R.string.password_new) },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
+        TextEntrySurface(
+            title = stringResource(R.string.users_password_title, user.name),
+            supportingText = stringResource(R.string.users_password_body),
+            value = password,
+            onValueChange = { password = it },
+            onSubmit = { actions.onSetPassword(password) },
+            onCancel = { actions.onShow(null) },
+            submitLabel = stringResource(R.string.users_password_action),
+            hint = stringResource(R.string.password_new),
+            submitEnabled = true,
+            singleLine = true,
+            secret = true,
+        )
+    }
 }
 
-@Composable
-private fun PasswordField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: Int,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(label)) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
+private const val LOADING_ROWS = 6

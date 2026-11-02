@@ -131,9 +131,33 @@ class JellyfinScreenshotTest {
     fun signedInHttps() = JellyfinRoot(previewSignedInHttps, Actions())
 
     @PreviewTest
-    @JellyfinScreenStatePreview
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
+
+    /** The server card with three pills at once, on an unencrypted address: an administrator's, at every size and in Spanish. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun serverCardAlerts() = JellyfinRoot(previewSignedInAdminAlerts, Actions())
+
+    /** The card before its figures arrive: a placeholder in each, and no Connected. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun serverCardLoading() = JellyfinRoot(previewSignedInCardLoading, Actions())
+
+    /** An administrator's account, behind the avatar: the rows everyone else has inline on their home. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun account() = AccountScreen(previewSignedInAdmin, Actions(), onBack = {})
 
     /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
     @PreviewTest

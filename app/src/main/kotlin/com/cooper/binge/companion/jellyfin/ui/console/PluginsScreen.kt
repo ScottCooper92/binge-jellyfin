@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.OpenInBrowser
@@ -26,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTabRow
 import com.binge.designsystem.component.ItemGroup
@@ -34,7 +34,6 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
-import com.binge.designsystem.template.ErrorScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -57,6 +56,8 @@ data class PluginsActions(
 
 /** Lines a failed change's message takes, so it never moves the list. */
 private const val STATUS_LINES = 2
+
+internal const val REPOSITORIES_TAB = 2
 
 private val TABS = listOf(R.string.plugins_tab_installed, R.string.plugins_tab_catalog, R.string.plugins_tab_repositories)
 
@@ -93,6 +94,17 @@ fun PluginsScreen(
         title = detail ?: stringResource(R.string.plugins_title),
         bar = ScreenBar.Small,
         onBack = if (detail != null) leaveDetail else onBack,
+        bottomBar = {
+            // Only the Repositories tab creates anything; the other tabs have no footer.
+            CreateFooter(
+                label = stringResource(R.string.repositories_add),
+                icon = Icons.Outlined.Add,
+                onClick = { repositoryActions.onAskAdd(true) },
+                visible = tab == REPOSITORIES_TAB && repositories !is RepositoriesUiState.Failed,
+                enabled = repositories is RepositoriesUiState.Ready,
+                loading = (repositories as? RepositoriesUiState.Ready)?.saving == true,
+            )
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
@@ -128,16 +140,6 @@ fun PluginsScreen(
     }
 }
 
-/** A failure that replaced the page: its words, and Try again. */
-@Composable
-internal fun PluginsFailed(
-    failure: ConsoleFailure,
-    onRetry: () -> Unit,
-) {
-    val kind = if (failure == ConsoleFailure.Unreachable) ErrorKind.Network else ErrorKind.Server
-    ErrorScreen(kind = kind, onRetry = onRetry, message = stringResource(failure.message))
-}
-
 /** The page's rows as they load: the shape of the list, not a spinner. */
 @Composable
 internal fun PluginsLoading(inner: PaddingValues) {
@@ -155,7 +157,7 @@ private fun InstalledTab(
 ) {
     when (state) {
         PluginsUiState.Loading -> PluginsLoading(inner)
-        is PluginsUiState.Failed -> PluginsFailed(state.failure, actions.onRetry)
+        is PluginsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is PluginsUiState.Ready ->
             when {
                 open != null -> PluginPage(open, state, actions, inner)

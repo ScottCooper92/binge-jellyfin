@@ -231,9 +231,8 @@ class ConsoleScreensTest {
 
     @Test
     fun `every subtitle mode is offered, with what it does`() {
-        val state = PlaybackUiState.Ready(PlaybackPreferences("", "", SubtitleMode.None), cultures, saveFailed = ConsoleFailure.Refused)
+        val state = PlaybackUiState.Ready(PlaybackPreferences("", "", SubtitleMode.None), cultures)
         compose.setContent { JellyfinTheme { PlaybackScreen(state, PlaybackActions()) } }
-        compose.onNodeWithText("Not saved. Something went wrong. Try again.").assertExists()
         compose.onNodeWithText("Subtitle mode").performScrollTo().performClick()
         listOf("Follow the file", "Smart", "Only forced", "Always").forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("You can still turn them on while watching").assertExists()
@@ -342,9 +341,8 @@ class ConsoleScreensTest {
         assertEquals(listOf("a"), ran)
         assertEquals(listOf("b"), stopped)
         state = state.copy(actionFailed = ConsoleFailure.Refused)
-        val notSent = "That didn't reach the server. Something went wrong. Try again."
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(notSent))
-        compose.onNodeWithText(notSent).assertExists()
+        // Said in a message over the list, not in a space the list keeps for it.
+        compose.onNodeWithText("That didn't reach the server. Something went wrong. Try again.").assertExists()
     }
 
     @Test
@@ -733,26 +731,28 @@ class ConsoleScreensTest {
         compose.onNodeWithText("New trigger").assertExists()
         compose.onNodeWithText("Every so often").performClick()
         compose.onAllNodesWithText("2 h")[1].performScrollTo().performClick()
-        compose.onNodeWithText("Add").performScrollTo().performClick()
+        compose.onNodeWithText("Add").performClick()
         assertEquals(listOf(TaskTrigger.interval(6 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR)), added)
         compose
             .onAllNodesWithText("At startup")
             .onLast()
             .performScrollTo()
             .performClick()
-        compose.onNodeWithText("Add").performScrollTo().performClick()
+        compose.onNodeWithText("Add").performClick()
         // The time limit chosen a moment ago is still chosen: the form keeps what was picked.
         assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
         state = state.copy(saving = true, actionFailed = ConsoleFailure.Refused, adding = false)
         compose.onAllNodesWithContentDescription("Remove").assertCountEquals(0)
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
         state = TasksUiState.Ready(TaskBoard(emptyList()), open = "gone")
         compose.onNodeWithText("Scan Media Library").assertDoesNotExist()
-        // A task with none says so, with Add trigger as its one action; a failed change says so in its place.
+        // A task with none says so, with Add trigger as its one action; a failed change says so in a message, and the page stays.
         state = TasksUiState.Ready(TaskBoard(listOf(scan.copy(triggers = emptyList()))), open = "t")
         compose.onNodeWithText("No triggers").assertExists()
         compose.onNodeWithText("This task only runs when you start it.").assertExists()
         state = state.copy(actionFailed = ConsoleFailure.Refused)
-        compose.onNodeWithText("This task only runs when you start it.").assertDoesNotExist()
+        compose.onNodeWithText("This task only runs when you start it.").assertExists()
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
         compose.onNodeWithText("Add trigger").performClick()
         assertTrue(state.adding)
     }
@@ -797,7 +797,7 @@ class ConsoleScreensTest {
         compose.onNodeWithContentDescription("Remove").performClick()
         assertEquals(listOf<ServerDevice?>(tv), asked)
         compose.onNodeWithText("SHIELD").performClick()
-        compose.onNodeWithText("Name").performTextInput("Den")
+        compose.onNode(hasSetTextAction()).performTextInput("Den")
         compose.onNodeWithText("Save").performClick()
         assertEquals(listOf("Den"), renamed)
         state = state.copy(renaming = null, removing = tv, actionFailed = ConsoleFailure.Refused)
@@ -935,8 +935,18 @@ class ConsoleScreensTest {
                 onShow = { state = state.copy(dialog = it) },
                 onAdministrator = { calls += "admin $it" },
                 onCanSignIn = { calls += "signin $it" },
-                onAllLibraries = { calls += "all $it" },
-                onLibrary = { id, on -> calls += "lib $id $on" },
+                onPolicy = { key, value ->
+                    if (key ==
+                        "EnableAllFolders"
+                    ) {
+                        calls += "all ${(value as kotlinx.serialization.json.JsonPrimitive).content}"
+                    }
+                },
+                onList = { key, change ->
+                    // The change takes an id in or out of the list; the shows library is what it was asked about.
+                    val after = change(emptyList()).map { (it as kotlinx.serialization.json.JsonPrimitive).content }
+                    if (key == "EnabledFolders") calls += "lib ${after.single()} true"
+                },
                 onCreate = { name, _ -> calls += "create $name" },
                 onSetPassword = { calls += "password $it" },
                 onDelete = { calls += "delete" },

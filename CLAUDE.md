@@ -140,6 +140,10 @@ as binge-seerr's TV is.
   says so: the server's version (`JellyfinServerProfile`), the user's policy (`JellyfinAccount`) and the
   server's configuration (Quick Connect, for one). A user never sees a page the server would refuse.
   `docs/server-compatibility.md` describes the three gates and how to add a feature behind them.
+- **A user's own settings** (approve a code, Playback, the Home screen, their password, Sign out) live in the account. For an
+  administrator that is a page behind an avatar in the home's top bar, so the home keeps the server and Administration. For
+  everyone else it is the home itself, inline, with Sign out last. Both come from the same composable (`AccountGroup`), so they
+  cannot drift. A new page of the user's own goes in that group, not in a group of its own.
 - **For everyone:** approving a Quick Connect code another device shows, Playback (their languages and
   playback switches), the Home screen, their password, and their own active sessions.
 - **For an admin:** every session, libraries and scans, scheduled tasks, activity, devices, users,
@@ -148,6 +152,11 @@ as binge-seerr's TV is.
   The exceptions are a form whose submit is the point (a new password, a new user) and anything
   destructive: removing a device or a user, stopping a stream, restarting the server. Those are last on
   their page, red, and behind a confirm that opens on Cancel.
+- **A page's create action is the footer's primary button.** "Add library", "New key", "Add repository" and the like are one filled
+  button with its icon in the page's `ScreenFooter` (`CreateFooter`), not an outlined button above the list. The footer is part of
+  the page from its first frame: disabled while the list loads, enabled once it is ready (an empty list too, whose empty state
+  then carries no Add of its own), and absent when a failure replaces the page or on a sub-page that creates nothing. A save-as-made
+  page has no such button, and a destructive action never goes in the footer.
 - **A settings PR is checked on a device first.** Against jellyfin-test, each field changed in the app and
   read back from the server's API, before it merges.
 - **Never test an admin call against a real server.** Admin pages are exercised against the fake

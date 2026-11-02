@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
@@ -60,6 +61,12 @@ class NowPlayingScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @Composable
+    fun loading() = NowPlayingScreen(NowPlayingUiState.Loading, administrator = true, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
     @JellyfinSpanishPreviews
     @Composable
     fun nothingPlaying() = NowPlayingScreen(NowPlayingUiState.Ready(emptyList()), administrator = true, NowPlayingActions())
@@ -74,12 +81,6 @@ class NowPlayingScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun stopping() = NowPlayingScreen(previewReady.copy(stopping = "tv"), administrator = true, NowPlayingActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun notStopped() =
-        NowPlayingScreen(previewReady.copy(stopFailed = ConsoleFailure.Unreachable), administrator = true, NowPlayingActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

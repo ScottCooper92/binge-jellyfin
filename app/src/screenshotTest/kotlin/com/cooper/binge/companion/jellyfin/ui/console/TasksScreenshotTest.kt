@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
@@ -60,10 +61,13 @@ class TasksScreenshotTest {
             now = NOW,
         )
 
+    /** The server showed no tasks: every one it listed was hidden, which its own dashboard leaves out too. */
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinSpanishPreviews
     @Composable
-    fun notSent() = TasksScreen(previewReady.copy(actionFailed = ConsoleFailure.Unreachable), TasksActions(), now = NOW)
+    fun empty() = TasksScreen(TasksUiState.Ready(TaskBoard(emptyList())), TasksActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

@@ -21,6 +21,7 @@ import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
+import mockwebserver3.SocketEffect
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -47,7 +48,7 @@ data class FakeItem(
 
 /**
  * A Jellyfin server in a [MockWebServer], answering the calls this app makes with the shapes the
- * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back.
+ * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back and [dropped] cuts one off.
  */
 class FakeJellyfin : Dispatcher() {
     val server = MockWebServer()
@@ -55,6 +56,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
     val slow = mutableSetOf<String>()
+
+    /** Paths whose connection is cut as the request arrives, as a server that has gone away. */
+    val dropped = mutableSetOf<String>()
     val notJson = mutableSetOf<String>()
 
     /** The event sockets the app opened, and every message it sent on them. */
@@ -241,6 +245,9 @@ class FakeJellyfin : Dispatcher() {
         """{"ServerName":"truenas","Version":"10.11.6","LocalAddress":"http://192.168.1.10:8096","SystemArchitecture":"X64",""" +
             """"OperatingSystemDisplayName":"Linux","HasUpdateAvailable":false,"HasPendingRestart":true,"CanSelfRestart":true}"""
 
+    /** `/Items/Counts`, as the signed-in user's library answers it. */
+    var itemCounts = """{"MovieCount":120,"SeriesCount":14,"EpisodeCount":900,"SongCount":0}"""
+
     /** How many `/System/Info/Public` reads a restart refuses, as the server goes down and comes back. */
     var restartDownPolls = 2
     private var down = 0
@@ -293,6 +300,7 @@ class FakeJellyfin : Dispatcher() {
                 .headersDelay(30, TimeUnit.SECONDS)
                 .build()
         }
+        if (path in dropped) return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
         status[path]?.let { return MockResponse(code = it) }
         if (path == "/socket") return socket(request)
         if (path in notJson) {
@@ -308,6 +316,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 503)
             }
             path == "/System/Info" -> json(systemInfo)
+            path == "/Items/Counts" -> json(itemCounts)
             path == "/System/Configuration" && request.method == "POST" -> {
                 serverConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
@@ -362,6 +371,14 @@ class FakeJellyfin : Dispatcher() {
                 serverUsers.remove(path.removePrefix("/Users/"))
                 MockResponse(code = 204)
             }
+            path == "/Localization/ParentalRatings" ->
+                json(
+                    """[{"Name":"G","Value":1,"RatingScore":{"score":1,"subScore":0}},{"Name":"PG","Value":5,"RatingScore":{"score":5,"subScore":2}},{"Name":"R","Value":9}]""",
+                )
+            path == "/LiveTv/Channels" ->
+                json(
+                    """{"Items":[{"Id":"ch-1","Name":"News"},{"Id":"ch-2","Name":"Sport"}],"TotalRecordCount":2}""",
+                )
             path == "/Sessions" -> json(sessions)
             path == "/Library/VirtualFolders" && request.method == "GET" -> json(libraries.toString())
             path.startsWith("/Library/VirtualFolders") || path.startsWith("/Environment/") || path == "/Libraries/AvailableOptions" ->

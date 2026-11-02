@@ -1,9 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -21,13 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
-import com.binge.designsystem.template.ScreenAction
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -67,18 +64,30 @@ fun LibrariesScreen(
     folders: FolderBrowseState = FolderBrowseState.Loading,
     folderActions: FolderActions = FolderActions(),
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.libraries_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    BingeScreenScaffold(
+        title = stringResource(R.string.libraries_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.libraries_add),
+                icon = Icons.Outlined.Add,
+                onClick = { actions.onAskAdd(true) },
+                visible = state !is LibrariesUiState.Failed,
+                enabled = state is LibrariesUiState.Ready,
+            )
+        },
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
                 LibrariesUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is LibrariesUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is LibrariesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LibrariesUiState.Ready -> {
                     if (state.libraries.isEmpty()) {
                         EmptyScreen(
                             message = stringResource(R.string.libraries_empty),
                             title = stringResource(R.string.libraries_empty_title),
-                            action = ScreenAction(stringResource(R.string.libraries_add), { actions.onAskAdd(true) }, Icons.Outlined.Add),
                         )
                     } else {
                         Libraries(state, actions, inner, now)
@@ -110,15 +119,7 @@ private fun Libraries(
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                Text(stringResource(R.string.libraries_body), style = MaterialTheme.typography.bodyMedium)
-                BingeOutlinedButton(
-                    label = stringResource(R.string.libraries_add),
-                    onClick = { actions.onAskAdd(true) },
-                    leadingIcon = Icons.Outlined.Add,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            Text(stringResource(R.string.libraries_body), style = MaterialTheme.typography.bodyMedium)
         }
         state.board.task(LIBRARY_SCAN_TASK)?.let { task ->
             item {

@@ -50,6 +50,9 @@ data class JellyfinServerProfile(
     /** The user permissions to manage collections, lyrics and subtitles. 10.9. */
     val hasContentManagementPermissions: Boolean get() = atLeast(TEN, NINE)
 
+    /** A user's allowed tags (the opposite of blocked ones), in their policy. 10.9. */
+    val hasAllowedTags: Boolean get() = atLeast(TEN, NINE)
+
     /** Audio normalisation's loudness scan, per library. 10.9. */
     val hasLoudnessScan: Boolean get() = atLeast(TEN, NINE)
 

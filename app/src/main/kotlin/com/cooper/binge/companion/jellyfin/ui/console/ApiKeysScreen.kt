@@ -1,34 +1,25 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.ImeAction
-import com.binge.designsystem.component.BingeLoadingIndicator
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -69,12 +60,27 @@ fun ApiKeysScreen(
     actions: ApiKeysActions,
     now: Long = System.currentTimeMillis(),
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.api_keys_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val ready = state as? ApiKeysUiState.Ready
+    BingeScreenScaffold(
+        title = stringResource(R.string.api_keys_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.api_keys_new),
+                icon = Icons.Outlined.Key,
+                onClick = { actions.onAskCreate(true) },
+                visible = state !is ApiKeysUiState.Failed,
+                enabled = ready != null,
+                loading = ready?.busy == true,
+            )
+        },
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                ApiKeysUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is ApiKeysUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                ApiKeysUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                is ApiKeysUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ApiKeysUiState.Ready -> Keys(state, actions, inner, now)
             }
         }
@@ -89,20 +95,9 @@ private fun Keys(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                Text(stringResource(R.string.api_keys_body), style = MaterialTheme.typography.bodyMedium)
-                BingeOutlinedButton(
-                    label = stringResource(R.string.api_keys_new),
-                    onClick = { actions.onAskCreate(true) },
-                    leadingIcon = Icons.Outlined.Key,
-                    loading = state.busy,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        item { Text(stringResource(R.string.api_keys_body), style = MaterialTheme.typography.bodyMedium) }
         if (state.keys.isEmpty()) {
-            item { Text(stringResource(R.string.api_keys_empty), style = MaterialTheme.typography.bodyLarge) }
+            item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
         } else {
             item { ItemGroup(title = null, rows = state.keys.map { it.row(state, actions, now) }) }
         }
@@ -116,7 +111,7 @@ private fun Keys(
             )
         }
     }
-    if (state.naming) NewKeyDialog(actions)
+    if (state.naming) NewKeySheet(actions)
     state.created?.let { CreatedKeyDialog(it, actions) }
     state.removing?.let { RevokeDialog(it, actions) }
 }
@@ -167,32 +162,25 @@ internal fun RevokeDialog(
     )
 }
 
-/** The app a new key is for. Its Create key saves too. */
+/** The app a new key is for. Its Create key saves too. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun NewKeyDialog(
+internal fun NewKeySheet(
     actions: ApiKeysActions,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
-    ConsoleConfirm(
-        title = stringResource(R.string.api_keys_new_title),
-        message = stringResource(R.string.api_keys_new_body),
-        confirmLabel = stringResource(R.string.api_keys_create),
-        onConfirm = { actions.onCreate(name) },
-        onDismissRequest = { actions.onAskCreate(false) },
-        inWindow = inWindow,
-        extraContent = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.api_keys_app_field)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { actions.onCreate(name) }),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onAskCreate(false) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(R.string.api_keys_new_title),
+            body = stringResource(R.string.api_keys_new_body),
+            value = name,
+            onValueChange = { name = it },
+            submitLabel = stringResource(R.string.api_keys_create),
+            onSubmit = { actions.onCreate(name) },
+            onCancel = { actions.onAskCreate(false) },
+            hint = stringResource(R.string.api_keys_app_field),
+        )
+    }
 }
 
 /** The key just made, in full, the one time it is shown. Copy is the only way it leaves the screen. */
@@ -221,3 +209,5 @@ internal fun CreatedKeyDialog(
         },
     )
 }
+
+private const val LOADING_ROWS = 5

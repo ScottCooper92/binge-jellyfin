@@ -1,15 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Code
@@ -20,7 +16,6 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,17 +23,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -68,6 +60,7 @@ private const val SETTINGS_DETAIL_LINES = 3
 
 /** Lines the custom CSS field shows before it scrolls. */
 private const val CSS_LINES = 8
+private const val MULTILINE_MIN = 3
 
 /**
  * The server's general settings (its name, the language and country metadata is fetched for, Quick
@@ -86,15 +79,12 @@ fun ServerSettingsScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 ServerSettingsUiState.Loading ->
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) { BingeLoadingIndicator() }
-                is ServerSettingsUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                    ConsoleLoading(inner, LOADING_ROWS)
+                is ServerSettingsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ServerSettingsUiState.Ready -> {
                     ServerSettingsBody(state, actions, splashscreenAvailable, inner) { picker = it }
                     picker?.let { ServerPickerSheet(it, state, actions) { picker = null } }
-                    state.editing?.let { TextDialog(it, state, actions) }
+                    state.editing?.let { TextSheet(it, state, actions) }
                 }
             }
         }
@@ -258,11 +248,11 @@ private fun ServerPickerSheet(
 }
 
 /**
- * A text setting's dialog: Save keeps what's typed, Cancel leaves the setting as it was. [inWindow]
- * false draws its body for a frame.
+ * A text setting's sheet: Save keeps what's typed, Cancel leaves the setting as it was. [inWindow]
+ * false draws the form for a frame.
  */
 @Composable
-internal fun TextDialog(
+internal fun TextSheet(
     text: ServerText,
     state: ServerSettingsUiState.Ready,
     actions: ServerSettingsActions,
@@ -282,25 +272,20 @@ internal fun TextDialog(
             ServerText.CustomCss -> R.string.server_settings_css to R.string.server_settings_css_body
         }
     val single = text == ServerText.Name
-    ConsoleConfirm(
-        title = stringResource(title),
-        message = stringResource(body),
-        confirmLabel = stringResource(R.string.server_settings_save),
-        onConfirm = { actions.onSaveText(text, value) },
-        onDismissRequest = { actions.onEdit(null) },
-        inWindow = inWindow,
-        extraContent = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it },
-                label = { Text(stringResource(title)) },
-                singleLine = single,
-                minLines = if (text == ServerText.CustomCss) CSS_LINES else 1,
-                maxLines = if (single) 1 else CSS_LINES,
-                keyboardOptions = KeyboardOptions(imeAction = if (single) ImeAction.Done else ImeAction.Default),
-                keyboardActions = KeyboardActions(onDone = { actions.onSaveText(text, value) }),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onEdit(null) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(title),
+            body = stringResource(body),
+            value = value,
+            onValueChange = { value = it },
+            submitLabel = stringResource(R.string.server_settings_save),
+            onSubmit = { actions.onSaveText(text, value) },
+            onCancel = { actions.onEdit(null) },
+            singleLine = single,
+            minLines = if (text == ServerText.CustomCss) CSS_LINES else MULTILINE_MIN,
+            maxLines = if (single) 1 else CSS_LINES,
+        )
+    }
 }
+
+private const val LOADING_ROWS = 8

@@ -43,7 +43,7 @@ internal fun CatalogTab(
 ) {
     when (state) {
         CatalogUiState.Loading -> PluginsLoading(inner)
-        is CatalogUiState.Failed -> PluginsFailed(state.failure, actions.onRetry)
+        is CatalogUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is CatalogUiState.Ready ->
             when {
                 open != null -> PackagePage(open, state, actions, inner)

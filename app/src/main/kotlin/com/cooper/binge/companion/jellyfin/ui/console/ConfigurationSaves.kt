@@ -1,81 +1,112 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import com.binge.designsystem.SaveStatus
+import com.binge.designsystem.save.SaveAsMade
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.saveUserConfiguration
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
+/** Where a page's saves stand, for [FormSaveStatus]: the last write's [status], and whether a change is [failed], unsent. */
+data class SaveProgress(
+    val status: SaveStatus = SaveStatus.Idle,
+    val failed: Boolean = false,
+)
+
 /**
- * Saves a configuration a change at a time, as the console's settings pages make them: the user's own
- * by default, or another that [save] sends (the server's, its branding). Jellyfin has no partial
- * update, so each save sends the last configuration the server accepted with that one change, and
- * saves take turns, each building on the last.
+ * Saves a configuration as a page's changes are made, through the design system's [SaveAsMade]: the user's own by
+ * default, or another that [save] sends (the server's, its branding). Jellyfin has no partial update, so each write
+ * sends the whole configuration as the page shows it, with every key it was given kept, and writes take turns, each
+ * built on the last. A burst of changes is one write.
  *
- * A change shows at once ([shown] goes to [onShown]). A save that fails puts that one key back to what
- * the server last accepted, with the failure, unless a newer change to the same key is on its way and
- * will say how it went itself.
+ * A change shows at once ([shown] goes to [onShown]). A write that fails because the server could not be reached keeps
+ * the change on screen, unsent, and [onProgress] says so until a write lands: [retry] sends it again. A write the server
+ * refuses would only be refused again, so the configuration goes back to what the server last accepted, with the
+ * failure, in [onShown].
  *
- * A save runs on the connection's own scope, not the page's, so closing the page does not cancel it.
+ * A write runs on the connection's own scope, not the page's, so closing the page does not cancel it.
  */
 internal class ConfigurationSaves(
     private val connection: Connection,
+    scope: CoroutineScope,
     private val tag: String,
     private val save: suspend (JellyfinSession, JellyfinClient, JsonObject) -> Unit = { session, client, configuration ->
         client.saveUserConfiguration(session.userId, configuration)
     },
+    private val onProgress: (SaveProgress) -> Unit = {},
     private val onShown: (shown: JsonObject, failure: ConsoleFailure?) -> Unit,
 ) {
     /** The configuration as the server last accepted it. */
     private var saved = JsonObject(emptyMap())
 
-    /** The configuration as the page shows it: [saved] with the changes still saving. */
+    /** The configuration as the page shows it: [saved] with the changes not yet accepted. */
     var shown = JsonObject(emptyMap())
         private set
 
-    private val saving = Mutex()
-    private val lock = Any()
+    private var progress = SaveProgress()
 
-    /** The latest change made to each key, so a failed save only puts back a change nothing newer replaced. */
-    private val latest = mutableMapOf<String, Int>()
+    private val engine =
+        SaveAsMade(
+            scope = scope,
+            appScope = connection.saveScope,
+            dispatcher = connection.io,
+            draft = { shown },
+            canSave = { true },
+            write = { configuration ->
+                connection.tracked {
+                    connection.consoleCall(tag) { session, client -> save(session, client, configuration) }.getOrThrow()
+                }
+                configuration
+            },
+            adopt = { sent, _ ->
+                saved = sent
+                shown != sent
+            },
+            failed = { failed ->
+                report(progress.copy(failed = failed))
+                if (failed) onShown(shown, ConsoleFailure.Unreachable)
+            },
+            isTransient = { error -> error.consoleFailure() == ConsoleFailure.Unreachable },
+            status = { status -> report(progress.copy(status = status)) },
+            refused = { error ->
+                shown = saved
+                onShown(shown, error.consoleFailure())
+            },
+        )
 
-    /** The configuration the page read: what the next save builds on. */
+    private fun report(next: SaveProgress) {
+        progress = next
+        onProgress(next)
+    }
+
+    /** The configuration the page read: what the next write builds on. */
     fun loaded(configuration: JsonObject) {
-        synchronized(lock) {
-            saved = configuration
-            shown = configuration
-        }
+        saved = configuration
+        shown = configuration
+        engine.discard()
     }
 
     fun set(
         key: String,
         value: JsonElement,
     ) {
-        val change =
-            synchronized(lock) {
-                val next = (latest[key] ?: 0) + 1
-                latest[key] = next
-                shown = JsonObject(shown + (key to value))
-                onShown(shown, null)
-                next
-            }
-        connection.launchSave {
-            saving.withLock {
-                val next = JsonObject(saved + (key to value))
-                connection
-                    .consoleCall(tag) { session, client -> save(session, client, next) }
-                    .onSuccess { synchronized(lock) { saved = next } }
-                    .onFailure { error ->
-                        synchronized(lock) {
-                            if (latest[key] != change) return@onFailure
-                            shown = JsonObject(shown - key + (saved[key]?.let { mapOf(key to it) } ?: emptyMap()))
-                            onShown(shown, error.consoleFailure())
-                        }
-                    }
-            }
-        }
+        shown = JsonObject(shown + (key to value))
+        onShown(shown, null)
+        engine.changed()
+    }
+
+    /** Sends the change a failed write left unsent. */
+    fun retry() = engine.now()
+
+    /**
+     * The page is going: a change still waiting, or one whose write failed, is sent now, and counted with the saves
+     * [Connection.awaitSaves] waits for, so a page opened next reads it.
+     */
+    fun cleared() {
+        val owed = engine.settle()
+        connection.launchSave { owed.await() }
     }
 }

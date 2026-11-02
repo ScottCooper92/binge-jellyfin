@@ -1,13 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CloudQueue
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.MaterialTheme
@@ -18,19 +15,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeAdaptiveSheet
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.template.EmptyScreen
-import com.binge.designsystem.template.ScreenAction
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.PluginRepository
 import com.binge.designsystem.R as DesR
@@ -53,13 +47,12 @@ internal fun RepositoriesTab(
 ) {
     when (state) {
         RepositoriesUiState.Loading -> PluginsLoading(inner)
-        is RepositoriesUiState.Failed -> PluginsFailed(state.failure, actions.onRetry)
+        is RepositoriesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is RepositoriesUiState.Ready -> {
             if (state.repositories.isEmpty()) {
                 EmptyScreen(
                     message = stringResource(R.string.repositories_empty),
                     title = stringResource(R.string.repositories_empty_title),
-                    action = ScreenAction(stringResource(R.string.repositories_add), { actions.onAskAdd(true) }, Icons.Outlined.Add),
                 )
             } else {
                 RepositoryList(state, actions, inner)
@@ -78,16 +71,7 @@ private fun RepositoryList(
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                Text(stringResource(R.string.repositories_body), style = MaterialTheme.typography.bodyMedium)
-                BingeOutlinedButton(
-                    label = stringResource(R.string.repositories_add),
-                    onClick = { actions.onAskAdd(true) },
-                    leadingIcon = Icons.Outlined.Add,
-                    loading = state.saving,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            Text(stringResource(R.string.repositories_body), style = MaterialTheme.typography.bodyMedium)
         }
         item { ItemGroup(title = null, rows = state.repositories.map { it.row(state, actions) }) }
         item { FailureLine(state.actionFailed) }
