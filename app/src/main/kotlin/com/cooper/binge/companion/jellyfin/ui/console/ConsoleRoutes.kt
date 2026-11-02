@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -33,7 +34,7 @@ internal fun ConsolePageRoute(
         ConsolePage.NowPlaying ->
             NowPlayingRoute(
                 graph,
-                signedIn.isAdministrator,
+                signedIn.account,
                 close,
             )
         ConsolePage.Libraries -> LibrariesRoute(graph, signedIn.profile, close)
@@ -255,16 +256,22 @@ private fun ServerRoute(
 @Composable
 private fun NowPlayingRoute(
     graph: AppGraph,
-    administrator: Boolean,
+    account: JellyfinAccount,
     onBack: () -> Unit,
 ) {
     val nowPlaying: NowPlayingViewModel =
-        viewModel(factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection) } })
+        viewModel(factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection, account) } })
     val state by nowPlaying.state.collectAsStateWithLifecycle()
     NowPlayingScreen(
         state,
-        administrator,
+        account.isAdministrator,
         NowPlayingActions(
+            onSelect = nowPlaying::select,
+            onDeselect = nowPlaying::deselect,
+            onPlayPause = nowPlaying::playPause,
+            onSkip = nowPlaying::skip,
+            onSeekBy = nowPlaying::seekBy,
+            onSeekTo = nowPlaying::seekTo,
             onStop = nowPlaying::askStop,
             onConfirmStop = nowPlaying::stop,
             onCancelStop = nowPlaying::cancelStop,
