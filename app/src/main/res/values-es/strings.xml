@@ -262,7 +262,6 @@
     <string name="console_logs_detail">Los archivos de registro del servidor</string>
     <string name="logs_empty">El servidor no tiene archivos de registro.</string>
     <string name="logs_search">Buscar en este registro</string>
-    <string name="logs_problems_only">Avisos y errores</string>
     <string name="logs_truncated">Se muestran los últimos %1$d KB de este registro.</string>
     <string name="logs_no_match">Ninguna línea coincide.</string>
     <string name="logs_share">Compartir</string>

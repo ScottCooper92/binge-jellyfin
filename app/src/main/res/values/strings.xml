@@ -261,7 +261,6 @@
     <string name="console_logs_detail">The server\'s log files</string>
     <string name="logs_empty">The server has no log files.</string>
     <string name="logs_search">Search this log</string>
-    <string name="logs_problems_only">Warnings and errors</string>
     <string name="logs_truncated">Showing the last %1$d KB of this log.</string>
     <string name="logs_no_match">No lines match.</string>
     <string name="logs_share">Share</string>

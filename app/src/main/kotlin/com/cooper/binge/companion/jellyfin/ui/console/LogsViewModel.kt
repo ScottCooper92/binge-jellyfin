@@ -3,7 +3,9 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.LogEntry
 import com.cooper.binge.companion.jellyfin.server.LogFile
+import com.cooper.binge.companion.jellyfin.server.LogLevel
 import com.cooper.binge.companion.jellyfin.server.logFiles
 import com.cooper.binge.companion.jellyfin.server.logTail
 import kotlinx.coroutines.Job
@@ -27,18 +29,21 @@ sealed interface LogsUiState {
     ) : LogsUiState
 }
 
-/** The log being read: what [content] has, narrowed by [query] and [problemsOnly]. */
+/** The log being read: what [content] has, narrowed to [level] and above and by [query]. */
 data class OpenLog(
     val name: String,
     val content: LogContent = LogContent.Loading,
     val query: String = "",
-    val problemsOnly: Boolean = false,
+    val level: LogLevel = LogLevel.Debug,
 ) {
-    /** The lines to show: those with a warning or an error when [problemsOnly], and those with [query] in them. */
-    val visible: List<String>
+    /** The entries to show: those at [level] or worse, and those with [query] in them. An entry with no level counts as Info. */
+    val visible: List<LogEntry>
         get() {
-            val lines = (content as? LogContent.Ready)?.lines ?: return emptyList()
-            return lines.filter { (!problemsOnly || it.isProblem()) && (query.isBlank() || it.contains(query.trim(), ignoreCase = true)) }
+            val entries = (content as? LogContent.Ready)?.entries ?: return emptyList()
+            return entries.filter {
+                (it.level ?: LogLevel.Info) >= level &&
+                    (query.isBlank() || it.text.contains(query.trim(), ignoreCase = true))
+            }
         }
 }
 
@@ -49,21 +54,16 @@ sealed interface LogContent {
         val failure: ConsoleFailure,
     ) : LogContent
 
-    /** The end of the file, oldest line first, and whether the file was longer than what was kept. */
+    /** The end of the file as entries, oldest first, and whether the file was longer than what was kept. */
     data class Ready(
-        val lines: List<String>,
+        val entries: List<LogEntry>,
         val truncated: Boolean,
     ) : LogContent
 }
 
-/** A line Jellyfin's logger wrote at warning level or worse: `[WRN]`, `[ERR]` or `[FTL]`. */
-internal fun String.isProblem(): Boolean = PROBLEM_MARKERS.any { it in this }
-
-private val PROBLEM_MARKERS = listOf("[WRN]", "[ERR]", "[FTL]")
-
 /**
  * The server's log files, and one read at a time: its end, with credentials blanked, searchable and
- * narrowed to warnings and errors. Admin only. Nothing is saved; reading is all this page does.
+ * narrowed by level. Admin only. Nothing is saved; reading is all this page does.
  */
 class LogsViewModel(
     private val connection: Connection,
@@ -109,7 +109,7 @@ class LogsViewModel(
 
     fun setQuery(query: String) = updateOpen { copy(query = query) }
 
-    fun setProblemsOnly(on: Boolean) = updateOpen { copy(problemsOnly = on) }
+    fun setLevel(level: LogLevel) = updateOpen { copy(level = level) }
 
     private fun read(name: String) {
         reading?.cancel()
@@ -119,7 +119,7 @@ class LogsViewModel(
                     connection
                         .consoleCall(TAG) { session, client -> client.logTail(name, session.token) }
                         .fold(
-                            onSuccess = { LogContent.Ready(it.lines, it.truncated) },
+                            onSuccess = { LogContent.Ready(it.entries, it.truncated) },
                             onFailure = { LogContent.Failed(it.consoleFailure()) },
                         )
                 // Only the log still open takes the answer: a slow read that was closed or replaced is dropped.

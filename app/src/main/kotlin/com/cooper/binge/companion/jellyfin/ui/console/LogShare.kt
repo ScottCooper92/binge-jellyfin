@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
@@ -39,3 +41,11 @@ internal fun writeSharedLog(
 }
 
 private const val SHARED_DIR = "logs"
+
+/** Puts one log entry on the clipboard: its text is the redacted entry, so the clipboard holds nothing the page did not show. */
+internal fun copyLogEntry(
+    context: Context,
+    text: String,
+) {
+    (context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("", text))
+}
