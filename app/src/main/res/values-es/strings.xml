@@ -114,6 +114,7 @@
     <string name="home_layout_order_detail">El orden en que aparecen tus bibliotecas, en todos los dispositivos donde inicies sesión. Cada toque mueve un lugar y se guarda.</string>
     <string name="home_layout_already_first">Ya es la primera</string>
     <string name="home_layout_already_last">Ya es la última</string>
+    <string name="home_layout_moved">Movida a la posición %1$d de %2$d</string>
     <string name="home_layout_hide_played">Ocultar lo ya visto en Últimos</string>
     <string name="home_layout_missing">Mostrar episodios que faltan</string>
     <string name="home_layout_missing_detail">Los huecos de una temporada se muestran como marcadores</string>
@@ -261,6 +262,21 @@
     <string name="library_readers">Lectores de metadatos locales</string>
     <string name="library_subtitles">Subtítulos</string>
     <string name="library_skip_embedded">Omitir si el archivo ya tiene subtítulos</string>
+    <string name="library_audio_tags">Etiquetas de audio</string>
+    <string name="library_audio_tags_none">Ninguno</string>
+    <string name="library_artists_tag">Preferir la etiqueta ARTISTS</string>
+    <string name="library_artists_tag_detail">Usa la etiqueta no estándar ARTISTS en lugar de ARTIST cuando un archivo la tiene.</string>
+    <string name="library_custom_delimiters">Delimitadores de etiquetas propios</string>
+    <string name="library_custom_delimiters_detail">Divide las etiquetas de artista y género por los caracteres que elijas.</string>
+    <string name="library_delimiters">Caracteres delimitadores</string>
+    <string name="library_delimiters_hint">Los caracteres por los que dividir, uno tras otro, como /|;</string>
+    <string name="library_whitelist">Lista de excepciones</string>
+    <string name="library_whitelist_hint">Nombres que el servidor nunca divide, uno en cada línea.</string>
+    <plurals name="library_whitelist_count">
+        <item quantity="one">%1$d nombre</item>
+        <item quantity="many">%1$d nombres</item>
+        <item quantity="other">%1$d nombres</item>
+    </plurals>
     <string name="library_embedded_subtitles">Subtítulos incrustados</string>
     <string name="library_embedded_subtitles_all">Todos los tipos</string>
     <string name="library_embedded_subtitles_text">Solo texto</string>
@@ -587,6 +603,11 @@
         <item quantity="one">Se detiene tras %1$d hora</item>
         <item quantity="many">Se detiene tras %1$d horas</item>
         <item quantity="other">Se detiene tras %1$d horas</item>
+    </plurals>
+    <plurals name="trigger_limit_value">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="many">%1$d horas</item>
+        <item quantity="other">%1$d horas</item>
     </plurals>
     <plurals name="trigger_limit_minutes">
         <item quantity="one">Se detiene tras %1$d minuto</item>
@@ -1007,4 +1028,15 @@
     <string name="backups_restore_not_back_title">El servidor no volvió a tiempo</string>
     <string name="backups_restore_not_back_body">Compruébalo e inténtalo de nuevo.</string>
     <string name="backups_restore_failed">No se pudo hacer la restauración.</string>
+    <string name="live_tv_title">TV en directo</string>
+    <string name="console_live_tv_detail">Sintonizadores y guía</string>
+    <string name="live_tv_body">Los sintonizadores y los datos de guía que este servidor usa para la TV en directo. Por ahora esta página solo los muestra.</string>
+    <string name="live_tv_tuners">Sintonizadores</string>
+    <string name="live_tv_no_tuners">Sin sintonizadores</string>
+    <string name="live_tv_guide">Datos de guía</string>
+    <string name="live_tv_no_guide">Sin datos de guía</string>
+    <string name="live_tv_guide_ends">La guía llega hasta</string>
+    <string name="live_tv_refresh_guide">Actualizar la guía</string>
+    <string name="live_tv_refresh_guide_detail">Se ejecuta desde Tareas programadas</string>
+    <string name="live_tv_type_m3u">Lista M3U</string>
 </resources>

@@ -45,4 +45,15 @@ class JellyfinAccountTest {
         val ldap = account("""{"AuthenticationProviderId":"Jellyfin.Plugin.LDAP_Auth.LdapAuthenticationProviderPlugin"}""")
         assertFalse(ldap.hasLocalPassword)
     }
+
+    @Test
+    fun `Live TV management and access are the policy's flags alone, with no shortcut for an administrator`() {
+        assertFalse(JellyfinAccount("Claude").canManageLiveTv)
+        assertFalse(account("""{"IsAdministrator":true}""").canManageLiveTv)
+        assertFalse(account("""{"IsAdministrator":true,"EnableLiveTvManagement":false,"EnableLiveTvAccess":true}""").canManageLiveTv)
+        val manager = account("""{"IsAdministrator":false,"EnableLiveTvManagement":true,"EnableLiveTvAccess":false}""")
+        assertTrue(manager.canManageLiveTv)
+        assertFalse(manager.canAccessLiveTv)
+        assertTrue(account("""{"EnableLiveTvAccess":true}""").canAccessLiveTv)
+    }
 }

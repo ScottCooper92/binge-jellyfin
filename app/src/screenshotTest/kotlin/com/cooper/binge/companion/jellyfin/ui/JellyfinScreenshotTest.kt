@@ -137,6 +137,17 @@ class JellyfinScreenshotTest {
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
 
+    /** The Live TV row, for a user who is not an administrator but may manage it, and for an administrator who may. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signedInLiveTvManager() = JellyfinRoot(previewSignedInLiveTvManager, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signedInAdminLiveTv() = JellyfinRoot(previewSignedInAdminLiveTv, Actions())
+
     /** The server card with three pills at once, on an unencrypted address: an administrator's, at every size and in Spanish. */
     @PreviewTest
     @JellyfinScreenPreviews

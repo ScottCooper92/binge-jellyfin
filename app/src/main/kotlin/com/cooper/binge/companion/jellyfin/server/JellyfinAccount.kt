@@ -35,6 +35,15 @@ data class JellyfinAccount(
      */
     val canControlSharedDevices: Boolean get() = policy.bool("EnableSharedDeviceControl") == true
 
+    /**
+     * Changing a server's Live TV tuners and guide data. The server reads this flag on the user and gives an administrator no
+     * shortcut, so neither does this: an administrator with it off is refused.
+     */
+    val canManageLiveTv: Boolean get() = policy.bool(POLICY_LIVE_TV_MANAGEMENT) == true
+
+    /** Live TV itself. The server's lookups for the add forms (tuner types, lineups, countries) need this as well as [canManageLiveTv]. */
+    val canAccessLiveTv: Boolean get() = policy.bool(POLICY_LIVE_TV_ACCESS) == true
+
     private companion object {
         const val DEFAULT_PROVIDER = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider"
     }
