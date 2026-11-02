@@ -389,7 +389,7 @@ internal fun PasswordSheet(
                 onValueChange = { password = it },
                 label = stringResource(R.string.password_new),
                 secret = true,
-                onDone = { actions.onSetPassword(password) },
+                onDone = { if (!submitting) actions.onSetPassword(password) },
             )
         }
     }

@@ -137,7 +137,7 @@ class UsersViewModel(
         password: String,
     ) {
         if (name.isBlank()) return
-        act(UserDone.Created, fromForm = true) { client ->
+        act(UserDone.Created, form = UserDialog.Create) { client ->
             val user = client.createUser(name.trim(), password)
             saved[user.id] = user.policy
             update { copy(users = (users + user).sortedBy { it.name.lowercase() }, open = user.id) }
@@ -148,7 +148,7 @@ class UsersViewModel(
         val ready = _state.value as? UsersUiState.Ready ?: return
         // The server asks the signed-in user for their current password, which the Password page does.
         val user = ready.openUser?.takeUnless { it.id == ready.me } ?: return
-        act(UserDone.PasswordSet, fromForm = true) { client ->
+        act(UserDone.PasswordSet, form = UserDialog.Password) { client ->
             client.setPassword(user.id, password)
             update { copy(users = users.map { if (it.id == user.id) it.copy(hasPassword = password.isNotEmpty()) else it }) }
         }
@@ -157,7 +157,7 @@ class UsersViewModel(
     fun delete() {
         val ready = _state.value as? UsersUiState.Ready ?: return
         val user = ready.openUser?.takeUnless { it.id == ready.me } ?: return
-        act(UserDone.Deleted, fromForm = false) { client ->
+        act(UserDone.Deleted, form = null) { client ->
             client.deleteUser(user.id)
             update { copy(users = users - user, open = null) }
         }
@@ -165,23 +165,25 @@ class UsersViewModel(
 
     /**
      * A create, password or delete, and the page says what happened. A delete's confirm closes as it is answered; a form
-     * ([fromForm]) stays open while the call runs, closes when it works, and keeps what was typed, with the reason in the
-     * form, when it doesn't.
+     * ([form]) stays open while the call runs, closes when it works, and keeps what was typed, with the reason in the
+     * form, when it doesn't. Only that same form counts: if it was left and another opened, the result goes to the page.
+     * One call at a time: a second while one is running is ignored.
      */
     private fun act(
         done: UserDone,
-        fromForm: Boolean,
+        form: UserDialog?,
         call: suspend (JellyfinClient) -> Unit,
     ) {
-        update { copy(dialog = if (fromForm) dialog else null, busy = true, done = null, formFailure = null, actionFailed = null) }
+        if ((_state.value as? UsersUiState.Ready)?.busy != false) return
+        update { copy(dialog = if (form != null) dialog else null, busy = true, done = null, formFailure = null, actionFailed = null) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> call(client) }
-                .onSuccess { update { copy(busy = false, done = done, dialog = null) } }
+                .onSuccess { update { copy(busy = false, done = done, dialog = if (form != null && dialog == form) null else dialog) } }
                 .onFailure { error ->
                     // A form left meanwhile has nowhere to say it, so the page does.
                     update {
-                        if (fromForm && dialog != null) {
+                        if (form != null && dialog == form) {
                             copy(busy = false, formFailure = error.consoleFailure())
                         } else {
                             copy(busy = false, actionFailed = error.consoleFailure())

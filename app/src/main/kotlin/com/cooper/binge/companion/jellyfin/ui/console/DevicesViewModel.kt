@@ -98,11 +98,24 @@ class DevicesViewModel(
                     call(client)
                     client.devices()
                 }.onSuccess { devices ->
-                    update { copy(devices = devices, busy = busy - device.id, renaming = if (fromForm) null else renaming) }
+                    update {
+                        copy(
+                            devices = devices,
+                            busy = busy - device.id,
+                            renaming =
+                                if (fromForm &&
+                                    renaming?.id == device.id
+                                ) {
+                                    null
+                                } else {
+                                    renaming
+                                },
+                        )
+                    }
                 }.onFailure { error ->
                     // A form left meanwhile has nowhere to say it, so the page does.
                     update {
-                        if (fromForm && renaming != null) {
+                        if (fromForm && renaming?.id == device.id) {
                             copy(busy = busy - device.id, formFailure = error.consoleFailure())
                         } else {
                             copy(busy = busy - device.id, actionFailed = error.consoleFailure())
