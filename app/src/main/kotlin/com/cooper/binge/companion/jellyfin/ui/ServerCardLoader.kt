@@ -1,13 +1,19 @@
 package com.cooper.binge.companion.jellyfin.ui
 
 import com.binge.companion.sdk.attempt
+import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.itemCounts
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.serverInfo
 import com.cooper.binge.companion.jellyfin.server.users
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * What the home's server card says about the server, as far as it has been read. [playing], [users], [movies] and
@@ -75,5 +81,27 @@ class ServerCardLoader(
         apply: ServerCardState.(T) -> ServerCardState,
     ) {
         async { attempt { read() }.onSuccess { value -> update { it.apply(value) } } }
+    }
+}
+
+/**
+ * Reads the server card's figures in the background, so the home never waits on them. Figures read in the last few
+ * minutes stand, unless [force]d or the card has none yet.
+ */
+internal fun ServerCardLoader.refresh(
+    scope: CoroutineScope,
+    state: MutableStateFlow<UiState>,
+    session: JellyfinSession,
+    client: JellyfinClient,
+    account: JellyfinAccount,
+    force: Boolean,
+) {
+    val key = "${session.baseUrl}|${session.userId}"
+    val shown = (state.value as? UiState.SignedIn)?.card?.connected == true
+    if (!force && shown && !due(key)) return
+    scope.launch {
+        load(key, client, session.userId, account.isAdministrator) { change ->
+            state.update { (it as? UiState.SignedIn)?.copy(card = change(it.card)) ?: it }
+        }
     }
 }

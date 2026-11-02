@@ -261,7 +261,7 @@ class JellyfinViewModel(
                 val (session, client) = connection.signedIn() ?: return@launch
                 attempt { client.readGates(session.serverVersion) }.onSuccess { (profile, account) ->
                     _state.update { (it as? UiState.SignedIn)?.copy(profile = profile, account = account) ?: it }
-                    loadCard(session, client, account, force = false)
+                    card.refresh(viewModelScope, _state, session, client, account, force = false)
                 }
             }
             return
@@ -278,7 +278,7 @@ class JellyfinViewModel(
                     // The gates first, so a library index that fails can't leave them unread.
                     val gates = signedIn.second.readGates(signedIn.first.serverVersion)
                     _state.update { (it as? UiState.SignedIn)?.copy(profile = gates.first, account = gates.second) ?: it }
-                    loadCard(signedIn.first, signedIn.second, gates.second, force = true)
+                    card.refresh(viewModelScope, _state, signedIn.first, signedIn.second, gates.second, force = true)
                     index.refresh(signedIn.second, signedIn.first.userId)
                     false
                 } catch (e: CancellationException) {
@@ -298,26 +298,6 @@ class JellyfinViewModel(
                     true
                 }
             _state.update { (it as? UiState.SignedIn)?.copy(refreshing = false, refreshFailed = failed, titles = index.size) ?: it }
-        }
-    }
-
-    /**
-     * Reads the server card's figures in the background, so the home never waits on them. Figures read in the last few
-     * minutes stand, unless [force]d or the card has none yet.
-     */
-    private fun loadCard(
-        session: JellyfinSession,
-        client: JellyfinClient,
-        account: JellyfinAccount,
-        force: Boolean,
-    ) {
-        val key = "${session.baseUrl}|${session.userId}"
-        val shown = (_state.value as? UiState.SignedIn)?.card?.connected == true
-        if (!force && shown && !card.due(key)) return
-        viewModelScope.launch {
-            card.load(key, client, session.userId, account.isAdministrator) { change ->
-                _state.update { (it as? UiState.SignedIn)?.copy(card = change(it.card)) ?: it }
-            }
         }
     }
 
