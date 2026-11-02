@@ -98,7 +98,8 @@ class TranscodingViewModelTest {
         vm.ready()
         vm.setEncoding(ENCODING_ACCELERATION, JsonPrimitive("vaapi"))
         vm.setEncoding(ENCODING_HARDWARE_ENCODING, JsonPrimitive(false))
-        saves(ENCODING, 2)
+        // Two changes made together are one write: the save waits out a short delay, and sends them both.
+        saves(ENCODING, 1)
         val sent = jellyfin.lastBody(ENCODING)
         assertEquals("vaapi", sent.getValue(ENCODING_ACCELERATION).jsonPrimitive.content)
         assertEquals(false, sent.getValue(ENCODING_HARDWARE_ENCODING).jsonPrimitive.boolean)
@@ -142,7 +143,7 @@ class TranscodingViewModelTest {
         vm.setCodec("av1", true)
         vm.setCodec("h264", false)
         vm.setCodec("av1", true)
-        saves(ENCODING, 3)
+        saves(ENCODING, 1)
         assertEquals(
             listOf("hevc", "av1"),
             jellyfin.lastBody(ENCODING).getValue(ENCODING_DECODING_CODECS).jsonArray.map {
