@@ -42,6 +42,22 @@ class HomeLayoutScreenshotTest {
     fun library() = HomeLayoutScreen(previewHome.copy(openId = "home"), HomeLayoutActions())
 
     @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun middleLibrary() = HomeLayoutScreen(previewHome.copy(openId = "movies"), HomeLayoutActions())
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun onlyLibrary() =
+        HomeLayoutScreen(
+            HomeLayoutUiState.Ready(previewViews.take(1), HomeLayout(), openId = "movies"),
+            HomeLayoutActions(),
+        )
+
+    @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun firstLibrary() = HomeLayoutScreen(previewHome.copy(openId = "shows"), HomeLayoutActions())
