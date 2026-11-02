@@ -948,9 +948,8 @@
     <string name="backups_create_action">Make backup</string>
     <string name="backups_creating">Making a backup</string>
     <string name="backups_creating_detail">The server is writing it. You can leave this page.</string>
-    <string name="backups_created">Backup made</string>
-    <string name="backups_created_detail">It is first in the list below.</string>
-    <string name="backups_create_failed">The backup wasn\'t made</string>
+    <string name="backups_created_message">Backup made. It is first in the list below.</string>
+    <string name="backups_create_failed_message">The backup wasn\'t made. %1$s</string>
     <string name="backups_create_refused">The server may need 5 GiB free where it keeps backups. Free up space before trying again.</string>
     <string name="backups_done">Done</string>
     <string name="backups_sheet_title">Backup</string>
