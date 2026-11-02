@@ -5,7 +5,8 @@ import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeConfirmDialogContent
 
 /**
- * A console page's confirm or form dialog. On screen it's a [BingeConfirmDialog]. With [inWindow]
+ * A console page's confirm dialog, or the one acknowledgement that shows something once. Anything that takes input is a sheet
+ * ([ConsoleSheet]). On screen it's a [BingeConfirmDialog]. With [inWindow]
  * false it draws [BingeConfirmDialogContent], the same body without the dialog window, which a screen
  * frame can't capture, so a `@PreviewTest` can show it.
  */
