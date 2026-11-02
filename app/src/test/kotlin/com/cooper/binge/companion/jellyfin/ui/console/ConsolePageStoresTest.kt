@@ -38,20 +38,36 @@ class ConsolePageStoresTest {
     }
 
     @Test
-    fun `a new opening clears the last one's view model and starts a fresh one`() {
+    fun `a page that left the stack has its view model cleared, and the ones still on it keep theirs`() {
         val stores = ConsolePageStores()
         val first = stores.storeFor(1).page()
         val second = stores.storeFor(2).page()
-        assertTrue(first.cleared)
-        assertNotSame(first, second)
+        stores.retain(setOf(1))
+        assertTrue(second.cleared)
+        assertFalse(first.cleared)
+        assertSame(first, stores.storeFor(1).page())
+        // The same opening number again after it left is a new page, not the old one back.
+        val again = stores.storeFor(2).page()
+        assertNotSame(second, again)
+    }
+
+    @Test
+    fun `after a process death there are no view models, and the restored pages load afresh`() {
+        val before = ConsolePageStores()
+        val page = before.storeFor(1).page()
+        // The new process has a new store holder; the saved stack still names opening 1.
+        val after = ConsolePageStores()
+        assertNotSame(page, after.storeFor(1).page())
     }
 
     @Test
     fun `closing the page clears its view model, and the Activity finishing clears an open one`() {
         val stores = ConsolePageStores()
         val closed = stores.storeFor(1).page()
+        val other = stores.storeFor(2).page()
         stores.close()
         assertTrue(closed.cleared)
+        assertTrue(other.cleared)
         // Opening the same number again after a close is a new page, not the old one back.
         val reopened = stores.storeFor(1).page()
         assertNotSame(closed, reopened)

@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,6 +35,7 @@ import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageScope
@@ -91,25 +91,25 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: JellyfinViewModel = viewModel(factory = factory)
             val state by viewModel.state.collectAsStateWithLifecycle()
-            // The console page open over its home, if any. Back closes it; leaving SignedIn closes it too.
-            var page by rememberSaveable { mutableStateOf<ConsolePage?>(null) }
-            // Counts openings, so each one gets a fresh store for its page's view model.
-            var opened by rememberSaveable { mutableIntStateOf(0) }
+            // The console pages open over the home, the last on top. A page that opens another stays under it, so
+            // Back returns to the opener, and to the home from the first. Leaving SignedIn closes them all.
+            var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
             val pageStores: ConsolePageStores = viewModel()
             val home = rememberSaveableStateHolder()
             val signedIn = state is UiState.SignedIn
-            LaunchedEffect(signedIn) { if (!signedIn) page = null }
+            LaunchedEffect(signedIn) { if (!signedIn) stack = stack.clear() }
             // A page the server or the user lost (Quick Connect turned off, admin rights taken away) closes,
-            // once the refresh has read what they now allow.
+            // once the refresh has read what they now allow; Back skips it.
             (state as? UiState.SignedIn)?.let { gated ->
                 LaunchedEffect(gated.profile, gated.account) {
-                    if (gated.account.isRead && page?.available(gated.profile, gated.account) == false) page = null
+                    if (gated.account.isRead) stack = stack.keeping { it.available(gated.profile, gated.account) }
                 }
             }
-            val openPage = page.takeIf { signedIn }
-            LaunchedEffect(openPage) { if (openPage == null) pageStores.close() }
-            RefreshGatesWhenHomeReturns(openPage) { viewModel.refresh(gatesOnly = true) }
-            BackHandler(enabled = openPage != null) { page = null }
+            val openPage = stack.top.takeIf { signedIn }
+            // A page's view models live while it is on the stack.
+            LaunchedEffect(stack, signedIn) { pageStores.retain(if (signedIn) stack.openings else emptySet()) }
+            RefreshGatesWhenHomeReturns(openPage?.page) { viewModel.refresh(gatesOnly = true) }
+            BackHandler(enabled = openPage != null) { stack = stack.back() }
             val actions =
                 Actions(
                     onAddress = viewModel::onAddress,
@@ -129,10 +129,7 @@ class MainActivity : ComponentActivity() {
                         viewModel.onAddress(server.address)
                         viewModel.connect()
                     },
-                    onOpenPage = {
-                        opened++
-                        page = it
-                    },
+                    onOpenPage = { stack = stack.open(it) },
                 )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalFlags provides flags) {
@@ -146,10 +143,10 @@ class MainActivity : ComponentActivity() {
                                 // state (the list's scroll position) for when it comes back.
                                 home.SaveableStateProvider(HOME_KEY) { JellyfinRoot(state, actions) }
                             } else {
-                                val close = { page = null }
-                                ConsolePageScope(pageStores.storeFor(opened)) {
+                                val close = { stack = stack.back() }
+                                ConsolePageScope(pageStores.storeFor(openPage.opening)) {
                                     (state as? UiState.SignedIn)?.let { gated ->
-                                        ConsolePageRoute(openPage, graph, gated, close, actions.onOpenPage)
+                                        ConsolePageRoute(openPage.page, graph, gated, close, actions.onOpenPage)
                                     }
                                 }
                             }
