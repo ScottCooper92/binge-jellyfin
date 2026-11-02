@@ -67,11 +67,6 @@ class TaskTriggersScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
-    @Composable
-    fun failed() = TasksScreen(open(failed = ConsoleFailure.Unreachable), TasksActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun newTrigger() = Surface { AddTriggerForm(TasksActions()) }

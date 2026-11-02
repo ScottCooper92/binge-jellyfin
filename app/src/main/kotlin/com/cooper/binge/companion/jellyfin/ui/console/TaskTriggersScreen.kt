@@ -65,9 +65,6 @@ import java.util.Locale
 import java.util.TimeZone
 import com.binge.designsystem.R as DesR
 
-/** Lines a failed change's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
-
 private const val MILLIS_PER_TICK = 10_000L
 private const val MINUTES_PER_HOUR = 60
 
@@ -91,12 +88,10 @@ internal fun TaskTriggers(
 ) {
     val timeLabel = rememberTimeLabel()
     if (task.triggers.isEmpty()) {
-        // Nothing yet: one screen that says so, with the one thing to do about it. A failed change says so here instead.
+        // Nothing yet: one screen that says so, with the one thing to do about it.
         Box(Modifier.fillMaxSize().padding(inner)) {
             EmptyScreen(
-                message =
-                    state.actionFailed?.let { stringResource(R.string.tasks_trigger_not_saved, stringResource(it.message)) }
-                        ?: stringResource(R.string.tasks_triggers_empty),
+                message = stringResource(R.string.tasks_triggers_empty),
                 title = stringResource(R.string.tasks_triggers_empty_title),
                 icon = Icons.Outlined.Schedule,
                 action = ScreenAction(stringResource(R.string.tasks_trigger_add), { actions.onAskAdd(true) }, Icons.Outlined.Add),
@@ -120,15 +115,6 @@ internal fun TaskTriggers(
             ItemGroup(
                 title = stringResource(R.string.tasks_triggers),
                 rows = task.triggers.mapIndexed { index, trigger -> trigger.row(index, state.saving, actions, timeLabel) },
-            )
-        }
-        item {
-            Text(
-                text = state.actionFailed?.let { stringResource(R.string.tasks_trigger_not_saved, stringResource(it.message)) }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
             )
         }
     }
