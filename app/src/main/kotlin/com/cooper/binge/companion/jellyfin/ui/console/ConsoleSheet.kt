@@ -111,7 +111,12 @@ internal fun ConsoleFieldsForm(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
         ) {
-            BingeOutlinedButton(label = stringResource(DesR.string.text_entry_cancel), onClick = onCancel, modifier = Modifier.weight(1f))
+            BingeOutlinedButton(
+                label = stringResource(DesR.string.text_entry_cancel),
+                onClick = onCancel,
+                enabled = !submitting,
+                modifier = Modifier.weight(1f),
+            )
             BingeFilledButton(label = submitLabel, onClick = onSubmit, loading = submitting, modifier = Modifier.weight(1f))
         }
     }

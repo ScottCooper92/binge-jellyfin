@@ -353,12 +353,14 @@ internal fun CreateSheet(
                 value = name,
                 onValueChange = { name = it },
                 label = stringResource(R.string.setup_username),
+                enabled = !submitting,
                 imeAction = ImeAction.Next,
             )
             ConsoleTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = stringResource(R.string.setup_password),
+                enabled = !submitting,
                 secret = true,
             )
         }
