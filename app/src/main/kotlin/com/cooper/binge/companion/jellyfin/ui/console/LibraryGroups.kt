@@ -45,7 +45,6 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_CHAPTER_IMAGES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_CHAPTER_IMAGES_ON_SCAN
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_COLLECTIONS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_COUNTRY
-import com.cooper.binge.companion.jellyfin.server.LIBRARY_DOWNLOAD_LANGUAGES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_EPISODES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_EXTRAS_TITLES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_TITLES
@@ -274,7 +273,7 @@ internal fun VideoGroups(
                     label = stringResource(R.string.library_download_languages),
                     detail = downloadLanguagesSummary(state),
                     onClick = { actions.onPage(LibraryPage.Languages) },
-                ).takeIf { LIBRARY_DOWNLOAD_LANGUAGES in state.options },
+                ),
             ),
     )
     ItemGroup(

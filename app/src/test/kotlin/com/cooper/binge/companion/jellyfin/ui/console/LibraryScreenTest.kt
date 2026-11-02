@@ -137,9 +137,24 @@ class LibraryScreenTest {
     }
 
     @Test
-    fun `a server that never sent the download languages is not offered them`() {
+    fun `a library that never chose download languages still offers them, as none`() {
         show("movies", """{"Enabled":true}""", cultures = languages)
-        compose.onAllNodesWithText("Download languages").assertCountEquals(0)
+        compose.onNodeWithText("Download languages").performScrollTo().assertExists()
+        compose.onNodeWithText("None").assertExists()
+    }
+
+    @Test
+    fun `a tap on a language adds the key when the library has none`() {
+        val calls = mutableListOf<String>()
+        show(
+            "movies",
+            """{"Enabled":true}""",
+            actions = LibraryActions(onJson = { key, value -> calls += "$key $value" }),
+            cultures = languages,
+            page = LibraryPage.Languages,
+        )
+        compose.onNodeWithText("Spanish").performClick()
+        assertEquals(listOf("""SubtitleDownloadLanguages ["spa"]"""), calls)
     }
 
     @Test
