@@ -137,9 +137,11 @@ class JellyfinScreenshotTest {
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
 
-    /** The server card flagging an update on an unencrypted address: an administrator's. */
+    /** The server card with three pills at once, on an unencrypted address: an administrator's, at every size and in Spanish. */
     @PreviewTest
     @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
     @Composable
     fun serverCardAlerts() = JellyfinRoot(previewSignedInAdminAlerts, Actions())
 

@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -94,8 +95,7 @@ class LibraryScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun saveFailed() =
-        LibraryScreen(ready().copy(saveFailed = ConsoleFailure.Unreachable, failed = ConsoleFailure.Refused), LibraryActions(), newest)
+    fun saving() = LibraryScreen(ready().copy(save = SaveProgress(SaveStatus.Saving)), LibraryActions(), newest)
 
     @PreviewTest
     @JellyfinScreenStatePreview

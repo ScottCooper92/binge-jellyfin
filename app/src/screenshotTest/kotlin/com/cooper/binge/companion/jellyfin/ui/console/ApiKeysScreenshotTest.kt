@@ -34,8 +34,10 @@ class ApiKeysScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun naming() = Surface { NewKeyDialog(ApiKeysActions(), inWindow = false) }
+    fun naming() = Surface { NewKeySheet(ApiKeysActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

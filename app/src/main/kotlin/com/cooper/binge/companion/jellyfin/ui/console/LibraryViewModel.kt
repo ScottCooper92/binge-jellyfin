@@ -72,7 +72,8 @@ sealed interface LibraryUiState {
     /**
      * The library and its options as shown (a change shows at once, and is put back if the server refuses it),
      * what the server offers to choose from, and the page and dialog open. [busy] is a folder, rename or remove
-     * in flight; [failed] the last of those that the server refused; [folderMissing] a typed folder it hasn't got; [nameTaken] a new name another library has;
+     * in flight; [failed] the last of those that the server refused; [save] where the options' saves stand and [refused] the
+     * last option the server refused, which was put back; [folderMissing] a typed folder it hasn't got; [nameTaken] a new name another library has;
      * and [gone] a removed library, which closes the page.
      */
     data class Ready(
@@ -84,7 +85,8 @@ sealed interface LibraryUiState {
         val page: LibraryPage = LibraryPage.Main,
         val dialog: LibraryDialog? = null,
         val busy: Boolean = false,
-        val saveFailed: ConsoleFailure? = null,
+        val save: SaveProgress = SaveProgress(),
+        val refused: ConsoleFailure? = null,
         val failed: ConsoleFailure? = null,
         val folderMissing: Boolean = false,
         val nameTaken: Boolean = false,
@@ -110,8 +112,14 @@ class LibraryViewModel(
     private var name = start.name
 
     private val saves =
-        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveLibraryOptions(id, json) }) { shown, failure ->
-            update { copy(options = shown, saveFailed = failure) }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveLibraryOptions(id, json) },
+            onProgress = { progress -> update { copy(save = progress) } },
+        ) { shown, failure ->
+            update { copy(options = shown, refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
         }
 
     init {
@@ -126,7 +134,7 @@ class LibraryViewModel(
                 connection
                     .consoleCall(TAG) { _, client ->
                         coroutineScope {
-                            val fresh = async { client.libraries().firstOrNull(::isThis) ?: start }
+                            val fresh = async { client.libraries().firstOrNull { it.isLibrary(id, name) } ?: start }
                             // What the server offers to choose from is a nicety: the page works without it.
                             val available = async { attempt { client.availableProviders(start.type) }.getOrDefault(AvailableProviders()) }
                             val cultures = async { attempt { client.cultures() }.getOrDefault(emptyList()) }
@@ -269,8 +277,7 @@ class LibraryViewModel(
         }
     }
 
-    /** Whether [row] is this library: by id, or by name while the server hasn't given it one. */
-    private fun isThis(row: ServerLibrary) = if (id.isEmpty()) row.name == name else row.id == id
+    fun retrySave() = saves.retry()
 
     /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
     override fun onCleared() {
@@ -284,6 +291,12 @@ class LibraryViewModel(
         const val TAG = "JellyfinLibrary"
     }
 }
+
+/** Whether this row is the library with [id], or with [name] while the server hasn't given it an id yet. */
+private fun ServerLibrary.isLibrary(
+    id: String,
+    name: String,
+) = if (id.isEmpty()) this.name == name else this.id == id
 
 /** The names the server offers for this group of providers. */
 internal fun ProviderGroup.available(providers: AvailableProviders): List<String> =

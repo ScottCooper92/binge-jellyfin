@@ -35,8 +35,10 @@ class DevicesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun renaming() = Surface { RenameDialog(previewDevices.first(), DevicesActions(), inWindow = false) }
+    fun renaming() = Surface { RenameSheet(previewDevices.first(), DevicesActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -47,8 +49,7 @@ class DevicesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun changing() =
-        DevicesScreen(previewReady.copy(busy = setOf("kodi"), actionFailed = ConsoleFailure.Unreachable), DevicesActions(), now = NOW)
+    fun changing() = DevicesScreen(previewReady.copy(busy = setOf("kodi")), DevicesActions(), now = NOW)
 
     /** The server listed no devices, which it can when every item it sent was one this app could not read. */
     @PreviewTest

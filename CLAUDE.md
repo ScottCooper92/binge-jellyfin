@@ -152,6 +152,11 @@ as binge-seerr's TV is.
   The exceptions are a form whose submit is the point (a new password, a new user) and anything
   destructive: removing a device or a user, stopping a stream, restarting the server. Those are last on
   their page, red, and behind a confirm that opens on Cancel.
+- **A page's create action is the footer's primary button.** "Add library", "New key", "Add repository" and the like are one filled
+  button with its icon in the page's `ScreenFooter` (`CreateFooter`), not an outlined button above the list. The footer is part of
+  the page from its first frame: disabled while the list loads, enabled once it is ready (an empty list too, whose empty state
+  then carries no Add of its own), and absent when a failure replaces the page or on a sub-page that creates nothing. A save-as-made
+  page has no such button, and a destructive action never goes in the footer.
 - **A settings PR is checked on a device first.** Against jellyfin-test, each field changed in the app and
   read back from the server's API, before it merges.
 - **Never test an admin call against a real server.** Admin pages are exercised against the fake

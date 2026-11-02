@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.OpenInBrowser
@@ -56,6 +57,8 @@ data class PluginsActions(
 /** Lines a failed change's message takes, so it never moves the list. */
 private const val STATUS_LINES = 2
 
+internal const val REPOSITORIES_TAB = 2
+
 private val TABS = listOf(R.string.plugins_tab_installed, R.string.plugins_tab_catalog, R.string.plugins_tab_repositories)
 
 /**
@@ -91,6 +94,17 @@ fun PluginsScreen(
         title = detail ?: stringResource(R.string.plugins_title),
         bar = ScreenBar.Small,
         onBack = if (detail != null) leaveDetail else onBack,
+        bottomBar = {
+            // Only the Repositories tab creates anything; the other tabs have no footer.
+            CreateFooter(
+                label = stringResource(R.string.repositories_add),
+                icon = Icons.Outlined.Add,
+                onClick = { repositoryActions.onAskAdd(true) },
+                visible = tab == REPOSITORIES_TAB && repositories !is RepositoriesUiState.Failed,
+                enabled = repositories is RepositoriesUiState.Ready,
+                loading = (repositories as? RepositoriesUiState.Ready)?.saving == true,
+            )
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()

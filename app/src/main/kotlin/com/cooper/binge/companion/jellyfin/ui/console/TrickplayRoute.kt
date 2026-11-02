@@ -29,6 +29,7 @@ internal fun TrickplayRoute(
             onProcessPriority = trickplay::setProcessPriority,
             onInterval = trickplay::setInterval,
             onRetry = trickplay::load,
+            onRetrySave = trickplay::retrySave,
             onBack = onBack,
         ),
         keyFrameOnlyAvailable = keyFrameOnlyAvailable,

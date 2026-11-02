@@ -13,6 +13,7 @@ import com.cooper.binge.companion.jellyfin.server.parseLogEntries
 import com.cooper.binge.companion.jellyfin.server.redactLog
 import java.time.ZoneOffset
 
+private const val LONG_NAME = "FFmpeg.Transcode-2026-10-31_09-15-02_3f2a9c.log"
 private const val DAY = 24 * 60 * 60_000L
 private const val NOW = 1_793_534_400_000L // 31 Oct 2026, 12:00 UTC
 
@@ -46,9 +47,11 @@ private fun open(
     level: LogLevel = LogLevel.Debug,
     truncated: Boolean = false,
     entries: List<LogEntry> = previewEntries,
+    name: String = "log_20261031.log",
+    content: LogContent = LogContent.Ready(entries, truncated),
 ) = LogsUiState.Ready(
     previewFiles,
-    OpenLog("log_20261031.log", LogContent.Ready(entries, truncated), query, level),
+    OpenLog(name, content, query, level),
 )
 
 /** Logs: the file list across the matrix, then a log open, cut short, searched with no match, and the read states. */
@@ -63,8 +66,25 @@ class LogsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun openLog() = LogsScreen(open(), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun openLogLongName() = LogsScreen(open(name = LONG_NAME), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun openLogLoading() = LogsScreen(open(content = LogContent.Loading), LogsActions(), zone = ZoneOffset.UTC)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun openLogFailed() = LogsScreen(open(content = LogContent.Failed(ConsoleFailure.Unreachable)), LogsActions(), zone = ZoneOffset.UTC)
 
     @PreviewTest
     @JellyfinScreenStatePreview

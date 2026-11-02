@@ -89,6 +89,7 @@ private fun LibraryRoute(
             onProvider = model::setProvider,
             onMove = model::moveProvider,
             onRetry = model::load,
+            onRetrySave = model::retrySave,
             onBack = onBack,
         ),
         profile,

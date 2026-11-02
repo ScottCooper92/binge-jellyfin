@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
@@ -66,13 +67,17 @@ class UsersScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun adding() = Surface { CreateDialog(UsersActions(), inWindow = false) }
+    fun adding() = Surface { CreateSheet(UsersActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun settingPassword() = Surface { PasswordDialog(previewUsers.first(), UsersActions(), inWindow = false) }
+    fun settingPassword() = Surface { PasswordSheet(previewUsers.first(), UsersActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

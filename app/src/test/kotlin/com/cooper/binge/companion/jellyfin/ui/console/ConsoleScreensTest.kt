@@ -341,9 +341,8 @@ class ConsoleScreensTest {
         assertEquals(listOf("a"), ran)
         assertEquals(listOf("b"), stopped)
         state = state.copy(actionFailed = ConsoleFailure.Refused)
-        val notSent = "That didn't reach the server. Something went wrong. Try again."
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(notSent))
-        compose.onNodeWithText(notSent).assertExists()
+        // Said in a message over the list, not in a space the list keeps for it.
+        compose.onNodeWithText("That didn't reach the server. Something went wrong. Try again.").assertExists()
     }
 
     @Test
@@ -430,10 +429,14 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Boom").performTouchInput { longClick() }
         assertEquals(lines[1], copied)
         compose.onNodeWithText("Showing the last 512 KB of this log.").assertExists()
-        compose.onNodeWithText("Share").performClick()
+        compose.onNodeWithContentDescription("Share this log").performClick()
         assertEquals("log_20261031.log" to lines.joinToString("\n"), shared)
         state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(entries, truncated = false), query = "zzz"))
         compose.onNodeWithText("No lines match.").assertExists()
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Loading))
+        compose.onNodeWithContentDescription("Share this log").assertIsNotEnabled()
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Failed(ConsoleFailure.Unreachable)))
+        compose.onNodeWithContentDescription("Share this log").assertIsNotEnabled()
         state = LogsUiState.Ready(emptyList())
         compose.onNodeWithText("The server has no log files.").assertExists()
         state = LogsUiState.Failed(ConsoleFailure.Unreachable)
@@ -740,14 +743,16 @@ class ConsoleScreensTest {
         assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
         state = state.copy(saving = true, actionFailed = ConsoleFailure.Refused, adding = false)
         compose.onAllNodesWithContentDescription("Remove").assertCountEquals(0)
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
         state = TasksUiState.Ready(TaskBoard(emptyList()), open = "gone")
         compose.onNodeWithText("Scan Media Library").assertDoesNotExist()
-        // A task with none says so, with Add trigger as its one action; a failed change says so in its place.
+        // A task with none says so, with Add trigger as its one action; a failed change says so in a message, and the page stays.
         state = TasksUiState.Ready(TaskBoard(listOf(scan.copy(triggers = emptyList()))), open = "t")
         compose.onNodeWithText("No triggers").assertExists()
         compose.onNodeWithText("This task only runs when you start it.").assertExists()
         state = state.copy(actionFailed = ConsoleFailure.Refused)
-        compose.onNodeWithText("This task only runs when you start it.").assertDoesNotExist()
+        compose.onNodeWithText("This task only runs when you start it.").assertExists()
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
         compose.onNodeWithText("Add trigger").performClick()
         assertTrue(state.adding)
     }
@@ -792,7 +797,7 @@ class ConsoleScreensTest {
         compose.onNodeWithContentDescription("Remove").performClick()
         assertEquals(listOf<ServerDevice?>(tv), asked)
         compose.onNodeWithText("SHIELD").performClick()
-        compose.onNodeWithText("Name").performTextInput("Den")
+        compose.onNode(hasSetTextAction()).performTextInput("Den")
         compose.onNodeWithText("Save").performClick()
         assertEquals(listOf("Den"), renamed)
         state = state.copy(renaming = null, removing = tv, actionFailed = ConsoleFailure.Refused)

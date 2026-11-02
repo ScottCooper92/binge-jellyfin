@@ -31,7 +31,7 @@ import org.robolectric.RobolectricTestRunner
 class PasswordViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+    private lateinit var connection: Connection
 
     private val teardown = ViewModelTeardown()
 
@@ -41,6 +41,9 @@ class PasswordViewModelTest {
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
         runBlocking { sessions.save(jellyfin.session()) }
+        // After the session is saved, so the connection's session watcher starts on it: built first, it would see the save
+        // arrive late and cancel the save a test starts at once (#165).
+        connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
     }
 
     @After
