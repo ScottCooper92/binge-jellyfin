@@ -103,7 +103,7 @@ fun TrickplayScreen(
         if (ready != null) {
             TrickplayBody(ready, actions, keyFrameOnlyAvailable) { picker = it }
             picker?.let { TrickplayPickerSheet(it, ready.settings, actions) { picker = null } }
-            ready.editing?.let { FieldSheet(it, ready.settings, actions) }
+            ready.editing?.let { FieldSheet(it, ready.settings, actions, submitting = ready.submitting, failure = ready.sheetFailed) }
             RefusedMessage(ready.refused, host)
         }
     }
@@ -310,13 +310,16 @@ private fun TrickplayPickerSheet(
 
 /**
  * A number's (or the widths') dialog: Save keeps what's typed if it is in range, and says so if it isn't;
- * Cancel leaves the setting as it was. [inWindow] false draws the form for a frame.
+ * Cancel leaves the setting as it was. While [submitting] the buttons wait, and a [failure] shows in the sheet. [inWindow] false draws
+ * the form for a frame.
  */
 @Composable
 internal fun FieldSheet(
     field: TrickplayField,
     settings: TrickplaySettings,
     actions: TrickplayActions,
+    submitting: Boolean = false,
+    failure: ConsoleFailure? = null,
     inWindow: Boolean = true,
 ) {
     val current =
@@ -332,6 +335,7 @@ internal fun FieldSheet(
     var value by rememberSaveable(field) { mutableStateOf(current) }
     var tried by rememberSaveable(field) { mutableStateOf(false) }
     val valid = if (field == TrickplayField.Widths) parseWidths(value) != null else field.parse(value) != null
+    val failed = failure?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
     val (title, body) =
         when (field) {
             TrickplayField.Interval -> R.string.trickplay_interval to R.string.trickplay_interval_body
@@ -355,6 +359,7 @@ internal fun FieldSheet(
             submitLabel = stringResource(R.string.trickplay_save),
             onSubmit = save,
             onCancel = { actions.onEdit(null) },
+            isSubmitting = submitting,
             error =
                 if (tried && !valid) {
                     if (field == TrickplayField.Widths) {
@@ -363,7 +368,7 @@ internal fun FieldSheet(
                         stringResource(R.string.trickplay_number_invalid, field.min, field.max)
                     }
                 } else {
-                    null
+                    failed
                 },
             keyboardOptions =
                 KeyboardOptions(keyboardType = if (field == TrickplayField.Widths) KeyboardType.Text else KeyboardType.Number),

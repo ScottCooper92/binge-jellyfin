@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.binge.companion.sdk.attempt
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.CUSTOM_CSS
 import com.cooper.binge.companion.jellyfin.server.Connection
@@ -45,7 +46,10 @@ sealed interface ServerSettingsUiState {
         val failure: ConsoleFailure,
     ) : ServerSettingsUiState
 
-    /** The settings as shown, what the pickers offer, and the last save that failed and was put back. */
+    /**
+     * The settings as shown, what the pickers offer, and the last save that failed ([saveFailed]). A text sheet that is
+     * [submitting] stays open while its save runs; if the server refuses it, [sheetFailed] says why in the sheet.
+     */
     data class Ready(
         val settings: ServerSettings,
         val branding: Branding,
@@ -53,6 +57,8 @@ sealed interface ServerSettingsUiState {
         val countries: List<Country> = emptyList(),
         val editing: ServerText? = null,
         val saveFailed: ConsoleFailure? = null,
+        val submitting: ServerText? = null,
+        val sheetFailed: ConsoleFailure? = null,
     ) : ServerSettingsUiState
 }
 
@@ -68,13 +74,25 @@ class ServerSettingsViewModel(
     val state: StateFlow<ServerSettingsUiState> = _state.asStateFlow()
 
     private val server =
-        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
-            update { copy(settings = shown.serverSettings(), saveFailed = failure) }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveServerConfiguration(json) },
+            onProgress = { progress -> sheetSaved(progress, SERVER_TEXTS) },
+        ) { shown, failure ->
+            update { copy(settings = shown.serverSettings()).routed(failure, SERVER_TEXTS) }
         }
 
     private val brand =
-        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveBranding(json) }) { shown, failure ->
-            update { copy(branding = shown.branding(), saveFailed = failure) }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveBranding(json) },
+            onProgress = { progress -> sheetSaved(progress, BRANDING_TEXTS) },
+        ) { shown, failure ->
+            update { copy(branding = shown.branding()).routed(failure, BRANDING_TEXTS) }
         }
 
     init {
@@ -106,19 +124,54 @@ class ServerSettingsViewModel(
         }
     }
 
-    /** Opens the dialog for [text], or closes it for null. */
-    fun edit(text: ServerText?) = update { copy(editing = text) }
+    /** Opens the sheet for [text], or closes it for null. A save the closed sheet was waiting on reports on the page. */
+    fun edit(text: ServerText?) = update { copy(editing = text, submitting = null, sheetFailed = null) }
 
-    /** Saves the text the dialog for [text] holds, and closes it. A blank server name isn't saved. */
+    /**
+     * Saves the text the sheet for [text] holds. The sheet stays open while the save runs: it closes when the server
+     * takes it, stays open with what was typed and says why if the server refuses it, and closes if the server can't be
+     * reached, the change then waiting unsent on the page. A text that is unchanged, or a blank server name, closes it.
+     */
     fun saveText(
         text: ServerText,
         value: String,
     ) {
-        update { copy(editing = null) }
-        when (text) {
-            ServerText.Name -> value.trim().takeIf(String::isNotEmpty)?.let { server.set(SERVER_NAME, JsonPrimitive(it)) }
-            ServerText.LoginDisclaimer -> brand.set(LOGIN_DISCLAIMER, JsonPrimitive(value.trim()))
-            ServerText.CustomCss -> brand.set(CUSTOM_CSS, JsonPrimitive(value))
+        val (saves, key, json) =
+            when (text) {
+                ServerText.Name -> Triple(server, SERVER_NAME, JsonPrimitive(value.trim()))
+                ServerText.LoginDisclaimer -> Triple(brand, LOGIN_DISCLAIMER, JsonPrimitive(value.trim()))
+                ServerText.CustomCss -> Triple(brand, CUSTOM_CSS, JsonPrimitive(value))
+            }
+        if ((text == ServerText.Name && json.content.isEmpty()) || saves.shown[key] == json) {
+            update { copy(editing = null) }
+            return
+        }
+        update { copy(submitting = text, sheetFailed = null, saveFailed = null) }
+        saves.set(key, json)
+    }
+
+    /** A save of one of [texts] landed: the sheet it came from, if still open and waiting, closes. */
+    private fun sheetSaved(
+        progress: SaveProgress,
+        texts: Set<ServerText>,
+    ) {
+        if (progress.status == SaveStatus.Saved) update { if (submitting in texts) copy(submitting = null, editing = null) else this }
+    }
+
+    /**
+     * Where [failure] shows. A refusal of what an open sheet submitted shows in the sheet, which keeps what was typed;
+     * an unreachable server closes it, the change unsent. Anything else, or a sheet already dismissed, shows on the page.
+     */
+    private fun ServerSettingsUiState.Ready.routed(
+        failure: ConsoleFailure?,
+        texts: Set<ServerText>,
+    ): ServerSettingsUiState.Ready {
+        val waiting = submitting != null && submitting in texts
+        return when {
+            waiting && editing != null && failure == ConsoleFailure.Refused ->
+                copy(submitting = null, sheetFailed = failure, saveFailed = null)
+            waiting && failure == ConsoleFailure.Unreachable -> copy(submitting = null, editing = null, saveFailed = failure)
+            else -> copy(saveFailed = failure)
         }
     }
 
@@ -141,5 +194,7 @@ class ServerSettingsViewModel(
 
     private companion object {
         const val TAG = "JellyfinServerSettings"
+        val SERVER_TEXTS = setOf(ServerText.Name)
+        val BRANDING_TEXTS = setOf(ServerText.LoginDisclaimer, ServerText.CustomCss)
     }
 }
