@@ -462,7 +462,8 @@
     <string name="server_restart_body">Todos los que lo usan se desconectan hasta que vuelva, normalmente en menos de un minuto.</string>
     <string name="server_restarting">Reiniciando… Esta página sigue cuando el servidor vuelva.</string>
     <string name="server_restarted">Reiniciado.</string>
-    <string name="server_not_back">El servidor no ha vuelto tras dos minutos. Compruébalo donde se ejecuta.</string>
+    <string name="server_not_back_title">El servidor no ha vuelto</string>
+    <string name="server_not_back_body">Han pasado dos minutos. Compruébalo donde se ejecuta.</string>
     <string name="server_restart_failed">El servidor no ha aceptado el reinicio. Vuelve a intentarlo.</string>
     <string name="server_cant_restart">Este servidor no puede reiniciarse solo. Reinícialo donde se ejecuta.</string>
     <string name="server_settings_title">Ajustes del servidor</string>
@@ -960,7 +961,7 @@
     <string name="backups_creating">Haciendo una copia de seguridad</string>
     <string name="backups_creating_detail">El servidor la está escribiendo. Puedes salir de esta página.</string>
     <string name="backups_created_message">Copia de seguridad hecha. Es la primera de la lista de abajo.</string>
-    <string name="backups_create_failed_message">No se hizo la copia de seguridad. %1$s</string>
+    <string name="backups_create_failed_title">No se hizo la copia de seguridad</string>
     <string name="backups_create_refused">Puede que el servidor necesite 5 GiB libres donde guarda las copias. Libera espacio antes de reintentar.</string>
     <string name="backups_done">Listo</string>
     <string name="backups_sheet_title">Copia de seguridad</string>
@@ -973,6 +974,7 @@
     <string name="backups_restoring_detail">El servidor se está reiniciando.</string>
     <string name="backups_restored">Restaurada</string>
     <string name="backups_restored_detail">El servidor ha vuelto.</string>
-    <string name="backups_restore_not_back">El servidor no volvió a tiempo. Compruébalo e inténtalo de nuevo.</string>
+    <string name="backups_restore_not_back_title">El servidor no volvió a tiempo</string>
+    <string name="backups_restore_not_back_body">Compruébalo e inténtalo de nuevo.</string>
     <string name="backups_restore_failed">No se pudo hacer la restauración.</string>
 </resources>
