@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
@@ -202,6 +203,39 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `a password the server refuses is said in the form, which stays open`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        vm.show(UserDialog.Password)
+        jellyfin.status["/Users/Password"] = 500
+        vm.setPassword("new-one")
+        val failed = vm.ready { it.formFailure != null }
+        assertEquals(ConsoleFailure.Refused, failed.formFailure)
+        assertEquals(UserDialog.Password, failed.dialog)
+        assertNull(failed.done)
+    }
+
+    @Test
+    fun `a second password while the first is on the wire is ignored`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        vm.show(UserDialog.Password)
+        jellyfin.slow += "/Users/Password"
+        vm.setPassword("first")
+        vm.ready { it.busy }
+        // busy is set before the request leaves; wait until the server has it.
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (jellyfin.hits("/Users/Password") == 0) delay(10)
+            }
+        }
+        vm.setPassword("second")
+        vm.create("Ana", "")
+        assertEquals(1, jellyfin.hits("/Users/Password"))
+        assertEquals(0, jellyfin.hits("/Users/New"))
+    }
+
+    @Test
     fun `the signed-in user's own password is left to the Password page`() {
         val vm = made(UsersViewModel(connection))
         val me = vm.ready().users.first { it.id == "user-1" }
@@ -212,12 +246,17 @@ class UsersViewModelTest {
     }
 
     @Test
-    fun `a create that fails says so, and a page that can't read offers Try again`() {
+    fun `a create that fails says so in the form, which stays open, and a page that can't read offers Try again`() {
         val vm = made(UsersViewModel(connection))
         vm.ready()
+        vm.show(UserDialog.Create)
         jellyfin.status["/Users/New"] = 400
         vm.create("Ana", "")
-        assertEquals(ConsoleFailure.Refused, vm.ready { it.actionFailed != null }.actionFailed)
+        val failed = vm.ready { it.formFailure != null }
+        assertEquals(ConsoleFailure.Refused, failed.formFailure)
+        assertEquals(UserDialog.Create, failed.dialog)
+        assertNull(failed.actionFailed)
+        assertFalse(failed.busy)
         jellyfin.status["/Users"] = 403
         vm.load()
         assertEquals(UsersUiState.Failed(ConsoleFailure.Refused), vm.settled())

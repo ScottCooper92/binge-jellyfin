@@ -139,6 +139,14 @@
     <string name="now_playing_empty">Nothing\'s playing right now.</string>
     <string name="now_playing_who">%1$s on %2$s · %3$s</string>
     <string name="now_playing_stop">Stop</string>
+    <string name="now_playing_not_sent">Not sent. %1$s</string>
+    <string name="now_playing_position">%1$s of %2$s</string>
+    <string name="now_playing_previous">Previous</string>
+    <string name="now_playing_next">Next</string>
+    <string name="now_playing_back_10">Back 10 seconds</string>
+    <string name="now_playing_forward_10">Forward 10 seconds</string>
+    <string name="now_playing_play">Play</string>
+    <string name="now_playing_pause">Pause</string>
     <string name="now_playing_stop_title">Stop %1$s?</string>
     <string name="now_playing_stop_body">It stops playing on %1$s, for %2$s.</string>
     <string name="now_playing_not_stopped">Not stopped. %1$s</string>
@@ -268,6 +276,15 @@
     <string name="activity_empty">Nothing has happened on this server yet.</string>
     <string name="activity_undated">Undated</string>
     <string name="logs_title">Logs</string>
+    <string name="logs_retention_title">Keep other log files</string>
+    <plurals name="logs_retention_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="logs_retention_unsent">Not saved yet. Tap to try again.</string>
+    <string name="logs_retention_body">How long to keep log files other than the server\'s own daily logs (the ones named log_…), such as transcoding logs. The server\'s Clean log files task deletes older ones. The daily logs follow the server\'s logging settings and are not removed by this.</string>
+    <string name="logs_retention_invalid">Enter a whole number of days from %1$d to %2$d.</string>
+    <string name="logs_retention_save">Save</string>
     <string name="console_logs_detail">The server\'s log files</string>
     <string name="logs_empty">The server has no log files.</string>
     <string name="logs_search">Search this log</string>
@@ -462,7 +479,7 @@
     <string name="languages_body_plain">Jellyfin uses these to choose the audio and subtitles when you play something.</string>
     <string name="api_keys_title">API keys</string>
     <string name="console_api_keys_detail">Keys for apps that use this server</string>
-    <string name="api_keys_body">An API key lets an app use this server without signing in as a user. Treat each one like a password.</string>
+    <string name="api_keys_body">An API key lets an app use this server without signing in. Treat each one like a password.</string>
     <string name="api_keys_new">New key</string>
     <string name="api_keys_empty">This server has no API keys.</string>
     <string name="api_keys_unnamed">Unnamed app</string>
@@ -751,7 +768,7 @@
     <string name="catalog_cancelled">The install was cancelled.</string>
     <string name="repositories_empty_title">No repositories</string>
     <string name="repositories_empty">This server has no repositories, so it has no catalog.</string>
-    <string name="repositories_body">The places this server fetches its plugin catalog from.</string>
+    <string name="repositories_body">Where this server fetches its plugin catalog.</string>
     <string name="repositories_add">Add repository</string>
     <string name="repositories_remove">Remove</string>
     <string name="repositories_remove_title">Remove %1$s?</string>

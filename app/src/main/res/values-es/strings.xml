@@ -139,6 +139,14 @@
     <string name="now_playing_empty">No se está reproduciendo nada.</string>
     <string name="now_playing_who">%1$s en %2$s · %3$s</string>
     <string name="now_playing_stop">Detener</string>
+    <string name="now_playing_not_sent">No enviado. %1$s</string>
+    <string name="now_playing_position">%1$s de %2$s</string>
+    <string name="now_playing_previous">Anterior</string>
+    <string name="now_playing_next">Siguiente</string>
+    <string name="now_playing_back_10">Retroceder 10 segundos</string>
+    <string name="now_playing_forward_10">Avanzar 10 segundos</string>
+    <string name="now_playing_play">Reproducir</string>
+    <string name="now_playing_pause">Pausar</string>
     <string name="now_playing_stop_title">¿Detener %1$s?</string>
     <string name="now_playing_stop_body">Se detiene en %1$s, para %2$s.</string>
     <string name="now_playing_not_stopped">No se ha detenido. %1$s</string>
@@ -269,6 +277,16 @@
     <string name="activity_empty">Aún no ha pasado nada en este servidor.</string>
     <string name="activity_undated">Sin fecha</string>
     <string name="logs_title">Registros</string>
+    <string name="logs_retention_title">Conservar otros archivos de registro</string>
+    <plurals name="logs_retention_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d de días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <string name="logs_retention_unsent">Aún no guardado. Toca para reintentar.</string>
+    <string name="logs_retention_body">Cuánto tiempo conservar los archivos de registro que no son los registros diarios del servidor (los que se llaman log_…), como los de transcodificación. La tarea «Limpiar archivos de registro» del servidor elimina los más antiguos. Los registros diarios siguen los ajustes de registro del servidor y esto no los elimina.</string>
+    <string name="logs_retention_invalid">Introduce un número entero de días de %1$d a %2$d.</string>
+    <string name="logs_retention_save">Guardar</string>
     <string name="console_logs_detail">Los archivos de registro del servidor</string>
     <string name="logs_empty">El servidor no tiene archivos de registro.</string>
     <string name="logs_search">Buscar en este registro</string>
@@ -466,7 +484,7 @@
     <string name="languages_body_plain">Jellyfin los usa para elegir el audio y los subtítulos cuando reproduces algo.</string>
     <string name="api_keys_title">Claves de API</string>
     <string name="console_api_keys_detail">Claves para las apps que usan este servidor</string>
-    <string name="api_keys_body">Una clave de API permite que una app use este servidor sin iniciar sesión como usuario. Trata cada una como una contraseña.</string>
+    <string name="api_keys_body">Una clave de API permite que una app use este servidor sin iniciar sesión. Trata cada una como una contraseña.</string>
     <string name="api_keys_new">Nueva clave</string>
     <string name="api_keys_empty">Este servidor no tiene claves de API.</string>
     <string name="api_keys_unnamed">App sin nombre</string>
@@ -741,7 +759,7 @@
     <string name="catalog_cancelled">Se ha cancelado la instalación.</string>
     <string name="repositories_empty_title">Sin repositorios</string>
     <string name="repositories_empty">Este servidor no tiene repositorios, así que no tiene catálogo.</string>
-    <string name="repositories_body">Los lugares de los que este servidor obtiene su catálogo de plugins.</string>
+    <string name="repositories_body">De dónde obtiene este servidor su catálogo de plugins.</string>
     <string name="repositories_add">Añadir repositorio</string>
     <string name="repositories_remove">Quitar</string>
     <string name="repositories_remove_title">¿Quitar %1$s?</string>

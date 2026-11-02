@@ -31,6 +31,7 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -132,7 +133,7 @@ private fun UserList(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item { Text(stringResource(R.string.users_body), style = MaterialTheme.typography.bodyMedium) }
+        item { PageIntro(stringResource(R.string.users_body)) }
         item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
         item { Status(state) }
     }
@@ -302,9 +303,10 @@ private fun UserDialogs(
     actions: UsersActions,
 ) {
     val user = state.openUser
+    val error = state.formFailure?.let { stringResource(R.string.users_not_changed, stringResource(it.message)) }
     when (state.dialog) {
-        UserDialog.Create -> CreateSheet(actions)
-        UserDialog.Password -> if (user != null) PasswordSheet(user, actions)
+        UserDialog.Create -> CreateSheet(actions, submitting = state.busy, error = error)
+        UserDialog.Password -> if (user != null) PasswordSheet(user, actions, submitting = state.busy, error = error)
         UserDialog.Delete -> if (user != null) DeleteDialog(user, actions)
         null -> Unit
     }
@@ -332,6 +334,8 @@ internal fun DeleteDialog(
 @Composable
 internal fun CreateSheet(
     actions: UsersActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -343,17 +347,21 @@ internal fun CreateSheet(
             submitLabel = stringResource(R.string.users_add_action),
             onSubmit = { actions.onCreate(name, password) },
             onCancel = { actions.onShow(null) },
+            submitting = submitting,
+            error = error,
         ) {
             ConsoleTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = stringResource(R.string.setup_username),
+                enabled = !submitting,
                 imeAction = ImeAction.Next,
             )
             ConsoleTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = stringResource(R.string.setup_password),
+                enabled = !submitting,
                 secret = true,
             )
         }
@@ -365,6 +373,8 @@ internal fun CreateSheet(
 internal fun PasswordSheet(
     user: ServerUser,
     actions: UsersActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var password by rememberSaveable { mutableStateOf("") }
@@ -379,6 +389,8 @@ internal fun PasswordSheet(
             submitLabel = stringResource(R.string.users_password_action),
             hint = stringResource(R.string.password_new),
             submitEnabled = true,
+            isSubmitting = submitting,
+            error = error,
             singleLine = true,
             secret = true,
         )
