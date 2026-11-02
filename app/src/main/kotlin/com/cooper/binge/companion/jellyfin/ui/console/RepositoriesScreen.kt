@@ -74,7 +74,6 @@ private fun RepositoryList(
             Text(stringResource(R.string.repositories_body), style = MaterialTheme.typography.bodyMedium)
         }
         item { ItemGroup(title = null, rows = state.repositories.map { it.row(state, actions) }) }
-        item { FailureLine(state.actionFailed) }
     }
 }
 

@@ -156,7 +156,6 @@ internal fun PolicySection(
             UserSection.Devices -> DevicesSection(policy, choices, actions, section)
             UserSection.Parental -> ParentalSection(policy, choices, profile, actions, { picker = it }) { adding = it }
         }
-        PolicyStatus(state.actionFailed?.let { stringResource(R.string.users_not_changed, stringResource(it.message)) })
     }
     picker?.let { PolicyPickerSheet(it, policy, choices, actions) { picker = null } }
     adding?.let { PolicyAddSheet(it, actions) { adding = null } }
@@ -274,7 +273,7 @@ private fun controlRows(
         ).takeIf { policy.has(POLICY_SYNC_PLAY) },
     )
 
-/** A failed change's message, in the error colour. */
+/** A failed load's message, in the error colour, beside its Retry. */
 @Composable
 internal fun PolicyStatus(text: String?) {
     if (text == null) return

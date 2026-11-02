@@ -17,10 +17,12 @@ import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -63,9 +65,6 @@ data class UsersActions(
     val onBack: () -> Unit = {},
 )
 
-/** Lines the last change's message takes, so it never moves what's above it. */
-private const val STATUS_LINES = 2
-
 /**
  * The server's users, and one user's page: whether they can sign in and are an administrator, which
  * libraries they see, their password, and, last and red, deleting them. Each switch saves as it's
@@ -91,10 +90,12 @@ fun UsersScreen(
         }
     BackHandler(enabled = user != null, onBack = back)
     val ready = state as? UsersUiState.Ready
+    val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = section?.let { stringResource(it.title()) } ?: user?.name ?: stringResource(R.string.users_title),
         bar = ScreenBar.Small,
         onBack = back,
+        snackbarHostState = host,
         bottomBar = {
             CreateFooter(
                 label = stringResource(R.string.users_add),
@@ -121,7 +122,12 @@ fun UsersScreen(
             }
         }
     }
-    (state as? UsersUiState.Ready)?.let { UserDialogs(it, actions) }
+    ready?.let {
+        UserDialogs(it, actions)
+        // What the last change did, or why it didn't go through, is said in a message, not in a space the page keeps for it.
+        RefusedMessage(it.actionFailed, host, R.string.users_not_changed)
+        SnackbarMessage(it.done?.let { done -> stringResource(done.message) }, host)
+    }
 }
 
 @Composable
@@ -134,7 +140,6 @@ private fun UserList(
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item { Text(stringResource(R.string.users_body), style = MaterialTheme.typography.bodyMedium) }
         item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
-        item { Status(state) }
     }
 }
 
@@ -224,7 +229,6 @@ private fun UserPage(
                 )
             }
         }
-        item { Status(state) }
         if (!mine) {
             item {
                 BingeTextButton(
@@ -268,24 +272,6 @@ private fun LibraryAccess(
             }
         }
     ItemGroup(title = stringResource(R.string.users_libraries), rows = listOf(all) + each)
-}
-
-/** What the last change did, or why it didn't go through. */
-@Composable
-private fun Status(state: UsersUiState.Ready) {
-    val failed = state.actionFailed
-    Text(
-        text =
-            when {
-                failed != null -> stringResource(R.string.users_not_changed, stringResource(failed.message))
-                state.done != null -> stringResource(state.done.message)
-                else -> ""
-            },
-        style = MaterialTheme.typography.bodyMedium,
-        color = if (failed != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-        minLines = STATUS_LINES,
-        maxLines = STATUS_LINES,
-    )
 }
 
 private val UserDone.message: Int

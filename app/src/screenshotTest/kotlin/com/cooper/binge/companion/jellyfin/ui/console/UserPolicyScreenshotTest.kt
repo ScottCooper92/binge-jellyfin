@@ -134,7 +134,7 @@ class UserPolicyScreenshotTest {
     @Composable
     fun parentalFailed() =
         UsersScreen(
-            ready(UserSection.Parental).copy(actionFailed = ConsoleFailure.Refused),
+            ready(UserSection.Parental),
             UsersActions(),
             choices = UserChoices(ratings = Loaded.Failed(ConsoleFailure.Unreachable)),
             profile = newest,

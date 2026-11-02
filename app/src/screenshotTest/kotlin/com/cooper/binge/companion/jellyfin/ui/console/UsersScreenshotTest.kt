@@ -88,11 +88,6 @@ class UsersScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun notChanged() = UsersScreen(previewReady.copy(open = "ana", actionFailed = ConsoleFailure.Refused), UsersActions(), now = NOW)
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
     fun loading() = UsersScreen(UsersUiState.Loading, UsersActions())
 
     @PreviewTest

@@ -14,8 +14,10 @@ import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
@@ -48,9 +50,6 @@ data class LibrariesActions(
 /** Rows in the page's skeleton while it loads. */
 private const val LOADING_ROWS = 6
 
-/** Lines a failed scan's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
-
 /**
  * The server's libraries as job rows, after binge-seerr's jobs: the scan of everything (the "Scan
  * Media Library" task, which can be stopped), then each library with its own scan. A scan in
@@ -64,10 +63,12 @@ fun LibrariesScreen(
     folders: FolderBrowseState = FolderBrowseState.Loading,
     folderActions: FolderActions = FolderActions(),
 ) {
+    val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = stringResource(R.string.libraries_title),
         bar = ScreenBar.Small,
         onBack = actions.onBack,
+        snackbarHostState = host,
         bottomBar = {
             CreateFooter(
                 label = stringResource(R.string.libraries_add),
@@ -84,6 +85,11 @@ fun LibrariesScreen(
                 LibrariesUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
                 is LibrariesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LibrariesUiState.Ready -> {
+                    RefusedMessage(
+                        state.actionFailed,
+                        host,
+                        if (state.stopFailed) R.string.libraries_not_stopped else R.string.libraries_not_started,
+                    )
                     if (state.libraries.isEmpty()) {
                         EmptyScreen(
                             message = stringResource(R.string.libraries_empty),
@@ -143,20 +149,6 @@ private fun Libraries(
             ItemGroup(
                 title = stringResource(R.string.libraries_group),
                 rows = state.libraries.map { library -> library.row(state, actions).item() },
-            )
-        }
-        item {
-            Text(
-                text =
-                    state.actionFailed
-                        ?.let {
-                            val title = if (state.stopFailed) R.string.libraries_not_stopped else R.string.libraries_not_started
-                            stringResource(title, stringResource(it.message))
-                        }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
             )
         }
     }

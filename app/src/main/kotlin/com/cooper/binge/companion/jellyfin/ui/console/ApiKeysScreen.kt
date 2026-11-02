@@ -10,10 +10,12 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -46,9 +48,6 @@ data class ApiKeysActions(
     val onBack: () -> Unit = {},
 )
 
-/** Lines a failed change's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
-
 /**
  * The server's API keys, newest first, each by its app's name with only the last four characters of the
  * key and when it was made. New key asks for an app name, then shows the key once, with Copy. Revoke, at
@@ -61,10 +60,12 @@ fun ApiKeysScreen(
     now: Long = System.currentTimeMillis(),
 ) {
     val ready = state as? ApiKeysUiState.Ready
+    val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = stringResource(R.string.api_keys_title),
         bar = ScreenBar.Small,
         onBack = actions.onBack,
+        snackbarHostState = host,
         bottomBar = {
             CreateFooter(
                 label = stringResource(R.string.api_keys_new),
@@ -81,7 +82,10 @@ fun ApiKeysScreen(
             when (state) {
                 ApiKeysUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is ApiKeysUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is ApiKeysUiState.Ready -> Keys(state, actions, inner, now)
+                is ApiKeysUiState.Ready -> {
+                    Keys(state, actions, inner, now)
+                    RefusedMessage(state.actionFailed, host, R.string.api_keys_not_changed)
+                }
             }
         }
     }
@@ -100,15 +104,6 @@ private fun Keys(
             item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
         } else {
             item { ItemGroup(title = null, rows = state.keys.map { it.row(state, actions, now) }) }
-        }
-        item {
-            Text(
-                text = state.actionFailed?.let { stringResource(R.string.api_keys_not_changed, stringResource(it.message)) }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
-            )
         }
     }
     if (state.naming) NewKeySheet(actions)

@@ -73,23 +73,9 @@ class LibrariesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun notStarted() =
+    fun scanFailed() =
         LibrariesScreen(
-            previewReady.copy(actionFailed = ConsoleFailure.Refused, outcomes = mapOf("p" to JobOutcome.Failed)),
-            LibrariesActions(),
-            now = NOW,
-        )
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun notStopped() =
-        LibrariesScreen(
-            previewReady.copy(
-                board = TaskBoard(listOf(previewScanTask.copy(running = true, percent = 68))),
-                actionFailed = ConsoleFailure.Unreachable,
-                stopFailed = true,
-            ),
+            previewReady.copy(outcomes = mapOf("p" to JobOutcome.Failed)),
             LibrariesActions(),
             now = NOW,
         )

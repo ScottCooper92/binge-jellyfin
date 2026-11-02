@@ -69,7 +69,6 @@ private fun PackageList(
                 ItemGroup(title = category.ifBlank { null }, rows = packages.map { it.row(state, actions) })
             }
         }
-        item { FailureLine(state.actionFailed) }
     }
 }
 
@@ -153,7 +152,6 @@ private fun PackagePage(
                     )
             }
         }
-        item { FailureLine(state.actionFailed) }
     }
 }
 
