@@ -68,11 +68,15 @@ sealed interface TrickplayUiState {
         val failure: ConsoleFailure,
     ) : TrickplayUiState
 
-    /** The options as shown, the field being edited in a dialog, and the last save that failed and was put back. */
+    /**
+     * The options as shown, the field being edited in a dialog, where the saves stand ([save]), and the last save the
+     * server refused, which was put back ([refused]).
+     */
     data class Ready(
         val settings: TrickplaySettings,
         val editing: TrickplayField? = null,
-        val saveFailed: ConsoleFailure? = null,
+        val save: SaveProgress = SaveProgress(),
+        val refused: ConsoleFailure? = null,
     ) : TrickplayUiState
 }
 
@@ -88,8 +92,14 @@ class TrickplayViewModel(
     val state: StateFlow<TrickplayUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
-            update { copy(settings = shown.trickplaySettings(), saveFailed = failure) }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveServerConfiguration(json) },
+            onProgress = { progress -> update { copy(save = progress) } },
+        ) { shown, failure ->
+            update { copy(settings = shown.trickplaySettings(), refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
         }
 
     init {
@@ -155,6 +165,8 @@ class TrickplayViewModel(
         key: String,
         value: JsonElement,
     ) = saves.set(TRICKPLAY_OPTIONS, saves.shown.withTrickplayOption(key, value))
+
+    fun retrySave() = saves.retry()
 
     /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
     override fun onCleared() {
