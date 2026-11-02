@@ -1,16 +1,23 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Translate
@@ -23,22 +30,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
+import com.binge.designsystem.component.BingeOutlinedButton
+import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.Branding
 import com.binge.designsystem.R as DesR
 
 /** What the server settings page can ask of its view model, and of the console. */
@@ -49,6 +65,10 @@ data class ServerSettingsActions(
     val onMetadataCountry: (String) -> Unit = {},
     val onQuickConnect: (Boolean) -> Unit = {},
     val onSplashscreen: (Boolean) -> Unit = {},
+    val onOpenSplash: (Boolean) -> Unit = {},
+    val onChooseSplash: () -> Unit = {},
+    val onAskRemoveSplash: (Boolean) -> Unit = {},
+    val onRemoveSplash: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -73,6 +93,7 @@ fun ServerSettingsScreen(
     state: ServerSettingsUiState,
     actions: ServerSettingsActions,
     splashscreenAvailable: Boolean = true,
+    splash: SplashUiState = SplashUiState(),
 ) {
     var picker by rememberSaveable { mutableStateOf<ServerPicker?>(null) }
     BingeScreenScaffold(title = stringResource(R.string.server_settings_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
@@ -86,6 +107,7 @@ fun ServerSettingsScreen(
                     ServerSettingsBody(state, actions, splashscreenAvailable, inner) { picker = it }
                     picker?.let { ServerPickerSheet(it, state, actions) { picker = null } }
                     state.editing?.let { TextSheet(it, state, actions) }
+                    if (splash.open && splashscreenAvailable) SplashSheet(state.branding.customSplashscreen, splash, actions)
                 }
             }
         }
@@ -144,41 +166,7 @@ private fun ServerSettingsBody(
                     ),
                 ),
         )
-        ItemGroup(
-            title = stringResource(R.string.server_settings_branding),
-            rows =
-                listOfNotNull(
-                    ListItem(
-                        icon = Icons.Outlined.Gavel,
-                        label = stringResource(R.string.server_settings_disclaimer),
-                        detail = branding.loginDisclaimer.ifBlank { stringResource(R.string.server_settings_none) },
-                        onClick = { actions.onEdit(ServerText.LoginDisclaimer) },
-                    ),
-                    ListItem(
-                        icon = Icons.Outlined.Code,
-                        label = stringResource(R.string.server_settings_css),
-                        detail =
-                            branding.customCss.lines().count(String::isNotBlank).let { lines ->
-                                if (lines ==
-                                    0
-                                ) {
-                                    stringResource(R.string.server_settings_none)
-                                } else {
-                                    pluralStringResource(R.plurals.server_settings_css_lines, lines, lines)
-                                }
-                            },
-                        onClick = { actions.onEdit(ServerText.CustomCss) },
-                    ),
-                    ListItem(
-                        icon = Icons.Outlined.Wallpaper,
-                        label = stringResource(R.string.server_settings_splashscreen),
-                        detail = stringResource(R.string.server_settings_splashscreen_detail),
-                        supportingMaxLines = SETTINGS_DETAIL_LINES,
-                        toggled = branding.splashscreen,
-                        onClick = { actions.onSplashscreen(!branding.splashscreen) },
-                    ).takeIf { splashscreenAvailable },
-                ),
-        )
+        LoginScreenGroup(branding, actions, splashscreenAvailable)
         Text(
             text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, it.text()) }.orEmpty(),
             style = MaterialTheme.typography.bodyMedium,
@@ -187,6 +175,63 @@ private fun ServerSettingsBody(
             maxLines = SETTINGS_STATUS_LINES,
         )
     }
+}
+
+/** The login screen's branding: the disclaimer, custom CSS, and, where the server has them (10.9), the splash screen and its image. */
+@Composable
+private fun LoginScreenGroup(
+    branding: Branding,
+    actions: ServerSettingsActions,
+    splashscreenAvailable: Boolean,
+) {
+    ItemGroup(
+        title = stringResource(R.string.server_settings_branding),
+        rows =
+            listOfNotNull(
+                ListItem(
+                    icon = Icons.Outlined.Gavel,
+                    label = stringResource(R.string.server_settings_disclaimer),
+                    detail = branding.loginDisclaimer.ifBlank { stringResource(R.string.server_settings_none) },
+                    onClick = { actions.onEdit(ServerText.LoginDisclaimer) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Code,
+                    label = stringResource(R.string.server_settings_css),
+                    detail =
+                        branding.customCss.lines().count(String::isNotBlank).let { lines ->
+                            if (lines ==
+                                0
+                            ) {
+                                stringResource(R.string.server_settings_none)
+                            } else {
+                                pluralStringResource(R.plurals.server_settings_css_lines, lines, lines)
+                            }
+                        },
+                    onClick = { actions.onEdit(ServerText.CustomCss) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Wallpaper,
+                    label = stringResource(R.string.server_settings_splashscreen),
+                    detail = stringResource(R.string.server_settings_splashscreen_detail),
+                    supportingMaxLines = SETTINGS_DETAIL_LINES,
+                    toggled = branding.splashscreen,
+                    onClick = { actions.onSplashscreen(!branding.splashscreen) },
+                ).takeIf { splashscreenAvailable },
+                ListItem(
+                    icon = Icons.Outlined.Image,
+                    label = stringResource(R.string.server_settings_splash_image),
+                    detail =
+                        stringResource(
+                            if (branding.customSplashscreen) {
+                                R.string.server_settings_splash_custom
+                            } else {
+                                R.string.server_settings_splash_default
+                            },
+                        ),
+                    onClick = { actions.onOpenSplash(true) },
+                ).takeIf { splashscreenAvailable },
+            ),
+    )
 }
 
 @Composable
@@ -290,6 +335,114 @@ internal fun TextSheet(
             maxLines = if (single) 1 else CSS_LINES,
         )
     }
+}
+
+/** The thumbnail's height in the splash image sheet. */
+private val SPLASH_THUMB_HEIGHT = 180.dp
+
+/**
+ * The login splash image: what the server serves now, Choose an image (the system photo picker, so no storage permission), and,
+ * only where a custom image is set ([custom]), Remove, last and red, behind a confirm. A sheet, since it offers a choice.
+ * [inWindow] false draws its body for a frame.
+ */
+@Composable
+internal fun SplashSheet(
+    custom: Boolean,
+    state: SplashUiState,
+    actions: ServerSettingsActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleSheet(onDismissRequest = { actions.onOpenSplash(false) }, inWindow = inWindow) {
+        Column(
+            modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+        ) {
+            BingeSheetHeader(
+                title = stringResource(R.string.server_settings_splash_image),
+                subtitle = stringResource(R.string.server_settings_splash_body),
+            )
+            SplashPreview(state)
+            ItemGroup(
+                title = null,
+                rows =
+                    listOf(
+                        ListItem(
+                            icon = Icons.Outlined.AddPhotoAlternate,
+                            label = stringResource(R.string.server_settings_splash_choose),
+                            destination = ListItemDestination.Action,
+                            loading = state.busy,
+                            onClick = actions.onChooseSplash,
+                        ),
+                    ),
+            )
+            val problem =
+                when {
+                    state.unreadable -> stringResource(R.string.profile_picture_unreadable)
+                    state.refused != null -> stringResource(R.string.server_settings_splash_not_changed, state.refused.text())
+                    else -> null
+                }
+            problem?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+            if (custom) {
+                BingeOutlinedButton(
+                    label = stringResource(R.string.server_settings_splash_remove),
+                    onClick = { actions.onAskRemoveSplash(true) },
+                    destructive = true,
+                    enabled = !state.busy,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+    if (state.confirmingRemove) RemoveSplashDialog(actions, inWindow)
+}
+
+/** The image the server serves, or a line saying there is none to show. */
+@Composable
+private fun SplashPreview(state: SplashUiState) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(SPLASH_THUMB_HEIGHT)
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            state.picture != null ->
+                Image(
+                    bitmap = state.picture.asImageBitmap(),
+                    contentDescription = stringResource(R.string.server_settings_splash_image),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            state.loading -> Unit
+            else ->
+                Text(
+                    stringResource(R.string.server_settings_splash_no_preview),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(dimensionResource(DesR.dimen.padding_m)),
+                )
+        }
+    }
+}
+
+/** Removing the custom splash image, as a confirm that opens on Cancel. [inWindow] false draws its body for a frame. */
+@Composable
+internal fun RemoveSplashDialog(
+    actions: ServerSettingsActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.server_settings_splash_remove_title),
+        message = stringResource(R.string.server_settings_splash_remove_body),
+        confirmLabel = stringResource(R.string.server_settings_splash_remove),
+        onConfirm = actions.onRemoveSplash,
+        onDismissRequest = { actions.onAskRemoveSplash(false) },
+        destructive = true,
+        inWindow = inWindow,
+    )
 }
 
 private const val LOADING_ROWS = 8

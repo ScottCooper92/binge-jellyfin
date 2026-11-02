@@ -95,6 +95,18 @@ class ServerSettingsViewModel(
             update { copy(branding = shown.branding()).routed(failure, BRANDING_TEXTS) }
         }
 
+    /** The login splash image's sheet, which reads the branding configuration again after it changes the image. */
+    internal val splashImage =
+        SplashImageController(
+            connection,
+            viewModelScope,
+            settleBranding = { brand.settle().await() },
+            adoptBranding = { json ->
+                brand.loaded(json)
+                update { copy(branding = json.branding()) }
+            },
+        )
+
     init {
         load()
     }

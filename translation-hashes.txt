@@ -593,6 +593,16 @@ app:server_settings_not_set  4895f73177ab
 app:server_settings_quick_connect  d15125b20094
 app:server_settings_quick_connect_detail  c4d8e4328a2a
 app:server_settings_save  1509f561f241
+app:server_settings_splash_body  e86559d9439f
+app:server_settings_splash_choose  ceed9fd5f54d
+app:server_settings_splash_custom  bfdf9e27d549
+app:server_settings_splash_default  4723ef52753d
+app:server_settings_splash_image  19b591641cff
+app:server_settings_splash_no_preview  7b81a130726c
+app:server_settings_splash_not_changed  98dfb2490c31
+app:server_settings_splash_remove  c3812fc4acb8
+app:server_settings_splash_remove_body  094ee8608770
+app:server_settings_splash_remove_title  8e632d08540c
 app:server_settings_splashscreen  3fc15c46953b
 app:server_settings_splashscreen_detail  a616eff63b0b
 app:server_settings_title  3e8fb11efc9e

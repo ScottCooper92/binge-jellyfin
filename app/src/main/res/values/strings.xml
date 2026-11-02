@@ -509,6 +509,16 @@
     <string name="server_settings_css_body">Restyles Jellyfin\'s web client for everyone. Leave it empty to use the default look.</string>
     <string name="server_settings_splashscreen">Splash screen</string>
     <string name="server_settings_splashscreen_detail">Shown while the web client loads</string>
+    <string name="server_settings_splash_image">Splash image</string>
+    <string name="server_settings_splash_body">The picture behind Jellyfin’s sign-in page and loading screen.</string>
+    <string name="server_settings_splash_custom">Your own image</string>
+    <string name="server_settings_splash_default">Jellyfin’s default</string>
+    <string name="server_settings_splash_choose">Choose an image</string>
+    <string name="server_settings_splash_remove">Remove</string>
+    <string name="server_settings_splash_remove_title">Remove the splash image?</string>
+    <string name="server_settings_splash_remove_body">The sign-in page goes back to Jellyfin’s own image.</string>
+    <string name="server_settings_splash_no_preview">Nothing to show. The server serves no splash image while the splash screen is off, or before it has made one.</string>
+    <string name="server_settings_splash_not_changed">Splash image not changed. %1$s</string>
     <string name="server_settings_save">Save</string>
     <string name="server_shutdown">Shut down server</string>
     <string name="server_shutdown_title">Shut down %1$s?</string>

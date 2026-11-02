@@ -515,6 +515,16 @@
     <string name="server_settings_css_body">Cambia el estilo del cliente web de Jellyfin para todos. Déjalo vacío para usar el aspecto predeterminado.</string>
     <string name="server_settings_splashscreen">Pantalla de bienvenida</string>
     <string name="server_settings_splashscreen_detail">Se muestra mientras carga el cliente web</string>
+    <string name="server_settings_splash_image">Imagen de inicio</string>
+    <string name="server_settings_splash_body">La imagen detrás de la página de inicio de sesión y de la pantalla de carga de Jellyfin.</string>
+    <string name="server_settings_splash_custom">Tu propia imagen</string>
+    <string name="server_settings_splash_default">La predeterminada de Jellyfin</string>
+    <string name="server_settings_splash_choose">Elegir una imagen</string>
+    <string name="server_settings_splash_remove">Quitar</string>
+    <string name="server_settings_splash_remove_title">¿Quitar la imagen de inicio?</string>
+    <string name="server_settings_splash_remove_body">La página de inicio de sesión vuelve a la imagen propia de Jellyfin.</string>
+    <string name="server_settings_splash_no_preview">No hay nada que mostrar. El servidor no sirve una imagen de inicio mientras la pantalla de inicio está desactivada, ni antes de haber creado una.</string>
+    <string name="server_settings_splash_not_changed">No se cambió la imagen de inicio. %1$s</string>
     <string name="server_settings_save">Guardar</string>
     <string name="server_shutdown">Apagar servidor</string>
     <string name="server_shutdown_title">¿Apagar %1$s?</string>

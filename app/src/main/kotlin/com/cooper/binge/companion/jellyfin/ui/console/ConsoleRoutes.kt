@@ -252,6 +252,13 @@ private fun ServerSettingsRoute(
     val settings: ServerSettingsViewModel =
         viewModel(factory = viewModelFactory { initializer { ServerSettingsViewModel(graph.connection) } })
     val state by settings.state.collectAsStateWithLifecycle()
+    val splash by settings.splashImage.state.collectAsStateWithLifecycle()
+    val resolver = LocalContext.current.contentResolver
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Nothing picked is the user backing out, not a failure.
+            if (uri != null) settings.splashImage.choose { attempt { resolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull() }
+        }
     ServerSettingsScreen(
         state,
         ServerSettingsActions(
@@ -261,10 +268,15 @@ private fun ServerSettingsRoute(
             onMetadataCountry = settings::setMetadataCountry,
             onQuickConnect = settings::setQuickConnect,
             onSplashscreen = settings::setSplashscreen,
+            onOpenSplash = settings.splashImage::open,
+            onChooseSplash = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onAskRemoveSplash = settings.splashImage::askRemove,
+            onRemoveSplash = settings.splashImage::remove,
             onRetry = settings::load,
             onBack = onBack,
         ),
         splashscreenAvailable = splashscreenAvailable,
+        splash = splash,
     )
 }
 
