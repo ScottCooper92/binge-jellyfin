@@ -37,6 +37,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.bool
+import kotlinx.serialization.json.JsonElement
 import com.binge.designsystem.R as DesR
 
 /** What a library's page can ask of its view model, and of the console. */
@@ -51,6 +52,7 @@ data class LibraryActions(
     val onRemoveFolder: (String) -> Unit = {},
     val onRemove: () -> Unit = {},
     val onProvider: (ProviderGroup, String, Boolean) -> Unit = { _, _, _ -> },
+    val onJson: (key: String, value: JsonElement) -> Unit = { _, _ -> },
     val onMove: (ProviderGroup, String, Int) -> Unit = { _, _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
@@ -132,8 +134,8 @@ private fun LibraryBody(
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         ItemGroup(title = null, rows = libraryRows(state, actions, profile))
         FoldersGroup(state, actions)
-        MetadataGroup(state, actions) { picker = it }
-        VideoGroups(state, actions, profile)
+        MetadataGroup(state, actions, profile) { picker = it }
+        VideoGroups(state, actions, profile) { picker = it }
         MusicGroups(state, actions, profile)
         SegmentsGroup(state, actions, profile)
         // Remove is last, red, and behind a confirm that opens on Cancel.

@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.ClosedCaptionOff
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.CollectionsBookmark
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.outlined.Hearing
 import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Lyrics
 import androidx.compose.material.icons.outlined.MergeType
+import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Save
@@ -36,16 +38,20 @@ import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.EMBEDDED_SUBTITLE_CHOICES
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_ALLOW_EMBEDDED_SUBTITLES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_CHAPTER_IMAGES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_CHAPTER_IMAGES_ON_SCAN
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_COLLECTIONS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_COUNTRY
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_EPISODES
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_EXTRAS_TITLES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_EMBEDDED_TITLES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_LANGUAGE
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_LOUDNESS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_LYRICS_WITH_MEDIA
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_METADATA_SAVERS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_PERFECT_MATCH
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_PHOTOS
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_REALTIME
@@ -61,15 +67,18 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_TRICKPLAY_ON_SCAN
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TRICKPLAY_WITH_MEDIA
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.bool
+import com.cooper.binge.companion.jellyfin.server.enabledSavers
 import com.cooper.binge.companion.jellyfin.server.int
+import com.cooper.binge.companion.jellyfin.server.libraryHasEmbeddedSubtitleChoice
 import com.cooper.binge.companion.jellyfin.server.libraryHasMovies
 import com.cooper.binge.companion.jellyfin.server.libraryHasShows
 import com.cooper.binge.companion.jellyfin.server.libraryHasVideo
 import com.cooper.binge.companion.jellyfin.server.providers
+import com.cooper.binge.companion.jellyfin.server.saversWith
 import com.cooper.binge.companion.jellyfin.server.string
 
 /** The choices a library's page opens in a sheet. */
-internal enum class LibraryPicker { Language, Country, Refresh }
+internal enum class LibraryPicker { Language, Country, Refresh, EmbeddedSubtitles }
 
 /** The refresh intervals offered, in days; 0 is never. The library's own is offered too, if it is another. */
 private val REFRESH_PRESETS = listOf(0, 7, 14, 30, 60, 90)
@@ -115,6 +124,7 @@ private fun LibraryUiState.Ready.providersRow(
 internal fun MetadataGroup(
     state: LibraryUiState.Ready,
     actions: LibraryActions,
+    profile: JellyfinServerProfile,
     onPick: (LibraryPicker) -> Unit,
 ) {
     val kind = state.library.type
@@ -164,6 +174,7 @@ internal fun MetadataGroup(
                 state
                     .switch(LIBRARY_EMBEDDED_TITLES, Icons.Outlined.Title, R.string.library_embedded_titles, actions)
                     .takeIf { libraryHasVideo(kind) },
+                state.embeddedExtrasRow(actions, profile),
                 state
                     .switch(LIBRARY_EMBEDDED_EPISODES, Icons.Outlined.ListAlt, R.string.library_embedded_episodes, actions)
                     .takeIf { libraryHasShows(kind) },
@@ -191,8 +202,44 @@ internal fun MetadataGroup(
                     ).takeIf { libraryHasMovies(kind) },
                 state.switch(LIBRARY_PHOTOS, Icons.Outlined.Photo, R.string.library_photos, actions).takeIf { kind == "homevideos" },
                 state.providersRow(ProviderGroup.Readers, Icons.Outlined.Description, actions),
-            ),
+            ) + state.saverRows(actions),
     )
+}
+
+/** The switch for preferring an extra's embedded title: for video, from 10.9, and only while embedded titles are on, as jellyfin-web has it. */
+@Composable
+private fun LibraryUiState.Ready.embeddedExtrasRow(
+    actions: LibraryActions,
+    profile: JellyfinServerProfile,
+): ListItem? =
+    switch(
+        LIBRARY_EMBEDDED_EXTRAS_TITLES,
+        Icons.Outlined.Title,
+        R.string.library_embedded_extras,
+        actions,
+        R.string.library_embedded_extras_detail,
+    ).takeIf {
+        libraryHasVideo(library.type) &&
+            profile.hasEmbeddedExtrasTitles &&
+            LIBRARY_EMBEDDED_EXTRAS_TITLES in options &&
+            options.bool(LIBRARY_EMBEDDED_TITLES) == true
+    }
+
+/** One switch for each metadata saver the server offers: a library that has never chosen has the ones the server defaults on. */
+@Composable
+private fun LibraryUiState.Ready.saverRows(actions: LibraryActions): List<ListItem> {
+    val on = options.enabledSavers(available.metadataSavers)
+    return available.metadataSavers.map { saver ->
+        val enabled = on.any { it.equals(saver.name, ignoreCase = true) }
+        ListItem(
+            icon = Icons.Outlined.NoteAdd,
+            label = saver.name,
+            detail = stringResource(R.string.library_saver_detail),
+            supportingMaxLines = LIBRARY_DETAIL_LINES,
+            toggled = enabled,
+            onClick = { actions.onJson(LIBRARY_METADATA_SAVERS, options.saversWith(available.metadataSavers, saver.name, !enabled)) },
+        )
+    }
 }
 
 @Composable
@@ -200,12 +247,21 @@ internal fun VideoGroups(
     state: LibraryUiState.Ready,
     actions: LibraryActions,
     profile: JellyfinServerProfile,
+    onPick: (LibraryPicker) -> Unit,
 ) {
     if (!libraryHasVideo(state.library.type)) return
     ItemGroup(
         title = stringResource(R.string.library_subtitles),
         rows =
             listOfNotNull(
+                ListItem(
+                    icon = Icons.Outlined.ClosedCaption,
+                    label = stringResource(R.string.library_embedded_subtitles),
+                    detail = embeddedSubtitlesLabel(state.options.string(LIBRARY_ALLOW_EMBEDDED_SUBTITLES) ?: "AllowAll"),
+                    onClick = { onPick(LibraryPicker.EmbeddedSubtitles) },
+                ).takeIf {
+                    libraryHasEmbeddedSubtitleChoice(state.library.type) && LIBRARY_ALLOW_EMBEDDED_SUBTITLES in state.options
+                },
                 state.switch(LIBRARY_SKIP_EMBEDDED_SUBTITLES, Icons.Outlined.ClosedCaptionOff, R.string.library_skip_embedded, actions),
                 state.switch(LIBRARY_SKIP_AUDIO_MATCH, Icons.Outlined.Hearing, R.string.library_skip_audio, actions),
                 state.switch(LIBRARY_PERFECT_MATCH, Icons.Outlined.Verified, R.string.library_perfect_match, actions),
@@ -270,6 +326,17 @@ internal fun SegmentsGroup(
     val row = state.providersRow(ProviderGroup.Segments, Icons.Outlined.SkipNext, actions) ?: return
     ItemGroup(title = stringResource(R.string.library_segments), rows = listOf(row))
 }
+
+/** What a library offers of the subtitles embedded in a file, as people say it. An unknown value is shown as the server wrote it. */
+@Composable
+internal fun embeddedSubtitlesLabel(value: String): String =
+    when (value) {
+        "AllowAll" -> stringResource(R.string.library_embedded_subtitles_all)
+        "AllowText" -> stringResource(R.string.library_embedded_subtitles_text)
+        "AllowImage" -> stringResource(R.string.library_embedded_subtitles_image)
+        "AllowNone" -> stringResource(R.string.library_embedded_subtitles_none)
+        else -> value
+    }
 
 /** The interval as people say it. */
 @Composable
@@ -339,6 +406,14 @@ internal fun LibraryPickerSheet(
                 pinned = listOf(""),
             )
         }
+        LibraryPicker.EmbeddedSubtitles ->
+            BingeChoiceSheet(
+                title = stringResource(R.string.library_embedded_subtitles),
+                choices = BingeChoiceList.Ready(EMBEDDED_SUBTITLE_CHOICES.map { BingeChoice(it, embeddedSubtitlesLabel(it)) }),
+                selected = state.options.string(LIBRARY_ALLOW_EMBEDDED_SUBTITLES) ?: "AllowAll",
+                onSelect = { actions.onText(LIBRARY_ALLOW_EMBEDDED_SUBTITLES, it) },
+                onDismissRequest = onDismiss,
+            )
         LibraryPicker.Refresh -> {
             val current = state.options.int(LIBRARY_REFRESH_DAYS) ?: 0
             val choices =

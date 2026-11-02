@@ -31,6 +31,12 @@ const val LIBRARY_TRICKPLAY_ON_SCAN = "ExtractTrickplayImagesDuringLibraryScan"
 const val LIBRARY_TRICKPLAY_WITH_MEDIA = "SaveTrickplayWithMedia"
 const val LIBRARY_LOUDNESS = "EnableLUFSScan"
 const val LIBRARY_LYRICS_WITH_MEDIA = "SaveLyricsWithMedia"
+const val LIBRARY_EMBEDDED_EXTRAS_TITLES = "EnableEmbeddedExtrasTitles"
+const val LIBRARY_ALLOW_EMBEDDED_SUBTITLES = "AllowEmbeddedSubtitles"
+const val LIBRARY_METADATA_SAVERS = "MetadataSavers"
+
+/** The kinds of embedded subtitle a library can offer, as the server names them: all of them, only text, only image, or none. */
+val EMBEDDED_SUBTITLE_CHOICES = listOf("AllowAll", "AllowText", "AllowImage", "AllowNone")
 
 /** A list of providers a library can use: the ones switched off, and the order of the rest. */
 enum class ProviderGroup(
@@ -95,6 +101,25 @@ fun JsonObject.providersDisabled(
     val disabled = names(group.disabledKey).filterNot { it.equals(name, ignoreCase = true) }
     return JsonArray((if (enabled) disabled else disabled + name).map(::JsonPrimitive))
 }
+
+/** The savers a library has on: its own list, or the server's defaults for a library that has never chosen. */
+fun JsonObject.enabledSavers(available: List<MetadataSaver>): List<String> =
+    if (LIBRARY_METADATA_SAVERS in this) names(LIBRARY_METADATA_SAVERS) else available.filter { it.defaultEnabled }.map { it.name }
+
+/** The saver list with [name] switched to [enabled]; a name the server doesn't list stays as the library has it. */
+fun JsonObject.saversWith(
+    available: List<MetadataSaver>,
+    name: String,
+    enabled: Boolean,
+): JsonArray {
+    val rest = enabledSavers(available).filterNot { it.equals(name, ignoreCase = true) }
+    return JsonArray((if (enabled) rest + name else rest).map(::JsonPrimitive))
+}
+
+/** Whether a library of [kind] chooses which embedded subtitles it offers: the kinds jellyfin-web shows the choice for. */
+fun libraryHasEmbeddedSubtitleChoice(kind: String): Boolean = kind in EMBEDDED_SUBTITLE_KINDS
+
+private val EMBEDDED_SUBTITLE_KINDS = setOf("movies", "tvshows", "musicvideos", MIXED_LIBRARY)
 
 /** Whether the library's kind has video: its chapter images, subtitles and trickplay mean something. */
 fun libraryHasVideo(kind: String): Boolean = kind in VIDEO_KINDS

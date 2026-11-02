@@ -87,6 +87,7 @@ private fun LibraryRoute(
             onRemoveFolder = model::removeFolder,
             onRemove = model::remove,
             onProvider = model::setProvider,
+            onJson = model::set,
             onMove = model::moveProvider,
             onRetry = model::load,
             onRetrySave = model::retrySave,

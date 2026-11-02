@@ -226,6 +226,9 @@
     <string name="library_save_local">Save metadata with the media</string>
     <string name="library_save_local_detail">Write artwork and metadata files into the media folders.</string>
     <string name="library_embedded_titles">Prefer embedded titles</string>
+    <string name="library_embedded_extras">Embedded titles for extras</string>
+    <string name="library_embedded_extras_detail">Use an extra\'s embedded title even when it matches its parent\'s.</string>
+    <string name="library_saver_detail">Writes this library\'s metadata to files beside the media.</string>
     <string name="library_embedded_episodes">Prefer embedded episode details</string>
     <string name="library_series_grouping">Merge series across folders</string>
     <string name="library_series_grouping_detail">Treat a series spread over several folders as one.</string>
@@ -237,6 +240,11 @@
     <string name="library_readers">Local metadata readers</string>
     <string name="library_subtitles">Subtitles</string>
     <string name="library_skip_embedded">Skip if the file has subtitles</string>
+    <string name="library_embedded_subtitles">Embedded subtitles</string>
+    <string name="library_embedded_subtitles_all">All types</string>
+    <string name="library_embedded_subtitles_text">Text only</string>
+    <string name="library_embedded_subtitles_image">Image only</string>
+    <string name="library_embedded_subtitles_none">None</string>
     <string name="library_skip_audio">Skip if the audio matches the language</string>
     <string name="library_perfect_match">Perfect matches only</string>
     <string name="library_save_subtitles">Save subtitles with the media</string>

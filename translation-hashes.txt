@@ -277,6 +277,13 @@ app:library_collections_detail  0fcf06f51d41
 app:library_country  5250f474f732
 app:library_default  42b998374988
 app:library_embedded_episodes  6de98530f5c3
+app:library_embedded_extras  38d229f01bd3
+app:library_embedded_extras_detail  0f7878f1a922
+app:library_embedded_subtitles  ee056a9cb4fa
+app:library_embedded_subtitles_all  f10988e79e8d
+app:library_embedded_subtitles_image  609dbd3c410d
+app:library_embedded_subtitles_none  dc937b598926
+app:library_embedded_subtitles_text  8bbfc646f3f5
 app:library_embedded_titles  cc89aa3b66cc
 app:library_enabled  92c1cdfdf4cb
 app:library_enabled_detail  495d0fd01134
@@ -340,6 +347,7 @@ app:library_save  1509f561f241
 app:library_save_local  dad0168de3e3
 app:library_save_local_detail  8fa8cbd62f86
 app:library_save_subtitles  e9a632797a88
+app:library_saver_detail  42a6a690ec57
 app:library_season_zero  5ea582762ae7
 app:library_season_zero_hint  90a92d7ef85b
 app:library_segment_providers  337bf4b25f80

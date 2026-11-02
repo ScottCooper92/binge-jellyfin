@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
@@ -12,6 +13,7 @@ import com.cooper.binge.companion.jellyfin.server.AvailableProviders
 import com.cooper.binge.companion.jellyfin.server.Country
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.MetadataSaver
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.ServerFolder
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
@@ -26,6 +28,7 @@ private val providers =
         subtitleFetchers = listOf("Open Subtitles", "Podnapisi", "Legendas"),
         lyricFetchers = listOf("LrcLib"),
         segmentProviders = listOf("Chapter Segments"),
+        metadataSavers = listOf(MetadataSaver("Nfo", false)),
     )
 
 private fun library(
@@ -38,7 +41,8 @@ private val movieOptions =
     """{"Enabled":true,"EnableRealtimeMonitor":true,"SaveLocalMetadata":false,"AutomaticRefreshIntervalDays":30,
     "PreferredMetadataLanguage":"en","MetadataCountryCode":"GB","EnableEmbeddedTitles":true,"AutomaticallyAddToCollection":true,
     "SkipSubtitlesIfEmbeddedSubtitlesPresent":true,"RequirePerfectSubtitleMatch":true,"SubtitleFetcherOrder":["Podnapisi"],
-    "DisabledSubtitleFetchers":["Legendas"],"EnableTrickplayImageExtraction":true,"SaveTrickplayWithMedia":false}"""
+    "DisabledSubtitleFetchers":["Legendas"],"EnableTrickplayImageExtraction":true,"SaveTrickplayWithMedia":false,
+    "EnableEmbeddedExtrasTitles":true,"AllowEmbeddedSubtitles":"AllowText","MetadataSavers":["Nfo"]}"""
 
 private fun ready(
     type: String = "movies",
@@ -60,6 +64,21 @@ class LibraryScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun library() = LibraryScreen(ready(), LibraryActions(), newest)
+
+    /** The metadata group: embedded titles for extras, and a switch for each metadata saver. They sit below the page frame's first screen. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun metadata() = Surface { Column { MetadataGroup(ready(), LibraryActions(), newest) {} } }
+
+    /** The subtitles group, with the embedded subtitle types the library offers. It sits below the page frame's first screen. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun subtitles() = Surface { Column { VideoGroups(ready(), LibraryActions(), newest) {} } }
 
     @PreviewTest
     @JellyfinScreenStatePreview

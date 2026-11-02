@@ -56,6 +56,31 @@ class JellyfinLibraryOptionsTest {
     }
 
     @Test
+    fun `a library that never chose has the savers the server turns on, and a change writes the whole list`() {
+        val savers = listOf(MetadataSaver("Nfo", true), MetadataSaver("Other", false))
+        val fresh = options("{}")
+        assertEquals(listOf("Nfo"), fresh.enabledSavers(savers))
+        assertEquals(names("Nfo", "Other"), fresh.saversWith(savers, "Other", enabled = true))
+        assertEquals(names(), fresh.saversWith(savers, "nfo", enabled = false))
+        // A library that has chosen keeps its own list, an empty one included, and a name the server doesn't list.
+        assertEquals(emptyList<String>(), options("""{"MetadataSavers":[]}""").enabledSavers(savers))
+        val chosen = options("""{"MetadataSavers":["Old plugin"]}""")
+        assertEquals(listOf("Old plugin"), chosen.enabledSavers(savers))
+        assertEquals(names("Old plugin", "Nfo"), chosen.saversWith(savers, "Nfo", enabled = true))
+        assertEquals(names("Old plugin"), chosen.saversWith(savers, "Nfo", enabled = false))
+    }
+
+    @Test
+    fun `the embedded subtitle choice is for the kinds of video library jellyfin-web shows it for`() {
+        assertTrue(libraryHasEmbeddedSubtitleChoice("movies"))
+        assertTrue(libraryHasEmbeddedSubtitleChoice("tvshows"))
+        assertTrue(libraryHasEmbeddedSubtitleChoice("musicvideos"))
+        assertTrue(libraryHasEmbeddedSubtitleChoice(MIXED_LIBRARY))
+        assertFalse(libraryHasEmbeddedSubtitleChoice("homevideos"))
+        assertFalse(libraryHasEmbeddedSubtitleChoice("music"))
+    }
+
+    @Test
     fun `which options a kind of library has`() {
         assertTrue(libraryHasVideo("movies"))
         assertTrue(libraryHasVideo(MIXED_LIBRARY))

@@ -135,6 +135,13 @@ data class AvailableProviders(
     val subtitleFetchers: List<String> = emptyList(),
     val lyricFetchers: List<String> = emptyList(),
     val segmentProviders: List<String> = emptyList(),
+    val metadataSavers: List<MetadataSaver> = emptyList(),
+)
+
+/** A metadata saver the server offers a library, and whether a library that has never chosen has it on. */
+data class MetadataSaver(
+    val name: String,
+    val defaultEnabled: Boolean,
 )
 
 suspend fun JellyfinClient.availableProviders(kind: String): AvailableProviders {
@@ -142,7 +149,18 @@ suspend fun JellyfinClient.availableProviders(kind: String): AvailableProviders 
     val answer = getObject("Libraries/AvailableOptions", query)
 
     fun names(key: String) = answer.array(key).mapNotNull { (it as? JsonObject)?.string("Name") }
-    return AvailableProviders(names("MetadataReaders"), names("SubtitleFetchers"), names("LyricFetchers"), names("MediaSegmentProviders"))
+    val savers =
+        answer.array("MetadataSavers").mapNotNull { element ->
+            val saver = element as? JsonObject ?: return@mapNotNull null
+            saver.string("Name")?.let { MetadataSaver(it, saver.bool("DefaultEnabled") ?: false) }
+        }
+    return AvailableProviders(
+        names("MetadataReaders"),
+        names("SubtitleFetchers"),
+        names("LyricFetchers"),
+        names("MediaSegmentProviders"),
+        savers,
+    )
 }
 
 private const val HTTP_NOT_FOUND = 404
