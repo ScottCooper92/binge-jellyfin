@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
@@ -429,6 +430,12 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_server_settings_detail),
                     onClick = { actions.onOpenPage(ConsolePage.ServerSettings) },
                 ).takeIf { ConsolePage.ServerSettings.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.Build,
+                    label = stringResource(R.string.advanced_title),
+                    detail = stringResource(R.string.console_advanced_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Advanced) },
+                ).takeIf { ConsolePage.Advanced.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Image,
                     label = stringResource(R.string.trickplay_title),
