@@ -87,6 +87,32 @@ val previewSignedInAdmin =
         card = previewCard.copy(users = 5),
     )
 
+/** A user who is not an administrator but may manage Live TV: their home gets the Live TV row. */
+val previewSignedInLiveTvManager =
+    previewSignedIn.copy(
+        account =
+            JellyfinAccount(
+                previewSignedIn.session.userName,
+                buildJsonObject {
+                    put("IsAdministrator", false)
+                    put("EnableLiveTvManagement", true)
+                },
+            ),
+    )
+
+/** An administrator whose policy lets them manage Live TV: the row is on their home too. */
+val previewSignedInAdminLiveTv =
+    previewSignedInAdmin.copy(
+        account =
+            JellyfinAccount(
+                previewSignedIn.session.userName,
+                buildJsonObject {
+                    put("IsAdministrator", true)
+                    put("EnableLiveTvManagement", true)
+                },
+            ),
+    )
+
 /**
  * An administrator's card with every pill that can show at once: not encrypted (this address is http), an update, and a
  * restart waiting. The worst case for the card's top row.

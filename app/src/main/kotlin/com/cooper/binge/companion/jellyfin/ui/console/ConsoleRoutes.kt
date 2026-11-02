@@ -58,6 +58,15 @@ internal fun ConsolePageRoute(
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
         ConsolePage.Backups -> BackupsRoute(graph, signedIn.profile.version, close)
         ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
+        ConsolePage.LiveTv ->
+            LiveTvRoute(
+                graph,
+                signedIn.account,
+                {
+                    open(ConsolePage.Tasks)
+                }.takeIf { ConsolePage.Tasks.available(signedIn.profile, signedIn.account) },
+                close,
+            )
         ConsolePage.Server -> ServerRoute(graph, close)
     }
 }

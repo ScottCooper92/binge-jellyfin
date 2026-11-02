@@ -997,4 +997,15 @@
     <string name="backups_restore_not_back_title">El servidor no volvió a tiempo</string>
     <string name="backups_restore_not_back_body">Compruébalo e inténtalo de nuevo.</string>
     <string name="backups_restore_failed">No se pudo hacer la restauración.</string>
+    <string name="live_tv_title">TV en directo</string>
+    <string name="console_live_tv_detail">Sintonizadores y guía</string>
+    <string name="live_tv_body">Los sintonizadores y los datos de guía que este servidor usa para la TV en directo. Por ahora esta página solo los muestra.</string>
+    <string name="live_tv_tuners">Sintonizadores</string>
+    <string name="live_tv_no_tuners">Sin sintonizadores</string>
+    <string name="live_tv_guide">Datos de guía</string>
+    <string name="live_tv_no_guide">Sin datos de guía</string>
+    <string name="live_tv_guide_ends">La guía llega hasta</string>
+    <string name="live_tv_refresh_guide">Actualizar la guía</string>
+    <string name="live_tv_refresh_guide_detail">Se ejecuta desde Tareas programadas</string>
+    <string name="live_tv_type_m3u">Lista M3U</string>
 </resources>

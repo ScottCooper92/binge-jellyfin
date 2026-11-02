@@ -15,9 +15,19 @@ class ConsolePageTest {
     private fun account(policy: String) = JellyfinAccount("Claude", Json.parseToJsonElement(policy).jsonObject)
 
     @Test
-    fun `an administrator gets every page`() {
-        val admin = account("""{"IsAdministrator":true}""")
+    fun `an administrator gets every page, Live TV when their policy lets them manage it`() {
+        val admin = account("""{"IsAdministrator":true,"EnableLiveTvManagement":true}""")
         assertTrue(ConsolePage.entries.all { it.available(server, admin) })
+    }
+
+    @Test
+    fun `Live TV follows the management flag alone, as the server does, with no shortcut for an administrator`() {
+        val adminWithout = account("""{"IsAdministrator":true,"EnableLiveTvManagement":false}""")
+        val userWith = account("""{"IsAdministrator":false,"EnableLiveTvManagement":true}""")
+        assertFalse(ConsolePage.LiveTv.available(server, adminWithout))
+        assertTrue(ConsolePage.LiveTv.available(server, userWith))
+        assertFalse(ConsolePage.LiveTv.isAdmin)
+        assertTrue(ConsolePage.entries.filter { it.isAdmin }.none { it.available(server, userWith) })
     }
 
     @Test
