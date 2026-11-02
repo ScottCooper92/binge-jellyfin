@@ -1,7 +1,12 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.binge.companion.sdk.attempt
+import com.binge.designsystem.ErrorKind
+import com.binge.designsystem.template.ErrorScreen
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.Connection
@@ -46,3 +51,17 @@ private fun Throwable.isUnauthorized(): Boolean = this is JellyfinHttpException 
 
 internal fun Throwable.consoleFailure(): ConsoleFailure =
     if (this is JellyfinHttpException) ConsoleFailure.Refused else ConsoleFailure.Unreachable
+
+/** The design system's [ErrorKind] that says this failure: no answer is a network failure, and a refusal is the server's. */
+internal fun ConsoleFailure.errorKind(): ErrorKind = if (this == ConsoleFailure.Unreachable) ErrorKind.Network else ErrorKind.Server
+
+/**
+ * A console page that couldn't read: the design system's [ErrorScreen] for [failure], in this app's words, with Try again.
+ * [modifier] carries the page's inner padding.
+ */
+@Composable
+internal fun ConsoleFailureScreen(
+    failure: ConsoleFailure,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) = ErrorScreen(kind = failure.errorKind(), onRetry = onRetry, message = stringResource(failure.message), modifier = modifier)

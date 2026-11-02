@@ -109,7 +109,7 @@ fun LibraryDisplayScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 LibraryDisplayUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is LibraryDisplayUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is LibraryDisplayUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LibraryDisplayUiState.Ready -> {
                     if (list == null) DisplayBody(state, actions, profile, inner) else ListEditor(list, state, actions, inner)
                     DisplaySheets(state, actions, folders, folderActions)

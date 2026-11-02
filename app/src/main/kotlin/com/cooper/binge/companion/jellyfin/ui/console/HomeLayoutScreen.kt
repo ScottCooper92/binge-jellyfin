@@ -87,7 +87,7 @@ fun HomeLayoutScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 HomeLayoutUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is HomeLayoutUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is HomeLayoutUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is HomeLayoutUiState.Ready ->
                     if (library == null) HomeLayoutBody(state, actions, inner) else LibraryPage(state, library, actions, inner)
             }
