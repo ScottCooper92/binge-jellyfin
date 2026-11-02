@@ -303,8 +303,8 @@ private fun UserDialogs(
 ) {
     val user = state.openUser
     when (state.dialog) {
-        UserDialog.Create -> CreateDialog(actions)
-        UserDialog.Password -> if (user != null) PasswordDialog(user, actions)
+        UserDialog.Create -> CreateSheet(actions)
+        UserDialog.Password -> if (user != null) PasswordSheet(user, actions)
         UserDialog.Delete -> if (user != null) DeleteDialog(user, actions)
         null -> Unit
     }
@@ -328,62 +328,63 @@ internal fun DeleteDialog(
     )
 }
 
+/** A new user: a name and a password. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun CreateDialog(
+internal fun CreateSheet(
     actions: UsersActions,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    ConsoleConfirm(
-        title = stringResource(R.string.users_add),
-        message = stringResource(R.string.users_add_body),
-        confirmLabel = stringResource(R.string.users_add_action),
-        onConfirm = { actions.onCreate(name, password) },
-        onDismissRequest = { actions.onShow(null) },
-        inWindow = inWindow,
-        extraContent = {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
-                ConsoleTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = stringResource(R.string.setup_username),
-                    imeAction = ImeAction.Next,
-                )
-                ConsoleTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = stringResource(R.string.setup_password),
-                    secret = true,
-                )
-            }
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
+        ConsoleFieldsForm(
+            title = stringResource(R.string.users_add),
+            body = stringResource(R.string.users_add_body),
+            submitLabel = stringResource(R.string.users_add_action),
+            onSubmit = { actions.onCreate(name, password) },
+            onCancel = { actions.onShow(null) },
+        ) {
+            ConsoleTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = stringResource(R.string.setup_username),
+                imeAction = ImeAction.Next,
+            )
+            ConsoleTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = stringResource(R.string.setup_password),
+                secret = true,
+            )
+        }
+    }
 }
 
+/** A new password for a user, with the console's show/hide toggle. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun PasswordDialog(
+internal fun PasswordSheet(
     user: ServerUser,
     actions: UsersActions,
     inWindow: Boolean = true,
 ) {
     var password by rememberSaveable { mutableStateOf("") }
-    ConsoleConfirm(
-        title = stringResource(R.string.users_password_title, user.name),
-        message = stringResource(R.string.users_password_body),
-        confirmLabel = stringResource(R.string.users_password_action),
-        onConfirm = { actions.onSetPassword(password) },
-        onDismissRequest = { actions.onShow(null) },
-        inWindow = inWindow,
-        extraContent = {
+    ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
+        ConsoleFieldsForm(
+            title = stringResource(R.string.users_password_title, user.name),
+            body = stringResource(R.string.users_password_body),
+            submitLabel = stringResource(R.string.users_password_action),
+            onSubmit = { actions.onSetPassword(password) },
+            onCancel = { actions.onShow(null) },
+        ) {
             ConsoleTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = stringResource(R.string.password_new),
                 secret = true,
+                onDone = { actions.onSetPassword(password) },
             )
-        },
-    )
+        }
+    }
 }
 
 private const val LOADING_ROWS = 6

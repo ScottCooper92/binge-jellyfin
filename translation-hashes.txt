@@ -68,7 +68,6 @@ app:devices_remove  c3812fc4acb8
 app:devices_remove_body  53f8b777dbbf
 app:devices_remove_title  e4dd7c24e78a
 app:devices_rename_body  38dc3f9fb5d8
-app:devices_rename_field  dcd1d5223f73
 app:devices_rename_save  1509f561f241
 app:devices_rename_title  e378076e71db
 app:devices_seen  1c757d8ab679

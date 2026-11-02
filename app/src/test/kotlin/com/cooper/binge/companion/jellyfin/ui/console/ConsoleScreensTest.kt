@@ -793,7 +793,7 @@ class ConsoleScreensTest {
         compose.onNodeWithContentDescription("Remove").performClick()
         assertEquals(listOf<ServerDevice?>(tv), asked)
         compose.onNodeWithText("SHIELD").performClick()
-        compose.onNodeWithText("Name").performTextInput("Den")
+        compose.onNode(hasSetTextAction()).performTextInput("Den")
         compose.onNodeWithText("Save").performClick()
         assertEquals(listOf("Den"), renamed)
         state = state.copy(renaming = null, removing = tv, actionFailed = ConsoleFailure.Refused)

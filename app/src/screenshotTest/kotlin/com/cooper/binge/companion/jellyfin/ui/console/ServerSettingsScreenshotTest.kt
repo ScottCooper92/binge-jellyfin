@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.Branding
@@ -47,13 +48,17 @@ class ServerSettingsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun editingName() = Surface { TextDialog(ServerText.Name, previewSettings, ServerSettingsActions(), inWindow = false) }
+    fun editingName() = Surface { TextSheet(ServerText.Name, previewSettings, ServerSettingsActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun editingCss() = Surface { TextDialog(ServerText.CustomCss, previewSettings, ServerSettingsActions(), inWindow = false) }
+    fun editingCss() = Surface { TextSheet(ServerText.CustomCss, previewSettings, ServerSettingsActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
