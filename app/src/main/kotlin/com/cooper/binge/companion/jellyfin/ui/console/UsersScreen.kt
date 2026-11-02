@@ -2,7 +2,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -91,10 +89,22 @@ fun UsersScreen(
             actions.onBack
         }
     BackHandler(enabled = user != null, onBack = back)
+    val ready = state as? UsersUiState.Ready
     BingeScreenScaffold(
         title = section?.let { stringResource(it.title()) } ?: user?.name ?: stringResource(R.string.users_title),
         bar = ScreenBar.Small,
         onBack = back,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.users_add),
+                icon = Icons.Outlined.PersonAdd,
+                onClick = { actions.onShow(UserDialog.Create) },
+                // On the list only: a user's own page and its sections have nothing to create.
+                visible = state !is UsersUiState.Failed && user == null,
+                enabled = ready != null,
+                loading = ready?.busy == true,
+            )
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
@@ -121,18 +131,7 @@ private fun UserList(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-                Text(stringResource(R.string.users_body), style = MaterialTheme.typography.bodyMedium)
-                BingeOutlinedButton(
-                    label = stringResource(R.string.users_add),
-                    onClick = { actions.onShow(UserDialog.Create) },
-                    leadingIcon = Icons.Outlined.PersonAdd,
-                    loading = state.busy,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+        item { Text(stringResource(R.string.users_body), style = MaterialTheme.typography.bodyMedium) }
         item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
         item { Status(state) }
     }
