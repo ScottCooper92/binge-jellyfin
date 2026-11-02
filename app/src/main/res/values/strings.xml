@@ -263,7 +263,7 @@
     <string name="logs_search">Search this log</string>
     <string name="logs_truncated">Showing the last %1$d KB of this log.</string>
     <string name="logs_no_match">No lines match.</string>
-    <string name="logs_share">Share</string>
+    <string name="logs_share_action">Share this log</string>
     <string name="logs_share_note">Shared as shown here, with keys and tokens blanked.</string>
     <string name="logs_share_title">Share log</string>
     <string name="devices_title">Devices</string>

@@ -264,7 +264,7 @@
     <string name="logs_search">Buscar en este registro</string>
     <string name="logs_truncated">Se muestran los últimos %1$d KB de este registro.</string>
     <string name="logs_no_match">Ninguna línea coincide.</string>
-    <string name="logs_share">Compartir</string>
+    <string name="logs_share_action">Compartir este registro</string>
     <string name="logs_share_note">Se comparte tal como se ve aquí, con las claves y los tokens ocultos.</string>
     <string name="logs_share_title">Compartir registro</string>
     <string name="devices_title">Dispositivos</string>
