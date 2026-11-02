@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
@@ -222,6 +223,12 @@ class UsersViewModelTest {
         jellyfin.slow += "/Users/Password"
         vm.setPassword("first")
         vm.ready { it.busy }
+        // busy is set before the request leaves; wait until the server has it.
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (jellyfin.hits("/Users/Password") == 0) delay(10)
+            }
+        }
         vm.setPassword("second")
         vm.create("Ana", "")
         assertEquals(1, jellyfin.hits("/Users/Password"))
