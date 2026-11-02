@@ -88,7 +88,7 @@ class TrickplayViewModel(
     val state: StateFlow<TrickplayUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
+        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
             update { copy(settings = shown.trickplaySettings(), saveFailed = failure) }
         }
 
@@ -155,6 +155,11 @@ class TrickplayViewModel(
         key: String,
         value: JsonElement,
     ) = saves.set(TRICKPLAY_OPTIONS, saves.shown.withTrickplayOption(key, value))
+
+    /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
+    override fun onCleared() {
+        saves.cleared()
+    }
 
     private fun update(change: TrickplayUiState.Ready.() -> TrickplayUiState.Ready) =
         _state.update { (it as? TrickplayUiState.Ready)?.change() ?: it }

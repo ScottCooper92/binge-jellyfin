@@ -110,7 +110,7 @@ class LibraryViewModel(
     private var name = start.name
 
     private val saves =
-        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveLibraryOptions(id, json) }) { shown, failure ->
+        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveLibraryOptions(id, json) }) { shown, failure ->
             update { copy(options = shown, saveFailed = failure) }
         }
 
@@ -271,6 +271,11 @@ class LibraryViewModel(
 
     /** Whether [row] is this library: by id, or by name while the server hasn't given it one. */
     private fun isThis(row: ServerLibrary) = if (id.isEmpty()) row.name == name else row.id == id
+
+    /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
+    override fun onCleared() {
+        saves.cleared()
+    }
 
     private fun update(change: LibraryUiState.Ready.() -> LibraryUiState.Ready) =
         _state.update { (it as? LibraryUiState.Ready)?.change() ?: it }

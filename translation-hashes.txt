@@ -349,6 +349,16 @@ app:repositories_url_invalid  1f146cf308cb
 app:repositories_url_title  790657b94fb2
 app:repositories_warning  fa442b5f5609
 app:server_cant_restart  1df046962fb5
+app:server_card_connected  22965568d22a
+app:server_card_movies  dff924b69f96
+app:server_card_not_encrypted  9ba1b2d1d68e
+app:server_card_playing  976ccf88b6ea
+app:server_card_restart  762d05992a1f
+app:server_card_series  a8295e08ff7a
+app:server_card_shutting_down  14363ae7ab8a
+app:server_card_update  ff8b555d818f
+app:server_card_users  6b0cc904d081
+app:server_card_version  8b089712c085
 app:server_detail  48e857ba0ec9
 app:server_detail_cleartext  c830dc79a39a
 app:server_not_back  71f9f340b581

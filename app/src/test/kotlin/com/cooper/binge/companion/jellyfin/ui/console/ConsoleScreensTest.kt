@@ -231,9 +231,8 @@ class ConsoleScreensTest {
 
     @Test
     fun `every subtitle mode is offered, with what it does`() {
-        val state = PlaybackUiState.Ready(PlaybackPreferences("", "", SubtitleMode.None), cultures, saveFailed = ConsoleFailure.Refused)
+        val state = PlaybackUiState.Ready(PlaybackPreferences("", "", SubtitleMode.None), cultures)
         compose.setContent { JellyfinTheme { PlaybackScreen(state, PlaybackActions()) } }
-        compose.onNodeWithText("Not saved. Something went wrong. Try again.").assertExists()
         compose.onNodeWithText("Subtitle mode").performScrollTo().performClick()
         listOf("Follow the file", "Smart", "Only forced", "Always").forEach { compose.onNodeWithText(it).assertExists() }
         compose.onNodeWithText("You can still turn them on while watching").assertExists()

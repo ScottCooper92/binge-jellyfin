@@ -84,6 +84,7 @@ private fun PlaybackRoute(
             onRememberSubtitles = playback::setRememberSubtitles,
             onAutoplayNextEpisode = playback::setAutoplayNextEpisode,
             onRetry = playback::load,
+            onRetrySave = playback::retrySave,
             onBack = onBack,
         ),
     )
@@ -111,6 +112,7 @@ private fun HomeLayoutRoute(
             onDisplayMissingEpisodes = home::setDisplayMissingEpisodes,
             onDisplayCollectionsView = home::setDisplayCollectionsView,
             onRetry = home::load,
+            onRetrySave = home::retrySave,
             onBack = onBack,
         ),
     )

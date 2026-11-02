@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Audiotrack
 import androidx.compose.material.icons.outlined.ClosedCaption
@@ -23,6 +21,7 @@ import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,10 +41,8 @@ import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.Culture
@@ -63,6 +60,7 @@ data class PlaybackActions(
     val onRememberSubtitles: (Boolean) -> Unit = {},
     val onAutoplayNextEpisode: (Boolean) -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -75,9 +73,6 @@ private const val ANY = ""
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts rather than ending in an ellipsis. */
 private const val SWITCH_DETAIL_LINES = 3
 
-/** Lines a failed save's message takes, so it never moves the rows. */
-private const val STATUS_LINES = 2
-
 /**
  * The user's playback settings: the audio and subtitle language Jellyfin prefers when it chooses
  * tracks, when it turns subtitles on, whether a track picked by hand is remembered, and whether the
@@ -89,16 +84,25 @@ fun PlaybackScreen(
     actions: PlaybackActions,
 ) {
     var open by rememberSaveable { mutableStateOf<LanguagePicker?>(null) }
-    BingeScreenScaffold(title = stringResource(R.string.playback_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
-        ScreenBody(padding) { _ ->
+    val host = remember { SnackbarHostState() }
+    val ready = state as? PlaybackUiState.Ready
+    FormScreen(
+        title = stringResource(R.string.playback_title),
+        onBack = actions.onBack,
+        bar = ScreenBar.Small,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        notReady =
             when (state) {
-                PlaybackUiState.Loading -> ConsoleLoading(padding.screenListPadding(), LOADING_ROWS)
-                is PlaybackUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, padding.screenListPadding())
-                is PlaybackUiState.Ready -> {
-                    PlaybackBody(state, actions, padding.screenListPadding()) { open = it }
-                    open?.let { LanguageSheet(it, state, actions) { open = null } }
-                }
-            }
+                PlaybackUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is PlaybackUiState.Failed -> { padding -> ConsoleFailed(state.failure, actions.onRetry, padding) }
+                is PlaybackUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            PlaybackBody(ready, actions) { open = it }
+            open?.let { LanguageSheet(it, ready, actions) { open = null } }
+            RefusedMessage(ready.refused, host)
         }
     }
 }
@@ -107,7 +111,6 @@ fun PlaybackScreen(
 private fun PlaybackBody(
     state: PlaybackUiState.Ready,
     actions: PlaybackActions,
-    inner: PaddingValues,
     onOpen: (LanguagePicker) -> Unit,
 ) {
     val locale = currentLocale()
@@ -115,10 +118,7 @@ private fun PlaybackBody(
 
     fun named(code: String) = if (code == ANY) any else state.cultures.find(code)?.label(locale) ?: code
     val preferences = state.preferences
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         val body = if (LocalFlags.current.bingePromotion) R.string.languages_body else R.string.languages_body_plain
         Text(stringResource(body), style = MaterialTheme.typography.bodyMedium)
         ItemGroup(
@@ -186,13 +186,6 @@ private fun PlaybackBody(
                         onClick = { actions.onAutoplayNextEpisode(!preferences.autoplayNextEpisode) },
                     ),
                 ),
-        )
-        Text(
-            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }.orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            minLines = STATUS_LINES,
-            maxLines = STATUS_LINES,
         )
     }
 }

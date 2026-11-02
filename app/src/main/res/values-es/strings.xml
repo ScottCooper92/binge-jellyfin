@@ -24,6 +24,16 @@
     <string name="server_detail">%1$s · Jellyfin %2$s</string>
     <string name="server_detail_cleartext">Sin cifrar · %1$s</string>
 
+    <string name="server_card_connected">Conectado</string>
+    <string name="server_card_not_encrypted">Sin cifrar</string>
+    <string name="server_card_update">Actualización disponible</string>
+    <string name="server_card_restart">Reinicio pendiente</string>
+    <string name="server_card_shutting_down">Apagándose</string>
+    <string name="server_card_version">Jellyfin %1$s</string>
+    <string name="server_card_playing">Reproduciendo</string>
+    <string name="server_card_users">Usuarios</string>
+    <string name="server_card_movies">Películas</string>
+    <string name="server_card_series">Series</string>
     <string name="settings_server">Servidor</string>
     <string name="settings_signed_in_as">Sesión iniciada</string>
     <string name="settings_library">Biblioteca</string>

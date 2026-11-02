@@ -32,17 +32,22 @@ sealed interface PlaybackUiState {
         val failure: ConsoleFailure,
     ) : PlaybackUiState
 
-    /** The choices as shown, and the last save that failed and was put back, if any. */
+    /**
+     * The choices as shown; where their saves stand ([save]); and the last save the server refused, which was put back
+     * ([refused]).
+     */
     data class Ready(
         val preferences: PlaybackPreferences,
         val cultures: List<Culture>,
-        val saveFailed: ConsoleFailure? = null,
+        val save: SaveProgress = SaveProgress(),
+        val refused: ConsoleFailure? = null,
     ) : PlaybackUiState
 }
 
 /**
  * The user's playback settings, read from and saved to their own configuration. Each choice saves
- * as it's made (see [ConfigurationSaves]); a save that fails puts the choice back and says so.
+ * as it's made (see [ConfigurationSaves]). A save that could not reach the server keeps the choice, unsent, for [retrySave];
+ * one the server refuses puts the choice back and says so.
  */
 class PlaybackViewModel(
     private val connection: Connection,
@@ -51,8 +56,18 @@ class PlaybackViewModel(
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(connection, TAG) { shown, failure ->
-            _state.update { (it as? PlaybackUiState.Ready)?.copy(preferences = shown.playbackPreferences(), saveFailed = failure) ?: it }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            onProgress = { progress -> _state.update { (it as? PlaybackUiState.Ready)?.copy(save = progress) ?: it } },
+        ) { shown, failure ->
+            _state.update {
+                (it as? PlaybackUiState.Ready)?.copy(
+                    preferences = shown.playbackPreferences(),
+                    refused = failure?.takeIf { refusal -> refusal == ConsoleFailure.Refused },
+                ) ?: it
+            }
         }
 
     init {
@@ -94,6 +109,10 @@ class PlaybackViewModel(
     fun setRememberSubtitles(on: Boolean) = save(REMEMBER_SUBTITLES, JsonPrimitive(on))
 
     fun setAutoplayNextEpisode(on: Boolean) = save(AUTOPLAY_NEXT_EPISODE, JsonPrimitive(on))
+
+    fun retrySave() = saves.retry()
+
+    override fun onCleared() = saves.cleared()
 
     private fun save(
         key: String,

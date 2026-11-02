@@ -137,6 +137,18 @@ class JellyfinScreenshotTest {
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
 
+    /** The server card flagging an update on an unencrypted address: an administrator's. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @Composable
+    fun serverCardAlerts() = JellyfinRoot(previewSignedInAdminAlerts, Actions())
+
+    /** The card before its figures arrive: a placeholder in each, and no Connected. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun serverCardLoading() = JellyfinRoot(previewSignedInCardLoading, Actions())
+
     /** An administrator's account, behind the avatar: the rows everyone else has inline on their home. */
     @PreviewTest
     @JellyfinScreenPreviews

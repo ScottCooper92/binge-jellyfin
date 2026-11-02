@@ -68,12 +68,12 @@ class ServerSettingsViewModel(
     val state: StateFlow<ServerSettingsUiState> = _state.asStateFlow()
 
     private val server =
-        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
+        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
             update { copy(settings = shown.serverSettings(), saveFailed = failure) }
         }
 
     private val brand =
-        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveBranding(json) }) { shown, failure ->
+        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveBranding(json) }) { shown, failure ->
             update { copy(branding = shown.branding(), saveFailed = failure) }
         }
 
@@ -129,6 +129,12 @@ class ServerSettingsViewModel(
     fun setQuickConnect(on: Boolean) = server.set(QUICK_CONNECT_AVAILABLE, JsonPrimitive(on))
 
     fun setSplashscreen(on: Boolean) = brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
+
+    /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
+    override fun onCleared() {
+        server.cleared()
+        brand.cleared()
+    }
 
     private fun update(change: ServerSettingsUiState.Ready.() -> ServerSettingsUiState.Ready) =
         _state.update { (it as? ServerSettingsUiState.Ready)?.change() ?: it }
