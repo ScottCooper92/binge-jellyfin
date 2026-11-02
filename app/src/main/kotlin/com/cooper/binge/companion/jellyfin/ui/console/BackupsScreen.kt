@@ -29,7 +29,6 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
-import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.ServerBackup
 import com.binge.designsystem.R as DesR
@@ -186,9 +185,10 @@ private fun CreationMessage(
 
 /** Why a backup was not made: the server's own reason, the free-space hint for a refusal, or the failure's plain sentence. */
 @Composable
-private fun BackupCreation.Failed.reason(): String =
-    (error as? JellyfinHttpException)?.let { it.reason ?: stringResource(R.string.backups_create_refused) }
-        ?: stringResource(error.consoleFailure().message)
+private fun BackupCreation.Failed.reason(): String {
+    val failure = error.consoleFailure()
+    return failure.reason ?: stringResource(if (failure == ConsoleFailure.Refused) R.string.backups_create_refused else failure.message)
+}
 
 @Composable
 private fun DismissButton(onClick: () -> Unit) = BingeTextButton(label = stringResource(R.string.backups_done), onClick = onClick)

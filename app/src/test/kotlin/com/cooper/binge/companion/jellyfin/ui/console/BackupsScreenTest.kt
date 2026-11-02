@@ -69,6 +69,14 @@ class BackupsScreenTest {
     }
 
     @Test
+    fun `a 401 never shows the server's words, only the free-space hint`() {
+        show(ready.copy(creation = BackupCreation.Failed(JellyfinHttpException(401, "Backup/Create", "Invalid token"))))
+
+        compose.onNode(hasText("5 GiB free", substring = true)).assertExists()
+        compose.onNode(hasText("Invalid token", substring = true)).assertDoesNotExist()
+    }
+
+    @Test
     fun `dismissing the message clears the creation`() {
         show(ready.copy(creation = BackupCreation.Failed(JellyfinHttpException(500, "Backup/Create"))))
         assertEquals(0, dismissed)
