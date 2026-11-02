@@ -21,6 +21,7 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.ServerBackup
@@ -37,6 +38,37 @@ internal fun BackupsOverlays(
     state.choosing?.let { CreateBackupSheet(it, actions) }
     state.open?.let { BackupSheet(it, serverVersion, actions, now) }
     state.confirmingRestore?.let { RestoreDialog(it, serverVersion, actions) }
+    (state.creation as? BackupCreation.Failed)?.let { BackupNotMadeDialog(it, actions) }
+    if (state.restore == Restore.NotBack) RestoreNotBackDialog(actions)
+}
+
+/** A backup the server did not make: what happened, its reason or the free-space hint, and OK. Not a snackbar: it is a cause and a next step. */
+@Composable
+internal fun BackupNotMadeDialog(
+    creation: BackupCreation.Failed,
+    actions: BackupsActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleMessage(
+        title = stringResource(R.string.backups_create_failed_title),
+        message = creation.reason(),
+        onDismiss = actions.onDismissCreation,
+        inWindow = inWindow,
+    )
+}
+
+/** A restore after which the server did not come back in time: what happened, and to check it and try again. */
+@Composable
+internal fun RestoreNotBackDialog(
+    actions: BackupsActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleMessage(
+        title = stringResource(R.string.backups_restore_not_back_title),
+        message = stringResource(R.string.backups_restore_not_back_body),
+        onDismiss = actions.onDismissRestore,
+        inWindow = inWindow,
+    )
 }
 
 /** What the new backup holds: the database, and optional extras that make it larger. The create runs on the server, so it closes at once. */

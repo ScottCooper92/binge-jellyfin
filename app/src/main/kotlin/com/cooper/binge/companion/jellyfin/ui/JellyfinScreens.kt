@@ -316,6 +316,7 @@ private fun SignedIn(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { ServerHomeCard(state) }
+        if ((state.card.tmdb?.withoutTmdbId ?: 0) > 0) item { TmdbCoverageNote(state.card.tmdb) }
         item { ServerGroup(state, actions) }
         // An administrator's own settings are in the account, behind the avatar. Everyone else has nothing else to
         // show, so their home is their account: the same rows, inline, and Sign out last.

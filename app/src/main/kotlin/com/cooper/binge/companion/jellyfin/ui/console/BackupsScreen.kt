@@ -159,8 +159,9 @@ private fun statusRows(
 }
 
 /**
- * A backup that was made, or refused, as a message over the page, so the list never moves for it. It carries a dismiss action
- * and clears the creation when it ends, by the action or by running out of time; a refusal stays until it is dismissed.
+ * A backup that was made, as a message over the page, so the list never moves for it. It carries a dismiss action and clears the
+ * creation when it ends, by the action or by running out of time. One the server refused is a dialog instead ([BackupNotMadeDialog]):
+ * it is a cause and a next step.
  */
 @Composable
 private fun CreationMessage(
@@ -168,16 +169,10 @@ private fun CreationMessage(
     host: SnackbarHostState,
     onDismiss: () -> Unit,
 ) {
-    val message =
-        when (creation) {
-            is BackupCreation.Created -> stringResource(R.string.backups_created_message)
-            is BackupCreation.Failed -> stringResource(R.string.backups_create_failed_message, creation.reason())
-            else -> null
-        }
-    val duration = if (creation is BackupCreation.Failed) SnackbarDuration.Indefinite else SnackbarDuration.Long
+    val message = if (creation is BackupCreation.Created) stringResource(R.string.backups_created_message) else null
     LaunchedEffect(creation) {
         if (message != null) {
-            host.showSnackbar(message, withDismissAction = true, duration = duration)
+            host.showSnackbar(message, withDismissAction = true, duration = SnackbarDuration.Long)
             onDismiss()
         }
     }
@@ -185,7 +180,7 @@ private fun CreationMessage(
 
 /** Why a backup was not made: the server's own reason, the free-space hint for a refusal, or the failure's plain sentence. */
 @Composable
-private fun BackupCreation.Failed.reason(): String {
+internal fun BackupCreation.Failed.reason(): String {
     val failure = error.consoleFailure()
     return failure.reason ?: stringResource(if (failure == ConsoleFailure.Refused) R.string.backups_create_refused else failure.message)
 }
@@ -193,13 +188,8 @@ private fun BackupCreation.Failed.reason(): String {
 @Composable
 private fun DismissButton(onClick: () -> Unit) = BingeTextButton(label = stringResource(R.string.backups_done), onClick = onClick)
 
-/** What a restore that did not finish says, as a message; null when it is going or done. */
-private fun Restore?.refusal(): Int? =
-    when (this) {
-        Restore.NotBack -> R.string.backups_restore_not_back
-        Restore.Failed -> R.string.backups_restore_failed
-        else -> null
-    }
+/** What a restore that failed outright says, as a snackbar; one the server did not come back from is a dialog, and null when it is going or done. */
+private fun Restore?.refusal(): Int? = if (this == Restore.Failed) R.string.backups_restore_failed else null
 
 @Composable
 private fun ServerBackup.row(

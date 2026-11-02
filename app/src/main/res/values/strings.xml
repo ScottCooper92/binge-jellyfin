@@ -33,6 +33,12 @@
     <string name="server_card_users">Users</string>
     <string name="server_card_movies">Movies</string>
     <string name="server_card_series">Series</string>
+    <plurals name="tmdb_missing_title">
+        <item quantity="one">%1$d of %2$d titles has no TMDB id</item>
+        <item quantity="other">%1$d of %2$d titles have no TMDB id</item>
+    </plurals>
+    <string name="tmdb_missing_detail_promoted">Binge cannot find these. Turn on TMDb as a metadata downloader for their library, then refresh its metadata.</string>
+    <string name="tmdb_missing_detail_plain">They cannot be matched by TMDB id. Turn on TMDb as a metadata downloader for their library, then refresh its metadata.</string>
     <string name="settings_server">Server</string>
     <string name="settings_signed_in_as">Signed in</string>
     <string name="settings_library">Library</string>
@@ -103,6 +109,10 @@
     <string name="home_layout_order">Order</string>
     <string name="home_layout_move_up">Move up</string>
     <string name="home_layout_move_down">Move down</string>
+    <string name="home_layout_position">Position %1$d of %2$d on your home</string>
+    <string name="home_layout_order_detail">The order your libraries appear in, on every device you sign in to. Each tap moves one place and saves.</string>
+    <string name="home_layout_already_first">Already first</string>
+    <string name="home_layout_already_last">Already last</string>
     <string name="home_layout_hide_played">Hide played items in Latest</string>
     <string name="home_layout_missing">Show missing episodes</string>
     <string name="home_layout_missing_detail">Gaps in a season show as placeholders</string>
@@ -259,6 +269,14 @@
     <string name="library_embedded_subtitles_text">Text only</string>
     <string name="library_embedded_subtitles_image">Image only</string>
     <string name="library_embedded_subtitles_none">None</string>
+    <string name="library_download_languages">Download languages</string>
+    <string name="library_download_languages_none">None</string>
+    <string name="library_download_languages_body">The languages the server looks for subtitles in when it downloads them.</string>
+    <string name="library_download_languages_unknown">The server did not list any languages.</string>
+    <plurals name="library_languages_count">
+        <item quantity="one">%1$d language</item>
+        <item quantity="other">%1$d languages</item>
+    </plurals>
     <string name="library_skip_audio">Skip if the audio matches the language</string>
     <string name="library_perfect_match">Perfect matches only</string>
     <string name="library_save_subtitles">Save subtitles with the media</string>
@@ -472,7 +490,8 @@
     <string name="server_restart_body">Everyone using it is cut off until it\'s back, usually within a minute.</string>
     <string name="server_restarting">Restarting… This page carries on when the server is back.</string>
     <string name="server_restarted">Restarted.</string>
-    <string name="server_not_back">The server hasn\'t come back after two minutes. Check it where it runs.</string>
+    <string name="server_not_back_title">The server hasn\'t come back</string>
+    <string name="server_not_back_body">It has been two minutes. Check it where it runs.</string>
     <string name="server_restart_failed">The server didn\'t take the restart. Try again.</string>
     <string name="server_cant_restart">This server can\'t restart itself. Restart it where it runs.</string>
     <string name="server_settings_title">Server settings</string>
@@ -981,7 +1000,7 @@
     <string name="backups_creating">Making a backup</string>
     <string name="backups_creating_detail">The server is writing it. You can leave this page.</string>
     <string name="backups_created_message">Backup made. It is first in the list below.</string>
-    <string name="backups_create_failed_message">The backup wasn\'t made. %1$s</string>
+    <string name="backups_create_failed_title">The backup wasn\'t made</string>
     <string name="backups_create_refused">The server may need 5 GiB free where it keeps backups. Free up space before trying again.</string>
     <string name="backups_done">Done</string>
     <string name="backups_sheet_title">Backup</string>
@@ -994,6 +1013,7 @@
     <string name="backups_restoring_detail">The server is restarting.</string>
     <string name="backups_restored">Restored</string>
     <string name="backups_restored_detail">The server is back.</string>
-    <string name="backups_restore_not_back">The server didn\'t come back in time. Check it, then try again.</string>
+    <string name="backups_restore_not_back_title">The server didn\'t come back in time</string>
+    <string name="backups_restore_not_back_body">Check it, then try again.</string>
     <string name="backups_restore_failed">The restore didn\'t go through.</string>
 </resources>

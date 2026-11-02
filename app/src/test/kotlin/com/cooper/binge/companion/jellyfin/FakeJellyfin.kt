@@ -704,7 +704,16 @@ class FakeJellyfin : Dispatcher() {
                         .queryParameter("includeItemTypes")
                         .orEmpty()
                         .split(',')
-                items.filter { it.type in types && it.tmdbId != null }
+                // `hasTmdbId` is true for the titles with an id, false for those without, and absent for both.
+                val hasTmdbId = request.url.queryParameter("hasTmdbId")
+                items.filter {
+                    it.type in types &&
+                        when (hasTmdbId) {
+                            "true" -> it.tmdbId != null
+                            "false" -> it.tmdbId == null
+                            else -> true
+                        }
+                }
             }
         val start = request.url.queryParameter("startIndex")?.toInt() ?: 0
         val limit = request.url.queryParameter("limit")?.toInt() ?: selected.size

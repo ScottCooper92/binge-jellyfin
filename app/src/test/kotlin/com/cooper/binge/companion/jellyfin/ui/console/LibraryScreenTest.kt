@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import com.cooper.binge.companion.jellyfin.server.AvailableProviders
+import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.MetadataSaver
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
@@ -37,6 +38,8 @@ class LibraryScreenTest {
         available: AvailableProviders = savers,
         actions: LibraryActions = LibraryActions(),
         dialog: LibraryDialog? = null,
+        cultures: List<Culture> = emptyList(),
+        page: LibraryPage = LibraryPage.Main,
     ) {
         val json = Json.parseToJsonElement(options).jsonObject
         val state =
@@ -45,6 +48,8 @@ class LibraryScreenTest {
                 options = json,
                 available = available,
                 dialog = dialog,
+                cultures = cultures,
+                page = page,
             )
         compose.setContent { JellyfinTheme { LibraryScreen(state, actions, JellyfinServerProfile.from(version)) } }
     }
@@ -174,6 +179,85 @@ class LibraryScreenTest {
         compose.onNode(hasSetTextAction()).performTextReplacement("AC/DC\n\nBack in Black")
         compose.onNodeWithText("Save").performClick()
         assertEquals(listOf("""DelimiterWhitelist ["AC/DC","Back in Black"]""", "ask null"), calls)
+    }
+
+    private val languages =
+        listOf(
+            Culture("English", "en", listOf("eng")),
+            Culture("French", "fr", listOf("fre", "fra")),
+            Culture("Spanish", "es", listOf("spa")),
+        )
+
+    @Test
+    fun `the download languages row says which languages by name when there are few`() {
+        show("movies", """{"SubtitleDownloadLanguages":["eng","fre"]}""", cultures = languages)
+        compose.onNodeWithText("Download languages").performScrollTo().assertExists()
+        compose.onNodeWithText("English, French").assertExists()
+    }
+
+    @Test
+    fun `the download languages row says how many when there are more than two`() {
+        show("movies", """{"SubtitleDownloadLanguages":["eng","fre","spa"]}""", cultures = languages)
+        compose.onNodeWithText("3 languages").performScrollTo().assertExists()
+    }
+
+    @Test
+    fun `no download languages reads as none`() {
+        show("movies", """{"SubtitleDownloadLanguages":null}""", cultures = languages)
+        compose.onNodeWithText("Download languages").performScrollTo().assertExists()
+        compose.onNodeWithText("None").assertExists()
+    }
+
+    @Test
+    fun `a library that never chose download languages still offers them, as none`() {
+        show("movies", """{"Enabled":true}""", cultures = languages)
+        compose.onNodeWithText("Download languages").performScrollTo().assertExists()
+        compose.onNodeWithText("None").assertExists()
+    }
+
+    @Test
+    fun `a tap on a language adds the key when the library has none`() {
+        val calls = mutableListOf<String>()
+        show(
+            "movies",
+            """{"Enabled":true}""",
+            actions = LibraryActions(onJson = { key, value -> calls += "$key $value" }),
+            cultures = languages,
+            page = LibraryPage.Languages,
+        )
+        // The page is a lazy list, so a language below the first screen is scrolled to before it is tapped.
+        compose.onNodeWithText("Spanish").performScrollTo().performClick()
+        assertEquals(listOf("""SubtitleDownloadLanguages ["spa"]"""), calls)
+    }
+
+    @Test
+    fun `the languages page has a switch for each language the server lists, and a tap sends the whole list`() {
+        val calls = mutableListOf<String>()
+        show(
+            "movies",
+            """{"SubtitleDownloadLanguages":["eng","XYZ"]}""",
+            actions = LibraryActions(onJson = { key, value -> calls += "$key $value" }),
+            cultures = languages,
+            page = LibraryPage.Languages,
+        )
+        compose.onNodeWithText("French").performClick()
+        compose.onNodeWithText("English").performClick()
+        // Each tap is made on the list the page shows, so the second does not carry the first.
+        assertEquals(listOf("""SubtitleDownloadLanguages ["eng","XYZ","fre"]""", """SubtitleDownloadLanguages ["XYZ"]"""), calls)
+    }
+
+    @Test
+    fun `the languages page lists the languages under the first letter of their names`() {
+        show("movies", """{"SubtitleDownloadLanguages":[]}""", cultures = languages, page = LibraryPage.Languages)
+        compose.onNodeWithText("E").assertExists()
+        compose.onNodeWithText("F").assertExists()
+        compose.onNodeWithText("S").assertExists()
+    }
+
+    @Test
+    fun `the languages page says so when the server listed no languages`() {
+        show("movies", """{"SubtitleDownloadLanguages":[]}""", page = LibraryPage.Languages)
+        compose.onNodeWithText("The server did not list any languages.").assertExists()
     }
 
     @Test

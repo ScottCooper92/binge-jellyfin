@@ -4,6 +4,7 @@ import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -62,6 +63,10 @@ private val session =
 private val previewCard = ServerCardState(connected = true, playing = 2, movies = 842, series = 120)
 
 val previewSignedIn = UiState.SignedIn(session = session, titles = 1_284, card = previewCard)
+
+/** A library where 12 of 134 titles carry no TMDB id, so nothing that looks one up can find them. */
+val previewSignedInNoTmdb =
+    previewSignedIn.copy(card = previewCard.copy(tmdb = TmdbCoverage(titles = 134, withoutTmdbId = 12)))
 
 /** The card before any read has come in: a placeholder in each total, and no Connected. */
 val previewSignedInCardLoading = previewSignedIn.copy(card = ServerCardState())

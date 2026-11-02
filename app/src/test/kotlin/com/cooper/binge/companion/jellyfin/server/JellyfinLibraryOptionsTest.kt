@@ -87,6 +87,17 @@ class JellyfinLibraryOptionsTest {
     }
 
     @Test
+    fun `a download language switches on and off by its three-letter code, in lower case, keeping codes the server doesn't list`() {
+        val library = options("""{"SubtitleDownloadLanguages":["eng","XYZ"]}""")
+        assertEquals(listOf("eng", "XYZ"), library.downloadLanguages())
+        assertEquals(names("eng", "XYZ", "fre"), library.languagesWith("FRE", on = true))
+        assertEquals(names("XYZ"), library.languagesWith("ENG", on = false))
+        // A library the server has never given a list leaves the key null, which reads as none.
+        assertEquals(emptyList<String>(), options("""{"SubtitleDownloadLanguages":null}""").downloadLanguages())
+        assertEquals(names("spa"), options("{}").languagesWith("spa", on = true))
+    }
+
+    @Test
     fun `the embedded subtitle choice is for the kinds of video library jellyfin-web shows it for`() {
         assertTrue(libraryHasEmbeddedSubtitleChoice("movies"))
         assertTrue(libraryHasEmbeddedSubtitleChoice("tvshows"))

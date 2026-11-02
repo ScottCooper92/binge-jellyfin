@@ -32,6 +32,13 @@
     <string name="server_card_users">Usuarios</string>
     <string name="server_card_movies">Películas</string>
     <string name="server_card_series">Series</string>
+    <plurals name="tmdb_missing_title">
+        <item quantity="one">%1$d de %2$d títulos no tiene ID de TMDB</item>
+        <item quantity="many">%1$d de %2$d títulos no tienen ID de TMDB</item>
+        <item quantity="other">%1$d de %2$d títulos no tienen ID de TMDB</item>
+    </plurals>
+    <string name="tmdb_missing_detail_promoted">Binge no puede encontrarlos. Activa TMDb como proveedor de metadatos de su biblioteca y actualiza sus metadatos.</string>
+    <string name="tmdb_missing_detail_plain">No se pueden identificar por ID de TMDB. Activa TMDb como proveedor de metadatos de su biblioteca y actualiza sus metadatos.</string>
     <string name="settings_server">Servidor</string>
     <string name="settings_signed_in_as">Sesión iniciada</string>
     <string name="settings_library">Biblioteca</string>
@@ -103,6 +110,10 @@
     <string name="home_layout_order">Orden</string>
     <string name="home_layout_move_up">Subir</string>
     <string name="home_layout_move_down">Bajar</string>
+    <string name="home_layout_position">Posición %1$d de %2$d en tu inicio</string>
+    <string name="home_layout_order_detail">El orden en que aparecen tus bibliotecas, en todos los dispositivos donde inicies sesión. Cada toque mueve un lugar y se guarda.</string>
+    <string name="home_layout_already_first">Ya es la primera</string>
+    <string name="home_layout_already_last">Ya es la última</string>
     <string name="home_layout_hide_played">Ocultar lo ya visto en Últimos</string>
     <string name="home_layout_missing">Mostrar episodios que faltan</string>
     <string name="home_layout_missing_detail">Los huecos de una temporada se muestran como marcadores</string>
@@ -260,6 +271,15 @@
     <string name="library_embedded_subtitles_text">Solo texto</string>
     <string name="library_embedded_subtitles_image">Solo imagen</string>
     <string name="library_embedded_subtitles_none">Ninguno</string>
+    <string name="library_download_languages">Idiomas de descarga</string>
+    <string name="library_download_languages_none">Ninguno</string>
+    <string name="library_download_languages_body">Los idiomas en los que el servidor busca subtítulos al descargarlos.</string>
+    <string name="library_download_languages_unknown">El servidor no indicó ningún idioma.</string>
+    <plurals name="library_languages_count">
+        <item quantity="one">%1$d idioma</item>
+        <item quantity="many">%1$d idiomas</item>
+        <item quantity="other">%1$d idiomas</item>
+    </plurals>
     <string name="library_skip_audio">Omitir si el audio coincide con el idioma</string>
     <string name="library_perfect_match">Solo coincidencias perfectas</string>
     <string name="library_save_subtitles">Guardar subtítulos con los archivos</string>
@@ -477,7 +497,8 @@
     <string name="server_restart_body">Todos los que lo usan se desconectan hasta que vuelva, normalmente en menos de un minuto.</string>
     <string name="server_restarting">Reiniciando… Esta página sigue cuando el servidor vuelva.</string>
     <string name="server_restarted">Reiniciado.</string>
-    <string name="server_not_back">El servidor no ha vuelto tras dos minutos. Compruébalo donde se ejecuta.</string>
+    <string name="server_not_back_title">El servidor no ha vuelto</string>
+    <string name="server_not_back_body">Han pasado dos minutos. Compruébalo donde se ejecuta.</string>
     <string name="server_restart_failed">El servidor no ha aceptado el reinicio. Vuelve a intentarlo.</string>
     <string name="server_cant_restart">Este servidor no puede reiniciarse solo. Reinícialo donde se ejecuta.</string>
     <string name="server_settings_title">Ajustes del servidor</string>
@@ -975,7 +996,7 @@
     <string name="backups_creating">Haciendo una copia de seguridad</string>
     <string name="backups_creating_detail">El servidor la está escribiendo. Puedes salir de esta página.</string>
     <string name="backups_created_message">Copia de seguridad hecha. Es la primera de la lista de abajo.</string>
-    <string name="backups_create_failed_message">No se hizo la copia de seguridad. %1$s</string>
+    <string name="backups_create_failed_title">No se hizo la copia de seguridad</string>
     <string name="backups_create_refused">Puede que el servidor necesite 5 GiB libres donde guarda las copias. Libera espacio antes de reintentar.</string>
     <string name="backups_done">Listo</string>
     <string name="backups_sheet_title">Copia de seguridad</string>
@@ -988,6 +1009,7 @@
     <string name="backups_restoring_detail">El servidor se está reiniciando.</string>
     <string name="backups_restored">Restaurada</string>
     <string name="backups_restored_detail">El servidor ha vuelto.</string>
-    <string name="backups_restore_not_back">El servidor no volvió a tiempo. Compruébalo e inténtalo de nuevo.</string>
+    <string name="backups_restore_not_back_title">El servidor no volvió a tiempo</string>
+    <string name="backups_restore_not_back_body">Compruébalo e inténtalo de nuevo.</string>
     <string name="backups_restore_failed">No se pudo hacer la restauración.</string>
 </resources>

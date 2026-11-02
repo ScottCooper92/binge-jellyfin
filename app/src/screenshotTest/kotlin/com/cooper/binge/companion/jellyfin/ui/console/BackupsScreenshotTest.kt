@@ -33,7 +33,10 @@ private val previewBackups =
 
 private val previewReady = BackupsUiState.Ready(previewBackups)
 
-/** Backups: the list across the matrix, then each thing the page can be doing, its sheets and the restore confirm, and the read states. */
+/**
+ * Backups: the list across the matrix, then each thing the page can be doing, its sheets, the restore confirm and the message dialogs
+ * (a backup not made, a restore the server did not come back from), and the read states.
+ */
 class BackupsScreenshotTest {
     @PreviewTest
     @JellyfinScreenPreviews
@@ -62,7 +65,7 @@ class BackupsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun notMade() = BackupsScreen(previewReady.copy(creation = BackupCreation.Failed(IOException("down"))), BackupsActions(), running, NOW)
+    fun notMade() = Surface { BackupNotMadeDialog(BackupCreation.Failed(IOException("down")), BackupsActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -70,28 +73,34 @@ class BackupsScreenshotTest {
     @JellyfinFontScalePreviews
     @Composable
     fun notMadeRefused() =
-        BackupsScreen(
-            previewReady.copy(creation = BackupCreation.Failed(JellyfinHttpException(500, "Backup/Create"))),
-            BackupsActions(),
-            running,
-            NOW,
-        )
+        Surface {
+            BackupNotMadeDialog(
+                BackupCreation.Failed(JellyfinHttpException(500, "Backup/Create")),
+                BackupsActions(),
+                inWindow = false,
+            )
+        }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun notMadeWithReason() =
-        BackupsScreen(
-            previewReady.copy(
-                creation =
-                    BackupCreation.Failed(
-                        JellyfinHttpException(500, "Backup/Create", "The backup directory does not have at least 5GiB free space"),
-                    ),
-            ),
-            BackupsActions(),
-            running,
-            NOW,
-        )
+        Surface {
+            BackupNotMadeDialog(
+                BackupCreation.Failed(
+                    JellyfinHttpException(500, "Backup/Create", "The backup directory does not have at least 5GiB free space"),
+                ),
+                BackupsActions(),
+                inWindow = false,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun restoreNotBack() = Surface { RestoreNotBackDialog(BackupsActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

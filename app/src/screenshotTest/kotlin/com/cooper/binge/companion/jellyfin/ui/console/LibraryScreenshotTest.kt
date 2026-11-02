@@ -42,7 +42,8 @@ private val movieOptions =
     "PreferredMetadataLanguage":"en","MetadataCountryCode":"GB","EnableEmbeddedTitles":true,"AutomaticallyAddToCollection":true,
     "SkipSubtitlesIfEmbeddedSubtitlesPresent":true,"RequirePerfectSubtitleMatch":true,"SubtitleFetcherOrder":["Podnapisi"],
     "DisabledSubtitleFetchers":["Legendas"],"EnableTrickplayImageExtraction":true,"SaveTrickplayWithMedia":false,
-    "EnableEmbeddedExtrasTitles":true,"AllowEmbeddedSubtitles":"AllowText","MetadataSavers":["Nfo"]}"""
+    "EnableEmbeddedExtrasTitles":true,"AllowEmbeddedSubtitles":"AllowText","MetadataSavers":["Nfo"],
+    "SubtitleDownloadLanguages":["eng","fre"]}"""
 
 private const val MUSIC_OPTIONS =
     """{"EnableLUFSScan":true,"SaveLyricsWithMedia":true,"DisabledLyricFetchers":[],"PreferNonstandardArtistsTag":true,
@@ -56,7 +57,15 @@ private fun ready(
     library = library(type, name, options),
     options = library(type, name, options).options,
     available = providers,
-    cultures = listOf(Culture("English", "en", listOf("eng"))),
+    cultures =
+        listOf(
+            Culture("English", "en", listOf("eng")),
+            Culture("French", "fr", listOf("fre", "fra")),
+            Culture("German", "de", listOf("ger", "deu")),
+            Culture("Italian", "it", listOf("ita")),
+            Culture("Portuguese", "pt", listOf("por")),
+            Culture("Spanish", "es", listOf("spa")),
+        ),
     countries = listOf(Country("GB", "United Kingdom")),
 )
 
@@ -83,6 +92,18 @@ class LibraryScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun subtitles() = Surface { Column { VideoGroups(ready(), LibraryActions(), newest) {} } }
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun languages() = LibraryScreen(ready().copy(page = LibraryPage.Languages), LibraryActions(), newest)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun languagesNone() = LibraryScreen(ready().copy(page = LibraryPage.Languages, cultures = emptyList()), LibraryActions(), newest)
 
     @PreviewTest
     @JellyfinScreenStatePreview

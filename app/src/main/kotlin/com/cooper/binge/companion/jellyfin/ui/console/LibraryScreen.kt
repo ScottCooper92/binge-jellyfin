@@ -88,6 +88,8 @@ fun LibraryScreen(
         bar = ScreenBar.Small,
         onBack = back,
         snackbarHostState = host,
+        // The languages are a long list, so that page lays itself out as a lazy list under the bar instead of in a scrolling form.
+        scrolling = page != LibraryPage.Languages,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
@@ -95,10 +97,11 @@ fun LibraryScreen(
                 is LibraryUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is LibraryUiState.Ready -> null
             },
-    ) { _ ->
+    ) { padding ->
         if (ready != null) {
             when (page) {
                 LibraryPage.Main -> LibraryBody(ready, actions, profile)
+                LibraryPage.Languages -> LanguagesPage(ready, actions, padding)
                 is LibraryPage.Providers -> ProvidersPage(page.group, ready, actions)
                 is LibraryPage.One -> ProviderPage(page, ready, actions)
             }
@@ -112,6 +115,7 @@ fun LibraryScreen(
 private fun LibraryPage.parent(): LibraryPage =
     when (this) {
         LibraryPage.Main -> LibraryPage.Main
+        LibraryPage.Languages -> LibraryPage.Main
         is LibraryPage.Providers -> LibraryPage.Main
         is LibraryPage.One -> LibraryPage.Providers(group)
     }
@@ -120,6 +124,7 @@ private fun LibraryPage.parent(): LibraryPage =
 private fun LibraryPage.title(ready: LibraryUiState.Ready?): String =
     when (this) {
         LibraryPage.Main -> ready?.library?.name?.ifBlank { null } ?: stringResource(R.string.libraries_unnamed)
+        LibraryPage.Languages -> stringResource(R.string.library_download_languages)
         is LibraryPage.Providers -> stringResource(group.title())
         is LibraryPage.One -> name
     }

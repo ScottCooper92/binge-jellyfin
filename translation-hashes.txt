@@ -85,7 +85,7 @@ app:approve_wrong  8bb61c428d9c
 app:backups_body  deeed621ab05
 app:backups_create_action  3cace080929e
 app:backups_create_body  3509df77c760
-app:backups_create_failed_message  c273e7dd10a0
+app:backups_create_failed_title  1dda49dbee0d
 app:backups_create_refused  a406de7ba763
 app:backups_create_title  4d85d11c299d
 app:backups_created_message  5176c35ef297
@@ -103,7 +103,8 @@ app:backups_new  4d85d11c299d
 app:backups_restore  a76e13b98392
 app:backups_restore_body  f420c3a5c230
 app:backups_restore_failed  21b2ffbfd682
-app:backups_restore_not_back  19785073a39d
+app:backups_restore_not_back_body  f6bf78c9db49
+app:backups_restore_not_back_title  fdc6e41ac274
 app:backups_restore_title  d3357dea7f97
 app:backups_restored  5d561a1e3f17
 app:backups_restored_detail  d24cde2885e6
@@ -220,6 +221,8 @@ app:error_quick_connect_off  045782322966
 app:error_signed_out  827096b0fbe6
 app:error_unreachable  8224327e4cec
 app:error_wrong_credentials  c16954ee58f2
+app:home_layout_already_first  764ba245abe6
+app:home_layout_already_last  71c74b973a38
 app:home_layout_body  5b830087e38e
 app:home_layout_collections  1667416a133a
 app:home_layout_collections_detail  b423e46e3340
@@ -236,6 +239,8 @@ app:home_layout_move_down  40bb50da160c
 app:home_layout_move_up  c66feb5eb8f2
 app:home_layout_no_libraries  fca5038510e7
 app:home_layout_order  6be090825c99
+app:home_layout_order_detail  d41944ffeeed
+app:home_layout_position  70c724f0dd6f
 app:home_layout_shown_both  d28774c778b3
 app:home_layout_shown_latest  21cd45b3fc25
 app:home_layout_shown_my_media  ed36607fbd6c
@@ -284,6 +289,10 @@ app:library_custom_delimiters_detail  1fb427a590ed
 app:library_default  42b998374988
 app:library_delimiters  09888a5ecef8
 app:library_delimiters_hint  31f75ae7df32
+app:library_download_languages  639bdcfcdf6d
+app:library_download_languages_body  014333768b12
+app:library_download_languages_none  dc937b598926
+app:library_download_languages_unknown  badaec97724d
 app:library_embedded_episodes  6de98530f5c3
 app:library_embedded_extras  38d229f01bd3
 app:library_embedded_extras_detail  0f7878f1a922
@@ -318,6 +327,7 @@ app:library_kind_other  f97e9da0e3b8
 app:library_kind_shows  e714ae21d3b4
 app:library_kind_title  6b79146db0b9
 app:library_language  85f3830223f2
+app:library_languages_count  cdcd81a1b8eb
 app:library_loudness  d219353de897
 app:library_loudness_detail  45dbc9854089
 app:library_lyric_providers  465957fb4d80
@@ -557,7 +567,8 @@ app:server_card_users  6b0cc904d081
 app:server_card_version  8b089712c085
 app:server_detail  48e857ba0ec9
 app:server_detail_cleartext  c830dc79a39a
-app:server_not_back  71f9f340b581
+app:server_not_back_body  2f000e0c6ef9
+app:server_not_back_title  56bc4ed823aa
 app:server_restart  51cd293a0b55
 app:server_restart_body  cc64dc04d2f5
 app:server_restart_failed  dd1b72b7802c
@@ -646,6 +657,9 @@ app:tasks_trigger_remove  c3812fc4acb8
 app:tasks_triggers  e62f2148a64d
 app:tasks_triggers_empty  0941d30cc781
 app:tasks_triggers_empty_title  ea3c76042e1c
+app:tmdb_missing_detail_plain  6a3eb81922d8
+app:tmdb_missing_detail_promoted  de6e11c829f2
+app:tmdb_missing_title  de853f0db7b2
 app:transcode_audio  ab82f46e218a
 app:transcode_bitrate  f776e945cb6d
 app:transcode_container  415a9113ceb1
