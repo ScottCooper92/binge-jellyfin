@@ -61,11 +61,6 @@ class TasksScreenshotTest {
             now = NOW,
         )
 
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun notSent() = TasksScreen(previewReady.copy(actionFailed = ConsoleFailure.Unreachable), TasksActions(), now = NOW)
-
     /** The server showed no tasks: every one it listed was hidden, which its own dashboard leaves out too. */
     @PreviewTest
     @JellyfinScreenStatePreview

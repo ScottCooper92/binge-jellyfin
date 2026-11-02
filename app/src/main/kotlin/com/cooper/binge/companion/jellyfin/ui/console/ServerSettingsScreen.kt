@@ -60,6 +60,7 @@ private const val SETTINGS_DETAIL_LINES = 3
 
 /** Lines the custom CSS field shows before it scrolls. */
 private const val CSS_LINES = 8
+private const val MULTILINE_MIN = 3
 
 /**
  * The server's general settings (its name, the language and country metadata is fetched for, Quick
@@ -83,7 +84,7 @@ fun ServerSettingsScreen(
                 is ServerSettingsUiState.Ready -> {
                     ServerSettingsBody(state, actions, splashscreenAvailable, inner) { picker = it }
                     picker?.let { ServerPickerSheet(it, state, actions) { picker = null } }
-                    state.editing?.let { TextDialog(it, state, actions) }
+                    state.editing?.let { TextSheet(it, state, actions) }
                 }
             }
         }
@@ -247,11 +248,11 @@ private fun ServerPickerSheet(
 }
 
 /**
- * A text setting's dialog: Save keeps what's typed, Cancel leaves the setting as it was. [inWindow]
- * false draws its body for a frame.
+ * A text setting's sheet: Save keeps what's typed, Cancel leaves the setting as it was. [inWindow]
+ * false draws the form for a frame.
  */
 @Composable
-internal fun TextDialog(
+internal fun TextSheet(
     text: ServerText,
     state: ServerSettingsUiState.Ready,
     actions: ServerSettingsActions,
@@ -271,25 +272,20 @@ internal fun TextDialog(
             ServerText.CustomCss -> R.string.server_settings_css to R.string.server_settings_css_body
         }
     val single = text == ServerText.Name
-    ConsoleConfirm(
-        title = stringResource(title),
-        message = stringResource(body),
-        confirmLabel = stringResource(R.string.server_settings_save),
-        onConfirm = { actions.onSaveText(text, value) },
-        onDismissRequest = { actions.onEdit(null) },
-        inWindow = inWindow,
-        extraContent = {
-            ConsoleTextField(
-                value = value,
-                onValueChange = { value = it },
-                label = stringResource(title),
-                singleLine = single,
-                minLines = if (text == ServerText.CustomCss) CSS_LINES else 1,
-                maxLines = if (single) 1 else CSS_LINES,
-                onDone = { actions.onSaveText(text, value) },
-            )
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onEdit(null) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(title),
+            body = stringResource(body),
+            value = value,
+            onValueChange = { value = it },
+            submitLabel = stringResource(R.string.server_settings_save),
+            onSubmit = { actions.onSaveText(text, value) },
+            onCancel = { actions.onEdit(null) },
+            singleLine = single,
+            minLines = if (text == ServerText.CustomCss) CSS_LINES else MULTILINE_MIN,
+            maxLines = if (single) 1 else CSS_LINES,
+        )
+    }
 }
 
 private const val LOADING_ROWS = 8

@@ -56,6 +56,10 @@ class JellyfinServerProfileTest {
         assertFalse(v1010.hasBackups)
         val v1011 = JellyfinServerProfile.from("10.11.0")
         assertTrue(v1011.hasBackups)
+        assertTrue(v1011.hasCacheAndLegacyAuth)
+        assertTrue(v1010.hasAdvancedPerformance)
+        assertFalse(v1010.hasCacheAndLegacyAuth)
+        assertFalse(JellyfinServerProfile.from("10.8.13").hasAdvancedPerformance)
         assertTrue(v1011.hasLibrarySegmentProviders)
         assertTrue(v1011.hasParentalSubRating)
         assertTrue(v1011.hasSeparateCollectionGrouping)
@@ -68,6 +72,8 @@ class JellyfinServerProfileTest {
         assertTrue(unknown.hasBackups)
         assertTrue(unknown.hasLibrarySegmentProviders)
         assertTrue(unknown.hasTrickplay)
+        assertTrue(unknown.hasAdvancedPerformance)
+        assertTrue(unknown.hasCacheAndLegacyAuth)
         assertTrue(unknown.hasKeyFrameOnlyTrickplay)
     }
 }

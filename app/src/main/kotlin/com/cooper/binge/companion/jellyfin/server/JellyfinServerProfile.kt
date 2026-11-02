@@ -95,6 +95,12 @@ data class JellyfinServerProfile(
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
 
+    /** Library update duration, parallel image encoding, the inactive session threshold and cast receivers, in the server's configuration. 10.9. */
+    val hasAdvancedPerformance: Boolean get() = atLeast(TEN, NINE)
+
+    /** The user-data cache size and the legacy authorization switch, in the server's configuration. 10.11. */
+    val hasCacheAndLegacyAuth: Boolean get() = atLeast(TEN, ELEVEN)
+
     private fun atLeast(
         major: Int,
         minor: Int,

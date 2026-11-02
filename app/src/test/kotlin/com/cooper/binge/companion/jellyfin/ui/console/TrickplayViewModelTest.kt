@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
@@ -183,14 +184,30 @@ class TrickplayViewModelTest {
     }
 
     @Test
+    fun `a save that can't reach the server keeps the option, says so, and Retry sends it`() {
+        val vm = made(TrickplayViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += CONFIGURATION
+        vm.setHwAcceleration(true)
+        val failed = vm.ready { it.save.failed }
+        assertTrue(failed.settings.hwAcceleration)
+        assertEquals(null, failed.refused)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.ready { it.save.status == SaveStatus.Saved }
+        assertFalse(saved.save.failed)
+        assertTrue(saved.settings.hwAcceleration)
+    }
+
+    @Test
     fun `a save the server refuses puts the option back and says so`() {
         val vm = made(TrickplayViewModel(connection))
         vm.ready()
         jellyfin.status[CONFIGURATION] = 500
         vm.setHwAcceleration(true)
-        val failed = vm.ready { it.saveFailed != null }
+        val failed = vm.ready { it.refused != null }
         assertFalse(failed.settings.hwAcceleration)
-        assertEquals(ConsoleFailure.Refused, failed.saveFailed)
+        assertEquals(ConsoleFailure.Refused, failed.refused)
     }
 
     @Test

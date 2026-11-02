@@ -3,8 +3,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
@@ -37,18 +39,22 @@ class TrickplayScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun number() = Surface { FieldDialog(TrickplayField.JpegQuality, previewSettings, TrickplayActions(), inWindow = false) }
+    fun number() = Surface { FieldSheet(TrickplayField.JpegQuality, previewSettings, TrickplayActions(), inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun widths() = Surface { FieldSheet(TrickplayField.Widths, previewSettings, TrickplayActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun widths() = Surface { FieldDialog(TrickplayField.Widths, previewSettings, TrickplayActions(), inWindow = false) }
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun saveFailed() = TrickplayScreen(previewReady.copy(saveFailed = ConsoleFailure.Unreachable), TrickplayActions())
+    fun saving() = TrickplayScreen(previewReady.copy(save = SaveProgress(SaveStatus.Saving)), TrickplayActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

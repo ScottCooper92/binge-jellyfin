@@ -59,18 +59,23 @@ class ServerCardTest {
     private fun JellyfinViewModel.signedIn(matches: (UiState.SignedIn) -> Boolean): UiState.SignedIn =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is UiState.SignedIn && matches(it) } as UiState.SignedIn } }
 
-    /** The card once every figure the viewer may read has come in. */
-    private fun JellyfinViewModel.read(administrator: Boolean) =
-        signedIn { s ->
-            val c = s.card
-            c.playing != null && c.movies != null && (!administrator || c.users != null && c.connected)
-        }.card
+    /**
+     * The card once every figure the viewer may read has come in. An administrator's flags come from a read of their own,
+     * which may land after the totals, so a test that asserts them says what they should be in [flagsRead].
+     */
+    private fun JellyfinViewModel.read(
+        administrator: Boolean,
+        flagsRead: (ServerCardState) -> Boolean = { true },
+    ) = signedIn { s ->
+        val c = s.card
+        c.playing != null && c.movies != null && (!administrator || c.users != null && c.connected && flagsRead(c))
+    }.card
 
     @Test
     fun `an administrator's card has the flags, the users, what is playing and the library`() {
         jellyfin.administrator = true
         jellyfin.systemInfo = INFO_WITH_FLAGS
-        val card = viewModel().read(administrator = true)
+        val card = viewModel().read(administrator = true) { it.updateAvailable && it.restartPending && it.shuttingDown }
         assertTrue(card.connected)
         assertTrue(card.updateAvailable)
         assertTrue(card.restartPending)
@@ -85,7 +90,12 @@ class ServerCardTest {
     fun `an older server that sends no flags gets no chip, and no error`() {
         jellyfin.administrator = true
         jellyfin.systemInfo = """{"ServerName":"old","Version":"10.8.13","LocalAddress":"http://192.168.1.10:8096"}"""
-        val card = viewModel().read(administrator = true)
+        val vm = viewModel()
+        vm.read(administrator = true)
+        // No flag to wait for: the flags read has answered once the server has been asked and a moment has passed.
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (jellyfin.hits("/System/Info") < 1) delay(POLL_MILLIS) } }
+        runBlocking { delay(SETTLE_MILLIS) }
+        val card = vm.signedIn { true }.card
         assertTrue(card.connected)
         assertFalse(card.updateAvailable)
         assertFalse(card.restartPending)

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.GraphicEq
@@ -17,9 +18,9 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
@@ -50,9 +51,6 @@ data class TasksActions(
     val onBack: () -> Unit = {},
 )
 
-/** Lines a failed run's message takes, so it never moves the list. */
-private const val STATUS_LINES = 2
-
 /**
  * The server's scheduled tasks as job rows, grouped by the server's own categories in its order: each
  * run or stopped in place, with how far it has got while it runs, and when it last ran (or failed)
@@ -67,10 +65,22 @@ fun TasksScreen(
     val ready = state as? TasksUiState.Ready
     val open = ready?.open?.let { id -> ready.board.tasks.firstOrNull { it.id == id } }
     BackHandler(enabled = open != null) { actions.onCloseTask() }
+    val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = open?.name ?: stringResource(R.string.tasks_title),
         bar = ScreenBar.Small,
         onBack = if (open != null) actions.onCloseTask else actions.onBack,
+        snackbarHostState = host,
+        bottomBar = {
+            // A task's triggers page creates triggers; the task list creates nothing.
+            CreateFooter(
+                label = stringResource(R.string.tasks_trigger_add),
+                icon = Icons.Outlined.Add,
+                onClick = { actions.onAskAdd(true) },
+                visible = ready != null && open != null,
+                loading = ready?.saving == true,
+            )
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
@@ -81,6 +91,8 @@ fun TasksScreen(
                 ready != null && open != null -> TaskTriggers(open, ready, actions, inner)
                 ready != null -> Tasks(ready, actions, inner, now)
             }
+            // A change or run the server didn't take is said in a message, not in a space kept in the list for it.
+            RefusedMessage(ready?.actionFailed, host, if (open != null) R.string.tasks_trigger_not_saved else R.string.tasks_not_sent)
         }
     }
 }
@@ -102,15 +114,6 @@ private fun Tasks(
                     rows = tasks.map { task -> task.row(board, actions, now).item() },
                 )
             }
-        }
-        item {
-            Text(
-                text = state.actionFailed?.let { stringResource(R.string.tasks_not_sent, stringResource(it.message)) }.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                minLines = STATUS_LINES,
-                maxLines = STATUS_LINES,
-            )
         }
     }
 }
