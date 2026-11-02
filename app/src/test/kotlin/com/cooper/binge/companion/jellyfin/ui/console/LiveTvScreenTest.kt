@@ -40,7 +40,7 @@ class LiveTvScreenTest {
         compose.onNodeWithText("M3U playlist", substring = true).assertIsDisplayed()
         compose.onNodeWithText("alice").assertIsDisplayed()
         compose.onNodeWithText("Schedules Direct").assertIsDisplayed()
-        compose.onNodeWithText("Guide runs until").assertIsDisplayed()
+        compose.onNodeWithText("Guide runs until").performScrollTo().assertIsDisplayed()
     }
 
     @Test

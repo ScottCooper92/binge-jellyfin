@@ -1020,7 +1020,7 @@
     <string name="backups_restore_failed">No se pudo hacer la restauración.</string>
     <string name="live_tv_title">TV en directo</string>
     <string name="console_live_tv_detail">Sintonizadores y guía</string>
-    <string name="live_tv_body">Los sintonizadores y los datos de guía que este servidor usa para la TV en directo. Por ahora esta página solo los muestra.</string>
+    <string name="live_tv_body">Los sintonizadores y los datos de guía que este servidor usa para la TV en directo.</string>
     <string name="live_tv_tuners">Sintonizadores</string>
     <string name="live_tv_no_tuners">Sin sintonizadores</string>
     <string name="live_tv_guide">Datos de guía</string>
@@ -1028,5 +1028,22 @@
     <string name="live_tv_guide_ends">La guía llega hasta</string>
     <string name="live_tv_refresh_guide">Actualizar la guía</string>
     <string name="live_tv_refresh_guide_detail">Se ejecuta desde Tareas programadas</string>
+    <string name="live_tv_guide_add">Añadir datos de guía</string>
+    <string name="live_tv_guide_add_detail">Una guía XMLTV, desde una dirección o un archivo del servidor</string>
+    <string name="live_tv_guide_form_add">Añadir guía XMLTV</string>
+    <string name="live_tv_guide_form_edit">Editar datos de guía</string>
+    <string name="live_tv_guide_path">Dirección o ruta</string>
+    <string name="live_tv_guide_path_detail">Una dirección web, o la ruta de un archivo XMLTV del servidor</string>
+    <string name="live_tv_guide_other_detail">Estos datos de guía se configuran por ahora en los ajustes de Jellyfin. Aquí puedes quitarlos.</string>
+    <string name="live_tv_guide_remove">Quitar datos de guía</string>
+    <string name="live_tv_guide_remove_title">¿Quitar estos datos de guía?</string>
+    <string name="live_tv_guide_remove_message">%1$s dejará de aportar la guía. El servidor actualiza la guía sin ellos.</string>
+    <string name="live_tv_guide_queued">Hecho. El servidor puso en cola una actualización de la guía.</string>
+    <string name="live_tv_guide_not_saved_title">No se guardaron los datos de guía</string>
+    <string name="live_tv_guide_not_saved_body">El servidor no pudo leerlos. Comprueba la dirección o la ruta, e inténtalo de nuevo.</string>
+    <string name="live_tv_guide_close">Cerrar</string>
+    <string name="live_tv_guide_add_submit">Añadir</string>
+    <string name="live_tv_guide_remove_confirm">Quitar</string>
+    <string name="live_tv_guide_not_changed">Sin cambios. Inténtalo de nuevo.</string>
     <string name="live_tv_type_m3u">Lista M3U</string>
 </resources>

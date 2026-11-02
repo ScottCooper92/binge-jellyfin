@@ -1,7 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.android.tools.screenshot.PreviewTest
+import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -60,4 +63,56 @@ class LiveTvScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = LiveTvScreen(LiveTvUiState.Failed(ConsoleFailure.Unreachable), LiveTvActions(), now = NOW)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun xmltvForm() = Surface { GuideFormContent(GuideForm(), false, LiveTvGuideActions()) }
+
+    /** An existing XMLTV guide: its path filled, and Remove last. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun xmltvEdit() =
+        Surface {
+            GuideFormContent(GuideForm("g1", "https://guide.example/xmltv.xml", name = "guide"), false, LiveTvGuideActions())
+        }
+
+    /** A Schedules Direct account, which cannot be edited here yet: no field, and the way to remove it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun schedulesDirectForm() =
+        Surface { GuideFormContent(GuideForm("g2", type = "SchedulesDirect", name = "alice"), false, LiveTvGuideActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun guideSaving() = Surface { GuideFormContent(GuideForm("g1", "/config/guide.xml"), true, LiveTvGuideActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun guideRemoveConfirm() =
+        ConsoleConfirm(
+            title = stringResource(R.string.live_tv_guide_remove_title),
+            message = stringResource(R.string.live_tv_guide_remove_message, "/config/guide.xml"),
+            confirmLabel = stringResource(R.string.live_tv_guide_remove_confirm),
+            onConfirm = {},
+            onDismissRequest = {},
+            destructive = true,
+            inWindow = false,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun guideNotSaved() =
+        ConsoleMessage(
+            title = stringResource(R.string.live_tv_guide_not_saved_title),
+            message = stringResource(R.string.live_tv_guide_not_saved_body),
+            onDismiss = {},
+            inWindow = false,
+        )
 }

@@ -1023,7 +1023,7 @@
     <string name="backups_restore_failed">The restore didn\'t go through.</string>
     <string name="live_tv_title">Live TV</string>
     <string name="console_live_tv_detail">Tuners and guide data</string>
-    <string name="live_tv_body">The tuners and guide data this server uses for Live TV. This page only shows them for now.</string>
+    <string name="live_tv_body">The tuners and guide data this server uses for Live TV.</string>
     <string name="live_tv_tuners">Tuners</string>
     <string name="live_tv_no_tuners">No tuners</string>
     <string name="live_tv_guide">Guide data</string>
@@ -1032,6 +1032,23 @@
     <string name="live_tv_refresh_guide">Refresh guide</string>
     <string name="live_tv_refresh_guide_detail">Run it from Scheduled tasks</string>
     <string name="live_tv_type_hdhomerun" translatable="false">HDHomeRun</string>
+    <string name="live_tv_guide_add">Add guide data</string>
+    <string name="live_tv_guide_add_detail">An XMLTV guide, from an address or a file on the server</string>
+    <string name="live_tv_guide_form_add">Add XMLTV guide</string>
+    <string name="live_tv_guide_form_edit">Edit guide data</string>
+    <string name="live_tv_guide_path">Address or path</string>
+    <string name="live_tv_guide_path_detail">A web address, or a path to an XMLTV file on the server</string>
+    <string name="live_tv_guide_other_detail">This guide data is set up in Jellyfin\'s own settings for now. You can remove it here.</string>
+    <string name="live_tv_guide_remove">Remove guide data</string>
+    <string name="live_tv_guide_remove_title">Remove this guide data?</string>
+    <string name="live_tv_guide_remove_message">%1$s will stop supplying the guide. The server refreshes the guide without it.</string>
+    <string name="live_tv_guide_queued">Done. The server queued a guide refresh.</string>
+    <string name="live_tv_guide_not_saved_title">The guide data was not saved</string>
+    <string name="live_tv_guide_not_saved_body">The server could not read it. Check the address or the path, then try again.</string>
+    <string name="live_tv_guide_close">Close</string>
+    <string name="live_tv_guide_add_submit">Add</string>
+    <string name="live_tv_guide_remove_confirm">Remove</string>
+    <string name="live_tv_guide_not_changed">Not changed. Try again.</string>
     <string name="live_tv_type_m3u">M3U playlist</string>
     <string name="live_tv_type_xmltv" translatable="false">XMLTV</string>
     <string name="live_tv_type_schedules_direct" translatable="false">Schedules Direct</string>

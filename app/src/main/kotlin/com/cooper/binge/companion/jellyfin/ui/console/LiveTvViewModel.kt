@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.server.liveTvSummary
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface LiveTvUiState {
@@ -47,6 +48,15 @@ class LiveTvViewModel(
                         onSuccess = { LiveTvUiState.Ready(it) },
                         onFailure = { LiveTvUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /** Reads the setup again without the page's skeleton, after a change to what it lists. */
+    fun refresh() {
+        viewModelScope.launch {
+            connection.consoleCall(TAG) { _, client -> client.liveTvSummary(withGuide) }.onSuccess { fresh ->
+                _state.update { (it as? LiveTvUiState.Ready)?.copy(summary = fresh) ?: it }
+            }
         }
     }
 
