@@ -49,6 +49,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import kotlinx.coroutines.launch
@@ -161,10 +162,8 @@ fun PluginsScreen(
                     BingeTabRow(
                         tabs = TABS.map { stringResource(it) },
                         selectedIndex = pager.currentPage,
-                        onSelect = { page ->
-                            tab = page
-                            scope.launch { pager.animateScrollToPage(page) }
-                        },
+                        // The pager alone writes `tab`, when it settles: a tap a swipe interrupts lands where the swipe did.
+                        onSelect = { page -> scope.launch { pager.animateScrollToPage(page) } },
                         modifier = Modifier.padding(top = inner.calculateTopPadding()),
                     )
                     HorizontalPager(
@@ -172,10 +171,34 @@ fun PluginsScreen(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         verticalAlignment = Alignment.Top,
                     ) { page ->
-                        PluginsPage(page, installed, catalog, repositories, actions, catalogActions, repositoryActions, content, listStates)
+                        PluginsPage(
+                            page,
+                            installed,
+                            catalog,
+                            repositories,
+                            actions,
+                            catalogActions,
+                            repositoryActions,
+                            content,
+                            listStates,
+                            plugin,
+                            pkg,
+                        )
                     }
                 } else {
-                    PluginsPage(tab, installed, catalog, repositories, actions, catalogActions, repositoryActions, content, listStates)
+                    PluginsPage(
+                        tab,
+                        installed,
+                        catalog,
+                        repositories,
+                        actions,
+                        catalogActions,
+                        repositoryActions,
+                        content,
+                        listStates,
+                        plugin,
+                        pkg,
+                    )
                 }
             }
         }
@@ -194,9 +217,9 @@ private fun PluginsPage(
     repositoryActions: RepositoriesActions,
     content: PaddingValues,
     listStates: PluginsListStates,
+    plugin: ServerPlugin?,
+    pkg: CatalogPackage?,
 ) {
-    val plugin = (installed as? PluginsUiState.Ready)?.let { ready -> ready.plugins.firstOrNull { it.id == ready.open } }
-    val pkg = (catalog as? CatalogUiState.Ready)?.let { ready -> ready.packages.firstOrNull { it.name == ready.open } }
     // Full height, so a page lays out as it did before the pager: a list fills it and a message sits where it always did.
     Box(Modifier.fillMaxSize()) {
         when (page) {
