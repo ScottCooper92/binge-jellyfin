@@ -374,6 +374,12 @@ app:now_playing_body  121fdbe9ea0e
 app:now_playing_body_admin  b3b28513c297
 app:now_playing_empty  a5a5b4149b90
 app:now_playing_forward_10  26551d43abbb
+app:now_playing_message  56e541ad86e0
+app:now_playing_message_body  dcee5cb89b47
+app:now_playing_message_header  8280fbd6bcff
+app:now_playing_message_send  f6f4688ff23d
+app:now_playing_message_text  2f77668a9dfb
+app:now_playing_mute  8dd6857baf02
 app:now_playing_next  1ff57a29d7c9
 app:now_playing_not_sent  0d35dbcb0c25
 app:now_playing_not_stopped  f96ec21644f6
@@ -385,6 +391,8 @@ app:now_playing_stop  cae7d57bc067
 app:now_playing_stop_body  8afcb72f95e7
 app:now_playing_stop_title  2b266e376814
 app:now_playing_title  0906bc70a0ec
+app:now_playing_unmute  ce4ee4efc5e3
+app:now_playing_volume  b10fb966d720
 app:now_playing_who  287892958adf
 app:password_action  3f9c991f63a9
 app:password_body  1214c1df1782

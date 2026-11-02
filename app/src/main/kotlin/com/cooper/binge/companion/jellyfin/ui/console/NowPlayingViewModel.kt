@@ -7,18 +7,15 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
-import com.cooper.binge.companion.jellyfin.server.PlaystateCommand
 import com.cooper.binge.companion.jellyfin.server.SessionControls
 import com.cooper.binge.companion.jellyfin.server.controllableSessionIds
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.nowPlayingFeed
-import com.cooper.binge.companion.jellyfin.server.sendPlaystate
 import com.cooper.binge.companion.jellyfin.server.stopPlaying
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface NowPlayingUiState {
@@ -44,6 +41,10 @@ sealed interface NowPlayingUiState {
         /** A playback command is on its way, so the page's buttons wait. */
         val sending: Boolean = false,
         val sendFailed: ConsoleFailure? = null,
+        /** The message sheet is open for this session, with the last send it refused, and whether one is on its way. */
+        val messaging: String? = null,
+        val messageSending: Boolean = false,
+        val messageFailed: ConsoleFailure? = null,
     ) : NowPlayingUiState {
         /** The open session, while it is still in the feed. */
         val selectedSession: NowPlaying? get() = selected?.let { id -> sessions.firstOrNull { it.sessionId == id } }
@@ -64,6 +65,9 @@ class NowPlayingViewModel(
     val state: StateFlow<NowPlayingUiState> = _state.asStateFlow()
 
     private var feed: Job? = null
+
+    /** The playback, volume and message commands, sent through this page's state. */
+    internal val remote = SessionRemote(connection, viewModelScope, _state)
 
     /** Whose session this is and which device: the pair that is never controlled, and the user whose list the server filters. */
     private var ownUserId = ""
@@ -116,48 +120,6 @@ class NowPlayingViewModel(
 
     fun deselect() = updateReady { copy(selected = null, sendFailed = null) }
 
-    fun playPause(session: NowPlaying) =
-        send(session, if (session.paused) PlaystateCommand.Unpause else PlaystateCommand.Pause) {
-            it.playPause
-        }
-
-    fun skip(
-        session: NowPlaying,
-        next: Boolean,
-    ) = send(session, if (next) PlaystateCommand.NextTrack else PlaystateCommand.PreviousTrack) { it.skip }
-
-    /** Moves [session]'s playback by [deltaMillis], within its own length. */
-    fun seekBy(
-        session: NowPlaying,
-        deltaMillis: Long,
-    ) = seekTo(session, session.positionTicks + deltaMillis * TICKS_PER_MILLI)
-
-    fun seekTo(
-        session: NowPlaying,
-        ticks: Long,
-    ) {
-        val limit = session.runtimeTicks ?: Long.MAX_VALUE
-        send(session, PlaystateCommand.Seek, ticks.coerceIn(0, limit)) { it.seek }
-    }
-
-    /** Sends [command] to [session] and no other, and only when the gates offer [allowed] for it: a refused one sends nothing. */
-    private fun send(
-        session: NowPlaying,
-        command: PlaystateCommand,
-        seekTicks: Long? = null,
-        allowed: (SessionControls) -> Boolean,
-    ) {
-        val ready = _state.value as? NowPlayingUiState.Ready ?: return
-        if (!allowed(ready.controlsFor(session)) || ready.sending) return
-        updateReady { copy(sending = true, sendFailed = null) }
-        viewModelScope.launch {
-            connection
-                .consoleCall(TAG) { _, client -> client.sendPlaystate(session.sessionId, command, seekTicks) }
-                .onSuccess { updateReady { copy(sending = false) } }
-                .onFailure { error -> updateReady { copy(sending = false, sendFailed = error.consoleFailure()) } }
-        }
-    }
-
     /** Reads the controllable list again when the feed shows a session it has not been asked about. */
     private suspend fun refreshControllable(
         client: JellyfinClient,
@@ -165,8 +127,10 @@ class NowPlayingViewModel(
     ) {
         val ids = pushed.mapTo(mutableSetOf()) { it.sessionId }
         if (asked.containsAll(ids)) return
-        asked = asked + ids
-        attempt { client.controllableSessionIds(ownUserId) }.onSuccess { controllable = it }
+        attempt { client.controllableSessionIds(ownUserId) }.onSuccess {
+            controllable = it
+            asked = asked + ids
+        }
     }
 
     private fun NowPlayingUiState.Ready.withControls(): NowPlayingUiState.Ready =
@@ -191,8 +155,7 @@ class NowPlayingViewModel(
         }
     }
 
-    private fun updateReady(change: NowPlayingUiState.Ready.() -> NowPlayingUiState.Ready) =
-        _state.update { (it as? NowPlayingUiState.Ready)?.change() ?: it }
+    private fun updateReady(change: NowPlayingUiState.Ready.() -> NowPlayingUiState.Ready) = _state.updateReady(change)
 
     private companion object {
         const val TAG = "JellyfinNowPlaying"
@@ -205,7 +168,5 @@ private fun NowPlayingUiState.Ready.following(pushed: List<NowPlaying>): NowPlay
         sessions = pushed,
         confirming = confirming?.takeIf { asked -> pushed.any { it.sessionId == asked.sessionId } },
         selected = selected?.takeIf { id -> pushed.any { it.sessionId == id } },
+        messaging = messaging?.takeIf { id -> pushed.any { it.sessionId == id } },
     )
-
-/** A tick is 100 nanoseconds, so 10,000 to a millisecond. */
-private const val TICKS_PER_MILLI = 10_000L

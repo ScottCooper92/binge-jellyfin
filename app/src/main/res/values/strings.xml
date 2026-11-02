@@ -147,6 +147,14 @@
     <string name="now_playing_forward_10">Forward 10 seconds</string>
     <string name="now_playing_play">Play</string>
     <string name="now_playing_pause">Pause</string>
+    <string name="now_playing_volume">Volume</string>
+    <string name="now_playing_mute">Mute</string>
+    <string name="now_playing_unmute">Unmute</string>
+    <string name="now_playing_message">Send a message</string>
+    <string name="now_playing_message_body">Shown on %2$s, %1$s\'s screen, for a few seconds.</string>
+    <string name="now_playing_message_header">Title (optional)</string>
+    <string name="now_playing_message_text">Message</string>
+    <string name="now_playing_message_send">Send</string>
     <string name="now_playing_stop_title">Stop %1$s?</string>
     <string name="now_playing_stop_body">It stops playing on %1$s, for %2$s.</string>
     <string name="now_playing_not_stopped">Not stopped. %1$s</string>

@@ -42,6 +42,11 @@ data class NowPlayingActions(
     val onSkip: (NowPlaying, Boolean) -> Unit = { _, _ -> },
     val onSeekBy: (NowPlaying, Long) -> Unit = { _, _ -> },
     val onSeekTo: (NowPlaying, Long) -> Unit = { _, _ -> },
+    val onVolume: (NowPlaying, Int) -> Unit = { _, _ -> },
+    val onToggleMute: (NowPlaying) -> Unit = {},
+    val onAskMessage: (NowPlaying) -> Unit = {},
+    val onCancelMessage: () -> Unit = {},
+    val onSendMessage: (NowPlaying, String, String) -> Unit = { _, _, _ -> },
     val onStop: (NowPlaying) -> Unit = {},
     val onConfirmStop: () -> Unit = {},
     val onCancelStop: () -> Unit = {},
@@ -80,6 +85,9 @@ fun NowPlayingScreen(
                 is NowPlayingUiState.Ready -> {
                     if (open == null) Streams(state, administrator, actions, inner) else SessionPage(open, state, actions, inner)
                     state.confirming?.let { StopDialog(it, actions) }
+                    state.messaging?.let { id ->
+                        state.sessions.firstOrNull { it.sessionId == id }?.let { MessageSheet(it, state, actions) }
+                    }
                     RefusedMessage(state.stopFailed, host, R.string.now_playing_not_stopped)
                     RefusedMessage(state.sendFailed, host, R.string.now_playing_not_sent)
                 }
