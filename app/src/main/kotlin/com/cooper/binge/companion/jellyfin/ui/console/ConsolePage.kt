@@ -21,6 +21,9 @@ enum class ConsolePage {
     /** Change the user's own password. For everyone. */
     Password,
 
+    /** Set, change and remove the user's own picture. For everyone: Jellyfin lets any user set their own. */
+    ProfilePicture,
+
     /** An administrator's own settings, behind the avatar: the pages everyone else has inline on their home. */
     Account,
 
@@ -88,7 +91,7 @@ enum class ConsolePage {
             ApproveCode -> profile.quickConnect
             Playback, HomeLayout -> account.canEditPreferences
             Password -> account.hasLocalPassword
-            NowPlaying -> true
+            NowPlaying, ProfilePicture -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
             Backups -> account.isAdministrator && profile.hasBackups

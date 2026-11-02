@@ -10,7 +10,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
@@ -93,7 +92,9 @@ class HomeAccountTest {
         }
         compose.onNodeWithText("Your account").assertExists()
         compose.onNodeWithText("Playback").performClick()
-        compose.onNodeWithText("Sign out").performScrollTo().performClick()
+        // The list is lazy and the page is taller than the window, so Sign out is scrolled to, not looked for where it is not yet.
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Sign out"))
+        compose.onNodeWithText("Sign out").performClick()
         assertEquals(listOf("Playback", "ask"), calls)
     }
 

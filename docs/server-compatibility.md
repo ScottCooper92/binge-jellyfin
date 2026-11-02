@@ -50,6 +50,7 @@ older server shows less rather than failing on a call it can't answer.
 | Loudness (LUFS) scanning for music libraries | 10.9 | `hasLoudnessScan` |
 | Preferring an extra's embedded title over its file name (library options) | 10.9 | `hasEmbeddedExtrasTitles` |
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
+| A user's picture at `/UserImage?userId=` (before, `/Users/{id}/Images/Primary`) | 10.9 | `hasUserImageRoute` |
 | Advanced options: library update duration, parallel image encoding, inactive session threshold, cast receivers (server configuration) | 10.9 | `hasAdvancedPerformance` |
 | Advanced options: user-data cache size, legacy authorization (server configuration) | 10.11 | `hasCacheAndLegacyAuth` |
 | Network: the ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`, `EnableIPv4`) | 10.9 | `hasInternalPortNames` |
