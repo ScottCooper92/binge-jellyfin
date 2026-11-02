@@ -56,6 +56,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
         ConsolePage.Backups -> BackupsRoute(graph, signedIn.profile.version, close)
+        ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
         ConsolePage.Server -> ServerRoute(graph, close)
     }
 }
