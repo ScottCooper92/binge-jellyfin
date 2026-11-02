@@ -38,7 +38,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Logs -> LogsRoute(graph, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
-        ConsolePage.Users -> UsersRoute(graph, close)
+        ConsolePage.Users -> UsersRoute(graph, signedIn.profile, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
         ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
@@ -186,32 +186,6 @@ private fun DevicesRoute(
             onAskRemove = devices::askRemove,
             onRemove = devices::remove,
             onRetry = devices::load,
-            onBack = onBack,
-        ),
-    )
-}
-
-/** The users page, with each user's own page inside it. */
-@Composable
-private fun UsersRoute(
-    graph: AppGraph,
-    onBack: () -> Unit,
-) {
-    val users: UsersViewModel = viewModel(factory = viewModelFactory { initializer { UsersViewModel(graph.connection) } })
-    val state by users.state.collectAsStateWithLifecycle()
-    UsersScreen(
-        state,
-        UsersActions(
-            onOpen = users::open,
-            onShow = users::show,
-            onAdministrator = users::setAdministrator,
-            onCanSignIn = users::setCanSignIn,
-            onAllLibraries = users::setAllLibraries,
-            onLibrary = users::setLibrary,
-            onCreate = users::create,
-            onSetPassword = users::setPassword,
-            onDelete = users::delete,
-            onRetry = users::load,
             onBack = onBack,
         ),
     )

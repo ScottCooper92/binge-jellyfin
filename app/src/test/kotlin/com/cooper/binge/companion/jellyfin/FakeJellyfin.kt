@@ -361,6 +361,14 @@ class FakeJellyfin : Dispatcher() {
                 serverUsers.remove(path.removePrefix("/Users/"))
                 MockResponse(code = 204)
             }
+            path == "/Localization/ParentalRatings" ->
+                json(
+                    """[{"Name":"G","Value":1,"RatingScore":{"score":1,"subScore":0}},{"Name":"PG","Value":5,"RatingScore":{"score":5,"subScore":2}},{"Name":"R","Value":9}]""",
+                )
+            path == "/LiveTv/Channels" ->
+                json(
+                    """{"Items":[{"Id":"ch-1","Name":"News"},{"Id":"ch-2","Name":"Sport"}],"TotalRecordCount":2}""",
+                )
             path == "/Sessions" -> json(sessions)
             path == "/Library/VirtualFolders" && request.method == "GET" -> json(libraries.toString())
             path.startsWith("/Library/VirtualFolders") || path.startsWith("/Environment/") || path == "/Libraries/AvailableOptions" ->
