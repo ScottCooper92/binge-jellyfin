@@ -1,15 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Code
@@ -20,7 +16,6 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,17 +23,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -86,10 +78,7 @@ fun ServerSettingsScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 ServerSettingsUiState.Loading ->
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) { BingeLoadingIndicator() }
+                    ConsoleLoading(inner, LOADING_ROWS)
                 is ServerSettingsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ServerSettingsUiState.Ready -> {
                     ServerSettingsBody(state, actions, splashscreenAvailable, inner) { picker = it }
@@ -290,17 +279,17 @@ internal fun TextDialog(
         onDismissRequest = { actions.onEdit(null) },
         inWindow = inWindow,
         extraContent = {
-            OutlinedTextField(
+            ConsoleTextField(
                 value = value,
                 onValueChange = { value = it },
-                label = { Text(stringResource(title)) },
+                label = stringResource(title),
                 singleLine = single,
                 minLines = if (text == ServerText.CustomCss) CSS_LINES else 1,
                 maxLines = if (single) 1 else CSS_LINES,
-                keyboardOptions = KeyboardOptions(imeAction = if (single) ImeAction.Done else ImeAction.Default),
-                keyboardActions = KeyboardActions(onDone = { actions.onSaveText(text, value) }),
-                modifier = Modifier.fillMaxWidth(),
+                onDone = { actions.onSaveText(text, value) },
             )
         },
     )
 }
+
+private const val LOADING_ROWS = 8

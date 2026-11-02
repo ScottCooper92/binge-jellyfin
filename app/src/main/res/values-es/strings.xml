@@ -12,6 +12,8 @@
     <string name="setup_sign_in_title">Iniciar sesión</string>
     <string name="setup_username">Nombre de usuario</string>
     <string name="setup_password">Contraseña</string>
+    <string name="field_show_password">Mostrar contraseña</string>
+    <string name="field_hide_password">Ocultar contraseña</string>
     <string name="setup_sign_in">Iniciar sesión</string>
     <string name="setup_quick_connect">Usar Quick Connect</string>
 
@@ -262,7 +264,6 @@
     <string name="console_logs_detail">Los archivos de registro del servidor</string>
     <string name="logs_empty">El servidor no tiene archivos de registro.</string>
     <string name="logs_search">Buscar en este registro</string>
-    <string name="logs_problems_only">Avisos y errores</string>
     <string name="logs_truncated">Se muestran los últimos %1$d KB de este registro.</string>
     <string name="logs_no_match">Ninguna línea coincide.</string>
     <string name="logs_share">Compartir</string>
@@ -698,6 +699,7 @@
     <string name="plugins_tab_catalog">Catálogo</string>
     <string name="plugins_tab_repositories">Repositorios</string>
     <string name="plugins_loading">Cargando plugins</string>
+    <string name="console_loading">Cargando</string>
     <string name="plugins_empty_title">Sin plugins</string>
     <string name="plugins_empty">Este servidor no tiene plugins instalados. Busca alguno en el catálogo.</string>
     <string name="plugins_restart_needed">Hace falta reiniciar</string>

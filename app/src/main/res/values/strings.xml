@@ -13,6 +13,8 @@
     <string name="setup_sign_in_title">Sign in</string>
     <string name="setup_username">Username</string>
     <string name="setup_password">Password</string>
+    <string name="field_show_password">Show password</string>
+    <string name="field_hide_password">Hide password</string>
     <string name="setup_sign_in">Sign in</string>
     <string name="setup_quick_connect">Use Quick Connect</string>
 
@@ -261,7 +263,6 @@
     <string name="console_logs_detail">The server\'s log files</string>
     <string name="logs_empty">The server has no log files.</string>
     <string name="logs_search">Search this log</string>
-    <string name="logs_problems_only">Warnings and errors</string>
     <string name="logs_truncated">Showing the last %1$d KB of this log.</string>
     <string name="logs_no_match">No lines match.</string>
     <string name="logs_share">Share</string>
@@ -708,6 +709,7 @@
     <string name="plugins_tab_catalog">Catalog</string>
     <string name="plugins_tab_repositories">Repositories</string>
     <string name="plugins_loading">Loading plugins</string>
+    <string name="console_loading">Loading</string>
     <string name="plugins_empty_title">No plugins</string>
     <string name="plugins_empty">This server has no plugins installed. Find some in the catalog.</string>
     <string name="plugins_restart_needed">Restart needed</string>

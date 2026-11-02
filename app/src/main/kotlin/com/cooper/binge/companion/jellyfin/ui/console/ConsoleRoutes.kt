@@ -10,6 +10,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.ui.AccountScreen
+import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.UiState
 
 /** The open console page, with its own view model from the page's store. */
@@ -20,12 +22,14 @@ internal fun ConsolePageRoute(
     signedIn: UiState.SignedIn,
     close: () -> Unit,
     open: (ConsolePage) -> Unit = {},
+    actions: Actions = Actions(),
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
         ConsolePage.Playback -> PlaybackRoute(graph, close)
         ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
+        ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying ->
             NowPlayingRoute(
                 graph,
@@ -277,7 +281,8 @@ private fun LogsRoute(
             onOpen = logs::open,
             onCloseLog = logs::closeLog,
             onQuery = logs::setQuery,
-            onProblemsOnly = logs::setProblemsOnly,
+            onLevel = logs::setLevel,
+            onCopy = { text -> copyLogEntry(context, text) },
             onShare = { name, text -> context.startActivity(shareLogIntent(context, name, text)) },
             onRetry = logs::load,
             onRetryOpen = logs::retryOpen,

@@ -56,12 +56,18 @@ internal fun Throwable.consoleFailure(): ConsoleFailure =
 internal fun ConsoleFailure.errorKind(): ErrorKind = if (this == ConsoleFailure.Unreachable) ErrorKind.Network else ErrorKind.Server
 
 /**
- * A console page that couldn't read: the design system's [ErrorScreen] for [failure], in this app's words, with Try again.
- * [modifier] carries the page's inner padding.
+ * A console page that couldn't read: the design system's [ErrorScreen] for [failure], with Try again. The kind's own copy
+ * says what happened; when the server didn't answer, this app's own headline names it ("Couldn't reach your Jellyfin
+ * server"), which the kind's "No connection" does not. [modifier] carries the page's inner padding.
  */
 @Composable
 internal fun ConsoleFailureScreen(
     failure: ConsoleFailure,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-) = ErrorScreen(kind = failure.errorKind(), onRetry = onRetry, message = stringResource(failure.message), modifier = modifier)
+) = ErrorScreen(
+    kind = failure.errorKind(),
+    onRetry = onRetry,
+    title = stringResource(R.string.error_unreachable).takeIf { failure == ConsoleFailure.Unreachable },
+    modifier = modifier,
+)

@@ -2,7 +2,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,12 +29,10 @@ import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
@@ -86,7 +83,7 @@ fun HomeLayoutScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                HomeLayoutUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                HomeLayoutUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is HomeLayoutUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is HomeLayoutUiState.Ready ->
                     if (library == null) HomeLayoutBody(state, actions, inner) else LibraryPage(state, library, actions, inner)
@@ -273,3 +270,5 @@ internal fun UserView.icon(): ImageVector =
         "folders" -> Icons.Outlined.Folder
         else -> Icons.Outlined.GridView
     }
+
+private const val LOADING_ROWS = 10
