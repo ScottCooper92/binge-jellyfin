@@ -139,6 +139,14 @@
     <string name="now_playing_empty">Nothing\'s playing right now.</string>
     <string name="now_playing_who">%1$s on %2$s · %3$s</string>
     <string name="now_playing_stop">Stop</string>
+    <string name="now_playing_not_sent">Not sent. %1$s</string>
+    <string name="now_playing_position">%1$s of %2$s</string>
+    <string name="now_playing_previous">Previous</string>
+    <string name="now_playing_next">Next</string>
+    <string name="now_playing_back_10">Back 10 seconds</string>
+    <string name="now_playing_forward_10">Forward 10 seconds</string>
+    <string name="now_playing_play">Play</string>
+    <string name="now_playing_pause">Pause</string>
     <string name="now_playing_stop_title">Stop %1$s?</string>
     <string name="now_playing_stop_body">It stops playing on %1$s, for %2$s.</string>
     <string name="now_playing_not_stopped">Not stopped. %1$s</string>

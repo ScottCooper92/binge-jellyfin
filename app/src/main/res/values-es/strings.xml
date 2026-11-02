@@ -139,6 +139,14 @@
     <string name="now_playing_empty">No se está reproduciendo nada.</string>
     <string name="now_playing_who">%1$s en %2$s · %3$s</string>
     <string name="now_playing_stop">Detener</string>
+    <string name="now_playing_not_sent">No enviado. %1$s</string>
+    <string name="now_playing_position">%1$s de %2$s</string>
+    <string name="now_playing_previous">Anterior</string>
+    <string name="now_playing_next">Siguiente</string>
+    <string name="now_playing_back_10">Retroceder 10 segundos</string>
+    <string name="now_playing_forward_10">Avanzar 10 segundos</string>
+    <string name="now_playing_play">Reproducir</string>
+    <string name="now_playing_pause">Pausar</string>
     <string name="now_playing_stop_title">¿Detener %1$s?</string>
     <string name="now_playing_stop_body">Se detiene en %1$s, para %2$s.</string>
     <string name="now_playing_not_stopped">No se ha detenido. %1$s</string>

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -18,6 +19,7 @@ import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -133,7 +135,105 @@ class NowPlayingViewModelTest {
         assertEquals(R.string.transcode_other, transcodeReason(listOf("DirectPlayError")))
     }
 
+    private fun controlSessions(vararg ids: String) =
+        ids.joinToString(",", "[", "]") { id ->
+            val owner = if (id == "s-other") OTHER_USER else "user-1"
+            """{"Id":"$id","UserId":"$owner","DeviceId":"dev-$id","UserName":"u","DeviceName":"d","Client":"c",""" +
+                """"SupportsRemoteControl":true,"SupportsMediaControl":true,"SupportedCommands":["Mute","SetVolume"],""" +
+                """"PlayState":{"PositionTicks":6000000000,"IsPaused":false,"CanSeek":true,"PlayMethod":"DirectPlay"},""" +
+                """"NowPlayingItem":{"Name":"Sintel","RunTimeTicks":8880000000}}"""
+        }
+
+    private fun commandPosts() = jellyfin.requests.filter { it.method == "POST" && "/Playing/" in it.url.encodedPath }
+
+    @Test
+    fun `a control goes to the tapped session and no other, with the seek position`() {
+        jellyfin.sessions = controlSessions("s-mine", "s-other")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = true))))
+        val ready = vm.ready()
+        val other = ready.sessions.first { it.sessionId == "s-other" }
+        vm.select(other)
+        vm.seekBy(other, 10_000)
+        vm.ready { !it.sending }
+        val post = commandPosts().single()
+        assertEquals("/Sessions/s-other/Playing/Seek", post.url.encodedPath)
+        assertEquals((6_000_000_000L + 100_000_000L).toString(), post.url.queryParameter("seekPositionTicks"))
+    }
+
+    @Test
+    fun `a control the account does not allow sends nothing`() {
+        jellyfin.sessions = controlSessions("s-mine", "s-other")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val other = vm.ready().sessions.first { it.sessionId == "s-other" }
+        vm.playPause(other)
+        vm.skip(other, true)
+        vm.askStop(other)
+        vm.stop()
+        assertTrue(commandPosts().isEmpty())
+        assertNull(vm.ready().confirming)
+    }
+
+    @Test
+    fun `a control the server's controllable list leaves out sends nothing`() {
+        jellyfin.sessions = controlSessions("s-mine", "s-other")
+        jellyfin.controllableSessionIds = setOf("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = true))))
+        val other = vm.ready().sessions.first { it.sessionId == "s-other" }
+        vm.playPause(other)
+        assertTrue(commandPosts().isEmpty())
+        assertTrue(
+            vm
+                .ready()
+                .controlsFor(other)
+                .any
+                .not(),
+        )
+    }
+
+    @Test
+    fun `play and pause follow the session's state, and a seek stays inside the media`() {
+        jellyfin.sessions = controlSessions("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val mine = vm.ready().sessions.single()
+        vm.playPause(mine)
+        vm.ready { !it.sending }
+        vm.seekTo(mine, 99_000_000_000L)
+        vm.ready { !it.sending }
+        val paths = commandPosts().map { it.url.encodedPath }
+        assertEquals(listOf("/Sessions/s-mine/Playing/Pause", "/Sessions/s-mine/Playing/Seek"), paths)
+        assertEquals("8880000000", commandPosts().last().url.queryParameter("seekPositionTicks"))
+    }
+
+    @Test
+    fun `a session that leaves the feed closes its page`() {
+        jellyfin.sessions = controlSessions("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        vm.select(vm.ready().sessions.single())
+        subscribed()
+        jellyfin.push("""{"MessageType":"Sessions","Data":[]}""")
+        assertNull(vm.ready { it.sessions.isEmpty() }.selected)
+    }
+
+    @Test
+    fun `a command the server cannot be reached for says so and keeps the page`() {
+        jellyfin.sessions = controlSessions("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val mine = vm.ready().sessions.single()
+        vm.select(mine)
+        jellyfin.dropped += "/Sessions/s-mine/Playing/Pause"
+        vm.playPause(mine)
+        val failed = vm.ready { it.sendFailed != null }
+        assertEquals("s-mine", failed.selected)
+        assertFalse(failed.sending)
+    }
+
+    private fun policyOf(remote: Boolean) =
+        kotlinx.serialization.json.Json
+            .parseToJsonElement("""{"IsAdministrator":false,"EnableRemoteControlOfOtherUsers":$remote}""")
+            .let { it as kotlinx.serialization.json.JsonObject }
+
     private companion object {
+        const val OTHER_USER = "OTHERUSER"
         const val TIMEOUT_MILLIS = 10_000L
         const val POLL_MILLIS = 10L
     }

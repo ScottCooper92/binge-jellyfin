@@ -2,10 +2,17 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
+import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
+import com.cooper.binge.companion.jellyfin.server.PlaystateCommand
+import com.cooper.binge.companion.jellyfin.server.SessionControls
+import com.cooper.binge.companion.jellyfin.server.controllableSessionIds
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.nowPlayingFeed
+import com.cooper.binge.companion.jellyfin.server.sendPlaystate
 import com.cooper.binge.companion.jellyfin.server.stopPlaying
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +37,19 @@ sealed interface NowPlayingUiState {
         val confirming: NowPlaying? = null,
         val stopping: String? = null,
         val stopFailed: ConsoleFailure? = null,
-    ) : NowPlayingUiState
+        /** What the signed-in user may do to each session, by session id: a session with no entry takes no control. */
+        val controls: Map<String, SessionControls> = emptyMap(),
+        /** The session whose page is open, if any. */
+        val selected: String? = null,
+        /** A playback command is on its way, so the page's buttons wait. */
+        val sending: Boolean = false,
+        val sendFailed: ConsoleFailure? = null,
+    ) : NowPlayingUiState {
+        /** The open session, while it is still in the feed. */
+        val selectedSession: NowPlaying? get() = selected?.let { id -> sessions.firstOrNull { it.sessionId == id } }
+
+        fun controlsFor(session: NowPlaying): SessionControls = controls[session.sessionId] ?: SessionControls()
+    }
 }
 
 /**
@@ -39,11 +58,18 @@ sealed interface NowPlayingUiState {
  */
 class NowPlayingViewModel(
     private val connection: Connection,
+    private val account: JellyfinAccount = JellyfinAccount(),
 ) : ViewModel() {
     private val _state = MutableStateFlow<NowPlayingUiState>(NowPlayingUiState.Loading)
     val state: StateFlow<NowPlayingUiState> = _state.asStateFlow()
 
     private var feed: Job? = null
+
+    /** Whose session this is and which device: the pair that is never controlled, and the user whose list the server filters. */
+    private var ownUserId = ""
+    private var ownDeviceId = ""
+    private var controllable: Set<String> = emptySet()
+    private var asked: Set<String> = emptySet()
 
     init {
         load()
@@ -54,22 +80,107 @@ class NowPlayingViewModel(
         _state.value = NowPlayingUiState.Loading
         feed =
             viewModelScope.launch {
-                val first = connection.consoleCall(TAG) { _, client -> client.nowPlaying() to client }
+                val first =
+                    connection.consoleCall(TAG) { session, client ->
+                        ownUserId = session.userId
+                        ownDeviceId = connection.identity().deviceId
+                        val sessions = client.nowPlaying()
+                        controllable = client.controllableSessionIds(session.userId)
+                        asked = sessions.mapTo(mutableSetOf()) { it.sessionId }
+                        sessions to client
+                    }
                 first
                     .onFailure { _state.value = NowPlayingUiState.Failed(it.consoleFailure()) }
                     .onSuccess { (sessions, client) ->
-                        _state.value = NowPlayingUiState.Ready(sessions)
-                        client.nowPlayingFeed().collect { pushed -> updateReady { following(pushed) } }
+                        _state.value = NowPlayingUiState.Ready(sessions).withControls()
+                        client.nowPlayingFeed().collect { pushed ->
+                            refreshControllable(client, pushed)
+                            updateReady { following(pushed).withControls() }
+                        }
                     }
             }
     }
 
-    fun askStop(session: NowPlaying) = updateReady { copy(confirming = session, stopFailed = null) }
+    /** Opens the page of [session], which must be one the feed lists. */
+    fun select(session: NowPlaying) =
+        updateReady {
+            if (sessions.any { it.sessionId == session.sessionId }) {
+                copy(
+                    selected = session.sessionId,
+                    sendFailed = null,
+                )
+            } else {
+                this
+            }
+        }
+
+    fun deselect() = updateReady { copy(selected = null, sendFailed = null) }
+
+    fun playPause(session: NowPlaying) =
+        send(session, if (session.paused) PlaystateCommand.Unpause else PlaystateCommand.Pause) {
+            it.playPause
+        }
+
+    fun skip(
+        session: NowPlaying,
+        next: Boolean,
+    ) = send(session, if (next) PlaystateCommand.NextTrack else PlaystateCommand.PreviousTrack) { it.skip }
+
+    /** Moves [session]'s playback by [deltaMillis], within its own length. */
+    fun seekBy(
+        session: NowPlaying,
+        deltaMillis: Long,
+    ) = seekTo(session, session.positionTicks + deltaMillis * TICKS_PER_MILLI)
+
+    fun seekTo(
+        session: NowPlaying,
+        ticks: Long,
+    ) {
+        val limit = session.runtimeTicks ?: Long.MAX_VALUE
+        send(session, PlaystateCommand.Seek, ticks.coerceIn(0, limit)) { it.seek }
+    }
+
+    /** Sends [command] to [session] and no other, and only when the gates offer [allowed] for it: a refused one sends nothing. */
+    private fun send(
+        session: NowPlaying,
+        command: PlaystateCommand,
+        seekTicks: Long? = null,
+        allowed: (SessionControls) -> Boolean,
+    ) {
+        val ready = _state.value as? NowPlayingUiState.Ready ?: return
+        if (!allowed(ready.controlsFor(session)) || ready.sending) return
+        updateReady { copy(sending = true, sendFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.sendPlaystate(session.sessionId, command, seekTicks) }
+                .onSuccess { updateReady { copy(sending = false) } }
+                .onFailure { error -> updateReady { copy(sending = false, sendFailed = error.consoleFailure()) } }
+        }
+    }
+
+    /** Reads the controllable list again when the feed shows a session it has not been asked about. */
+    private suspend fun refreshControllable(
+        client: JellyfinClient,
+        pushed: List<NowPlaying>,
+    ) {
+        val ids = pushed.mapTo(mutableSetOf()) { it.sessionId }
+        if (asked.containsAll(ids)) return
+        asked = asked + ids
+        attempt { client.controllableSessionIds(ownUserId) }.onSuccess { controllable = it }
+    }
+
+    private fun NowPlayingUiState.Ready.withControls(): NowPlayingUiState.Ready =
+        copy(controls = sessions.associate { it.sessionId to SessionControls.of(it, controllable, account, ownUserId, ownDeviceId) })
+
+    fun askStop(session: NowPlaying) =
+        updateReady { if (controlsFor(session).stop) copy(confirming = session, stopFailed = null) else this }
 
     fun cancelStop() = updateReady { copy(confirming = null) }
 
     fun stop() {
-        val session = (_state.value as? NowPlayingUiState.Ready)?.confirming ?: return
+        val ready = _state.value as? NowPlayingUiState.Ready ?: return
+        val session = ready.confirming ?: return
+        if (!ready.controlsFor(session).stop) return
         updateReady { copy(confirming = null, stopping = session.sessionId, stopFailed = null) }
         viewModelScope.launch {
             connection
@@ -93,4 +204,8 @@ private fun NowPlayingUiState.Ready.following(pushed: List<NowPlaying>): NowPlay
     copy(
         sessions = pushed,
         confirming = confirming?.takeIf { asked -> pushed.any { it.sessionId == asked.sessionId } },
+        selected = selected?.takeIf { id -> pushed.any { it.sessionId == id } },
     )
+
+/** A tick is 100 nanoseconds, so 10,000 to a millisecond. */
+private const val TICKS_PER_MILLI = 10_000L
