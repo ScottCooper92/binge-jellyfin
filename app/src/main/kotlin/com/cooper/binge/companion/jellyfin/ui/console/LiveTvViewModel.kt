@@ -105,9 +105,25 @@ class LiveTvViewModel(
                                     .takeIf { it.isNotBlank() }
                                     ?.let { it to host }
                             }.toMap()
-                    update { copy(sheet = TunerSheet.Found(found.values.map { TunerDraft.of(it).copy(id = null) })) }
+                    update {
+                        if (sheet == TunerSheet.Discovering) {
+                            copy(sheet = TunerSheet.Found(found.values.map { TunerDraft.of(it).copy(id = null) }))
+                        } else {
+                            this
+                        }
+                    }
                 },
-                onFailure = { update { copy(sheet = TunerSheet.Choose, problem = TunerProblem.DiscoverFailed) } },
+                onFailure = {
+                    update {
+                        if (sheet ==
+                            TunerSheet.Discovering
+                        ) {
+                            copy(sheet = TunerSheet.Choose, problem = TunerProblem.DiscoverFailed)
+                        } else {
+                            this
+                        }
+                    }
+                },
             )
         }
     }

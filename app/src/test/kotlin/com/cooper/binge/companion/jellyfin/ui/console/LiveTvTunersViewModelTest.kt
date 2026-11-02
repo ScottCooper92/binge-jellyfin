@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
@@ -210,6 +211,34 @@ class LiveTvTunersViewModelTest {
         assertEquals(TunerSheet.Choose, ready.sheet)
     }
 
+    private fun awaitDiscoveryAnswered() {
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (jellyfin.requests.none { it.url.encodedPath == "/LiveTv/Tuners/Discover" }) delay(10)
+            }
+            delay(DISCOVERY_SETTLE_MILLIS)
+        }
+    }
+
+    @Test
+    fun `a discovery that answers after the sheet changed leaves the sheet alone`() {
+        val vm = vm()
+        vm.ready()
+        vm.discover()
+        vm.edit("t1")
+        awaitDiscoveryAnswered()
+        assertTrue(vm.ready().sheet is TunerSheet.Form)
+
+        jellyfin.requests.clear()
+        jellyfin.discoveredTuners = "not json"
+        vm.discover()
+        vm.sheet(null)
+        awaitDiscoveryAnswered()
+        val ready = vm.ready()
+        assertNull(ready.sheet)
+        assertNull(ready.problem)
+    }
+
     @Test
     fun `a draft keeps its address out of its text, which an M3U playlist's may carry an account in`() {
         val draft = TunerDraft(TUNER_TYPE_M3U, url = "https://u:secret@iptv.example/get.php?password=hunter2")
@@ -221,5 +250,6 @@ class LiveTvTunersViewModelTest {
     private companion object {
         const val HOSTS = "/LiveTv/TunerHosts"
         const val TIMEOUT_MILLIS = 10_000L
+        const val DISCOVERY_SETTLE_MILLIS = 300L
     }
 }
