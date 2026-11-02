@@ -153,7 +153,8 @@ class LibraryScreenTest {
             cultures = languages,
             page = LibraryPage.Languages,
         )
-        compose.onNodeWithText("Spanish").performClick()
+        // The page is a lazy list, so a language below the first screen is scrolled to before it is tapped.
+        compose.onNodeWithText("Spanish").performScrollTo().performClick()
         assertEquals(listOf("""SubtitleDownloadLanguages ["spa"]"""), calls)
     }
 
