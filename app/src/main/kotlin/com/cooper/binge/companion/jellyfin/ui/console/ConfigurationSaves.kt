@@ -98,6 +98,9 @@ internal class ConfigurationSaves(
         engine.changed()
     }
 
+    /** Sends a change still waiting, after any write running; the answer completes when the server has it. */
+    fun settle() = engine.settle()
+
     /** Sends the change a failed write left unsent. */
     fun retry() = engine.now()
 

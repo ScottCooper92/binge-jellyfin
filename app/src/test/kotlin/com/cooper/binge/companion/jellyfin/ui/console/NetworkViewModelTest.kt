@@ -237,8 +237,7 @@ class NetworkViewModelTest {
     }
 
     @Test
-    fun `from 10_9 the base URL is written into the server's configuration, not the network one`() {
-        jellyfin.serverConfiguration = """{"ServerName":"truenas","BaseUrl":"","FutureServerOption":3}"""
+    fun `from 10_9 the base URL is still written into the network configuration`() {
         val vm = vm("10.10.7")
         vm.ready()
         vm.saveText(NetworkText.BaseUrl, "/jf")
@@ -246,12 +245,23 @@ class NetworkViewModelTest {
         vm.save()
         assertEquals(setOf(NetworkImpact.BaseUrl), vm.ready { it.confirming != null }.confirming)
         vm.confirm()
-        waitFor("/System/Configuration", 1)
-        val body = jellyfin.lastBody("/System/Configuration")
-        assertEquals("/jf", body.getValue("BaseUrl").jsonPrimitive.content)
-        assertEquals(3, body.getValue("FutureServerOption").jsonPrimitive.int)
-        assertEquals(0, posts(NETWORK))
+        waitFor(NETWORK, 1)
+        assertEquals("/jf", sent().getValue("BaseUrl").jsonPrimitive.content)
+        assertEquals(0, posts("/System/Configuration"))
         assertTrue(vm.ready { it.restartNeeded && !it.committing }.draft.isEmpty())
+    }
+
+    @Test
+    fun `Save changes sends a save-as-made change still waiting first, and keeps both`() {
+        val vm = vm()
+        vm.ready()
+        vm.setSwitch("AutoDiscovery", false, form = false)
+        vm.saveNumber(NetworkNumber.PublicHttpPort, "8000")
+        vm.save()
+        vm.ready { it.restartNeeded && !it.committing }
+        assertEquals(false, sent().getValue("AutoDiscovery").jsonPrimitive.boolean)
+        assertEquals(8000, sent().getValue("PublicHttpPort").jsonPrimitive.int)
+        assertEquals(false, vm.ready().settings.autoDiscovery)
     }
 
     @Test

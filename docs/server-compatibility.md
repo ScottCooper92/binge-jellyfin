@@ -51,7 +51,7 @@ older server shows less rather than failing on a call it can't answer.
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
 | Advanced options: library update duration, parallel image encoding, inactive session threshold, cast receivers (server configuration) | 10.9 | `hasAdvancedPerformance` |
 | Advanced options: user-data cache size, legacy authorization (server configuration) | 10.11 | `hasCacheAndLegacyAuth` |
-| Network: the ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`, `EnableIPv4`), and the base URL is in the server's configuration, not the network one | 10.9 | `hasInternalPortNames` |
+| Network: the ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`, `EnableIPv4`) | 10.9 | `hasInternalPortNames` |
 | Network: the UPnP port mapping switch, which 10.11 marks no longer supported (so it shows before 10.11) | until 10.10 | `hasUpnpOption` |
 | Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |

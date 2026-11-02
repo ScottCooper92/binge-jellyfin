@@ -17,17 +17,15 @@ class JellyfinNetworkSettingsTest {
     ) = networkImpacts(app, before, after)
 
     @Test
-    fun `names differ by release, the base URL moves, and both read`() {
+    fun `names differ by release, and both read`() {
         val old = JellyfinServerProfile.from("10.8.13")
         val new = JellyfinServerProfile.from("10.9.0")
         assertEquals("HttpServerPortNumber", networkKeys(old).httpPort)
         assertEquals("PublicPort", networkKeys(old).publicHttpPort)
         assertEquals("EnableIPV4", networkKeys(old).ipv4)
-        assertFalse(networkKeys(old).baseUrlInServer)
         assertEquals("InternalHttpPort", networkKeys(new).httpPort)
         assertEquals("PublicHttpPort", networkKeys(new).publicHttpPort)
         assertEquals("EnableIPv4", networkKeys(new).ipv4)
-        assertTrue(networkKeys(new).baseUrlInServer)
         val json = Json.parseToJsonElement("""{"HttpServerPortNumber":9000,"EnableIPV6":true,"BaseUrl":"/jf"}""").jsonObject
         val settings = json.networkSettings(networkKeys(old))
         assertEquals(9000, settings.httpPort)
@@ -50,9 +48,11 @@ class JellyfinNetworkSettingsTest {
     }
 
     @Test
-    fun `the base URL a release keeps in the server's configuration is read from it`() {
-        val network = Json.parseToJsonElement("""{"InternalHttpPort":8096}""").jsonObject
-        assertEquals("/jf", network.networkSettings(networkKeys(JellyfinServerProfile.from("10.10.0")), "/jf").baseUrl)
+    fun `the base URL is in the network configuration on every release`() {
+        val network = Json.parseToJsonElement("""{"InternalHttpPort":8096,"BaseUrl":"/jf"}""").jsonObject
+        val settings = network.networkSettings(networkKeys(JellyfinServerProfile.from("10.10.0")))
+        assertEquals("/jf", settings.baseUrl)
+        assertTrue(settings.has("BaseUrl"))
     }
 
     @Test

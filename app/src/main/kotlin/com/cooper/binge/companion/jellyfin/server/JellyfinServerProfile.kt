@@ -95,7 +95,7 @@ data class JellyfinServerProfile(
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
 
-    /** The network configuration's ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`), and the base URL is in the server's own configuration. 10.9. */
+    /** The network configuration's ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`). 10.9. */
     val hasInternalPortNames: Boolean get() = atLeast(TEN, NINE)
 
     /** UPnP port mapping: in the network configuration until 10.11 marks it no longer supported. */

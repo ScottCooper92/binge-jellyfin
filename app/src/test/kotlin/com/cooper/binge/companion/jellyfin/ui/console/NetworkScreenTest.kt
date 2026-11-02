@@ -43,7 +43,7 @@ class NetworkScreenTest {
         val keys = networkKeys(JellyfinServerProfile.from(version))
         val state =
             NetworkUiState.Ready(
-                Json.parseToJsonElement(json).jsonObject.networkSettings(keys, "/jf"),
+                Json.parseToJsonElement(json).jsonObject.networkSettings(keys),
                 keys,
                 draft,
                 confirming = confirming,
