@@ -249,6 +249,7 @@ private fun ServerRoute(
             onRestart = server::restart,
             onConfirmShutdown = server::confirmShutdown,
             onShutdown = server::shutdown,
+            onDismissRestart = server::dismissRestart,
             onRetry = server::load,
             onBack = onBack,
         ),

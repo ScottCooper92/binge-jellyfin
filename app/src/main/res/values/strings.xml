@@ -458,7 +458,8 @@
     <string name="server_restart_body">Everyone using it is cut off until it\'s back, usually within a minute.</string>
     <string name="server_restarting">Restarting… This page carries on when the server is back.</string>
     <string name="server_restarted">Restarted.</string>
-    <string name="server_not_back">The server hasn\'t come back after two minutes. Check it where it runs.</string>
+    <string name="server_not_back_title">The server hasn\'t come back</string>
+    <string name="server_not_back_body">It has been two minutes. Check it where it runs.</string>
     <string name="server_restart_failed">The server didn\'t take the restart. Try again.</string>
     <string name="server_cant_restart">This server can\'t restart itself. Restart it where it runs.</string>
     <string name="server_settings_title">Server settings</string>
@@ -967,7 +968,7 @@
     <string name="backups_creating">Making a backup</string>
     <string name="backups_creating_detail">The server is writing it. You can leave this page.</string>
     <string name="backups_created_message">Backup made. It is first in the list below.</string>
-    <string name="backups_create_failed_message">The backup wasn\'t made. %1$s</string>
+    <string name="backups_create_failed_title">The backup wasn\'t made</string>
     <string name="backups_create_refused">The server may need 5 GiB free where it keeps backups. Free up space before trying again.</string>
     <string name="backups_done">Done</string>
     <string name="backups_sheet_title">Backup</string>
@@ -980,6 +981,7 @@
     <string name="backups_restoring_detail">The server is restarting.</string>
     <string name="backups_restored">Restored</string>
     <string name="backups_restored_detail">The server is back.</string>
-    <string name="backups_restore_not_back">The server didn\'t come back in time. Check it, then try again.</string>
+    <string name="backups_restore_not_back_title">The server didn\'t come back in time</string>
+    <string name="backups_restore_not_back_body">Check it, then try again.</string>
     <string name="backups_restore_failed">The restore didn\'t go through.</string>
 </resources>

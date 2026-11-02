@@ -74,6 +74,9 @@ class ServerViewModel(
 
     fun confirm(showing: Boolean) = update { copy(confirming = showing && info.canRestart && !down) }
 
+    /** Clears the notice that the server never came back. A restart that is going, or done, is not cleared. */
+    fun dismissRestart() = update { if (restart == Restart.NotBack) copy(restart = null) else this }
+
     fun confirmShutdown(showing: Boolean) = update { copy(confirmingShutdown = showing && !down) }
 
     fun restart() {
