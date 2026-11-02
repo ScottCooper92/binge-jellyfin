@@ -116,7 +116,7 @@ internal fun AddFolderForm(
                 if (state.folderMissing) {
                     stringResource(R.string.library_path_missing)
                 } else {
-                    state.failed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
+                    state.failed?.let { stringResource(R.string.settings_not_saved, it.text()) }
                 },
             minLines = 1,
             maxLines = 2,

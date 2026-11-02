@@ -129,7 +129,7 @@ private fun More(
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
     } else {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(stringResource(failed.message), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            Text(failed.text(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
             BingeTextButton(label = stringResource(R.string.console_retry), onClick = actions.onLoadMore)
         }
     }

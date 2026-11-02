@@ -105,7 +105,7 @@ private fun Devices(
             submitting = it.id in state.busy,
             error =
                 state.formFailure?.let { f ->
-                    stringResource(R.string.devices_not_changed, stringResource(f.message))
+                    stringResource(R.string.devices_not_changed, f.text())
                 },
         )
     }

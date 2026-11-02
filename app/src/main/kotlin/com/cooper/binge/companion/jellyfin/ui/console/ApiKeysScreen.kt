@@ -104,7 +104,7 @@ private fun Keys(
         }
         item {
             Text(
-                text = state.actionFailed?.let { stringResource(R.string.api_keys_not_changed, stringResource(it.message)) }.orEmpty(),
+                text = state.actionFailed?.let { stringResource(R.string.api_keys_not_changed, it.text()) }.orEmpty(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 minLines = STATUS_LINES,
@@ -118,7 +118,7 @@ private fun Keys(
             submitting = state.busy,
             error =
                 state.formFailure?.let {
-                    stringResource(R.string.api_keys_not_changed, stringResource(it.message))
+                    stringResource(R.string.api_keys_not_changed, it.text())
                 },
         )
     }
