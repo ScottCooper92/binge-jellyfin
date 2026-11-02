@@ -49,8 +49,7 @@ class DevicesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun changing() =
-        DevicesScreen(previewReady.copy(busy = setOf("kodi")), DevicesActions(), now = NOW)
+    fun changing() = DevicesScreen(previewReady.copy(busy = setOf("kodi")), DevicesActions(), now = NOW)
 
     /** The server listed no devices, which it can when every item it sent was one this app could not read. */
     @PreviewTest
