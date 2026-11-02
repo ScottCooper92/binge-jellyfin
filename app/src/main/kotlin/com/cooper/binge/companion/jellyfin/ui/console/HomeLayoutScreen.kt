@@ -25,9 +25,14 @@ import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
@@ -187,6 +192,7 @@ private fun LibraryPage(
     val inMyMedia = library.id !in layout.myMediaExcludes
     val inLatest = library.id !in layout.latestExcludes
     val place = state.libraries.indexOf(library)
+    AnnounceMove(place, state.libraries.size)
     Column(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
@@ -237,6 +243,27 @@ private fun LibraryPage(
                     ),
                 ),
         )
+    }
+}
+
+/**
+ * Says the library's new place aloud once it has moved, as TalkBack: the position row is plain text, so a move reads
+ * nothing until focus returns to it. The first composition says nothing, only a change of [place] does. A
+ * `ListItem` carries no live region, so this announces from the view.
+ */
+@Composable
+private fun AnnounceMove(
+    place: Int,
+    count: Int,
+) {
+    val view = LocalView.current
+    val message = stringResource(R.string.home_layout_moved, place + 1, count)
+    var shown by remember { mutableIntStateOf(place) }
+    LaunchedEffect(place) {
+        if (place != shown) {
+            shown = place
+            view.announceForAccessibility(message)
+        }
     }
 }
 

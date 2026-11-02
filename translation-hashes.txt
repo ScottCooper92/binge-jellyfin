@@ -237,6 +237,7 @@ app:home_layout_missing  4afabe4321fb
 app:home_layout_missing_detail  73c9fc3d9376
 app:home_layout_move_down  40bb50da160c
 app:home_layout_move_up  c66feb5eb8f2
+app:home_layout_moved  4967d6b34f95
 app:home_layout_no_libraries  fca5038510e7
 app:home_layout_order  6be090825c99
 app:home_layout_order_detail  d41944ffeeed
