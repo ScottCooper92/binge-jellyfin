@@ -102,6 +102,15 @@ class JellyfinNetworkSettingsTest {
     }
 
     @Test
+    fun `a new certificate file with HTTPS on is flagged, and with HTTPS off is not`() {
+        val on = base.copy(enableHttps = true, certificatePath = "/a.pfx")
+        assertEquals(setOf(NetworkImpact.Certificate), impacts("http://nas:8096", on.copy(certificatePath = "/b.pfx"), before = on))
+        val off = base.copy(enableHttps = false, certificatePath = "/a.pfx")
+        assertEquals(emptySet<NetworkImpact>(), impacts("http://nas:8096", off.copy(certificatePath = "/b.pfx"), before = off))
+        assertTrue(NetworkImpact.Certificate.severe)
+    }
+
+    @Test
     fun `narrowing who can connect is flagged, and is not severe`() {
         val after = base.copy(remoteAccess = false, remoteIpFilter = listOf("203.0.113.0/24"), ipv6 = false)
         assertEquals(

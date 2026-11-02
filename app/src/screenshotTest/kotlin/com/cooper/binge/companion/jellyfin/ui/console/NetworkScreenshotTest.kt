@@ -55,6 +55,9 @@ private val preview =
 
 private val ready = NetworkUiState.Ready(preview, newest)
 
+/** A page of one row, so what sits under it shows in a frame that doesn't scroll. */
+private val short = NetworkUiState.Ready(NetworkSettings(present = setOf("InternalHttpPort")), newest)
+
 /** Networking: the page across the matrix, an older server's, a change not yet saved, the confirm, each sheet, then the other states. */
 class NetworkScreenshotTest {
     @PreviewTest
@@ -86,7 +89,18 @@ class NetworkScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun restart() = NetworkScreen(ready.copy(restartNeeded = true), NetworkActions())
+    fun restart() = NetworkScreen(short.copy(restartNeeded = true), NetworkActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun restartReconnect() = NetworkScreen(short.copy(restartNeeded = true, reconnect = true), NetworkActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun passwordSheet() = Surface { NetworkPasswordSheet(NetworkActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

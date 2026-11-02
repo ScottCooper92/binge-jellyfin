@@ -823,4 +823,11 @@
     <string name="network_impact_remote">Se desactivan las conexiones remotas. Si esta app se conecta desde fuera de tu red, dejará de funcionar.</string>
     <string name="network_impact_filter">Cambia qué direcciones pueden conectarse desde fuera.</string>
     <string name="network_impact_ip">Se desactiva IPv4 o IPv6.</string>
+    <string name="network_cert_password">Contraseña del certificado</string>
+    <string name="network_cert_password_body">Solo si el certificado tiene una. Se guarda en el servidor y nunca se muestra aquí: escribe la nueva, o déjala vacía para ninguna.</string>
+    <string name="network_cert_password_hint">Contraseña nueva</string>
+    <string name="network_cert_password_kept">Se queda como está</string>
+    <string name="network_cert_password_new">Una contraseña nueva, sin guardar</string>
+    <string name="network_restart_reconnect_detail">El servidor aplica estos cambios al reiniciarse. Esta app tiene la sesión iniciada en la dirección que has cambiado, así que tras el reinicio cierra la sesión aquí e inicia sesión de nuevo en la nueva. Abre la página Servidor.</string>
+    <string name="network_impact_certificate">HTTPS está activado y su certificado o su contraseña cambia. Si es incorrecto, el servidor no puede ofrecer HTTPS.</string>
 </resources>

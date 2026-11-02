@@ -340,6 +340,11 @@ app:network_base_url_body  feb490e0885e
 app:network_bind  d0459c924d43
 app:network_bind_body  9ff897fb5a1c
 app:network_body  82ba4850bcba
+app:network_cert_password  19b3efdadf4c
+app:network_cert_password_body  41f01d545df9
+app:network_cert_password_hint  3dd9df4441fb
+app:network_cert_password_kept  199135237cd4
+app:network_cert_password_new  711658642b4d
 app:network_cert_path  e7b448794b19
 app:network_cert_path_body  5e1eb64bae9a
 app:network_confirm_address  052d18055585
@@ -359,6 +364,7 @@ app:network_https_port  1b598b72cfd3
 app:network_ignore_virtual  85849ca65845
 app:network_impact_base_url  d05c2851c28b
 app:network_impact_bind  dd1712612112
+app:network_impact_certificate  60ca2107ff08
 app:network_impact_filter  5a1190956b9f
 app:network_impact_https_off  a6b1e05b06bb
 app:network_impact_ip  6abbc06e985d
@@ -388,6 +394,7 @@ app:network_require_https  047d7c5ad0a5
 app:network_require_https_detail  442938d5bd53
 app:network_restart  3aa53ce7811c
 app:network_restart_detail  18b06ff93b1f
+app:network_restart_reconnect_detail  5307d20a654d
 app:network_save  dd0ae7a5cbcf
 app:network_subnets  2bfc9d00ac4f
 app:network_subnets_body  27bea948f720

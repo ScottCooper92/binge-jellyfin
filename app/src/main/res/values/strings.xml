@@ -808,4 +808,11 @@
     <string name="network_impact_remote">Remote connections are being turned off. If this app connects from outside your network, it will stop.</string>
     <string name="network_impact_filter">Which addresses may connect from outside is changing.</string>
     <string name="network_impact_ip">IPv4 or IPv6 is being turned off.</string>
+    <string name="network_cert_password">Certificate password</string>
+    <string name="network_cert_password_body">Only if the certificate has one. It is kept on the server, and never shown here: type the new one, or leave it empty for none.</string>
+    <string name="network_cert_password_hint">New password</string>
+    <string name="network_cert_password_kept">Stays as it is</string>
+    <string name="network_cert_password_new">A new password, not saved yet</string>
+    <string name="network_restart_reconnect_detail">The server applies these changes when it restarts. This app is signed in at the address you changed, so after the restart sign out here and sign in again at the new one. Open the Server page.</string>
+    <string name="network_impact_certificate">HTTPS is on and its certificate or its password is changing. If it is wrong, the server cannot serve HTTPS.</string>
 </resources>

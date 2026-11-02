@@ -42,6 +42,9 @@ fun networkKeys(profile: JellyfinServerProfile): NetworkKeys =
 internal const val NETWORK_ENABLE_HTTPS = "EnableHttps"
 internal const val NETWORK_REQUIRE_HTTPS = "RequireHttps"
 internal const val NETWORK_CERTIFICATE_PATH = "CertificatePath"
+
+/** The certificate's password: a secret. It is never read into [NetworkSettings] or shown; it goes back to the server as it came, or as the person typed a new one. */
+internal const val NETWORK_CERTIFICATE_PASSWORD = "CertificatePassword"
 internal const val NETWORK_BASE_URL = "BaseUrl"
 internal const val NETWORK_BIND_ADDRESSES = "LocalNetworkAddresses"
 internal const val NETWORK_REMOTE_ACCESS = "EnableRemoteAccess"
@@ -152,6 +155,9 @@ enum class NetworkImpact(
     /** The server is told which addresses to listen on, and the address this app uses is not one of them. */
     BindAddress(true),
 
+    /** HTTPS is on and its certificate is changing: a wrong file or password leaves the server unable to serve HTTPS. */
+    Certificate(true),
+
     /** Remote access is being turned off: this app may be connecting from outside the local network. */
     RemoteAccess(false),
 
@@ -190,6 +196,7 @@ private fun addressImpacts(
         NetworkImpact.RequireHttps.takeIf { !app.isHttps && !before.requireHttps && after.requireHttps },
         NetworkImpact.BaseUrl.takeIf { before.baseUrl != after.baseUrl },
         NetworkImpact.BindAddress.takeIf { listensElsewhere(app.host, before, after) },
+        NetworkImpact.Certificate.takeIf { after.enableHttps && before.certificatePath != after.certificatePath },
     ).toSet()
 }
 

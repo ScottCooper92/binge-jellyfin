@@ -7,6 +7,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.NETWORK_BASE_URL
 import com.cooper.binge.companion.jellyfin.server.NETWORK_BIND_ADDRESSES
+import com.cooper.binge.companion.jellyfin.server.NETWORK_CERTIFICATE_PASSWORD
 import com.cooper.binge.companion.jellyfin.server.NETWORK_CERTIFICATE_PATH
 import com.cooper.binge.companion.jellyfin.server.NETWORK_KNOWN_PROXIES
 import com.cooper.binge.companion.jellyfin.server.NETWORK_LOCAL_SUBNETS
@@ -60,6 +61,9 @@ enum class NetworkText(
 ) {
     BaseUrl(NETWORK_BASE_URL),
     CertificatePath(NETWORK_CERTIFICATE_PATH),
+
+    /** A new certificate password, typed. Never shown back, and kept exactly as typed. */
+    CertificatePassword(NETWORK_CERTIFICATE_PASSWORD),
 }
 
 /**
@@ -115,6 +119,7 @@ sealed interface NetworkUiState {
         val committing: Boolean = false,
         val formFailed: ConsoleFailure? = null,
         val restartNeeded: Boolean = false,
+        val reconnect: Boolean = false,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
     ) : NetworkUiState
@@ -154,6 +159,10 @@ internal class NetworkDraft(
 
     /** The network configuration to write: [saved] with the changes over it, the base URL aside when the server keeps it elsewhere. */
     fun network(saved: JsonObject): JsonObject = JsonObject(saved + networkChanges())
+
+    /** A new certificate password with HTTPS on is a change that can leave the server unable to serve it. */
+    fun passwordImpact(saved: JsonObject): Set<NetworkImpact> =
+        if (NETWORK_CERTIFICATE_PASSWORD in changes && shown(saved).enableHttps) setOf(NetworkImpact.Certificate) else emptySet()
 
     fun hasNetworkChanges(): Boolean = networkChanges().isNotEmpty()
 
@@ -199,6 +208,9 @@ class NetworkViewModel(
 ) : ViewModel() {
     private val names = networkKeys(profile)
     private val unsaved = NetworkDraft(names)
+
+    /** Whether the changes being saved can cut this app off, so the page says to reconnect after the restart. */
+    private var cutOff = false
 
     private val _state = MutableStateFlow<NetworkUiState>(NetworkUiState.Loading)
     val state: StateFlow<NetworkUiState> = _state.asStateFlow()
@@ -255,7 +267,13 @@ class NetworkViewModel(
         text: String,
     ) {
         update { copy(sheet = null) }
-        drafted(field.key, JsonPrimitive(if (field == NetworkText.BaseUrl) normalBaseUrl(text) else text.trim()))
+        val value =
+            when (field) {
+                NetworkText.BaseUrl -> normalBaseUrl(text)
+                NetworkText.CertificatePath -> text.trim()
+                NetworkText.CertificatePassword -> text
+            }
+        drafted(field.key, JsonPrimitive(value))
     }
 
     fun saveItems(
@@ -284,16 +302,21 @@ class NetworkViewModel(
 
     /** Save changes: straight through if it doesn't reach this app's address, else after the person has confirmed how it does. */
     fun save() {
+        cutOff = false
         viewModelScope.launch {
             val appUrl = connection.signedIn()?.first?.baseUrl
-            val impacts = appUrl?.let { networkImpacts(it, unsaved.settings(saves.shown), unsaved.shown(saves.shown)) }.orEmpty()
+            val impacts =
+                appUrl?.let { networkImpacts(it, unsaved.settings(saves.shown), unsaved.shown(saves.shown)) }.orEmpty() +
+                    unsaved.passwordImpact(saves.shown)
             if (impacts.isEmpty()) commit() else update { copy(confirming = impacts) }
         }
     }
 
     fun dismissConfirm() = update { copy(confirming = null) }
 
+    /** Saves after the person confirmed. A change that can cut this app off says to reconnect once the server restarts. */
     fun confirm() {
+        cutOff = (_state.value as? NetworkUiState.Ready)?.confirming?.any { it.severe } == true
         update { copy(confirming = null) }
         commit()
     }
@@ -340,6 +363,7 @@ class NetworkViewModel(
                 draft = unsaved.changes.keys,
                 committing = network != null && committing,
                 restartNeeded = true,
+                reconnect = cutOff,
             )
         }
     }

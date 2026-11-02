@@ -4,10 +4,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.NetworkImpact
 import com.cooper.binge.companion.jellyfin.server.NetworkSettings
@@ -22,7 +24,12 @@ internal fun NetworkSheetFor(
 ) {
     when (sheet) {
         is NetworkSheet.Number -> NetworkNumberSheet(sheet.field, state, actions, inWindow)
-        is NetworkSheet.Text -> NetworkTextSheet(sheet.field, state.settings, actions, inWindow)
+        is NetworkSheet.Text ->
+            if (sheet.field == NetworkText.CertificatePassword) {
+                NetworkPasswordSheet(actions, inWindow)
+            } else {
+                NetworkTextSheet(sheet.field, state.settings, actions, inWindow)
+            }
         is NetworkSheet.Items -> NetworkItemsSheet(sheet.field, state.settings, actions, inWindow)
     }
 }
@@ -101,6 +108,33 @@ internal fun NetworkTextSheet(
     }
 }
 
+/**
+ * A new certificate password, on the design system's secret entry. It starts empty and is not remembered across a restart of the
+ * app: nothing about the stored password is ever shown, and the page keeps what is typed only until Save changes.
+ */
+@Composable
+internal fun NetworkPasswordSheet(
+    actions: NetworkActions,
+    inWindow: Boolean = true,
+) {
+    var value by remember { mutableStateOf("") }
+    ConsoleSheet(onDismissRequest = { actions.onSheet(null) }, inWindow = inWindow) {
+        TextEntrySurface(
+            title = stringResource(R.string.network_cert_password),
+            supportingText = stringResource(R.string.network_cert_password_body),
+            value = value,
+            onValueChange = { value = it },
+            onSubmit = { actions.onText(NetworkText.CertificatePassword, value) },
+            onCancel = { actions.onSheet(null) },
+            submitLabel = stringResource(R.string.network_keep),
+            hint = stringResource(R.string.network_cert_password_hint),
+            submitEnabled = true,
+            singleLine = true,
+            secret = true,
+        )
+    }
+}
+
 private fun NetworkList.current(settings: NetworkSettings): List<String> =
     when (this) {
         NetworkList.BindAddresses -> settings.bindAddresses
@@ -166,6 +200,7 @@ private fun NetworkImpact.sentence(): Int =
         NetworkImpact.RequireHttps -> R.string.network_impact_require_https
         NetworkImpact.BaseUrl -> R.string.network_impact_base_url
         NetworkImpact.BindAddress -> R.string.network_impact_bind
+        NetworkImpact.Certificate -> R.string.network_impact_certificate
         NetworkImpact.RemoteAccess -> R.string.network_impact_remote
         NetworkImpact.IpFilter -> R.string.network_impact_filter
         NetworkImpact.Ip -> R.string.network_impact_ip

@@ -56,7 +56,6 @@ class NetworkScreenTest {
         show("10.10.7")
         compose.onNodeWithText("Certificate file").performScrollTo().assertExists()
         compose.onAllNodesWithText("s3cret", substring = true).assertCountEquals(0)
-        compose.onAllNodesWithText("Certificate password").assertCountEquals(0)
     }
 
     @Test
@@ -122,5 +121,19 @@ class NetworkScreenTest {
         // Clicked by its action: the footer covers the last row in a window this small.
         compose.onNodeWithText("Restart to apply").performScrollTo().performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(1, opened)
+    }
+
+    @Test
+    fun `the password row says only whether a new one is waiting, never a value`() {
+        show("10.10.7", draft = setOf("CertificatePassword"))
+        compose.onNodeWithText("Certificate password").performScrollTo().assertExists()
+        compose.onNodeWithText("A new password, not saved yet").performScrollTo().assertExists()
+        compose.onAllNodesWithText("s3cret", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `the password row says it stays as it is when nothing is waiting`() {
+        show("10.10.7")
+        compose.onNodeWithText("Stays as it is").performScrollTo().assertExists()
     }
 }

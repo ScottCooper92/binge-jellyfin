@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Public
@@ -35,6 +36,7 @@ import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.NETWORK_AUTO_DISCOVERY
 import com.cooper.binge.companion.jellyfin.server.NETWORK_BASE_URL
 import com.cooper.binge.companion.jellyfin.server.NETWORK_BIND_ADDRESSES
+import com.cooper.binge.companion.jellyfin.server.NETWORK_CERTIFICATE_PASSWORD
 import com.cooper.binge.companion.jellyfin.server.NETWORK_CERTIFICATE_PATH
 import com.cooper.binge.companion.jellyfin.server.NETWORK_ENABLE_HTTPS
 import com.cooper.binge.companion.jellyfin.server.NETWORK_IGNORE_VIRTUAL
@@ -131,7 +133,10 @@ private fun NetworkBody(
                         ListItem(
                             icon = Icons.Outlined.RestartAlt,
                             label = stringResource(R.string.network_restart),
-                            detail = stringResource(R.string.network_restart_detail),
+                            detail =
+                                stringResource(
+                                    if (state.reconnect) R.string.network_restart_reconnect_detail else R.string.network_restart_detail,
+                                ),
                             supportingMaxLines = NETWORK_DETAIL_LINES,
                             onClick = actions.onOpenServer,
                         ),
@@ -262,6 +267,21 @@ private fun secureRows(
             R.string.network_cert_path,
             s.certificatePath.ifEmpty { stringResource(R.string.network_none) },
         ) { actions.onSheet(NetworkSheet.Text(NetworkText.CertificatePath)) },
+        // Never the stored password: only whether a new one is waiting to be saved.
+        state.formRow(
+            NETWORK_CERTIFICATE_PASSWORD,
+            Icons.Outlined.Key,
+            R.string.network_cert_password,
+            stringResource(
+                if (NETWORK_CERTIFICATE_PASSWORD in
+                    state.draft
+                ) {
+                    R.string.network_cert_password_new
+                } else {
+                    R.string.network_cert_password_kept
+                },
+            ),
+        ) { actions.onSheet(NetworkSheet.Text(NetworkText.CertificatePassword)) },
     )
 }
 

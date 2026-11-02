@@ -136,7 +136,9 @@ class NetworkViewModelTest {
         vm.ready()
         vm.saveText(NetworkText.CertificatePath, " /new.pfx ")
         vm.save()
-        // Turning nothing off, and not on this app's port: no confirm.
+        // HTTPS is on, so a new certificate file asks first.
+        assertEquals(setOf(NetworkImpact.Certificate), vm.ready { it.confirming != null }.confirming)
+        vm.confirm()
         waitFor(NETWORK, 1)
         assertEquals("/new.pfx", sent().getValue("CertificatePath").jsonPrimitive.content)
         assertEquals("", sent().getValue("CertificatePassword").jsonPrimitive.content)
@@ -264,6 +266,63 @@ class NetworkViewModelTest {
         waitFor(NETWORK, 2)
         assertEquals(false, sent().getValue("AutoDiscovery").jsonPrimitive.boolean)
         assertTrue(vm.ready().draft.isEmpty())
+    }
+
+    @Test
+    fun `a new certificate password is kept as typed, held for Save, and never read back into the settings`() {
+        val vm = vm()
+        vm.ready()
+        vm.saveText(NetworkText.CertificatePassword, " new pass ")
+        val drafted = vm.ready { "CertificatePassword" in it.draft }
+        assertFalse(drafted.settings.toString().contains("new pass"))
+        assertFalse(drafted.settings.toString().contains("s3cret"))
+        assertEquals(0, posts(NETWORK))
+        vm.save()
+        waitFor(NETWORK, 1)
+        // Exactly as typed, spaces and all.
+        assertEquals(" new pass ", sent().getValue("CertificatePassword").jsonPrimitive.content)
+        assertTrue(vm.ready { it.restartNeeded && !it.committing }.draft.isEmpty())
+    }
+
+    @Test
+    fun `a new password with HTTPS on asks first, because a wrong one stops the server serving HTTPS`() {
+        jellyfin.networkConfiguration = jellyfin.networkConfiguration.replace("\"EnableHttps\":false", "\"EnableHttps\":true")
+        val vm = vm()
+        vm.ready()
+        vm.saveText(NetworkText.CertificatePassword, "x")
+        vm.save()
+        assertEquals(setOf(NetworkImpact.Certificate), vm.ready { it.confirming != null }.confirming)
+        assertEquals(0, posts(NETWORK))
+    }
+
+    @Test
+    fun `a new password with HTTPS off is written without asking`() {
+        val vm = vm()
+        vm.ready()
+        vm.saveText(NetworkText.CertificatePassword, "x")
+        vm.save()
+        waitFor(NETWORK, 1)
+        assertNull(vm.ready().confirming)
+    }
+
+    @Test
+    fun `a change that can cut this app off says to reconnect after the restart, and one that can't does not`() {
+        jellyfin.networkConfiguration = jellyfin.networkConfiguration.replace("\"InternalHttpPort\":8096", "\"InternalHttpPort\":$appPort")
+        val vm = vm()
+        vm.ready()
+        vm.saveNumber(NetworkNumber.HttpPort, "9000")
+        vm.save()
+        vm.ready { it.confirming != null }
+        vm.confirm()
+        assertTrue(vm.ready { it.restartNeeded && !it.committing }.reconnect)
+        val calm = vm()
+        calm.ready()
+        calm.setSwitch("IsRemoteIPFilterBlacklist", true, form = true)
+        calm.save()
+        // Narrowing who can connect asks, but isn't one that cuts this app off.
+        assertEquals(setOf(NetworkImpact.IpFilter), calm.ready { it.confirming != null }.confirming)
+        calm.confirm()
+        assertFalse(calm.ready { it.restartNeeded && !it.committing }.reconnect)
     }
 
     @Test
