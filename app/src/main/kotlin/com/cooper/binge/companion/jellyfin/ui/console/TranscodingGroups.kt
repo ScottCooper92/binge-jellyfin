@@ -28,6 +28,11 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ENCODING_AUDIO_VBR
+import com.cooper.binge.companion.jellyfin.server.ENCODING_AV1
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_10
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_REXT_10
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_REXT_12
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_VP9_10
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODING_CODECS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DEINTERLACE
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DEINTERLACE_DOUBLE_RATE
@@ -37,6 +42,7 @@ import com.cooper.binge.companion.jellyfin.server.ENCODING_FALLBACK_FONT
 import com.cooper.binge.companion.jellyfin.server.ENCODING_FALLBACK_FONT_PATH
 import com.cooper.binge.companion.jellyfin.server.ENCODING_HARDWARE_ENCODING
 import com.cooper.binge.companion.jellyfin.server.ENCODING_HEVC
+import com.cooper.binge.companion.jellyfin.server.ENCODING_INTEL_LOW_POWER_H264
 import com.cooper.binge.companion.jellyfin.server.ENCODING_INTEL_LOW_POWER_HEVC
 import com.cooper.binge.companion.jellyfin.server.ENCODING_PRESET
 import com.cooper.binge.companion.jellyfin.server.ENCODING_QSV_DEVICE
@@ -57,6 +63,8 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.decodingCodecs
 import com.cooper.binge.companion.jellyfin.server.encodingChoice
+import com.cooper.binge.companion.jellyfin.server.hasColorDepthDecoding
+import com.cooper.binge.companion.jellyfin.server.hasHevcRextDecoding
 import com.cooper.binge.companion.jellyfin.server.hasIntelOptions
 import com.cooper.binge.companion.jellyfin.server.hasToneMapping
 import com.cooper.binge.companion.jellyfin.server.hasToneMappingMode
@@ -173,11 +181,12 @@ internal fun hardwareRows(
         ).takeIf { type == "qsv" && profile.hasQsvDeviceAndDownmix && state.encoding.sent(ENCODING_QSV_DEVICE) },
     )
 
-/** Hardware decoding by codec, and the encoding switches, for a type that does the work in hardware. */
+/** Hardware decoding by codec and colour depth, and the encoding switches, for a type that does the work in hardware. */
 @Composable
 internal fun HardwareGroups(
     state: TranscodingUiState.Ready,
     type: String,
+    profile: JellyfinServerProfile,
     actions: TranscodingActions,
 ) {
     if (!isAccelerated(type)) return
@@ -194,42 +203,70 @@ internal fun HardwareGroups(
                         toggled = codec in on,
                         onClick = { actions.onCodec(codec, codec !in on) },
                     )
-                },
+                } + colorDepthRows(state, type, profile, actions),
         )
     }
-    ItemGroup(
-        title = stringResource(R.string.transcoding_encoding),
-        rows =
-            listOfNotNull(
-                state.switch(ENCODING_HARDWARE_ENCODING, Icons.Outlined.Memory, R.string.transcoding_hardware_encoding, actions),
-                state.switch(ENCODING_HEVC, Icons.Outlined.Hd, R.string.transcoding_hevc, actions, R.string.transcoding_hevc_detail),
-                state
-                    .switch(
-                        ENCODING_INTEL_LOW_POWER_HEVC,
-                        Icons.Outlined.Speed,
-                        R.string.transcoding_low_power,
-                        actions,
-                        R.string.transcoding_low_power_detail,
-                    ).takeIf { hasIntelOptions(type) },
-                state
-                    .switch(
-                        ENCODING_ENHANCED_NVDEC,
-                        Icons.Outlined.Architecture,
-                        R.string.transcoding_nvdec,
-                        actions,
-                        R.string.transcoding_nvdec_detail,
-                    ).takeIf { type == "nvenc" },
-                state
-                    .switch(
-                        ENCODING_SYSTEM_NATIVE,
-                        Icons.Outlined.Memory,
-                        R.string.transcoding_native,
-                        actions,
-                        R.string.transcoding_native_detail,
-                    ).takeIf { type == "qsv" },
-            ),
-    )
+    ItemGroup(title = stringResource(R.string.transcoding_encoding), rows = encodingRows(state, type, profile, actions))
 }
+
+/** The switches that tell a hardware decoder it may take 10-bit HEVC and VP9, and the HEVC range extensions. */
+@Composable
+internal fun colorDepthRows(
+    state: TranscodingUiState.Ready,
+    type: String,
+    profile: JellyfinServerProfile,
+    actions: TranscodingActions,
+): List<ListItem> =
+    listOfNotNull(
+        state.switch(ENCODING_DECODE_HEVC_10, Icons.Outlined.Videocam, R.string.transcoding_decode_hevc_10, actions),
+        state.switch(ENCODING_DECODE_VP9_10, Icons.Outlined.Videocam, R.string.transcoding_decode_vp9_10, actions),
+    ).filter { hasColorDepthDecoding(type) } +
+        listOfNotNull(
+            state.switch(ENCODING_DECODE_HEVC_REXT_10, Icons.Outlined.Videocam, R.string.transcoding_decode_rext_10, actions),
+            state.switch(ENCODING_DECODE_HEVC_REXT_12, Icons.Outlined.Videocam, R.string.transcoding_decode_rext_12, actions),
+        ).filter { hasHevcRextDecoding(type, profile) }
+
+@Composable
+internal fun encodingRows(
+    state: TranscodingUiState.Ready,
+    type: String,
+    profile: JellyfinServerProfile,
+    actions: TranscodingActions,
+): List<ListItem> =
+    listOfNotNull(
+        state.switch(ENCODING_HARDWARE_ENCODING, Icons.Outlined.Memory, R.string.transcoding_hardware_encoding, actions),
+        state.switch(ENCODING_HEVC, Icons.Outlined.Hd, R.string.transcoding_hevc, actions, R.string.transcoding_hevc_detail),
+        state
+            .switch(ENCODING_AV1, Icons.Outlined.Hd, R.string.transcoding_av1, actions, R.string.transcoding_av1_detail)
+            .takeIf { profile.hasAdvancedEncoding },
+        state
+            .switch(
+                ENCODING_INTEL_LOW_POWER_HEVC,
+                Icons.Outlined.Speed,
+                R.string.transcoding_low_power,
+                actions,
+                R.string.transcoding_low_power_detail,
+            ).takeIf { hasIntelOptions(type) },
+        state
+            .switch(
+                ENCODING_INTEL_LOW_POWER_H264,
+                Icons.Outlined.Speed,
+                R.string.transcoding_low_power_h264,
+                actions,
+                R.string.transcoding_low_power_detail,
+            ).takeIf { hasIntelOptions(type) },
+        state
+            .switch(
+                ENCODING_ENHANCED_NVDEC,
+                Icons.Outlined.Architecture,
+                R.string.transcoding_nvdec,
+                actions,
+                R.string.transcoding_nvdec_detail,
+            ).takeIf { type == "nvenc" },
+        state
+            .switch(ENCODING_SYSTEM_NATIVE, Icons.Outlined.Memory, R.string.transcoding_native, actions, R.string.transcoding_native_detail)
+            .takeIf { type == "qsv" },
+    )
 
 @Composable
 internal fun ToneMappingGroup(
@@ -335,6 +372,9 @@ internal fun QualityGroup(
                     actions,
                     R.string.transcoding_double_rate_detail,
                 ),
+                state.number(NumberField.H264Crf, Icons.Outlined.VideoSettings, R.string.transcoding_h264_crf, actions),
+                state.number(NumberField.H265Crf, Icons.Outlined.VideoSettings, R.string.transcoding_h265_crf, actions),
+                state.number(NumberField.MuxingQueue, Icons.Outlined.Layers, R.string.transcoding_muxing_queue, actions),
             ),
     )
 }

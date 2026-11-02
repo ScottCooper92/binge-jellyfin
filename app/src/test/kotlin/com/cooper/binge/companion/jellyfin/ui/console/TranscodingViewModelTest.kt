@@ -7,8 +7,15 @@ import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
+import com.cooper.binge.companion.jellyfin.server.ENCODING_AV1
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_10
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_REXT_10
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_REXT_12
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODING_CODECS
+import com.cooper.binge.companion.jellyfin.server.ENCODING_H264_CRF
+import com.cooper.binge.companion.jellyfin.server.ENCODING_H265_CRF
 import com.cooper.binge.companion.jellyfin.server.ENCODING_HARDWARE_ENCODING
+import com.cooper.binge.companion.jellyfin.server.ENCODING_MUXING_QUEUE
 import com.cooper.binge.companion.jellyfin.server.ENCODING_TEMP_PATH
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -184,6 +191,45 @@ class TranscodingViewModelTest {
                 .jsonPrimitive.content,
         )
         assertEquals(0, jellyfin.requests.count { it.url.encodedPath == ENCODING && it.method == "POST" })
+    }
+
+    @Test
+    fun `a decoding or encoding switch saves its own key and leaves the rest as it was`() {
+        val vm = made(TranscodingViewModel(connection))
+        vm.ready()
+        vm.setEncoding(ENCODING_DECODE_HEVC_REXT_12, JsonPrimitive(true))
+        saves(ENCODING, 1)
+        val sent = jellyfin.lastBody(ENCODING)
+        assertEquals(true, sent.getValue(ENCODING_DECODE_HEVC_REXT_12).jsonPrimitive.boolean)
+        assertEquals(false, sent.getValue(ENCODING_DECODE_HEVC_REXT_10).jsonPrimitive.boolean)
+        assertEquals(true, sent.getValue(ENCODING_DECODE_HEVC_10).jsonPrimitive.boolean)
+        assertEquals(false, sent.getValue(ENCODING_AV1).jsonPrimitive.boolean)
+        assertEquals(23, sent.getValue(ENCODING_H264_CRF).jsonPrimitive.int)
+    }
+
+    @Test
+    fun `a quality number saves in the encoding configuration`() {
+        val vm = made(TranscodingViewModel(connection))
+        vm.ready()
+        vm.saveNumber(NumberField.H265Crf, "30")
+        saves(ENCODING, 1)
+        val sent = jellyfin.lastBody(ENCODING)
+        assertEquals(30, sent.getValue(ENCODING_H265_CRF).jsonPrimitive.int)
+        assertEquals(23, sent.getValue(ENCODING_H264_CRF).jsonPrimitive.int)
+        assertEquals(2048, sent.getValue(ENCODING_MUXING_QUEUE).jsonPrimitive.int)
+    }
+
+    @Test
+    fun `the CRFs and the muxing queue have the range jellyfin-web sets, and take no fraction`() {
+        assertEquals(JsonPrimitive(0), NumberField.H264Crf.parse("0"))
+        assertEquals(JsonPrimitive(51), NumberField.H265Crf.parse("51"))
+        assertNull(NumberField.H264Crf.parse("52"))
+        assertNull(NumberField.H265Crf.parse("-1"))
+        assertNull(NumberField.H264Crf.parse("23.5"))
+        assertNull(NumberField.MuxingQueue.parse("127"))
+        assertEquals(JsonPrimitive(128), NumberField.MuxingQueue.parse("128"))
+        assertEquals(JsonPrimitive(Int.MAX_VALUE), NumberField.MuxingQueue.parse("2147483647"))
+        assertNull(NumberField.MuxingQueue.parse("2147483648"))
     }
 
     @Test

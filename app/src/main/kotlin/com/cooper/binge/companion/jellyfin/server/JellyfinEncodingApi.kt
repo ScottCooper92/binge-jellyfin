@@ -22,7 +22,16 @@ const val ENCODING_QSV_DEVICE = "QsvDevice"
 const val ENCODING_DECODING_CODECS = "HardwareDecodingCodecs"
 const val ENCODING_HARDWARE_ENCODING = "EnableHardwareEncoding"
 const val ENCODING_HEVC = "AllowHevcEncoding"
+const val ENCODING_AV1 = "AllowAv1Encoding"
 const val ENCODING_INTEL_LOW_POWER_HEVC = "EnableIntelLowPowerHevcHwEncoder"
+const val ENCODING_INTEL_LOW_POWER_H264 = "EnableIntelLowPowerH264HwEncoder"
+const val ENCODING_DECODE_HEVC_10 = "EnableDecodingColorDepth10Hevc"
+const val ENCODING_DECODE_VP9_10 = "EnableDecodingColorDepth10Vp9"
+const val ENCODING_DECODE_HEVC_REXT_10 = "EnableDecodingColorDepth10HevcRext"
+const val ENCODING_DECODE_HEVC_REXT_12 = "EnableDecodingColorDepth12HevcRext"
+const val ENCODING_H264_CRF = "H264Crf"
+const val ENCODING_H265_CRF = "H265Crf"
+const val ENCODING_MUXING_QUEUE = "MaxMuxingQueueSize"
 const val ENCODING_ENHANCED_NVDEC = "EnableEnhancedNvdecDecoder"
 const val ENCODING_SYSTEM_NATIVE = "PreferSystemNativeHwDecoder"
 const val ENCODING_TONEMAPPING = "EnableTonemapping"
@@ -121,6 +130,15 @@ fun hasToneMappingMode(
     type: String,
     profile: JellyfinServerProfile,
 ): Boolean = type in TONEMAPPING_TYPES && (type != "videotoolbox" || profile.hasAdvancedEncoding)
+
+/** The types whose decoder can be told to take 10-bit HEVC and VP9: every one jellyfin-web lists them for. */
+fun hasColorDepthDecoding(type: String): Boolean = type in setOf("amf", "nvenc", "qsv", "vaapi", "rkmpp")
+
+/** The types that can decode the HEVC range extensions, on a release that has the switches (10.10). */
+fun hasHevcRextDecoding(
+    type: String,
+    profile: JellyfinServerProfile,
+): Boolean = profile.hasHevcRext && type in setOf("nvenc", "qsv", "vaapi")
 
 /** The extra Intel switch (low power HEVC encoding) is for Quick Sync and VAAPI. */
 fun hasIntelOptions(type: String): Boolean = type == "qsv" || type == "vaapi"

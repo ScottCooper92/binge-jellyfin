@@ -215,6 +215,9 @@ class FakeJellyfin : Dispatcher() {
             """"DeinterlaceDoubleRate":false,"DownMixAudioBoost":2,"DownMixStereoAlgorithm":"None","EnableAudioVbr":false,""" +
             """"EnableThrottling":false,"ThrottleDelaySeconds":180,"EnableSegmentDeletion":true,"SegmentKeepSeconds":720,""" +
             """"EnableSubtitleExtraction":true,"EnableFallbackFont":false,"FallbackFontPath":"","TranscodingTempPath":"",""" +
+            """"AllowAv1Encoding":false,"EnableIntelLowPowerH264HwEncoder":false,"EnableDecodingColorDepth10Hevc":true,""" +
+            """"EnableDecodingColorDepth10Vp9":true,"EnableDecodingColorDepth10HevcRext":false,""" +
+            """"EnableDecodingColorDepth12HevcRext":false,"H264Crf":23,"H265Crf":28,"MaxMuxingQueueSize":2048,""" +
             """"FutureOption":{"keep":"me"}}"""
 
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */

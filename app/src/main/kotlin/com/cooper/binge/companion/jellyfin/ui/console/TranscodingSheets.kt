@@ -129,6 +129,9 @@ internal fun NumberField.title(): Int =
         NumberField.ToneMappingParam -> R.string.transcoding_tonemapping_param
         NumberField.VppBrightness -> R.string.transcoding_vpp_brightness
         NumberField.VppContrast -> R.string.transcoding_vpp_contrast
+        NumberField.H264Crf -> R.string.transcoding_h264_crf
+        NumberField.H265Crf -> R.string.transcoding_h265_crf
+        NumberField.MuxingQueue -> R.string.transcoding_muxing_queue
         NumberField.MinResumePercent -> R.string.transcoding_min_resume
         NumberField.MaxResumePercent -> R.string.transcoding_max_resume
         NumberField.MinResumeSeconds -> R.string.transcoding_min_duration
