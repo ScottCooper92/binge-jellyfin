@@ -24,8 +24,8 @@ private const val NOW = 1_793_534_400_000L
 private const val DAY = 86_400_000L
 
 /**
- * A backup made or refused is a message over the page, not a row in it (#248): the list is where it was, the message says what
- * it said as a row, and dismissing it clears the creation. Snackbars do not show in a frame, so this is where it is pinned.
+ * A backup made is a snackbar message over the page, not a row in it (#248); one the server refused, or a restore it did not come
+ * back from, is a message dialog, since it is a cause and a next step (#260). Neither shows in a frame, so this is where it is pinned.
  */
 @RunWith(RobolectricTestRunner::class)
 class BackupsScreenTest {
@@ -54,18 +54,21 @@ class BackupsScreenTest {
     }
 
     @Test
-    fun `a refusal with no reason says the free-space hint, in the message`() {
+    fun `a refusal with no reason is a dialog with what happened, the free-space hint and OK`() {
         show(ready.copy(creation = BackupCreation.Failed(JellyfinHttpException(500, "Backup/Create"))))
 
-        compose.onNode(hasText("The backup wasn't made.", substring = true) and hasText("5 GiB free", substring = true)).assertExists()
+        compose.onNodeWithText("The backup wasn't made").assertExists()
+        compose.onNode(hasText("5 GiB free", substring = true)).assertExists()
+        compose.onNodeWithText("OK").assertExists()
         compose.onNodeWithText("Yesterday").assertExists()
     }
 
     @Test
-    fun `a refusal that carries the server's reason says that reason`() {
+    fun `a refusal that carries the server's reason says that reason in the dialog`() {
         show(ready.copy(creation = BackupCreation.Failed(JellyfinHttpException(500, "Backup/Create", "The volume is full"))))
 
-        compose.onNodeWithText("The backup wasn't made. The volume is full").assertExists()
+        compose.onNodeWithText("The backup wasn't made").assertExists()
+        compose.onNodeWithText("The volume is full").assertExists()
     }
 
     @Test
@@ -77,13 +80,53 @@ class BackupsScreenTest {
     }
 
     @Test
-    fun `dismissing the message clears the creation`() {
+    fun `OK on the dialog clears the creation`() {
         show(ready.copy(creation = BackupCreation.Failed(JellyfinHttpException(500, "Backup/Create"))))
         assertEquals(0, dismissed)
 
+        compose.onNodeWithText("OK").performClickWithIdle()
+
+        assertEquals(1, dismissed)
+    }
+
+    @Test
+    fun `a backup made still says so in a snackbar message that clears the creation`() {
+        show(ready.copy(creation = BackupCreation.Created(made)))
+
+        compose.onNodeWithText("Backup made. It is first in the list below.").assertExists()
+        compose.onNodeWithText("OK").assertDoesNotExist()
         compose.onNodeWithContentDescription("Dismiss").performClickWithIdle()
 
         assertTrue("the creation was cleared: $dismissed", dismissed >= 1)
+    }
+
+    @Test
+    fun `a restore the server did not come back from is a dialog with a next step, and OK dismisses it`() {
+        var restoreDismissed = 0
+        compose.setContent {
+            JellyfinTheme {
+                BackupsScreen(
+                    ready.copy(restore = Restore.NotBack),
+                    BackupsActions(onDismissRestore = { restoreDismissed++ }),
+                    JellyfinVersion(10, 11, 6),
+                    NOW,
+                )
+            }
+        }
+
+        compose.onNodeWithText("The server didn't come back in time").assertExists()
+        compose.onNodeWithText("Check it, then try again.").assertExists()
+        compose.onNodeWithText("OK").performClickWithIdle()
+
+        assertEquals(1, restoreDismissed)
+    }
+
+    @Test
+    fun `a restore that failed outright stays a short snackbar message, with no dialog`() {
+        show(ready.copy(restore = Restore.Failed))
+
+        compose.onNodeWithText("The restore didn't go through.").assertExists()
+        compose.onNodeWithText("OK").assertDoesNotExist()
     }
 
     private fun SemanticsNodeInteraction.performClickWithIdle() {

@@ -41,6 +41,7 @@ data class ServerActions(
     val onRestart: () -> Unit = {},
     val onConfirmShutdown: (Boolean) -> Unit = {},
     val onShutdown: () -> Unit = {},
+    val onDismissRestart: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -69,7 +70,7 @@ fun ServerScreen(
                 is ServerUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ServerUiState.Ready -> {
                     Server(state, actions, inner)
-                    // A restart or shutdown the server didn't take, or a restart that never came back, is a message.
+                    // A restart or shutdown the server didn't take is a short message; a restart that never came back is a dialog.
                     SnackbarMessage(state.refusal()?.let { stringResource(it) }, host)
                 }
             }
@@ -78,6 +79,21 @@ fun ServerScreen(
     val ready = state as? ServerUiState.Ready
     if (ready?.confirming == true) RestartDialog(ready.info, actions)
     if (ready?.confirmingShutdown == true) ShutdownDialog(ready.info, actions)
+    if (ready?.restart == Restart.NotBack) RestartNotBackDialog(actions)
+}
+
+/** A restart the server never came back from: what happened, and where to look. Not a snackbar: it is a cause and a next step. */
+@Composable
+internal fun RestartNotBackDialog(
+    actions: ServerActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleMessage(
+        title = stringResource(R.string.server_not_back_title),
+        message = stringResource(R.string.server_not_back_body),
+        onDismiss = actions.onDismissRestart,
+        inWindow = inWindow,
+    )
 }
 
 /** Shutting the server down, after its name, as a confirm. [inWindow] false draws its body for a frame. */
@@ -116,11 +132,11 @@ internal fun RestartDialog(
     )
 }
 
-/** The message of a restart or shutdown that failed, or a restart the server never came back from; null when none did. */
+/** The message of a restart or shutdown the server didn't take; null when none did. */
 private fun ServerUiState.Ready.refusal(): Int? =
     when {
         shutdown == Shutdown.Failed -> shutdown.message
-        restart == Restart.Failed || restart == Restart.NotBack -> restart.message
+        restart == Restart.Failed -> restart.message
         else -> null
     }
 
@@ -137,7 +153,7 @@ private fun Server(
         ItemGroup(title = null, rows = state.info.rows())
         // Where a restart or shutdown has got to, while it is going on or done. A failure is a message instead.
         if (state.refusal() == null) {
-            (state.shutdown?.message ?: state.restart?.message)?.let {
+            (state.shutdown?.message ?: state.restart?.takeIf { it != Restart.NotBack }?.message)?.let {
                 Text(text = stringResource(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
             }
         }
@@ -216,7 +232,7 @@ private val Restart.message: Int
         when (this) {
             Restart.Restarting -> R.string.server_restarting
             Restart.Restarted -> R.string.server_restarted
-            Restart.NotBack -> R.string.server_not_back
+            Restart.NotBack -> R.string.server_not_back_title
             Restart.Failed -> R.string.server_restart_failed
         }
 

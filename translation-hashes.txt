@@ -85,7 +85,7 @@ app:approve_wrong  8bb61c428d9c
 app:backups_body  deeed621ab05
 app:backups_create_action  3cace080929e
 app:backups_create_body  3509df77c760
-app:backups_create_failed_message  c273e7dd10a0
+app:backups_create_failed_title  1dda49dbee0d
 app:backups_create_refused  a406de7ba763
 app:backups_create_title  4d85d11c299d
 app:backups_created_message  5176c35ef297
@@ -103,7 +103,8 @@ app:backups_new  4d85d11c299d
 app:backups_restore  a76e13b98392
 app:backups_restore_body  f420c3a5c230
 app:backups_restore_failed  21b2ffbfd682
-app:backups_restore_not_back  19785073a39d
+app:backups_restore_not_back_body  f6bf78c9db49
+app:backups_restore_not_back_title  fdc6e41ac274
 app:backups_restore_title  d3357dea7f97
 app:backups_restored  5d561a1e3f17
 app:backups_restored_detail  d24cde2885e6
@@ -546,7 +547,8 @@ app:server_card_users  6b0cc904d081
 app:server_card_version  8b089712c085
 app:server_detail  48e857ba0ec9
 app:server_detail_cleartext  c830dc79a39a
-app:server_not_back  71f9f340b581
+app:server_not_back_body  2f000e0c6ef9
+app:server_not_back_title  56bc4ed823aa
 app:server_restart  51cd293a0b55
 app:server_restart_body  cc64dc04d2f5
 app:server_restart_failed  dd1b72b7802c

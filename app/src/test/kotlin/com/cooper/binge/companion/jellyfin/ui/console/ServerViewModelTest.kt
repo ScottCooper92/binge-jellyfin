@@ -125,6 +125,19 @@ class ServerViewModelTest {
     }
 
     @Test
+    fun `dismissing the not-back notice clears it, and only that`() {
+        jellyfin.restartDownPolls = 1_000
+        val vm = viewModel()
+        vm.ready()
+        vm.restart()
+        vm.ready { it.restart == Restart.NotBack }
+
+        vm.dismissRestart()
+
+        assertEquals(null, vm.ready { it.restart == null }.restart)
+    }
+
+    @Test
     fun `a server that can't restart itself offers no restart`() {
         jellyfin.systemInfo = jellyfin.systemInfo.replace("\"CanSelfRestart\":true", "\"CanSelfRestart\":false")
         val vm = viewModel()

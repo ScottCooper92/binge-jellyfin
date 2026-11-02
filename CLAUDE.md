@@ -173,11 +173,23 @@ as binge-seerr's TV is.
   - rows and groups are `ListItem` and `ItemGroup`, every row has an icon, and a row's detail is one short
     line only where the row isn't self-explanatory;
   - text entry goes through one wrapper, not `OutlinedTextField` in each screen;
-  - a dialog is for a confirmation only; anything that takes input (a name, a number, a list) or offers a choice is
-    a sheet (`BingeAdaptiveSheet`), with the design system's text-entry surface for a typed value.
+  - a dialog is for a confirmation (`ConsoleConfirm`, at most two actions) or a message (below); anything that takes input
+    (a name, a number, a list) or offers a choice is a sheet (`BingeAdaptiveSheet`), with the design system's text-entry
+    surface for a typed value.
   If the design system has a template or component for the job, use it. If it has none and binge-seerr
   has built its own, say so in the PR and propose moving it into the design system rather than writing
   a third. A cloud session can't run the full gate, so this is the check it can make by reading.
+- **Messages: a snackbar for a result, a dialog for a cause and a next step.** (The phone. The TV shows results in place and
+  has no snackbars; this app's TV is sign-in and settings only.)
+  - **Snackbar** (`SnackbarMessage`, `RefusedMessage`): the outcome of a tap, one short sentence that reads in full at 1.3x
+    font. It may carry one action (Retry, Undo) and goes away by itself. "Not changed. Couldn't reach your server."
+  - **Message dialog** (`ConsoleMessage`, the design system's `BingeMessageDialog`): any message that explains why something
+    failed **and** what the user can do about it, however short. A title says what happened, the body gives the cause and the
+    next step, and one OK acknowledges it. It does not go away by itself. It is an acknowledgement, not a confirmation, so it
+    has exactly one action. Backups' "The backup wasn't made" is the worked example: it was cut off in a snackbar.
+  - **In place:** a failed load stays an error screen with Retry.
+  - A snackbar never carries text the user must read to act. Do not turn every message into a dialog: a short result or a
+    refusal with nothing to act on stays a snackbar.
 - **Out of scope:** browsing the library, editing an item's metadata, and anything that plays media.
   Everything else in Jellyfin's settings is in scope, the server's and the user's: the app means to
   be the best way to manage both. Every feature is gated on the server's version, the user's policy

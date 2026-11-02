@@ -64,6 +64,13 @@ class ServerScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun restartNotBack() = Surface { RestartNotBackDialog(ServerActions(), inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
     @Composable
     fun shutDown() = ServerScreen(previewReady.copy(shutdown = Shutdown.ShutDown), ServerActions())
 
