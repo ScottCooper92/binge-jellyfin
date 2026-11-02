@@ -41,6 +41,15 @@ class ConsolePageTest {
     }
 
     @Test
+    fun `advanced is for an administrator on any release`() {
+        val admin = account("""{"IsAdministrator":true}""")
+        val user = account("""{"IsAdministrator":false}""")
+        assertTrue(ConsolePage.Advanced.available(JellyfinServerProfile.from("10.8.13"), admin))
+        assertFalse(ConsolePage.Advanced.available(server, user))
+        assertTrue(ConsolePage.Advanced.isAdmin)
+    }
+
+    @Test
     fun `plugins is for an administrator on any release`() {
         val admin = account("""{"IsAdministrator":true}""")
         val user = account("""{"IsAdministrator":false}""")

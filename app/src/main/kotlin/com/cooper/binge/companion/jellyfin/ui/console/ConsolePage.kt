@@ -57,6 +57,9 @@ enum class ConsolePage {
     /** The server's trickplay (seek thumbnail) options. Admin only, on a server that has trickplay. */
     Trickplay,
 
+    /** The server's advanced options: scanning, caches, log retention, CORS. Admin only. */
+    Advanced,
+
     /** The server's library display and metadata defaults. Admin only. */
     LibraryDisplay,
 
@@ -79,7 +82,7 @@ enum class ConsolePage {
             NowPlaying -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
-            Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, LibraryDisplay, Server ->
+            Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, Advanced, LibraryDisplay, Server ->
                 account.isAdministrator
         }
 
@@ -95,6 +98,7 @@ enum class ConsolePage {
                 Devices,
                 Users,
                 ServerSettings,
+                Advanced,
                 LibraryDisplay,
                 Trickplay,
                 Plugins,
