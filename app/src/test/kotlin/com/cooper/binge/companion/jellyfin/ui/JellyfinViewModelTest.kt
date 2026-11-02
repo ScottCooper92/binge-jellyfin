@@ -383,10 +383,14 @@ class JellyfinViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
         vm.await<UiState.SignedIn> { it.account.isRead && !it.refreshing }
-        val libraryReads = jellyfin.hits("/Items")
+
+        // The library index reads items that have a TMDB id. The server card's coverage count also reads /Items, without that
+        // filter or with false, and its reads can land at any moment, so they are not library reads.
+        fun libraryReads() = jellyfin.requests.count { it.url.encodedPath == "/Items" && it.url.queryParameter("hasTmdbId") == "true" }
+        val before = libraryReads()
         jellyfin.quickConnectEnabled = false
         vm.refresh(gatesOnly = true)
         vm.await<UiState.SignedIn> { !it.profile.quickConnect }
-        assertEquals(libraryReads, jellyfin.hits("/Items"))
+        assertEquals(before, libraryReads())
     }
 }
