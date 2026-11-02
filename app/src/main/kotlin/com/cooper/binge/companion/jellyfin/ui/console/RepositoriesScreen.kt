@@ -53,7 +53,7 @@ internal fun RepositoriesTab(
 ) {
     when (state) {
         RepositoriesUiState.Loading -> PluginsLoading(inner)
-        is RepositoriesUiState.Failed -> PluginsFailed(state.failure, actions.onRetry)
+        is RepositoriesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is RepositoriesUiState.Ready -> {
             if (state.repositories.isEmpty()) {
                 EmptyScreen(

@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTabRow
 import com.binge.designsystem.component.ItemGroup
@@ -34,7 +33,6 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
-import com.binge.designsystem.template.ErrorScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -128,16 +126,6 @@ fun PluginsScreen(
     }
 }
 
-/** A failure that replaced the page: its words, and Try again. */
-@Composable
-internal fun PluginsFailed(
-    failure: ConsoleFailure,
-    onRetry: () -> Unit,
-) {
-    val kind = if (failure == ConsoleFailure.Unreachable) ErrorKind.Network else ErrorKind.Server
-    ErrorScreen(kind = kind, onRetry = onRetry, message = stringResource(failure.message))
-}
-
 /** The page's rows as they load: the shape of the list, not a spinner. */
 @Composable
 internal fun PluginsLoading(inner: PaddingValues) {
@@ -155,7 +143,7 @@ private fun InstalledTab(
 ) {
     when (state) {
         PluginsUiState.Loading -> PluginsLoading(inner)
-        is PluginsUiState.Failed -> PluginsFailed(state.failure, actions.onRetry)
+        is PluginsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is PluginsUiState.Ready ->
             when {
                 open != null -> PluginPage(open, state, actions, inner)
