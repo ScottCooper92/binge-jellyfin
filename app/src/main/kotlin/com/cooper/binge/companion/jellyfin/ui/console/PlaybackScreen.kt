@@ -43,6 +43,7 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.Culture
@@ -91,7 +92,7 @@ fun PlaybackScreen(
         onBack = actions.onBack,
         bar = ScreenBar.Small,
         snackbarHostState = host,
-        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
                 PlaybackUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }

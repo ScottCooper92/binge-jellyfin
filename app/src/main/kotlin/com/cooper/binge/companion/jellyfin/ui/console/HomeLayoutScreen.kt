@@ -36,6 +36,7 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.UserView
 import com.binge.designsystem.R as DesR
@@ -76,7 +77,7 @@ fun HomeLayoutScreen(
         bar = ScreenBar.Small,
         onBack = if (library != null) ({ actions.onOpen(null) }) else actions.onBack,
         snackbarHostState = host,
-        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
                 HomeLayoutUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
