@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
@@ -25,7 +23,6 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LockOpen
-import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
@@ -36,7 +33,6 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +43,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeConfirmDialogContent
@@ -65,6 +60,7 @@ import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleTextField
 import com.binge.designsystem.R as DesR
 
 /** What the screens can ask of the [JellyfinViewModel]. */
@@ -141,17 +137,16 @@ private fun EnterServer(
         Text(stringResource(R.string.setup_server_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.setup_server_body), style = MaterialTheme.typography.bodyMedium)
         DiscoveredServers(state, actions)
-        OutlinedTextField(
+        ConsoleTextField(
             value = state.address,
             onValueChange = actions.onAddress,
-            label = { Text(stringResource(R.string.setup_server_field)) },
-            placeholder = { Text("192.168.1.10:8096") },
-            singleLine = true,
+            label = stringResource(R.string.setup_server_field),
+            placeholder = "192.168.1.10:8096",
             isError = state.error != null,
-            supportingText = state.error?.let { { Text(errorText(it)) } },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = { actions.onConnect() }),
-            modifier = Modifier.fillMaxWidth(),
+            supporting = state.error?.let { errorText(it) },
+            keyboardType = KeyboardType.Uri,
+            imeAction = ImeAction.Go,
+            onDone = actions.onConnect,
         )
         BingeFilledButton(
             label = stringResource(R.string.setup_connect),
@@ -234,26 +229,22 @@ private fun SignIn(
             return@SetupColumn
         }
         Text(stringResource(R.string.setup_sign_in_title), style = MaterialTheme.typography.headlineSmall)
-        OutlinedTextField(
+        ConsoleTextField(
             value = state.username,
             onValueChange = actions.onUsername,
-            label = { Text(stringResource(R.string.setup_username)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.setup_username),
+            imeAction = ImeAction.Next,
         )
-        OutlinedTextField(
+        ConsoleTextField(
             value = state.password,
             onValueChange = actions.onPassword,
-            label = { Text(stringResource(R.string.setup_password)) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            label = stringResource(R.string.setup_password),
+            secret = true,
             // Only a wrong password is the field's fault; any other failure is said beside the button that failed.
             isError = state.passwordError == SetupError.WrongCredentials,
-            supportingText = state.passwordError?.takeIf { it == SetupError.WrongCredentials }?.let { { Text(errorText(it)) } },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = { actions.onSignIn() }),
-            modifier = Modifier.fillMaxWidth(),
+            supporting = state.passwordError?.takeIf { it == SetupError.WrongCredentials }?.let { errorText(it) },
+            imeAction = ImeAction.Go,
+            onDone = actions.onSignIn,
         )
         BingeFilledButton(
             label = stringResource(R.string.setup_sign_in),
