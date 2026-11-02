@@ -45,6 +45,10 @@ private val movieOptions =
     "EnableEmbeddedExtrasTitles":true,"AllowEmbeddedSubtitles":"AllowText","MetadataSavers":["Nfo"],
     "SubtitleDownloadLanguages":["eng","fre"]}"""
 
+private const val MUSIC_OPTIONS =
+    """{"EnableLUFSScan":true,"SaveLyricsWithMedia":true,"DisabledLyricFetchers":[],"PreferNonstandardArtistsTag":true,
+    "UseCustomTagDelimiters":true,"CustomTagDelimiters":["/","|",";"],"DelimiterWhitelist":["AC/DC","Back in Black"]}"""
+
 private fun ready(
     type: String = "movies",
     name: String = "Movies",
@@ -117,10 +121,30 @@ class LibraryScreenshotTest {
     @Composable
     fun music() =
         LibraryScreen(
-            ready("music", "Music", """{"EnableLUFSScan":true,"SaveLyricsWithMedia":true,"DisabledLyricFetchers":[]}"""),
+            ready("music", "Music", MUSIC_OPTIONS),
             LibraryActions(),
             newest,
         )
+
+    /** The audio tag options of a music library. They sit below the page frame's first screen. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun audioTags() = Surface { Column { AudioTagsGroup(ready("music", "Music", MUSIC_OPTIONS), LibraryActions(), newest) } }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun tagDelimiters() = Surface { TagDelimitersForm("/|;", LibraryActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun delimiterWhitelist() = Surface { DelimiterWhitelistForm("AC/DC\nBack in Black", LibraryActions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

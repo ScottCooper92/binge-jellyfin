@@ -2,11 +2,13 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import com.cooper.binge.companion.jellyfin.server.AvailableProviders
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -35,6 +37,7 @@ class LibraryScreenTest {
         version: String = "10.11.6",
         available: AvailableProviders = savers,
         actions: LibraryActions = LibraryActions(),
+        dialog: LibraryDialog? = null,
         cultures: List<Culture> = emptyList(),
         page: LibraryPage = LibraryPage.Main,
     ) {
@@ -44,6 +47,7 @@ class LibraryScreenTest {
                 library = ServerLibrary("id-$kind", "Library", kind, listOf("/media"), json),
                 options = json,
                 available = available,
+                dialog = dialog,
                 cultures = cultures,
                 page = page,
             )
@@ -107,6 +111,74 @@ class LibraryScreenTest {
         compose.onNodeWithText("Nfo").performScrollTo().performClick()
         // The whole list goes, with the name the server no longer lists kept.
         assertEquals(listOf("""MetadataSavers ["Old plugin","Nfo"]"""), calls)
+    }
+
+    private val tagOptions =
+        """{"PreferNonstandardArtistsTag":false,"UseCustomTagDelimiters":true,"CustomTagDelimiters":["/","|"],"DelimiterWhitelist":["AC/DC"]}"""
+
+    @Test
+    fun `a music library shows its audio tag options from 10_10, and what they say`() {
+        show("music", tagOptions)
+        compose.onNodeWithText("Prefer the ARTISTS tag").performScrollTo().assertExists()
+        compose.onNodeWithText("Custom tag delimiters").assertExists()
+        compose.onNodeWithText("/|").assertExists()
+        compose.onNodeWithText("1 name").assertExists()
+    }
+
+    @Test
+    fun `the delimiter characters are only shown while custom delimiters are on`() {
+        show("music", tagOptions.replace("\"UseCustomTagDelimiters\":true", "\"UseCustomTagDelimiters\":false"))
+        compose.onNodeWithText("Custom tag delimiters").performScrollTo().assertExists()
+        compose.onAllNodesWithText("Delimiter characters").assertCountEquals(0)
+        compose.onNodeWithText("Delimiter whitelist").assertExists()
+    }
+
+    @Test
+    fun `the audio tag options are not on 10_9`() {
+        show("music", tagOptions, version = "10.9.0")
+        compose.onAllNodesWithText("Prefer the ARTISTS tag").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a movies library has no audio tag options`() {
+        show("movies", tagOptions)
+        compose.onAllNodesWithText("Prefer the ARTISTS tag").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a switch for an audio tag option reaches its action`() {
+        val calls = mutableListOf<String>()
+        show("music", tagOptions, actions = LibraryActions(onFlag = { key, on -> calls += "$key $on" }))
+        compose.onNodeWithText("Prefer the ARTISTS tag").performScrollTo().performClick()
+        assertEquals(listOf("PreferNonstandardArtistsTag true"), calls)
+    }
+
+    @Test
+    fun `typed delimiter characters are sent one to an element, and the sheet closes`() {
+        val calls = mutableListOf<String>()
+        show(
+            "music",
+            tagOptions,
+            actions = LibraryActions(onJson = { key, value -> calls += "$key $value" }, onAsk = { calls += "ask $it" }),
+            dialog = LibraryDialog.TagDelimiters,
+        )
+        compose.onNode(hasSetTextAction()).performTextReplacement("&;")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("""CustomTagDelimiters ["&",";"]""", "ask null"), calls)
+    }
+
+    @Test
+    fun `the whitelist is sent one name to a line, with blank lines dropped`() {
+        val calls = mutableListOf<String>()
+        show(
+            "music",
+            tagOptions,
+            actions = LibraryActions(onJson = { key, value -> calls += "$key $value" }, onAsk = { calls += "ask $it" }),
+            dialog = LibraryDialog.DelimiterWhitelist,
+        )
+        compose.onNode(hasSetTextAction()).performTextReplacement("AC/DC\n\nBack in Black")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("""DelimiterWhitelist ["AC/DC","Back in Black"]""", "ask null"), calls)
     }
 
     private val languages =
