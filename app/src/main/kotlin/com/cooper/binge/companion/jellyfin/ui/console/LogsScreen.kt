@@ -15,26 +15,35 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeFilterChip
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -45,6 +54,8 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.LOG_RETENTION_MAX_DAYS
+import com.cooper.binge.companion.jellyfin.server.LOG_RETENTION_MIN_DAYS
 import com.cooper.binge.companion.jellyfin.server.LOG_TAIL_BYTES
 import com.cooper.binge.companion.jellyfin.server.LogEntry
 import com.cooper.binge.companion.jellyfin.server.LogFile
@@ -66,6 +77,9 @@ data class LogsActions(
     val onCopy: (String) -> Unit = {},
     /** Shares the log [name] as a file whose text is the second argument. */
     val onShare: (name: String, text: String) -> Unit = { _, _ -> },
+    val onEditRetention: (Boolean) -> Unit = {},
+    val onSaveRetention: (String) -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onRetryOpen: () -> Unit = {},
     val onBack: () -> Unit = {},
@@ -83,26 +97,42 @@ fun LogsScreen(
 ) {
     val open = (state as? LogsUiState.Ready)?.open
     BackHandler(enabled = open != null) { actions.onCloseLog() }
+    val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = open?.name?.middleEllipsised() ?: stringResource(R.string.logs_title),
         bar = ScreenBar.Small,
         onBack = if (open != null) actions.onCloseLog else actions.onBack,
+        snackbarHostState = host,
         actions = { if (open != null) ShareAction(open, actions.onShare) },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                LogsUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is LogsUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
-                is LogsUiState.Ready -> if (open == null) Files(state.files, actions, inner, zone) else Reader(open, actions, inner)
+                LogsUiState.Loading -> ConsoleLoading(inner, FILE_ROWS)
+                is LogsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                is LogsUiState.Ready -> if (open == null) Files(state, actions, inner, zone) else Reader(open, actions, inner)
             }
+            RefusedMessage((state as? LogsUiState.Ready)?.refused, host)
         }
     }
 }
 
 @Composable
 private fun Files(
+    state: LogsUiState.Ready,
+    actions: LogsActions,
+    inner: PaddingValues,
+    zone: ZoneId,
+) {
+    val files = state.files
+    FilesList(files, state, actions, inner, zone)
+    if (state.editingRetention) RetentionSheet(state.retention, actions)
+}
+
+@Composable
+private fun FilesList(
     files: List<LogFile>,
+    state: LogsUiState.Ready,
     actions: LogsActions,
     inner: PaddingValues,
     zone: ZoneId,
@@ -110,9 +140,14 @@ private fun Files(
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
     val time = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale).withZone(zone)
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = inner) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+    ) {
+        state.retention?.let { days -> item { RetentionRow(days, state.save.failed, actions) } }
         if (files.isEmpty()) {
-            item { Text(stringResource(R.string.logs_empty), style = MaterialTheme.typography.bodyLarge) }
+            item { ConsoleEmptyScreen(stringResource(R.string.logs_empty), Icons.Outlined.Description) }
         } else {
             item {
                 ItemGroup(
@@ -138,6 +173,64 @@ private fun Files(
 }
 
 @Composable
+private fun RetentionRow(
+    days: Int,
+    unsent: Boolean,
+    actions: LogsActions,
+) {
+    ItemGroup(
+        title = null,
+        rows =
+            listOf(
+                ListItem(
+                    icon = Icons.Outlined.DeleteSweep,
+                    label = stringResource(R.string.logs_retention_title),
+                    detail =
+                        if (unsent) {
+                            stringResource(R.string.logs_retention_unsent)
+                        } else {
+                            pluralStringResource(R.plurals.logs_retention_days, days, days)
+                        },
+                    onClick = if (unsent) actions.onRetrySave else ({ actions.onEditRetention(true) }),
+                ),
+            ),
+    )
+}
+
+/** The retention's number sheet: Save keeps what is typed if it is a whole number of days in range, and says so if it isn't. */
+@Composable
+internal fun RetentionSheet(
+    days: Int?,
+    actions: LogsActions,
+    inWindow: Boolean = true,
+) {
+    var value by rememberSaveable { mutableStateOf(days?.toString().orEmpty()) }
+    var tried by rememberSaveable { mutableStateOf(false) }
+    val valid = value.trim().toIntOrNull()?.let { it in LOG_RETENTION_MIN_DAYS..LOG_RETENTION_MAX_DAYS } == true
+    ConsoleSheet(onDismissRequest = { actions.onEditRetention(false) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(R.string.logs_retention_title),
+            body = stringResource(R.string.logs_retention_body),
+            value = value,
+            onValueChange = { value = it },
+            submitLabel = stringResource(R.string.logs_retention_save),
+            onSubmit = {
+                tried = true
+                if (valid) actions.onSaveRetention(value)
+            },
+            onCancel = { actions.onEditRetention(false) },
+            error =
+                if (tried && !valid) {
+                    stringResource(R.string.logs_retention_invalid, LOG_RETENTION_MIN_DAYS, LOG_RETENTION_MAX_DAYS)
+                } else {
+                    null
+                },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+    }
+}
+
+@Composable
 private fun Reader(
     open: OpenLog,
     actions: LogsActions,
@@ -149,8 +242,8 @@ private fun Reader(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
     ) {
         when (content) {
-            LogContent.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-            is LogContent.Failed -> ConsoleFailed(content.failure, actions.onRetryOpen, PaddingValues())
+            LogContent.Loading -> ConsoleLoading(PaddingValues(), LOG_ROWS)
+            is LogContent.Failed -> ConsoleFailureScreen(content.failure, actions.onRetryOpen)
             is LogContent.Ready -> {
                 LogIntro(open.name)
                 BingeSearchField(
@@ -246,4 +339,6 @@ private fun Entries(
     }
 }
 
+private const val FILE_ROWS = 6
+private const val LOG_ROWS = 8
 private const val LOG_KEPT_KB = LOG_TAIL_BYTES / 1024

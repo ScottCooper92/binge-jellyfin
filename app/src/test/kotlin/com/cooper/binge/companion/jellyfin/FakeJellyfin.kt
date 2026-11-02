@@ -144,6 +144,9 @@ class FakeJellyfin : Dispatcher() {
     /** `/Sessions`: one stream playing, a movie being transcoded, and a session playing nothing. */
     var sessions = SESSIONS
 
+    /** The session ids `/Sessions?controllableByUserId=` answers with; null answers every session, as a server with no limits would. */
+    var controllableSessionIds: Set<String>? = null
+
     /** `/ScheduledTasks`: the library scan, an idle task that last failed, and a hidden one. */
     var scheduledTasks = TASKS
 
@@ -403,7 +406,7 @@ class FakeJellyfin : Dispatcher() {
                 json(
                     """{"Items":[{"Id":"ch-1","Name":"News"},{"Id":"ch-2","Name":"Sport"}],"TotalRecordCount":2}""",
                 )
-            path == "/Sessions" -> json(sessions)
+            path == "/Sessions" -> json(sessions.forQuery(request.url.queryParameter("controllableByUserId") != null))
             path == "/Library/VirtualFolders" && request.method == "GET" -> json(libraries.toString())
             path.startsWith("/Library/VirtualFolders") || path.startsWith("/Environment/") || path == "/Libraries/AvailableOptions" ->
                 libraryCall(path, request)
@@ -497,7 +500,7 @@ class FakeJellyfin : Dispatcher() {
             path == "/Devices/Info" -> deviceInfo(request.url.queryParameter("id").orEmpty())
             path.startsWith("/ScheduledTasks/Running/") -> MockResponse(code = 204)
             path.startsWith("/Items/") && path.endsWith("/Refresh") -> MockResponse(code = 204)
-            path.startsWith("/Sessions/") && path.endsWith("/Playing/Stop") -> MockResponse(code = 204)
+            path.startsWith("/Sessions/") && "/Playing/" in path -> MockResponse(code = 204)
             path == "/QuickConnect/Authorize" ->
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
@@ -825,6 +828,14 @@ class FakeJellyfin : Dispatcher() {
             .body(body)
             .build()
 
+    /** [this] sessions JSON, narrowed to [controllableSessionIds] when the request asks which ones the user can control. */
+    private fun String.forQuery(controllable: Boolean): String {
+        val ids = controllableSessionIds
+        if (!controllable || ids == null) return this
+        val all = Json.parseToJsonElement(this).jsonArray
+        return JsonArray(all.filter { it.jsonObject["Id"]?.jsonPrimitive?.content in ids }).toString()
+    }
+
     companion object {
         private const val GOING_AWAY = 1001
 
@@ -850,8 +861,9 @@ class FakeJellyfin : Dispatcher() {
 
         const val SESSIONS =
             """[
-            {"Id":"s-tv","UserName":"Claude","DeviceName":"Living room","Client":"Jellyfin Android TV",
-             "PlayState":{"PositionTicks":6000000000,"IsPaused":false,"PlayMethod":"Transcode"},
+            {"Id":"s-tv","UserId":"user-1","DeviceId":"dev-tv","UserName":"Claude","DeviceName":"Living room","Client":"Jellyfin Android TV",
+             "SupportsRemoteControl":true,"SupportsMediaControl":true,"SupportedCommands":["Mute","SetVolume","DisplayMessage"],
+             "PlayState":{"PositionTicks":6000000000,"IsPaused":false,"CanSeek":true,"PlayMethod":"Transcode"},
              "NowPlayingItem":{"Name":"Sintel","RunTimeTicks":8880000000},
              "TranscodingInfo":{"TranscodeReasons":["AudioCodecNotSupported","VideoCodecNotSupported"]}},
             {"Id":"s-idle","UserName":"Claude","DeviceName":"Phone","Client":"Jellyfin Companion"}

@@ -13,7 +13,6 @@ import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +27,7 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
@@ -91,14 +91,24 @@ private fun Devices(
     now: Long,
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item { Text(stringResource(R.string.devices_body), style = MaterialTheme.typography.bodyMedium) }
+        item { PageIntro(stringResource(R.string.devices_body)) }
         if (state.devices.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }
         } else {
             item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
         }
     }
-    state.renaming?.let { RenameSheet(it, actions) }
+    state.renaming?.let {
+        RenameSheet(
+            it,
+            actions,
+            submitting = it.id in state.busy,
+            error =
+                state.formFailure?.let { f ->
+                    stringResource(R.string.devices_not_changed, stringResource(f.message))
+                },
+        )
+    }
     state.removing?.let { RemoveDialog(it, actions) }
 }
 
@@ -158,6 +168,8 @@ private fun ServerDevice.row(
 internal fun RenameSheet(
     device: ServerDevice,
     actions: DevicesActions,
+    submitting: Boolean = false,
+    error: String? = null,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable(device.id) { mutableStateOf(device.customName.orEmpty()) }
@@ -171,6 +183,8 @@ internal fun RenameSheet(
             onSubmit = { actions.onRename(name) },
             onCancel = { actions.onAskRename(null) },
             hint = device.name,
+            error = error,
+            isSubmitting = submitting,
         )
     }
 }

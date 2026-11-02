@@ -22,6 +22,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListRowSkeletonColumn
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
@@ -119,7 +120,7 @@ private fun Libraries(
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item {
-            Text(stringResource(R.string.libraries_body), style = MaterialTheme.typography.bodyMedium)
+            PageIntro(stringResource(R.string.libraries_body))
         }
         state.board.task(LIBRARY_SCAN_TASK)?.let { task ->
             item {
