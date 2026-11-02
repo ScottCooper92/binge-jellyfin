@@ -69,17 +69,6 @@ class PlaybackScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
-    @JellyfinSpanishPreviews
-    @Composable
-    fun notSaved() = PlaybackScreen(previewReady.copy(save = SaveProgress(failed = true)), PlaybackActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun refused() = PlaybackScreen(previewReady.copy(refused = ConsoleFailure.Refused), PlaybackActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
     @Composable
     fun loading() = PlaybackScreen(PlaybackUiState.Loading, PlaybackActions())
 

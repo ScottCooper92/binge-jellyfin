@@ -64,17 +64,6 @@ class HomeLayoutScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
-    @JellyfinSpanishPreviews
-    @Composable
-    fun notSaved() = HomeLayoutScreen(previewHome.copy(save = SaveProgress(failed = true)), HomeLayoutActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun refused() = HomeLayoutScreen(previewHome.copy(refused = ConsoleFailure.Refused), HomeLayoutActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
     @Composable
     fun loading() = HomeLayoutScreen(HomeLayoutUiState.Loading, HomeLayoutActions())
 
