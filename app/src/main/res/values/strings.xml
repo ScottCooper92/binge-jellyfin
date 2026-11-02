@@ -25,6 +25,16 @@
     <string name="server_detail">%1$s · Jellyfin %2$s</string>
     <string name="server_detail_cleartext">Not encrypted · %1$s</string>
 
+    <string name="server_card_connected">Connected</string>
+    <string name="server_card_not_encrypted">Not encrypted</string>
+    <string name="server_card_update">Update available</string>
+    <string name="server_card_restart">Restart pending</string>
+    <string name="server_card_shutting_down">Shutting down</string>
+    <string name="server_card_version">Jellyfin %1$s</string>
+    <string name="server_card_playing">Playing now</string>
+    <string name="server_card_users">Users</string>
+    <string name="server_card_movies">Movies</string>
+    <string name="server_card_series">Series</string>
     <string name="settings_server">Server</string>
     <string name="settings_signed_in_as">Signed in</string>
     <string name="settings_library">Library</string>

@@ -40,11 +40,15 @@ class HomeAccountTest {
             account = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":$admin}""").jsonObject),
         )
 
+    /** The home is a lazy list under the server card, so a row below the fold is scrolled to before it is looked for. */
+    private fun scrollTo(text: String) = compose.onNode(hasScrollAction()).performScrollToNode(hasText(text))
+
     @Test
     fun `an administrator's home has the avatar, the server and Administration, and none of the account's rows`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions()) } }
         compose.onNodeWithContentDescription("Your account").assertExists()
-        compose.onNodeWithText("Libraries").performScrollTo().assertExists()
+        scrollTo("Libraries")
+        compose.onNodeWithText("Libraries").assertExists()
         compose.onAllNodesWithText("Approve a sign-in code").assertCountEquals(0)
         compose.onAllNodesWithText("Change password").assertCountEquals(0)
         compose.onAllNodesWithText("Sign out").assertCountEquals(0)
@@ -65,12 +69,15 @@ class HomeAccountTest {
             JellyfinTheme { JellyfinRoot(state(admin = false), Actions(onAskSignOut = { asked += "ask" })) }
         }
         compose.onAllNodesWithContentDescription("Your account").assertCountEquals(0)
+        scrollTo("Approve a sign-in code")
         compose.onNodeWithText("Approve a sign-in code").assertExists()
+        scrollTo("Playback")
         compose.onNodeWithText("Playback").assertExists()
+        scrollTo("Home screen")
         compose.onNodeWithText("Home screen").assertExists()
         compose.onAllNodesWithText("Libraries").assertCountEquals(0)
         // The list is lazy: Sign out is its last item, so it is scrolled to, not just found.
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Sign out"))
+        scrollTo("Sign out")
         compose.onNodeWithText("Sign out").performClick()
         assertEquals(listOf("ask"), asked)
     }
