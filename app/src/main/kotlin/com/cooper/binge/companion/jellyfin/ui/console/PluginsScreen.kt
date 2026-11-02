@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Extension
@@ -58,6 +60,20 @@ data class PluginsActions(
 
 internal const val REPOSITORIES_TAB = 2
 
+/**
+ * Each tab's list position, held above the tab switch so it outlives the list: switching tabs, opening a plugin or
+ * package and coming back, and a reload that swaps the rows all leave the position where it was. Saved, so a
+ * rotation keeps it too.
+ */
+class PluginsListStates(
+    val installed: LazyListState,
+    val catalog: LazyListState,
+    val repositories: LazyListState,
+)
+
+@Composable
+fun rememberPluginsListStates() = PluginsListStates(rememberLazyListState(), rememberLazyListState(), rememberLazyListState())
+
 private val TABS = listOf(R.string.plugins_tab_installed, R.string.plugins_tab_catalog, R.string.plugins_tab_repositories)
 
 /**
@@ -75,6 +91,7 @@ fun PluginsScreen(
     onBack: () -> Unit,
     /** The tab it opens on: the installed plugins, unless a frame opens another. */
     initialTab: Int = 0,
+    listStates: PluginsListStates = rememberPluginsListStates(),
 ) {
     var tab by rememberSaveable { mutableIntStateOf(initialTab) }
     val plugin = (installed as? PluginsUiState.Ready)?.let { ready -> ready.plugins.firstOrNull { it.id == ready.open } }
@@ -140,9 +157,9 @@ fun PluginsScreen(
                     )
                 }
                 when (tab) {
-                    0 -> InstalledTab(installed, plugin, actions, content)
-                    1 -> CatalogTab(catalog, pkg, catalogActions, content)
-                    else -> RepositoriesTab(repositories, repositoryActions, content)
+                    0 -> InstalledTab(installed, plugin, actions, content, listStates.installed)
+                    1 -> CatalogTab(catalog, pkg, catalogActions, content, listStates.catalog)
+                    else -> RepositoriesTab(repositories, repositoryActions, content, listStates.repositories)
                 }
             }
         }
@@ -163,6 +180,7 @@ private fun InstalledTab(
     open: ServerPlugin?,
     actions: PluginsActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
     when (state) {
         PluginsUiState.Loading -> PluginsLoading(inner)
@@ -175,7 +193,7 @@ private fun InstalledTab(
                         message = stringResource(R.string.plugins_empty),
                         title = stringResource(R.string.plugins_empty_title),
                     )
-                else -> InstalledList(state, actions, inner)
+                else -> InstalledList(state, actions, inner, listState)
             }
     }
 }
@@ -185,10 +203,15 @@ private fun InstalledList(
     state: PluginsUiState.Ready,
     actions: PluginsActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         if (state.restartNeeded) {
-            item {
+            item(key = "restart") {
                 ItemGroup(
                     title = null,
                     rows =
@@ -204,7 +227,7 @@ private fun InstalledList(
                 )
             }
         }
-        item { ItemGroup(title = null, rows = state.plugins.map { it.row(state, actions) }) }
+        item(key = "plugins") { ItemGroup(title = null, rows = state.plugins.map { it.row(state, actions) }) }
     }
 }
 

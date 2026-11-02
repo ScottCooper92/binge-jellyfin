@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.server.sendGeneralCommand
 import com.cooper.binge.companion.jellyfin.server.sendPlaystate
 import com.cooper.binge.companion.jellyfin.server.sendSessionMessage
 import com.cooper.binge.companion.jellyfin.server.setSessionVolume
+import com.cooper.binge.companion.jellyfin.service.TICKS_PER_MILLI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -107,17 +108,7 @@ internal class SessionRemote(
         command: PlaystateCommand,
         seekTicks: Long? = null,
         allowed: (SessionControls) -> Boolean,
-    ) {
-        val ready = state.value as? NowPlayingUiState.Ready ?: return
-        if (!allowed(ready.controlsFor(session)) || ready.sending) return
-        state.updateReady { copy(sending = true, sendFailed = null) }
-        scope.launch {
-            connection
-                .consoleCall(TAG) { _, client -> client.sendPlaystate(session.sessionId, command, seekTicks) }
-                .onSuccess { state.updateReady { copy(sending = false) } }
-                .onFailure { error -> state.updateReady { copy(sending = false, sendFailed = error.consoleFailure()) } }
-        }
-    }
+    ) = sendCommand(session, allowed) { client -> client.sendPlaystate(session.sessionId, command, seekTicks) }
 
     private companion object {
         const val TAG = "JellyfinNowPlaying"
@@ -139,6 +130,3 @@ internal fun validMessage(
     header: String,
     text: String,
 ): Boolean = text.isNotBlank() && text.length <= MESSAGE_TEXT_MAX && header.length <= MESSAGE_HEADER_MAX
-
-/** A tick is 100 nanoseconds, so 10,000 to a millisecond. */
-private const val TICKS_PER_MILLI = 10_000L
