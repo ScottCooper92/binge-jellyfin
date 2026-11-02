@@ -140,6 +140,10 @@ as binge-seerr's TV is.
   says so: the server's version (`JellyfinServerProfile`), the user's policy (`JellyfinAccount`) and the
   server's configuration (Quick Connect, for one). A user never sees a page the server would refuse.
   `docs/server-compatibility.md` describes the three gates and how to add a feature behind them.
+- **A user's own settings** (approve a code, Playback, the Home screen, their password, Sign out) live in the account. For an
+  administrator that is a page behind an avatar in the home's top bar, so the home keeps the server and Administration. For
+  everyone else it is the home itself, inline, with Sign out last. Both come from the same composable (`AccountGroup`), so they
+  cannot drift. A new page of the user's own goes in that group, not in a group of its own.
 - **For everyone:** approving a Quick Connect code another device shows, Playback (their languages and
   playback switches), the Home screen, their password, and their own active sessions.
 - **For an admin:** every session, libraries and scans, scheduled tasks, activity, devices, users,

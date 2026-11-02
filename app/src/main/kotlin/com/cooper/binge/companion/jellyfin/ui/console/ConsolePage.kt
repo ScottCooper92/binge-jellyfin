@@ -21,6 +21,9 @@ enum class ConsolePage {
     /** Change the user's own password. For everyone. */
     Password,
 
+    /** An administrator's own settings, behind the avatar: the pages everyone else has inline on their home. */
+    Account,
+
     /** Who is watching what, and stopping a stream. Everyone's for an admin, else the user's own. */
     NowPlaying,
 
@@ -76,7 +79,8 @@ enum class ConsolePage {
             NowPlaying -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
-            Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, LibraryDisplay, Server -> account.isAdministrator
+            Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, LibraryDisplay, Server ->
+                account.isAdministrator
         }
 
     /** One of the administrator's pages, listed together on the home. */
