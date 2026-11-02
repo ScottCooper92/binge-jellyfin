@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Extension
@@ -22,11 +25,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
@@ -44,6 +51,7 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerPlugin
+import kotlinx.coroutines.launch
 import com.binge.designsystem.R as DesR
 
 /** What the installed tab can ask of its view model, and of the console. */
@@ -94,6 +102,10 @@ fun PluginsScreen(
     listStates: PluginsListStates = rememberPluginsListStates(),
 ) {
     var tab by rememberSaveable { mutableIntStateOf(initialTab) }
+    // The pager and the tab row are one control: a swipe settles on a page and sets the tab, a tap on a tab animates the pager.
+    val pager = rememberPagerState(initialPage = tab) { TABS.size }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.collect { tab = it } }
     val plugin = (installed as? PluginsUiState.Ready)?.let { ready -> ready.plugins.firstOrNull { it.id == ready.open } }
     val pkg = (catalog as? CatalogUiState.Ready)?.let { ready -> ready.packages.firstOrNull { it.name == ready.open } }
     val detail =
@@ -148,17 +160,49 @@ fun PluginsScreen(
                 if (detail == null) {
                     BingeTabRow(
                         tabs = TABS.map { stringResource(it) },
-                        selectedIndex = tab,
-                        onSelect = { tab = it },
+                        selectedIndex = pager.currentPage,
+                        onSelect = { page ->
+                            tab = page
+                            scope.launch { pager.animateScrollToPage(page) }
+                        },
                         modifier = Modifier.padding(top = inner.calculateTopPadding()),
                     )
-                }
-                when (tab) {
-                    0 -> InstalledTab(installed, plugin, actions, content, listStates.installed)
-                    1 -> CatalogTab(catalog, pkg, catalogActions, content, listStates.catalog)
-                    else -> RepositoriesTab(repositories, repositoryActions, content, listStates.repositories)
+                    HorizontalPager(
+                        state = pager,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                    ) { page ->
+                        PluginsPage(page, installed, catalog, repositories, actions, catalogActions, repositoryActions, content, listStates)
+                    }
+                } else {
+                    PluginsPage(tab, installed, catalog, repositories, actions, catalogActions, repositoryActions, content, listStates)
                 }
             }
+        }
+    }
+}
+
+/** One tab's page, by index. */
+@Composable
+private fun PluginsPage(
+    page: Int,
+    installed: PluginsUiState,
+    catalog: CatalogUiState,
+    repositories: RepositoriesUiState,
+    actions: PluginsActions,
+    catalogActions: CatalogActions,
+    repositoryActions: RepositoriesActions,
+    content: PaddingValues,
+    listStates: PluginsListStates,
+) {
+    val plugin = (installed as? PluginsUiState.Ready)?.let { ready -> ready.plugins.firstOrNull { it.id == ready.open } }
+    val pkg = (catalog as? CatalogUiState.Ready)?.let { ready -> ready.packages.firstOrNull { it.name == ready.open } }
+    // Full height, so a page lays out as it did before the pager: a list fills it and a message sits where it always did.
+    Box(Modifier.fillMaxSize()) {
+        when (page) {
+            0 -> InstalledTab(installed, plugin, actions, content, listStates.installed)
+            1 -> CatalogTab(catalog, pkg, catalogActions, content, listStates.catalog)
+            else -> RepositoriesTab(repositories, repositoryActions, content, listStates.repositories)
         }
     }
 }
