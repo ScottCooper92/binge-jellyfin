@@ -59,6 +59,8 @@ sealed interface UsersUiState {
         val busy: Boolean = false,
         val done: UserDone? = null,
         val actionFailed: ConsoleFailure? = null,
+        /** Why the open form (a new user, a password) was refused, shown in the form, which stays open with what was typed. */
+        val formFailure: ConsoleFailure? = null,
     ) : UsersUiState {
         val openUser: ServerUser? get() = users.firstOrNull { it.id == open }
     }
@@ -109,7 +111,7 @@ class UsersViewModel(
 
     fun open(user: ServerUser?) = update { copy(open = user?.id, section = null, dialog = null, done = null, actionFailed = null) }
 
-    fun show(dialog: UserDialog?) = update { copy(dialog = dialog, done = null, actionFailed = null) }
+    fun show(dialog: UserDialog?) = update { copy(dialog = dialog, done = null, formFailure = null, actionFailed = null) }
 
     fun setAdministrator(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_ADMINISTRATOR to JsonPrimitive(on)) }
 
@@ -135,7 +137,7 @@ class UsersViewModel(
         password: String,
     ) {
         if (name.isBlank()) return
-        act(UserDone.Created) { client ->
+        act(UserDone.Created, form = { dialog == UserDialog.Create }) { client ->
             val user = client.createUser(name.trim(), password)
             saved[user.id] = user.policy
             update { copy(users = (users + user).sortedBy { it.name.lowercase() }, open = user.id) }
@@ -146,7 +148,7 @@ class UsersViewModel(
         val ready = _state.value as? UsersUiState.Ready ?: return
         // The server asks the signed-in user for their current password, which the Password page does.
         val user = ready.openUser?.takeUnless { it.id == ready.me } ?: return
-        act(UserDone.PasswordSet) { client ->
+        act(UserDone.PasswordSet, form = { dialog == UserDialog.Password && open == user.id }) { client ->
             client.setPassword(user.id, password)
             update { copy(users = users.map { if (it.id == user.id) it.copy(hasPassword = password.isNotEmpty()) else it }) }
         }
@@ -155,23 +157,39 @@ class UsersViewModel(
     fun delete() {
         val ready = _state.value as? UsersUiState.Ready ?: return
         val user = ready.openUser?.takeUnless { it.id == ready.me } ?: return
-        act(UserDone.Deleted) { client ->
+        act(UserDone.Deleted, form = null) { client ->
             client.deleteUser(user.id)
             update { copy(users = users - user, open = null) }
         }
     }
 
-    /** A create, password or delete: the dialog closes, and the page says what happened or why it didn't. */
+    /**
+     * A create, password or delete, and the page says what happened. A delete's confirm closes as it is answered; a form
+     * ([form]) stays open while the call runs, closes when it works, and keeps what was typed, with the reason in the
+     * form, when it doesn't. Only that same form counts (the same dialog, for the same user): if it was left and another opened, the result goes to the page.
+     * One call at a time: a second while one is running is ignored.
+     */
     private fun act(
         done: UserDone,
+        form: (UsersUiState.Ready.() -> Boolean)?,
         call: suspend (JellyfinClient) -> Unit,
     ) {
-        update { copy(dialog = null, busy = true, done = null, actionFailed = null) }
+        if ((_state.value as? UsersUiState.Ready)?.busy != false) return
+        update { copy(dialog = if (form != null) dialog else null, busy = true, done = null, formFailure = null, actionFailed = null) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> call(client) }
-                .onSuccess { update { copy(busy = false, done = done) } }
-                .onFailure { error -> update { copy(busy = false, actionFailed = error.consoleFailure()) } }
+                .onSuccess { update { copy(busy = false, done = done, dialog = if (form != null && form()) null else dialog) } }
+                .onFailure { error ->
+                    // A form left meanwhile has nowhere to say it, so the page does.
+                    update {
+                        if (form != null && form()) {
+                            copy(busy = false, formFailure = error.consoleFailure())
+                        } else {
+                            copy(busy = false, actionFailed = error.consoleFailure())
+                        }
+                    }
+                }
         }
     }
 

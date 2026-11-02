@@ -41,6 +41,20 @@ class ApiKeysScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @Composable
+    fun namingSubmitting() = Surface { NewKeySheet(ApiKeysActions(), submitting = true, inWindow = false) }
+
+    /** The form stays open with what was typed, and says why in its own error slot. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun namingFailed() =
+        Surface { NewKeySheet(ApiKeysActions(), error = "Not changed. Something went wrong. Try again.", inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun created() = Surface { CreatedKeyDialog(previewKeys.first(), ApiKeysActions(), inWindow = false) }

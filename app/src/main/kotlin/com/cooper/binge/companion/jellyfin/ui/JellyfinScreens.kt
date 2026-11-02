@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
@@ -40,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -373,6 +376,32 @@ private fun ServerGroup(
     )
 }
 
+private class AdminPage(
+    val page: ConsolePage,
+    val icon: ImageVector,
+    @StringRes val label: Int,
+    @StringRes val detail: Int,
+)
+
+private val adminPages =
+    listOf(
+        AdminPage(ConsolePage.Libraries, Icons.Outlined.Folder, R.string.libraries_title, R.string.console_libraries_detail),
+        AdminPage(ConsolePage.Tasks, Icons.Outlined.Schedule, R.string.tasks_title, R.string.console_tasks_detail),
+        AdminPage(ConsolePage.Activity, Icons.Outlined.History, R.string.activity_title, R.string.console_activity_detail),
+        AdminPage(ConsolePage.Logs, Icons.Outlined.Description, R.string.logs_title, R.string.console_logs_detail),
+        AdminPage(ConsolePage.ApiKeys, Icons.Outlined.Key, R.string.api_keys_title, R.string.console_api_keys_detail),
+        AdminPage(ConsolePage.Devices, Icons.Outlined.Devices, R.string.devices_title, R.string.console_devices_detail),
+        AdminPage(ConsolePage.Users, Icons.Outlined.Group, R.string.users_title, R.string.console_users_detail),
+        AdminPage(ConsolePage.ServerSettings, Icons.Outlined.Tune, R.string.server_settings_title, R.string.console_server_settings_detail),
+        AdminPage(ConsolePage.Advanced, Icons.Outlined.Build, R.string.advanced_title, R.string.console_advanced_detail),
+        AdminPage(ConsolePage.Trickplay, Icons.Outlined.Image, R.string.trickplay_title, R.string.console_trickplay_detail),
+        AdminPage(ConsolePage.LibraryDisplay, Icons.Outlined.ViewModule, R.string.display_title, R.string.console_display_detail),
+        AdminPage(ConsolePage.Plugins, Icons.Outlined.Extension, R.string.plugins_title, R.string.console_plugins_detail),
+        AdminPage(ConsolePage.Transcoding, Icons.Outlined.Memory, R.string.transcoding_title, R.string.console_transcoding_detail),
+        AdminPage(ConsolePage.Backups, Icons.Outlined.Backup, R.string.backups_title, R.string.console_backups_detail),
+        AdminPage(ConsolePage.Server, Icons.Outlined.SettingsApplications, R.string.server_title, R.string.console_server_detail),
+    )
+
 /** The console's pages for an administrator, shown only to one: the server would refuse anyone else. */
 @Composable
 private fun AdminGroup(
@@ -382,102 +411,16 @@ private fun AdminGroup(
     ItemGroup(
         title = stringResource(R.string.console_admin_title),
         rows =
-            listOfNotNull(
+            adminPages.filter { it.page.available(state.profile, state.account) }.map { entry ->
                 ListItem(
-                    icon = Icons.Outlined.Folder,
-                    label = stringResource(R.string.libraries_title),
-                    detail = stringResource(R.string.console_libraries_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Libraries) },
-                ).takeIf { ConsolePage.Libraries.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Schedule,
-                    label = stringResource(R.string.tasks_title),
-                    detail = stringResource(R.string.console_tasks_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Tasks) },
-                ).takeIf { ConsolePage.Tasks.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.History,
-                    label = stringResource(R.string.activity_title),
-                    detail = stringResource(R.string.console_activity_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Activity) },
-                ).takeIf { ConsolePage.Activity.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Description,
-                    label = stringResource(R.string.logs_title),
-                    detail = stringResource(R.string.console_logs_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Logs) },
-                ).takeIf { ConsolePage.Logs.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Key,
-                    label = stringResource(R.string.api_keys_title),
-                    detail = stringResource(R.string.console_api_keys_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.ApiKeys) },
-                ).takeIf { ConsolePage.ApiKeys.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Devices,
-                    label = stringResource(R.string.devices_title),
-                    detail = stringResource(R.string.console_devices_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Devices) },
-                ).takeIf { ConsolePage.Devices.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Group,
-                    label = stringResource(R.string.users_title),
-                    detail = stringResource(R.string.console_users_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Users) },
-                ).takeIf { ConsolePage.Users.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Tune,
-                    label = stringResource(R.string.server_settings_title),
-                    detail = stringResource(R.string.console_server_settings_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.ServerSettings) },
-                ).takeIf { ConsolePage.ServerSettings.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Build,
-                    label = stringResource(R.string.advanced_title),
-                    detail = stringResource(R.string.console_advanced_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Advanced) },
-                ).takeIf { ConsolePage.Advanced.available(state.profile, state.account) },
-            ) + serverAdminRows(state, actions),
+                    icon = entry.icon,
+                    label = stringResource(entry.label),
+                    detail = stringResource(entry.detail),
+                    onClick = { actions.onOpenPage(entry.page) },
+                )
+            },
     )
 }
-
-@Composable
-private fun serverAdminRows(
-    state: UiState.SignedIn,
-    actions: Actions,
-): List<ListItem> =
-    listOfNotNull(
-        ListItem(
-            icon = Icons.Outlined.Image,
-            label = stringResource(R.string.trickplay_title),
-            detail = stringResource(R.string.console_trickplay_detail),
-            onClick = { actions.onOpenPage(ConsolePage.Trickplay) },
-        ).takeIf { ConsolePage.Trickplay.available(state.profile, state.account) },
-        ListItem(
-            icon = Icons.Outlined.ViewModule,
-            label = stringResource(R.string.display_title),
-            detail = stringResource(R.string.console_display_detail),
-            onClick = { actions.onOpenPage(ConsolePage.LibraryDisplay) },
-        ).takeIf { ConsolePage.LibraryDisplay.available(state.profile, state.account) },
-        ListItem(
-            icon = Icons.Outlined.Extension,
-            label = stringResource(R.string.plugins_title),
-            detail = stringResource(R.string.console_plugins_detail),
-            onClick = { actions.onOpenPage(ConsolePage.Plugins) },
-        ).takeIf { ConsolePage.Plugins.available(state.profile, state.account) },
-        ListItem(
-            icon = Icons.Outlined.Backup,
-            label = stringResource(R.string.backups_title),
-            detail = stringResource(R.string.console_backups_detail),
-            onClick = { actions.onOpenPage(ConsolePage.Backups) },
-        ).takeIf { ConsolePage.Backups.available(state.profile, state.account) },
-        ListItem(
-            icon = Icons.Outlined.SettingsApplications,
-            label = stringResource(R.string.server_title),
-            detail = stringResource(R.string.console_server_detail),
-            onClick = { actions.onOpenPage(ConsolePage.Server) },
-        ).takeIf { ConsolePage.Server.available(state.profile, state.account) },
-    )
 
 @Composable
 private fun LibraryGroup(
