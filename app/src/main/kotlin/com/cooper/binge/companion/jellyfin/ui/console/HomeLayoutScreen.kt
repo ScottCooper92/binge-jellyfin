@@ -3,11 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
 import androidx.compose.material.icons.outlined.ArrowDownward
@@ -27,8 +23,10 @@ import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
@@ -36,10 +34,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.UserView
 import com.binge.designsystem.R as DesR
@@ -55,14 +51,12 @@ data class HomeLayoutActions(
     val onDisplayMissingEpisodes: (Boolean) -> Unit = {},
     val onDisplayCollectionsView: (Boolean) -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
 private const val HOME_DETAIL_LINES = 3
-
-/** Lines a failed save's message takes, so it never moves the rows. */
-private const val HOME_STATUS_LINES = 2
 
 /**
  * How Jellyfin's apps lay out the user's home: their libraries in order, each with its own page for
@@ -75,19 +69,26 @@ fun HomeLayoutScreen(
 ) {
     val library = (state as? HomeLayoutUiState.Ready)?.openLibrary
     BackHandler(enabled = library != null) { actions.onOpen(null) }
-    BingeScreenScaffold(
+    val host = remember { SnackbarHostState() }
+    val ready = state as? HomeLayoutUiState.Ready
+    FormScreen(
         title = library?.name ?: stringResource(R.string.home_layout_title),
         bar = ScreenBar.Small,
         onBack = if (library != null) ({ actions.onOpen(null) }) else actions.onBack,
-    ) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+        snackbarHostState = host,
+        saveStatus = ready?.save?.formStatus(actions.onRetrySave),
+        notReady =
             when (state) {
-                HomeLayoutUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
-                is HomeLayoutUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is HomeLayoutUiState.Ready ->
-                    if (library == null) HomeLayoutBody(state, actions, inner) else LibraryPage(state, library, actions, inner)
-            }
+                HomeLayoutUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is HomeLayoutUiState.Failed -> { padding ->
+                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
+                }
+                is HomeLayoutUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            if (library == null) HomeLayoutBody(ready, actions) else LibraryPage(ready, library, actions)
+            RefusedMessage(ready.refused, host)
         }
     }
 }
@@ -96,11 +97,9 @@ fun HomeLayoutScreen(
 private fun HomeLayoutBody(
     state: HomeLayoutUiState.Ready,
     actions: HomeLayoutActions,
-    inner: PaddingValues,
 ) {
     val layout = state.layout
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         Text(stringResource(R.string.home_layout_body), style = MaterialTheme.typography.bodyMedium)
@@ -170,7 +169,6 @@ private fun HomeLayoutBody(
                     ),
                 ),
         )
-        SaveStatus(state.saveFailed)
     }
 }
 
@@ -180,14 +178,12 @@ private fun LibraryPage(
     state: HomeLayoutUiState.Ready,
     library: UserView,
     actions: HomeLayoutActions,
-    inner: PaddingValues,
 ) {
     val layout = state.layout
     val inMyMedia = library.id !in layout.myMediaExcludes
     val inLatest = library.id !in layout.latestExcludes
     val place = state.libraries.indexOf(library)
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         ItemGroup(
@@ -228,20 +224,7 @@ private fun LibraryPage(
                     ),
                 ),
         )
-        SaveStatus(state.saveFailed)
     }
-}
-
-/** A failed save's message, in a space kept for it so the rows never move. */
-@Composable
-private fun SaveStatus(failure: ConsoleFailure?) {
-    Text(
-        text = failure?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }.orEmpty(),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.error,
-        minLines = HOME_STATUS_LINES,
-        maxLines = HOME_STATUS_LINES,
-    )
 }
 
 /** Where a library shows on the home, for its row. */

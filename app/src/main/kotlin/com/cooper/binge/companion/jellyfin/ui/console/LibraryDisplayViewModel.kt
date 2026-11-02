@@ -64,7 +64,7 @@ class LibraryDisplayViewModel(
     val state: StateFlow<LibraryDisplayUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(connection, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
+        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
             update { copy(configuration = shown, saveFailed = failure, draft = editing?.let { shown.entries(it) } ?: draft) }
         }
 
@@ -120,6 +120,11 @@ class LibraryDisplayViewModel(
         val list = ready.editing ?: return
         val entries = change(ready.draft)
         if (entries != ready.draft) saves.set(list.key, jsonEntries(list, entries))
+    }
+
+    /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
+    override fun onCleared() {
+        saves.cleared()
     }
 
     private fun update(change: LibraryDisplayUiState.Ready.() -> LibraryDisplayUiState.Ready) =
