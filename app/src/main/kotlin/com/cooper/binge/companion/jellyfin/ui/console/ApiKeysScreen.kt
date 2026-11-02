@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -74,7 +75,7 @@ fun ApiKeysScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 ApiKeysUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is ApiKeysUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is ApiKeysUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ApiKeysUiState.Ready -> Keys(state, actions, inner, now)
             }
         }
@@ -102,7 +103,7 @@ private fun Keys(
             }
         }
         if (state.keys.isEmpty()) {
-            item { Text(stringResource(R.string.api_keys_empty), style = MaterialTheme.typography.bodyLarge) }
+            item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
         } else {
             item { ItemGroup(title = null, rows = state.keys.map { it.row(state, actions, now) }) }
         }

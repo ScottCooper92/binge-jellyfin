@@ -3,8 +3,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
-import com.cooper.binge.companion.jellyfin.server.ENABLED_FOLDERS
-import com.cooper.binge.companion.jellyfin.server.ENABLE_ALL_FOLDERS
 import com.cooper.binge.companion.jellyfin.server.IS_ADMINISTRATOR
 import com.cooper.binge.companion.jellyfin.server.IS_DISABLED
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
@@ -33,6 +31,9 @@ import kotlinx.serialization.json.JsonPrimitive
 /** The dialog open over the users page, if any. */
 enum class UserDialog { Create, Password, Delete }
 
+/** A page of settings under one user's page. */
+enum class UserSection { Access, Playback, Content, Control, LiveTv, Devices, Parental }
+
 /** What the last create, password or delete did, said under its page. */
 enum class UserDone { Created, PasswordSet, Deleted }
 
@@ -45,7 +46,7 @@ sealed interface UsersUiState {
 
     /**
      * The users, and the libraries a user may be given; [me], the signed-in user's id; [open], the user
-     * whose page is showing; [dialog] over it; [busy] while a create, password or delete is on its way;
+     * whose page is showing, and [section], the page of their settings that is; [dialog] over it; [busy] while a create, password or delete is on its way;
      * [done] what the last one did; [actionFailed] the last change that didn't go through.
      */
     data class Ready(
@@ -53,6 +54,7 @@ sealed interface UsersUiState {
         val libraries: List<ServerLibrary>,
         val me: String,
         val open: String? = null,
+        val section: UserSection? = null,
         val dialog: UserDialog? = null,
         val busy: Boolean = false,
         val done: UserDone? = null,
@@ -105,7 +107,7 @@ class UsersViewModel(
         }
     }
 
-    fun open(user: ServerUser?) = update { copy(open = user?.id, dialog = null, done = null, actionFailed = null) }
+    fun open(user: ServerUser?) = update { copy(open = user?.id, section = null, dialog = null, done = null, actionFailed = null) }
 
     fun show(dialog: UserDialog?) = update { copy(dialog = dialog, done = null, actionFailed = null) }
 
@@ -113,16 +115,20 @@ class UsersViewModel(
 
     fun setCanSignIn(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_DISABLED to JsonPrimitive(!on)) }
 
-    fun setAllLibraries(on: Boolean) = changePolicy { it + (ENABLE_ALL_FOLDERS to JsonPrimitive(on)) }
+    /** Changes one setting of the open user's policy, and saves it. */
+    fun setPolicy(
+        key: String,
+        value: JsonElement,
+    ) = changePolicy { it + (key to value) }
 
-    fun setLibrary(
-        id: String,
-        on: Boolean,
-    ) = changePolicy { policy ->
-        val folders = (policy[ENABLED_FOLDERS] as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.content }
-        val next = if (on) (folders + id).distinct() else folders - id
-        policy + (ENABLED_FOLDERS to JsonArray(next.map(::JsonPrimitive)))
-    }
+    /** Changes one list in the open user's policy (their libraries, devices, tags, schedules), and saves it. */
+    fun editList(
+        key: String,
+        change: (List<JsonElement>) -> List<JsonElement>,
+    ) = changePolicy { policy -> policy + (key to JsonArray(change((policy[key] as? JsonArray).orEmpty()))) }
+
+    /** Opens [section] of the open user's settings, or their page for null. */
+    fun section(section: UserSection?) = update { copy(section = section, done = null, actionFailed = null) }
 
     fun create(
         name: String,

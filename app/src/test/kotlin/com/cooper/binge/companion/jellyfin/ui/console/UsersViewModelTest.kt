@@ -60,6 +60,13 @@ class UsersViewModelTest {
             .getValue("Policy")
             .jsonObject
 
+    private fun UsersViewModel.setLibrary(
+        id: String,
+        on: Boolean,
+    ) = editList("EnabledFolders", memberChange(id, on))
+
+    private fun UsersViewModel.setAllLibraries(on: Boolean) = setPolicy("EnableAllFolders", kotlinx.serialization.json.JsonPrimitive(on))
+
     private fun saves() = jellyfin.requests.count { it.url.encodedPath.endsWith("/Policy") }
 
     private fun UsersViewModel.openSam() = ready().users.first { it.name == "Sam" }.also(::open)

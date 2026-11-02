@@ -90,7 +90,7 @@ fun ServerSettingsScreen(
                         Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) { BingeLoadingIndicator() }
-                is ServerSettingsUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is ServerSettingsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ServerSettingsUiState.Ready -> {
                     ServerSettingsBody(state, actions, splashscreenAvailable, inner) { picker = it }
                     picker?.let { ServerPickerSheet(it, state, actions) { picker = null } }

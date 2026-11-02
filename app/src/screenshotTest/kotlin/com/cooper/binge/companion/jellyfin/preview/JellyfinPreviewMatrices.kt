@@ -51,6 +51,11 @@ annotation class JellyfinSpanishPreviews
 @Preview(name = "phone", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class JellyfinScreenStatePreview
 
+/** The light phone cell alone, beside [JellyfinScreenStatePreview]'s dark one, for a state whose colours matter in both. */
+@PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
+@Preview(name = "phone-light", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_NO, locale = SOURCE_LOCALE)
+annotation class JellyfinScreenStateLightPreview
+
 /** The TV harness painting the window's black, for a screen root, wearing [JellyfinBrand]. */
 class JellyfinTvScreenshotThemeOnBlackWrapper : TvScreenshotThemeOnBlackWrapper() {
     override val brand: BingeBrand = JellyfinBrand

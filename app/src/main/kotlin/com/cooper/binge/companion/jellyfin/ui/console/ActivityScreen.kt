@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.GppBad
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Person
@@ -77,7 +79,7 @@ fun ActivityScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 ActivityUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is ActivityUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is ActivityUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ActivityUiState.Ready ->
                     BingePullToRefresh(
                         isRefreshing = state.refreshing,
@@ -104,7 +106,7 @@ private fun Entries(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        if (state.entries.isEmpty()) item { Text(stringResource(R.string.activity_empty), style = MaterialTheme.typography.bodyLarge) }
+        if (state.entries.isEmpty()) item { ConsoleEmptyScreen(stringResource(R.string.activity_empty), Icons.Outlined.History) }
         state.entries.groupBy { day(it.dateMillis, zone) }.forEach { (day, entries) ->
             item(key = "day-$day") {
                 ItemGroup(title = dayTitle(day, now), rows = entries.map { it.row(time) })

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -75,7 +76,7 @@ fun DevicesScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 DevicesUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is DevicesUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is DevicesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is DevicesUiState.Ready -> Devices(state, actions, inner, now)
             }
         }
@@ -91,7 +92,11 @@ private fun Devices(
 ) {
     LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         item { Text(stringResource(R.string.devices_body), style = MaterialTheme.typography.bodyMedium) }
-        item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
+        if (state.devices.isEmpty()) {
+            item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }
+        } else {
+            item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
+        }
         item {
             Text(
                 text = state.actionFailed?.let { stringResource(R.string.devices_not_changed, stringResource(it.message)) }.orEmpty(),

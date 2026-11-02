@@ -90,7 +90,7 @@ fun LibraryScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 LibraryUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is LibraryUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is LibraryUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LibraryUiState.Ready -> {
                     when (page) {
                         LibraryPage.Main -> LibraryBody(state, actions, profile, inner)

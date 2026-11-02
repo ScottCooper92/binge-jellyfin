@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
@@ -69,6 +70,7 @@ class ActivityScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
     @JellyfinSpanishPreviews
     @Composable
     fun empty() = ActivityScreen(ActivityUiState.Ready(emptyList(), total = 0), ActivityActions(), now = NOW, zone = ZoneOffset.UTC)

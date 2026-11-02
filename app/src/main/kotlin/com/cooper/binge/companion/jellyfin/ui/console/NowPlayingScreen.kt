@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Transform
@@ -24,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
@@ -70,7 +70,7 @@ fun NowPlayingScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 NowPlayingUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
-                is NowPlayingUiState.Failed -> ConsoleFailed(state.failure, actions.onRetry, inner)
+                is NowPlayingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is NowPlayingUiState.Ready -> Streams(state, administrator, actions, inner)
             }
         }
@@ -95,14 +95,7 @@ private fun Streams(
             )
         }
         if (state.sessions.isEmpty()) {
-            item {
-                Text(
-                    stringResource(R.string.now_playing_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = dimensionResource(DesR.dimen.padding_l)),
-                )
-            }
+            item { ConsoleEmptyScreen(stringResource(R.string.now_playing_empty), Icons.Outlined.PlayCircle) }
         }
         items(state.sessions, key = { it.sessionId }) { session ->
             Stream(session, stopping = state.stopping == session.sessionId) { actions.onStop(session) }
