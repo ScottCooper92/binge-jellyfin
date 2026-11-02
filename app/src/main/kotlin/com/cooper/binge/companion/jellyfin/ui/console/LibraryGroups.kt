@@ -67,6 +67,7 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_TRICKPLAY_ON_SCAN
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TRICKPLAY_WITH_MEDIA
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.bool
+import com.cooper.binge.companion.jellyfin.server.downloadLanguages
 import com.cooper.binge.companion.jellyfin.server.enabledSavers
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.libraryHasEmbeddedSubtitleChoice
@@ -267,6 +268,12 @@ internal fun VideoGroups(
                 state.switch(LIBRARY_PERFECT_MATCH, Icons.Outlined.Verified, R.string.library_perfect_match, actions),
                 state.switch(LIBRARY_SAVE_SUBTITLES, Icons.Outlined.Subtitles, R.string.library_save_subtitles, actions),
                 state.providersRow(ProviderGroup.Subtitles, Icons.Outlined.CloudDownload, actions),
+                ListItem(
+                    icon = Icons.Outlined.Translate,
+                    label = stringResource(R.string.library_download_languages),
+                    detail = downloadLanguagesSummary(state),
+                    onClick = { actions.onPage(LibraryPage.Languages) },
+                ),
             ),
     )
     ItemGroup(
@@ -337,6 +344,23 @@ internal fun embeddedSubtitlesLabel(value: String): String =
         "AllowNone" -> stringResource(R.string.library_embedded_subtitles_none)
         else -> value
     }
+
+/** The languages a library downloads subtitles in, as the row says it: none, their names when there are few, or how many. */
+@Composable
+private fun downloadLanguagesSummary(state: LibraryUiState.Ready): String {
+    val codes = state.options.downloadLanguages()
+    if (codes.isEmpty()) return stringResource(R.string.library_download_languages_none)
+    val names = codes.map { code -> state.cultures.firstOrNull { it.code.equals(code, ignoreCase = true) }?.displayName ?: code }
+    return if (names.size <=
+        SUMMARY_NAMES
+    ) {
+        names.joinToString()
+    } else {
+        pluralStringResource(R.plurals.library_languages_count, names.size, names.size)
+    }
+}
+
+private const val SUMMARY_NAMES = 2
 
 /** The interval as people say it. */
 @Composable

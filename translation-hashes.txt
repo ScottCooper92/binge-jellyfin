@@ -277,6 +277,10 @@ app:library_collections  b32c8428dac9
 app:library_collections_detail  0fcf06f51d41
 app:library_country  5250f474f732
 app:library_default  42b998374988
+app:library_download_languages  639bdcfcdf6d
+app:library_download_languages_body  014333768b12
+app:library_download_languages_none  dc937b598926
+app:library_download_languages_unknown  badaec97724d
 app:library_embedded_episodes  6de98530f5c3
 app:library_embedded_extras  38d229f01bd3
 app:library_embedded_extras_detail  0f7878f1a922
@@ -311,6 +315,7 @@ app:library_kind_other  f97e9da0e3b8
 app:library_kind_shows  e714ae21d3b4
 app:library_kind_title  6b79146db0b9
 app:library_language  85f3830223f2
+app:library_languages_count  cdcd81a1b8eb
 app:library_loudness  d219353de897
 app:library_loudness_detail  45dbc9854089
 app:library_lyric_providers  465957fb4d80

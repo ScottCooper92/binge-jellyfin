@@ -37,6 +37,9 @@ import kotlinx.serialization.json.JsonObject
 sealed interface LibraryPage {
     data object Main : LibraryPage
 
+    /** The languages the library downloads subtitles in. */
+    data object Languages : LibraryPage
+
     data class Providers(
         val group: ProviderGroup,
     ) : LibraryPage
