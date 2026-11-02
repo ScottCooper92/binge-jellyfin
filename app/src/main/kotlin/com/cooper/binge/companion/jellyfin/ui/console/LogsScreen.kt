@@ -2,21 +2,22 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,21 +28,22 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextOverflow
 import com.binge.designsystem.component.BingeFilterChip
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.LogRow
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.LOG_TAIL_BYTES
+import com.cooper.binge.companion.jellyfin.server.LogEntry
 import com.cooper.binge.companion.jellyfin.server.LogFile
+import com.cooper.binge.companion.jellyfin.server.LogLevel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -54,7 +56,9 @@ data class LogsActions(
     val onOpen: (String) -> Unit = {},
     val onCloseLog: () -> Unit = {},
     val onQuery: (String) -> Unit = {},
-    val onProblemsOnly: (Boolean) -> Unit = {},
+    val onLevel: (LogLevel) -> Unit = {},
+    /** Puts the text of one entry, already redacted, on the clipboard. */
+    val onCopy: (String) -> Unit = {},
     /** Shares the log [name] as a file whose text is the second argument. */
     val onShare: (name: String, text: String) -> Unit = { _, _ -> },
     val onRetry: () -> Unit = {},
@@ -63,8 +67,8 @@ data class LogsActions(
 )
 
 /**
- * The server's log files, newest first. Opening one shows its end in a monospace view, with a search
- * and a switch for warnings and errors, and Share. Back from a log returns to the list.
+ * The server's log files, newest first. Opening one shows its end as log rows, with a search, a chip per
+ * level, and Share. Back from a log returns to the list.
  */
 @Composable
 fun LogsScreen(
@@ -148,12 +152,7 @@ private fun Reader(
                     onClear = { actions.onQuery("") },
                     placeholder = stringResource(R.string.logs_search),
                 )
-                BingeFilterChip(
-                    label = stringResource(R.string.logs_problems_only),
-                    selected = open.problemsOnly,
-                    onClick = { actions.onProblemsOnly(!open.problemsOnly) },
-                    leadingIcon = Icons.Outlined.WarningAmber,
-                )
+                LevelChips(open.level, actions.onLevel)
                 if (content.truncated) {
                     Text(
                         stringResource(R.string.logs_truncated, LOG_KEPT_KB),
@@ -161,11 +160,11 @@ private fun Reader(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Lines(open.visible, Modifier.weight(1f))
+                Entries(open.visible, actions.onCopy, Modifier.weight(1f))
                 BingeTextButton(
                     label = stringResource(R.string.logs_share),
                     leadingIcon = Icons.Outlined.Share,
-                    onClick = { actions.onShare(open.name, open.visible.joinToString("\n")) },
+                    onClick = { actions.onShare(open.name, open.visible.joinToString("\n") { it.text }) },
                 )
                 Text(
                     stringResource(R.string.logs_share_note),
@@ -177,40 +176,42 @@ private fun Reader(
     }
 }
 
-/** The lines, oldest first, opening on the newest: a log is read from its end. */
 @Composable
-private fun Lines(
-    lines: List<String>,
+private fun LevelChips(
+    selected: LogLevel,
+    onLevel: (LogLevel) -> Unit,
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
+    ) {
+        LogLevel.entries.forEach { level ->
+            BingeFilterChip(label = stringResource(level.labelRes()), selected = level == selected, onClick = { onLevel(level) })
+        }
+    }
+}
+
+/** The entries, oldest first, opening on the newest: a log is read from its end. */
+@Composable
+private fun Entries(
+    entries: List<LogEntry>,
+    onCopy: (String) -> Unit,
     modifier: Modifier,
 ) {
     val list = rememberLazyListState()
-    LaunchedEffect(lines) { if (lines.isNotEmpty()) list.scrollToItem(lines.lastIndex) }
-    if (lines.isEmpty()) {
+    LaunchedEffect(entries) { if (entries.isNotEmpty()) list.scrollToItem(entries.lastIndex) }
+    if (entries.isEmpty()) {
         Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(stringResource(R.string.logs_no_match), style = MaterialTheme.typography.bodyLarge)
         }
         return
     }
-    SelectionContainer(modifier) {
-        LazyColumn(state = list, modifier = Modifier.fillMaxSize()) {
-            items(lines.size) { index ->
-                val line = lines[index]
-                Text(
-                    line,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
-                    color =
-                        if (line.contains("[ERR]") ||
-                            line.contains("[FTL]")
-                        ) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    overflow = TextOverflow.Visible,
-                )
-            }
-        }
+    LazyColumn(
+        state = list,
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
+    ) {
+        items(entries, key = { it.id }) { entry -> LogRow(entry.toRowEntry(), onCopy = { onCopy(entry.text) }) }
     }
 }
 

@@ -3,6 +3,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.LogEntry
+import com.cooper.binge.companion.jellyfin.server.LogLevel
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -72,10 +74,10 @@ class LogsViewModelTest {
         val open = vm.opened()
         val content = open.content as LogContent.Ready
         assertFalse(content.truncated)
-        assertTrue(content.lines.any { "api_key=[redacted]" in it })
-        assertFalse(content.lines.any { "abcdef123456" in it })
-        assertTrue(content.lines.any { "Logging out access token \"[redacted]\"" in it })
-        assertFalse(content.lines.any { "0123456789abcdef0123456789abcdef" in it })
+        assertTrue(content.entries.any { "api_key=[redacted]" in it.text })
+        assertFalse(content.entries.any { "abcdef123456" in it.text })
+        assertTrue(content.entries.any { "Logging out access token \"[redacted]\"" in it.message })
+        assertFalse(content.entries.any { "0123456789abcdef0123456789abcdef" in it.text })
         vm.closeLog()
         assertEquals(null, vm.ready { it.open == null }.open)
     }
@@ -83,13 +85,13 @@ class LogsViewModelTest {
     @Test
     fun `a log naming this app's own token, or another credential, shows none of them`() {
         jellyfin.logTexts["log_20261031.log"] =
-            "[10:00:00] [INF] Session for token-1 ended\n" +
-            "[10:01:00] [INF] Logging out access token \"ffffeeeeddddccccbbbbaaaa99998888\"\n" +
-            "[10:02:00] [INF] Revoked the token of Bob: 11112222333344445555666677778888\n"
+            "[2026-10-31 10:00:00.000 +00:00] [INF] [1] A: Session for token-1 ended\n" +
+            "[2026-10-31 10:01:00.000 +00:00] [INF] [1] A: Logging out access token \"ffffeeeeddddccccbbbbaaaa99998888\"\n" +
+            "[2026-10-31 10:02:00.000 +00:00] [INF] [1] A: Revoked the token of Bob: 11112222333344445555666677778888\n"
         val vm = made(LogsViewModel(connection))
         vm.ready()
         vm.open("log_20261031.log")
-        val shown = (vm.opened().content as LogContent.Ready).lines.joinToString("\n")
+        val shown = (vm.opened().content as LogContent.Ready).entries.joinToString("\n") { it.text }
         for (secret in listOf("token-1", "ffffeeeeddddccccbbbbaaaa99998888", "11112222333344445555666677778888")) {
             assertFalse("$secret was shown", secret in shown)
         }
@@ -97,18 +99,20 @@ class LogsViewModelTest {
     }
 
     @Test
-    fun `search narrows the lines, and so does warnings only`() {
+    fun `search narrows the entries, and so does the level`() {
         val vm = made(LogsViewModel(connection))
         vm.ready()
         vm.open("log_20261031.log")
         assertEquals(4, vm.opened().visible.size)
         vm.setQuery("slow")
-        assertEquals(listOf("[10:05:00] [WRN] Slow query"), vm.opened { it.query == "slow" }.visible)
+        assertEquals(listOf("Slow query"), vm.opened { it.query == "slow" }.visible.map { it.message })
         vm.setQuery("")
-        vm.setProblemsOnly(true)
-        assertEquals(2, vm.opened { it.problemsOnly }.visible.size)
+        vm.setLevel(LogLevel.Warn)
+        assertEquals(listOf(LogLevel.Warn, LogLevel.Error), vm.opened { it.level == LogLevel.Warn }.visible.map { it.level })
+        vm.setLevel(LogLevel.Error)
+        assertEquals(1, vm.opened { it.level == LogLevel.Error }.visible.size)
         vm.setQuery("nothing like this")
-        assertEquals(emptyList<String>(), vm.opened { it.query.isNotEmpty() }.visible)
+        assertEquals(emptyList<LogEntry>(), vm.opened { it.query.isNotEmpty() }.visible)
     }
 
     @Test
@@ -122,7 +126,13 @@ class LogsViewModelTest {
         vm.open("log_20261031.log")
         val open = vm.opened()
         assertEquals("log_20261031.log", open.name)
-        assertTrue((open.content as LogContent.Ready).lines.first().contains("Server started"))
+        assertTrue(
+            (open.content as LogContent.Ready)
+                .entries
+                .first()
+                .message
+                .contains("Server started"),
+        )
     }
 
     @Test
@@ -145,14 +155,6 @@ class LogsViewModelTest {
         jellyfin.status.remove("/System/Logs")
         vm.load()
         assertEquals(2, vm.ready().files.size)
-    }
-
-    @Test
-    fun `a line is a problem at warning level or worse`() {
-        assertTrue("x [WRN] y".isProblem())
-        assertTrue("x [ERR] y".isProblem())
-        assertTrue("x [FTL] y".isProblem())
-        assertFalse("x [INF] y".isProblem())
     }
 
     private companion object {

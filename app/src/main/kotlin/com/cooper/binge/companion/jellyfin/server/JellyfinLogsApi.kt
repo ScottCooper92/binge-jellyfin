@@ -11,9 +11,9 @@ data class LogFile(
     val modifiedMillis: Long?,
 )
 
-/** The end of a log: [lines], oldest first, and whether the file was longer than what was kept. */
+/** The end of a log: [entries], oldest first, and whether the file was longer than what was kept. */
 data class LogText(
-    val lines: List<String>,
+    val entries: List<LogEntry>,
     val truncated: Boolean,
 )
 
@@ -36,9 +36,9 @@ private fun JsonObject.logFile(): LogFile? {
 }
 
 /**
- * The last [maxBytes] of the log [name], with anything that looks like a credential blanked (see
- * [redactSecrets]): Jellyfin's own logs can carry an `api_key` in a request URL, and what this returns
- * is shown and shared. [ownToken], the signed-in user's, is blanked wherever it appears.
+ * The last [maxBytes] of the log [name] as entries, with anything that looks like a credential blanked first (see
+ * [redactLog]): Jellyfin's own logs can carry an `api_key` in a request URL, and what this returns is shown, copied
+ * and shared. [ownToken], the signed-in user's, is blanked wherever it appears.
  */
 suspend fun JellyfinClient.logTail(
     name: String,
@@ -46,17 +46,8 @@ suspend fun JellyfinClient.logTail(
     maxBytes: Int = LOG_TAIL_BYTES,
 ): LogText {
     val tail = getTail("System/Logs/Log", mapOf("name" to name), maxBytes)
-    return LogText(
-        tail.text
-            .lines()
-            .dropLastWhile { it.isEmpty() }
-            .map { redactSecrets(it.withoutToken(ownToken)) },
-        tail.truncated,
-    )
+    return LogText(parseLogEntries(redactLog(tail.text, ownToken)), tail.truncated)
 }
-
-/** [this] line with [token], this app's own, replaced by `[redacted]` wherever it appears: exact, whatever the wording around it. */
-private fun String.withoutToken(token: String?): String = token?.takeIf { it.isNotBlank() }?.let { replace(it, REDACTED) } ?: this
 
 /** How much of a log is kept: enough for a day's errors, small enough for a phone. */
 const val LOG_TAIL_BYTES = 512 * 1024
@@ -85,7 +76,7 @@ fun redactSecrets(line: String): String {
 
 private const val NEAR_CHARS = 60
 
-private const val REDACTED = "[redacted]"
+internal const val REDACTED = "[redacted]"
 
 /** Reads [source] to its end, keeping the last [maxBytes] of it. A cut-off first line is dropped. */
 internal fun readTail(

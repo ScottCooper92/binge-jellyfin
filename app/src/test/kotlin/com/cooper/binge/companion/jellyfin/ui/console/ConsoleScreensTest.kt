@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.Branding
@@ -52,6 +54,8 @@ import com.cooper.binge.companion.jellyfin.server.TaskStatus
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
 import com.cooper.binge.companion.jellyfin.server.UserView
+import com.cooper.binge.companion.jellyfin.server.parseLogEntries
+import com.cooper.binge.companion.jellyfin.server.redactLog
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -398,6 +402,7 @@ class ConsoleScreensTest {
         var opened: String? = null
         var query = ""
         var shared: Pair<String, String>? = null
+        var copied: String? = null
         var closed = 0
         val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L), LogFile("log_20261030.log", 2048, null))
         var state by mutableStateOf<LogsUiState>(LogsUiState.Ready(files))
@@ -409,6 +414,7 @@ class ConsoleScreensTest {
                         onOpen = { opened = it },
                         onCloseLog = { closed++ },
                         onQuery = { query = it },
+                        onCopy = { copied = it },
                         onShare = { name, text -> shared = name to text },
                     ),
                     zone = java.time.ZoneOffset.UTC,
@@ -418,13 +424,16 @@ class ConsoleScreensTest {
         compose.onNodeWithText("log_20261030.log").assertExists()
         compose.onNodeWithText("log_20261031.log").performClick()
         assertEquals("log_20261031.log", opened)
-        val lines = listOf("[10:00:00] [INF] Server started", "[10:06:00] [ERR] Boom")
-        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(lines, truncated = true)))
-        compose.onNodeWithText("[10:06:00] [ERR] Boom").assertExists()
+        val lines = listOf("$STAMP [INF] [1] Main: Server started", "$STAMP [ERR] [2] Main: Boom")
+        val entries = parseLogEntries(redactLog(lines.joinToString("\n")))
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(entries, truncated = true)))
+        compose.onNodeWithText("Boom").assertExists()
+        compose.onNodeWithText("Boom").performTouchInput { longClick() }
+        assertEquals(lines[1], copied)
         compose.onNodeWithText("Showing the last 512 KB of this log.").assertExists()
         compose.onNodeWithText("Share").performClick()
         assertEquals("log_20261031.log" to lines.joinToString("\n"), shared)
-        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(lines, truncated = false), query = "zzz"))
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(entries, truncated = false), query = "zzz"))
         compose.onNodeWithText("No lines match.").assertExists()
         state = LogsUiState.Ready(emptyList())
         compose.onNodeWithText("The server has no log files.").assertExists()
@@ -436,7 +445,11 @@ class ConsoleScreensTest {
     fun `system back with a log open closes the log, not the page`() {
         var closed = 0
         var left = 0
-        val open = OpenLog("log_20261031.log", LogContent.Ready(listOf("[10:00:00] [INF] Server started"), truncated = false))
+        val open =
+            OpenLog(
+                "log_20261031.log",
+                LogContent.Ready(parseLogEntries(redactLog("$STAMP [INF] [1] Main: Server started")), truncated = false),
+            )
         compose.setContent {
             JellyfinTheme {
                 LogsScreen(
@@ -982,3 +995,5 @@ class ConsoleScreensTest {
         compose.onNodeWithText("This server can't restart itself. Restart it where it runs.").assertExists()
     }
 }
+
+private const val STAMP = "[2026-10-31 10:00:00.000 +00:00]"
