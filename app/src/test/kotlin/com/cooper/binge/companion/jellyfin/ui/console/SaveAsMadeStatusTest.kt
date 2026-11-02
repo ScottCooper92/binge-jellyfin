@@ -1,6 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -8,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,5 +40,26 @@ class SaveAsMadeStatusTest {
     fun `a refused change says why it went back`() {
         compose.setContent { JellyfinTheme { PlaybackScreen(ready.copy(refused = ConsoleFailure.Refused), PlaybackActions()) } }
         compose.onNodeWithText("Not saved. Something went wrong. Try again.").assertExists()
+    }
+
+    @Test
+    fun `a refusal after an earlier failure with the same words is still said`() {
+        val host = SnackbarHostState()
+        var refused by mutableStateOf<ConsoleFailure?>(null)
+        compose.setContent {
+            JellyfinTheme {
+                RefusedMessage(refused, host)
+                RefusedMessage(ConsoleFailure.Refused, host)
+            }
+        }
+        val message = "Not saved. Something went wrong. Try again."
+        compose.waitForIdle()
+        assertEquals(message, host.currentSnackbarData?.visuals?.message)
+        host.currentSnackbarData?.dismiss()
+        compose.waitForIdle()
+        assertNull(host.currentSnackbarData)
+        compose.runOnIdle { refused = ConsoleFailure.Refused }
+        compose.waitForIdle()
+        assertEquals(message, host.currentSnackbarData?.visuals?.message)
     }
 }

@@ -100,7 +100,8 @@ fun LibraryScreen(
                 is LibraryPage.One -> ProviderPage(page, ready, actions)
             }
             LibraryDialogs(ready, actions, folders, folderActions)
-            RefusedMessage(ready.refused ?: ready.failed, host)
+            RefusedMessage(ready.refused, host)
+            RefusedMessage(ready.failed, host)
         }
     }
 }
