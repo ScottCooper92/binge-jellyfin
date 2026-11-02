@@ -439,7 +439,10 @@ class FakeJellyfin : Dispatcher() {
             path == "/Devices/Info" -> deviceInfo(request.url.queryParameter("id").orEmpty())
             path.startsWith("/ScheduledTasks/Running/") -> MockResponse(code = 204)
             path.startsWith("/Items/") && path.endsWith("/Refresh") -> MockResponse(code = 204)
-            path.startsWith("/Sessions/") && "/Playing/" in path -> MockResponse(code = 204)
+            path.startsWith(
+                "/Sessions/",
+            ) &&
+                ("/Playing/" in path || "/Command" in path || path.endsWith("/Message")) -> MockResponse(code = 204)
             path == "/QuickConnect/Authorize" ->
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
@@ -754,6 +757,9 @@ class FakeJellyfin : Dispatcher() {
             .addHeader("Content-Type", "application/json")
             .body(body)
             .build()
+
+    /** A command sent to a session: playstate, general command or message. */
+    private fun isSessionCommand(path: String) = "/Playing/" in path || "/Command" in path || path.endsWith("/Message")
 
     /** [this] sessions JSON, narrowed to [controllableSessionIds] when the request asks which ones the user can control. */
     private fun String.forQuery(controllable: Boolean): String {

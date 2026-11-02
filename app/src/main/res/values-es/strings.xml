@@ -147,6 +147,14 @@
     <string name="now_playing_forward_10">Avanzar 10 segundos</string>
     <string name="now_playing_play">Reproducir</string>
     <string name="now_playing_pause">Pausar</string>
+    <string name="now_playing_volume">Volumen</string>
+    <string name="now_playing_mute">Silenciar</string>
+    <string name="now_playing_unmute">Activar el sonido</string>
+    <string name="now_playing_message">Enviar un mensaje</string>
+    <string name="now_playing_message_body">Se muestra unos segundos en %2$s, la pantalla de %1$s.</string>
+    <string name="now_playing_message_header">Título (opcional)</string>
+    <string name="now_playing_message_text">Mensaje</string>
+    <string name="now_playing_message_send">Enviar</string>
     <string name="now_playing_stop_title">¿Detener %1$s?</string>
     <string name="now_playing_stop_body">Se detiene en %1$s, para %2$s.</string>
     <string name="now_playing_not_stopped">No se ha detenido. %1$s</string>

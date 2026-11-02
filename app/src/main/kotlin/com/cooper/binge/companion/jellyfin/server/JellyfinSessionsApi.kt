@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /** How the server feeds a stream, as `PlayState.PlayMethod` names it. */
 enum class PlayMethod { DirectPlay, DirectStream, Transcode }
@@ -34,6 +36,9 @@ data class NowPlaying(
     val canSeek: Boolean = false,
     /** What the client says it takes, as `GeneralCommandType` names (`Mute`, `SetVolume`, `DisplayMessage`, ...). */
     val supportedCommands: Set<String> = emptySet(),
+    /** The client's volume from 0 to 100, or null if it did not say. */
+    val volumeLevel: Int? = null,
+    val muted: Boolean = false,
 ) {
     /** How far through, from 0 to 1, or null with no runtime to measure against. */
     val progress: Float? get() = runtimeTicks?.takeIf { it > 0 }?.let { (positionTicks.toFloat() / it).coerceIn(0f, 1f) }
@@ -84,6 +89,45 @@ suspend fun JellyfinClient.sendPlaystate(
     )
 }
 
+/** A general command with no arguments: `Mute`, `Unmute`, `VolumeUp`, `VolumeDown`. Sends to [sessionId] only. */
+suspend fun JellyfinClient.sendGeneralCommand(
+    sessionId: String,
+    command: String,
+) {
+    post("Sessions/$sessionId/Command/$command", null)
+}
+
+/** Sets the session's volume, `0` to `100`. */
+suspend fun JellyfinClient.setSessionVolume(
+    sessionId: String,
+    level: Int,
+) {
+    val body =
+        buildJsonObject {
+            put("Name", "SetVolume")
+            put("Arguments", buildJsonObject { put("Volume", level.coerceIn(0, MAX_VOLUME).toString()) })
+        }
+    post("Sessions/$sessionId/Command", body)
+}
+
+/** Shows a message on the session's screen for [timeoutMs]. A blank [header] is left for the server to fill in. */
+suspend fun JellyfinClient.sendSessionMessage(
+    sessionId: String,
+    header: String,
+    text: String,
+    timeoutMs: Long,
+) {
+    val body =
+        buildJsonObject {
+            if (header.isNotBlank()) put("Header", header.trim())
+            put("Text", text.trim())
+            put("TimeoutMs", timeoutMs)
+        }
+    post("Sessions/$sessionId/Message", body)
+}
+
+private const val MAX_VOLUME = 100
+
 /** Asks the session's client to stop playing. The client stops; the session stays. */
 suspend fun JellyfinClient.stopPlaying(sessionId: String) {
     post("Sessions/$sessionId/Playing/Stop", null)
@@ -115,6 +159,8 @@ internal fun JsonObject.nowPlayingOrNull(): NowPlaying? {
         supportsRemoteControl = bool("SupportsRemoteControl") == true,
         canSeek = state?.bool("CanSeek") == true,
         supportedCommands = array("SupportedCommands").mapNotNull { (it as? JsonPrimitive)?.content }.toSet(),
+        volumeLevel = state?.int("VolumeLevel"),
+        muted = state?.bool("IsMuted") == true,
     )
 }
 
