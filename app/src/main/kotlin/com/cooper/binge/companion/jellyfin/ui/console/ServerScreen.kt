@@ -1,7 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +18,9 @@ import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -63,7 +60,7 @@ fun ServerScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                ServerUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                ServerUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is ServerUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ServerUiState.Ready -> Server(state, actions, inner)
             }
@@ -207,3 +204,5 @@ private val Restart.message: Int
             Restart.NotBack -> R.string.server_not_back
             Restart.Failed -> R.string.server_restart_failed
         }
+
+private const val LOADING_ROWS = 5

@@ -1,7 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
@@ -42,7 +40,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -101,7 +98,7 @@ fun TrickplayScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                TrickplayUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+                TrickplayUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is TrickplayUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is TrickplayUiState.Ready -> {
                     TrickplayBody(state, actions, keyFrameOnlyAvailable, inner) { picker = it }
@@ -395,3 +392,5 @@ internal fun FieldDialog(
         },
     )
 }
+
+private const val LOADING_ROWS = 10

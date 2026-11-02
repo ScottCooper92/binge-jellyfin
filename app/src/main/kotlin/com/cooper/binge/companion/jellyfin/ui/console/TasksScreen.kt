@@ -2,9 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -22,12 +20,10 @@ import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -80,10 +76,7 @@ fun TasksScreen(
             val inner = padding.screenListPadding()
             when {
                 state is TasksUiState.Loading ->
-                    Box(
-                        Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) { BingeLoadingIndicator() }
+                    ConsoleLoading(inner, LOADING_ROWS)
                 state is TasksUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 ready != null && open != null -> TaskTriggers(open, ready, actions, inner)
                 ready != null -> Tasks(ready, actions, inner, now)
@@ -165,3 +158,5 @@ internal fun taskIcon(key: String): ImageVector =
         key.contains("Database") || key.contains("Optimi") -> Icons.Outlined.Storage
         else -> Icons.Outlined.Schedule
     }
+
+private const val LOADING_ROWS = 8
