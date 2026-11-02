@@ -11,10 +11,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -66,7 +68,13 @@ fun TranscodingScreen(
     folders: FolderBrowseState = FolderBrowseState.Loading,
     folderActions: FolderActions = FolderActions(),
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.transcoding_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = stringResource(R.string.transcoding_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
@@ -75,6 +83,8 @@ fun TranscodingScreen(
                 is TranscodingUiState.Ready -> {
                     TranscodingBody(state, actions, profile, inner)
                     TranscodingSheets(state, actions, folders, folderActions)
+                    // A save the server refused is put back and said in a message, not in a space the page keeps for it.
+                    RefusedMessage(state.saveFailed, host)
                 }
             }
         }
@@ -118,7 +128,6 @@ private fun TranscodingBody(
         QualityGroup(state, actions) { picker = it }
         AudioGroup(state, profile, actions) { picker = it }
         StreamingGroups(state, profile, actions)
-        FailureText(state.saveFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) })
     }
     picker?.let { TranscodingPickerSheet(it, state, profile, actions) { picker = null } }
 }

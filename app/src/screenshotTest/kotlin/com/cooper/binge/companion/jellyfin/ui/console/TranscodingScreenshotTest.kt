@@ -77,11 +77,6 @@ class TranscodingScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
-    @Composable
-    fun saveFailed() = TranscodingScreen(ready().copy(saveFailed = ConsoleFailure.Unreachable), TranscodingActions(), newest)
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun bitrate() = Surface { NumberForm(NumberField.BitrateLimit, "8", TranscodingActions()) }
