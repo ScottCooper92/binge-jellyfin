@@ -19,6 +19,14 @@ internal fun RefusedMessage(
     host: SnackbarHostState,
     @StringRes text: Int = R.string.settings_not_saved,
 ) {
-    val message = failure?.let { stringResource(text, stringResource(it.message)) }
+    SnackbarMessage(failure?.let { stringResource(text, stringResource(it.message)) }, host)
+}
+
+/** Shows [message] in a snackbar when there is one, and again when it changes. A page's own sentence for what went wrong. */
+@Composable
+internal fun SnackbarMessage(
+    message: String?,
+    host: SnackbarHostState,
+) {
     LaunchedEffect(message) { if (message != null) host.showSnackbar(message) }
 }

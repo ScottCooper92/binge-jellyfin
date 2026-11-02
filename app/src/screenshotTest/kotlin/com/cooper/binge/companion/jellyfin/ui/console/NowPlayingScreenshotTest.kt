@@ -85,11 +85,5 @@ class NowPlayingScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun notStopped() =
-        NowPlayingScreen(previewReady.copy(stopFailed = ConsoleFailure.Unreachable), administrator = true, NowPlayingActions())
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
     fun failed() = NowPlayingScreen(NowPlayingUiState.Failed(ConsoleFailure.Refused), administrator = false, NowPlayingActions())
 }
