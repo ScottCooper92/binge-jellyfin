@@ -265,6 +265,7 @@ internal fun TextSheet(
             ServerText.CustomCss -> state.branding.customCss
         }
     var value by rememberSaveable(text) { mutableStateOf(current) }
+    val error = state.sheetFailed?.let { stringResource(R.string.settings_not_saved, stringResource(it.message)) }
     val (title, body) =
         when (text) {
             ServerText.Name -> R.string.server_settings_name to R.string.server_settings_name_body
@@ -281,6 +282,8 @@ internal fun TextSheet(
             submitLabel = stringResource(R.string.server_settings_save),
             onSubmit = { actions.onSaveText(text, value) },
             onCancel = { actions.onEdit(null) },
+            isSubmitting = state.submitting == text,
+            error = error,
             singleLine = single,
             minLines = if (text == ServerText.CustomCss) CSS_LINES else MULTILINE_MIN,
             maxLines = if (single) 1 else CSS_LINES,
