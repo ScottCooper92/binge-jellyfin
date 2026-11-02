@@ -548,6 +548,10 @@
         <item quantity="one">Stops after %1$d hour</item>
         <item quantity="other">Stops after %1$d hours</item>
     </plurals>
+    <plurals name="trigger_limit_value">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
     <plurals name="trigger_limit_minutes">
         <item quantity="one">Stops after %1$d minute</item>
         <item quantity="other">Stops after %1$d minutes</item>

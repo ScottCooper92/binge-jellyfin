@@ -557,6 +557,11 @@
         <item quantity="many">Se detiene tras %1$d horas</item>
         <item quantity="other">Se detiene tras %1$d horas</item>
     </plurals>
+    <plurals name="trigger_limit_value">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="many">%1$d horas</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
     <plurals name="trigger_limit_minutes">
         <item quantity="one">Se detiene tras %1$d minuto</item>
         <item quantity="many">Se detiene tras %1$d minutos</item>

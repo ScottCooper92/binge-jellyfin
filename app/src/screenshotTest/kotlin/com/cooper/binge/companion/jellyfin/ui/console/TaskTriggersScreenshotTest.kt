@@ -67,12 +67,26 @@ class TaskTriggersScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun newTrigger() = Surface { AddTriggerForm(TasksActions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
     @Composable
     fun newWeeklyTrigger() = Surface { AddTriggerForm(TasksActions(), TriggerKind.Weekly) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun newIntervalTrigger() = Surface { AddTriggerForm(TasksActions(), TriggerKind.Interval) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun newStartupTrigger() = Surface { AddTriggerForm(TasksActions(), TriggerKind.Startup) }
 }

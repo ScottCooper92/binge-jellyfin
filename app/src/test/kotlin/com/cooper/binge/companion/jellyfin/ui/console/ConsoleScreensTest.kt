@@ -4,6 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
@@ -20,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
@@ -757,7 +760,9 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Add trigger").performClick()
         compose.onNodeWithText("New trigger").assertExists()
         compose.onNodeWithText("Every so often").performClick()
-        compose.onAllNodesWithText("2 h")[1].performScrollTo().performClick()
+        compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress)).performScrollTo().performSemanticsAction(
+            SemanticsActions.SetProgress,
+        ) { it(2f) }
         compose.onNodeWithText("Add").performClick()
         assertEquals(listOf(TaskTrigger.interval(6 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR)), added)
         compose

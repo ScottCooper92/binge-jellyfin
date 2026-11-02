@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeFilterChip
+import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ExpressiveIconButton
@@ -70,7 +71,7 @@ private val INTERVAL_MINUTES = listOf(15, 30, 45)
 private val INTERVAL_HOURS = listOf(1, 2, 3, 4, 6, 8, 12, 24)
 
 /** The time limits offered, in hours, beside none. */
-private val LIMIT_HOURS = listOf(1, 2, 4, 6, 8, 12, 24)
+private val LIMIT_HOURS = 1..24
 
 private const val DEFAULT_HOUR = 3
 private const val DEFAULT_INTERVAL_HOURS = 6
@@ -252,7 +253,7 @@ internal fun AddTriggerForm(
             if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) TimeInput(timeState)
             if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
             if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
-            LimitChips(limitHours) { limitHours = it }
+            LimitSlider(limitHours) { limitHours = it }
         }
         BingeFilledButton(
             label = stringResource(R.string.tasks_trigger_create),
@@ -331,23 +332,23 @@ private fun IntervalChips(
     }
 }
 
-/** An optional time limit: none, or a number of hours after which the server stops the run. */
+/** An optional time limit: whole hours from one to 24 on a slider, whose open end is no limit. */
 @Composable
-private fun LimitChips(
-    selected: Int,
-    onSelect: (Int) -> Unit,
+private fun LimitSlider(
+    hours: Int,
+    onChange: (Int) -> Unit,
 ) {
+    val resources = LocalContext.current.resources
+    val title = stringResource(R.string.tasks_trigger_limit)
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
-        Text(stringResource(R.string.tasks_trigger_limit), style = MaterialTheme.typography.labelLarge)
-        WrappingRow {
-            BingeFilterChip(label = stringResource(R.string.tasks_trigger_no_limit), selected = selected == 0, onClick = { onSelect(0) })
-            LIMIT_HOURS.forEach { hours ->
-                BingeFilterChip(
-                    label = stringResource(R.string.trigger_hours_short, hours),
-                    selected = hours == selected,
-                    onClick = { onSelect(hours) },
-                )
-            }
-        }
+        Text(title, style = MaterialTheme.typography.labelLarge)
+        BingeNumberSlider(
+            value = hours.takeIf { it > 0 },
+            onValueChange = { onChange(it ?: 0) },
+            range = LIMIT_HOURS,
+            format = { resources.getQuantityString(R.plurals.trigger_limit_value, it, it) },
+            description = title,
+            openEndLabel = stringResource(R.string.tasks_trigger_no_limit),
+        )
     }
 }

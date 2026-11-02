@@ -778,6 +778,7 @@ app:trigger_kind_interval  ab30bf9d6761
 app:trigger_kind_weekly  2975132481a7
 app:trigger_limit_hours  b65f860b5977
 app:trigger_limit_minutes  0882bd5a858c
+app:trigger_limit_value  12e0c0483f41
 app:trigger_minutes_short  3122a2f3e04b
 app:trigger_other  d020a2c7e096
 app:trigger_startup  1e0ff8230be7
