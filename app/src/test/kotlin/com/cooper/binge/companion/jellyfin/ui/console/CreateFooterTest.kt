@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
+import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import kotlinx.serialization.json.JsonObject
@@ -81,5 +82,53 @@ class CreateFooterTest {
         state = UsersUiState.Failed(ConsoleFailure.Unreachable)
         compose.waitForIdle()
         compose.onAllNodesWithText("Add a user").assertCountEquals(0)
+    }
+
+    @Test
+    fun `the Plugins page has Add repository in the footer on the Repositories tab only`() {
+        var adding = false
+        var repositories by mutableStateOf<RepositoriesUiState>(RepositoriesUiState.Loading)
+        compose.setContent {
+            JellyfinTheme {
+                PluginsScreen(
+                    PluginsUiState.Ready(emptyList()),
+                    CatalogUiState.Ready(emptyList()),
+                    repositories,
+                    PluginsActions(),
+                    CatalogActions(),
+                    RepositoriesActions(onAskAdd = { adding = it }),
+                    onBack = {},
+                    initialTab = 2,
+                )
+            }
+        }
+        compose.onNodeWithText("Add repository").assertIsNotEnabled()
+        repositories = RepositoriesUiState.Ready(emptyList())
+        compose.waitForIdle()
+        // One Add, in the footer: the empty state doesn't carry a second.
+        compose.onAllNodesWithText("Add repository").assertCountEquals(1)
+        compose.onNodeWithText("Add repository").assertIsEnabled().performClick()
+        assertEquals(true, adding)
+        repositories = RepositoriesUiState.Failed(ConsoleFailure.Unreachable)
+        compose.waitForIdle()
+        compose.onAllNodesWithText("Add repository").assertCountEquals(0)
+        // Another tab has none.
+        compose.onNodeWithText("Installed").performClick()
+        compose.onAllNodesWithText("Add repository").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a task's triggers page has Add trigger in the footer, and the task list has none`() {
+        var adding = false
+        val task = ServerTask("t", "k", "Scan", "", "Library", false, false, null, null)
+        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(task))))
+        compose.setContent { JellyfinTheme { TasksScreen(state, TasksActions(onAskAdd = { adding = it })) } }
+        compose.onAllNodesWithText("Add trigger").assertCountEquals(0)
+        state = TasksUiState.Ready(TaskBoard(listOf(task)), open = "t")
+        compose.waitForIdle()
+        // The task has no triggers: its empty state doesn't carry a second Add.
+        compose.onAllNodesWithText("Add trigger").assertCountEquals(1)
+        compose.onNodeWithText("Add trigger").assertIsEnabled().performClick()
+        assertEquals(true, adding)
     }
 }
