@@ -269,6 +269,16 @@
     <string name="activity_empty">Aún no ha pasado nada en este servidor.</string>
     <string name="activity_undated">Sin fecha</string>
     <string name="logs_title">Registros</string>
+    <string name="logs_retention_title">Conservar otros archivos de registro</string>
+    <plurals name="logs_retention_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d de días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <string name="logs_retention_unsent">Aún no guardado. Toca para reintentar.</string>
+    <string name="logs_retention_body">Cuánto tiempo conservar los archivos de registro que no son los registros diarios del servidor (los que se llaman log_…), como los de transcodificación. La tarea «Limpiar archivos de registro» del servidor elimina los más antiguos. Los registros diarios siguen los ajustes de registro del servidor y esto no los elimina.</string>
+    <string name="logs_retention_invalid">Introduce un número entero de días de %1$d a %2$d.</string>
+    <string name="logs_retention_save">Guardar</string>
     <string name="console_logs_detail">Los archivos de registro del servidor</string>
     <string name="logs_empty">El servidor no tiene archivos de registro.</string>
     <string name="logs_search">Buscar en este registro</string>

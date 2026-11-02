@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LogEntry
@@ -14,6 +15,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -155,6 +161,68 @@ class LogsViewModelTest {
         jellyfin.status.remove("/System/Logs")
         vm.load()
         assertEquals(2, vm.ready().files.size)
+    }
+
+    @Test
+    fun `the retention is read from the configuration, and absent when the server sends none`() {
+        jellyfin.serverConfiguration = """{"ServerName":"x","LogFileRetentionDays":3}"""
+        assertEquals(3, made(LogsViewModel(connection)).ready().retention)
+        jellyfin.serverConfiguration = """{"ServerName":"x"}"""
+        assertEquals(null, made(LogsViewModel(connection)).ready().retention)
+    }
+
+    @Test
+    fun `a new retention is saved with the rest of the configuration untouched`() {
+        jellyfin.serverConfiguration = """{"ServerName":"x","LogFileRetentionDays":3}"""
+        val vm = made(LogsViewModel(connection))
+        vm.ready()
+        vm.editRetention(true)
+        vm.saveRetention(" 14 ")
+        val saved = vm.ready { it.save.status == SaveStatus.Saved }
+        assertEquals(14, saved.retention)
+        assertFalse(saved.editingRetention)
+        val sent = Json.parseToJsonElement(jellyfin.serverConfiguration).jsonObject
+        assertEquals(14, sent.getValue("LogFileRetentionDays").jsonPrimitive.int)
+        assertEquals("x", sent.getValue("ServerName").jsonPrimitive.contentOrNull)
+    }
+
+    @Test
+    fun `text that is not a whole number of days in range saves nothing and keeps the sheet open`() {
+        jellyfin.serverConfiguration = """{"ServerName":"x","LogFileRetentionDays":3}"""
+        val vm = made(LogsViewModel(connection))
+        vm.ready()
+        vm.editRetention(true)
+        for (text in listOf("", "abc", "0", "-1", "3651", "2.5")) vm.saveRetention(text)
+        val still = vm.ready()
+        assertTrue(still.editingRetention)
+        assertEquals(3, still.retention)
+        assertEquals("""{"ServerName":"x","LogFileRetentionDays":3}""", jellyfin.serverConfiguration)
+    }
+
+    @Test
+    fun `a retention the server refuses is put back, and says so`() {
+        jellyfin.serverConfiguration = """{"ServerName":"x","LogFileRetentionDays":3}"""
+        val vm = made(LogsViewModel(connection))
+        vm.ready()
+        jellyfin.status["/System/Configuration"] = 500
+        vm.saveRetention("7")
+        val failed = vm.ready { it.refused != null }
+        assertEquals(3, failed.retention)
+        assertEquals(ConsoleFailure.Refused, failed.refused)
+    }
+
+    @Test
+    fun `a retention that can't reach the server stays unsent until Retry`() {
+        jellyfin.serverConfiguration = """{"ServerName":"x","LogFileRetentionDays":3}"""
+        val vm = made(LogsViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += "/System/Configuration"
+        vm.saveRetention("7")
+        val unsent = vm.ready { it.save.failed }
+        assertEquals(7, unsent.retention)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        assertFalse(vm.ready { it.save.status == SaveStatus.Saved }.save.failed)
     }
 
     private companion object {
