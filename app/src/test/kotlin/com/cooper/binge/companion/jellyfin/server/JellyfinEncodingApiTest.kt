@@ -1,0 +1,76 @@
+package com.cooper.binge.companion.jellyfin.server
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class JellyfinEncodingApiTest {
+    @Test
+    fun `each acceleration type offers the codecs jellyfin-web offers it`() {
+        assertEquals(listOf("h264", "hevc", "mpeg2video", "vc1", "vp8", "vp9", "av1"), decodingCodecs("qsv"))
+        assertEquals(decodingCodecs("qsv"), decodingCodecs("vaapi"))
+        assertEquals(listOf("h264", "hevc", "mpeg2video", "vc1", "vp9", "av1"), decodingCodecs("amf"))
+        assertTrue("mpeg4" in decodingCodecs("nvenc"))
+        assertTrue("mpeg1video" in decodingCodecs("rkmpp"))
+        assertEquals(listOf("h264", "hevc", "vp8", "vp9"), decodingCodecs("videotoolbox"))
+        assertEquals(listOf("h264"), decodingCodecs("v4l2m2m"))
+        assertEquals(emptyList<String>(), decodingCodecs("none"))
+    }
+
+    @Test
+    fun `which options a type shows`() {
+        assertFalse(isAccelerated("none"))
+        assertFalse(isAccelerated(""))
+        assertTrue(isAccelerated("v4l2m2m"))
+        // Software tone mapping is 10.10's, without a mode; hardware has the mode; V4L2 has none.
+        val ten = JellyfinServerProfile.from("10.10.0")
+        val nine = JellyfinServerProfile.from("10.9.0")
+        assertTrue(hasToneMapping("none", ten))
+        assertFalse(hasToneMapping("none", nine))
+        assertFalse(hasToneMappingMode("none", ten))
+        assertTrue(hasToneMapping("nvenc", nine) && hasToneMappingMode("nvenc", nine))
+        assertFalse(hasToneMapping("v4l2m2m", ten))
+        // VideoToolbox tone mapping arrived in 10.9.
+        val eight = JellyfinServerProfile.from("10.8.13")
+        assertFalse(hasToneMapping("videotoolbox", eight) || hasToneMappingMode("videotoolbox", eight))
+        assertTrue(hasToneMapping("videotoolbox", nine) && hasToneMappingMode("videotoolbox", nine))
+        assertTrue(hasIntelOptions("qsv") && hasIntelOptions("vaapi"))
+        assertFalse(hasIntelOptions("nvenc"))
+    }
+
+    @Test
+    fun `the downmix algorithms RFC 7845 and AC-4 come with 10_10`() {
+        assertEquals(listOf("None", "Dave750", "NightmodeDialogue"), downmixAlgorithms(JellyfinServerProfile.from("10.9.0")))
+        assertEquals(
+            listOf("None", "Dave750", "NightmodeDialogue", "Rfc7845", "Ac4"),
+            downmixAlgorithms(JellyfinServerProfile.from("10.10.0")),
+        )
+    }
+
+    @Test
+    fun `rkmpp is offered from 10_9`() {
+        assertFalse("rkmpp" in accelerationTypes(JellyfinServerProfile.from("10.8.13")))
+        assertTrue("rkmpp" in accelerationTypes(JellyfinServerProfile.from("10.9.0")))
+    }
+
+    @Test
+    fun `every acceleration type is listed once, none first`() {
+        assertEquals("none", ACCELERATION_TYPES.first())
+        assertEquals(ACCELERATION_TYPES.size, ACCELERATION_TYPES.toSet().size)
+    }
+
+    @Test
+    fun `before 10_10 none and auto are stored as blank, and blank reads as them`() {
+        val nine = JellyfinServerProfile(JellyfinVersion(10, 9, 0))
+        val ten = JellyfinServerProfile(JellyfinVersion(10, 10, 0))
+        assertEquals("none", encodingChoice("", "none"))
+        assertEquals("auto", encodingChoice(null, "auto"))
+        assertEquals("slow", encodingChoice("slow", "auto"))
+        assertEquals("", encodingStored("auto", "auto", nine))
+        assertEquals("", encodingStored("none", "none", nine))
+        assertEquals("vaapi", encodingStored("vaapi", "none", nine))
+        assertEquals("auto", encodingStored("auto", "auto", ten))
+        assertEquals("none", encodingStored("none", "none", ten))
+    }
+}

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
@@ -471,6 +472,12 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_plugins_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Plugins) },
                 ).takeIf { ConsolePage.Plugins.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.Memory,
+                    label = stringResource(R.string.transcoding_title),
+                    detail = stringResource(R.string.console_transcoding_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.Transcoding) },
+                ).takeIf { ConsolePage.Transcoding.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.SettingsApplications,
                     label = stringResource(R.string.server_title),

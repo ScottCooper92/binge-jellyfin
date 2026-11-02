@@ -68,6 +68,15 @@ data class JellyfinServerProfile(
     /** The resolution of chapter images and the dummy chapter duration, in the server's configuration. 10.9. */
     val hasChapterImageSettings: Boolean get() = atLeast(TEN, NINE)
 
+    /** Segment deletion, the stereo downmix algorithm, audio VBR and VideoToolbox tone mapping, in the encoding options. 10.9. */
+    val hasAdvancedEncoding: Boolean get() = atLeast(TEN, NINE)
+
+    /** `none` and `auto` as the encoding options' stored values for no acceleration and the default preset; before 10.10 both are `""`. */
+    val hasNamedEncodingDefaults: Boolean get() = atLeast(TEN, TEN)
+
+    /** The Quick Sync device and two more stereo downmix algorithms (RFC 7845, AC-4), in the encoding options. 10.10. */
+    val hasQsvDeviceAndDownmix: Boolean get() = atLeast(TEN, TEN)
+
     /** A library's lyric providers: which, and in what order, listed by the server. 10.10. */
     val hasLibraryLyricFetchers: Boolean get() = atLeast(TEN, TEN)
 

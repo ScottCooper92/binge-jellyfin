@@ -47,6 +47,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
+        ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
         ConsolePage.Server -> ServerRoute(graph, close)
     }
 }
