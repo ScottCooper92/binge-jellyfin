@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AdminPanelSettings
@@ -20,7 +19,6 @@ import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,8 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
@@ -350,14 +347,18 @@ internal fun CreateDialog(
         inWindow = inWindow,
         extraContent = {
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
-                OutlinedTextField(
+                ConsoleTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.setup_username)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    label = stringResource(R.string.setup_username),
+                    imeAction = ImeAction.Next,
                 )
-                PasswordField(password, { password = it }, R.string.setup_password)
+                ConsoleTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = stringResource(R.string.setup_password),
+                    secret = true,
+                )
             }
         },
     )
@@ -377,23 +378,13 @@ internal fun PasswordDialog(
         onConfirm = { actions.onSetPassword(password) },
         onDismissRequest = { actions.onShow(null) },
         inWindow = inWindow,
-        extraContent = { PasswordField(password, { password = it }, R.string.password_new) },
-    )
-}
-
-@Composable
-private fun PasswordField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: Int,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(label)) },
-        singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        modifier = Modifier.fillMaxWidth(),
+        extraContent = {
+            ConsoleTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = stringResource(R.string.password_new),
+                secret = true,
+            )
+        },
     )
 }

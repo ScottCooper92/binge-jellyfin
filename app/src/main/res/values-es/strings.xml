@@ -12,6 +12,8 @@
     <string name="setup_sign_in_title">Iniciar sesión</string>
     <string name="setup_username">Nombre de usuario</string>
     <string name="setup_password">Contraseña</string>
+    <string name="field_show_password">Mostrar contraseña</string>
+    <string name="field_hide_password">Ocultar contraseña</string>
     <string name="setup_sign_in">Iniciar sesión</string>
     <string name="setup_quick_connect">Usar Quick Connect</string>
 
