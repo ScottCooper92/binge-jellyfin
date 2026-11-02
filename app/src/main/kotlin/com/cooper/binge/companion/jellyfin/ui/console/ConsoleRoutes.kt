@@ -44,6 +44,13 @@ internal fun ConsolePageRoute(
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, signedIn.profile, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
+        ConsolePage.Advanced ->
+            AdvancedRoute(
+                graph,
+                AdvancedGates(signedIn.profile.hasAdvancedPerformance, signedIn.profile.hasCacheAndLegacyAuth),
+                { open(ConsolePage.Server) },
+                close,
+            )
         ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
