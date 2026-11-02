@@ -7,17 +7,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -58,15 +54,13 @@ fun ApproveCodeScreen(
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
             ) {
                 Text(stringResource(R.string.approve_body), style = MaterialTheme.typography.bodyMedium)
-                OutlinedTextField(
+                ConsoleTextField(
                     value = state.code,
                     onValueChange = actions.onCode,
-                    label = { Text(stringResource(R.string.approve_field)) },
-                    singleLine = true,
+                    label = stringResource(R.string.approve_field),
                     isError = state.result != null && state.result != ApproveResult.Approved,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { actions.onApprove() }),
-                    modifier = Modifier.fillMaxWidth(),
+                    keyboardType = KeyboardType.NumberPassword,
+                    onDone = actions.onApprove,
                 )
                 Text(
                     text = state.result?.let { resultText(it) }.orEmpty(),

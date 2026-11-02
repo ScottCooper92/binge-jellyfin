@@ -4,11 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AspectRatio
@@ -24,7 +21,6 @@ import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material.icons.outlined.ViewColumn
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
@@ -364,30 +359,24 @@ internal fun FieldDialog(
         onDismissRequest = { actions.onEdit(null) },
         inWindow = inWindow,
         extraContent = {
-            OutlinedTextField(
+            ConsoleTextField(
                 value = value,
                 onValueChange = { value = it },
-                label = { Text(stringResource(title)) },
-                singleLine = true,
+                label = stringResource(title),
                 isError = tried && !valid,
-                supportingText = {
+                supporting =
                     if (tried && !valid) {
-                        Text(
-                            if (field == TrickplayField.Widths) {
-                                stringResource(R.string.trickplay_widths_invalid, field.min, field.max)
-                            } else {
-                                stringResource(R.string.trickplay_number_invalid, field.min, field.max)
-                            },
-                        )
-                    }
-                },
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType = if (field == TrickplayField.Widths) KeyboardType.Text else KeyboardType.Number,
-                        imeAction = ImeAction.Done,
-                    ),
-                keyboardActions = KeyboardActions(onDone = { save() }),
-                modifier = Modifier.fillMaxWidth(),
+                        if (field == TrickplayField.Widths) {
+                            stringResource(R.string.trickplay_widths_invalid, field.min, field.max)
+                        } else {
+                            stringResource(R.string.trickplay_number_invalid, field.min, field.max)
+                        }
+                    } else {
+                        // Empty, not null: the line stays reserved so the sheet does not jump when the error appears.
+                        ""
+                    },
+                keyboardType = if (field == TrickplayField.Widths) KeyboardType.Text else KeyboardType.Number,
+                onDone = { save() },
             )
         },
     )

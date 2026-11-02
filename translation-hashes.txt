@@ -131,6 +131,8 @@ app:error_quick_connect_off  045782322966
 app:error_signed_out  827096b0fbe6
 app:error_unreachable  8224327e4cec
 app:error_wrong_credentials  c16954ee58f2
+app:field_hide_password  a60a56c584b3
+app:field_show_password  6aeaa6a53d09
 app:home_layout_body  5b830087e38e
 app:home_layout_collections  1667416a133a
 app:home_layout_collections_detail  b423e46e3340

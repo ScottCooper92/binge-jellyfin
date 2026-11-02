@@ -4,11 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Code
@@ -19,7 +16,6 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,7 +28,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
@@ -284,16 +279,14 @@ internal fun TextDialog(
         onDismissRequest = { actions.onEdit(null) },
         inWindow = inWindow,
         extraContent = {
-            OutlinedTextField(
+            ConsoleTextField(
                 value = value,
                 onValueChange = { value = it },
-                label = { Text(stringResource(title)) },
+                label = stringResource(title),
                 singleLine = single,
                 minLines = if (text == ServerText.CustomCss) CSS_LINES else 1,
                 maxLines = if (single) 1 else CSS_LINES,
-                keyboardOptions = KeyboardOptions(imeAction = if (single) ImeAction.Done else ImeAction.Default),
-                keyboardActions = KeyboardActions(onDone = { actions.onSaveText(text, value) }),
-                modifier = Modifier.fillMaxWidth(),
+                onDone = { actions.onSaveText(text, value) },
             )
         },
     )

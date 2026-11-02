@@ -7,21 +7,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
@@ -51,7 +44,6 @@ fun PasswordScreen(
     state: PasswordUiState,
     actions: PasswordActions,
 ) {
-    val focus = LocalFocusManager.current
     BingeScreenScaffold(title = stringResource(R.string.password_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
         ScreenBody(padding) { _ ->
             Column(
@@ -64,21 +56,28 @@ fun PasswordScreen(
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
             ) {
                 Text(stringResource(R.string.password_body), style = MaterialTheme.typography.bodyMedium)
-                val next: () -> Unit = { focus.moveFocus(FocusDirection.Down) }
-                PasswordField(
-                    state.current,
-                    actions.onCurrent,
-                    R.string.password_current,
-                    state.result == PasswordResult.WrongCurrent,
-                    next,
+                ConsoleTextField(
+                    value = state.current,
+                    onValueChange = actions.onCurrent,
+                    label = stringResource(R.string.password_current),
+                    isError = state.result == PasswordResult.WrongCurrent,
+                    secret = true,
+                    imeAction = ImeAction.Next,
                 )
-                PasswordField(state.new, actions.onNew, R.string.password_new, isError = false, onIme = next)
-                PasswordField(
-                    state.confirm,
-                    actions.onConfirm,
-                    R.string.password_confirm,
-                    state.result == PasswordResult.Mismatch,
-                    actions.onChange,
+                ConsoleTextField(
+                    value = state.new,
+                    onValueChange = actions.onNew,
+                    label = stringResource(R.string.password_new),
+                    secret = true,
+                    imeAction = ImeAction.Next,
+                )
+                ConsoleTextField(
+                    value = state.confirm,
+                    onValueChange = actions.onConfirm,
+                    label = stringResource(R.string.password_confirm),
+                    isError = state.result == PasswordResult.Mismatch,
+                    secret = true,
+                    onDone = actions.onChange,
                 )
                 Text(
                     text = state.result?.let { stringResource(it.message) }.orEmpty(),
@@ -98,29 +97,6 @@ fun PasswordScreen(
             }
         }
     }
-}
-
-@Composable
-private fun PasswordField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: Int,
-    isError: Boolean,
-    onIme: () -> Unit,
-) {
-    // The confirmation is the last field: its key submits.
-    val last = label == R.string.password_confirm
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(label)) },
-        singleLine = true,
-        isError = isError,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = if (last) ImeAction.Done else ImeAction.Next),
-        keyboardActions = KeyboardActions(onNext = { onIme() }, onDone = { onIme() }),
-        modifier = Modifier.fillMaxWidth(),
-    )
 }
 
 private val PasswordResult.message: Int

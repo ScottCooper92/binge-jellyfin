@@ -6,14 +6,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ExpressiveIconButton
@@ -179,14 +175,11 @@ internal fun NewKeyDialog(
         onDismissRequest = { actions.onAskCreate(false) },
         inWindow = inWindow,
         extraContent = {
-            OutlinedTextField(
+            ConsoleTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(R.string.api_keys_app_field)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { actions.onCreate(name) }),
-                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.api_keys_app_field),
+                onDone = { actions.onCreate(name) },
             )
         },
     )

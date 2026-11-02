@@ -13,6 +13,8 @@
     <string name="setup_sign_in_title">Sign in</string>
     <string name="setup_username">Username</string>
     <string name="setup_password">Password</string>
+    <string name="field_show_password">Show password</string>
+    <string name="field_hide_password">Hide password</string>
     <string name="setup_sign_in">Sign in</string>
     <string name="setup_quick_connect">Use Quick Connect</string>
 
