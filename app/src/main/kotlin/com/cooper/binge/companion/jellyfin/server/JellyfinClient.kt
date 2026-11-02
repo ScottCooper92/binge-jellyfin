@@ -9,6 +9,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -22,13 +24,18 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.IOException
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/** A Jellyfin answer other than 2xx. 401 is a broken session; 404 an item the server does not have. */
+/**
+ * A Jellyfin answer other than 2xx. 401 is a broken session; 404 an item the server does not have. [reason] is the
+ * server's own words for a refusal, when its body gave any; it is not in the message, which is logged.
+ */
 class JellyfinHttpException(
     val code: Int,
     path: String,
+    val reason: String? = null,
 ) : IOException("Jellyfin answered $code for $path")
 
 /**
@@ -56,11 +63,11 @@ data class ClientIdentity(
  * OpenAPI document (`/api-docs/openapi.json`).
  */
 class JellyfinClient(
-    private val http: OkHttpClient,
+    internal val http: OkHttpClient,
     val baseUrl: HttpUrl,
-    private val identity: ClientIdentity,
-    private val io: CoroutineDispatcher,
-    private val token: String? = null,
+    internal val identity: ClientIdentity,
+    internal val io: CoroutineDispatcher,
+    internal val token: String? = null,
 ) {
     fun withToken(token: String): JellyfinClient = JellyfinClient(http, baseUrl, identity, io, token)
 
@@ -240,7 +247,7 @@ class JellyfinClient(
                         val outcome =
                             attempt {
                                 response.use {
-                                    if (!it.isSuccessful) throw JellyfinHttpException(it.code, path)
+                                    if (!it.isSuccessful) throw JellyfinHttpException(it.code, path, it.reasonGiven())
                                     it.body.string() to it.request.url
                                 }
                             }
@@ -264,7 +271,34 @@ class JellyfinClient(
     }
 }
 
+/**
+ * The server's reason in an error answer: a problem document's `detail` or `title`, or a short plain-text body. Null
+ * when there is none, or the body is HTML or too long to be a sentence.
+ */
+private fun Response.reasonGiven(): String? {
+    val text = attempt { peekBody(REASON_PEEK_BYTES).string().trim() }.getOrNull()?.takeIf { it.isNotEmpty() } ?: return null
+    val parsed = attempt { Json.parseToJsonElement(text) }.getOrNull()
+    val reason =
+        when (parsed) {
+            null -> text.takeUnless { it.startsWith("<") }
+            is JsonObject -> listOf("detail", "title", "message").firstNotNullOfOrNull { (parsed[it] as? JsonPrimitive)?.contentOrNull }
+            is JsonPrimitive -> parsed.contentOrNull
+            else -> null
+        }
+    return reason?.trim()?.takeIf { it.isNotEmpty() && it.length <= REASON_MAX_CHARS && !it.equals(GENERIC_ERROR_BODY, ignoreCase = true) }
+}
+
+/** What Jellyfin's exception middleware answers whatever went wrong. It says nothing, so it is no reason. */
+private const val GENERIC_ERROR_BODY = "Error processing request."
+
+private const val REASON_PEEK_BYTES = 2048L
+private const val REASON_MAX_CHARS = 300
+
 /** Percent-encoded as a URI component: `%20` for a space, not the form encoding's `+`. */
 private fun String.encoded(): String = URLEncoder.encode(this, "UTF-8").replace("+", "%20")
 
 private fun JsonElement.asObject(path: String): JsonObject = this as? JsonObject ?: throw JellyfinUnreadableAnswer(path)
+
+/** This client with a longer wait for an answer, for the one call the server answers only when its work is done. */
+fun JellyfinClient.withReadTimeout(millis: Long): JellyfinClient =
+    JellyfinClient(http.newBuilder().readTimeout(millis, TimeUnit.MILLISECONDS).build(), baseUrl, identity, io, token)

@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
@@ -398,6 +400,8 @@ private val adminPages =
         AdminPage(ConsolePage.Trickplay, Icons.Outlined.Image, R.string.trickplay_title, R.string.console_trickplay_detail),
         AdminPage(ConsolePage.LibraryDisplay, Icons.Outlined.ViewModule, R.string.display_title, R.string.console_display_detail),
         AdminPage(ConsolePage.Plugins, Icons.Outlined.Extension, R.string.plugins_title, R.string.console_plugins_detail),
+        AdminPage(ConsolePage.Transcoding, Icons.Outlined.Memory, R.string.transcoding_title, R.string.console_transcoding_detail),
+        AdminPage(ConsolePage.Backups, Icons.Outlined.Backup, R.string.backups_title, R.string.console_backups_detail),
         AdminPage(ConsolePage.Server, Icons.Outlined.SettingsApplications, R.string.server_title, R.string.console_server_detail),
     )
 

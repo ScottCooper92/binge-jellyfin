@@ -3,13 +3,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
-import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
-import com.cooper.binge.companion.jellyfin.server.answers
 import com.cooper.binge.companion.jellyfin.server.restartServer
 import com.cooper.binge.companion.jellyfin.server.serverInfo
 import com.cooper.binge.companion.jellyfin.server.shutdownServer
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,10 +49,12 @@ sealed interface ServerUiState {
  */
 class ServerViewModel(
     private val connection: Connection,
-    private val pollMillis: Long = POLL_MILLIS,
-    private val downWaitMillis: Long = DOWN_WAIT_MILLIS,
-    private val backWaitMillis: Long = BACK_WAIT_MILLIS,
+    pollMillis: Long = RestartTiming.POLL_MILLIS,
+    downWaitMillis: Long = RestartTiming.DOWN_WAIT_MILLIS,
+    backWaitMillis: Long = RestartTiming.BACK_WAIT_MILLIS,
 ) : ViewModel() {
+    private val timing = RestartTiming(pollMillis, downWaitMillis, backWaitMillis)
+
     private val _state = MutableStateFlow<ServerUiState>(ServerUiState.Loading)
     val state: StateFlow<ServerUiState> = _state.asStateFlow()
 
@@ -85,7 +84,7 @@ class ServerViewModel(
             connection
                 .consoleCall(TAG) { _, client ->
                     client.restartServer()
-                    client.awaitBack()
+                    client.awaitBack(timing)
                 }.fold(
                     onSuccess = { back -> if (back) reloaded() else update { copy(restart = Restart.NotBack) } },
                     onFailure = { update { copy(restart = Restart.Failed) } },
@@ -108,24 +107,6 @@ class ServerViewModel(
         }
     }
 
-    /**
-     * Waits for the server to go down, then to answer again. A server that never seems to go down within
-     * [downWaitMillis] restarted too quickly to see, and counts as back. False if it isn't back within
-     * [backWaitMillis].
-     */
-    private suspend fun JellyfinClient.awaitBack(): Boolean {
-        var waited = 0L
-        var wentDown = false
-        while (waited < backWaitMillis) {
-            delay(pollMillis)
-            waited += pollMillis
-            val up = answers()
-            if (!up) wentDown = true
-            if (up && (wentDown || waited >= downWaitMillis)) return true
-        }
-        return false
-    }
-
     private suspend fun reloaded() {
         val info = connection.consoleCall(TAG) { _, client -> client.serverInfo() }.getOrNull()
         update { copy(info = info ?: this.info, restart = Restart.Restarted) }
@@ -136,8 +117,5 @@ class ServerViewModel(
 
     private companion object {
         const val TAG = "JellyfinServer"
-        const val POLL_MILLIS = 2_000L
-        const val DOWN_WAIT_MILLIS = 15_000L
-        const val BACK_WAIT_MILLIS = 120_000L
     }
 }

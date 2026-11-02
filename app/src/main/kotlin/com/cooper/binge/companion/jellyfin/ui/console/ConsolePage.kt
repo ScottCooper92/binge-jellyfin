@@ -66,6 +66,12 @@ enum class ConsolePage {
     /** The server's library display and metadata defaults. Admin only. */
     LibraryDisplay,
 
+    /** The server's backups: made, and restored from. Admin only, on a server with backups. */
+    Backups,
+
+    /** The server's transcoding, resume and streaming settings. Admin only. */
+    Transcoding,
+
     /** The server itself: its info, restarting it and shutting it down. Admin only. */
     Server,
     ;
@@ -85,8 +91,10 @@ enum class ConsolePage {
             NowPlaying -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
-            Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, ServerSettings, Network, Advanced, LibraryDisplay, Server ->
-                account.isAdministrator
+            Backups -> account.isAdministrator && profile.hasBackups
+            Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
+            ServerSettings, Network, LibraryDisplay, Transcoding, Server,
+            -> account.isAdministrator
         }
 
     /** One of the administrator's pages, listed together on the home. */
@@ -104,8 +112,10 @@ enum class ConsolePage {
                 Network,
                 Advanced,
                 LibraryDisplay,
+                Transcoding,
                 Trickplay,
                 Plugins,
+                Backups,
                 Server,
             )
 }

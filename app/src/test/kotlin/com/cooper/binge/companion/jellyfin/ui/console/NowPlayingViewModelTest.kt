@@ -16,6 +16,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -139,7 +145,8 @@ class NowPlayingViewModelTest {
         ids.joinToString(",", "[", "]") { id ->
             val owner = if (id == "s-other") OTHER_USER else "user-1"
             """{"Id":"$id","UserId":"$owner","DeviceId":"dev-$id","UserName":"u","DeviceName":"d","Client":"c",""" +
-                """"SupportsRemoteControl":true,"SupportsMediaControl":true,"SupportedCommands":["Mute","SetVolume"],""" +
+                """"SupportsRemoteControl":true,"SupportsMediaControl":true,""" +
+                """"SupportedCommands":["Mute","Unmute","SetVolume","DisplayMessage"],""" +
                 """"PlayState":{"PositionTicks":6000000000,"IsPaused":false,"CanSeek":true,"PlayMethod":"DirectPlay"},""" +
                 """"NowPlayingItem":{"Name":"Sintel","RunTimeTicks":8880000000}}"""
         }
@@ -153,7 +160,7 @@ class NowPlayingViewModelTest {
         val ready = vm.ready()
         val other = ready.sessions.first { it.sessionId == "s-other" }
         vm.select(other)
-        vm.seekBy(other, 10_000)
+        vm.remote.seekBy(other, 10_000)
         vm.ready { !it.sending }
         val post = commandPosts().single()
         assertEquals("/Sessions/s-other/Playing/Seek", post.url.encodedPath)
@@ -165,8 +172,8 @@ class NowPlayingViewModelTest {
         jellyfin.sessions = controlSessions("s-mine", "s-other")
         val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
         val other = vm.ready().sessions.first { it.sessionId == "s-other" }
-        vm.playPause(other)
-        vm.skip(other, true)
+        vm.remote.playPause(other)
+        vm.remote.skip(other, true)
         vm.askStop(other)
         vm.stop()
         assertTrue(commandPosts().isEmpty())
@@ -179,7 +186,7 @@ class NowPlayingViewModelTest {
         jellyfin.controllableSessionIds = setOf("s-mine")
         val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = true))))
         val other = vm.ready().sessions.first { it.sessionId == "s-other" }
-        vm.playPause(other)
+        vm.remote.playPause(other)
         assertTrue(commandPosts().isEmpty())
         assertTrue(
             vm
@@ -195,9 +202,9 @@ class NowPlayingViewModelTest {
         jellyfin.sessions = controlSessions("s-mine")
         val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
         val mine = vm.ready().sessions.single()
-        vm.playPause(mine)
+        vm.remote.playPause(mine)
         vm.ready { !it.sending }
-        vm.seekTo(mine, 99_000_000_000L)
+        vm.remote.seekTo(mine, 99_000_000_000L)
         vm.ready { !it.sending }
         val paths = commandPosts().map { it.url.encodedPath }
         assertEquals(listOf("/Sessions/s-mine/Playing/Pause", "/Sessions/s-mine/Playing/Seek"), paths)
@@ -221,10 +228,106 @@ class NowPlayingViewModelTest {
         val mine = vm.ready().sessions.single()
         vm.select(mine)
         jellyfin.dropped += "/Sessions/s-mine/Playing/Pause"
-        vm.playPause(mine)
+        vm.remote.playPause(mine)
         val failed = vm.ready { it.sendFailed != null }
         assertEquals("s-mine", failed.selected)
         assertFalse(failed.sending)
+    }
+
+    private fun commandBodies() = jellyfin.requests.filter { it.method == "POST" && it.url.encodedPath.endsWith("/Command") }
+
+    private fun messageBodies() = jellyfin.requests.filter { it.method == "POST" && it.url.encodedPath.endsWith("/Message") }
+
+    @Test
+    fun `volume goes to the tapped session as SetVolume, and mute and unmute follow its state`() {
+        jellyfin.sessions = controlSessions("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val mine = vm.ready().sessions.single()
+        vm.remote.setVolume(mine, 40)
+        vm.ready { !it.sending }
+        val body =
+            Json
+                .parseToJsonElement(
+                    commandBodies()
+                        .single()
+                        .body
+                        ?.utf8()
+                        .orEmpty(),
+                ).jsonObject
+        assertEquals("/Sessions/s-mine/Command", commandBodies().single().url.encodedPath)
+        assertEquals("SetVolume", body.getValue("Name").jsonPrimitive.contentOrNull)
+        assertEquals(
+            "40",
+            body
+                .getValue("Arguments")
+                .jsonObject
+                .getValue("Volume")
+                .jsonPrimitive.contentOrNull,
+        )
+        vm.remote.toggleMute(mine)
+        vm.ready { !it.sending }
+        assertEquals(1, jellyfin.hits("/Sessions/s-mine/Command/Mute"))
+    }
+
+    @Test
+    fun `a message is sent to the tapped session with its text and a fixed timeout, and closes the sheet`() {
+        jellyfin.sessions = controlSessions("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val mine = vm.ready().sessions.single()
+        vm.remote.askMessage(mine)
+        assertEquals("s-mine", vm.ready().messaging)
+        vm.remote.sendMessage(mine, "  ", " Dinner is ready ")
+        vm.ready { !it.messageSending && it.messaging == null }
+        val body =
+            Json
+                .parseToJsonElement(
+                    messageBodies()
+                        .single()
+                        .body
+                        ?.utf8()
+                        .orEmpty(),
+                ).jsonObject
+        assertEquals("/Sessions/s-mine/Message", messageBodies().single().url.encodedPath)
+        assertEquals("Dinner is ready", body.getValue("Text").jsonPrimitive.contentOrNull)
+        assertEquals(false, "Header" in body)
+        assertEquals(MESSAGE_TIMEOUT_MILLIS, body.getValue("TimeoutMs").jsonPrimitive.long)
+    }
+
+    @Test
+    fun `a message that is blank or too long sends nothing and keeps the sheet`() {
+        jellyfin.sessions = controlSessions("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val mine = vm.ready().sessions.single()
+        vm.remote.askMessage(mine)
+        vm.remote.sendMessage(mine, "", "   ")
+        vm.remote.sendMessage(mine, "", "x".repeat(MESSAGE_TEXT_MAX + 1))
+        vm.remote.sendMessage(mine, "h".repeat(MESSAGE_HEADER_MAX + 1), "hi")
+        assertTrue(messageBodies().isEmpty())
+        assertEquals("s-mine", vm.ready().messaging)
+    }
+
+    @Test
+    fun `a message the account may not send sends nothing, and the sheet does not open`() {
+        jellyfin.sessions = controlSessions("s-mine", "s-other")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val other = vm.ready().sessions.first { it.sessionId == "s-other" }
+        vm.remote.askMessage(other)
+        vm.remote.sendMessage(other, "", "hello")
+        assertNull(vm.ready().messaging)
+        assertTrue(messageBodies().isEmpty())
+    }
+
+    @Test
+    fun `a message that cannot reach the server keeps the sheet and says so`() {
+        jellyfin.sessions = controlSessions("s-mine")
+        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
+        val mine = vm.ready().sessions.single()
+        vm.remote.askMessage(mine)
+        jellyfin.dropped += "/Sessions/s-mine/Message"
+        vm.remote.sendMessage(mine, "", "hello")
+        val failed = vm.ready { it.messageFailed != null }
+        assertEquals("s-mine", failed.messaging)
+        assertFalse(failed.messageSending)
     }
 
     private fun policyOf(remote: Boolean) =

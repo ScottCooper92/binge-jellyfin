@@ -52,6 +52,9 @@ private val previewReady =
         controls = mapOf(previewEpisode.sessionId to fullControls, previewMovie.sessionId to fullControls),
     )
 
+private val remoteControls =
+    SessionControls(playPause = true, seek = true, skip = true, stop = true, volume = true, mute = true, message = true)
+
 private fun page(
     session: NowPlaying,
     controls: SessionControls,
@@ -84,6 +87,59 @@ class NowPlayingScreenshotTest {
     @JellyfinFontScalePreviews
     @Composable
     fun sessionPage() = NowPlayingScreen(page(previewEpisode, fullControls), administrator = true, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun sessionPageRemote() =
+        NowPlayingScreen(page(previewEpisode.copy(volumeLevel = 40), remoteControls), administrator = true, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sessionPageMuted() =
+        NowPlayingScreen(
+            page(previewEpisode.copy(volumeLevel = 0, muted = true), remoteControls),
+            administrator = true,
+            NowPlayingActions(),
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun messageSheet() =
+        Surface { MessageSheet(previewEpisode, page(previewEpisode, remoteControls), NowPlayingActions(), inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun messageSheetSending() =
+        Surface {
+            MessageSheet(
+                previewEpisode,
+                page(previewEpisode, remoteControls).copy(messageSending = true),
+                NowPlayingActions(),
+                inWindow = false,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun messageSheetFailed() =
+        Surface {
+            MessageSheet(
+                previewEpisode,
+                page(previewEpisode, remoteControls).copy(messageFailed = ConsoleFailure.Unreachable),
+                NowPlayingActions(),
+                inWindow = false,
+            )
+        }
 
     @PreviewTest
     @JellyfinScreenStatePreview
