@@ -141,6 +141,18 @@ class BackupsViewModelTest {
     }
 
     @Test
+    fun `a backup refused with Jellyfin's boilerplate body carries no reason`() {
+        jellyfin.status["/Backup/Create"] = 500
+        jellyfin.statusBody["/Backup/Create"] = "Error processing request."
+        val vm = viewModel()
+        vm.ready()
+        vm.askCreate(true)
+        vm.create()
+        val failed = vm.ready { it.creation is BackupCreation.Failed }.creation as BackupCreation.Failed
+        assertEquals(null, (failed.error as JellyfinHttpException).reason)
+    }
+
+    @Test
     fun `a backup still being made is not started twice, and cannot be dismissed`() {
         jellyfin.backupCreateDelayMillis = 300
         val vm = viewModel()

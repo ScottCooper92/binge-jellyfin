@@ -144,7 +144,7 @@ private fun statusRows(
                         icon = Icons.Outlined.ErrorOutline,
                         label = stringResource(R.string.backups_create_failed),
                         detail =
-                            (creation.error as? JellyfinHttpException)?.reason
+                            (creation.error as? JellyfinHttpException)?.let { it.reason ?: stringResource(R.string.backups_create_refused) }
                                 ?: stringResource(creation.error.consoleFailure().message),
                         supportingMaxLines = STATUS_LINES,
                         trailingContent = { DismissButton(actions.onDismissCreation) },

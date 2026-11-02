@@ -285,8 +285,11 @@ private fun Response.reasonGiven(): String? {
             is JsonPrimitive -> parsed.contentOrNull
             else -> null
         }
-    return reason?.trim()?.takeIf { it.isNotEmpty() && it.length <= REASON_MAX_CHARS }
+    return reason?.trim()?.takeIf { it.isNotEmpty() && it.length <= REASON_MAX_CHARS && !it.equals(GENERIC_ERROR_BODY, ignoreCase = true) }
 }
+
+/** What Jellyfin's exception middleware answers whatever went wrong. It says nothing, so it is no reason. */
+private const val GENERIC_ERROR_BODY = "Error processing request."
 
 private const val REASON_PEEK_BYTES = 2048L
 private const val REASON_MAX_CHARS = 300

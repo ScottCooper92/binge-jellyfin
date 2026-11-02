@@ -767,6 +767,7 @@
     <string name="backups_created">Copia de seguridad hecha</string>
     <string name="backups_created_detail">Es la primera de la lista de abajo.</string>
     <string name="backups_create_failed">No se hizo la copia de seguridad</string>
+    <string name="backups_create_refused">El servidor lo rechazó. Necesita 5 GiB libres en el volumen donde guarda sus copias, y volver a intentarlo no servirá hasta que los tenga.</string>
     <string name="backups_done">Listo</string>
     <string name="backups_sheet_title">Copia de seguridad</string>
     <string name="backups_made_by">Hecha por Jellyfin %1$s</string>

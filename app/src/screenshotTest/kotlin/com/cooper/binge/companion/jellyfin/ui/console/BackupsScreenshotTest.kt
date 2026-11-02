@@ -67,6 +67,17 @@ class BackupsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
+    fun notMadeRefused() =
+        BackupsScreen(
+            previewReady.copy(creation = BackupCreation.Failed(JellyfinHttpException(500, "Backup/Create"))),
+            BackupsActions(),
+            running,
+            NOW,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
     fun notMadeWithReason() =
         BackupsScreen(
             previewReady.copy(
