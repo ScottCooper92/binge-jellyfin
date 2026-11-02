@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
+import com.cooper.binge.companion.jellyfin.server.SessionControls
 
 private const val MINUTE_TICKS = 600_000_000L
 
@@ -43,7 +44,24 @@ private val previewMovie =
         transcodeReasons = emptyList(),
     )
 
-private val previewReady = NowPlayingUiState.Ready(listOf(previewEpisode, previewMovie))
+private val fullControls = SessionControls(playPause = true, seek = true, skip = true, stop = true)
+
+private val previewReady =
+    NowPlayingUiState.Ready(
+        listOf(previewEpisode, previewMovie),
+        controls = mapOf(previewEpisode.sessionId to fullControls, previewMovie.sessionId to fullControls),
+    )
+
+private fun page(
+    session: NowPlaying,
+    controls: SessionControls,
+    sending: Boolean = false,
+) = NowPlayingUiState.Ready(
+    listOf(session),
+    controls = mapOf(session.sessionId to controls),
+    selected = session.sessionId,
+    sending = sending,
+)
 
 /** Now playing: two streams across the matrix for an admin, then each other state on the phone cell. */
 class NowPlayingScreenshotTest {
@@ -58,6 +76,45 @@ class NowPlayingScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun ownStreams() = NowPlayingScreen(NowPlayingUiState.Ready(listOf(previewMovie)), administrator = false, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun sessionPage() = NowPlayingScreen(page(previewEpisode, fullControls), administrator = true, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sessionPagePaused() = NowPlayingScreen(page(previewMovie, fullControls), administrator = true, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sessionPageSending() =
+        NowPlayingScreen(page(previewEpisode, fullControls, sending = true), administrator = true, NowPlayingActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sessionPageNoSeek() =
+        NowPlayingScreen(
+            page(previewEpisode, SessionControls(playPause = true, seek = false, skip = true, stop = true)),
+            administrator = true,
+            NowPlayingActions(),
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sessionPageNoStop() =
+        NowPlayingScreen(
+            page(previewEpisode, SessionControls(playPause = true, seek = true, skip = true, stop = false)),
+            administrator = true,
+            NowPlayingActions(),
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview

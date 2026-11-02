@@ -45,6 +45,7 @@ import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.server.ServerSettings
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.ServerUser
+import com.cooper.binge.companion.jellyfin.server.SessionControls
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
@@ -76,20 +77,47 @@ class ConsoleScreensTest {
     private val cultures = listOf(Culture("English", "en", listOf("eng")), Culture("French", "fr", listOf("fre", "fra")))
 
     @Test
-    fun `now playing shows each stream, and Stop asks before it stops`() {
+    fun `now playing shows each stream, opens its page, and Stop asks before it stops`() {
         val asked = mutableListOf<NowPlaying>()
+        val opened = mutableListOf<NowPlaying>()
         var confirmed = false
-        val actions = NowPlayingActions(onStop = { asked += it }, onConfirmStop = { confirmed = true })
-        var state by mutableStateOf<NowPlayingUiState>(NowPlayingUiState.Ready(listOf(stream)))
+        val actions =
+            NowPlayingActions(onSelect = { opened += it }, onStop = { asked += it }, onConfirmStop = { confirmed = true })
+        val full = SessionControls(playPause = true, seek = true, skip = true, stop = true)
+        var state by mutableStateOf<NowPlayingUiState>(NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to full)))
         compose.setContent { JellyfinTheme { NowPlayingScreen(state, administrator = false, actions) } }
         compose.onNodeWithText("Sintel").assertExists()
         compose.onNodeWithText("Transcoding: the device can't play the audio").assertExists()
+        compose.onNodeWithText("Sintel").performClick()
+        assertEquals(listOf(stream), opened)
+        state = NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to full), selected = stream.sessionId)
+        compose.onNodeWithContentDescription("Play").assertExists()
+        compose.onNodeWithContentDescription("Back 10 seconds").assertExists()
+        compose.onNodeWithContentDescription("Next").assertExists()
         compose.onNodeWithText("Stop").performClick()
         assertEquals(listOf(stream), asked)
-        state = NowPlayingUiState.Ready(listOf(stream), confirming = stream)
+        state =
+            NowPlayingUiState.Ready(
+                listOf(stream),
+                controls = mapOf(stream.sessionId to full),
+                selected = stream.sessionId,
+                confirming = stream,
+            )
         compose.onNodeWithText("Stop Sintel?").assertExists()
         compose.onAllNodesWithText("Stop")[1].performClick()
         assertEquals(true, confirmed)
+    }
+
+    @Test
+    fun `a session page draws only the controls the user has`() {
+        val some = SessionControls(playPause = true, seek = false, skip = false, stop = false)
+        val state =
+            NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to some), selected = stream.sessionId)
+        compose.setContent { JellyfinTheme { NowPlayingScreen(state, administrator = false, NowPlayingActions()) } }
+        compose.onNodeWithContentDescription("Play").assertExists()
+        compose.onNodeWithContentDescription("Back 10 seconds").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Next").assertDoesNotExist()
+        compose.onNodeWithText("Stop").assertDoesNotExist()
     }
 
     @Test
