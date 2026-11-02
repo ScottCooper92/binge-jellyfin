@@ -63,7 +63,7 @@ internal fun RenameForm(
     taken: Boolean,
     actions: LibraryActions,
 ) {
-    var name by rememberSaveable { mutableStateOf(current) }
+    var name by rememberSaveable(key = "RenameForm.name") { mutableStateOf(current) }
     TextEntrySurface(
         title = stringResource(R.string.library_rename_title),
         value = name,
@@ -86,7 +86,7 @@ internal fun SeasonZeroForm(
     current: String,
     actions: LibraryActions,
 ) {
-    var name by rememberSaveable { mutableStateOf(current) }
+    var name by rememberSaveable(key = "SeasonZeroForm.name") { mutableStateOf(current) }
     TextEntrySurface(
         title = stringResource(R.string.library_season_zero),
         value = name,
@@ -110,7 +110,7 @@ internal fun TagDelimitersForm(
     current: String,
     actions: LibraryActions,
 ) {
-    var typed by rememberSaveable { mutableStateOf(current) }
+    var typed by rememberSaveable(key = "TagDelimitersForm.typed") { mutableStateOf(current) }
     TextEntrySurface(
         title = stringResource(R.string.library_delimiters),
         value = typed,
@@ -133,7 +133,7 @@ internal fun DelimiterWhitelistForm(
     current: String,
     actions: LibraryActions,
 ) {
-    var typed by rememberSaveable { mutableStateOf(current) }
+    var typed by rememberSaveable(key = "DelimiterWhitelistForm.typed") { mutableStateOf(current) }
     TextEntrySurface(
         title = stringResource(R.string.library_whitelist),
         value = typed,
@@ -162,8 +162,8 @@ internal fun AddFolderForm(
     actions: LibraryActions,
     startTyping: Boolean = false,
 ) {
-    var typing by rememberSaveable { mutableStateOf(startTyping) }
-    var path by rememberSaveable { mutableStateOf("") }
+    var typing by rememberSaveable(key = "AddFolderForm.typing") { mutableStateOf(startTyping) }
+    var path by rememberSaveable(key = "AddFolderForm.path") { mutableStateOf("") }
     if (typing) {
         TextEntrySurface(
             title = stringResource(R.string.library_path_title),

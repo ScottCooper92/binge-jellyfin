@@ -150,9 +150,9 @@ internal fun AddRepositoryForm(
     actions: RepositoriesActions,
     startStep: Int = 0,
 ) {
-    var step by rememberSaveable { mutableIntStateOf(startStep) }
-    var name by rememberSaveable { mutableStateOf("") }
-    var url by rememberSaveable { mutableStateOf("") }
+    var step by rememberSaveable(key = "AddRepositoryForm.step") { mutableIntStateOf(startStep) }
+    var name by rememberSaveable(key = "AddRepositoryForm.name") { mutableStateOf("") }
+    var url by rememberSaveable(key = "AddRepositoryForm.url") { mutableStateOf("") }
     val valid = repositoryUrl(url) != null
     if (step == 0) {
         TextEntrySurface(

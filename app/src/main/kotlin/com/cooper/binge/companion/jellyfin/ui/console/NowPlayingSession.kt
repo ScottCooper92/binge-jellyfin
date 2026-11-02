@@ -244,8 +244,8 @@ internal fun MessageSheet(
     actions: NowPlayingActions,
     inWindow: Boolean = true,
 ) {
-    var header by rememberSaveable { mutableStateOf("") }
-    var text by rememberSaveable { mutableStateOf("") }
+    var header by rememberSaveable(key = "MessageSheet.header") { mutableStateOf("") }
+    var text by rememberSaveable(key = "MessageSheet.text") { mutableStateOf("") }
     val submitting = state.messageSending
     ConsoleSheet(onDismissRequest = actions.onCancelMessage, inWindow = inWindow) {
         ConsoleFieldsForm(

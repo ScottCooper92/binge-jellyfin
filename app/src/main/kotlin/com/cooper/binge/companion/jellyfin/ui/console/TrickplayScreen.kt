@@ -332,8 +332,8 @@ internal fun FieldSheet(
             TrickplayField.JpegQuality -> settings.jpegQuality.toString()
             TrickplayField.Threads -> settings.threads.toString()
         }
-    var value by rememberSaveable(field) { mutableStateOf(current) }
-    var tried by rememberSaveable(field) { mutableStateOf(false) }
+    var value by rememberSaveable(field, key = "FieldSheet.value") { mutableStateOf(current) }
+    var tried by rememberSaveable(field, key = "FieldSheet.tried") { mutableStateOf(false) }
     val valid = if (field == TrickplayField.Widths) parseWidths(value) != null else field.parse(value) != null
     val failed = failure?.let { stringResource(R.string.settings_not_saved, it.text()) }
     val (title, body) =

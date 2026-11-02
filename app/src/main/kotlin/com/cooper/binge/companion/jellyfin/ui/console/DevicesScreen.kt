@@ -172,7 +172,7 @@ internal fun RenameSheet(
     error: String? = null,
     inWindow: Boolean = true,
 ) {
-    var name by rememberSaveable(device.id) { mutableStateOf(device.customName.orEmpty()) }
+    var name by rememberSaveable(device.id, key = "RenameSheet.name") { mutableStateOf(device.customName.orEmpty()) }
     ConsoleSheet(onDismissRequest = { actions.onAskRename(null) }, inWindow = inWindow) {
         ConsoleTextEntry(
             title = stringResource(R.string.devices_rename_title),

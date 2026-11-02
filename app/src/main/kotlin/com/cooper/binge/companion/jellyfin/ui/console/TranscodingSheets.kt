@@ -92,7 +92,7 @@ internal fun NumberForm(
     current: String,
     actions: TranscodingActions,
 ) {
-    var text by rememberSaveable { mutableStateOf(current) }
+    var text by rememberSaveable(key = "NumberForm.text") { mutableStateOf(current) }
     val valid = field.parse(text) != null
     val min = shownBound(field.min)
     val max = shownBound(field.max)
@@ -147,7 +147,7 @@ internal fun TextForm(
     current: String,
     actions: TranscodingActions,
 ) {
-    var text by rememberSaveable { mutableStateOf(current) }
+    var text by rememberSaveable(key = "TextForm.text") { mutableStateOf(current) }
     TextEntrySurface(
         title =
             stringResource(
@@ -181,8 +181,8 @@ internal fun TempFolderForm(
     actions: TranscodingActions,
     startTyping: Boolean = false,
 ) {
-    var typing by rememberSaveable { mutableStateOf(startTyping) }
-    var path by rememberSaveable { mutableStateOf(current) }
+    var typing by rememberSaveable(key = "TempFolderForm.typing") { mutableStateOf(startTyping) }
+    var path by rememberSaveable(key = "TempFolderForm.path") { mutableStateOf(current) }
     val choose = { value: String ->
         actions.onEncoding(ENCODING_TEMP_PATH, JsonPrimitive(value.trim()))
         actions.onSheet(null)

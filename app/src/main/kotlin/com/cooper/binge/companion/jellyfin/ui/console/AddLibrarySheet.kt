@@ -71,12 +71,12 @@ internal fun AddLibraryForm(
     startName: String = "",
     folderMissing: Boolean = false,
 ) {
-    var step by rememberSaveable { mutableIntStateOf(startStep) }
-    var name by rememberSaveable { mutableStateOf(startName) }
-    var kind by rememberSaveable { mutableStateOf(LIBRARY_KINDS.first()) }
-    var path by rememberSaveable { mutableStateOf("") }
+    var step by rememberSaveable(key = "AddLibraryForm.step") { mutableIntStateOf(startStep) }
+    var name by rememberSaveable(key = "AddLibraryForm.name") { mutableStateOf(startName) }
+    var kind by rememberSaveable(key = "AddLibraryForm.kind") { mutableStateOf(LIBRARY_KINDS.first()) }
+    var path by rememberSaveable(key = "AddLibraryForm.path") { mutableStateOf("") }
     // The folder the server last said it hasn't got; editing the path drops the line.
-    var tried by rememberSaveable { mutableStateOf("") }
+    var tried by rememberSaveable(key = "AddLibraryForm.tried") { mutableStateOf("") }
     when (step) {
         Step.NAME -> {
             val taken = names.any { it.equals(name.trim(), ignoreCase = true) }

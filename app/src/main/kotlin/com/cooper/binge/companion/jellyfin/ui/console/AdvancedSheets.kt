@@ -48,8 +48,8 @@ internal fun NumberSheet(
     actions: AdvancedActions,
     inWindow: Boolean = true,
 ) {
-    var value by rememberSaveable(number) { mutableStateOf(number.current(settings)) }
-    var tried by rememberSaveable(number) { mutableStateOf(false) }
+    var value by rememberSaveable(number, key = "NumberSheet.value") { mutableStateOf(number.current(settings)) }
+    var tried by rememberSaveable(number, key = "NumberSheet.tried") { mutableStateOf(false) }
     val valid = number.parse(value) != null
     ConsoleSheet(onDismissRequest = { actions.onEdit(null) }, inWindow = inWindow) {
         ConsoleTextEntry(
@@ -82,8 +82,8 @@ internal fun ListSheet(
             AdvancedList.CorsHosts -> settings.corsHosts.joinToString("\n")
             AdvancedList.CastReceivers -> settings.castReceivers.joinToString("\n") { "${it.id}, ${it.name}" }
         }
-    var value by rememberSaveable(list) { mutableStateOf(current) }
-    var tried by rememberSaveable(list) { mutableStateOf(false) }
+    var value by rememberSaveable(list, key = "ListSheet.value") { mutableStateOf(current) }
+    var tried by rememberSaveable(list, key = "ListSheet.tried") { mutableStateOf(false) }
     val valid = list == AdvancedList.CorsHosts || parseCastReceivers(value) != null
     ConsoleSheet(onDismissRequest = { actions.onEditList(null) }, inWindow = inWindow) {
         ConsoleTextEntry(

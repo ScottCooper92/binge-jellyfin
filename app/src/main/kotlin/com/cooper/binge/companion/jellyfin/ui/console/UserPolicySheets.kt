@@ -261,7 +261,7 @@ internal fun TagForm(
     actions: UsersActions,
     onClose: () -> Unit,
 ) {
-    var tag by rememberSaveable { mutableStateOf("") }
+    var tag by rememberSaveable(key = "TagForm.tag") { mutableStateOf("") }
     TextEntrySurface(
         title = stringResource(R.string.users_add_tag),
         value = tag,
@@ -287,9 +287,9 @@ internal fun ScheduleForm(
     startDay: String = SCHEDULE_DAYS.first(),
     startHour: Int = 0,
 ) {
-    var step by rememberSaveable { mutableIntStateOf(startStep) }
-    var day by rememberSaveable { mutableStateOf(startDay) }
-    var from by rememberSaveable { mutableIntStateOf(startHour) }
+    var step by rememberSaveable(key = "ScheduleForm.step") { mutableIntStateOf(startStep) }
+    var day by rememberSaveable(key = "ScheduleForm.day") { mutableStateOf(startDay) }
+    var from by rememberSaveable(key = "ScheduleForm.from") { mutableIntStateOf(startHour) }
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(dimensionResource(DesR.dimen.padding_m)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),

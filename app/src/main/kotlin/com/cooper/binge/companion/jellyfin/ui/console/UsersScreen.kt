@@ -322,8 +322,9 @@ internal fun CreateSheet(
     error: String? = null,
     inWindow: Boolean = true,
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable(key = "CreateSheet.name") { mutableStateOf("") }
+    // A password is not saved with the instance state: it would sit in the saved bundle. A rotation empties it, on purpose.
+    var password by remember { mutableStateOf("") }
     ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
         ConsoleFieldsForm(
             title = stringResource(R.string.users_add),
@@ -361,7 +362,8 @@ internal fun PasswordSheet(
     error: String? = null,
     inWindow: Boolean = true,
 ) {
-    var password by rememberSaveable { mutableStateOf("") }
+    // A password is not saved with the instance state: it would sit in the saved bundle. A rotation empties it, on purpose.
+    var password by remember { mutableStateOf("") }
     ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
         TextEntrySurface(
             title = stringResource(R.string.users_password_title, user.name),

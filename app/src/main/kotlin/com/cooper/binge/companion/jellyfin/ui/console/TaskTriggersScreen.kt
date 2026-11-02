@@ -225,12 +225,14 @@ internal fun AddTriggerForm(
     actions: TasksActions,
     startKind: TriggerKind = TriggerKind.Daily,
 ) {
-    var kindIndex by rememberSaveable { mutableIntStateOf(startKind.ordinal) }
+    var kindIndex by rememberSaveable(key = "AddTriggerForm.kindIndex") { mutableIntStateOf(startKind.ordinal) }
     val context = LocalContext.current
     val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, DateFormat.is24HourFormat(context))
-    var dayIndex by rememberSaveable { mutableIntStateOf(0) }
-    var intervalTicks by rememberSaveable { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
-    var limitHours by rememberSaveable { mutableIntStateOf(0) }
+    var dayIndex by rememberSaveable(key = "AddTriggerForm.dayIndex") { mutableIntStateOf(0) }
+    var intervalTicks by rememberSaveable(
+        key = "AddTriggerForm.intervalTicks",
+    ) { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
+    var limitHours by rememberSaveable(key = "AddTriggerForm.limitHours") { mutableIntStateOf(0) }
     val kind = TriggerKind.entries[kindIndex]
     val limit = limitHours.takeIf { it > 0 }?.let { it * TICKS_PER_HOUR }
     Column {

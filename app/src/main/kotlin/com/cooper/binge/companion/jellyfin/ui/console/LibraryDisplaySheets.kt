@@ -64,7 +64,7 @@ internal fun ChapterDurationForm(
     current: Int,
     actions: LibraryDisplayActions,
 ) {
-    var text by rememberSaveable { mutableStateOf(current.toString()) }
+    var text by rememberSaveable(key = "ChapterDurationForm.text") { mutableStateOf(current.toString()) }
     val seconds = parseChapterSeconds(text)
     TextEntrySurface(
         title = stringResource(R.string.display_dummy_chapters),
@@ -101,8 +101,8 @@ internal fun MetadataPathForm(
     actions: LibraryDisplayActions,
     startTyping: Boolean = false,
 ) {
-    var typing by rememberSaveable { mutableStateOf(startTyping) }
-    var path by rememberSaveable { mutableStateOf(current) }
+    var typing by rememberSaveable(key = "MetadataPathForm.typing") { mutableStateOf(startTyping) }
+    var path by rememberSaveable(key = "MetadataPathForm.path") { mutableStateOf(current) }
     val choose = { value: String ->
         actions.onText(METADATA_PATH, value.trim())
         actions.onSheet(null)
@@ -143,9 +143,9 @@ internal fun NewEntryForm(
     actions: LibraryDisplayActions,
     startStep: Int = 0,
 ) {
-    var step by rememberSaveable { mutableIntStateOf(startStep) }
-    var first by rememberSaveable { mutableStateOf("") }
-    var second by rememberSaveable { mutableStateOf("") }
+    var step by rememberSaveable(key = "NewEntryForm.step") { mutableIntStateOf(startStep) }
+    var first by rememberSaveable(key = "NewEntryForm.first") { mutableStateOf("") }
+    var second by rememberSaveable(key = "NewEntryForm.second") { mutableStateOf("") }
     if (list.pairs && step == 1) {
         TextEntrySurface(
             title = stringResource(R.string.display_substitution_to),

@@ -204,8 +204,8 @@ internal fun RetentionSheet(
     actions: LogsActions,
     inWindow: Boolean = true,
 ) {
-    var value by rememberSaveable { mutableStateOf(days?.toString().orEmpty()) }
-    var tried by rememberSaveable { mutableStateOf(false) }
+    var value by rememberSaveable(key = "RetentionSheet.value") { mutableStateOf(days?.toString().orEmpty()) }
+    var tried by rememberSaveable(key = "RetentionSheet.tried") { mutableStateOf(false) }
     val valid = value.trim().toIntOrNull()?.let { it in LOG_RETENTION_MIN_DAYS..LOG_RETENTION_MAX_DAYS } == true
     ConsoleSheet(onDismissRequest = { actions.onEditRetention(false) }, inWindow = inWindow) {
         ConsoleTextEntry(

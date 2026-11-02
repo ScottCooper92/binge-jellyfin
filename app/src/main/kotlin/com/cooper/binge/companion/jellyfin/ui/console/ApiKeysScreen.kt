@@ -175,7 +175,7 @@ internal fun NewKeySheet(
     error: String? = null,
     inWindow: Boolean = true,
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable(key = "NewKeySheet.name") { mutableStateOf("") }
     ConsoleSheet(onDismissRequest = { actions.onAskCreate(false) }, inWindow = inWindow) {
         ConsoleTextEntry(
             title = stringResource(R.string.api_keys_new_title),

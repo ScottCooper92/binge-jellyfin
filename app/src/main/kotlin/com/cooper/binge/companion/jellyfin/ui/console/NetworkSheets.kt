@@ -58,8 +58,8 @@ internal fun NetworkNumberSheet(
     actions: NetworkActions,
     inWindow: Boolean = true,
 ) {
-    var value by rememberSaveable(field) { mutableStateOf(field.current(state.settings).toString()) }
-    var tried by rememberSaveable(field) { mutableStateOf(false) }
+    var value by rememberSaveable(field, key = "NetworkNumberSheet.value") { mutableStateOf(field.current(state.settings).toString()) }
+    var tried by rememberSaveable(field, key = "NetworkNumberSheet.tried") { mutableStateOf(false) }
     val valid = field.parse(value) != null
     ConsoleSheet(onDismissRequest = { actions.onSheet(null) }, inWindow = inWindow) {
         ConsoleTextEntry(
@@ -88,7 +88,7 @@ internal fun NetworkTextSheet(
     inWindow: Boolean = true,
 ) {
     val current = if (field == NetworkText.BaseUrl) settings.baseUrl else settings.certificatePath
-    var value by rememberSaveable(field) { mutableStateOf(current) }
+    var value by rememberSaveable(field, key = "NetworkTextSheet.value") { mutableStateOf(current) }
     val (title, body) =
         if (field == NetworkText.BaseUrl) {
             R.string.network_base_url to R.string.network_base_url_body
@@ -173,7 +173,7 @@ internal fun NetworkItemsSheet(
     actions: NetworkActions,
     inWindow: Boolean = true,
 ) {
-    var value by rememberSaveable(field) { mutableStateOf(field.current(settings).joinToString("\n")) }
+    var value by rememberSaveable(field, key = "NetworkItemsSheet.value") { mutableStateOf(field.current(settings).joinToString("\n")) }
     ConsoleSheet(onDismissRequest = { actions.onSheet(null) }, inWindow = inWindow) {
         ConsoleTextEntry(
             title = stringResource(field.title()),

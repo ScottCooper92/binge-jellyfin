@@ -265,7 +265,7 @@ internal fun TextSheet(
             ServerText.LoginDisclaimer -> state.branding.loginDisclaimer
             ServerText.CustomCss -> state.branding.customCss
         }
-    var value by rememberSaveable(text) { mutableStateOf(current) }
+    var value by rememberSaveable(text, key = "TextSheet.value") { mutableStateOf(current) }
     val error = state.sheetFailed?.let { stringResource(R.string.settings_not_saved, it.text()) }
     val (title, body) =
         when (text) {
