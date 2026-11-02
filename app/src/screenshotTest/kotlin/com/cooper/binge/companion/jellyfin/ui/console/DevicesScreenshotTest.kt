@@ -35,8 +35,10 @@ class DevicesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
     @Composable
-    fun renaming() = Surface { RenameDialog(previewDevices.first(), DevicesActions(), inWindow = false) }
+    fun renaming() = Surface { RenameSheet(previewDevices.first(), DevicesActions(), inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

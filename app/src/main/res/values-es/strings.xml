@@ -290,7 +290,6 @@
     <string name="devices_remove_body">Se cierra su sesión y tendrá que volver a iniciarla para usar este servidor.</string>
     <string name="devices_rename_title">Cambiar nombre del dispositivo</string>
     <string name="devices_rename_body">Déjalo vacío para usar el nombre que se da el propio dispositivo.</string>
-    <string name="devices_rename_field">Nombre</string>
     <string name="devices_rename_save">Guardar</string>
     <string name="devices_not_changed">No se ha cambiado. %1$s</string>
     <string name="users_title">Usuarios</string>

@@ -109,7 +109,7 @@ private fun Keys(
             )
         }
     }
-    if (state.naming) NewKeyDialog(actions)
+    if (state.naming) NewKeySheet(actions)
     state.created?.let { CreatedKeyDialog(it, actions) }
     state.removing?.let { RevokeDialog(it, actions) }
 }
@@ -160,29 +160,25 @@ internal fun RevokeDialog(
     )
 }
 
-/** The app a new key is for. Its Create key saves too. */
+/** The app a new key is for. Its Create key saves too. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun NewKeyDialog(
+internal fun NewKeySheet(
     actions: ApiKeysActions,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
-    ConsoleConfirm(
-        title = stringResource(R.string.api_keys_new_title),
-        message = stringResource(R.string.api_keys_new_body),
-        confirmLabel = stringResource(R.string.api_keys_create),
-        onConfirm = { actions.onCreate(name) },
-        onDismissRequest = { actions.onAskCreate(false) },
-        inWindow = inWindow,
-        extraContent = {
-            ConsoleTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = stringResource(R.string.api_keys_app_field),
-                onDone = { actions.onCreate(name) },
-            )
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onAskCreate(false) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(R.string.api_keys_new_title),
+            body = stringResource(R.string.api_keys_new_body),
+            value = name,
+            onValueChange = { name = it },
+            submitLabel = stringResource(R.string.api_keys_create),
+            onSubmit = { actions.onCreate(name) },
+            onCancel = { actions.onAskCreate(false) },
+            hint = stringResource(R.string.api_keys_app_field),
+        )
+    }
 }
 
 /** The key just made, in full, the one time it is shown. Copy is the only way it leaves the screen. */

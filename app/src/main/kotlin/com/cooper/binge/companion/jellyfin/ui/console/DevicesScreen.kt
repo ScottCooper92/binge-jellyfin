@@ -98,7 +98,7 @@ private fun Devices(
             )
         }
     }
-    state.renaming?.let { RenameDialog(it, actions) }
+    state.renaming?.let { RenameSheet(it, actions) }
     state.removing?.let { RemoveDialog(it, actions) }
 }
 
@@ -153,31 +153,26 @@ private fun ServerDevice.row(
     )
 }
 
-/** A name for the device; left empty, it goes back to the name the device gives itself. */
+/** A name for the device; left empty, it goes back to the name the device gives itself. [inWindow] false draws the form for a frame. */
 @Composable
-internal fun RenameDialog(
+internal fun RenameSheet(
     device: ServerDevice,
     actions: DevicesActions,
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable(device.id) { mutableStateOf(device.customName.orEmpty()) }
-    ConsoleConfirm(
-        title = stringResource(R.string.devices_rename_title),
-        message = stringResource(R.string.devices_rename_body),
-        confirmLabel = stringResource(R.string.devices_rename_save),
-        onConfirm = { actions.onRename(name) },
-        onDismissRequest = { actions.onAskRename(null) },
-        inWindow = inWindow,
-        extraContent = {
-            ConsoleTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = stringResource(R.string.devices_rename_field),
-                placeholder = device.name,
-                onDone = { actions.onRename(name) },
-            )
-        },
-    )
+    ConsoleSheet(onDismissRequest = { actions.onAskRename(null) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(R.string.devices_rename_title),
+            body = stringResource(R.string.devices_rename_body),
+            value = name,
+            onValueChange = { name = it },
+            submitLabel = stringResource(R.string.devices_rename_save),
+            onSubmit = { actions.onRename(name) },
+            onCancel = { actions.onAskRename(null) },
+            hint = device.name,
+        )
+    }
 }
 
 /** A device's icon, from its app's or its own name: a TV, a browser, a phone, or devices in general. */

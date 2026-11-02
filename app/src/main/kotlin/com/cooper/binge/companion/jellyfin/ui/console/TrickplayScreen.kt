@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AspectRatio
@@ -98,7 +99,7 @@ fun TrickplayScreen(
                 is TrickplayUiState.Ready -> {
                     TrickplayBody(state, actions, keyFrameOnlyAvailable, inner) { picker = it }
                     picker?.let { TrickplayPickerSheet(it, state.settings, actions) { picker = null } }
-                    state.editing?.let { FieldDialog(it, state.settings, actions) }
+                    state.editing?.let { FieldSheet(it, state.settings, actions) }
                 }
             }
         }
@@ -315,10 +316,10 @@ private fun TrickplayPickerSheet(
 
 /**
  * A number's (or the widths') dialog: Save keeps what's typed if it is in range, and says so if it isn't;
- * Cancel leaves the setting as it was. [inWindow] false draws its body for a frame.
+ * Cancel leaves the setting as it was. [inWindow] false draws the form for a frame.
  */
 @Composable
-internal fun FieldDialog(
+internal fun FieldSheet(
     field: TrickplayField,
     settings: TrickplaySettings,
     actions: TrickplayActions,
@@ -351,35 +352,29 @@ internal fun FieldDialog(
         tried = true
         if (valid) actions.onSave(field, value)
     }
-    ConsoleConfirm(
-        title = stringResource(title),
-        message = stringResource(body),
-        confirmLabel = stringResource(R.string.trickplay_save),
-        onConfirm = save,
-        onDismissRequest = { actions.onEdit(null) },
-        inWindow = inWindow,
-        extraContent = {
-            ConsoleTextField(
-                value = value,
-                onValueChange = { value = it },
-                label = stringResource(title),
-                isError = tried && !valid,
-                supporting =
-                    if (tried && !valid) {
-                        if (field == TrickplayField.Widths) {
-                            stringResource(R.string.trickplay_widths_invalid, field.min, field.max)
-                        } else {
-                            stringResource(R.string.trickplay_number_invalid, field.min, field.max)
-                        }
+    ConsoleSheet(onDismissRequest = { actions.onEdit(null) }, inWindow = inWindow) {
+        ConsoleTextEntry(
+            title = stringResource(title),
+            body = stringResource(body),
+            value = value,
+            onValueChange = { value = it },
+            submitLabel = stringResource(R.string.trickplay_save),
+            onSubmit = save,
+            onCancel = { actions.onEdit(null) },
+            error =
+                if (tried && !valid) {
+                    if (field == TrickplayField.Widths) {
+                        stringResource(R.string.trickplay_widths_invalid, field.min, field.max)
                     } else {
-                        // Empty, not null: the line stays reserved so the sheet does not jump when the error appears.
-                        ""
-                    },
-                keyboardType = if (field == TrickplayField.Widths) KeyboardType.Text else KeyboardType.Number,
-                onDone = { save() },
-            )
-        },
-    )
+                        stringResource(R.string.trickplay_number_invalid, field.min, field.max)
+                    }
+                } else {
+                    null
+                },
+            keyboardOptions =
+                KeyboardOptions(keyboardType = if (field == TrickplayField.Widths) KeyboardType.Text else KeyboardType.Number),
+        )
+    }
 }
 
 private const val LOADING_ROWS = 10
