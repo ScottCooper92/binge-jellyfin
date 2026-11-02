@@ -134,7 +134,7 @@ class LibraryViewModel(
                 connection
                     .consoleCall(TAG) { _, client ->
                         coroutineScope {
-                            val fresh = async { client.libraries().firstOrNull(::isThis) ?: start }
+                            val fresh = async { client.libraries().firstOrNull { it.isLibrary(id, name) } ?: start }
                             // What the server offers to choose from is a nicety: the page works without it.
                             val available = async { attempt { client.availableProviders(start.type) }.getOrDefault(AvailableProviders()) }
                             val cultures = async { attempt { client.cultures() }.getOrDefault(emptyList()) }
@@ -277,9 +277,6 @@ class LibraryViewModel(
         }
     }
 
-    /** Whether [row] is this library: by id, or by name while the server hasn't given it one. */
-    private fun isThis(row: ServerLibrary) = if (id.isEmpty()) row.name == name else row.id == id
-
     fun retrySave() = saves.retry()
 
     /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
@@ -294,6 +291,12 @@ class LibraryViewModel(
         const val TAG = "JellyfinLibrary"
     }
 }
+
+/** Whether this row is the library with [id], or with [name] while the server hasn't given it an id yet. */
+private fun ServerLibrary.isLibrary(
+    id: String,
+    name: String,
+) = if (id.isEmpty()) this.name == name else this.id == id
 
 /** The names the server offers for this group of providers. */
 internal fun ProviderGroup.available(providers: AvailableProviders): List<String> =
