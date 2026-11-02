@@ -88,7 +88,7 @@ private fun LiveTvContent(
                                 icon = Icons.Outlined.Videocam,
                                 label = stringResource(R.string.live_tv_recording_row),
                                 detail = stringResource(R.string.live_tv_recording_row_detail),
-                                supportingMaxLines = ADDRESS_LINES,
+                                supportingMaxLines = RECORDING_DETAIL_LINES,
                                 onClick = open,
                             ),
                         ),
@@ -174,3 +174,6 @@ private const val LOADING_ROWS = 4
 
 /** An address is what tells two tuners apart, so a larger font wraps it instead of cutting it off. */
 private const val ADDRESS_LINES = 3
+
+/** The Recording row's detail names three things, so a larger font wraps it instead of cutting it off. */
+private const val RECORDING_DETAIL_LINES = 3

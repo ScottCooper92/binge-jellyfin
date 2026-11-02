@@ -107,19 +107,7 @@ class LiveTvRecordingViewModel(
             { _, client, json -> client.saveLiveTvConfiguration(json) },
             onProgress = { progress -> update { copy(save = progress) } },
         ) { shown, failure ->
-            update {
-                copy(
-                    config = shown,
-                    refused =
-                        if (failure ==
-                            null
-                        ) {
-                            null
-                        } else {
-                            failure.takeIf { it == ConsoleFailure.Refused } ?: refused
-                        },
-                )
-            }
+            update { copy(config = shown, refused = refusedOr(refused, failure)) }
         }
 
     init {
@@ -176,6 +164,12 @@ class LiveTvRecordingViewModel(
         saves.set(field.key, value)
         update { copy(sheet = null) }
     }
+
+    /** A refused save is said until the next change; a change or a failure to reach the server clears it. */
+    private fun refusedOr(
+        current: ConsoleFailure?,
+        failure: ConsoleFailure?,
+    ) = if (failure == null) null else failure.takeIf { it == ConsoleFailure.Refused } ?: current
 
     private fun update(change: LiveTvRecordingUiState.Ready.() -> LiveTvRecordingUiState.Ready) =
         _state.update { (it as? LiveTvRecordingUiState.Ready)?.change() ?: it }
