@@ -1002,4 +1002,18 @@
     <string name="backups_restore_not_back_title">The server didn\'t come back in time</string>
     <string name="backups_restore_not_back_body">Check it, then try again.</string>
     <string name="backups_restore_failed">The restore didn\'t go through.</string>
+    <string name="live_tv_title">Live TV</string>
+    <string name="console_live_tv_detail">Tuners and guide data</string>
+    <string name="live_tv_body">The tuners and guide data this server uses for Live TV. This page only shows them for now.</string>
+    <string name="live_tv_tuners">Tuners</string>
+    <string name="live_tv_no_tuners">No tuners</string>
+    <string name="live_tv_guide">Guide data</string>
+    <string name="live_tv_no_guide">No guide data</string>
+    <string name="live_tv_guide_ends">Guide runs until</string>
+    <string name="live_tv_refresh_guide">Refresh guide</string>
+    <string name="live_tv_refresh_guide_detail">Run it from Scheduled tasks</string>
+    <string name="live_tv_type_hdhomerun" translatable="false">HDHomeRun</string>
+    <string name="live_tv_type_m3u">M3U playlist</string>
+    <string name="live_tv_type_xmltv" translatable="false">XMLTV</string>
+    <string name="live_tv_type_schedules_direct" translatable="false">Schedules Direct</string>
 </resources>

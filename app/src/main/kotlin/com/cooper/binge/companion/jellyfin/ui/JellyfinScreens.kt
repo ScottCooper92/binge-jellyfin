@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Person
@@ -374,6 +375,12 @@ private fun ServerGroup(
                     label = stringResource(R.string.now_playing_title),
                     onClick = { actions.onOpenPage(ConsolePage.NowPlaying) },
                 ).takeIf { ConsolePage.NowPlaying.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.LiveTv,
+                    label = stringResource(R.string.live_tv_title),
+                    detail = stringResource(R.string.console_live_tv_detail),
+                    onClick = { actions.onOpenPage(ConsolePage.LiveTv) },
+                ).takeIf { ConsolePage.LiveTv.available(state.profile, state.account) },
             ),
     )
 }

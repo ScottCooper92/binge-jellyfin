@@ -72,6 +72,9 @@ enum class ConsolePage {
     /** The server's transcoding, resume and streaming settings. Admin only. */
     Transcoding,
 
+    /** The server's Live TV tuners and guide data. For a user whose policy lets them manage Live TV, an administrator or not. */
+    LiveTv,
+
     /** The server itself: its info, restarting it and shutting it down. Admin only. */
     Server,
     ;
@@ -91,6 +94,7 @@ enum class ConsolePage {
             NowPlaying -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
+            LiveTv -> account.canManageLiveTv
             Backups -> account.isAdministrator && profile.hasBackups
             Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
             ServerSettings, Network, LibraryDisplay, Transcoding, Server,
