@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -374,15 +375,14 @@ private fun ServerGroup(
     )
 }
 
-/** One of the administrator's pages as the home lists it: its icon, name and the line under it. */
 private class AdminPage(
     val page: ConsolePage,
     val icon: ImageVector,
-    val label: Int,
-    val detail: Int,
+    @StringRes val label: Int,
+    @StringRes val detail: Int,
 )
 
-private val ADMIN_PAGES =
+private val adminPages =
     listOf(
         AdminPage(ConsolePage.Libraries, Icons.Outlined.Folder, R.string.libraries_title, R.string.console_libraries_detail),
         AdminPage(ConsolePage.Tasks, Icons.Outlined.Schedule, R.string.tasks_title, R.string.console_tasks_detail),
@@ -409,16 +409,14 @@ private fun AdminGroup(
     ItemGroup(
         title = stringResource(R.string.console_admin_title),
         rows =
-            ADMIN_PAGES
-                .filter { it.page.available(state.profile, state.account) }
-                .map { entry ->
-                    ListItem(
-                        icon = entry.icon,
-                        label = stringResource(entry.label),
-                        detail = stringResource(entry.detail),
-                        onClick = { actions.onOpenPage(entry.page) },
-                    )
-                },
+            adminPages.filter { it.page.available(state.profile, state.account) }.map { entry ->
+                ListItem(
+                    icon = entry.icon,
+                    label = stringResource(entry.label),
+                    detail = stringResource(entry.detail),
+                    onClick = { actions.onOpenPage(entry.page) },
+                )
+            },
     )
 }
 
