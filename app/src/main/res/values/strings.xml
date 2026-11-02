@@ -733,4 +733,40 @@
     </plurals>
     <string name="advanced_number_invalid">Enter a whole number from %1$d to %2$d.</string>
     <string name="advanced_save">Save</string>
+    <string name="backups_title">Backups</string>
+    <string name="console_backups_detail">Make a backup of the server, and restore one</string>
+    <string name="backups_body">A backup holds the server\'s database, and whatever else you choose. Restoring one restarts the server.</string>
+    <string name="backups_new">New backup</string>
+    <string name="backups_empty">No backups yet</string>
+    <string name="backups_date_unknown">Date unknown</string>
+    <string name="backups_detail" translatable="false">Jellyfin %1$s · %2$s</string>
+    <string name="backups_list_separator" translatable="false">", "</string>
+    <string name="backups_database">Database</string>
+    <string name="backups_database_detail">Users, libraries, watch history and settings</string>
+    <string name="backups_metadata">Metadata</string>
+    <string name="backups_metadata_detail">Artwork and descriptions the server holds. Makes the backup much larger.</string>
+    <string name="backups_subtitles">Subtitles</string>
+    <string name="backups_subtitles_detail">Subtitle files the server keeps. Makes the backup larger.</string>
+    <string name="backups_trickplay_detail">Seek thumbnails. Makes the backup much larger.</string>
+    <string name="backups_create_title">New backup</string>
+    <string name="backups_create_body">Choose what it holds. It can take a few minutes on a big library, and you can leave this page while the server writes it.</string>
+    <string name="backups_create_action">Make backup</string>
+    <string name="backups_creating">Making a backup</string>
+    <string name="backups_creating_detail">The server is writing it. You can leave this page.</string>
+    <string name="backups_created">Backup made</string>
+    <string name="backups_created_detail">It is first in the list below.</string>
+    <string name="backups_create_failed">The backup wasn\'t made</string>
+    <string name="backups_done">Done</string>
+    <string name="backups_sheet_title">Backup</string>
+    <string name="backups_made_by">Made by Jellyfin %1$s</string>
+    <string name="backups_version_differs">This server runs Jellyfin %1$s, a different release, so the restore may not work.</string>
+    <string name="backups_restore">Restore</string>
+    <string name="backups_restore_title">Restore this backup?</string>
+    <string name="backups_restore_body">The server restarts and takes its database from this backup. Everything since it was made is lost, such as new users, watch history and settings. This app may be signed out.</string>
+    <string name="backups_restoring">Restoring</string>
+    <string name="backups_restoring_detail">The server is restarting.</string>
+    <string name="backups_restored">Restored</string>
+    <string name="backups_restored_detail">The server is back.</string>
+    <string name="backups_restore_not_back">The server didn\'t come back in time. Check it, then try again.</string>
+    <string name="backups_restore_failed">The restore didn\'t go through.</string>
 </resources>

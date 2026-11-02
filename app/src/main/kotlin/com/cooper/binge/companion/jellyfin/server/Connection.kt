@@ -10,8 +10,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
@@ -21,6 +24,21 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.util.concurrent.ConcurrentHashMap
+
+/** Where the backup being made stands. The server writes it in its own time, so this outlives the page that asked. */
+sealed interface BackupCreation {
+    data object Idle : BackupCreation
+
+    data object Creating : BackupCreation
+
+    data class Created(
+        val backup: ServerBackup,
+    ) : BackupCreation
+
+    data class Failed(
+        val error: Throwable,
+    ) : BackupCreation
+}
 
 /** Makes [JellyfinClient]s: an anonymous one for a typed address, and one for the saved session. */
 class Connection(
@@ -46,6 +64,14 @@ class Connection(
     /** Lives as long as the connection, so a save outlives the page that started it. */
     internal val saveScope = CoroutineScope(SupervisorJob() + io)
     private val pendingSaves: MutableSet<Job> = ConcurrentHashMap.newKeySet()
+    private val creations = MutableStateFlow<BackupCreation>(BackupCreation.Idle)
+
+    /** The backup being made, or the last one's result until it is dismissed: held here so leaving the page does not lose it. */
+    val backupCreation: StateFlow<BackupCreation> = creations.asStateFlow()
+
+    fun setBackupCreation(creation: BackupCreation) {
+        creations.value = creation
+    }
 
     init {
         // A save is built from one account's configuration, so it dies with the session it was made under.
@@ -54,7 +80,10 @@ class Connection(
                 .map { session -> session?.let { Triple(it.baseUrl, it.userId, it.token) } }
                 .distinctUntilChanged()
                 .drop(1)
-                .collect { pendingSaves.toList().forEach { it.cancel() } }
+                .collect {
+                    pendingSaves.toList().forEach { it.cancel() }
+                    creations.value = BackupCreation.Idle
+                }
         }
     }
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
@@ -436,33 +437,47 @@ private fun AdminGroup(
                     detail = stringResource(R.string.console_advanced_detail),
                     onClick = { actions.onOpenPage(ConsolePage.Advanced) },
                 ).takeIf { ConsolePage.Advanced.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Image,
-                    label = stringResource(R.string.trickplay_title),
-                    detail = stringResource(R.string.console_trickplay_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Trickplay) },
-                ).takeIf { ConsolePage.Trickplay.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.ViewModule,
-                    label = stringResource(R.string.display_title),
-                    detail = stringResource(R.string.console_display_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.LibraryDisplay) },
-                ).takeIf { ConsolePage.LibraryDisplay.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.Extension,
-                    label = stringResource(R.string.plugins_title),
-                    detail = stringResource(R.string.console_plugins_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Plugins) },
-                ).takeIf { ConsolePage.Plugins.available(state.profile, state.account) },
-                ListItem(
-                    icon = Icons.Outlined.SettingsApplications,
-                    label = stringResource(R.string.server_title),
-                    detail = stringResource(R.string.console_server_detail),
-                    onClick = { actions.onOpenPage(ConsolePage.Server) },
-                ).takeIf { ConsolePage.Server.available(state.profile, state.account) },
-            ),
+            ) + serverAdminRows(state, actions),
     )
 }
+
+@Composable
+private fun serverAdminRows(
+    state: UiState.SignedIn,
+    actions: Actions,
+): List<ListItem> =
+    listOfNotNull(
+        ListItem(
+            icon = Icons.Outlined.Image,
+            label = stringResource(R.string.trickplay_title),
+            detail = stringResource(R.string.console_trickplay_detail),
+            onClick = { actions.onOpenPage(ConsolePage.Trickplay) },
+        ).takeIf { ConsolePage.Trickplay.available(state.profile, state.account) },
+        ListItem(
+            icon = Icons.Outlined.ViewModule,
+            label = stringResource(R.string.display_title),
+            detail = stringResource(R.string.console_display_detail),
+            onClick = { actions.onOpenPage(ConsolePage.LibraryDisplay) },
+        ).takeIf { ConsolePage.LibraryDisplay.available(state.profile, state.account) },
+        ListItem(
+            icon = Icons.Outlined.Extension,
+            label = stringResource(R.string.plugins_title),
+            detail = stringResource(R.string.console_plugins_detail),
+            onClick = { actions.onOpenPage(ConsolePage.Plugins) },
+        ).takeIf { ConsolePage.Plugins.available(state.profile, state.account) },
+        ListItem(
+            icon = Icons.Outlined.Backup,
+            label = stringResource(R.string.backups_title),
+            detail = stringResource(R.string.console_backups_detail),
+            onClick = { actions.onOpenPage(ConsolePage.Backups) },
+        ).takeIf { ConsolePage.Backups.available(state.profile, state.account) },
+        ListItem(
+            icon = Icons.Outlined.SettingsApplications,
+            label = stringResource(R.string.server_title),
+            detail = stringResource(R.string.console_server_detail),
+            onClick = { actions.onOpenPage(ConsolePage.Server) },
+        ).takeIf { ConsolePage.Server.available(state.profile, state.account) },
+    )
 
 @Composable
 private fun LibraryGroup(

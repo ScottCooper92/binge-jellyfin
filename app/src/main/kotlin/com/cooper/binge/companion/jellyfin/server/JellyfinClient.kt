@@ -22,6 +22,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.IOException
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -56,11 +57,11 @@ data class ClientIdentity(
  * OpenAPI document (`/api-docs/openapi.json`).
  */
 class JellyfinClient(
-    private val http: OkHttpClient,
+    internal val http: OkHttpClient,
     val baseUrl: HttpUrl,
-    private val identity: ClientIdentity,
-    private val io: CoroutineDispatcher,
-    private val token: String? = null,
+    internal val identity: ClientIdentity,
+    internal val io: CoroutineDispatcher,
+    internal val token: String? = null,
 ) {
     fun withToken(token: String): JellyfinClient = JellyfinClient(http, baseUrl, identity, io, token)
 
@@ -268,3 +269,7 @@ class JellyfinClient(
 private fun String.encoded(): String = URLEncoder.encode(this, "UTF-8").replace("+", "%20")
 
 private fun JsonElement.asObject(path: String): JsonObject = this as? JsonObject ?: throw JellyfinUnreadableAnswer(path)
+
+/** This client with a longer wait for an answer, for the one call the server answers only when its work is done. */
+fun JellyfinClient.withReadTimeout(millis: Long): JellyfinClient =
+    JellyfinClient(http.newBuilder().readTimeout(millis, TimeUnit.MILLISECONDS).build(), baseUrl, identity, io, token)
