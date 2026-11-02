@@ -120,13 +120,7 @@ internal fun shownNumber(
 ): String {
     val stored = (config[field.key] as? JsonPrimitive)?.doubleOrNull ?: return ""
     val shown = stored / field.scale
-    return if (shown % 1.0 ==
-        0.0
-    ) {
-        shown.toLong().toString()
-    } else {
-        "%s".format(java.util.Locale.ROOT, shown.toBigDecimal().stripTrailingZeros().toPlainString())
-    }
+    return if (shown % 1.0 == 0.0) shown.toLong().toString() else shown.toBigDecimal().stripTrailingZeros().toPlainString()
 }
 
 @Composable

@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODING_CODECS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DOWNMIX_BOOST
@@ -119,13 +120,30 @@ sealed interface TranscodingUiState {
         val failure: ConsoleFailure,
     ) : TranscodingUiState
 
-    /** The two configurations as shown, the sheet open, and the last save that failed and was put back. */
+    /**
+     * The two configurations as shown, the sheet open, where each one's saves stand, and the last save the server
+     * refused, which was put back ([refused]).
+     */
     data class Ready(
         val encoding: JsonObject,
         val server: JsonObject,
         val sheet: TranscodingSheet? = null,
-        val saveFailed: ConsoleFailure? = null,
-    ) : TranscodingUiState
+        val encodingSave: SaveProgress = SaveProgress(),
+        val serverSave: SaveProgress = SaveProgress(),
+        val refused: ConsoleFailure? = null,
+    ) : TranscodingUiState {
+        /** Where the page's saves stand, the two writers' together: failed if either is, busy if either is. */
+        val save: SaveProgress
+            get() {
+                val statuses = listOf(encodingSave.status, serverSave.status)
+                val status =
+                    statuses.firstOrNull { it == SaveStatus.Saving }
+                        ?: statuses.firstOrNull { it == SaveStatus.Saved }
+                        ?: statuses.firstOrNull { it != SaveStatus.Idle }
+                        ?: SaveStatus.Idle
+                return SaveProgress(status, encodingSave.failed || serverSave.failed)
+            }
+    }
 }
 
 /**
@@ -146,12 +164,19 @@ class TranscodingViewModel(
             viewModelScope,
             TAG,
             { _, client, json -> client.saveEncodingConfiguration(json) },
+            onProgress = { progress -> update { copy(encodingSave = progress) } },
         ) { shown, failure ->
-            update { copy(encoding = shown, saveFailed = failure) }
+            update { copy(encoding = shown, refused = refusedOr(refused, failure)) }
         }
     private val server =
-        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
-            update { copy(server = shown, saveFailed = failure) }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveServerConfiguration(json) },
+            onProgress = { progress -> update { copy(serverSave = progress) } },
+        ) { shown, failure ->
+            update { copy(server = shown, refused = refusedOr(refused, failure)) }
         }
 
     init {
@@ -198,6 +223,12 @@ class TranscodingViewModel(
         value: JsonElement,
     ) = server.set(key, value)
 
+    /** Sends the changes a failed write left unsent. */
+    fun retrySave() {
+        encoding.retry()
+        server.retry()
+    }
+
     /** Opens [sheet], or closes whichever is open for null. */
     fun sheet(sheet: TranscodingSheet?) = update { copy(sheet = sheet) }
 
@@ -222,6 +253,12 @@ class TranscodingViewModel(
 
     private fun update(change: TranscodingUiState.Ready.() -> TranscodingUiState.Ready) =
         _state.update { (it as? TranscodingUiState.Ready)?.change() ?: it }
+
+    /** A refused save is said until the next change; a change or a failure to reach the server clears it. */
+    private fun refusedOr(
+        current: ConsoleFailure?,
+        failure: ConsoleFailure?,
+    ) = if (failure == null) null else failure.takeIf { it == ConsoleFailure.Refused } ?: current
 
     private companion object {
         const val TAG = "JellyfinTranscoding"

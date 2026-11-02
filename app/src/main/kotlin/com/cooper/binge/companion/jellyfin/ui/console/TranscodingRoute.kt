@@ -33,6 +33,7 @@ internal fun TranscodingRoute(
             onSheet = transcoding::sheet,
             onNumber = transcoding::saveNumber,
             onRetry = transcoding::load,
+            onRetrySave = transcoding::retrySave,
             onBack = onBack,
         ),
         profile,

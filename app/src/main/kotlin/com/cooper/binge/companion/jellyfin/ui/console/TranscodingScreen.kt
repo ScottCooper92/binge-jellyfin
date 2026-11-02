@@ -2,11 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Warning
@@ -25,11 +21,9 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
-import com.binge.designsystem.component.ListRowSkeletonColumn
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -46,6 +40,7 @@ data class TranscodingActions(
     val onSheet: (TranscodingSheet?) -> Unit = {},
     val onNumber: (NumberField, String) -> Unit = { _, _ -> },
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -69,24 +64,27 @@ fun TranscodingScreen(
     folderActions: FolderActions = FolderActions(),
 ) {
     val host = remember { SnackbarHostState() }
-    BingeScreenScaffold(
+    val ready = state as? TranscodingUiState.Ready
+    FormScreen(
         title = stringResource(R.string.transcoding_title),
         bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
-    ) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady =
             when (state) {
-                TranscodingUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
-                is TranscodingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is TranscodingUiState.Ready -> {
-                    TranscodingBody(state, actions, profile, inner)
-                    TranscodingSheets(state, actions, folders, folderActions)
-                    // A save the server refused is put back and said in a message, not in a space the page keeps for it.
-                    RefusedMessage(state.saveFailed, host)
+                TranscodingUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is TranscodingUiState.Failed -> { padding ->
+                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
-            }
+                is TranscodingUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            TranscodingBody(ready, actions, profile)
+            TranscodingSheets(ready, actions, folders, folderActions)
+            // A save the server refused is put back and said in a message, not in a space the page keeps for it.
+            RefusedMessage(ready.refused, host)
         }
     }
 }
@@ -96,12 +94,10 @@ private fun TranscodingBody(
     state: TranscodingUiState.Ready,
     actions: TranscodingActions,
     profile: JellyfinServerProfile,
-    inner: PaddingValues,
 ) {
     var picker by rememberSaveable { mutableStateOf<TranscodingPicker?>(null) }
     val type = encodingChoice(state.encoding.string(ENCODING_ACCELERATION), "none")
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         Text(stringResource(R.string.transcoding_body), style = MaterialTheme.typography.bodyMedium)

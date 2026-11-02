@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
@@ -28,6 +29,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -254,12 +256,32 @@ class TranscodingViewModelTest {
     }
 
     @Test
+    fun `a save that can't reach the server keeps the change, says so, and Retry sends it`() {
+        val vm = made(TranscodingViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += ENCODING
+        vm.setEncoding(ENCODING_ACCELERATION, JsonPrimitive("vaapi"))
+        val failed = vm.ready { it.save.failed }
+        assertEquals(
+            "vaapi",
+            failed.encoding
+                .getValue(ENCODING_ACCELERATION)
+                .jsonPrimitive.content,
+        )
+        assertNull(failed.refused)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.ready { it.save.status == SaveStatus.Saved }
+        assertFalse(saved.save.failed)
+    }
+
+    @Test
     fun `a refused save goes back and says so, and a page that can't read says why`() {
         val vm = made(TranscodingViewModel(connection))
         vm.ready()
         jellyfin.status[ENCODING] = 500
         vm.setEncoding(ENCODING_ACCELERATION, JsonPrimitive("vaapi"))
-        val back = vm.ready { it.saveFailed != null }
+        val back = vm.ready { it.refused != null }
         assertEquals(
             "qsv",
             back.encoding
