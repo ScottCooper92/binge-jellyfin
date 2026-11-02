@@ -33,6 +33,12 @@
     <string name="server_card_users">Users</string>
     <string name="server_card_movies">Movies</string>
     <string name="server_card_series">Series</string>
+    <plurals name="tmdb_missing_title">
+        <item quantity="one">%1$d of %2$d titles has no TMDB id</item>
+        <item quantity="other">%1$d of %2$d titles have no TMDB id</item>
+    </plurals>
+    <string name="tmdb_missing_detail_promoted">Binge cannot find these. Turn on TMDb as a metadata downloader for their library, then refresh its metadata.</string>
+    <string name="tmdb_missing_detail_plain">They cannot be matched by TMDB id. Turn on TMDb as a metadata downloader for their library, then refresh its metadata.</string>
     <string name="settings_server">Server</string>
     <string name="settings_signed_in_as">Signed in</string>
     <string name="settings_library">Library</string>

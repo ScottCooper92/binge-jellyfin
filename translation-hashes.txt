@@ -635,6 +635,9 @@ app:tasks_trigger_remove  c3812fc4acb8
 app:tasks_triggers  e62f2148a64d
 app:tasks_triggers_empty  0941d30cc781
 app:tasks_triggers_empty_title  ea3c76042e1c
+app:tmdb_missing_detail_plain  6a3eb81922d8
+app:tmdb_missing_detail_promoted  de6e11c829f2
+app:tmdb_missing_title  de853f0db7b2
 app:transcode_audio  ab82f46e218a
 app:transcode_bitrate  f776e945cb6d
 app:transcode_container  415a9113ceb1

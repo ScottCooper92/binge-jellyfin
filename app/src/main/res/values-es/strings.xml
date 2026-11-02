@@ -32,6 +32,13 @@
     <string name="server_card_users">Usuarios</string>
     <string name="server_card_movies">Películas</string>
     <string name="server_card_series">Series</string>
+    <plurals name="tmdb_missing_title">
+        <item quantity="one">%1$d de %2$d títulos no tiene ID de TMDB</item>
+        <item quantity="many">%1$d de %2$d títulos no tienen ID de TMDB</item>
+        <item quantity="other">%1$d de %2$d títulos no tienen ID de TMDB</item>
+    </plurals>
+    <string name="tmdb_missing_detail_promoted">Binge no puede encontrarlos. Activa TMDb como proveedor de metadatos de su biblioteca y actualiza sus metadatos.</string>
+    <string name="tmdb_missing_detail_plain">No se pueden identificar por ID de TMDB. Activa TMDb como proveedor de metadatos de su biblioteca y actualiza sus metadatos.</string>
     <string name="settings_server">Servidor</string>
     <string name="settings_signed_in_as">Sesión iniciada</string>
     <string name="settings_library">Biblioteca</string>
