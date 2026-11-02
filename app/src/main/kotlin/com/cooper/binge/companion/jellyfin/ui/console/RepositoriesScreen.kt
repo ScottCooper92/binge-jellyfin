@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudQueue
@@ -45,6 +46,7 @@ internal fun RepositoriesTab(
     state: RepositoriesUiState,
     actions: RepositoriesActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
     when (state) {
         RepositoriesUiState.Loading -> PluginsLoading(inner)
@@ -56,7 +58,7 @@ internal fun RepositoriesTab(
                     title = stringResource(R.string.repositories_empty_title),
                 )
             } else {
-                RepositoryList(state, actions, inner)
+                RepositoryList(state, actions, inner, listState)
             }
             if (state.adding) AddRepositorySheet(state.saving, actions)
             state.removing?.let { RemoveRepositoryDialog(it, actions) }
@@ -69,13 +71,18 @@ private fun RepositoryList(
     state: RepositoriesUiState.Ready,
     actions: RepositoriesActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
+        item(key = "intro") {
             PageIntro(stringResource(R.string.repositories_body))
         }
-        item { ItemGroup(title = null, rows = state.repositories.map { it.row(state, actions) }) }
-        item { FailureLine(state.actionFailed) }
+        item(key = "repositories") { ItemGroup(title = null, rows = state.repositories.map { it.row(state, actions) }) }
+        item(key = "failure") { FailureLine(state.actionFailed) }
     }
 }
 

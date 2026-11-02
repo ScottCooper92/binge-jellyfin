@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Download
@@ -40,6 +41,7 @@ internal fun CatalogTab(
     open: CatalogPackage?,
     actions: CatalogActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
     when (state) {
         CatalogUiState.Loading -> PluginsLoading(inner)
@@ -52,7 +54,7 @@ internal fun CatalogTab(
                         message = stringResource(R.string.catalog_empty),
                         title = stringResource(R.string.catalog_empty_title),
                     )
-                else -> PackageList(state, actions, inner)
+                else -> PackageList(state, actions, inner, listState)
             }
     }
 }
@@ -62,14 +64,19 @@ private fun PackageList(
     state: CatalogUiState.Ready,
     actions: CatalogActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         state.packages.groupBy { it.category }.forEach { (category, packages) ->
-            item(key = category) {
+            item(key = "category:$category") {
                 ItemGroup(title = category.ifBlank { null }, rows = packages.map { it.row(state, actions) })
             }
         }
-        item { FailureLine(state.actionFailed) }
+        item(key = "failure") { FailureLine(state.actionFailed) }
     }
 }
 
