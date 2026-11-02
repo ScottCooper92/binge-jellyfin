@@ -23,12 +23,13 @@ import com.cooper.binge.companion.jellyfin.server.networkKeys
 import com.cooper.binge.companion.jellyfin.server.networkSettings
 import com.cooper.binge.companion.jellyfin.server.normalBaseUrl
 import com.cooper.binge.companion.jellyfin.server.saveNetworkConfiguration
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -261,7 +262,11 @@ class NetworkViewModel(
         form: Boolean,
     ) = if (form) drafted(key, JsonPrimitive(on)) else asMade(key, JsonPrimitive(on))
 
-    /** A change that saves as made waits out a Save changes in flight: both write this configuration, and one would overwrite the other. */
+    /**
+     * A change that saves as made. Not while a Save changes is in flight: both write this configuration, and one would overwrite
+     * the other. The page disables these rows (and closes their sheet) while it commits, so a change is never made then; the
+     * guard keeps one from being written under the commit if it somehow is.
+     */
     private val asMade: (String, JsonElement) -> Unit = { key, value ->
         if ((_state.value as? NetworkUiState.Ready)?.committing != true) saves.set(key, value)
     }
@@ -303,10 +308,11 @@ class NetworkViewModel(
     private fun commit() {
         if (!unsaved.hasNetworkChanges()) return
         val owed = saves.settle()
-        update { copy(committing = true, formFailed = null) }
+        update { copy(committing = true, formFailed = null, sheet = null) }
         connection.launchSave {
             owed.await()
-            val network = viewModelScope.async { unsaved.network(saves.shown) }.await()
+            // Read on the main thread, but not tied to this page's scope: leaving the page must not cancel a confirmed save.
+            val network = withContext(Dispatchers.Main.immediate) { unsaved.network(saves.shown) }
             val result =
                 attempt { connection.consoleCall(TAG) { _, client -> client.saveNetworkConfiguration(network) }.getOrThrow() }
             viewModelScope.launch {

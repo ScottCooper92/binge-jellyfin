@@ -153,6 +153,7 @@ private fun NetworkUiState.Ready.formRow(
     icon: ImageVector,
     label: Int,
     detail: String,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ): ListItem? =
     ListItem(
@@ -161,6 +162,7 @@ private fun NetworkUiState.Ready.formRow(
         detail = detail,
         supportingMaxLines = NETWORK_DETAIL_LINES,
         note = if (key in draft) ListItemNote(stringResource(R.string.network_unsaved), icon = Icons.Outlined.Info) else null,
+        enabled = enabled,
         onClick = onClick,
     ).takeIf { settings.has(key) }
 
@@ -195,6 +197,8 @@ private fun NetworkUiState.Ready.madeSwitch(
         icon = icon,
         label = stringResource(label),
         toggled = on,
+        // Not while Save changes is writing this configuration: the two would overwrite each other.
+        enabled = !committing,
         onClick = { actions.onSwitch(key, !on) },
     ).takeIf { settings.has(key) }
 
@@ -213,7 +217,10 @@ private fun NetworkUiState.Ready.listRow(
     label: Int,
     value: List<String>,
     actions: NetworkActions,
-): ListItem? = formRow(field.key, Icons.Outlined.Router, label, entries(value)) { actions.onSheet(NetworkSheet.Items(field)) }
+): ListItem? =
+    formRow(field.key, Icons.Outlined.Router, label, entries(value), enabled = field.form || !committing) {
+        actions.onSheet(NetworkSheet.Items(field))
+    }
 
 @Composable
 private fun entries(list: List<String>): String =

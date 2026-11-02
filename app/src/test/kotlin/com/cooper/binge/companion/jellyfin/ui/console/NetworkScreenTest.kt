@@ -136,4 +136,20 @@ class NetworkScreenTest {
         show("10.10.7")
         compose.onNodeWithText("Stays as it is").performScrollTo().assertExists()
     }
+
+    @Test
+    fun `the rows that save as made are disabled while Save changes is writing, and the form's are not`() {
+        val keys = networkKeys(JellyfinServerProfile.from("10.10.7"))
+        val state =
+            NetworkUiState.Ready(
+                Json.parseToJsonElement(fixture).jsonObject.networkSettings(keys),
+                keys,
+                setOf("PublicHttpPort"),
+                committing = true,
+            )
+        compose.setContent { JellyfinTheme { NetworkScreen(state, NetworkActions()) } }
+        compose.onNodeWithText("Auto discovery").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("Known proxies").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("HTTP port").performScrollTo().assertIsEnabled()
+    }
 }

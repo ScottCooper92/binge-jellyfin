@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -10,6 +11,7 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -336,6 +338,40 @@ class NetworkViewModelTest {
     }
 
     @Test
+    fun `leaving the page while Save changes waits on an as-made write still sends the confirmed save`() {
+        val vm = vm()
+        vm.ready()
+        // An as-made change is pending (its write waits out a short delay) when Save changes is pressed, and the page is left.
+        vm.setSwitch("AutoDiscovery", false, form = false)
+        vm.saveNumber(NetworkNumber.PublicHttpPort, "8000")
+        vm.save()
+        vm.ready { it.committing }
+        vm.viewModelScope.cancel()
+        waitFor(NETWORK, 1)
+        assertEquals(8000, sent().getValue("PublicHttpPort").jsonPrimitive.int)
+        assertEquals(false, sent().getValue("AutoDiscovery").jsonPrimitive.boolean)
+    }
+
+    @Test
+    fun `an as-made change made while Save changes is writing is not written under it`() {
+        val vm = vm()
+        vm.ready()
+        jellyfin.slow += NETWORK
+        vm.saveNumber(NetworkNumber.PublicHttpPort, "8000")
+        vm.save()
+        vm.ready { it.committing }
+        vm.setSwitch("AutoDiscovery", false, form = false)
+        vm.saveItems(NetworkList.KnownProxies, "10.0.0.9")
+        Thread.sleep(SETTLE_MILLIS)
+        val during = vm.ready()
+        assertTrue(during.settings.autoDiscovery)
+        assertTrue(during.settings.knownProxies.isEmpty())
+        assertEquals(1, posts(NETWORK))
+        // Starting the commit closes any sheet.
+        assertNull(during.sheet)
+    }
+
+    @Test
     fun `a port out of range is never kept`() {
         val vm = vm()
         vm.ready()
@@ -365,5 +401,6 @@ class NetworkViewModelTest {
         const val NETWORK = "/System/Configuration/network"
         const val TIMEOUT_MILLIS = 10_000L
         const val POLL_MILLIS = 10L
+        const val SETTLE_MILLIS = 1_200L
     }
 }
