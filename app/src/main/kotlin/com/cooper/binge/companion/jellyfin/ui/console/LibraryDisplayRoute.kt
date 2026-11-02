@@ -38,6 +38,7 @@ internal fun LibraryDisplayRoute(
             onAdd = display::add,
             onRemove = display::remove,
             onRetry = display::load,
+            onRetrySave = display::retrySave,
             onBack = onBack,
         ),
         profile,

@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
@@ -136,14 +137,30 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun `a save that can't reach the server keeps the option, says so, and Retry sends it`() {
+        val vm = made(LibraryViewModel(connection, movies))
+        vm.ready()
+        jellyfin.dropped += "/Library/VirtualFolders/LibraryOptions"
+        vm.set(LIBRARY_REALTIME, JsonPrimitive(true))
+        val failed = vm.ready { it.save.failed }
+        assertEquals(JsonPrimitive(true), failed.options[LIBRARY_REALTIME])
+        assertEquals(null, failed.refused)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.ready { it.save.status == SaveStatus.Saved }
+        assertEquals(false, saved.save.failed)
+        assertEquals(JsonPrimitive(true), saved.options[LIBRARY_REALTIME])
+    }
+
+    @Test
     fun `a refused save puts the option back and says so`() {
         val vm = made(LibraryViewModel(connection, movies))
         vm.ready()
         jellyfin.status["/Library/VirtualFolders/LibraryOptions"] = 500
         vm.set(LIBRARY_REALTIME, JsonPrimitive(true))
-        val failed = vm.ready { it.saveFailed != null }
+        val failed = vm.ready { it.refused != null }
         assertEquals(JsonPrimitive(false), failed.options[LIBRARY_REALTIME])
-        assertEquals(ConsoleFailure.Refused, failed.saveFailed)
+        assertEquals(ConsoleFailure.Refused, failed.refused)
     }
 
     @Test

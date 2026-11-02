@@ -40,7 +40,8 @@ sealed interface LibraryDisplayUiState {
 
     /**
      * The configuration as shown, the languages the server can be shown in, the sheet open, and the list being
-     * edited, whose entries are [draft] (each add and remove saves as it's made, so Back loses nothing).
+     * edited, whose entries are [draft] (each add and remove saves as it's made, so Back loses nothing). [save] is where the
+     * saves stand, and [refused] the last the server refused, which was put back.
      */
     data class Ready(
         val configuration: JsonObject,
@@ -48,7 +49,8 @@ sealed interface LibraryDisplayUiState {
         val sheet: DisplaySheet? = null,
         val editing: DisplayList? = null,
         val draft: List<ListEntry> = emptyList(),
-        val saveFailed: ConsoleFailure? = null,
+        val save: SaveProgress = SaveProgress(),
+        val refused: ConsoleFailure? = null,
     ) : LibraryDisplayUiState
 }
 
@@ -64,8 +66,20 @@ class LibraryDisplayViewModel(
     val state: StateFlow<LibraryDisplayUiState> = _state.asStateFlow()
 
     private val saves =
-        ConfigurationSaves(connection, viewModelScope, TAG, { _, client, json -> client.saveServerConfiguration(json) }) { shown, failure ->
-            update { copy(configuration = shown, saveFailed = failure, draft = editing?.let { shown.entries(it) } ?: draft) }
+        ConfigurationSaves(
+            connection,
+            viewModelScope,
+            TAG,
+            { _, client, json -> client.saveServerConfiguration(json) },
+            onProgress = { progress -> update { copy(save = progress) } },
+        ) { shown, failure ->
+            update {
+                copy(
+                    configuration = shown,
+                    refused = failure?.takeIf { it == ConsoleFailure.Refused },
+                    draft = editing?.let { shown.entries(it) } ?: draft,
+                )
+            }
         }
 
     init {
@@ -121,6 +135,8 @@ class LibraryDisplayViewModel(
         val entries = change(ready.draft)
         if (entries != ready.draft) saves.set(list.key, jsonEntries(list, entries))
     }
+
+    fun retrySave() = saves.retry()
 
     /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
     override fun onCleared() {
