@@ -143,7 +143,7 @@ private fun ApiKey.row(
     return ListItem(
         icon = Icons.Outlined.Key,
         label = app.ifBlank { stringResource(R.string.api_keys_unnamed) },
-        detail = listOfNotNull(stringResource(R.string.api_keys_ends_in, lastFour), made).joinToString(" · "),
+        detail = listOfNotNull(stringResource(R.string.api_keys_ends_in, lastFour), made).joinToString("\n"),
         supportingMaxLines = 2,
         trailingContent =
             if (state.busy) {

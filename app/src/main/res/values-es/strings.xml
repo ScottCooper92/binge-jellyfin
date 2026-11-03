@@ -580,8 +580,8 @@
     <string name="api_keys_new">Nueva clave</string>
     <string name="api_keys_empty">Este servidor no tiene claves de API.</string>
     <string name="api_keys_unnamed">App sin nombre</string>
-    <string name="api_keys_ends_in">Termina en %1$s</string>
-    <string name="api_keys_created">creada %1$s</string>
+    <string name="api_keys_ends_in">****%1$s</string>
+    <string name="api_keys_created">Creada %1$s</string>
     <string name="api_keys_revoke">Revocar</string>
     <string name="api_keys_revoke_title">¿Revocar %1$s?</string>
     <string name="api_keys_revoke_body">Todo lo que use esta clave será rechazado desde ahora.</string>
