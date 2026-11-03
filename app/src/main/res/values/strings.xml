@@ -365,6 +365,7 @@
     <string name="devices_rename_title">Rename device</string>
     <string name="devices_rename_body">Leave it empty to use the name the device gives itself.</string>
     <string name="devices_rename_save">Save</string>
+    <string name="console_not_refreshed">Not refreshed. %1$s</string>
     <string name="devices_not_changed">Not changed. %1$s</string>
     <string name="users_title">Users</string>
     <string name="console_users_detail">Who can sign in, and what they see</string>
