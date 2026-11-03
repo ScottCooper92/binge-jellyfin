@@ -574,7 +574,7 @@ class FakeJellyfin : Dispatcher() {
                 brandingConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
             }
-            path == "/System/Configuration/branding" -> json(brandingConfiguration)
+            path == "/System/Configuration/branding" -> json(servedBranding())
             path == "/System/Configuration/livetv" && request.method == "POST" -> {
                 liveTvConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
@@ -1080,6 +1080,19 @@ class FakeJellyfin : Dispatcher() {
     ) = """{"ServerVersion":"$serverVersion","BackupEngineVersion":"0.2.0.0","DateCreated":"$created",""" +
         """"Path":"/config/data/backups/$fileName","Options":{"Metadata":$metadata,"Trickplay":$trickplay,""" +
         """"Subtitles":$subtitles,"Database":$database}}"""
+
+    /**
+     * Whether the branding configuration serves `SplashscreenLocation`. The real one does from 10.11; before that the property is
+     * `[JsonIgnore]`d ("Not served via the API"), so the page cannot tell an image of the user's own from the default.
+     */
+    var servesSplashLocation = true
+
+    private fun servedBranding(): String =
+        if (servesSplashLocation) {
+            brandingConfiguration
+        } else {
+            JsonObject(Json.parseToJsonElement(brandingConfiguration).jsonObject - "SplashscreenLocation").toString()
+        }
 
     private fun splashscreen(request: RecordedRequest): MockResponse {
         val branding = Json.parseToJsonElement(brandingConfiguration).jsonObject

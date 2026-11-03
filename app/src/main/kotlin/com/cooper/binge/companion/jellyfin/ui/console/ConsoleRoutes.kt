@@ -50,7 +50,7 @@ internal fun ConsolePageRoute(
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, signedIn.profile, close)
-        ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile.hasSplashscreen, close)
+        ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile, close)
         ConsolePage.Network -> NetworkRoute(graph, signedIn.profile, { open(ConsolePage.Server) }, close)
         ConsolePage.Advanced ->
             AdvancedRoute(
@@ -257,7 +257,7 @@ private fun DevicesRoute(
 @Composable
 private fun ServerSettingsRoute(
     graph: AppGraph,
-    splashscreenAvailable: Boolean,
+    profile: JellyfinServerProfile,
     onBack: () -> Unit,
 ) {
     val settings: ServerSettingsViewModel =
@@ -286,7 +286,8 @@ private fun ServerSettingsRoute(
             onRetry = settings::load,
             onBack = onBack,
         ),
-        splashscreenAvailable = splashscreenAvailable,
+        splashscreenAvailable = profile.hasSplashscreen,
+        splashImageKnown = profile.servesSplashscreenLocation,
         splash = splash,
     )
 }

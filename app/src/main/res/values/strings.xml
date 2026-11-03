@@ -535,6 +535,7 @@
     <string name="server_settings_splash_remove_body">The sign-in page goes back to Jellyfin’s own image.</string>
     <string name="server_settings_splash_no_preview">Nothing to show. The server serves no splash image while the splash screen is off, or before it has made one.</string>
     <string name="server_settings_splash_not_changed">Splash image not changed. %1$s</string>
+    <string name="server_settings_splash_unknown">This server doesn’t say whether it has an image of your own, so Remove is always offered. On this version, changing the login screen’s other settings can also reset it.</string>
     <string name="server_settings_save">Save</string>
     <string name="server_shutdown">Shut down server</string>
     <string name="server_shutdown_title">Shut down %1$s?</string>

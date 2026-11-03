@@ -148,6 +148,21 @@ class ServerSettingsScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun splashUnknown() =
+        Surface {
+            SplashSheet(
+                custom = false,
+                state = SplashUiState(open = true),
+                actions = ServerSettingsActions(),
+                inWindow = false,
+                known = false,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun splashRefused() =
         Surface {

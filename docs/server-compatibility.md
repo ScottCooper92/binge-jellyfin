@@ -44,6 +44,7 @@ older server shows less rather than failing on a call it can't answer.
 | Lyrics, lyric management permission | 10.9 | `hasLyrics` |
 | Trickplay settings, per-library trickplay extraction | 10.9 | `hasTrickplay` |
 | Splash screen in branding | 10.9 | `hasSplashscreen` |
+| Whether the branding says a splash image of the user's own is set (`SplashscreenLocation`) | 10.11 | `servesSplashscreenLocation` |
 | Turning a library off without removing it | 10.9 | `canDisableLibraries` |
 | Collection, subtitle and lyric management permissions | 10.9 | `hasContentManagementPermissions` |
 | A user's allowed tags | 10.9 | `hasAllowedTags` |

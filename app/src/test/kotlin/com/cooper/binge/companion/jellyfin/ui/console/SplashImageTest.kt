@@ -80,6 +80,21 @@ class SplashImageTest {
     }
 
     @Test
+    fun `a server that does not serve the location uploads and removes all the same, and the page never reads an image as custom`() {
+        jellyfin.servesSplashLocation = false
+        val vm = viewModel()
+        val file = jpeg()
+        vm.splashImage.choose { file }
+        vm.splash { !it.busy }
+        // The upload went; the branding never says so before 10.11, so the page makes no claim and the screen offers Remove regardless.
+        assertArrayEquals(file, jellyfin.splashImage)
+        assertFalse(vm.ready().branding.customSplashscreen)
+        vm.splashImage.remove()
+        vm.splash { !it.busy }
+        assertNull(jellyfin.splashImage)
+    }
+
+    @Test
     fun `a switch touched after an upload keeps the image, because the page holds the location the server wrote`() {
         val vm = viewModel()
         vm.splashImage.choose { jpeg() }
