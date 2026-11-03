@@ -83,8 +83,10 @@ class TasksViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> client.tasks() }
-                .onSuccess { fresh -> update { copy(board = board.following(fresh), refreshing = false) } }
-                .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
+                .onSuccess { fresh ->
+                    following(fresh)
+                    update { copy(refreshing = false) }
+                }.onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 
@@ -118,8 +120,10 @@ class TasksViewModel(
                 .consoleCall(TAG) { _, client ->
                     client.saveTaskTriggers(task.id, change(task.triggers))
                     client.tasks()
-                }.onSuccess { tasks -> update { copy(board = board.following(tasks), saving = false) } }
-                .onFailure { error -> update { copy(saving = false, actionFailed = error.consoleFailure()) } }
+                }.onSuccess { tasks ->
+                    following(tasks)
+                    update { copy(saving = false) }
+                }.onFailure { error -> update { copy(saving = false, actionFailed = error.consoleFailure()) } }
         }
     }
 
