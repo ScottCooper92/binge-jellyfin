@@ -380,17 +380,22 @@ class TvJellyfinFocusTest {
     }
 
     @Test
-    fun `a save that failed offers Retry as the last option in the pane`() {
+    fun `a save that failed shows Retry in the pane of the row that was changed, and only there`() {
         signedInWith(PlaybackUiState.Ready(prefs, cultures, save = SaveProgress(failed = true)))
+        // Nothing has been changed yet, so no row carries the status.
+        compose.onAllNodesWithText("Retry").assertCountEquals(0)
         down()
         down()
         right()
         down()
         down()
+        ok()
+        assertEquals(listOf("audio:fre"), picks)
+        // The change is the audio row's: its pane now has the status, with Retry after the options.
         down()
         compose.onNode(isFocused() and hasText("Retry")).assertIsFocused()
         ok()
-        assertEquals(listOf("retrySave"), picks)
+        assertEquals(listOf("audio:fre", "retrySave"), picks)
     }
 
     @Test

@@ -126,7 +126,8 @@ class TvJellyfinScreenshotTest {
     private fun withPlayback(
         playback: PlaybackUiState,
         describing: String = ACCOUNT_KEY,
-    ) = TvJellyfinRoot(previewSignedIn, Actions(), playback = TvPlayback(playback, PlaybackActions()), describing = describing)
+        changed: String? = null,
+    ) = TvJellyfinRoot(previewSignedIn, Actions(), playback = TvPlayback(playback, PlaybackActions(), changed), describing = describing)
 
     /** The user's own playback settings follow the account on the signed-in page. */
     @PreviewTest
@@ -138,12 +139,12 @@ class TvJellyfinScreenshotTest {
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
-    fun playbackSaved() = withPlayback(PlaybackUiState.Ready(prefs, cultures, SaveProgress(SaveStatus.Saved)), AUDIO_KEY)
+    fun playbackSaved() = withPlayback(PlaybackUiState.Ready(prefs, cultures, SaveProgress(SaveStatus.Saved)), AUDIO_KEY, AUDIO_KEY)
 
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
-    fun playbackSaveFailed() = withPlayback(PlaybackUiState.Ready(prefs, cultures, SaveProgress(failed = true)), AUDIO_KEY)
+    fun playbackSaveFailed() = withPlayback(PlaybackUiState.Ready(prefs, cultures, SaveProgress(failed = true)), AUDIO_KEY, AUDIO_KEY)
 
     /** A language row's pane: Any language, then the languages, the one in use ticked. */
     @PreviewTest

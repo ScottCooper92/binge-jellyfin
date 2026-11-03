@@ -7,6 +7,10 @@ import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.SaveStatus
@@ -25,7 +29,6 @@ import com.cooper.binge.companion.jellyfin.ui.console.label
 import com.cooper.binge.companion.jellyfin.ui.console.suggestedLanguages
 import com.cooper.binge.companion.jellyfin.ui.console.text
 import java.util.Locale
-import com.binge.designsystem.R as DesR
 import com.cooper.binge.companion.jellyfin.ui.console.detail as subtitleModeDetail
 import com.cooper.binge.companion.jellyfin.ui.console.label as subtitleModeLabel
 
@@ -33,6 +36,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.label as subtitleModeLabel
 class TvPlayback(
     val state: PlaybackUiState,
     val actions: PlaybackActions,
+    /** The row whose save the status is for before the user changes one: a frame's seed, as the board's own. */
+    val changed: String? = null,
 )
 
 /**
@@ -63,7 +68,7 @@ internal fun playbackGroup(playback: TvPlayback): TvPaneGroup {
                     ),
                 ),
             )
-        is PlaybackUiState.Ready -> TvPaneGroup(title, readyRows(state, actions))
+        is PlaybackUiState.Ready -> TvPaneGroup(title, readyRows(state, actions, playback.changed))
     }
 }
 
@@ -71,6 +76,7 @@ internal fun playbackGroup(playback: TvPlayback): TvPaneGroup {
 private fun readyRows(
     state: PlaybackUiState.Ready,
     actions: PlaybackActions,
+    seed: String?,
 ): List<TvPaneRow> {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
     val suggested = suggestedLanguages(state.cultures, LocalConfiguration.current.locales)
@@ -83,6 +89,8 @@ private fun readyRows(
             state.save.failed -> SaveStatus.Failed
             else -> state.save.status
         }
+    // The save status belongs to the row the user just changed, so it is shown there and nowhere else.
+    var changed by rememberSaveable { mutableStateOf(seed) }
     val on = stringResource(R.string.library_provider_on)
     val off = stringResource(R.string.library_provider_off)
 
@@ -96,7 +104,11 @@ private fun readyRows(
         label = label,
         icon = Icons.Outlined.Language,
         detail = if (current == ANY) any else state.cultures.find(current)?.label(locale) ?: current,
-        options = languageOptions(state.cultures, suggested, current, any, locale, pick),
+        options =
+            languageOptions(state.cultures, suggested, current, any, locale) { value ->
+                changed = key
+                pick(value)
+            },
     )
 
     fun switch(
@@ -114,14 +126,27 @@ private fun readyRows(
         detail = if (value) on else off,
         multiSelect = true,
         // The row's own label is the pane's title, so the one option is the setting's state: ticked while it is on.
-        options = listOf(TvPaneOption(label = on, selected = value, onSelect = { change(!value) })),
+        options =
+            listOf(
+                TvPaneOption(
+                    label = on,
+                    selected = value,
+                    onSelect = {
+                        changed = key
+                        change(!value)
+                    },
+                ),
+            ),
     )
 
     val rows =
         listOf(
             language(AUDIO_KEY, stringResource(R.string.languages_audio), prefs.audio, actions.onAudio),
             language(SUBTITLES_KEY, stringResource(R.string.languages_subtitles), prefs.subtitles, actions.onSubtitles),
-            subtitleModeRow(prefs, actions),
+            subtitleModeRow(prefs) {
+                changed = SUBTITLE_MODE_KEY
+                actions.onSubtitleMode(it)
+            },
             switch(
                 DEFAULT_AUDIO_KEY,
                 stringResource(R.string.playback_default_audio),
@@ -155,34 +180,15 @@ private fun readyRows(
                 actions.onAutoplayNextEpisode,
             ),
         )
-    // The board has no slot for a save status, so it is the pane's closing note, read politely, with Retry as the last option.
-    val note =
-        when (status) {
-            SaveStatus.Idle -> null
-            SaveStatus.Saving -> stringResource(DesR.string.save_status_saving)
-            SaveStatus.Saved -> stringResource(DesR.string.save_status_saved)
-            SaveStatus.Failed -> stringResource(DesR.string.save_status_failed)
-            is SaveStatus.Refused -> status.reason
-        }
-    val retry = stringResource(DesR.string.save_status_retry)
     return rows.map { row ->
-        row.copy(
-            note = note,
-            announceNote = true,
-            options =
-                if (status == SaveStatus.Failed) {
-                    row.options + TvPaneOption(label = retry, action = true, onSelect = actions.onRetrySave)
-                } else {
-                    row.options
-                },
-        )
+        if (row.key == changed) row.copy(saveStatus = status, onRetry = actions.onRetrySave) else row
     }
 }
 
 @Composable
 private fun subtitleModeRow(
     prefs: PlaybackPreferences,
-    actions: PlaybackActions,
+    onMode: (SubtitleMode) -> Unit,
 ): TvPaneRow =
     TvPaneRow(
         key = SUBTITLE_MODE_KEY,
@@ -194,7 +200,7 @@ private fun subtitleModeRow(
                 TvPaneOption(
                     label = stringResource(mode.subtitleModeLabel),
                     selected = mode == prefs.subtitleMode,
-                    onSelect = { actions.onSubtitleMode(mode) },
+                    onSelect = { onMode(mode) },
                 )
             },
         body = stringResource(prefs.subtitleMode.subtitleModeDetail),
