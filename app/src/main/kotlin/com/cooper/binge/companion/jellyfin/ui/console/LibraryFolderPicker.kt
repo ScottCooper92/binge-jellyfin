@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -28,7 +29,6 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
-import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerFolder
 import com.binge.designsystem.R as DesR
@@ -73,15 +73,10 @@ internal fun FolderPicker(
         when (state) {
             // The shape of the list that is coming, rows the height of a folder's, so it does not jump when the folders arrive.
             FolderBrowseState.Loading ->
-                ListRowSkeletonColumn(
-                    contentPadding = PaddingValues(),
-                    modifier = Modifier.heightIn(min = FolderListHeight),
-                    count = FOLDER_SKELETON_ROWS,
-                    height =
-                        dimensionResource(
-                            DesR.dimen.item_group_icon_size,
-                        ) + dimensionResource(DesR.dimen.item_group_row_padding_v) * 2,
-                    description = stringResource(R.string.console_loading),
+                ConsoleLoading(
+                    inner = PaddingValues(),
+                    rows = FOLDER_SKELETON_ROWS,
+                    modifier = Modifier.height(FolderListHeight),
                 )
             is FolderBrowseState.Failed ->
                 Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
