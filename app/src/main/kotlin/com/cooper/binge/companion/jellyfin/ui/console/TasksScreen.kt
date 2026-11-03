@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
@@ -48,6 +50,7 @@ data class TasksActions(
     val onAddTrigger: (TaskTrigger) -> Unit = {},
     val onRemoveTrigger: (Int) -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -89,9 +92,15 @@ fun TasksScreen(
                     ConsoleLoading(inner, LOADING_ROWS)
                 state is TasksUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 ready != null && open != null -> TaskTriggers(open, ready, actions, inner)
-                ready != null -> Tasks(ready, actions, inner, now)
+                ready != null ->
+                    BingePullToRefresh(
+                        isRefreshing = ready.refreshing,
+                        onRefresh = actions.onRefresh,
+                        indicatorTopInset = padding.calculateTopPadding(),
+                    ) { Tasks(ready, actions, inner, now) }
             }
             // A change or run the server didn't take is said in a message, not in a space kept in the list for it.
+            RefusedMessage(ready?.refreshFailed, host, R.string.console_not_refreshed)
             RefusedMessage(ready?.actionFailed, host, if (open != null) R.string.tasks_trigger_not_saved else R.string.tasks_not_sent)
         }
     }
@@ -105,7 +114,11 @@ private fun Tasks(
     now: Long,
 ) {
     val board = state.board
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         if (board.tasks.isEmpty()) item { ConsoleEmptyScreen(stringResource(R.string.tasks_empty), Icons.Outlined.Schedule) }
         board.tasks.groupBy { it.category }.forEach { (category, tasks) ->
             item(key = category) {

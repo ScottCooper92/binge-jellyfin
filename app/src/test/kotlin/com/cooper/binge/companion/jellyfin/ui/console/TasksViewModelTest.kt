@@ -64,6 +64,37 @@ class TasksViewModelTest {
     }
 
     @Test
+    fun `a pull reads the tasks again in place, and a pull that fails keeps the list and says so`() {
+        val vm = made(TasksViewModel(connection))
+        assertEquals(
+            listOf("t-scan", "t-clean"),
+            vm
+                .ready()
+                .board.tasks
+                .map { it.id },
+        )
+        jellyfin.scheduledTasks = jellyfin.scheduledTasks.replace("t-clean", "t-clean2")
+        vm.refresh()
+        assertEquals(
+            listOf("t-scan", "t-clean2"),
+            vm
+                .ready {
+                    !it.refreshing &&
+                        "t-clean2" in
+                        it.board.tasks.map { t ->
+                            t.id
+                        }
+                }.board.tasks
+                .map { it.id },
+        )
+        jellyfin.status["/ScheduledTasks"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(2, failed.board.tasks.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
     fun `run shows the task running from the tap, follows its pushes, and shows how it ended`() {
         val vm = made(TasksViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }
         val clean = vm.ready().board.tasks[1]
