@@ -30,10 +30,12 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -69,6 +71,9 @@ private const val MINUTES_PER_HOUR = 60
 /** The run-every choices: 15, 30 and 45 minutes, then whole hours. */
 private val INTERVAL_MINUTES = listOf(15, 30, 45)
 private val INTERVAL_HOURS = listOf(1, 2, 3, 4, 6, 8, 12, 24)
+
+/** Marks the time-of-day fields, for the test that they are centred. */
+internal const val TRIGGER_TIME_TAG = "trigger-time"
 
 /** The time limits offered, in hours, beside none. */
 private val LIMIT_HOURS = 1..24
@@ -250,7 +255,12 @@ internal fun AddTriggerForm(
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
         ) {
             KindChips(kind) { kindIndex = it.ordinal }
-            if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) TimeInput(timeState)
+            if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) {
+                // Centred, to share an axis with the time limit's readout and slider below, which fill the width.
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimeInput(timeState, modifier = Modifier.testTag(TRIGGER_TIME_TAG))
+                }
+            }
             if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
             if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
             LimitSlider(limitHours) { limitHours = it }
