@@ -196,7 +196,7 @@ class NetworkViewModel(
             { _, client, json -> client.saveNetworkConfiguration(json) },
             onProgress = { progress -> update { copy(save = progress) } },
         ) { _, failure ->
-            update { copy(settings = unsaved.shown(saves.shown), refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
+            update { copy(settings = unsaved.shown(saves.shown), refused = refusedAfter(refused, failure)) }
         }
 
     init {

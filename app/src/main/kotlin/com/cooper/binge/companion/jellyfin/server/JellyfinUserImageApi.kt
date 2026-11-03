@@ -15,10 +15,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /** The most of a picture this app will read back from the server: far over a 512-pixel JPEG, well under memory. */
-internal const val MAX_PICTURE_BYTES = 8L * 1024 * 1024
+private const val MAX_PICTURE_BYTES = 8L * 1024 * 1024
 
 /** The file type the picture is sent as: the app always sends a JPEG, whatever the user picked. */
-internal const val PICTURE_TYPE = "image/jpeg"
+private const val PICTURE_TYPE = "image/jpeg"
 
 /**
  * A user's picture route. From 10.9 it is `/UserImage?userId=`; before that, `/Users/{id}/Images/Primary`. [newRoute] is
@@ -67,7 +67,7 @@ private const val HTTP_NOT_FOUND = 404
  * [JellyfinClient.post] with a plain-text body of [contentType]: a user's picture, which Jellyfin reads as base64 text and
  * takes the file type from the header of.
  */
-internal suspend fun JellyfinClient.postText(
+private suspend fun JellyfinClient.postText(
     path: String,
     text: String,
     contentType: String,
@@ -78,7 +78,7 @@ internal suspend fun JellyfinClient.postText(
  * A GET for a file: its bytes, or null when the server has none there (a 404). An answer longer than [maxBytes] is refused,
  * not held. Sent with the header only, so the token never rides in the URL.
  */
-internal suspend fun JellyfinClient.getBytes(
+private suspend fun JellyfinClient.getBytes(
     path: String,
     query: Map<String, String>,
     maxBytes: Long,

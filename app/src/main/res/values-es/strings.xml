@@ -353,6 +353,7 @@
     <string name="logs_empty">El servidor no tiene archivos de registro.</string>
     <string name="logs_search">Buscar en este registro</string>
     <string name="logs_truncated">Se muestran los últimos %1$d KB de este registro.</string>
+    <string name="logs_no_match_title">Sin coincidencias</string>
     <string name="logs_no_match">Ninguna línea coincide.</string>
     <string name="logs_share_action">Compartir este registro</string>
     <string name="logs_share_note">Se comparte tal como se ve aquí, con las claves y los tokens ocultos.</string>

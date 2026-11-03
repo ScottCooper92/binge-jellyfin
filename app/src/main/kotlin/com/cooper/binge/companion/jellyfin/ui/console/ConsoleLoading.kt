@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ListRowSkeletonColumn
@@ -16,8 +17,10 @@ import com.binge.designsystem.R as DesR
 internal fun ConsoleLoading(
     inner: PaddingValues,
     rows: Int,
+    modifier: Modifier = Modifier,
 ) = ListRowSkeletonColumn(
     contentPadding = inner,
+    modifier = modifier,
     count = rows,
     height = dimensionResource(DesR.dimen.item_group_icon_size) + dimensionResource(DesR.dimen.item_group_row_padding_v) * 2,
     description = stringResource(R.string.console_loading),

@@ -62,6 +62,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
+    var failsTheMissingIdCount = false
+
     /** The body a [status] override answers with, by path. */
     val statusBody = mutableMapOf<String, String>()
     val slow = mutableSetOf<String>()
@@ -412,9 +415,24 @@ class FakeJellyfin : Dispatcher() {
 
     val baseUrl: String get() = server.url("/").toString().trimEnd('/')
 
+    private val socketLock = Any()
+    private var closing = false
+
+    /**
+     * Closes every event socket, and any that opens from now on: one still open holds the server's shutdown, and one whose
+     * handshake was in flight when a test ended would register after a plain snapshot of [sockets] was taken.
+     */
+    fun closeSockets() {
+        val open =
+            synchronized(socketLock) {
+                closing = true
+                sockets.toList()
+            }
+        open.forEach { it.close(GOING_AWAY, null) }
+    }
+
     override fun close() {
-        // An event socket still open holds the server's shutdown, so close them first.
-        sockets.forEach { it.close(GOING_AWAY, null) }
+        closeSockets()
         server.close()
     }
 
@@ -486,6 +504,9 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         if (path in dropped) return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
+        if (failsTheMissingIdCount && path == "/Items" && request.url.queryParameter("hasTmdbId") == "false") {
+            return MockResponse.Builder().code(500).build()
+        }
         status[path]?.let { code ->
             return MockResponse
                 .Builder()
@@ -711,7 +732,15 @@ class FakeJellyfin : Dispatcher() {
                         webSocket: WebSocket,
                         response: Response,
                     ) {
-                        sockets += webSocket
+                        val refused =
+                            synchronized(socketLock) {
+                                if (!closing) sockets += webSocket
+                                closing
+                            }
+                        if (refused) {
+                            webSocket.close(GOING_AWAY, null)
+                            return
+                        }
                         webSocket.send("""{"MessageType":"ForceKeepAlive","Data":$keepAliveSeconds}""")
                     }
 

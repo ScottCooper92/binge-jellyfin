@@ -102,8 +102,12 @@ class TasksViewModel(
                 .consoleCall(TAG) { _, client ->
                     client.saveTaskTriggers(task.id, change(task.triggers))
                     client.tasks()
-                }.onSuccess { tasks -> update { copy(board = board.following(tasks), saving = false) } }
-                .onFailure { error -> update { copy(saving = false, actionFailed = error.consoleFailure()) } }
+                }.onSuccess { tasks ->
+                    // The read-back can carry a run that ended meanwhile: it goes through the same path as a push, which
+                    // is what clears that run's outcome from its row after a moment.
+                    following(tasks)
+                    update { copy(saving = false) }
+                }.onFailure { error -> update { copy(saving = false, actionFailed = error.consoleFailure()) } }
         }
     }
 

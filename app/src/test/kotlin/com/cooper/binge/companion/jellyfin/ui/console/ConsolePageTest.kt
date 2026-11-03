@@ -96,6 +96,7 @@ class ConsolePageTest {
             )
         assertFalse(ConsolePage.Playback.available(server, user))
         assertFalse(ConsolePage.HomeLayout.available(server, user))
+        assertFalse(ConsolePage.ProfilePicture.available(server, user))
         assertFalse(ConsolePage.Password.available(server, user))
         assertFalse(ConsolePage.ApproveCode.available(server.copy(quickConnect = false), user))
         assertTrue(ConsolePage.NowPlaying.available(server, user))
