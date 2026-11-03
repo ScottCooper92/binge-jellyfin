@@ -8,7 +8,11 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -120,6 +124,19 @@ class AddTriggerFormTest {
         compose.onNodeWithText("13").performTextReplacement("")
         compose.onNodeWithText("Use an hour from 1 to 12 and minutes from 0 to 59.").assertIsDisplayed()
         compose.onNodeWithText("Add").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `the hour and minute fields are labelled for TalkBack, and the chosen period is announced as selected`() {
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = false) } }
+        // A field's label is part of the node a screen reader reads, so each field is named, not just "edit box".
+        compose.onNode(hasSetTextAction() and hasText("Hour")).assertIsDisplayed()
+        compose.onNode(hasSetTextAction() and hasText("Minute")).assertIsDisplayed()
+        compose.onNodeWithText("a.m.").assertIsSelected()
+        compose.onNodeWithText("p.m.").assertIsNotSelected()
+        compose.onNodeWithText("p.m.").performClick()
+        compose.onNodeWithText("p.m.").assertIsSelected()
+        compose.onNodeWithText("a.m.").assertIsNotSelected()
     }
 
     @Test
