@@ -76,7 +76,7 @@ class LibraryDisplayViewModel(
             update {
                 copy(
                     configuration = shown,
-                    refused = failure?.takeIf { it == ConsoleFailure.Refused },
+                    refused = refusedAfter(refused, failure),
                     draft = editing?.let { shown.entries(it) } ?: draft,
                 )
             }

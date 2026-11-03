@@ -63,10 +63,12 @@ class PlaybackViewModel(
             onProgress = { progress -> _state.update { (it as? PlaybackUiState.Ready)?.copy(save = progress) ?: it } },
         ) { shown, failure ->
             _state.update {
-                (it as? PlaybackUiState.Ready)?.copy(
-                    preferences = shown.playbackPreferences(),
-                    refused = failure?.takeIf { refusal -> refusal == ConsoleFailure.Refused },
-                ) ?: it
+                (it as? PlaybackUiState.Ready)?.let { ready ->
+                    ready.copy(
+                        preferences = shown.playbackPreferences(),
+                        refused = refusedAfter(ready.refused, failure),
+                    )
+                } ?: it
             }
         }
 
