@@ -65,9 +65,9 @@ data class Provider(
     val enabled: Boolean,
 )
 
-private fun JsonObject.names(key: String): List<String> = array(key).mapNotNull { (it as? JsonPrimitive)?.content }
+internal fun JsonObject.names(key: String): List<String> = array(key).mapNotNull { (it as? JsonPrimitive)?.content }
 
-private fun Collection<String>.has(name: String) = any { it.equals(name, ignoreCase = true) }
+internal fun Collection<String>.has(name: String) = any { it.equals(name, ignoreCase = true) }
 
 /**
  * [group]'s providers in the library's order: those it lists first, then the rest of [available] in the

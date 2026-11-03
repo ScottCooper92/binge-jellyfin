@@ -136,7 +136,24 @@ data class AvailableProviders(
     val lyricFetchers: List<String> = emptyList(),
     val segmentProviders: List<String> = emptyList(),
     val metadataSavers: List<MetadataSaver> = emptyList(),
+    /** What each item type of the library can be fetched by: its metadata downloaders and its image fetchers. */
+    val types: List<FetcherType> = emptyList(),
 )
+
+/** A metadata downloader or image fetcher the server offers for one item type, and whether a library with no choice yet has it on. */
+data class AvailableFetcher(
+    val name: String,
+    val defaultEnabled: Boolean,
+)
+
+/** One item type of a library (`Movie`, `Series`, `MusicAlbum`) and the fetchers the server offers for it, in its order. */
+data class FetcherType(
+    val type: String,
+    val metadata: List<AvailableFetcher> = emptyList(),
+    val images: List<AvailableFetcher> = emptyList(),
+) {
+    fun of(kind: FetcherKind): List<AvailableFetcher> = if (kind == FetcherKind.Metadata) metadata else images
+}
 
 /** A metadata saver the server offers a library, and whether a library that has never chosen has it on. */
 data class MetadataSaver(
@@ -154,12 +171,26 @@ suspend fun JellyfinClient.availableProviders(kind: String): AvailableProviders 
             val saver = element as? JsonObject ?: return@mapNotNull null
             saver.string("Name")?.let { MetadataSaver(it, saver.bool("DefaultEnabled") ?: false) }
         }
+
+    fun fetchers(
+        from: JsonObject,
+        key: String,
+    ) = from.array(key).mapNotNull { element ->
+        val fetcher = element as? JsonObject ?: return@mapNotNull null
+        fetcher.string("Name")?.let { AvailableFetcher(it, fetcher.bool("DefaultEnabled") ?: false) }
+    }
+    val types =
+        answer.array("TypeOptions").mapNotNull { element ->
+            val type = element as? JsonObject ?: return@mapNotNull null
+            type.string("Type")?.let { FetcherType(it, fetchers(type, "MetadataFetchers"), fetchers(type, "ImageFetchers")) }
+        }
     return AvailableProviders(
         names("MetadataReaders"),
         names("SubtitleFetchers"),
         names("LyricFetchers"),
         names("MediaSegmentProviders"),
         savers,
+        types,
     )
 }
 

@@ -42,6 +42,7 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.EMBEDDED_SUBTITLE_CHOICES
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ALLOW_EMBEDDED_SUBTITLES
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_CHAPTER_IMAGES
@@ -77,6 +78,7 @@ import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.delimiterWhitelist
 import com.cooper.binge.companion.jellyfin.server.downloadLanguages
 import com.cooper.binge.companion.jellyfin.server.enabledSavers
+import com.cooper.binge.companion.jellyfin.server.fetchers
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.libraryHasEmbeddedSubtitleChoice
 import com.cooper.binge.companion.jellyfin.server.libraryHasMovies
@@ -110,6 +112,23 @@ private fun LibraryUiState.Ready.switch(
         supportingMaxLines = LIBRARY_DETAIL_LINES,
         toggled = on,
         onClick = { actions.onFlag(key, !on) },
+    )
+}
+
+/** The row that opens each item type's [kind] fetchers, saying how many the library uses in all. Not shown when the server offers none. */
+@Composable
+private fun LibraryUiState.Ready.fetchersRow(
+    kind: FetcherKind,
+    icon: ImageVector,
+    actions: LibraryActions,
+): ListItem? {
+    val all = available.types.flatMap { options.fetchers(it, kind) }
+    if (all.isEmpty()) return null
+    return ListItem(
+        icon = icon,
+        label = stringResource(kind.title()),
+        detail = stringResource(R.string.library_providers_on, all.count { it.enabled }, all.size),
+        onClick = { actions.onPage(LibraryPage.Fetchers(kind)) },
     )
 }
 
@@ -212,6 +231,8 @@ internal fun MetadataGroup(
                     ).takeIf { libraryHasMovies(kind) },
                 state.switch(LIBRARY_PHOTOS, Icons.Outlined.Photo, R.string.library_photos, actions).takeIf { kind == "homevideos" },
                 state.providersRow(ProviderGroup.Readers, Icons.Outlined.Description, actions),
+                state.fetchersRow(FetcherKind.Metadata, Icons.Outlined.CloudDownload, actions),
+                state.fetchersRow(FetcherKind.Images, Icons.Outlined.Photo, actions),
             ) + state.saverRows(actions),
     )
 }
