@@ -3,10 +3,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.BackupCreation
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
@@ -30,7 +30,7 @@ private const val DAY = 86_400_000L
 @RunWith(RobolectricTestRunner::class)
 class BackupsScreenTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private val made = ServerBackup("jellyfin-backup-20261030090000.zip", NOW - DAY, "10.11.6.0", BackupOptions())
     private val ready = BackupsUiState.Ready(listOf(made))
