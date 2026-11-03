@@ -37,7 +37,6 @@ data class MetadataDefaultsActions(
 )
 
 private const val LOADING_ROWS = 8
-private const val DETAIL_LINES = 3
 
 /** The words for an item type as the server names it, or the name itself for one this app has no word for. */
 @Composable
@@ -143,7 +142,6 @@ private fun TypePage(
                             ListItem(
                                 icon = if (kind == FetcherKind.Metadata) Icons.Outlined.Extension else Icons.Outlined.Image,
                                 label = provider.name,
-                                supportingMaxLines = DETAIL_LINES,
                                 toggled = provider.enabled,
                                 onClick = { actions.onSet(type, kind, provider.name, !provider.enabled) },
                             )
