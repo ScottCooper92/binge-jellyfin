@@ -81,7 +81,10 @@ class LiveTvSchedulesDirectViewModel(
 
     fun start() = _state.update { SdUiState(step = SdStep.Account) }
 
-    fun close() = _state.update { SdUiState() }
+    fun close() {
+        lineupsLookup?.cancel()
+        _state.update { SdUiState() }
+    }
 
     fun dismissProblem() = _state.update { it.copy(problem = null, failed = null) }
 
@@ -106,7 +109,8 @@ class LiveTvSchedulesDirectViewModel(
                             _state.update { it.copy(saving = false, problem = SdProblem.AccountNotSaved) }
                         } else {
                             _state.update { it.copy(saving = false) }
-                            locate(id)
+                            // The account stays saved if the sheet was left meanwhile; the list shows it as not finished.
+                            if (_state.value.step is SdStep.Account) locate(id)
                         }
                     },
                     onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.AccountNotSaved) } },
@@ -147,7 +151,13 @@ class LiveTvSchedulesDirectViewModel(
                 connection.consoleCall(TAG) { _, client -> client.schedulesDirectLineups(location.providerId, country.code, code) }.fold(
                     onSuccess = { lineups -> updateStep<SdStep.Lineups> { copy(lineups = lineups) } },
                     onFailure = { error ->
-                        _state.update { it.copy(step = location.copy(postalCode = postalCode), failed = error.consoleFailure()) }
+                        _state.update {
+                            if (it.step is SdStep.Lineups) {
+                                it.copy(step = location.copy(postalCode = postalCode), failed = error.consoleFailure())
+                            } else {
+                                it
+                            }
+                        }
                     },
                 )
             }

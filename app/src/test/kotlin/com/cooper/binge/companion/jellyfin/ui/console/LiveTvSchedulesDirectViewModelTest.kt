@@ -181,6 +181,41 @@ class LiveTvSchedulesDirectViewModelTest {
     }
 
     @Test
+    fun `a lookup that fails after the sheet was closed does not bring the location step back`() {
+        jellyfin.sdLineupsStatus = 500
+        val vm = vm()
+        signedIn(vm)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.pickCountry(usa)
+        vm.findLineups("10001")
+        vm.close()
+        Thread.sleep(SETTLE_MILLIS)
+        assertEquals(SdUiState(), vm.state.value)
+    }
+
+    @Test
+    fun `an account saved after the sheet was closed does not reopen it`() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val vm =
+            made(
+                LiveTvSchedulesDirectViewModel(connection) {
+                    entered.countDown()
+                    release.await()
+                    changed++
+                },
+            )
+        vm.start()
+        vm.signIn("carol", "hunter2")
+        assertTrue(entered.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+        vm.close()
+        release.countDown()
+        Thread.sleep(SETTLE_MILLIS)
+        assertEquals(SdUiState(), vm.state.value)
+        assertEquals(1, changed)
+    }
+
+    @Test
     fun `an unfinished account is picked up again at its location step`() {
         val vm = vm()
         vm.locate("g2")
@@ -290,5 +325,6 @@ class LiveTvSchedulesDirectViewModelTest {
     private companion object {
         const val PROVIDERS = "/LiveTv/ListingProviders"
         const val TIMEOUT_MILLIS = 10_000L
+        const val SETTLE_MILLIS = 500L
     }
 }
