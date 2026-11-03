@@ -61,6 +61,18 @@ class TaskTriggersViewModelTest {
             .let { (Json.parseToJsonElement(it) as JsonArray).map { trigger -> trigger.toString() } }
 
     @Test
+    fun `a run that ended meanwhile and is read back with a trigger save shows its outcome, and the outcome clears`() {
+        val vm = made(TasksViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }.openScan()
+        vm.ready()
+        // The event socket missed it: the task finished on the server, and only the trigger save's read-back sees that.
+        jellyfin.scheduledTasks = jellyfin.scheduledTasks.replace("2026-10-31T18:00:00Z", "2026-11-01T18:00:00Z")
+        vm.addTrigger(TaskTrigger.startup())
+        val shown = vm.ready { !it.saving && "t-scan" in it.board.outcomes }
+        assertEquals(JobOutcome.Succeeded, shown.board.outcomes["t-scan"])
+        vm.ready { it.board.outcomes.isEmpty() }
+    }
+
+    @Test
     fun `a task comes with its triggers, and opening one shows them`() {
         val vm = made(TasksViewModel(connection)).openScan()
         val ready = vm.ready { it.open == "t-scan" }
@@ -171,5 +183,6 @@ class TaskTriggersViewModelTest {
 
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
+        const val OUTCOME_MILLIS = 800L
     }
 }

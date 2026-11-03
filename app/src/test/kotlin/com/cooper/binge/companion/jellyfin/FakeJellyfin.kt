@@ -59,6 +59,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
+    var failsTheMissingIdCount = false
+
     /** The body a [status] override answers with, by path. */
     val statusBody = mutableMapOf<String, String>()
     val slow = mutableSetOf<String>()
@@ -152,6 +155,15 @@ class FakeJellyfin : Dispatcher() {
     /** More of the user's policy for `/Users/Me`, as JSON members after `IsAdministrator` (`,"Key":value`). */
     var policy = ""
 
+    /**
+     * The signed-in user's picture, as the file the server holds. Set by a POST to either route, whose body the real server
+     * reads as base64 text (a body that is not base64 is a 400, as it is there); cleared by a DELETE.
+     */
+    var userImage: ByteArray? = null
+
+    /** The `Content-Type` of the last picture sent. */
+    var userImageType: String? = null
+
     /** The user's configuration, as `/Users/Me` answers it and `/Users/Configuration` replaces it. */
     var userConfiguration =
         """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
@@ -243,6 +255,24 @@ class FakeJellyfin : Dispatcher() {
             """{"Id":"t2","Type":"hdhomerun","FriendlyName":"","Url":"http://192.168.1.50"}],"ListingProviders":[""" +
             """{"Id":"g1","Type":"xmltv","Path":"/config/guide.xml"},""" +
             """{"Id":"g2","Type":"SchedulesDirect","Username":"alice","Password":"5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8"}]}"""
+
+    /** The status `POST /LiveTv/ListingProviders` answers with, 200 when it keeps the provider; the server answers 500 for one it cannot read. */
+    var listingSaveStatus = 200
+
+    /** What `/LiveTv/ListingProviders/SchedulesDirect/Countries` answers: Schedules Direct's own JSON, regions each holding countries. */
+    var sdCountries =
+        """{"North America":[{"fullName":"United States","shortName":"USA","postalCodeExample":"90210","postalCode":"d"}],""" +
+            """"Europe":[{"fullName":"United Kingdom","shortName":"GBR","postalCodeExample":"SW1A 1AA","postalCode":"x"}]}"""
+
+    /** What `/LiveTv/ListingProviders/Lineups` answers, or the status code that replaces it. An empty list is also what a failed login gives. */
+    var sdLineups = """[{"Name":"Comcast Digital","Id":"USA-NY12345-X"},{"Name":"Dish Network","Id":"USA-DISH-X"}]"""
+    var sdLineupsStatus = 200
+
+    /** The status `POST /LiveTv/TunerHosts` answers with, 200 when it keeps the host; the server answers 500 for one it cannot reach. */
+    var tunerSaveStatus = 200
+
+    /** The tuners `GET /LiveTv/Tuners/Discover` finds. */
+    var discoveredTuners = """[{"Type":"hdhomerun","Url":"http://192.168.1.77","FriendlyName":"HDHomeRun PRIME","DeviceId":"1070A1B2"}]"""
 
     /** What `/LiveTv/GuideInfo` answers, or the status code that replaces it. */
     var guideInfo = """{"StartDate":"2026-11-01T00:00:00.0000000Z","EndDate":"2026-11-08T00:00:00.0000000Z"}"""
@@ -393,9 +423,24 @@ class FakeJellyfin : Dispatcher() {
 
     val baseUrl: String get() = server.url("/").toString().trimEnd('/')
 
+    private val socketLock = Any()
+    private var closing = false
+
+    /**
+     * Closes every event socket, and any that opens from now on: one still open holds the server's shutdown, and one whose
+     * handshake was in flight when a test ended would register after a plain snapshot of [sockets] was taken.
+     */
+    fun closeSockets() {
+        val open =
+            synchronized(socketLock) {
+                closing = true
+                sockets.toList()
+            }
+        open.forEach { it.close(GOING_AWAY, null) }
+    }
+
     override fun close() {
-        // An event socket still open holds the server's shutdown, so close them first.
-        sockets.forEach { it.close(GOING_AWAY, null) }
+        closeSockets()
         server.close()
     }
 
@@ -417,6 +462,40 @@ class FakeJellyfin : Dispatcher() {
             .body
             ?.utf8()
             .orEmpty()
+
+    /** Keeps a guide provider as the server does: a new one gets an `Id`, one with an `Id` replaces that provider whole. */
+    private fun saveListingProvider(body: String): MockResponse {
+        if (listingSaveStatus != 200) return MockResponse(code = listingSaveStatus)
+        val provider = Json.parseToJsonElement(body).jsonObject
+        val id = provider["Id"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: "guide${requests.size}"
+        val saved = JsonObject(provider + ("Id" to JsonPrimitive(id)))
+        val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+        val kept =
+            config.getValue("ListingProviders").jsonArray.filter {
+                it.jsonObject
+                    .getValue("Id")
+                    .jsonPrimitive.content != id
+            }
+        liveTvConfiguration = JsonObject(config + ("ListingProviders" to JsonArray(kept + saved))).toString()
+        return json(saved.toString())
+    }
+
+    /** Keeps a tuner host as the server does: a new one gets an `Id`, one with an `Id` replaces that host whole. */
+    private fun saveTunerHost(body: String): MockResponse {
+        if (tunerSaveStatus != 200) return MockResponse(code = tunerSaveStatus)
+        val host = Json.parseToJsonElement(body).jsonObject
+        val id = host["Id"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: "new${requests.size}"
+        val saved = JsonObject(host + ("Id" to JsonPrimitive(id)))
+        val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+        val hosts =
+            config.getValue("TunerHosts").jsonArray.filter {
+                it.jsonObject
+                    .getValue("Id")
+                    .jsonPrimitive.content != id
+            }
+        liveTvConfiguration = JsonObject(config + ("TunerHosts" to JsonArray(hosts + saved))).toString()
+        return json(saved.toString())
+    }
 
     fun hits(path: String): Int = requests.count { it.url.encodedPath == path }
 
@@ -467,6 +546,9 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         if (path in dropped) return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
+        if (failsTheMissingIdCount && path == "/Items" && request.url.queryParameter("hasTmdbId") == "false") {
+            return MockResponse.Builder().code(500).build()
+        }
         status[path]?.let { code ->
             return MockResponse
                 .Builder()
@@ -489,6 +571,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 503)
             }
             path == "/System/Info" -> json(systemInfo)
+            path == "/UserImage" || path == "/Users/user-1/Images/Primary" -> userImage(request)
             path == "/Items/Counts" -> json(itemCounts)
             path == "/System/Configuration/network" && request.method == "POST" -> {
                 networkConfiguration = request.body?.utf8().orEmpty()
@@ -515,7 +598,43 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Configuration/livetv" -> json(liveTvConfiguration)
+            path == "/LiveTv/TunerHosts" && request.method == "POST" -> saveTunerHost(request.body?.utf8().orEmpty())
+            path == "/LiveTv/TunerHosts" && request.method == "DELETE" -> {
+                val id = request.url.queryParameter("id")
+                val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+                val kept =
+                    config.getValue("TunerHosts").jsonArray.filter {
+                        it.jsonObject
+                            .getValue("Id")
+                            .jsonPrimitive.content != id
+                    }
+                liveTvConfiguration = JsonObject(config + ("TunerHosts" to JsonArray(kept))).toString()
+                MockResponse(code = 204)
+            }
+            path == "/LiveTv/Tuners/Discover" -> json(discoveredTuners)
             path == "/LiveTv/GuideInfo" -> if (guideInfoStatus == 200) json(guideInfo) else MockResponse(code = guideInfoStatus)
+            path == "/LiveTv/ListingProviders/SchedulesDirect/Countries" -> json(sdCountries)
+            path == "/LiveTv/ListingProviders/Lineups" ->
+                if (sdLineupsStatus ==
+                    200
+                ) {
+                    json(sdLineups)
+                } else {
+                    MockResponse(code = sdLineupsStatus)
+                }
+            path == "/LiveTv/ListingProviders" && request.method == "POST" -> saveListingProvider(request.body?.utf8().orEmpty())
+            path == "/LiveTv/ListingProviders" && request.method == "DELETE" -> {
+                val id = request.url.queryParameter("id")
+                val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+                val kept =
+                    config.getValue("ListingProviders").jsonArray.filter {
+                        it.jsonObject
+                            .getValue("Id")
+                            .jsonPrimitive.content != id
+                    }
+                liveTvConfiguration = JsonObject(config + ("ListingProviders" to JsonArray(kept))).toString()
+                MockResponse(code = 204)
+            }
             path == "/Localization/Countries" ->
                 json(
                     """[{"Name":"GB","DisplayName":"United Kingdom","TwoLetterISORegionName":"GB"},""" +
@@ -690,7 +809,15 @@ class FakeJellyfin : Dispatcher() {
                         webSocket: WebSocket,
                         response: Response,
                     ) {
-                        sockets += webSocket
+                        val refused =
+                            synchronized(socketLock) {
+                                if (!closing) sockets += webSocket
+                                closing
+                            }
+                        if (refused) {
+                            webSocket.close(GOING_AWAY, null)
+                            return
+                        }
                         webSocket.send("""{"MessageType":"ForceKeepAlive","Data":$keepAliveSeconds}""")
                     }
 
@@ -993,6 +1120,46 @@ class FakeJellyfin : Dispatcher() {
     ) = """{"ServerVersion":"$serverVersion","BackupEngineVersion":"0.2.0.0","DateCreated":"$created",""" +
         """"Path":"/config/data/backups/$fileName","Options":{"Metadata":$metadata,"Trickplay":$trickplay,""" +
         """"Subtitles":$subtitles,"Database":$database}}"""
+
+    private fun userImage(request: RecordedRequest): MockResponse =
+        when (request.method) {
+            "POST" -> {
+                val type = request.headers["Content-Type"].orEmpty()
+                val decoded =
+                    runCatching {
+                        java.util.Base64
+                            .getDecoder()
+                            .decode(
+                                request.body
+                                    ?.utf8()
+                                    .orEmpty()
+                                    .trim(),
+                            )
+                    }.getOrNull()
+                if (!type.startsWith("image/") || decoded == null) {
+                    MockResponse(code = 400)
+                } else {
+                    userImage = decoded
+                    userImageType = type
+                    MockResponse(code = 204)
+                }
+            }
+            "DELETE" -> {
+                userImage = null
+                MockResponse(code = 204)
+            }
+            else ->
+                userImage?.let {
+                    MockResponse
+                        .Builder()
+                        .code(
+                            200,
+                        ).addHeader("Content-Type", "image/jpeg")
+                        .body(okio.Buffer().write(it))
+                        .build()
+                }
+                    ?: MockResponse(code = 404)
+        }
 
     private fun json(body: String): MockResponse =
         MockResponse
