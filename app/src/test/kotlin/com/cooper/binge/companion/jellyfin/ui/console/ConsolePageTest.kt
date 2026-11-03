@@ -96,6 +96,8 @@ class ConsolePageTest {
             )
         assertFalse(ConsolePage.Playback.available(server, user))
         assertFalse(ConsolePage.HomeLayout.available(server, user))
+        // The server's image routes refuse a user without preference access, so the page isn't shown to them.
+        assertFalse(ConsolePage.ProfilePicture.available(server, user))
         assertFalse(ConsolePage.Password.available(server, user))
         assertFalse(ConsolePage.ApproveCode.available(server.copy(quickConnect = false), user))
         assertTrue(ConsolePage.NowPlaying.available(server, user))

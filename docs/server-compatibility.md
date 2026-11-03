@@ -77,7 +77,7 @@ older server shows less rather than failing on a call it can't answer.
 | Trickplay settings (its own page) | administrators, on a server that has trickplay | `isAdministrator` and `hasTrickplay` |
 | Networking (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasInternalPortNames` and `hasUpnpOption` |
 | Advanced options (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasAdvancedPerformance` and `hasCacheAndLegacyAuth` per row |
-| Their own preferences (languages, playback, the home screen) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |
+| Their own preferences (languages, playback, the home screen, their picture) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |
 | Changing their own password | users of Jellyfin's own provider, not LDAP or another plugin | `hasLocalPassword` |
 | Controlling a stream on someone else's session (pause, seek, next, stop, volume, mute, message) | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers`, and the session in `GET /Sessions?controllableByUserId=` |
 | Controlling a session on a shared device (nobody signed in on it) | users with `EnableSharedDeviceControl`; an administrator has no shortcut | `canControlSharedDevices`, and the same list |
