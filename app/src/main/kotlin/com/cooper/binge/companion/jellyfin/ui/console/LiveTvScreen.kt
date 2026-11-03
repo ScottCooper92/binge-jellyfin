@@ -69,7 +69,7 @@ fun LiveTvScreen(
                     GuideSheet(guide, guideActions)
                     GuideMessages(guide, guideActions, host)
                     SdSheet(sd, sdActions)
-                    SdMessages(sd, sdActions)
+                    SdMessages(sd, sdActions, host)
                 }
             }
         }

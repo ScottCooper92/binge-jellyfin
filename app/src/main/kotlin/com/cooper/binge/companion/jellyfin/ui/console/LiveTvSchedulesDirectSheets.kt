@@ -12,6 +12,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Subscriptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -228,17 +229,18 @@ private fun LineupsStep(
     }
 }
 
-/** What a Schedules Direct problem says, each as a dialog with its cause and next step. */
+/** What a Schedules Direct problem says: a dialog for the server's own refusal, with its cause and next step, and a snackbar for a call that never got there. */
 @Composable
 internal fun SdMessages(
     state: SdUiState,
     actions: SdActions,
+    host: SnackbarHostState,
 ) {
+    RefusedMessage(state.failed, host, R.string.live_tv_sd_not_done)
     val (title, body) =
         when (state.problem) {
             SdProblem.AccountNotSaved -> R.string.live_tv_sd_account_not_saved_title to R.string.live_tv_sd_account_not_saved_body
             SdProblem.LineupNotAdded -> R.string.live_tv_sd_lineup_not_added_title to R.string.live_tv_sd_lineup_not_added_body
-            SdProblem.NotRead -> R.string.live_tv_sd_not_read_title to R.string.live_tv_sd_not_read_body
             null -> return
         }
     ConsoleMessage(title = stringResource(title), message = stringResource(body), onDismiss = actions.onDismissProblem)

@@ -395,7 +395,7 @@ app:live_tv_guide_ends  6d2e0da284bd
 app:live_tv_guide_finish  bc01ae77f37c
 app:live_tv_guide_form_add  9f07ebeaa95d
 app:live_tv_guide_form_edit  b75d0e5f0b60
-app:live_tv_guide_not_changed  dd2557d6417a
+app:live_tv_guide_not_changed  f770f37ad5b3
 app:live_tv_guide_not_saved_body  830a673fb116
 app:live_tv_guide_not_saved_title  8bccee6ae781
 app:live_tv_guide_other_detail  002e1107c2db
@@ -429,8 +429,7 @@ app:live_tv_sd_location_title  b37f35b5faa8
 app:live_tv_sd_next  1ff57a29d7c9
 app:live_tv_sd_no_countries  4d234b84a6d3
 app:live_tv_sd_no_lineups  c2109c986dc0
-app:live_tv_sd_not_read_body  37a43b4efa9e
-app:live_tv_sd_not_read_title  b9e5d986cd73
+app:live_tv_sd_not_done  a97d1c484c5c
 app:live_tv_sd_password  e7cf3ef4f17c
 app:live_tv_sd_postal_code  ae53cea8228b
 app:live_tv_sd_postal_code_detail  54b5322ef731

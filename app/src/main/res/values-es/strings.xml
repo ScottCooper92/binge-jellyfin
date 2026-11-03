@@ -1044,7 +1044,6 @@
     <string name="live_tv_guide_close">Cerrar</string>
     <string name="live_tv_guide_add_submit">Añadir</string>
     <string name="live_tv_guide_remove_confirm">Quitar</string>
-    <string name="live_tv_guide_not_changed">Sin cambios. Inténtalo de nuevo.</string>
     <string name="live_tv_guide_choose_body">Elige el tipo de datos de guía que quieres añadir.</string>
     <string name="live_tv_guide_sd_detail">Una cuenta de Schedules Direct, con su alineación</string>
     <string name="live_tv_guide_pending_detail">La cuenta está guardada, pero aún no hay una alineación elegida, así que el servidor no tiene guía que leer. Termina la configuración o quita la cuenta.</string>
@@ -1070,7 +1069,7 @@
     <string name="live_tv_sd_account_not_saved_body">El servidor no quiso guardarla. Comprueba que el usuario y la contraseña están rellenos y que el servidor es accesible, e inténtalo de nuevo.</string>
     <string name="live_tv_sd_lineup_not_added_title">No se añadió la alineación</string>
     <string name="live_tv_sd_lineup_not_added_body">El servidor no pudo añadirla a tu cuenta de Schedules Direct, casi siempre por el inicio de sesión. Comprueba tu usuario y contraseña, o quita esta cuenta y vuelve a configurarla.</string>
-    <string name="live_tv_sd_not_read_title">No se pudo leer</string>
-    <string name="live_tv_sd_not_read_body">El servidor no respondió. Comprueba que es accesible e inténtalo de nuevo. Tu cuenta sigue guardada.</string>
+    <string name="live_tv_guide_not_changed">Sin cambios. %1$s</string>
+    <string name="live_tv_sd_not_done">No se hizo. %1$s</string>
     <string name="live_tv_type_m3u">Lista M3U</string>
 </resources>

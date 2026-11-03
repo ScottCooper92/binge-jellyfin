@@ -120,6 +120,32 @@ class LiveTvGuideViewModelTest {
     }
 
     @Test
+    fun `a save the server refuses the user for is not blamed on the address, and keeps the form`() {
+        jellyfin.listingSaveStatus = 401
+        val vm = vm()
+        vm.add()
+        vm.save(GuideForm(path = "/guide.xml"))
+        val failed = vm.until { it.failed != null }
+        assertNull(failed.problem)
+        assertEquals(ConsoleFailure.Refused, failed.failed)
+        assertTrue(failed.form != null)
+        assertFalse(failed.saving)
+        vm.dismissProblem()
+        assertNull(vm.until { it.failed == null }.failed)
+    }
+
+    @Test
+    fun `a server that cannot be reached is said to be unreachable, not unreadable`() {
+        val vm = vm()
+        jellyfin.close()
+        vm.add()
+        vm.save(GuideForm(path = "/guide.xml"))
+        val failed = vm.until { it.failed != null }
+        assertNull(failed.problem)
+        assertEquals(ConsoleFailure.Unreachable, failed.failed)
+    }
+
+    @Test
     fun `an empty path sends nothing`() {
         val vm = vm()
         vm.add()

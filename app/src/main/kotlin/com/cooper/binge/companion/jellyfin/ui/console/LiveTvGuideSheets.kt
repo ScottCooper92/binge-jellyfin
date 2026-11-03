@@ -148,14 +148,8 @@ internal fun GuideMessages(
     actions: LiveTvGuideActions,
     host: SnackbarHostState,
 ) {
-    SnackbarMessage(
-        when {
-            state.problem == GuideProblem.NotChanged -> stringResource(R.string.live_tv_guide_not_changed)
-            state.queued -> stringResource(R.string.live_tv_guide_queued)
-            else -> null
-        },
-        host,
-    )
+    RefusedMessage(state.failed, host, R.string.live_tv_guide_not_changed)
+    SnackbarMessage(if (state.queued) stringResource(R.string.live_tv_guide_queued) else null, host)
     if (state.problem == GuideProblem.NotSaved) {
         ConsoleMessage(
             title = stringResource(R.string.live_tv_guide_not_saved_title),

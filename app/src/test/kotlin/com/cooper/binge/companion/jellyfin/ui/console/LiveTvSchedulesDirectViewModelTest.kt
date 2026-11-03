@@ -207,8 +207,30 @@ class LiveTvSchedulesDirectViewModelTest {
         vm.until { (it.step as? SdStep.Location)?.countries != null }
         vm.pickCountry(usa)
         vm.findLineups("10001")
-        val failed = vm.until { it.problem == SdProblem.NotRead }
+        val failed = vm.until { it.failed != null }
+        assertNull(failed.problem)
+        assertEquals(ConsoleFailure.Refused, failed.failed)
         assertTrue(failed.step is SdStep.Location)
+    }
+
+    @Test
+    fun `an account the user is not allowed to save is not blamed on the details, and an unreachable server is said to be unreachable`() {
+        jellyfin.listingSaveStatus = 401
+        val denied = vm()
+        denied.start()
+        denied.signIn("carol", "hunter2")
+        val refused = denied.until { it.failed != null }
+        assertNull(refused.problem)
+        assertEquals(ConsoleFailure.Refused, refused.failed)
+        assertEquals(SdStep.Account, refused.step)
+
+        val unreachable = vm()
+        jellyfin.close()
+        unreachable.start()
+        unreachable.signIn("carol", "hunter2")
+        val down = unreachable.until { it.failed != null }
+        assertNull(down.problem)
+        assertEquals(ConsoleFailure.Unreachable, down.failed)
     }
 
     @Test

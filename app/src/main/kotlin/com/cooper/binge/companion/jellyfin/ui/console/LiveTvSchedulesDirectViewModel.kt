@@ -51,16 +51,17 @@ enum class SdProblem {
 
     /** The server would not add the lineup to the account, which is almost always the login. A dialog says why. */
     LineupNotAdded,
-
-    /** The countries or lineups could not be read, and nothing more is known. */
-    NotRead,
 }
 
-/** The setup sheet's [step] (null when closed), whether a call is in flight, and the last [problem]. Always interactive, so a flat class. */
+/**
+ * The setup sheet's [step] (null when closed), whether a call is in flight, the last [problem] (the server's own refusal of what it was
+ * sent) and the last [failed] call that never got that far (unreachable, or not allowed), which a snackbar says. Always interactive, so a flat class.
+ */
 data class SdUiState(
     val step: SdStep? = null,
     val saving: Boolean = false,
     val problem: SdProblem? = null,
+    val failed: ConsoleFailure? = null,
 )
 
 /**
@@ -79,7 +80,7 @@ class LiveTvSchedulesDirectViewModel(
 
     fun close() = _state.update { SdUiState() }
 
-    fun dismissProblem() = _state.update { it.copy(problem = null) }
+    fun dismissProblem() = _state.update { it.copy(problem = null, failed = null) }
 
     /** Saves the account from [username] and [password], hashing the password here, and goes on to the location. */
     fun signIn(
@@ -88,7 +89,7 @@ class LiveTvSchedulesDirectViewModel(
     ) {
         if (username.isBlank() || password.isEmpty() || _state.value.saving) return
         val account = newSchedulesDirectProvider(username.trim(), password)
-        _state.update { it.copy(saving = true, problem = null) }
+        _state.update { it.copy(saving = true, problem = null, failed = null) }
         viewModelScope.launch {
             connection
                 .consoleCall(
@@ -105,18 +106,18 @@ class LiveTvSchedulesDirectViewModel(
                             locate(id)
                         }
                     },
-                    onFailure = { _state.update { it.copy(saving = false, problem = SdProblem.AccountNotSaved) } },
+                    onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.AccountNotSaved) } },
                 )
         }
     }
 
     /** Opens the location step for the saved account [providerId], reading the countries: for a new account, or one left unfinished. */
     fun locate(providerId: String) {
-        _state.update { it.copy(step = SdStep.Location(providerId, countries = null), problem = null) }
+        _state.update { it.copy(step = SdStep.Location(providerId, countries = null), problem = null, failed = null) }
         viewModelScope.launch {
             connection.consoleCall(TAG) { _, client -> client.schedulesDirectCountries() }.fold(
                 onSuccess = { countries -> updateStep<SdStep.Location> { copy(countries = countries) } },
-                onFailure = { _state.update { it.copy(step = null, problem = SdProblem.NotRead) } },
+                onFailure = { error -> _state.update { it.copy(step = null, failed = error.consoleFailure()) } },
             )
         }
     }
@@ -132,11 +133,13 @@ class LiveTvSchedulesDirectViewModel(
         val code = postalCode.trim()
         if (code.isEmpty()) return
         val countries = location.countries.orEmpty()
-        _state.update { it.copy(step = SdStep.Lineups(location.providerId, countries, country, code, lineups = null), problem = null) }
+        _state.update {
+            it.copy(step = SdStep.Lineups(location.providerId, countries, country, code, lineups = null), problem = null, failed = null)
+        }
         viewModelScope.launch {
             connection.consoleCall(TAG) { _, client -> client.schedulesDirectLineups(location.providerId, country.code, code) }.fold(
                 onSuccess = { lineups -> updateStep<SdStep.Lineups> { copy(lineups = lineups) } },
-                onFailure = { _state.update { it.copy(step = location, problem = SdProblem.NotRead) } },
+                onFailure = { error -> _state.update { it.copy(step = location, failed = error.consoleFailure()) } },
             )
         }
     }
@@ -151,7 +154,7 @@ class LiveTvSchedulesDirectViewModel(
     fun addLineup(lineup: SdLineup) {
         val step = _state.value.step as? SdStep.Lineups ?: return
         if (_state.value.saving) return
-        _state.update { it.copy(saving = true, problem = null) }
+        _state.update { it.copy(saving = true, problem = null, failed = null) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
@@ -164,10 +167,16 @@ class LiveTvSchedulesDirectViewModel(
                         _state.update { SdUiState() }
                         onChanged()
                     },
-                    onFailure = { _state.update { it.copy(saving = false, problem = SdProblem.LineupNotAdded) } },
+                    onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.LineupNotAdded) } },
                 )
         }
     }
+
+    /** The server's own refusal of what it was sent is [problem], which a dialog explains; any other failure says why it never got there. */
+    private fun SdUiState.failedWith(
+        error: Throwable,
+        problem: SdProblem,
+    ) = if (error.isProviderRefused()) copy(problem = problem) else copy(failed = error.consoleFailure())
 
     private inline fun <reified S : SdStep> updateStep(change: S.() -> S) =
         _state.update { current -> (current.step as? S)?.let { current.copy(step = it.change()) } ?: current }
