@@ -112,7 +112,7 @@ class LibraryIndex(
                     if (type == null || tmdb == null) null else IndexKey(type, tmdb) to item
                 }
             // Best-effort: a count that cannot be read leaves the answer "unknown", and never fails the build.
-            lacksIds = attempt { client.tmdbCoverage(userId) }.getOrNull()?.let { it.withoutTmdbId > 0 } == true
+            lacksIds = attempt { client.titlesWithoutTmdbId(userId) }.getOrNull()?.let { it > 0 } == true
             byKey = keyed.toMap()
             byId = keyed.associate { (key, item) -> item.id to key }
             owner = owned

@@ -22,7 +22,9 @@ class LibraryIndexTest {
     @After
     fun close() = jellyfin.close()
 
-    private fun requestsForItems() = jellyfin.hits("/Items")
+    /** The library pages the index reads: the titles with an id. Its one count of those without is not a page. */
+    private fun requestsForItems() =
+        jellyfin.requests.count { it.url.encodedPath == "/Items" && it.url.queryParameter("hasTmdbId") == "true" }
 
     @Test
     fun `pages in every titled movie and series, and serves later lookups from memory`() =
