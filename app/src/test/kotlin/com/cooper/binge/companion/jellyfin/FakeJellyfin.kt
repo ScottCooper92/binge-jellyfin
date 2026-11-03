@@ -59,6 +59,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
+    var failsTheMissingIdCount = false
+
     /** The body a [status] override answers with, by path. */
     val statusBody = mutableMapOf<String, String>()
     val slow = mutableSetOf<String>()
@@ -467,6 +470,9 @@ class FakeJellyfin : Dispatcher() {
                 .build()
         }
         if (path in dropped) return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
+        if (failsTheMissingIdCount && path == "/Items" && request.url.queryParameter("hasTmdbId") == "false") {
+            return MockResponse.Builder().code(500).build()
+        }
         status[path]?.let { code ->
             return MockResponse
                 .Builder()

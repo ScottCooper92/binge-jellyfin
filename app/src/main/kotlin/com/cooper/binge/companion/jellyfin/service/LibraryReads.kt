@@ -34,7 +34,9 @@ class LibraryReads(
 
     suspend fun availability(media: MediaId): Availability {
         val (session, client) = signedIn()
-        val item = index.find(client, session.userId, media.toKey()) ?: return notInLibrary()
+        val item =
+            index.find(client, session.userId, media.toKey())
+                ?: return notInLibrary(serverLacksIds = index.serverLacksIds(client, session.userId))
         val builder =
             Availability
                 .newBuilder()
