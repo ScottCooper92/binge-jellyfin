@@ -81,6 +81,7 @@ older server shows less rather than failing on a call it can't answer.
 | Changing their own password | users of Jellyfin's own provider, not LDAP or another plugin | `hasLocalPassword` |
 | Controlling a stream on someone else's session (pause, seek, next, stop, volume, mute, message) | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers`, and the session in `GET /Sessions?controllableByUserId=` |
 | Controlling a session on a shared device (nobody signed in on it) | users with `EnableSharedDeviceControl`; an administrator has no shortcut | `canControlSharedDevices`, and the same list |
+| Changing how the server records (the Recording page) | administrators who also have `EnableLiveTvManagement`: the server saves the configuration for administrators only | `ConsolePage.LiveTvRecording` |
 | Seeing the server's Live TV tuners and guide data | users with `EnableLiveTvManagement`; an administrator whose flag is off is refused, as the server refuses them | `canManageLiveTv`. The guide end also needs `EnableLiveTvAccess` (`canAccessLiveTv`) |
 | Approving a Quick Connect code | everyone, while Quick Connect is on | `profile.quickConnect` |
 
@@ -118,3 +119,5 @@ Read from Jellyfin's source at 10.8.13, 10.9.11, 10.10.7 and 10.11.0. The endpoi
 - **Secrets in that read.** A Schedules Direct provider's `Password` (a SHA-1 hex) comes back in it, and an M3U tuner's `Url` often carries the provider's account. The page never reads the `Password`, and shows a web address as its scheme, host and port only.
 - **`TunerHostInfo` grows.** `IgnoreDts` from 10.9; `AllowFmp4TranscodingContainer`, `AllowStreamSharing` and `FallbackMaxStreamingBitrate` from 10.10; `ReadAtNativeFramerate` from 10.11.
 - **Refresh Guide** (`RefreshGuide`, category "Live TV") is a scheduled task, on the Tasks page. Adding or deleting a listing provider queues it.
+- **Recording settings** are `LiveTvOptions` keys, saved as made through `ConfigurationSaves`: the whole object goes back with one key changed, so the tuners, providers (and the `Password` a provider holds) and any key this app does not know return as they came. A key the server did not send is not shown. `SaveRecordingNFO` and `SaveRecordingImages` exist from 10.9, so 10.8 shows neither. Padding is stored in seconds and shown in minutes. `GuideDays` is nullable: empty leaves the server to choose. Changing a folder does not move recordings already made, and the page says so.
+- **Not here:** `RecordingPostProcessor` and its arguments. They run a program on the server, so this app leaves them as they are.

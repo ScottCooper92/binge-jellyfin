@@ -78,6 +78,9 @@ enum class ConsolePage {
     /** The server's Live TV tuners and guide data. For a user whose policy lets them manage Live TV, an administrator or not. */
     LiveTv,
 
+    /** How the server records Live TV: folders, padding and saved files. Opened from the Live TV page. Admin only. */
+    LiveTvRecording,
+
     /** The server itself: its info, restarting it and shutting it down. Admin only. */
     Server,
     ;
@@ -98,6 +101,7 @@ enum class ConsolePage {
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
             LiveTv -> account.canManageLiveTv
+            LiveTvRecording -> account.isAdministrator && account.canManageLiveTv
             Backups -> account.isAdministrator && profile.hasBackups
             Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
             ServerSettings, Network, LibraryDisplay, Transcoding, Server,
