@@ -1,5 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -8,12 +11,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import kotlinx.coroutines.launch
 
 /** The open console page, with its own view model from the page's store. */
 @Composable
@@ -30,6 +35,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Playback -> PlaybackRoute(graph, close)
         ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
+        ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying ->
             NowPlayingRoute(
@@ -56,6 +62,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
+        ConsolePage.MetadataDefaults -> MetadataDefaultsRoute(graph, close)
         ConsolePage.Backups -> BackupsRoute(graph, signedIn.profile.version, close)
         ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
         ConsolePage.LiveTv ->
@@ -134,6 +141,34 @@ private fun HomeLayoutRoute(
             onDisplayCollectionsView = home::setDisplayCollectionsView,
             onRetry = home::load,
             onRetrySave = home::retrySave,
+            onBack = onBack,
+        ),
+    )
+}
+
+/** The profile picture page: the system photo picker feeds the view model the picked file's bytes. */
+@Composable
+private fun ProfilePictureRoute(
+    graph: AppGraph,
+    newRoute: Boolean,
+    onBack: () -> Unit,
+) {
+    val picture: ProfilePictureViewModel =
+        viewModel(factory = viewModelFactory { initializer { ProfilePictureViewModel(graph.connection, newRoute) } })
+    val state by picture.state.collectAsStateWithLifecycle()
+    val resolver = LocalContext.current.applicationContext.contentResolver
+    val picker =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            // Nothing picked is the user backing out, not a failure.
+            if (uri != null) picture.choose { attempt { resolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull() }
+        }
+    ProfilePictureScreen(
+        state,
+        ProfilePictureActions(
+            onChoose = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onAskRemove = picture::askRemove,
+            onRemove = picture::remove,
+            onRetry = picture::load,
             onBack = onBack,
         ),
     )
@@ -263,6 +298,7 @@ private fun ServerRoute(
             onShutdown = server::shutdown,
             onDismissRestart = server::dismissRestart,
             onRetry = server::load,
+            onRefresh = server::refresh,
             onBack = onBack,
         ),
     )
@@ -324,6 +360,7 @@ private fun LogsRoute(
             onSaveRetention = logs::saveRetention,
             onRetrySave = logs::retrySave,
             onRetry = logs::load,
+            onRefresh = logs::refresh,
             onRetryOpen = logs::retryOpen,
             onBack = onBack,
         ),

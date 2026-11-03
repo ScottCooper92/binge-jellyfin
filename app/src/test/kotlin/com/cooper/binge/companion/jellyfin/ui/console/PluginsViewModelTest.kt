@@ -87,6 +87,22 @@ class PluginsViewModelTest {
     }
 
     @Test
+    fun `a pull reads the plugins again in place, and a pull that fails keeps them and says so`() {
+        val vm = made(PluginsViewModel(connection))
+        assertEquals(2, vm.ready().plugins.size)
+        jellyfin.plugins +=
+            """{"Name":"Kodi Sync Queue","Version":"15.0.0.0","Description":"","Id":"771e19d6-5385-4caa-b35d-b7bc8a3c8b0a",""" +
+            """"CanUninstall":true,"HasImage":false,"Status":"Active"}"""
+        vm.pull()
+        assertNull(vm.ready { it.plugins.size == 3 && !it.refreshing }.refreshFailed)
+        jellyfin.status["/Plugins"] = 500
+        vm.pull()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(3, failed.plugins.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
     fun `refresh reads a plugin installed since, and the restart it needs, without going back to loading`() {
         val vm = made(PluginsViewModel(connection))
         assertFalse(vm.ready().restartNeeded)

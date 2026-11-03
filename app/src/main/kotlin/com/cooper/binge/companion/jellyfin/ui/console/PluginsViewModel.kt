@@ -40,6 +40,9 @@ sealed interface PluginsUiState {
         val settingsUrl: String? = null,
         val actionFailed: ConsoleFailure? = null,
         val sentEnabled: Map<String, Boolean> = emptyMap(),
+        /** True while a pull reads the list again; the list stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : PluginsUiState {
         /**
          * Whether [plugin] is switched on. Once a change is waiting for a restart the server reports `Restart`
@@ -81,6 +84,19 @@ class PluginsViewModel(
         }
     }
 
+    /** Reads the plugins again for a pull to refresh, keeping the list and reporting a failure. */
+    fun pull() {
+        val ready = _state.value as? PluginsUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.plugins() }
+                .onSuccess { plugins -> update { read(plugins).copy(refreshing = false) } }
+                .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
+        }
+    }
+
     /**
      * Reads the plugins again without going back to Loading, for a change made elsewhere on the page (an
      * install). Keeps what the page is showing, and the last on/off sent for a plugin still waiting for a restart.
@@ -89,12 +105,7 @@ class PluginsViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> client.plugins() }
-                .onSuccess { plugins ->
-                    update {
-                        val waiting = plugins.filter { it.status == PluginStatus.Restart }.map { it.id }.toSet()
-                        copy(plugins = plugins, sentEnabled = sentEnabled.filterKeys { it in waiting })
-                    }
-                }
+                .onSuccess { plugins -> update { read(plugins) } }
         }
     }
 
@@ -153,6 +164,12 @@ class PluginsViewModel(
                     }
                 }.onFailure { error -> update { copy(busy = busy - plugin.id, actionFailed = error.consoleFailure()) } }
         }
+    }
+
+    /** The page with [plugins] as the server now lists them, and the last on/off sent only for those still waiting for a restart. */
+    private fun PluginsUiState.Ready.read(plugins: List<ServerPlugin>): PluginsUiState.Ready {
+        val waiting = plugins.filter { it.status == PluginStatus.Restart }.map { it.id }.toSet()
+        return copy(plugins = plugins, sentEnabled = sentEnabled.filterKeys { it in waiting })
     }
 
     private fun update(change: PluginsUiState.Ready.() -> PluginsUiState.Ready) =

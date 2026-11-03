@@ -12,8 +12,11 @@ import java.io.File
  * is a hazard that CI cannot see until some other test falls over.
  */
 class ComposeRuleGuardTest {
-    /** This file, which names the rules it forbids, and the one rule that wraps a plain one in the take-down. */
-    private val allowed = setOf("ComposeRuleGuardTest.kt", "RecreatableTakeDownRule.kt")
+    /**
+     * This file, which names the rules it forbids, and the one test that must not use a rule that owns the Activity: it recreates
+     * the Activity under an `ActivityController` and drains the looper itself (see its KDoc).
+     */
+    private val allowed = setOf("ComposeRuleGuardTest.kt", "AddRepositoryRecreationTest.kt")
 
     private val plainRule =
         Regex("""\b(createComposeRule|createAndroidComposeRule|createEmptyComposeRule|createKeyboardComposeRule)\b""")
@@ -30,8 +33,8 @@ class ComposeRuleGuardTest {
                 .toList()
 
         assertTrue(
-            "Use createTakeDownAndroidComposeRule<ComponentActivity>() (or RecreatableTakeDownRule for a test that recreates " +
-                "the Activity), not a plain compose rule (binge-jellyfin#308), in: $offenders",
+            "Use createTakeDownAndroidComposeRule<ComponentActivity>() (its `scenario` recreates the Activity), not a plain " +
+                "compose rule (binge-jellyfin#308), in: $offenders",
             offenders.isEmpty(),
         )
     }

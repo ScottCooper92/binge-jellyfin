@@ -62,6 +62,7 @@ internal fun PluginsRoute(
                 onOpenSettings = installed::openSettings,
                 onRestart = onOpenServer,
                 onRetry = installed::load,
+                onRefresh = installed::pull,
             ),
         catalogActions =
             CatalogActions(
@@ -77,6 +78,7 @@ internal fun PluginsRoute(
                 onAskRemove = repositories::askRemove,
                 onRemove = repositories::remove,
                 onRetry = repositories::load,
+                onRefresh = repositories::refresh,
             ),
         onBack = onBack,
     )
