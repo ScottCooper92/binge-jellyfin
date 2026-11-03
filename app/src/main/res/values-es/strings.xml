@@ -386,6 +386,7 @@
     <string name="devices_rename_title">Cambiar nombre del dispositivo</string>
     <string name="devices_rename_body">Déjalo vacío para usar el nombre que se da el propio dispositivo.</string>
     <string name="devices_rename_save">Guardar</string>
+    <string name="console_not_refreshed">No se ha actualizado. %1$s</string>
     <string name="devices_not_changed">No se ha cambiado. %1$s</string>
     <string name="users_title">Usuarios</string>
     <string name="console_users_detail">Quién puede iniciar sesión y qué ve</string>
@@ -579,7 +580,7 @@
     <string name="api_keys_create">Crear clave</string>
     <string name="api_keys_created_title">Clave para %1$s</string>
     <string name="api_keys_created_body">Cópiala ahora. Solo se muestra una vez.</string>
-    <string name="api_keys_done">Hecho</string>
+    <string name="api_keys_copied">Ya la he copiado</string>
     <string name="api_keys_copy">Copiar</string>
     <string name="api_keys_not_changed">No se ha cambiado. %1$s</string>
     <string name="tasks_triggers">Activadores</string>
@@ -590,6 +591,11 @@
     <string name="tasks_trigger_new_title">Nuevo activador</string>
     <string name="tasks_trigger_new_body">¿Cuándo debe ejecutarse esta tarea por sí sola?</string>
     <string name="tasks_trigger_create">Añadir</string>
+    <string name="tasks_trigger_hour">Hora</string>
+    <string name="tasks_trigger_minute">Minuto</string>
+    <string name="tasks_trigger_am">a. m.</string>
+    <string name="tasks_trigger_pm">p. m.</string>
+    <string name="tasks_trigger_time_invalid">Usa una hora de 1 a 12 y minutos de 0 a 59.</string>
     <string name="tasks_trigger_limit">Límite de tiempo</string>
     <string name="tasks_trigger_no_limit">Sin límite</string>
     <string name="trigger_kind_daily">Diario</string>

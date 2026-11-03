@@ -81,6 +81,13 @@ class PluginsScreenshotTest {
     @Composable
     fun installed() = Plugins()
 
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun installedRefreshing() = Plugins(installed = PluginsUiState.Ready(installedPlugins, refreshing = true))
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
@@ -172,6 +179,13 @@ class PluginsScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun repositories() = RepositoriesTabPreview(RepositoriesUiState.Ready(repositories))
+
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun repositoriesRefreshing() = RepositoriesTabPreview(RepositoriesUiState.Ready(repositories, refreshing = true))
 
     @PreviewTest
     @JellyfinScreenStatePreview

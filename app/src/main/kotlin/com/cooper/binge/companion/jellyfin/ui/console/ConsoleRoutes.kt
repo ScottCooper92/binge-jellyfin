@@ -297,6 +297,7 @@ private fun ServerRoute(
             onShutdown = server::shutdown,
             onDismissRestart = server::dismissRestart,
             onRetry = server::load,
+            onRefresh = server::refresh,
             onBack = onBack,
         ),
     )
@@ -358,6 +359,7 @@ private fun LogsRoute(
             onSaveRetention = logs::saveRetention,
             onRetrySave = logs::retrySave,
             onRetry = logs::load,
+            onRefresh = logs::refresh,
             onRetryOpen = logs::retryOpen,
             onBack = onBack,
         ),
