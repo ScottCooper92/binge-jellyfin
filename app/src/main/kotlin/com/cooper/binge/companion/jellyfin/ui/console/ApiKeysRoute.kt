@@ -28,6 +28,7 @@ internal fun ApiKeysRoute(
             onAskRemove = keys::askRemove,
             onRemove = keys::remove,
             onRetry = keys::load,
+            onRefresh = keys::refresh,
             onBack = onBack,
         ),
     )

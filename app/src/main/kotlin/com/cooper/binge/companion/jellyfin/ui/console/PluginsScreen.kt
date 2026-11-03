@@ -40,6 +40,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import com.binge.designsystem.component.BingeOutlinedButton
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTabRow
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -66,6 +67,7 @@ data class PluginsActions(
     /** Goes to the Server page, where Restart is. */
     val onRestart: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
 )
 
 internal const val REPOSITORIES_TAB = 2
@@ -146,6 +148,8 @@ fun PluginsScreen(
             RefusedMessage((installed as? PluginsUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
             RefusedMessage((catalog as? CatalogUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
             RefusedMessage((repositories as? RepositoriesUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
+            RefusedMessage((installed as? PluginsUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
+            RefusedMessage((repositories as? RepositoriesUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
             Column(Modifier.fillMaxSize()) {
                 if (detail == null) {
                     BingeTabRow(
@@ -256,7 +260,12 @@ private fun InstalledTab(
                         message = stringResource(R.string.plugins_empty),
                         title = stringResource(R.string.plugins_empty_title),
                     )
-                else -> InstalledList(state, actions, inner, listState)
+                else ->
+                    BingePullToRefresh(
+                        isRefreshing = state.refreshing,
+                        onRefresh = actions.onRefresh,
+                        indicatorTopInset = inner.calculateTopPadding(),
+                    ) { InstalledList(state, actions, inner, listState) }
             }
     }
 }
@@ -269,6 +278,7 @@ private fun InstalledList(
     listState: LazyListState,
 ) {
     LazyColumn(
+        modifier = Modifier.fillMaxSize(),
         state = listState,
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
