@@ -97,7 +97,7 @@ enum class ConsolePage {
             ApproveCode -> profile.quickConnect
             Playback, HomeLayout, ProfilePicture -> account.canEditPreferences
             Password -> account.hasLocalPassword
-            NowPlaying, ProfilePicture -> true
+            NowPlaying -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
             LiveTv -> account.canManageLiveTv
