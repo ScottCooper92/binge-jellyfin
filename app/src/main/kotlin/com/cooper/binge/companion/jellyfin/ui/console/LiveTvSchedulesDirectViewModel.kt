@@ -178,8 +178,9 @@ class LiveTvSchedulesDirectViewModel(
                     }
                 }.fold(
                     onSuccess = {
-                        _state.update { SdUiState() }
+                        // The page is told first, so seeing the setup closed means it has been.
                         onChanged()
+                        _state.update { SdUiState() }
                     },
                     onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.LineupNotAdded) } },
                 )

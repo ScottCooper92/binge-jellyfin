@@ -27,6 +27,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -132,6 +135,36 @@ class LiveTvSchedulesDirectViewModelTest {
         assertEquals("USA", sent.getValue("Country").jsonPrimitive.content)
         assertEquals("10001", sent.getValue("ZipCode").jsonPrimitive.content)
         assertEquals("carol", sent.getValue("Username").jsonPrimitive.content)
+        assertEquals(2, changed)
+    }
+
+    /** As the guide's: the page is told before the setup reads as closed, held on a latch so the order shows without a sleep (#299). */
+    @Test
+    fun `the setup reads as closed only after the page has been told`() {
+        val calls = AtomicInteger()
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val vm =
+            made(
+                LiveTvSchedulesDirectViewModel(connection) {
+                    // The first call is the account being saved; the second is the lineup being added, which is held.
+                    if (calls.incrementAndGet() == 2) {
+                        entered.countDown()
+                        release.await()
+                    }
+                    changed++
+                },
+            )
+        signedIn(vm)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.pickCountry(usa)
+        vm.findLineups("10001")
+        vm.until { (it.step as? SdStep.Lineups)?.lineups != null }
+        vm.addLineup(SdLineup("USA-NY12345-X", "Comcast Digital"))
+        assertTrue(entered.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+        assertTrue(vm.state.value.step is SdStep.Lineups)
+        release.countDown()
+        vm.until { it.step == null && !it.saving }
         assertEquals(2, changed)
     }
 
