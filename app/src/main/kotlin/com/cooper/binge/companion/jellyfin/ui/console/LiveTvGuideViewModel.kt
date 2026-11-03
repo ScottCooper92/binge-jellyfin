@@ -170,8 +170,9 @@ class LiveTvGuideViewModel(
 }
 
 private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403
 
-private fun Throwable.isProviderRefused(): Boolean = this is JellyfinHttpException && code != HTTP_UNAUTHORIZED
+private fun Throwable.isProviderRefused(): Boolean = this is JellyfinHttpException && code !in HTTP_UNAUTHORIZED..HTTP_FORBIDDEN
 
 /** The provider the user asked to remove, by the name the page shows for it. */
 data class GuideRemoval(
