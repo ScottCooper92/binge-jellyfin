@@ -1,9 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -15,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class ConsoleBackStackTest {
     @get:Rule
-    val compose = RecreatableTakeDownRule()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private fun ConsoleBackStack.pages() = entries.map { it.page }
 

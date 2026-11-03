@@ -24,6 +24,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -57,6 +58,23 @@ class LogsViewModelTest {
 
     private fun LogsViewModel.opened(check: (OpenLog) -> Boolean = { it.content !is LogContent.Loading }) =
         ready { it.open?.let(check) == true }.open!!
+
+    @Test
+    fun `a pull reads the files again in place without touching the retention, and a pull that fails keeps them and says so`() {
+        val vm = made(LogsViewModel(connection))
+        val before = vm.ready()
+        assertEquals(2, before.files.size)
+        jellyfin.logFiles = jellyfin.logFiles.take(1)
+        vm.refresh()
+        val fresh = vm.ready { it.files.size == 1 && !it.refreshing }
+        assertNull(fresh.refreshFailed)
+        assertEquals(before.retention, fresh.retention)
+        jellyfin.status["/System/Logs"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(1, failed.files.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
 
     @Test
     fun `lists the log files, newest first`() {

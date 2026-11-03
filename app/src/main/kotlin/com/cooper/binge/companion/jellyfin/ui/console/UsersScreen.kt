@@ -323,7 +323,8 @@ internal fun CreateSheet(
     inWindow: Boolean = true,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    // A password is not saved: saved state outlives the sheet (a rotation, a killed process), and a secret must not.
+    var password by remember { mutableStateOf("") }
     ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
         ConsoleFieldsForm(
             title = stringResource(R.string.users_add),
@@ -361,7 +362,8 @@ internal fun PasswordSheet(
     error: String? = null,
     inWindow: Boolean = true,
 ) {
-    var password by rememberSaveable { mutableStateOf("") }
+    // A password is not saved: saved state outlives the sheet (a rotation, a killed process), and a secret must not.
+    var password by remember { mutableStateOf("") }
     ConsoleSheet(onDismissRequest = { actions.onShow(null) }, inWindow = inWindow) {
         TextEntrySurface(
             title = stringResource(R.string.users_password_title, user.name),

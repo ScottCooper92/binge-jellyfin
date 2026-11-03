@@ -32,6 +32,13 @@ class ServerScreenshotTest {
     @Composable
     fun server() = ServerScreen(previewReady, ServerActions())
 
+    /** A pull in progress: the page stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = ServerScreen(previewReady.copy(refreshing = true), ServerActions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews

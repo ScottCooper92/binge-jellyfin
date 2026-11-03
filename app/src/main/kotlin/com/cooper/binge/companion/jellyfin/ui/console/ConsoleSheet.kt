@@ -94,6 +94,7 @@ internal fun ConsoleFieldsForm(
     onCancel: () -> Unit,
     submitting: Boolean = false,
     error: String? = null,
+    submitEnabled: Boolean = true,
     fields: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -117,7 +118,13 @@ internal fun ConsoleFieldsForm(
                 enabled = !submitting,
                 modifier = Modifier.weight(1f),
             )
-            BingeFilledButton(label = submitLabel, onClick = onSubmit, loading = submitting, modifier = Modifier.weight(1f))
+            BingeFilledButton(
+                label = submitLabel,
+                onClick = onSubmit,
+                enabled = submitEnabled,
+                loading = submitting,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }

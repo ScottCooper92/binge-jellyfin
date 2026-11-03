@@ -26,6 +26,7 @@ composeBom = "2026.09.00"
 material3 = "1.5.0-alpha29"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
+navigation3 = "1.0.0"
 androidxTestCore = "1.7.0"
 androidxTestRunner = "1.7.0"
 androidxTestJunit = "1.3.0"
@@ -58,6 +59,11 @@ compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview"
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+# Navigation 3 (stable) and its view model scoping: the console's pages are its entries, and each keeps its view
+# models while it is on the back stack. The design system's adaptive-navigation3 brings the same runtime.
+navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
 lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

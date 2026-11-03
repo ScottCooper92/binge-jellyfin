@@ -45,6 +45,13 @@ class BackupsScreenshotTest {
     @Composable
     fun backups() = BackupsScreen(previewReady, BackupsActions(), running, NOW)
 
+    /** A pull in progress: the page stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = BackupsScreen(previewReady.copy(refreshing = true), BackupsActions(), running, NOW)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
