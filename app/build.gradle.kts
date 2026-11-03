@@ -195,6 +195,8 @@ dependencies {
     implementation(libs.firebase.config)
     implementation(libs.androidx.fragment)
     testImplementation(libs.junit)
+    // The design system's take-down compose rules (createTakeDownAndroidComposeRule and its wrapper).
+    testImplementation(testFixtures(libs.binge.designsystem))
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
