@@ -56,10 +56,20 @@ internal class SplashImageController(
     /** Opens the sheet, reading the preview, or closes it. */
     fun open(on: Boolean) {
         if (!on) {
-            _state.update { it.copy(open = false, confirmingRemove = false, refused = null, unreadable = false) }
+            // A change still running keeps its outcome for the next time the sheet opens.
+            _state.update {
+                if (it.busy) {
+                    it.copy(
+                        open = false,
+                        confirmingRemove = false,
+                    )
+                } else {
+                    it.copy(open = false, confirmingRemove = false, refused = null, unreadable = false)
+                }
+            }
             return
         }
-        _state.value = SplashUiState(open = true, loading = true)
+        _state.update { it.copy(open = true, loading = true, picture = null) }
         scope.launch {
             val picture = readPicture().getOrNull()
             _state.update { it.copy(loading = false, picture = picture) }
@@ -119,7 +129,10 @@ internal class SplashImageController(
     private fun change(block: suspend () -> Unit) = connection.launchSave(block)
 
     private suspend fun adoptCurrentBranding() {
-        connection.consoleCall(TAG) { _, client -> client.brandingConfiguration() }.getOrNull()?.let { adoptBranding(it) }
+        connection.consoleCall(TAG) { _, client -> client.brandingConfiguration() }.getOrNull()?.let { json ->
+            // On the scope's own thread, as the page's saves are, and not at all once the page has gone.
+            scope.launch { adoptBranding(json) }.join()
+        }
     }
 
     private fun decode(bytes: ByteArray): Bitmap? = attempt { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }.getOrNull()

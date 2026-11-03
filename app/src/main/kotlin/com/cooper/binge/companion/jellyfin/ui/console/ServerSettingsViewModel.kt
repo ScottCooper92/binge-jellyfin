@@ -193,7 +193,10 @@ class ServerSettingsViewModel(
 
     fun setQuickConnect(on: Boolean) = server.set(QUICK_CONNECT_AVAILABLE, JsonPrimitive(on))
 
-    fun setSplashscreen(on: Boolean) = brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
+    /** Not while the image changes: a write now would send back the location the server is about to replace. */
+    fun setSplashscreen(on: Boolean) {
+        if (!splashImage.state.value.busy) brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
+    }
 
     /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
     override fun onCleared() {

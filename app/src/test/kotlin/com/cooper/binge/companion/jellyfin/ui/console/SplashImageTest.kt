@@ -90,6 +90,23 @@ class SplashImageTest {
     }
 
     @Test
+    fun `reopening the sheet during a change keeps it busy`() {
+        val vm = viewModel()
+        val release = java.util.concurrent.CountDownLatch(1)
+        vm.splashImage.open(true)
+        vm.splash { !it.loading }
+        vm.splashImage.choose {
+            release.await()
+            jpeg()
+        }
+        vm.splashImage.open(false)
+        vm.splashImage.open(true)
+        assertTrue(vm.splashImage.state.value.busy)
+        release.countDown()
+        vm.splash { !it.busy }
+    }
+
+    @Test
     fun `a change waiting to be saved is sent before the upload, not lost under it`() {
         val vm = viewModel()
         vm.setSplashscreen(true)
