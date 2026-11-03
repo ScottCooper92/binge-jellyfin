@@ -6,6 +6,7 @@ import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.TypeFetchers
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -40,6 +41,16 @@ class MetadataDefaultsScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun typePage() = MetadataDefaultsScreen(ready.copy(type = "MusicVideo"), MetadataDefaultsActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun fetcherPage() =
+        MetadataDefaultsScreen(
+            ready.copy(type = "MusicVideo", provider = OpenFetcher(FetcherKind.Metadata, "The Open Movie Database")),
+            MetadataDefaultsActions(),
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview

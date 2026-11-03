@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -17,6 +20,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.FormScreen
@@ -31,13 +35,14 @@ import com.binge.designsystem.R as DesR
 data class MetadataDefaultsActions(
     val onOpen: (String?) -> Unit = {},
     val onSet: (type: String, kind: FetcherKind, name: String, enabled: Boolean) -> Unit = { _, _, _, _ -> },
+    val onOpenFetcher: (OpenFetcher?) -> Unit = {},
+    val onMove: (type: String, kind: FetcherKind, name: String, by: Int) -> Unit = { _, _, _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
 private const val LOADING_ROWS = 8
-private const val DETAIL_LINES = 3
 
 /** The words for an item type as the server names it, or the name itself for one this app has no word for. */
 @Composable
@@ -70,12 +75,14 @@ fun MetadataDefaultsScreen(
 ) {
     val ready = state as? MetadataDefaultsUiState.Ready
     val type = ready?.type
-    BackHandler(enabled = type != null) { actions.onOpen(null) }
+    val provider = ready?.provider
+    val back: () -> Unit = if (provider != null) ({ actions.onOpenFetcher(null) }) else ({ actions.onOpen(null) })
+    BackHandler(enabled = type != null, onBack = back)
     val host = remember { SnackbarHostState() }
     FormScreen(
-        title = type?.let { itemTypeName(it) } ?: stringResource(R.string.metadata_title),
+        title = provider?.name ?: type?.let { itemTypeName(it) } ?: stringResource(R.string.metadata_title),
         bar = ScreenBar.Small,
-        onBack = if (type != null) ({ actions.onOpen(null) }) else actions.onBack,
+        onBack = if (type != null) back else actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
@@ -88,7 +95,11 @@ fun MetadataDefaultsScreen(
             },
     ) { _ ->
         if (ready != null) {
-            if (type == null) TypeList(ready, actions) else TypePage(type, ready, actions)
+            when {
+                type == null -> TypeList(ready, actions)
+                provider == null -> TypePage(type, ready, actions)
+                else -> FetcherPage(type, provider, ready, actions)
+            }
             RefusedMessage(ready.refused, host)
         }
     }
@@ -143,14 +154,63 @@ private fun TypePage(
                             ListItem(
                                 icon = if (kind == FetcherKind.Metadata) Icons.Outlined.Extension else Icons.Outlined.Image,
                                 label = provider.name,
-                                supportingMaxLines = DETAIL_LINES,
-                                toggled = provider.enabled,
-                                onClick = { actions.onSet(type, kind, provider.name, !provider.enabled) },
+                                detail =
+                                    stringResource(
+                                        if (provider.enabled) R.string.library_provider_on else R.string.library_provider_off,
+                                    ),
+                                onClick = { actions.onOpenFetcher(OpenFetcher(kind, provider.name)) },
                             )
                         },
                 )
             }
         }
+    }
+}
+
+/** One fetcher of a type: whether the defaults use it, and its place in the order. */
+@Composable
+private fun FetcherPage(
+    type: String,
+    open: OpenFetcher,
+    state: MetadataDefaultsUiState.Ready,
+    actions: MetadataDefaultsActions,
+) {
+    val all = state.fetchers(type, open.kind)
+    val place = all.indexOfFirst { it.name.equals(open.name, ignoreCase = true) }
+    val fetcher = all.getOrNull(place) ?: return
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+        ItemGroup(
+            title = null,
+            rows =
+                listOf(
+                    ListItem(
+                        icon = Icons.Outlined.PowerSettingsNew,
+                        label = stringResource(R.string.library_provider_use),
+                        toggled = fetcher.enabled,
+                        onClick = { actions.onSet(type, open.kind, fetcher.name, !fetcher.enabled) },
+                    ),
+                ),
+        )
+        ItemGroup(
+            title = stringResource(R.string.home_layout_order),
+            rows =
+                listOf(
+                    ListItem(
+                        icon = Icons.Outlined.ArrowUpward,
+                        label = stringResource(R.string.home_layout_move_up),
+                        enabled = place > 0,
+                        destination = ListItemDestination.Action,
+                        onClick = { actions.onMove(type, open.kind, fetcher.name, -1) },
+                    ),
+                    ListItem(
+                        icon = Icons.Outlined.ArrowDownward,
+                        label = stringResource(R.string.home_layout_move_down),
+                        enabled = place < all.lastIndex,
+                        destination = ListItemDestination.Action,
+                        onClick = { actions.onMove(type, open.kind, fetcher.name, 1) },
+                    ),
+                ),
+        )
     }
 }
 

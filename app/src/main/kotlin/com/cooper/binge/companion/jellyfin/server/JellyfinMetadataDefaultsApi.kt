@@ -8,8 +8,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 // The server's per-item-type metadata defaults: `MetadataOptions` in `/System/Configuration`, an array of one entry per item
-// type. Read at v10.9.11 and v10.11.0 (and present at 10.8.13 and 10.10.0): each entry holds `ItemType`, and the lists the page
-// leaves alone, `DisabledMetadataSavers`, `LocalMetadataReaderOrder`, `MetadataFetcherOrder` and `ImageFetcherOrder`. A fetcher
+// type. Read at v10.9.11 and v10.11.0 (and present at 10.8.13 and 10.10.0): each entry holds `ItemType`, the disabled and order
+// lists of the two fetcher kinds, and the lists the page leaves alone (`DisabledMetadataSavers`, `LocalMetadataReaderOrder`). A fetcher
 // is on unless it is in the entry's disabled list, and a type with no entry has everything on. The page changes one list of one
 // entry and sends the whole configuration back, so every other entry and key survives.
 
@@ -19,9 +19,10 @@ const val METADATA_ITEM_TYPE = "ItemType"
 /** The two lists of fetchers a type's defaults switch on and off. */
 enum class FetcherKind(
     val disabledKey: String,
+    val orderKey: String,
 ) {
-    Metadata("DisabledMetadataFetchers"),
-    Images("DisabledImageFetchers"),
+    Metadata("DisabledMetadataFetchers", "MetadataFetcherOrder"),
+    Images("DisabledImageFetchers", "ImageFetcherOrder"),
 }
 
 /** The fetchers the server offers an item type, by the names it knows them by, in its default order. */
@@ -81,8 +82,9 @@ fun JsonObject.disabledFetchers(
 ): List<String> = entries().entryFor(type)?.names(kind.disabledKey).orEmpty()
 
 /**
- * [type]'s fetchers of [kind]: those the server [offered] in its order, then any the defaults switch off that it no longer
- * offers, so a name the page cannot list still shows and can be switched back on.
+ * [type]'s fetchers of [kind] in the order the defaults ask them: those the entry's order lists first, then the rest of
+ * [offered] in the server's order, then any the defaults switch off that the server no longer offers, so a name the page cannot
+ * list still shows and can be switched back on.
  */
 fun JsonObject.fetchers(
     type: String,
@@ -90,7 +92,9 @@ fun JsonObject.fetchers(
     offered: List<String>,
 ): List<Provider> {
     val disabled = disabledFetchers(type, kind)
-    val names = offered + disabled.filterNot { offered.has(it) }
+    val listed = entries().entryFor(type)?.names(kind.orderKey).orEmpty()
+    val ordered = listed.mapNotNull { name -> offered.firstOrNull { it.equals(name, ignoreCase = true) } }
+    val names = ordered + offered.filterNot { ordered.has(it) } + disabled.filterNot { offered.has(it) }
     return names.distinct().map { Provider(it, !disabled.has(it)) }
 }
 
@@ -104,10 +108,39 @@ fun JsonObject.withFetcher(
     name: String,
     enabled: Boolean,
 ): JsonObject {
+    val disabled = disabledFetchers(type, kind).filterNot { it.equals(name, ignoreCase = true) }
+    return withEntryList(type, kind.disabledKey, if (enabled) disabled else disabled + name)
+}
+
+/**
+ * The configuration with [name] moved [by] places (-1 earlier, 1 later) in [kind]'s order for [type]. Every offered name is
+ * written, so the order is kept whole whatever the server adds later; a name that cannot move stays where it is.
+ */
+fun JsonObject.withFetcherMoved(
+    type: String,
+    kind: FetcherKind,
+    offered: List<String>,
+    name: String,
+    by: Int,
+): JsonObject {
+    val names = fetchers(type, kind, offered).map { it.name }.filter { offered.has(it) }.toMutableList()
+    val from = names.indexOfFirst { it.equals(name, ignoreCase = true) }
+    val to = from + by
+    if (from >= 0 && to in names.indices) names.add(to, names.removeAt(from))
+    return withEntryList(type, kind.orderKey, names)
+}
+
+private fun JsonObject.withEntryList(
+    type: String,
+    key: String,
+    names: List<String>,
+): JsonObject {
     val all = entries()
-    val entry = all.entryFor(type) ?: JsonObject(mapOf(METADATA_ITEM_TYPE to JsonPrimitive(type)))
-    val disabled = entry.names(kind.disabledKey).filterNot { it.equals(name, ignoreCase = true) }
-    val changed = JsonObject(entry + (kind.disabledKey to JsonArray((if (enabled) disabled else disabled + name).map(::JsonPrimitive))))
-    val rewritten = if (all.entryFor(type) == null) all + changed else all.map { if (it === all.entryFor(type)) changed else it }
+    val found = all.entryFor(type)
+    val changed =
+        JsonObject(
+            (found ?: JsonObject(mapOf(METADATA_ITEM_TYPE to JsonPrimitive(type)))) + (key to JsonArray(names.map(::JsonPrimitive))),
+        )
+    val rewritten = if (found == null) all + changed else all.map { if (it === found) changed else it }
     return JsonObject(this + (METADATA_OPTIONS to JsonArray(rewritten)))
 }

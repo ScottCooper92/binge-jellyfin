@@ -169,6 +169,48 @@ class MetadataDefaultsViewModelTest {
     }
 
     @Test
+    fun `a move saves the order of that type's kind and the page shows it`() {
+        val vm = made(MetadataDefaultsViewModel(connection))
+        vm.ready()
+
+        vm.move("Movie", FetcherKind.Metadata, "The Open Movie Database", -1)
+        vm.ready { it.save.status == SaveStatus.Saved }
+        saves(1)
+
+        assertEquals(
+            JsonArray(listOf("The Open Movie Database", "TheMovieDb").map(::JsonPrimitive)),
+            entry("Movie").getValue("MetadataFetcherOrder"),
+        )
+        assertEquals(
+            listOf("The Open Movie Database", "TheMovieDb"),
+            vm
+                .ready()
+                .let {
+                    it.configuration.fetchers(
+                        "Movie",
+                        FetcherKind.Metadata,
+                        it.offered("Movie", FetcherKind.Metadata),
+                    )
+                }.map { it.name },
+        )
+    }
+
+    @Test
+    fun `a fetcher's page opens, and opening a type or the list closes it`() {
+        val vm = made(MetadataDefaultsViewModel(connection))
+        vm.ready()
+
+        vm.open("Movie")
+        vm.openFetcher(OpenFetcher(FetcherKind.Images, "TheMovieDb"))
+        assertEquals("TheMovieDb", vm.ready { it.provider != null }.provider?.name)
+        vm.openFetcher(null)
+        assertNull(vm.ready { it.provider == null }.provider)
+        vm.openFetcher(OpenFetcher(FetcherKind.Images, "TheMovieDb"))
+        vm.open(null)
+        assertNull(vm.ready { it.type == null }.provider)
+    }
+
+    @Test
     fun `a type's page opens and goes back to the list`() {
         val vm = made(MetadataDefaultsViewModel(connection))
         vm.ready()

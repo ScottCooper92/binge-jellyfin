@@ -95,6 +95,55 @@ class JellyfinMetadataDefaultsApiTest {
         assertEquals(JsonArray(listOf(JsonPrimitive("themoviedb"))), twice.entryOf("Movie").getValue("DisabledMetadataFetchers"))
     }
 
+    @Test
+    fun `fetchers show in the order the entry asks, then the rest as the server offers them`() {
+        val offered = listOf("TheMovieDb", "The Open Movie Database", "TheTVDB")
+        val ordered = configuration.withFetcherMoved("Movie", FetcherKind.Metadata, offered, "TheTVDB", -1)
+        val names = ordered.fetchers("Movie", FetcherKind.Metadata, offered).map { it.name }
+
+        assertEquals(listOf("TheMovieDb", "TheTVDB", "The Open Movie Database"), names)
+        assertEquals(
+            JsonArray(listOf("TheMovieDb", "TheTVDB", "The Open Movie Database").map(::JsonPrimitive)),
+            ordered.entryOf("Movie").getValue("MetadataFetcherOrder"),
+        )
+    }
+
+    @Test
+    fun `a move changes that order list of that entry and nothing else`() {
+        val offered = listOf("a", "b", "c")
+        val changed = configuration.withFetcherMoved("MusicVideo", FetcherKind.Images, offered, "a", 1)
+
+        assertEquals(JsonArray(listOf("b", "a", "c").map(::JsonPrimitive)), changed.entryOf("MusicVideo").getValue("ImageFetcherOrder"))
+        assertEquals(
+            configuration.entryOf("MusicVideo").getValue("DisabledImageFetchers"),
+            changed.entryOf("MusicVideo").getValue("DisabledImageFetchers"),
+        )
+        assertEquals(configuration.entryOf("Movie"), changed.entryOf("Movie"))
+        assertEquals(configuration.getValue("Future"), changed.getValue("Future"))
+    }
+
+    @Test
+    fun `a name at the end cannot move past it, and the first move for a type with no entry writes one`() {
+        val offered = listOf("a", "b")
+
+        assertEquals(
+            JsonArray(listOf("a", "b").map(::JsonPrimitive)),
+            configuration
+                .withFetcherMoved(
+                    "Series",
+                    FetcherKind.Metadata,
+                    offered,
+                    "a",
+                    -1,
+                ).entryOf("Series")
+                .getValue("MetadataFetcherOrder"),
+        )
+        assertEquals(
+            listOf("Movie", "MusicVideo", "Series"),
+            configuration.withFetcherMoved("Series", FetcherKind.Metadata, offered, "b", -1).metadataTypes(),
+        )
+    }
+
     private fun JsonObject.entryOf(type: String): JsonObject =
         getValue("MetadataOptions").let { it as JsonArray }.map { it.jsonObject }.first { it.getValue("ItemType") == JsonPrimitive(type) }
 }
