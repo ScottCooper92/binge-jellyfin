@@ -21,20 +21,30 @@ data class TmdbCoverage(
  * server does not send a total.
  */
 suspend fun JellyfinClient.tmdbCoverage(userId: String): TmdbCoverage? {
-    suspend fun total(withoutTmdbId: Boolean): Int? {
-        val query =
-            mapOf(
-                "userId" to userId,
-                "recursive" to "true",
-                "includeItemTypes" to "Movie,Series",
-                "enableImages" to "false",
-                "limit" to "1",
-            )
-        return getObject("Items", if (withoutTmdbId) query + ("hasTmdbId" to "false") else query).int("TotalRecordCount")
-    }
-    val titles = total(withoutTmdbId = false) ?: return null
-    val without = total(withoutTmdbId = true) ?: return null
+    val titles = titleTotal(userId, withoutTmdbId = false) ?: return null
+    val without = titleTotal(userId, withoutTmdbId = true) ?: return null
     return TmdbCoverage(titles, without)
+}
+
+/**
+ * How many movies and series [userId] can see that carry no TMDB id, from one read of `/Items` that asks for one record and
+ * takes the server's total. Null when the server does not send a total.
+ */
+suspend fun JellyfinClient.titlesWithoutTmdbId(userId: String): Int? = titleTotal(userId, withoutTmdbId = true)
+
+private suspend fun JellyfinClient.titleTotal(
+    userId: String,
+    withoutTmdbId: Boolean,
+): Int? {
+    val query =
+        mapOf(
+            "userId" to userId,
+            "recursive" to "true",
+            "includeItemTypes" to "Movie,Series",
+            "enableImages" to "false",
+            "limit" to "1",
+        )
+    return getObject("Items", if (withoutTmdbId) query + ("hasTmdbId" to "false") else query).int("TotalRecordCount")
 }
 
 /**

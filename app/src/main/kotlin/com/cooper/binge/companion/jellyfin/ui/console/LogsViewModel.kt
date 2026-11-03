@@ -94,7 +94,7 @@ class LogsViewModel(
             { _, client, json -> client.saveServerConfiguration(json) },
             onProgress = { progress -> update { copy(save = progress) } },
         ) { shown, failure ->
-            update { copy(retention = shown.logRetentionDays(), refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
+            update { copy(retention = shown.logRetentionDays(), refused = refusedAfter(refused, failure)) }
         }
 
     init {

@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.service
 
+import com.binge.companion.contracts.library.v1.AvailabilityReason
 import com.binge.companion.contracts.library.v1.AvailabilityState
 import com.binge.companion.contracts.library.v1.Capability
 import com.binge.companion.contracts.library.v1.EpisodeRef
@@ -167,6 +168,45 @@ class JellyfinLibraryServiceTest {
             val absent = stub.getAvailability(GetAvailabilityRequest.newBuilder().setMedia(media(MediaType.MEDIA_TYPE_MOVIE, 1)).build())
             assertEquals(AvailabilityState.AVAILABILITY_STATE_NOT_IN_LIBRARY, absent.availability.state)
         }
+
+    private fun absentReason(): AvailabilityReason =
+        runBlocking {
+            stub
+                .getAvailability(
+                    GetAvailabilityRequest.newBuilder().setMedia(media(MediaType.MEDIA_TYPE_MOVIE, 1)).build(),
+                ).availability.reason
+        }
+
+    @Test
+    fun `a title that is not found says the server has titles with no TMDB id, when it does`() {
+        assertEquals(AvailabilityReason.AVAILABILITY_REASON_SERVER_LACKS_IDS, absentReason())
+    }
+
+    @Test
+    fun `a title that is not found says nothing more when every title the server holds has an id`() {
+        jellyfin.items.removeAll { it.id == "untagged" }
+        assertEquals(AvailabilityReason.AVAILABILITY_REASON_UNSPECIFIED, absentReason())
+    }
+
+    @Test
+    fun `a title that is found carries no reason, even when the server has titles with no id`() =
+        runBlocking {
+            val held = stub.getAvailability(GetAvailabilityRequest.newBuilder().setMedia(movie).build()).availability
+            assertEquals(AvailabilityState.AVAILABILITY_STATE_IN_LIBRARY, held.state)
+            assertEquals(AvailabilityReason.AVAILABILITY_REASON_UNSPECIFIED, held.reason)
+        }
+
+    @Test
+    fun `an empty library says nothing more than not in library`() {
+        jellyfin.items.clear()
+        assertEquals(AvailabilityReason.AVAILABILITY_REASON_UNSPECIFIED, absentReason())
+    }
+
+    @Test
+    fun `a count that cannot be read leaves the reason unspecified and does not fail the answer`() {
+        jellyfin.failsTheMissingIdCount = true
+        assertEquals(AvailabilityReason.AVAILABILITY_REASON_UNSPECIFIED, absentReason())
+    }
 
     @Test
     fun `a series lists the episodes the server has files for, by season`() =

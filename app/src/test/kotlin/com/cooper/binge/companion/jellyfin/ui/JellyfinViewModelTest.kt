@@ -382,7 +382,7 @@ class JellyfinViewModelTest {
     fun `a gates-only refresh picks up a change without reading the library again`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
-        vm.await<UiState.SignedIn> { it.account.isRead && !it.refreshing }
+        vm.await<UiState.SignedIn> { it.account.isRead && !it.refreshing && it.card.tmdb != null }
 
         // The library index reads items that have a TMDB id. The server card's coverage count also reads /Items, without that
         // filter or with false, and its reads can land at any moment, so they are not library reads.

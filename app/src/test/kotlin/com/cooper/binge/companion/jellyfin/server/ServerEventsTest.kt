@@ -36,6 +36,9 @@ class ServerEventsTest {
         jellyfin.close()
     }
 
+    /** The library pages the index reads (the titles with an id); its one count of those without is not a page. */
+    private fun pageReads() = jellyfin.requests.count { it.url.encodedPath == "/Items" && it.url.queryParameter("hasTmdbId") == "true" }
+
     private fun awaitUntil(check: () -> Boolean) {
         val deadline = System.currentTimeMillis() + TIMEOUT_MILLIS
         while (!check()) {
@@ -97,7 +100,7 @@ class ServerEventsTest {
         val client = runBlocking { connection.signedIn()!!.second }
         val key = IndexKey(IndexType.MOVIE, 5)
         runBlocking { index.find(client, "user-1", key) }
-        val before = jellyfin.hits("/Items")
+        val before = pageReads()
 
         jellyfin.push("""{"MessageType":"LibraryChanged","Data":{"ItemsAdded":["x"]}}""")
         repeat(2) { assertEquals(ServerEvent.LIBRARY_CHANGED, received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) }
@@ -105,7 +108,7 @@ class ServerEventsTest {
             index.find(client, "user-1", key)
             index.find(client, "user-1", key)
         }
-        assertEquals(before + 1, jellyfin.hits("/Items"))
+        assertEquals(before + 1, pageReads())
     }
 
     @Test

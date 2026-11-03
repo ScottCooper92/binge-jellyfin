@@ -4,7 +4,6 @@ import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -35,7 +34,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +48,7 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.LogRow
 import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -325,9 +324,12 @@ private fun Entries(
     val list = rememberLazyListState()
     LaunchedEffect(entries) { if (entries.isNotEmpty()) list.scrollToItem(entries.lastIndex) }
     if (entries.isEmpty()) {
-        Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.logs_no_match), style = MaterialTheme.typography.bodyLarge)
-        }
+        // A search that matched nothing is the same empty state as an empty list, with the search-off icon.
+        EmptyScreen(
+            message = stringResource(R.string.logs_no_match),
+            title = stringResource(R.string.logs_no_match_title),
+            modifier = modifier.fillMaxWidth(),
+        )
         return
     }
     LazyColumn(
