@@ -262,6 +262,31 @@ class TvJellyfinFocusTest {
         on(R.string.setup_sign_in).assertIsFocused()
     }
 
+    // Back steps back through setup.
+
+    @Test
+    fun `Back from the password form returns to the code, on the control that stays, and asks for a code`() {
+        show(signIn.copy(quickConnectCode = "482913"))
+        ok()
+        // Opening the password cancelled the code in the view model.
+        state = signIn
+        compose.waitForIdle()
+        field(R.string.setup_username).assertIsFocused()
+        calls.clear()
+        back()
+        on(R.string.tv_use_password).assertIsFocused()
+        // The panel is new, so it asks for a code (the view model had cancelled the last one when the password opened).
+        assertEquals(listOf("quickConnect"), calls)
+    }
+
+    @Test
+    fun `Back from the code goes to the server step`() {
+        show(signIn.copy(quickConnectCode = "482913"))
+        calls.clear()
+        back()
+        assertEquals(listOf("changeServer"), calls)
+    }
+
     // Signed in.
 
     @Test
