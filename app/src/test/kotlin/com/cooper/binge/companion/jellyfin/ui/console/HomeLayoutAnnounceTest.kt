@@ -6,7 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -22,7 +22,7 @@ import org.robolectric.Shadows.shadowOf
 @RunWith(RobolectricTestRunner::class)
 class HomeLayoutAnnounceTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private val views = listOf(UserView("a", "Movies", "movies"), UserView("b", "Shows", "tvshows"), UserView("c", "Music", "music"))
     private var state by mutableStateOf(HomeLayoutUiState.Ready(views, HomeLayout(), openId = "b"))

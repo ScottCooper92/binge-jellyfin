@@ -5,9 +5,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -22,7 +22,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class SaveAsMadeStatusTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private val ready = PlaybackUiState.Ready(PlaybackPreferences("", "", SubtitleMode.None), emptyList())
 
