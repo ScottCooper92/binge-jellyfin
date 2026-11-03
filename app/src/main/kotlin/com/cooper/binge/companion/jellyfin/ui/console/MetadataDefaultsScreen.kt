@@ -178,6 +178,9 @@ private fun FetcherPage(
     val all = state.fetchers(type, open.kind)
     val place = all.indexOfFirst { it.name.equals(open.name, ignoreCase = true) }
     val fetcher = all.getOrNull(place) ?: return
+    val offered = state.offered(type, open.kind)
+    val movable = all.map { it.name }.filter { name -> offered.any { it.equals(name, ignoreCase = true) } }
+    val movablePlace = movable.indexOfFirst { it.equals(open.name, ignoreCase = true) }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         ItemGroup(
             title = null,
@@ -198,14 +201,14 @@ private fun FetcherPage(
                     ListItem(
                         icon = Icons.Outlined.ArrowUpward,
                         label = stringResource(R.string.home_layout_move_up),
-                        enabled = place > 0,
+                        enabled = movablePlace > 0,
                         destination = ListItemDestination.Action,
                         onClick = { actions.onMove(type, open.kind, fetcher.name, -1) },
                     ),
                     ListItem(
                         icon = Icons.Outlined.ArrowDownward,
                         label = stringResource(R.string.home_layout_move_down),
-                        enabled = place < all.lastIndex,
+                        enabled = movablePlace in 0 until movable.lastIndex,
                         destination = ListItemDestination.Action,
                         onClick = { actions.onMove(type, open.kind, fetcher.name, 1) },
                     ),
