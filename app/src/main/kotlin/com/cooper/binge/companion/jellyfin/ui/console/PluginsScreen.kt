@@ -190,6 +190,8 @@ fun PluginsScreen(
                     )
                 }
             }
+            // Outside the pager: a page keeps its own saved state, and a sheet drawn there lost its text when the phone turned.
+            RepositoriesOverlays(repositories, repositoryActions)
         }
     }
 }

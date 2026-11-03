@@ -3,6 +3,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -61,5 +63,25 @@ class SheetRotationTest {
     @Test
     fun `a repository name typed in the Add repository form survives the switch between the bottom and side sheet`() {
         survivesTheSwitch("A name to know it by", "Jellyfin Stable") { AddRepositoryForm(saving = false, actions = RepositoriesActions()) }
+    }
+
+    @Test
+    fun `a repository name typed in the Add repository form on the Plugins pager survives a recreation`() {
+        val tester = StateRestorationTester(compose)
+        tester.setContent {
+            JellyfinTheme {
+                val pager = rememberPagerState(initialPage = 2) { 3 }
+                HorizontalPager(state = pager) { page ->
+                    Box {
+                        if (page == 2) AddRepositoryForm(saving = false, actions = RepositoriesActions())
+                    }
+                }
+            }
+        }
+        compose.onNodeWithText("A name to know it by").performTextInput("Kept")
+        compose.onNodeWithText("Kept").assertIsDisplayed()
+        tester.emulateSavedInstanceStateRestore()
+        compose.waitForIdle()
+        compose.onNodeWithText("Kept").assertIsDisplayed()
     }
 }

@@ -40,7 +40,10 @@ data class RepositoriesActions(
     val onRetry: () -> Unit = {},
 )
 
-/** The repositories the server fetches its catalog from, with Add repository and a red Remove on each. */
+/**
+ * The repositories the server fetches its catalog from, with a red Remove on each. Its Add sheet and Remove confirm are
+ * [RepositoriesOverlays], drawn by the screen outside the pager, so what is typed in the sheet is saved with the screen.
+ */
 @Composable
 internal fun RepositoriesTab(
     state: RepositoriesUiState,
@@ -60,10 +63,19 @@ internal fun RepositoriesTab(
             } else {
                 RepositoryList(state, actions, inner, listState)
             }
-            if (state.adding) AddRepositorySheet(state.saving, actions)
-            state.removing?.let { RemoveRepositoryDialog(it, actions) }
         }
     }
+}
+
+/** The Add repository sheet and the Remove confirm, when [state] asks for them. */
+@Composable
+internal fun RepositoriesOverlays(
+    state: RepositoriesUiState,
+    actions: RepositoriesActions,
+) {
+    if (state !is RepositoriesUiState.Ready) return
+    if (state.adding) AddRepositorySheet(state.saving, actions)
+    state.removing?.let { RemoveRepositoryDialog(it, actions) }
 }
 
 @Composable
