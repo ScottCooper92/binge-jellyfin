@@ -50,15 +50,20 @@ data class LiveTvActions(
 
 /**
  * The server's Live TV setup: its tuners, which a tap edits and Add tuner adds to, its guide data, when the guide ends, and a way to
- * Scheduled tasks, where Refresh Guide is. Its Recording page, for an administrator, changes how it records. A web address shows as its
- * host only, since a playlist's address often carries the provider's account in it. Removing a tuner asks first, and a tuner the server
- * could not add says why in a dialog.
+ * Scheduled tasks, where Refresh Guide is. A guide provider's row opens its form, and Add guide data adds an XMLTV one. Its Recording
+ * page, for an administrator, changes how it records. A web address shows as its host only, since a playlist's address often carries
+ * the provider's account in it. Removing a tuner asks first, and a tuner the server could not add says why in a dialog.
  */
 @Composable
 fun LiveTvScreen(
     state: LiveTvUiState,
     actions: LiveTvActions,
     now: Long = System.currentTimeMillis(),
+    guide: GuideUiState = GuideUiState(),
+    guideActions: LiveTvGuideActions = LiveTvGuideActions(),
+    sd: SdUiState = SdUiState(),
+    sdActions: SdActions = SdActions(),
+    canFinishSetup: Boolean = true,
 ) {
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -82,9 +87,13 @@ fun LiveTvScreen(
                 LiveTvUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is LiveTvUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LiveTvUiState.Ready -> {
-                    LiveTvContent(state.summary, actions, inner, now)
+                    LiveTvContent(state.summary, actions, guideActions, inner, now)
                     TunerSheets(state, actions)
                     TunerMessages(state, actions, host)
+                    GuideSheet(guide, guideActions, canFinishSetup)
+                    GuideMessages(guide, guideActions, host)
+                    SdSheet(sd, sdActions)
+                    SdMessages(sd, sdActions, host)
                 }
             }
         }
@@ -95,6 +104,7 @@ fun LiveTvScreen(
 private fun LiveTvContent(
     summary: LiveTvSummary,
     actions: LiveTvActions,
+    guideActions: LiveTvGuideActions,
     inner: PaddingValues,
     now: Long,
 ) {
@@ -127,8 +137,8 @@ private fun LiveTvContent(
             ItemGroup(
                 title = stringResource(R.string.live_tv_guide),
                 rows =
-                    summary.providers.map { it.row() }.ifEmpty { listOf(emptyRow(R.string.live_tv_no_guide)) } +
-                        guideRows(summary, actions, now),
+                    summary.providers.map { it.row(guideActions) }.ifEmpty { listOf(emptyRow(R.string.live_tv_no_guide)) } +
+                        guideRows(summary, actions, guideActions, now),
             )
         }
     }
@@ -138,9 +148,17 @@ private fun LiveTvContent(
 private fun guideRows(
     summary: LiveTvSummary,
     actions: LiveTvActions,
+    guideActions: LiveTvGuideActions,
     now: Long,
 ): List<ListItem> =
     listOfNotNull(
+        ListItem(
+            icon = Icons.Outlined.Add,
+            label = stringResource(R.string.live_tv_guide_add),
+            detail = stringResource(R.string.live_tv_guide_add_detail),
+            supportingMaxLines = ADDRESS_LINES,
+            onClick = guideActions.onAdd,
+        ),
         summary.guideEndMillis?.let { end ->
             ListItem(
                 icon = Icons.Outlined.EventNote,
@@ -170,12 +188,17 @@ private fun TunerHostSummary.row(actions: LiveTvActions): ListItem =
     )
 
 @Composable
-private fun GuideProviderSummary.row(): ListItem =
+private fun GuideProviderSummary.row(guideActions: LiveTvGuideActions): ListItem =
     ListItem(
         icon = Icons.Outlined.Dns,
         label = label.ifBlank { guideTypeLabel(type) },
-        detail = guideTypeLabel(type),
-        clickable = false,
+        detail =
+            if (lineupPending) {
+                stringResource(R.string.live_tv_guide_pending_row, guideTypeLabel(type))
+            } else {
+                guideTypeLabel(type)
+            },
+        onClick = { guideActions.onEdit(this) },
     )
 
 @Composable
@@ -191,7 +214,7 @@ private fun tunerTypeLabel(type: String): String =
     }
 
 @Composable
-private fun guideTypeLabel(type: String): String =
+internal fun guideTypeLabel(type: String): String =
     when (type.lowercase()) {
         "xmltv" -> stringResource(R.string.live_tv_type_xmltv)
         "schedulesdirect" -> stringResource(R.string.live_tv_type_schedules_direct)

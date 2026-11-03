@@ -211,6 +211,9 @@ class FakeJellyfin : Dispatcher() {
             """"LyricFetchers":[{"Name":"LrcLib","DefaultEnabled":true}],""" +
             """"MediaSegmentProviders":[{"Name":"Chapter Segments","DefaultEnabled":true}],"TypeOptions":[]}"""
 
+    /** What `/Libraries/AvailableOptions` answers for one `libraryContentType`, where it differs from [availableOptions]. */
+    val availableOptionsByType = mutableMapOf<String, String>()
+
     /** The folders `/Environment/DirectoryContents` lists, by parent: `""` holds the drives. */
     var serverFolders: Map<String, List<String>> =
         mapOf("" to listOf("/media"), "/media" to listOf("/media/movies", "/media/tv"), "/media/movies" to emptyList())
@@ -265,6 +268,18 @@ class FakeJellyfin : Dispatcher() {
             """{"Id":"t2","Type":"hdhomerun","FriendlyName":"","Url":"http://192.168.1.50"}],"ListingProviders":[""" +
             """{"Id":"g1","Type":"xmltv","Path":"/config/guide.xml"},""" +
             """{"Id":"g2","Type":"SchedulesDirect","Username":"alice","Password":"5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8"}]}"""
+
+    /** The status `POST /LiveTv/ListingProviders` answers with, 200 when it keeps the provider; the server answers 500 for one it cannot read. */
+    var listingSaveStatus = 200
+
+    /** What `/LiveTv/ListingProviders/SchedulesDirect/Countries` answers: Schedules Direct's own JSON, regions each holding countries. */
+    var sdCountries =
+        """{"North America":[{"fullName":"United States","shortName":"USA","postalCodeExample":"90210","postalCode":"d"}],""" +
+            """"Europe":[{"fullName":"United Kingdom","shortName":"GBR","postalCodeExample":"SW1A 1AA","postalCode":"x"}]}"""
+
+    /** What `/LiveTv/ListingProviders/Lineups` answers, or the status code that replaces it. An empty list is also what a failed login gives. */
+    var sdLineups = """[{"Name":"Comcast Digital","Id":"USA-NY12345-X"},{"Name":"Dish Network","Id":"USA-DISH-X"}]"""
+    var sdLineupsStatus = 200
 
     /** The status `POST /LiveTv/TunerHosts` answers with, 200 when it keeps the host; the server answers 500 for one it cannot reach. */
     var tunerSaveStatus = 200
@@ -461,6 +476,23 @@ class FakeJellyfin : Dispatcher() {
             ?.utf8()
             .orEmpty()
 
+    /** Keeps a guide provider as the server does: a new one gets an `Id`, one with an `Id` replaces that provider whole. */
+    private fun saveListingProvider(body: String): MockResponse {
+        if (listingSaveStatus != 200) return MockResponse(code = listingSaveStatus)
+        val provider = Json.parseToJsonElement(body).jsonObject
+        val id = provider["Id"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: "guide${requests.size}"
+        val saved = JsonObject(provider + ("Id" to JsonPrimitive(id)))
+        val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+        val kept =
+            config.getValue("ListingProviders").jsonArray.filter {
+                it.jsonObject
+                    .getValue("Id")
+                    .jsonPrimitive.content != id
+            }
+        liveTvConfiguration = JsonObject(config + ("ListingProviders" to JsonArray(kept + saved))).toString()
+        return json(saved.toString())
+    }
+
     /** Keeps a tuner host as the server does: a new one gets an `Id`, one with an `Id` replaces that host whole. */
     private fun saveTunerHost(body: String): MockResponse {
         if (tunerSaveStatus != 200) return MockResponse(code = tunerSaveStatus)
@@ -595,6 +627,28 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/LiveTv/Tuners/Discover" -> json(discoveredTuners)
             path == "/LiveTv/GuideInfo" -> if (guideInfoStatus == 200) json(guideInfo) else MockResponse(code = guideInfoStatus)
+            path == "/LiveTv/ListingProviders/SchedulesDirect/Countries" -> json(sdCountries)
+            path == "/LiveTv/ListingProviders/Lineups" ->
+                if (sdLineupsStatus ==
+                    200
+                ) {
+                    json(sdLineups)
+                } else {
+                    MockResponse(code = sdLineupsStatus)
+                }
+            path == "/LiveTv/ListingProviders" && request.method == "POST" -> saveListingProvider(request.body?.utf8().orEmpty())
+            path == "/LiveTv/ListingProviders" && request.method == "DELETE" -> {
+                val id = request.url.queryParameter("id")
+                val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+                val kept =
+                    config.getValue("ListingProviders").jsonArray.filter {
+                        it.jsonObject
+                            .getValue("Id")
+                            .jsonPrimitive.content != id
+                    }
+                liveTvConfiguration = JsonObject(config + ("ListingProviders" to JsonArray(kept))).toString()
+                MockResponse(code = 204)
+            }
             path == "/Localization/Countries" ->
                 json(
                     """[{"Name":"GB","DisplayName":"United Kingdom","TwoLetterISORegionName":"GB"},""" +
@@ -945,7 +999,10 @@ class FakeJellyfin : Dispatcher() {
                             404
                         },
                 )
-            path == "/Libraries/AvailableOptions" -> json(availableOptions)
+            path == "/Libraries/AvailableOptions" ->
+                json(
+                    availableOptionsByType[request.url.queryParameter("libraryContentType")] ?: availableOptions,
+                )
             path == "/Library/VirtualFolders" && request.method == "POST" -> {
                 val paths = query.queryParameter("paths")?.split(',').orEmpty()
                 val entry =
