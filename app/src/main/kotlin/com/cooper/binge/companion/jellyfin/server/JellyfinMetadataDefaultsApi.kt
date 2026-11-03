@@ -112,9 +112,21 @@ fun JsonObject.withFetcher(
     return withEntryList(type, kind.disabledKey, if (enabled) disabled else disabled + name)
 }
 
+/** [name]'s place among the names the server [offered] for [type]: its index and how many there are, null if it is not offered. */
+fun JsonObject.fetcherPlace(
+    type: String,
+    kind: FetcherKind,
+    offered: List<String>,
+    name: String,
+): Pair<Int, Int>? {
+    val names = fetchers(type, kind, offered).map { it.name }.filter { offered.has(it) }
+    val at = names.indexOfFirst { it.equals(name, ignoreCase = true) }
+    return if (at < 0) null else at to names.size
+}
+
 /**
  * The configuration with [name] moved [by] places (-1 earlier, 1 later) in [kind]'s order for [type]. Every offered name is
- * written, so the order is kept whole whatever the server adds later; a name that cannot move stays where it is.
+ * written, so the order is kept whole whatever the server adds later; a name that cannot move changes nothing.
  */
 fun JsonObject.withFetcherMoved(
     type: String,
@@ -126,7 +138,8 @@ fun JsonObject.withFetcherMoved(
     val names = fetchers(type, kind, offered).map { it.name }.filter { offered.has(it) }.toMutableList()
     val from = names.indexOfFirst { it.equals(name, ignoreCase = true) }
     val to = from + by
-    if (from >= 0 && to in names.indices) names.add(to, names.removeAt(from))
+    if (from < 0 || to !in names.indices) return this
+    names.add(to, names.removeAt(from))
     return withEntryList(type, kind.orderKey, names)
 }
 

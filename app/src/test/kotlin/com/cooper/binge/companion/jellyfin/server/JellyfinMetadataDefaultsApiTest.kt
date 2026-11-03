@@ -123,25 +123,23 @@ class JellyfinMetadataDefaultsApiTest {
     }
 
     @Test
-    fun `a name at the end cannot move past it, and the first move for a type with no entry writes one`() {
+    fun `a name at the end cannot move past it and changes nothing, and the first move for a type with no entry writes one`() {
         val offered = listOf("a", "b")
 
-        assertEquals(
-            JsonArray(listOf("a", "b").map(::JsonPrimitive)),
-            configuration
-                .withFetcherMoved(
-                    "Series",
-                    FetcherKind.Metadata,
-                    offered,
-                    "a",
-                    -1,
-                ).entryOf("Series")
-                .getValue("MetadataFetcherOrder"),
-        )
-        assertEquals(
-            listOf("Movie", "MusicVideo", "Series"),
-            configuration.withFetcherMoved("Series", FetcherKind.Metadata, offered, "b", -1).metadataTypes(),
-        )
+        assertEquals(configuration, configuration.withFetcherMoved("Series", FetcherKind.Metadata, offered, "a", -1))
+        val moved = configuration.withFetcherMoved("Series", FetcherKind.Metadata, offered, "b", -1)
+        assertEquals(listOf("Movie", "MusicVideo", "Series"), moved.metadataTypes())
+        assertEquals(JsonArray(listOf("b", "a").map(::JsonPrimitive)), moved.entryOf("Series").getValue("MetadataFetcherOrder"))
+    }
+
+    @Test
+    fun `a place counts the offered names only, so a stale disabled name has none and does not widen the others`() {
+        val offered = listOf("a", "b")
+        val stale = configuration.withFetcher("Movie", FetcherKind.Metadata, "Old", enabled = false)
+
+        assertEquals(1 to 2, stale.fetcherPlace("Movie", FetcherKind.Metadata, offered, "b"))
+        assertEquals(null, stale.fetcherPlace("Movie", FetcherKind.Metadata, offered, "Old"))
+        assertEquals(stale, stale.withFetcherMoved("Movie", FetcherKind.Metadata, offered, "b", 1))
     }
 
     private fun JsonObject.entryOf(type: String): JsonObject =

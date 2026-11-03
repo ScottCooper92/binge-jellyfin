@@ -28,6 +28,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
+import com.cooper.binge.companion.jellyfin.server.fetcherPlace
 import com.cooper.binge.companion.jellyfin.server.fetchers
 import com.binge.designsystem.R as DesR
 
@@ -176,8 +177,9 @@ private fun FetcherPage(
     actions: MetadataDefaultsActions,
 ) {
     val all = state.fetchers(type, open.kind)
-    val place = all.indexOfFirst { it.name.equals(open.name, ignoreCase = true) }
-    val fetcher = all.getOrNull(place) ?: return
+    val fetcher = all.firstOrNull { it.name.equals(open.name, ignoreCase = true) } ?: return
+    val place = state.configuration.fetcherPlace(type, open.kind, state.offered(type, open.kind), fetcher.name)
+    val index = place?.first ?: 0
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         ItemGroup(
             title = null,
@@ -198,14 +200,14 @@ private fun FetcherPage(
                     ListItem(
                         icon = Icons.Outlined.ArrowUpward,
                         label = stringResource(R.string.home_layout_move_up),
-                        enabled = place > 0,
+                        enabled = place != null && index > 0,
                         destination = ListItemDestination.Action,
                         onClick = { actions.onMove(type, open.kind, fetcher.name, -1) },
                     ),
                     ListItem(
                         icon = Icons.Outlined.ArrowDownward,
                         label = stringResource(R.string.home_layout_move_down),
-                        enabled = place < all.lastIndex,
+                        enabled = place != null && index < place.second - 1,
                         destination = ListItemDestination.Action,
                         onClick = { actions.onMove(type, open.kind, fetcher.name, 1) },
                     ),

@@ -196,6 +196,18 @@ class MetadataDefaultsViewModelTest {
     }
 
     @Test
+    fun `a move that cannot move sends nothing`() {
+        val vm = made(MetadataDefaultsViewModel(connection))
+        vm.ready()
+
+        vm.move("Movie", FetcherKind.Metadata, "TheMovieDb", -1)
+        vm.move("Movie", FetcherKind.Metadata, "Gone", 1)
+
+        assertEquals(SaveProgress(), vm.ready().save)
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" })
+    }
+
+    @Test
     fun `a fetcher's page opens, and opening a type or the list closes it`() {
         val vm = made(MetadataDefaultsViewModel(connection))
         vm.ready()

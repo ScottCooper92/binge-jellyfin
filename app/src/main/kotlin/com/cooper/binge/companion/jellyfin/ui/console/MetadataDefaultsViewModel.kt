@@ -134,7 +134,7 @@ class MetadataDefaultsViewModel(
     ) {
         val ready = _state.value as? MetadataDefaultsUiState.Ready ?: return
         val changed = saves.shown.withFetcherMoved(type, kind, ready.offered(type, kind), name, by)
-        saves.set(METADATA_OPTIONS, changed.getValue(METADATA_OPTIONS))
+        if (changed != saves.shown) saves.set(METADATA_OPTIONS, changed.getValue(METADATA_OPTIONS))
     }
 
     fun retrySave() = saves.retry()
