@@ -109,6 +109,24 @@ class SplashImageTest {
     }
 
     @Test
+    fun `a disclaimer saved during an upload is not sent and keeps the image`() {
+        val vm = viewModel()
+        val release = java.util.concurrent.CountDownLatch(1)
+        vm.splashImage.open(true)
+        vm.splash { !it.loading }
+        vm.splashImage.choose {
+            release.await()
+            jpeg()
+        }
+        vm.splashImage.open(false)
+        vm.saveText(ServerText.LoginDisclaimer, "Hello")
+        release.countDown()
+        vm.splash { !it.busy }
+        assertTrue(jellyfin.requests.none { it.method == "POST" && it.url.encodedPath == "/System/Configuration/branding" })
+        assertTrue(vm.ready().branding.customSplashscreen)
+    }
+
+    @Test
     fun `a change waiting to be saved is sent before the upload, not lost under it`() {
         val vm = viewModel()
         vm.setSplashscreen(true)

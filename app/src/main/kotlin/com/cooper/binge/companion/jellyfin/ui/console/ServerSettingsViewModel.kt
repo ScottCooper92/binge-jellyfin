@@ -143,6 +143,8 @@ class ServerSettingsViewModel(
      * Saves the text the sheet for [text] holds. The sheet stays open while the save runs: it closes when the server
      * takes it, stays open with what was typed and says why if the server refuses it, and closes if the server can't be
      * reached, the change then waiting unsent on the page. A text that is unchanged, or a blank server name, closes it.
+     * So does a branding text while the splash image changes, with nothing sent: a write now would send back the
+     * location the server is about to replace.
      */
     fun saveText(
         text: ServerText,
@@ -154,7 +156,8 @@ class ServerSettingsViewModel(
                 ServerText.LoginDisclaimer -> Triple(brand, LOGIN_DISCLAIMER, JsonPrimitive(value.trim()))
                 ServerText.CustomCss -> Triple(brand, CUSTOM_CSS, JsonPrimitive(value))
             }
-        if ((text == ServerText.Name && json.content.isEmpty()) || saves.shown[key] == json) {
+        val unsendable = (saves === brand && splashImage.state.value.busy) || (text == ServerText.Name && json.content.isEmpty())
+        if (unsendable || saves.shown[key] == json) {
             update { copy(editing = null) }
             return
         }
