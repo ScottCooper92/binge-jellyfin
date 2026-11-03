@@ -21,10 +21,7 @@ enum class ConsolePage {
     /** Change the user's own password. For everyone. */
     Password,
 
-    /**
-     * Set, change and remove the user's own picture. For everyone whose policy lets them edit their own preferences: the server's
-     * image routes refuse a user without `EnableUserPreferenceAccess` (an administrator always may).
-     */
+    /** Set, change and remove the user's own picture. For an admin, or a user whose preference access is on: the server refuses the rest. */
     ProfilePicture,
 
     /** An administrator's own settings, behind the avatar: the pages everyone else has inline on their home. */
