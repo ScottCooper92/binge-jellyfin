@@ -4,7 +4,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -36,10 +34,9 @@ import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
-import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageScope
-import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageStores
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
@@ -95,8 +92,6 @@ class MainActivity : ComponentActivity() {
             // The console pages open over the home, the last on top. A page that opens another stays under it, so
             // Back returns to the opener, and to the home from the first. Leaving SignedIn closes them all.
             var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
-            val pageStores: ConsolePageStores = viewModel()
-            val home = rememberSaveableStateHolder()
             val signedIn = state is UiState.SignedIn
             LaunchedEffect(signedIn) { if (!signedIn) stack = stack.clear() }
             // A page the server or the user lost (Quick Connect turned off, admin rights taken away) closes,
@@ -107,10 +102,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val openPage = stack.top.takeIf { signedIn }
-            // A page's view models live while it is on the stack.
-            LaunchedEffect(stack, signedIn) { pageStores.retain(if (signedIn) stack.openings else emptySet()) }
             RefreshGatesWhenHomeReturns(openPage?.page) { viewModel.refresh(gatesOnly = true) }
-            BackHandler(enabled = openPage != null) { stack = stack.back() }
             val actions =
                 Actions(
                     onAddress = viewModel::onAddress,
@@ -139,18 +131,16 @@ class MainActivity : ComponentActivity() {
                 } else {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                            if (openPage == null) {
-                                // The home leaves the composition while a page is open; this keeps its saved
-                                // state (the list's scroll position) for when it comes back.
-                                home.SaveableStateProvider(HOME_KEY) { JellyfinRoot(state, actions) }
-                            } else {
-                                val close = { stack = stack.back() }
-                                ConsolePageScope(pageStores.storeFor(openPage.opening)) {
+                            ConsoleNavHost(
+                                stack = if (signedIn) stack else ConsoleBackStack(),
+                                onBack = { stack = stack.back() },
+                                home = { JellyfinRoot(state, actions) },
+                                page = { entry ->
                                     (state as? UiState.SignedIn)?.let { gated ->
-                                        ConsolePageRoute(openPage.page, graph, gated, close, actions.onOpenPage, actions)
+                                        ConsolePageRoute(entry.page, graph, gated, { stack = stack.back() }, actions.onOpenPage, actions)
                                     }
-                                }
-                            }
+                                },
+                            )
                         }
                     }
                 }
@@ -159,8 +149,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val HOME_KEY = "home"
-
         /** Android 17, where reaching the local network became a permission of its own. */
         const val LOCAL_NETWORK_SDK = 37
         const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
