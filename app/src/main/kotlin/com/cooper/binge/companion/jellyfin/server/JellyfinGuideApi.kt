@@ -24,7 +24,19 @@ const val GUIDE_TYPE_XMLTV = "xmltv"
  * checks the provider before it keeps it (an XMLTV path must be an address or a file that exists) and answers an error if not.
  * Nothing is sent in the address: a Schedules Direct password goes in the body, hashed, and never as `pw`.
  */
-suspend fun JellyfinClient.saveListingProvider(provider: JsonObject): JsonObject = postObject(LISTING_PROVIDERS, provider)
+suspend fun JellyfinClient.saveListingProvider(
+    provider: JsonObject,
+    validateLogin: Boolean = false,
+    validateListings: Boolean = false,
+): JsonObject =
+    postObject(
+        LISTING_PROVIDERS,
+        provider,
+        buildMap {
+            if (validateLogin) put("validateLogin", "true")
+            if (validateListings) put("validateListings", "true")
+        },
+    )
 
 suspend fun JellyfinClient.deleteListingProvider(id: String) {
     delete(LISTING_PROVIDERS, mapOf("id" to id))

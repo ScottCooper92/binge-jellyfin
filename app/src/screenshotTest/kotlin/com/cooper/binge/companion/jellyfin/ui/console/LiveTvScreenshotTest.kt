@@ -11,6 +11,8 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.GuideProviderSummary
 import com.cooper.binge.companion.jellyfin.server.LiveTvSummary
+import com.cooper.binge.companion.jellyfin.server.SdCountry
+import com.cooper.binge.companion.jellyfin.server.SdLineup
 import com.cooper.binge.companion.jellyfin.server.TunerHostSummary
 
 private const val NOW = 1_793_534_400_000L // 31 Oct 2026, 12:00 UTC
@@ -115,4 +117,115 @@ class LiveTvScreenshotTest {
             onDismiss = {},
             inWindow = false,
         )
+
+    /** The Add guide data choice, offered where the user may read lineups. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun guideChoice() = Surface { ChooseGuideContent(LiveTvGuideActions()) }
+
+    /** An account saved with no lineup: its row says so, and its form offers to finish the setup. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun unfinishedAccount() =
+        LiveTvScreen(
+            LiveTvUiState.Ready(
+                previewSummary.copy(providers = listOf(GuideProviderSummary("g3", "SchedulesDirect", "carol", lineupPending = true))),
+            ),
+            withTasks,
+            now = NOW,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun unfinishedForm() =
+        Surface {
+            GuideFormContent(
+                GuideForm("g3", type = "SchedulesDirect", name = "carol", lineupPending = true),
+                false,
+                LiveTvGuideActions(),
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun sdAccount() = Surface { SdStepContent(SdStep.Account, false, SdActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdAccountSaving() = Surface { SdStepContent(SdStep.Account, true, SdActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdLocation() = Surface { SdStepContent(SdStep.Location("g3", sdCountries, country = sdCountries.first()), false, SdActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdLocationLoading() = Surface { SdStepContent(SdStep.Location("g3", countries = null), false, SdActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdCountryList() =
+        Surface {
+            SdStepContent(SdStep.Location("g3", sdCountries, country = sdCountries.first(), choosing = true), false, SdActions())
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun sdLineups() =
+        Surface {
+            SdStepContent(
+                SdStep.Lineups(
+                    "g3",
+                    sdCountries,
+                    sdCountries.first(),
+                    "10001",
+                    listOf(SdLineup("USA-NY12345-X", "Comcast Digital"), SdLineup("USA-DISH-X", "Dish Network")),
+                ),
+                false,
+                SdActions(),
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdLineupsLoading() =
+        Surface {
+            SdStepContent(SdStep.Lineups("g3", sdCountries, sdCountries.first(), "10001", null), false, SdActions())
+        }
+
+    /** No lineups, which the server also answers for a login that failed. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdNoLineups() =
+        Surface {
+            SdStepContent(SdStep.Lineups("g3", sdCountries, sdCountries.first(), "99999", emptyList()), false, SdActions())
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdLineupNotAdded() =
+        ConsoleMessage(
+            title = stringResource(R.string.live_tv_sd_lineup_not_added_title),
+            message = stringResource(R.string.live_tv_sd_lineup_not_added_body),
+            onDismiss = {},
+            inWindow = false,
+        )
 }
+
+private val sdCountries =
+    listOf(SdCountry("USA", "United States", "North America"), SdCountry("GBR", "United Kingdom", "Europe"))

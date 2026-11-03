@@ -49,6 +49,8 @@ fun LiveTvScreen(
     now: Long = System.currentTimeMillis(),
     guide: GuideUiState = GuideUiState(),
     guideActions: LiveTvGuideActions = LiveTvGuideActions(),
+    sd: SdUiState = SdUiState(),
+    sdActions: SdActions = SdActions(),
 ) {
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -66,6 +68,8 @@ fun LiveTvScreen(
                     LiveTvContent(state.summary, actions, guideActions, inner, now)
                     GuideSheet(guide, guideActions)
                     GuideMessages(guide, guideActions, host)
+                    SdSheet(sd, sdActions)
+                    SdMessages(sd, sdActions)
                 }
             }
         }
@@ -147,7 +151,12 @@ private fun GuideProviderSummary.row(guideActions: LiveTvGuideActions): ListItem
     ListItem(
         icon = Icons.Outlined.Dns,
         label = label.ifBlank { guideTypeLabel(type) },
-        detail = guideTypeLabel(type),
+        detail =
+            if (lineupPending) {
+                stringResource(R.string.live_tv_guide_pending_row, guideTypeLabel(type))
+            } else {
+                guideTypeLabel(type)
+            },
         onClick = { guideActions.onEdit(this) },
     )
 

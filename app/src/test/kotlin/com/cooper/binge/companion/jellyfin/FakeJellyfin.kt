@@ -246,6 +246,15 @@ class FakeJellyfin : Dispatcher() {
     /** The status `POST /LiveTv/ListingProviders` answers with, 200 when it keeps the provider; the server answers 500 for one it cannot read. */
     var listingSaveStatus = 200
 
+    /** What `/LiveTv/ListingProviders/SchedulesDirect/Countries` answers: Schedules Direct's own JSON, regions each holding countries. */
+    var sdCountries =
+        """{"North America":[{"fullName":"United States","shortName":"USA","postalCodeExample":"90210","postalCode":"d"}],""" +
+            """"Europe":[{"fullName":"United Kingdom","shortName":"GBR","postalCodeExample":"SW1A 1AA","postalCode":"x"}]}"""
+
+    /** What `/LiveTv/ListingProviders/Lineups` answers, or the status code that replaces it. An empty list is also what a failed login gives. */
+    var sdLineups = """[{"Name":"Comcast Digital","Id":"USA-NY12345-X"},{"Name":"Dish Network","Id":"USA-DISH-X"}]"""
+    var sdLineupsStatus = 200
+
     /** What `/LiveTv/GuideInfo` answers, or the status code that replaces it. */
     var guideInfo = """{"StartDate":"2026-11-01T00:00:00.0000000Z","EndDate":"2026-11-08T00:00:00.0000000Z"}"""
     var guideInfoStatus = 200
@@ -535,6 +544,15 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Configuration/livetv" -> json(liveTvConfiguration)
             path == "/LiveTv/GuideInfo" -> if (guideInfoStatus == 200) json(guideInfo) else MockResponse(code = guideInfoStatus)
+            path == "/LiveTv/ListingProviders/SchedulesDirect/Countries" -> json(sdCountries)
+            path == "/LiveTv/ListingProviders/Lineups" ->
+                if (sdLineupsStatus ==
+                    200
+                ) {
+                    json(sdLineups)
+                } else {
+                    MockResponse(code = sdLineupsStatus)
+                }
             path == "/LiveTv/ListingProviders" && request.method == "POST" -> saveListingProvider(request.body?.utf8().orEmpty())
             path == "/LiveTv/ListingProviders" && request.method == "DELETE" -> {
                 val id = request.url.queryParameter("id")
