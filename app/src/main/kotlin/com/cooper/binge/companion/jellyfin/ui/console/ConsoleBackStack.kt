@@ -33,7 +33,7 @@ data class ConsoleBackStack(
     /** The page showing, or null for the home. */
     val top: ConsoleEntry? get() = entries.lastOrNull()
 
-    /** The openings still on the stack: the ones whose view models are kept. */
+    /** The opening numbers of the pages on the stack. */
     val openings: Set<Int> get() = entries.map { it.opening }.toSet()
 
     /** The stack as Navigation 3 shows it: the home at the bottom, then each open page. */
