@@ -45,7 +45,14 @@ class ConsolePageTest {
     fun `a user gets only their own pages`() {
         val user = account("""{"IsAdministrator":false}""")
         assertEquals(
-            listOf(ConsolePage.ApproveCode, ConsolePage.Playback, ConsolePage.HomeLayout, ConsolePage.Password, ConsolePage.NowPlaying),
+            listOf(
+                ConsolePage.ApproveCode,
+                ConsolePage.Playback,
+                ConsolePage.HomeLayout,
+                ConsolePage.Password,
+                ConsolePage.ProfilePicture,
+                ConsolePage.NowPlaying,
+            ),
             ConsolePage.entries.filter { it.available(server, user) },
         )
         assertTrue(ConsolePage.entries.filter { it.isAdmin }.none { it.available(server, user) })
@@ -89,6 +96,7 @@ class ConsolePageTest {
             )
         assertFalse(ConsolePage.Playback.available(server, user))
         assertFalse(ConsolePage.HomeLayout.available(server, user))
+        assertFalse(ConsolePage.ProfilePicture.available(server, user))
         assertFalse(ConsolePage.Password.available(server, user))
         assertFalse(ConsolePage.ApproveCode.available(server.copy(quickConnect = false), user))
         assertTrue(ConsolePage.NowPlaying.available(server, user))

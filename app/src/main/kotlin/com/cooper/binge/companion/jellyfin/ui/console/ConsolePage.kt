@@ -21,6 +21,9 @@ enum class ConsolePage {
     /** Change the user's own password. For everyone. */
     Password,
 
+    /** Set, change and remove the user's own picture. For an admin, or a user whose preference access is on: the server refuses the rest. */
+    ProfilePicture,
+
     /** An administrator's own settings, behind the avatar: the pages everyone else has inline on their home. */
     Account,
 
@@ -66,6 +69,9 @@ enum class ConsolePage {
     /** The server's library display and metadata defaults. Admin only. */
     LibraryDisplay,
 
+    /** The server's per-item-type metadata and image provider defaults. Admin only. */
+    MetadataDefaults,
+
     /** The server's backups: made, and restored from. Admin only, on a server with backups. */
     Backups,
 
@@ -92,7 +98,7 @@ enum class ConsolePage {
     ): Boolean =
         when (this) {
             ApproveCode -> profile.quickConnect
-            Playback, HomeLayout -> account.canEditPreferences
+            Playback, HomeLayout, ProfilePicture -> account.canEditPreferences
             Password -> account.hasLocalPassword
             NowPlaying -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
@@ -101,7 +107,7 @@ enum class ConsolePage {
             LiveTvRecording -> account.isAdministrator && account.canManageLiveTv
             Backups -> account.isAdministrator && profile.hasBackups
             Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
-            ServerSettings, Network, LibraryDisplay, Transcoding, Server,
+            ServerSettings, Network, LibraryDisplay, MetadataDefaults, Transcoding, Server,
             -> account.isAdministrator
         }
 
@@ -120,6 +126,7 @@ enum class ConsolePage {
                 Network,
                 Advanced,
                 LibraryDisplay,
+                MetadataDefaults,
                 Transcoding,
                 Trickplay,
                 Plugins,
