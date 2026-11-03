@@ -399,9 +399,24 @@ class FakeJellyfin : Dispatcher() {
 
     val baseUrl: String get() = server.url("/").toString().trimEnd('/')
 
+    private val socketLock = Any()
+    private var closing = false
+
+    /**
+     * Closes every event socket, and any that opens from now on: one still open holds the server's shutdown, and one whose
+     * handshake was in flight when a test ended would register after a plain snapshot of [sockets] was taken.
+     */
+    fun closeSockets() {
+        val open =
+            synchronized(socketLock) {
+                closing = true
+                sockets.toList()
+            }
+        open.forEach { it.close(GOING_AWAY, null) }
+    }
+
     override fun close() {
-        // An event socket still open holds the server's shutdown, so close them first.
-        sockets.forEach { it.close(GOING_AWAY, null) }
+        closeSockets()
         server.close()
     }
 
@@ -699,7 +714,15 @@ class FakeJellyfin : Dispatcher() {
                         webSocket: WebSocket,
                         response: Response,
                     ) {
-                        sockets += webSocket
+                        val refused =
+                            synchronized(socketLock) {
+                                if (!closing) sockets += webSocket
+                                closing
+                            }
+                        if (refused) {
+                            webSocket.close(GOING_AWAY, null)
+                            return
+                        }
                         webSocket.send("""{"MessageType":"ForceKeepAlive","Data":$keepAliveSeconds}""")
                     }
 
