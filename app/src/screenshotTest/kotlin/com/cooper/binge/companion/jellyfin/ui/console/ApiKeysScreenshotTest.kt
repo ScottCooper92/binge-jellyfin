@@ -31,6 +31,13 @@ class ApiKeysScreenshotTest {
     @Composable
     fun apiKeys() = ApiKeysScreen(previewReady, ApiKeysActions(), now = NOW)
 
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = ApiKeysScreen(previewReady.copy(refreshing = true), ApiKeysActions(), now = NOW)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews

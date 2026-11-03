@@ -64,6 +64,13 @@ class LogsScreenshotTest {
     @Composable
     fun list() = LogsScreen(LogsUiState.Ready(previewFiles), LogsActions(), zone = ZoneOffset.UTC)
 
+    /** A pull in progress: the page stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = LogsScreen(LogsUiState.Ready(previewFiles, refreshing = true), LogsActions(), zone = ZoneOffset.UTC)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews

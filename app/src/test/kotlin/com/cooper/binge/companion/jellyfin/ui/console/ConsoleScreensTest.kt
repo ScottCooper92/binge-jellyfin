@@ -12,7 +12,6 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
@@ -26,6 +25,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.Branding
@@ -62,17 +62,19 @@ import com.cooper.binge.companion.jellyfin.server.parseLogEntries
 import com.cooper.binge.companion.jellyfin.server.redactLog
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowDialog
 
 /** The console's pages, driven as a user would: each tap reaches the action it should. */
 @RunWith(RobolectricTestRunner::class)
 class ConsoleScreensTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private val stream =
         NowPlaying("tv", "Ana", "Living room", "Web", "Sintel", null, 1, 4, paused = true, PlayMethod.Transcode, listOf("AudioIsExternal"))
@@ -868,7 +870,12 @@ class ConsoleScreensTest {
         compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertExists()
         compose.onNodeWithText("Copy").performClick()
         assertEquals(listOf("zzzzyyyyxxxxwwww9999"), copied)
-        compose.onNodeWithText("Done").performClick()
+        // Back does not close it: the key is shown once, and a stray press would lose it.
+        compose.runOnUiThread { ShadowDialog.getLatestDialog().onBackPressed() }
+        compose.waitForIdle()
+        assertFalse(dismissed)
+        compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertExists()
+        compose.onNodeWithText("I have copied it").performClick()
         assertTrue(dismissed)
         state = state.copy(created = null)
         compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertDoesNotExist()

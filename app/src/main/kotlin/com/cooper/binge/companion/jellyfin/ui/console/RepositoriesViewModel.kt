@@ -31,6 +31,9 @@ sealed interface RepositoriesUiState {
         val removing: PluginRepository? = null,
         val saving: Boolean = false,
         val actionFailed: ConsoleFailure? = null,
+        /** True while a pull reads the list again; the list stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : RepositoriesUiState
 }
 
@@ -66,6 +69,19 @@ class RepositoriesViewModel(
                         onSuccess = { RepositoriesUiState.Ready(it) },
                         onFailure = { RepositoriesUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /** A pull: reads the repositories again in place, keeping the page, and says in a message when it couldn't. */
+    fun refresh() {
+        val ready = _state.value as? RepositoriesUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.repositories() }
+                .onSuccess { fresh -> update { copy(repositories = fresh, refreshing = false) } }
+                .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 

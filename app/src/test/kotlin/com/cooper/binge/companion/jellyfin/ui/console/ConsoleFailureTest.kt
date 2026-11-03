@@ -2,9 +2,9 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.Connection
@@ -34,7 +34,7 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 class ConsoleFailureTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun `a refusal carries the server's reason, and an unreachable server has none`() {

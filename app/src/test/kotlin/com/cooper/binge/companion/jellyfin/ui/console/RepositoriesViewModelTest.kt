@@ -52,6 +52,22 @@ class RepositoriesViewModelTest {
     private fun saved() = jellyfin.lastBodyText("/Repositories")
 
     @Test
+    fun `a pull reads the repositories again in place, and a pull that fails keeps them and says so`() {
+        val vm = made(RepositoriesViewModel(connection))
+        assertEquals(1, vm.ready().repositories.size)
+        jellyfin.repositories =
+            """[{"Name":"Jellyfin Stable","Url":"https://repo.example/stable.json","Enabled":true},""" +
+            """{"Name":"Mine","Url":"https://repo.example/mine.json","Enabled":true}]"""
+        vm.refresh()
+        assertNull(vm.ready { it.repositories.size == 2 && !it.refreshing }.refreshFailed)
+        jellyfin.status["/Repositories"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(2, failed.repositories.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
     fun `reads the repositories`() {
         val ready = made(RepositoriesViewModel(connection)).ready()
         assertEquals(listOf("Jellyfin Stable"), ready.repositories.map { it.name })

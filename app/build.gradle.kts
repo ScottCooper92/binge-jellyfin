@@ -184,6 +184,9 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.navigation3.runtime)
+    implementation(libs.navigation3.ui)
+    implementation(libs.lifecycle.viewmodel.navigation3)
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
@@ -192,6 +195,8 @@ dependencies {
     implementation(libs.firebase.config)
     implementation(libs.androidx.fragment)
     testImplementation(libs.junit)
+    // The design system's take-down compose rules (createTakeDownAndroidComposeRule and its wrapper).
+    testImplementation(testFixtures(libs.binge.designsystem))
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
