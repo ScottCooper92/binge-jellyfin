@@ -13,6 +13,8 @@ import com.cooper.binge.companion.jellyfin.server.GuideProviderSummary
 import com.cooper.binge.companion.jellyfin.server.LiveTvSummary
 import com.cooper.binge.companion.jellyfin.server.SdCountry
 import com.cooper.binge.companion.jellyfin.server.SdLineup
+import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_HDHOMERUN
+import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_M3U
 import com.cooper.binge.companion.jellyfin.server.TunerHostSummary
 
 private const val NOW = 1_793_534_400_000L // 31 Oct 2026, 12:00 UTC
@@ -97,8 +99,77 @@ class LiveTvScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun addChoice() = Surface { TunerSheetContent(TunerSheet.Choose, false, LiveTvActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun discovering() = Surface { TunerSheetContent(TunerSheet.Discovering, false, LiveTvActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun found() =
+        Surface {
+            TunerSheetContent(
+                TunerSheet.Found(
+                    listOf(
+                        TunerDraft(TUNER_TYPE_HDHOMERUN, name = "HDHomeRun PRIME", url = "http://192.168.1.77"),
+                        TunerDraft(TUNER_TYPE_HDHOMERUN, name = "", url = "http://192.168.1.78"),
+                    ),
+                ),
+                false,
+                LiveTvActions(),
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun foundNone() = Surface { TunerSheetContent(TunerSheet.Found(emptyList()), false, LiveTvActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun hdHomeRunForm() =
+        Surface {
+            TunerSheetContent(
+                TunerSheet.Form(TunerDraft(TUNER_TYPE_HDHOMERUN, url = "http://192.168.1.77")),
+                false,
+                LiveTvActions(),
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun guideSaving() = Surface { GuideFormContent(GuideForm("g1", "/config/guide.xml"), true, LiveTvGuideActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun m3uForm() = Surface { TunerSheetContent(TunerSheet.Form(TunerDraft(TUNER_TYPE_M3U)), false, LiveTvActions()) }
+
+    /** An existing tuner: its fields filled, and Remove last. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun editForm() =
+        Surface {
+            val draft =
+                TunerDraft(
+                    TUNER_TYPE_M3U,
+                    id = "t2",
+                    name = "IPTV",
+                    url = "https://iptv.example:8443/list.m3u",
+                    userAgent = "VLC",
+                    streamLimit = "2",
+                )
+            TunerSheetContent(TunerSheet.Form(draft), false, LiveTvActions())
+        }
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -108,6 +179,28 @@ class LiveTvScreenshotTest {
             title = stringResource(R.string.live_tv_guide_remove_title),
             message = stringResource(R.string.live_tv_guide_remove_message, "/config/guide.xml"),
             confirmLabel = stringResource(R.string.live_tv_guide_remove_confirm),
+            onConfirm = {},
+            onDismissRequest = {},
+            destructive = true,
+            inWindow = false,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun saving() =
+        Surface {
+            TunerSheetContent(TunerSheet.Form(TunerDraft(TUNER_TYPE_HDHOMERUN, url = "http://192.168.1.77")), true, LiveTvActions())
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun removeConfirm() =
+        ConsoleConfirm(
+            title = stringResource(R.string.live_tv_remove_title),
+            message = stringResource(R.string.live_tv_remove_message, "IPTV"),
+            confirmLabel = stringResource(R.string.live_tv_remove_confirm),
             onConfirm = {},
             onDismissRequest = {},
             destructive = true,
@@ -275,6 +368,17 @@ class LiveTvScreenshotTest {
         ConsoleMessage(
             title = stringResource(R.string.live_tv_sd_lineup_not_added_title),
             message = stringResource(R.string.live_tv_sd_lineup_not_added_body),
+            onDismiss = {},
+            inWindow = false,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun notAdded() =
+        ConsoleMessage(
+            title = stringResource(R.string.live_tv_not_saved_title),
+            message = stringResource(R.string.live_tv_not_saved_body),
             onDismiss = {},
             inWindow = false,
         )

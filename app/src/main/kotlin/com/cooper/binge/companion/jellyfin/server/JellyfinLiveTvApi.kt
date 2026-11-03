@@ -64,12 +64,24 @@ const val LIVE_TV_GUIDE_DAYS = "GuideDays"
  * The Live TV setup, with when the guide ends where the user has Live TV access (the server refuses `GuideInfo` to anyone else, and
  * a guide read that fails leaves the rest of the page standing).
  */
-suspend fun JellyfinClient.liveTvSummary(withGuide: Boolean): LiveTvSummary {
-    val summary = liveTvConfiguration().liveTvSummary()
-    if (!withGuide) return summary
-    val end = attempt { getObject(GUIDE_INFO) }.getOrNull()?.string("EndDate")?.epochMillisOrNull()
-    return summary.copy(guideEndMillis = end)
+suspend fun JellyfinClient.liveTvSummary(withGuide: Boolean): LiveTvSummary = liveTvRead(withGuide).summary
+
+/** What a read of the Live TV setup holds: the [summary] the page shows, and the tuner [hosts] as the server holds them, by `Id`, for an edit. */
+data class LiveTvRead(
+    val summary: LiveTvSummary,
+    val hosts: Map<String, JsonObject>,
+)
+
+suspend fun JellyfinClient.liveTvRead(withGuide: Boolean): LiveTvRead {
+    val configuration = liveTvConfiguration()
+    val summary = configuration.liveTvSummary()
+    val end = if (withGuide) attempt { getObject(GUIDE_INFO) }.getOrNull()?.string("EndDate")?.epochMillisOrNull() else null
+    return LiveTvRead(summary.copy(guideEndMillis = end), configuration.tunerHosts())
 }
+
+/** The tuner hosts as the server holds them, by `Id`: what an edit sends back with its changes. Kept apart from [LiveTvSummary], which holds nothing secret. */
+internal fun JsonObject.tunerHosts(): Map<String, JsonObject> =
+    array("TunerHosts").objects().mapNotNull { host -> host.string("Id")?.let { it to host } }.toMap()
 
 internal fun JsonObject.liveTvSummary(): LiveTvSummary =
     LiveTvSummary(

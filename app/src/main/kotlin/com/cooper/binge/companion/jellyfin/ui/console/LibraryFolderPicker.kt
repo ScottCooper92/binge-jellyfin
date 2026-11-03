@@ -1,9 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -18,13 +19,11 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingeFilledButton
-import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
@@ -43,6 +42,7 @@ data class FolderActions(
 
 /** How tall the folder list grows before it scrolls, so the buttons under it stay in reach. */
 private val FolderListHeight = 320.dp
+private const val FOLDER_SKELETON_ROWS = 5
 
 /**
  * Choosing a folder on the server, as jellyfin-web does: drives first, then the folders in each. The server's
@@ -71,10 +71,13 @@ internal fun FolderPicker(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         when (state) {
+            // The shape of the list that is coming, rows the height of a folder's, so it does not jump when the folders arrive.
             FolderBrowseState.Loading ->
-                Box(Modifier.fillMaxWidth().heightIn(min = FolderListHeight), contentAlignment = Alignment.Center) {
-                    BingeLoadingIndicator()
-                }
+                ConsoleLoading(
+                    inner = PaddingValues(),
+                    rows = FOLDER_SKELETON_ROWS,
+                    modifier = Modifier.height(FolderListHeight),
+                )
             is FolderBrowseState.Failed ->
                 Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
                     Text(state.failure.text(), style = MaterialTheme.typography.bodyLarge)

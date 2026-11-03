@@ -101,8 +101,14 @@ internal class ConfigurationSaves(
     /** Sends a change still waiting, after any write running; the answer completes when the server has it. */
     fun settle() = engine.settle()
 
-    /** Sends the change a failed write left unsent. */
-    fun retry() = engine.now()
+    /**
+     * Sends the change a failed write left unsent. Nothing happens if the last write did not fail: Jellyfin has no
+     * partial update, so a write of a configuration that never failed would send the snapshot this page read, and put
+     * back what someone changed on the server since.
+     */
+    fun retry() {
+        if (progress.failed) engine.now()
+    }
 
     /**
      * The page is going: a change still waiting, or one whose write failed, is sent now, and counted with the saves
@@ -129,3 +135,20 @@ internal fun refusedAfter(
         ConsoleFailure.Refused -> failure
         else -> current
     }
+
+/**
+ * The saves of a page with two writers, as one status: failed if either is, busy if either is, else saved if either is.
+ * Every page with two writers reads its save status through this, so they cannot drift apart.
+ */
+internal fun combined(
+    first: SaveProgress,
+    second: SaveProgress,
+): SaveProgress {
+    val statuses = listOf(first.status, second.status)
+    val status =
+        statuses.firstOrNull { it == SaveStatus.Saving }
+            ?: statuses.firstOrNull { it == SaveStatus.Saved }
+            ?: statuses.firstOrNull { it != SaveStatus.Idle }
+            ?: SaveStatus.Idle
+    return SaveProgress(status, first.failed || second.failed)
+}
