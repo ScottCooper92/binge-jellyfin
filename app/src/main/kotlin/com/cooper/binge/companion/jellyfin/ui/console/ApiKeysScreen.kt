@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -46,6 +48,7 @@ data class ApiKeysActions(
     val onAskRemove: (ApiKey?) -> Unit = {},
     val onRemove: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -84,8 +87,13 @@ fun ApiKeysScreen(
                 ApiKeysUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is ApiKeysUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ApiKeysUiState.Ready -> {
-                    Keys(state, actions, inner, now)
+                    BingePullToRefresh(
+                        isRefreshing = state.refreshing,
+                        onRefresh = actions.onRefresh,
+                        indicatorTopInset = padding.calculateTopPadding(),
+                    ) { Keys(state, actions, inner, now) }
                     RefusedMessage(state.actionFailed, host, R.string.api_keys_not_changed)
+                    RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                 }
             }
         }
@@ -99,7 +107,11 @@ private fun Keys(
     inner: PaddingValues,
     now: Long,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item { PageIntro(stringResource(R.string.api_keys_body)) }
         if (state.keys.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
@@ -192,20 +204,24 @@ internal fun NewKeySheet(
     }
 }
 
-/** The key just made, in full, the one time it is shown. Copy is the only way it leaves the screen. */
+/**
+ * The key just made, in full, the one time it is shown. Copy is the only way it leaves the screen. Only its button closes it, not
+ * Back or a tap outside: the list keeps the last four characters, so a stray tap would lose the key and the key would have to be
+ * revoked and made again.
+ */
 @Composable
 internal fun CreatedKeyDialog(
     key: ApiKey,
     actions: ApiKeysActions,
     inWindow: Boolean = true,
 ) {
-    ConsoleConfirm(
+    ConsoleMessage(
         title = stringResource(R.string.api_keys_created_title, key.app),
         message = stringResource(R.string.api_keys_created_body),
-        confirmLabel = stringResource(R.string.api_keys_done),
-        onConfirm = actions.onDismissCreated,
-        onDismissRequest = actions.onDismissCreated,
+        onDismiss = actions.onDismissCreated,
         inWindow = inWindow,
+        confirmLabel = stringResource(R.string.api_keys_copied),
+        dismissible = false,
         extraContent = {
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
                 Text(key.key, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)

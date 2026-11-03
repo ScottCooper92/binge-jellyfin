@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeLoadingIndicator
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -44,6 +46,7 @@ data class BackupsActions(
     val onRestore: () -> Unit = {},
     val onDismissRestore: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -83,7 +86,12 @@ fun BackupsScreen(
                 BackupsUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is BackupsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is BackupsUiState.Ready -> {
-                    Backups(state, actions, inner, now)
+                    BingePullToRefresh(
+                        isRefreshing = state.refreshing,
+                        onRefresh = actions.onRefresh,
+                        indicatorTopInset = padding.calculateTopPadding(),
+                    ) { Backups(state, actions, inner, now) }
+                    RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                     SnackbarMessage(state.restore.refusal()?.let { stringResource(it) }, host)
                     CreationMessage(state.creation, host, actions.onDismissCreation)
                 }
@@ -101,7 +109,11 @@ private fun Backups(
     now: Long,
 ) {
     val status = statusRows(state, actions)
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item { Text(stringResource(R.string.backups_body), style = MaterialTheme.typography.bodyMedium) }
         status?.let { rows -> item { ItemGroup(title = null, rows = rows) } }
         if (state.backups.isEmpty()) {

@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -35,10 +36,13 @@ import com.binge.designsystem.tv.component.TvButton
 import com.binge.designsystem.tv.component.TvConfirmDialog
 import com.binge.designsystem.tv.component.TvOptionRow
 import com.binge.designsystem.tv.component.TvTextField
+import com.binge.designsystem.tv.template.TvListPaneBoard
 import com.binge.designsystem.tv.template.TvMessagePage
+import com.binge.designsystem.tv.template.TvPaneGroup
+import com.binge.designsystem.tv.template.TvPaneOption
+import com.binge.designsystem.tv.template.TvPaneRow
 import com.binge.designsystem.tv.template.TvTwoPaneCopy
 import com.binge.designsystem.tv.template.TvTwoPanePage
-import com.binge.designsystem.tv.template.TvTwoPaneSplit
 import com.binge.designsystem.tv.template.TvTwoPaneStyle
 import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.binge.companion.jellyfin.R
@@ -61,13 +65,15 @@ fun TvJellyfinRoot(
     state: UiState,
     actions: Actions,
     modifier: Modifier = Modifier,
+    playback: TvPlayback? = null,
+    describing: String = ACCOUNT_KEY,
 ) {
     when (state) {
         // TvMessagePage draws no spinner: loading only holds back its actions, so the body is what shows.
         UiState.Loading -> TvMessagePage(body = stringResource(R.string.tv_loading), loading = true, modifier = modifier)
         is UiState.EnterServer -> TvServerPage(state, actions, modifier)
         is UiState.SignIn -> TvSignInPage(state, actions, modifier)
-        is UiState.SignedIn -> TvSignedInPage(state, actions, modifier)
+        is UiState.SignedIn -> TvSignedInPage(state, actions, playback, describing, modifier)
     }
 }
 
@@ -308,29 +314,30 @@ private fun ColumnScope.TvPasswordPanel(
 }
 
 /**
- * Signed in: who and where in the copy pane; checking the library again, then signing out, last and
- * behind a confirm whose remote starts on Cancel.
+ * Signed in, as the design system's list-and-pane board: the account's rows (the server and who is signed in, checking the
+ * library again, and Sign out, last and behind a confirm whose remote starts on Cancel), then the user's own playback settings
+ * when they may change them. A row names itself in the list and holds what it means and its choices in the pane, which is the
+ * only place anything changes. [playback] is null on a page that has none to show.
  */
 @Composable
 private fun TvSignedInPage(
     state: UiState.SignedIn,
     actions: Actions,
+    playback: TvPlayback?,
+    describing: String,
     modifier: Modifier,
 ) {
     val session = state.session
     val promoted = LocalFlags.current.bingePromotion
+    var focused by rememberSaveable { mutableStateOf(describing) }
     val entry = remember { FocusRequester() }
-    // Arriving from sign-in, the control the remote was on is gone with it: land on the first row.
     LaunchedEffect(Unit) { entry.requestFocus() }
-    TvTwoPanePage(
-        title = stringResource(R.string.app_label),
-        split = TvTwoPaneSplit.ListDetail,
-        style = TvTwoPaneStyle.Board,
-        entry = entry,
-        modifier = modifier,
-        copy = {
-            TvTwoPaneCopy(
-                headline = session.serverName.ifBlank { session.baseUrl },
+    val titles = state.titles
+    val accountRows =
+        listOfNotNull(
+            TvPaneRow(
+                key = ACCOUNT_KEY,
+                label = session.serverName.ifBlank { session.baseUrl },
                 body = stringResource(R.string.tv_signed_in_as, session.userName),
                 note =
                     if (state.cleartext) {
@@ -338,35 +345,56 @@ private fun TvSignedInPage(
                     } else {
                         stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
                     },
-            )
-        },
-        action = {
-            val titles = state.titles
+                icon = Icons.Outlined.Dns,
+            ),
             // What Binge can find in the library is Binge's to show; without the flag the page is the account alone.
-            if (promoted) {
-                TvOptionRow(
-                    label = stringResource(R.string.settings_refresh),
-                    supportingText =
-                        when {
-                            state.refreshFailed -> stringResource(R.string.settings_titles_failed)
-                            titles == null -> stringResource(R.string.settings_titles_checking)
-                            else -> pluralStringResource(R.plurals.tv_titles_count, titles, titles)
-                        },
-                    icon = Icons.Outlined.Refresh,
-                    selected = false,
-                    saving = state.refreshing,
-                    onClick = actions.onRefresh,
-                    modifier = Modifier.focusRequester(entry),
-                )
-            }
-            TvOptionRow(
+            TvPaneRow(
+                key = REFRESH_KEY,
+                label = stringResource(R.string.settings_refresh),
+                detail =
+                    when {
+                        state.refreshFailed -> stringResource(R.string.settings_titles_failed)
+                        titles == null -> stringResource(R.string.settings_titles_checking)
+                        else -> pluralStringResource(R.plurals.tv_titles_count, titles, titles)
+                    },
+                icon = Icons.Outlined.Refresh,
+                loading = state.refreshing,
+                options =
+                    listOf(
+                        TvPaneOption(
+                            label = stringResource(R.string.settings_refresh),
+                            action = true,
+                            onSelect = actions.onRefresh,
+                            icon = Icons.Outlined.Refresh,
+                        ),
+                    ),
+            ).takeIf { promoted },
+            TvPaneRow(
+                key = SIGN_OUT_KEY,
                 label = stringResource(R.string.settings_sign_out),
                 icon = Icons.AutoMirrored.Outlined.Logout,
-                selected = false,
-                onClick = actions.onAskSignOut,
-                modifier = if (promoted) Modifier else Modifier.focusRequester(entry),
-            )
-        },
+                options =
+                    listOf(
+                        TvPaneOption(
+                            label = stringResource(R.string.settings_sign_out),
+                            action = true,
+                            onSelect = actions.onAskSignOut,
+                            icon = Icons.AutoMirrored.Outlined.Logout,
+                        ),
+                    ),
+            ),
+        )
+    val groups =
+        listOfNotNull(
+            TvPaneGroup(title = stringResource(R.string.settings_signed_in_as), rows = accountRows),
+            playback?.let { playbackGroup(it) },
+        )
+    TvListPaneBoard(
+        title = stringResource(R.string.app_label),
+        groups = groups,
+        focusedKey = focused.takeIf { key -> groups.any { group -> group.rows.any { it.key == key } } } ?: ACCOUNT_KEY,
+        onFocusRow = { focused = it },
+        modifier = modifier.focusRequester(entry).focusGroup(),
     )
     if (state.confirmingSignOut) {
         TvConfirmDialog(
@@ -379,6 +407,10 @@ private fun TvSignedInPage(
         )
     }
 }
+
+internal const val ACCOUNT_KEY = "account"
+private const val REFRESH_KEY = "refresh"
+private const val SIGN_OUT_KEY = "signOut"
 
 /** A status under a form, [lines] tall at least, and at most unless not [capped], so it rarely moves the controls below it. */
 @Composable

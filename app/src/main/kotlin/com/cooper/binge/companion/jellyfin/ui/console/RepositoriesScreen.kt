@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,10 +17,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeAdaptiveSheet
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -38,6 +41,7 @@ data class RepositoriesActions(
     val onAskRemove: (PluginRepository?) -> Unit = {},
     val onRemove: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
 )
 
 /** The repositories the server fetches its catalog from, with Add repository and a red Remove on each. */
@@ -58,7 +62,11 @@ internal fun RepositoriesTab(
                     title = stringResource(R.string.repositories_empty_title),
                 )
             } else {
-                RepositoryList(state, actions, inner, listState)
+                BingePullToRefresh(
+                    isRefreshing = state.refreshing,
+                    onRefresh = actions.onRefresh,
+                    indicatorTopInset = inner.calculateTopPadding(),
+                ) { RepositoryList(state, actions, inner, listState) }
             }
             if (state.adding) AddRepositorySheet(state.saving, actions)
             state.removing?.let { RemoveRepositoryDialog(it, actions) }
@@ -74,6 +82,7 @@ private fun RepositoryList(
     listState: LazyListState,
 ) {
     LazyColumn(
+        modifier = Modifier.fillMaxSize(),
         state = listState,
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

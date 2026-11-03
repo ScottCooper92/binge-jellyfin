@@ -63,7 +63,7 @@ data class PlaybackActions(
 enum class LanguagePicker { Audio, Subtitles, SubtitleMode }
 
 /** The value that stands for "any language" in the user's configuration. */
-private const val ANY = ""
+internal const val ANY = ""
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts rather than ending in an ellipsis. */
 private const val SWITCH_DETAIL_LINES = 3
@@ -295,7 +295,7 @@ private fun iso3Language(locale: Locale): String =
         ""
     }
 
-private val SubtitleMode.label: Int
+internal val SubtitleMode.label: Int
     get() =
         when (this) {
             SubtitleMode.Default -> R.string.subtitle_mode_default
@@ -305,7 +305,7 @@ private val SubtitleMode.label: Int
             SubtitleMode.None -> R.string.subtitle_mode_none
         }
 
-private val SubtitleMode.detail: Int
+internal val SubtitleMode.detail: Int
     get() =
         when (this) {
             SubtitleMode.Default -> R.string.subtitle_mode_default_detail
