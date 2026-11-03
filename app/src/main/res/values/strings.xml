@@ -365,6 +365,7 @@
     <string name="devices_rename_title">Rename device</string>
     <string name="devices_rename_body">Leave it empty to use the name the device gives itself.</string>
     <string name="devices_rename_save">Save</string>
+    <string name="console_not_refreshed">Not refreshed. %1$s</string>
     <string name="devices_not_changed">Not changed. %1$s</string>
     <string name="users_title">Users</string>
     <string name="console_users_detail">Who can sign in, and what they see</string>
@@ -566,7 +567,7 @@
     <string name="api_keys_create">Create key</string>
     <string name="api_keys_created_title">Key for %1$s</string>
     <string name="api_keys_created_body">Copy it now. It is shown only once.</string>
-    <string name="api_keys_done">Done</string>
+    <string name="api_keys_copied">I have copied it</string>
     <string name="api_keys_copy">Copy</string>
     <string name="api_keys_not_changed">Not changed. %1$s</string>
     <string name="tasks_triggers">Triggers</string>
@@ -577,6 +578,11 @@
     <string name="tasks_trigger_new_title">New trigger</string>
     <string name="tasks_trigger_new_body">When should this task run by itself?</string>
     <string name="tasks_trigger_create">Add</string>
+    <string name="tasks_trigger_hour">Hour</string>
+    <string name="tasks_trigger_minute">Minute</string>
+    <string name="tasks_trigger_am">a.m.</string>
+    <string name="tasks_trigger_pm">p.m.</string>
+    <string name="tasks_trigger_time_invalid">Use an hour from 1 to 12 and minutes from 0 to 59.</string>
     <string name="tasks_trigger_limit">Time limit</string>
     <string name="tasks_trigger_no_limit">No limit</string>
     <string name="trigger_kind_daily">Daily</string>

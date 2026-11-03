@@ -42,6 +42,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeFilterChip
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -80,6 +81,7 @@ data class LogsActions(
     val onSaveRetention: (String) -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onRetryOpen: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -109,9 +111,19 @@ fun LogsScreen(
             when (state) {
                 LogsUiState.Loading -> ConsoleLoading(inner, FILE_ROWS)
                 is LogsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is LogsUiState.Ready -> if (open == null) Files(state, actions, inner, zone) else Reader(open, actions, inner)
+                is LogsUiState.Ready ->
+                    if (open == null) {
+                        BingePullToRefresh(
+                            isRefreshing = state.refreshing,
+                            onRefresh = actions.onRefresh,
+                            indicatorTopInset = padding.calculateTopPadding(),
+                        ) { Files(state, actions, inner, zone) }
+                    } else {
+                        Reader(open, actions, inner)
+                    }
             }
             RefusedMessage((state as? LogsUiState.Ready)?.refused, host)
+            RefusedMessage((state as? LogsUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
         }
     }
 }

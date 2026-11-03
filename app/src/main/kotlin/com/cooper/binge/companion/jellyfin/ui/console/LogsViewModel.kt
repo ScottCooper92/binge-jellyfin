@@ -40,6 +40,9 @@ sealed interface LogsUiState {
         val editingRetention: Boolean = false,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
+        /** True while a pull reads again; the page stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : LogsUiState
 }
 
@@ -114,6 +117,22 @@ class LogsViewModel(
                         onSuccess = { LogsUiState.Ready(it, retention = configuration?.logRetentionDays()) },
                         onFailure = { LogsUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /**
+     * A pull on the list of files: reads the files again in place, keeping the page, and says in a message when it couldn't.
+     * The retention setting is not read again: it saves as it is changed, and a read would put back what is still on its way.
+     */
+    fun refresh() {
+        val ready = _state.value as? LogsUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.logFiles() }
+                .onSuccess { fresh -> update { copy(files = fresh, refreshing = false) } }
+                .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 

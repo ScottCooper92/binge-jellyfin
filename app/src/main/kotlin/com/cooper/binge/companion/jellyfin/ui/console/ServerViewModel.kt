@@ -36,6 +36,9 @@ sealed interface ServerUiState {
         val restart: Restart? = null,
         val confirmingShutdown: Boolean = false,
         val shutdown: Shutdown? = null,
+        /** True while a pull reads again; the page stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : ServerUiState {
         /** Whether the server is going or gone, so nothing more can be asked of it. */
         val down: Boolean get() = shutdown == Shutdown.ShuttingDown || shutdown == Shutdown.ShutDown
@@ -107,6 +110,22 @@ class ServerViewModel(
                     onSuccess = { update { copy(shutdown = Shutdown.ShutDown) } },
                     onFailure = { update { copy(shutdown = Shutdown.Failed) } },
                 )
+        }
+    }
+
+    /**
+     * A pull: reads the server's info again in place, keeping the page, and says in a message when it couldn't. Not while a
+     * restart or shutdown is going on: it reads the info itself, and the server is about to be gone.
+     */
+    fun refresh() {
+        val ready = _state.value as? ServerUiState.Ready ?: return
+        if (ready.refreshing || ready.restart == Restart.Restarting || ready.down) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.serverInfo() }
+                .onSuccess { fresh -> update { copy(info = fresh, refreshing = false) } }
+                .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 

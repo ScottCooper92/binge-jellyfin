@@ -7,13 +7,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.TriggerKind
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -90,6 +97,53 @@ class AddTriggerFormTest {
     fun `and at one and a half times`() {
         val (time, limit) = centres(TriggerKind.Weekly)
         assertEquals(limit, time, 1f)
+    }
+
+    @Test
+    fun `a twelve hour time is the minutes since midnight, with 12 a m as midnight and 12 p m as noon`() {
+        assertEquals(0, twelveHourMinutes("12", "00", afternoon = false))
+        assertEquals(12 * 60, twelveHourMinutes("12", "0", afternoon = true))
+        assertEquals(15 * 60, twelveHourMinutes("3", "00", afternoon = true))
+        assertEquals(23 * 60 + 59, twelveHourMinutes("11", "59", afternoon = true))
+        assertEquals(60 + 5, twelveHourMinutes("1", "5", afternoon = false))
+        listOf("" to "00", "0" to "00", "13" to "00", "3" to "60", "3" to "").forEach { (h, m) ->
+            assertEquals("$h:$m", null, twelveHourMinutes(h, m, afternoon = false))
+        }
+    }
+
+    @Test
+    fun `the p m chip makes the daily trigger an afternoon one, and an hour out of range stops Add`() {
+        val added = mutableListOf<TaskTrigger>()
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(onAddTrigger = { added += it }), is24Hour = false) } }
+        compose.onNodeWithText("p.m.").performClick()
+        compose.onNodeWithText("Add").performClick()
+        assertEquals(listOf(TaskTrigger.daily(15 * TICKS_PER_HOUR)), added)
+        compose.onNodeWithText("3").performTextReplacement("13")
+        compose.onNodeWithText("Use an hour from 1 to 12 and minutes from 0 to 59.").assertIsDisplayed()
+        compose.onNodeWithText("Add").assertIsNotEnabled()
+        compose.onNodeWithText("13").performTextReplacement("")
+        compose.onNodeWithText("Use an hour from 1 to 12 and minutes from 0 to 59.").assertIsDisplayed()
+        compose.onNodeWithText("Add").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `the hour and minute fields are labelled for TalkBack, and the chosen period is announced as selected`() {
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = false) } }
+        // A field's label is part of the node a screen reader reads, so each field is named, not just "edit box".
+        compose.onNode(hasSetTextAction() and hasText("Hour")).assertIsDisplayed()
+        compose.onNode(hasSetTextAction() and hasText("Minute")).assertIsDisplayed()
+        compose.onNodeWithText("a.m.").assertIsSelected()
+        compose.onNodeWithText("p.m.").assertIsNotSelected()
+        compose.onNodeWithText("p.m.").performClick()
+        compose.onNodeWithText("p.m.").assertIsSelected()
+        compose.onNodeWithText("a.m.").assertIsNotSelected()
+    }
+
+    @Test
+    fun `a twenty four hour device keeps the Material time input, which has no period to clip`() {
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = true) } }
+        compose.onNodeWithText("p.m.").assertDoesNotExist()
+        compose.onNodeWithTag(TRIGGER_TIME_TAG).assertIsDisplayed()
     }
 
     private companion object {

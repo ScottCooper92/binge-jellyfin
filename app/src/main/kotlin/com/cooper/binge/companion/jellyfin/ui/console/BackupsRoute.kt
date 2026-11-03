@@ -30,6 +30,7 @@ internal fun BackupsRoute(
             onRestore = backups::restore,
             onDismissRestore = backups::dismissRestore,
             onRetry = backups::load,
+            onRefresh = backups::refresh,
             onBack = onBack,
         ),
         serverVersion = serverVersion,
