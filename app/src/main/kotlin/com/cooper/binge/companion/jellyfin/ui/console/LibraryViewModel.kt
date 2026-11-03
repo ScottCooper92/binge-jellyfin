@@ -128,7 +128,7 @@ class LibraryViewModel(
             { _, client, json -> client.saveLibraryOptions(id, json) },
             onProgress = { progress -> update { copy(save = progress) } },
         ) { shown, failure ->
-            update { copy(options = shown, refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
+            update { copy(options = shown, refused = refusedAfter(refused, failure)) }
         }
 
     init {

@@ -201,7 +201,7 @@ class JellyfinClient(
         }
     }
 
-    private suspend fun call(
+    internal suspend fun call(
         builder: Request.Builder,
         path: String,
     ): JsonElement = located(builder, path).first
@@ -275,7 +275,7 @@ class JellyfinClient(
  * The server's reason in an error answer: a problem document's `detail` or `title`, or a short plain-text body. Null
  * when there is none, or the body is HTML or too long to be a sentence.
  */
-private fun Response.reasonGiven(): String? {
+internal fun Response.reasonGiven(): String? {
     val text = attempt { peekBody(REASON_PEEK_BYTES).string().trim() }.getOrNull()?.takeIf { it.isNotEmpty() } ?: return null
     val parsed = attempt { Json.parseToJsonElement(text) }.getOrNull()
     val reason =

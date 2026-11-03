@@ -2,7 +2,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODING_CODECS
 import com.cooper.binge.companion.jellyfin.server.ENCODING_DOWNMIX_BOOST
@@ -139,16 +138,7 @@ sealed interface TranscodingUiState {
         val refused: ConsoleFailure? = null,
     ) : TranscodingUiState {
         /** Where the page's saves stand, the two writers' together: failed if either is, busy if either is. */
-        val save: SaveProgress
-            get() {
-                val statuses = listOf(encodingSave.status, serverSave.status)
-                val status =
-                    statuses.firstOrNull { it == SaveStatus.Saving }
-                        ?: statuses.firstOrNull { it == SaveStatus.Saved }
-                        ?: statuses.firstOrNull { it != SaveStatus.Idle }
-                        ?: SaveStatus.Idle
-                return SaveProgress(status, encodingSave.failed || serverSave.failed)
-            }
+        val save: SaveProgress get() = combined(encodingSave, serverSave)
     }
 }
 
@@ -172,7 +162,7 @@ class TranscodingViewModel(
             { _, client, json -> client.saveEncodingConfiguration(json) },
             onProgress = { progress -> update { copy(encodingSave = progress) } },
         ) { shown, failure ->
-            update { copy(encoding = shown, refused = refusedOr(refused, failure)) }
+            update { copy(encoding = shown, refused = refusedAfter(refused, failure)) }
         }
     private val server =
         ConfigurationSaves(
@@ -182,7 +172,7 @@ class TranscodingViewModel(
             { _, client, json -> client.saveServerConfiguration(json) },
             onProgress = { progress -> update { copy(serverSave = progress) } },
         ) { shown, failure ->
-            update { copy(server = shown, refused = refusedOr(refused, failure)) }
+            update { copy(server = shown, refused = refusedAfter(refused, failure)) }
         }
 
     init {
@@ -229,7 +219,7 @@ class TranscodingViewModel(
         value: JsonElement,
     ) = server.set(key, value)
 
-    /** Sends the changes a failed write left unsent. */
+    /** Sends the changes a failed write left unsent, from the writer that failed only: the other has nothing owed. */
     fun retrySave() {
         encoding.retry()
         server.retry()
@@ -259,12 +249,6 @@ class TranscodingViewModel(
 
     private fun update(change: TranscodingUiState.Ready.() -> TranscodingUiState.Ready) =
         _state.update { (it as? TranscodingUiState.Ready)?.change() ?: it }
-
-    /** A refused save is said until the next change; a change or a failure to reach the server clears it. */
-    private fun refusedOr(
-        current: ConsoleFailure?,
-        failure: ConsoleFailure?,
-    ) = if (failure == null) null else failure.takeIf { it == ConsoleFailure.Refused } ?: current
 
     private companion object {
         const val TAG = "JellyfinTranscoding"
