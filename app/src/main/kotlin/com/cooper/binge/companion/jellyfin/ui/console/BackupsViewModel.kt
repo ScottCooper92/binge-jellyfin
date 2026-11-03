@@ -90,7 +90,7 @@ class BackupsViewModel(
     /** A pull: reads the backups again in place, keeping the page, and says in a message when it couldn't. */
     fun refresh() {
         val ready = _state.value as? BackupsUiState.Ready ?: return
-        if (ready.refreshing) return
+        if (ready.refreshing || ready.restore == Restore.Restoring) return
         update { copy(refreshing = true, refreshFailed = null) }
         viewModelScope.launch {
             connection
