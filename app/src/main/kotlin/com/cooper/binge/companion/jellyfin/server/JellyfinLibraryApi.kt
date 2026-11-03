@@ -23,6 +23,8 @@ data class JellyfinItem(
     val seasonNumber: Int? = null,
     val episodeNumber: Int? = null,
     val locationType: String? = null,
+    /** The trickplay sets the server holds for it, by media source id, when the read asked for them (`Fields=Trickplay`). */
+    val trickplay: Map<String, List<TrickplayInfo>> = emptyMap(),
 )
 
 /** One page of movies and series that carry a TMDB id, with their provider ids and the user's data, and the total. */
@@ -54,8 +56,9 @@ suspend fun JellyfinClient.libraryPage(
 suspend fun JellyfinClient.item(
     userId: String,
     itemId: String,
+    fields: String = "ProviderIds",
 ): JellyfinItem? =
-    getObject("Items", mapOf("userId" to userId, "ids" to itemId, "enableUserData" to "true", "fields" to "ProviderIds"))
+    getObject("Items", mapOf("userId" to userId, "ids" to itemId, "enableUserData" to "true", "fields" to fields))
         .itemsOf()
         .firstOrNull()
 
@@ -161,6 +164,7 @@ private fun JsonObject.toItem(): JellyfinItem {
         seasonNumber = int("ParentIndexNumber"),
         episodeNumber = int("IndexNumber"),
         locationType = string("LocationType"),
+        trickplay = trickplayOf(),
     )
 }
 

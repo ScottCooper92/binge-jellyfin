@@ -8,12 +8,14 @@ import com.binge.companion.contracts.library.v1.PlaybackEvent
 import com.binge.companion.contracts.library.v1.PlaybackMethod
 import com.binge.companion.contracts.library.v1.ReportPlaybackRequest
 import com.binge.companion.contracts.library.v1.SubtitleTrack
+import com.binge.companion.contracts.library.v1.Trickplay
 import com.binge.companion.contracts.v1.HttpHeader
 import com.binge.companion.contracts.v1.PlaybackSource
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.DeviceProfiles
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinItem
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.array
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.item
@@ -62,7 +64,10 @@ class PlaybackSources(
             )
         val stream = stream(client, source, sitting, tokenInUrl = if (request.playerPackage.isNotEmpty()) session.token else null)
         val runtimeMillis = (source.long("RunTimeTicks") ?: item.runTimeTicks ?: 0L) / TICKS_PER_MILLI
-        val resumeMillis = (client.item(session.userId, item.id) ?: item).userData?.takeUnless { it.played }?.positionTicks ?: 0L
+        val wantsTrickplay = wantsTrickplay(session, request)
+        val fresh = freshItem(client, session, item, withTrickplay = wantsTrickplay)
+        val resumeMillis = fresh.userData?.takeUnless { it.played }?.positionTicks ?: 0L
+        val trickplay = trickplay(client, fresh, sitting, wantsTrickplay)
         Log.i(TAG, "Minted ${item.id}: ${sitting.playMethod}")
         return GetPlaybackSourceResponse
             .newBuilder()
@@ -83,8 +88,37 @@ class PlaybackSources(
                     PlaybackMethod.PLAYBACK_METHOD_DIRECT_PLAY
                 },
             ).addAllSubtitles(subtitles(client, source, session.token))
+            .apply { trickplay?.let { setTrickplay(it) } }
             .build()
     }
+
+    /**
+     * Seek thumbnails are for Binge's own player alone, and only on a server that makes them: an installed player cannot send
+     * the headers the sheets need, and the token never goes into a template to make up for it.
+     */
+    private fun wantsTrickplay(
+        session: JellyfinSession,
+        request: GetPlaybackSourceRequest,
+    ): Boolean = request.playerPackage.isEmpty() && JellyfinServerProfile.from(session.serverVersion).hasTrickplay
+
+    /** The item as the server has it now, for the resume point, and with its trickplay sets when [withTrickplay]. */
+    private suspend fun freshItem(
+        client: JellyfinClient,
+        session: JellyfinSession,
+        item: JellyfinItem,
+        withTrickplay: Boolean,
+    ): JellyfinItem = client.item(session.userId, item.id, fields = if (withTrickplay) "ProviderIds,Trickplay" else "ProviderIds") ?: item
+
+    /** The descriptor for the source being played, or null: not wanted, none held for that source, or one the contract would drop. */
+    private fun trickplay(
+        client: JellyfinClient,
+        item: JellyfinItem,
+        sitting: Sitting,
+        wanted: Boolean,
+    ): Trickplay? =
+        item.trickplay[sitting.mediaSourceId]
+            ?.takeIf { wanted }
+            ?.let { TrickplayDescriptors.descriptor(client, sitting.mediaSourceId, it) }
 
     /** One report, as the Jellyfin session call its event maps to. */
     suspend fun report(

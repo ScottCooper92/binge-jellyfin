@@ -20,6 +20,7 @@ import com.binge.companion.contracts.library.v1.ReportPlaybackRequest
 import com.binge.companion.contracts.library.v1.SetPlayedRequest
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
+import com.binge.companion.sdk.problem
 import com.binge.companion.sdk.userMessageOf
 import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
@@ -370,6 +371,99 @@ class JellyfinLibraryServiceTest {
             val profile = jellyfin.lastBody("/Items/movie-1/PlaybackInfo")["DeviceProfile"].toString()
             assertTrue(profile.contains("\"VideoCodec\":\"h264\""))
         }
+
+    private fun sets(
+        sourceId: String,
+        vararg widths: Int,
+        count: Int = 360,
+    ) = """"$sourceId":{${widths.joinToString(
+        ",",
+    ) {
+        """"$it":{"Width":$it,"Height":${it * 9 / 16},"TileWidth":10,"TileHeight":10,"ThumbnailCount":$count,"Interval":10000,"Bandwidth":1}"""
+    }}}"""
+
+    private fun withTrickplay(trickplay: String?) {
+        val index = jellyfin.items.indexOfFirst { it.id == "movie-1" }
+        jellyfin.items[index] = jellyfin.items[index].copy(trickplay = trickplay)
+    }
+
+    private fun playbackSource(playerPackage: String = "") =
+        runBlocking {
+            stub.getPlaybackSource(
+                GetPlaybackSourceRequest
+                    .newBuilder()
+                    .setMedia(movie)
+                    .setPlayerPackage(playerPackage)
+                    .build(),
+            )
+        }
+
+    @Test
+    fun `a source carries the trickplay descriptor for the media source, with no credential in the template`() {
+        withTrickplay("{${sets("source-1", 160, 320, 640)}}")
+
+        val trickplay = playbackSource().trickplay
+
+        assertEquals("${jellyfin.baseUrl}/Videos/source-1/Trickplay/320/{index}.jpg", trickplay.urlTemplate)
+        assertEquals(320, trickplay.thumbnailWidth)
+        assertEquals(180, trickplay.thumbnailHeight)
+        assertEquals(10, trickplay.tileColumns)
+        assertEquals(10, trickplay.tileRows)
+        assertEquals(10_000L, trickplay.intervalMillis)
+        assertEquals(360, trickplay.thumbnailCount)
+        assertFalse(trickplay.urlTemplate.contains("token-1"))
+        assertFalse(trickplay.urlTemplate.contains("ApiKey", ignoreCase = true))
+        assertEquals(null, trickplay.problem())
+    }
+
+    @Test
+    fun `a title with no trickplay sends none, and that is not an error`() {
+        assertFalse(playbackSource().hasTrickplay())
+    }
+
+    @Test
+    fun `the descriptor is made for the media source being played, not another version of the item`() {
+        withTrickplay("{${sets("source-2", 320)},${sets("source-1", 160)}}")
+
+        val trickplay = playbackSource().trickplay
+
+        assertTrue(trickplay.urlTemplate.contains("/Videos/source-1/Trickplay/160/"))
+        assertEquals(160, trickplay.thumbnailWidth)
+    }
+
+    @Test
+    fun `sets held for another version only send nothing`() {
+        withTrickplay("{${sets("source-2", 320)}}")
+
+        assertFalse(playbackSource().hasTrickplay())
+    }
+
+    @Test
+    fun `a descriptor the contract would drop is not sent`() {
+        withTrickplay("{${sets("source-1", 320, count = 0)}}")
+
+        assertFalse(playbackSource().hasTrickplay())
+    }
+
+    @Test
+    fun `a server older than trickplay sends none and is not asked for it`() {
+        runBlocking { sessions.save(jellyfin.session().copy(serverVersion = "10.8.13")) }
+        withTrickplay("{${sets("source-1", 320)}}")
+
+        assertFalse(playbackSource().hasTrickplay())
+        assertTrue(jellyfin.requests.none { it.url.queryParameter("fields")?.contains("Trickplay") == true })
+    }
+
+    @Test
+    fun `an installed player gets no trickplay, since it cannot send the headers the sheets need, and is not asked for it`() {
+        withTrickplay("{${sets("source-1", 320)}}")
+
+        val source = playbackSource(playerPackage = "org.videolan.vlc")
+
+        assertFalse(source.hasTrickplay())
+        assertTrue(source.source.url.contains("ApiKey=token-1"))
+        assertTrue(jellyfin.requests.none { it.url.queryParameter("fields")?.contains("Trickplay") == true })
+    }
 
     @Test
     fun `an installed player's source carries the token in the URL`() =

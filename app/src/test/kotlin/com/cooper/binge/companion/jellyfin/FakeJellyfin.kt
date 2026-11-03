@@ -50,6 +50,8 @@ data class FakeItem(
     val season: Int? = null,
     val episode: Int? = null,
     val locationType: String = "FileSystem",
+    /** The item's `Trickplay` object as the server writes it: media source id, then width, then the set. */
+    val trickplay: String? = null,
 )
 
 /**
@@ -920,6 +922,7 @@ class FakeJellyfin : Dispatcher() {
             seriesId?.let { append(""","SeriesId":"$it"""") }
             season?.let { append(""","ParentIndexNumber":$it""") }
             episode?.let { append(""","IndexNumber":$it""") }
+            trickplay?.let { append(",\"Trickplay\":$it") }
             append(""","ImageTags":{"Primary":"tag"}}""")
         }
 
