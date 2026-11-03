@@ -190,7 +190,7 @@ fun PluginsScreen(
                     )
                 }
             }
-            // Outside the pager: a page keeps its own saved state, and a sheet drawn there lost its text when the phone turned.
+            // Beside the API keys sheet, outside the pager. This is placement only: the sheet keeps its text by holding it above its window.
             RepositoriesOverlays(repositories, repositoryActions)
         }
     }

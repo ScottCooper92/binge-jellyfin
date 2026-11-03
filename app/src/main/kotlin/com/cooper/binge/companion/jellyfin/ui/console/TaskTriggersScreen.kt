@@ -22,13 +22,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableLongState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -209,10 +209,33 @@ internal fun rememberTimeLabel(): (Long) -> String {
 /** The new trigger sheet: a task sheet over the page, closed by its own Add or by dismissing it. */
 @Composable
 internal fun AddTriggerSheet(actions: TasksActions) {
+    // The drafts are held here, above the sheet's window, so they survive the activity being recreated.
+    val kindIndex = rememberDraft(TRIGGER_KIND_INDEX, TriggerKind.Daily.ordinal)
+    val timeState = rememberTriggerTimeState()
+    val dayIndex = rememberDraft(TRIGGER_DAY_INDEX, 0)
+    val intervalTicks = rememberDraft(TRIGGER_INTERVAL_TICKS, DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR)
+    val limitHours = rememberDraft(TRIGGER_LIMIT_HOURS, 0)
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onAskAdd(false) }) {
-        AddTriggerForm(actions)
+        AddTriggerForm(
+            actions,
+            kindDraft = kindIndex,
+            timeState = timeState,
+            dayDraft = dayIndex,
+            intervalDraft = intervalTicks,
+            limitDraft = limitHours,
+        )
     }
 }
+
+private const val TRIGGER_KIND_INDEX = "AddTriggerForm.kindIndex"
+private const val TRIGGER_DAY_INDEX = "AddTriggerForm.dayIndex"
+private const val TRIGGER_INTERVAL_TICKS = "AddTriggerForm.intervalTicks"
+private const val TRIGGER_LIMIT_HOURS = "AddTriggerForm.limitHours"
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rememberTriggerTimeState(): TimePickerState =
+    rememberTimePickerState(DEFAULT_HOUR, 0, DateFormat.is24HourFormat(LocalContext.current))
 
 /**
  * A new trigger's form: its kind, then what that kind needs (a time of day, a day, how often), and an
@@ -224,15 +247,16 @@ internal fun AddTriggerSheet(actions: TasksActions) {
 internal fun AddTriggerForm(
     actions: TasksActions,
     startKind: TriggerKind = TriggerKind.Daily,
+    kindDraft: MutableIntState = rememberDraft(TRIGGER_KIND_INDEX, startKind.ordinal),
+    timeState: TimePickerState = rememberTriggerTimeState(),
+    dayDraft: MutableIntState = rememberDraft(TRIGGER_DAY_INDEX, 0),
+    intervalDraft: MutableLongState = rememberDraft(TRIGGER_INTERVAL_TICKS, DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR),
+    limitDraft: MutableIntState = rememberDraft(TRIGGER_LIMIT_HOURS, 0),
 ) {
-    var kindIndex by rememberSaveable(key = "AddTriggerForm.kindIndex") { mutableIntStateOf(startKind.ordinal) }
-    val context = LocalContext.current
-    val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, DateFormat.is24HourFormat(context))
-    var dayIndex by rememberSaveable(key = "AddTriggerForm.dayIndex") { mutableIntStateOf(0) }
-    var intervalTicks by rememberSaveable(
-        key = "AddTriggerForm.intervalTicks",
-    ) { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
-    var limitHours by rememberSaveable(key = "AddTriggerForm.limitHours") { mutableIntStateOf(0) }
+    var kindIndex by kindDraft
+    var dayIndex by dayDraft
+    var intervalTicks by intervalDraft
+    var limitHours by limitDraft
     val kind = TriggerKind.entries[kindIndex]
     val limit = limitHours.takeIf { it > 0 }?.let { it * TICKS_PER_HOUR }
     Column {

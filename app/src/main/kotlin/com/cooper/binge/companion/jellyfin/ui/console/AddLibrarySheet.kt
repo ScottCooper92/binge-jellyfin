@@ -9,10 +9,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -40,10 +39,36 @@ internal fun AddLibrarySheet(
     onDismiss: () -> Unit,
     folderMissing: Boolean = false,
 ) {
+    // The drafts are held here, above the sheet's window, so they survive the activity being recreated.
+    val step = rememberDraft(ADD_LIBRARY_STEP, Step.NAME)
+    val name = rememberDraft(ADD_LIBRARY_NAME, "")
+    val kind = rememberDraft(ADD_LIBRARY_KIND, LIBRARY_KINDS.first())
+    val path = rememberDraft(ADD_LIBRARY_PATH, "")
+    val tried = rememberDraft(ADD_LIBRARY_TRIED, "")
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
-        AddLibraryForm(names, saving, failed, folders, folderActions, onAdd, onDismiss, folderMissing = folderMissing)
+        AddLibraryForm(
+            names,
+            saving,
+            failed,
+            folders,
+            folderActions,
+            onAdd,
+            onDismiss,
+            folderMissing = folderMissing,
+            stepDraft = step,
+            nameDraft = name,
+            kindDraft = kind,
+            pathDraft = path,
+            triedDraft = tried,
+        )
     }
 }
+
+private const val ADD_LIBRARY_STEP = "AddLibraryForm.step"
+private const val ADD_LIBRARY_NAME = "AddLibraryForm.name"
+private const val ADD_LIBRARY_KIND = "AddLibraryForm.kind"
+private const val ADD_LIBRARY_PATH = "AddLibraryForm.path"
+private const val ADD_LIBRARY_TRIED = "AddLibraryForm.tried"
 
 /** The steps of making a library. */
 private object Step {
@@ -70,13 +95,18 @@ internal fun AddLibraryForm(
     startStep: Int = Step.NAME,
     startName: String = "",
     folderMissing: Boolean = false,
-) {
-    var step by rememberSaveable(key = "AddLibraryForm.step") { mutableIntStateOf(startStep) }
-    var name by rememberSaveable(key = "AddLibraryForm.name") { mutableStateOf(startName) }
-    var kind by rememberSaveable(key = "AddLibraryForm.kind") { mutableStateOf(LIBRARY_KINDS.first()) }
-    var path by rememberSaveable(key = "AddLibraryForm.path") { mutableStateOf("") }
+    stepDraft: MutableIntState = rememberDraft(ADD_LIBRARY_STEP, startStep),
+    nameDraft: MutableState<String> = rememberDraft(ADD_LIBRARY_NAME, startName),
+    kindDraft: MutableState<String> = rememberDraft(ADD_LIBRARY_KIND, LIBRARY_KINDS.first()),
+    pathDraft: MutableState<String> = rememberDraft(ADD_LIBRARY_PATH, ""),
     // The folder the server last said it hasn't got; editing the path drops the line.
-    var tried by rememberSaveable(key = "AddLibraryForm.tried") { mutableStateOf("") }
+    triedDraft: MutableState<String> = rememberDraft(ADD_LIBRARY_TRIED, ""),
+) {
+    var step by stepDraft
+    var name by nameDraft
+    var kind by kindDraft
+    var path by pathDraft
+    var tried by triedDraft
     when (step) {
         Step.NAME -> {
             val taken = names.any { it.equals(name.trim(), ignoreCase = true) }

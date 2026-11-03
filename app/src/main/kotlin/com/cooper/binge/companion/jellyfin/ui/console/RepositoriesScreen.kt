@@ -42,7 +42,7 @@ data class RepositoriesActions(
 
 /**
  * The repositories the server fetches its catalog from, with a red Remove on each. Its Add sheet and Remove confirm are
- * [RepositoriesOverlays], drawn by the screen outside the pager, so what is typed in the sheet is saved with the screen.
+ * [RepositoriesOverlays], drawn by the screen outside the pager, next to the API keys sheet.
  */
 @Composable
 internal fun RepositoriesTab(

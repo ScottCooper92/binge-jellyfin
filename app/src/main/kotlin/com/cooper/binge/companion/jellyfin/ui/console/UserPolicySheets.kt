@@ -12,10 +12,9 @@ import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -245,14 +244,25 @@ internal fun PolicyAddSheet(
     actions: UsersActions,
     onDismiss: () -> Unit,
 ) {
+    // The drafts are held here, above the sheet's window, so they survive the activity being recreated.
+    val tag = rememberDraft(TAG_FORM_TAG, "")
+    val step = rememberDraft(SCHEDULE_STEP, 0)
+    val day = rememberDraft(SCHEDULE_DAY, SCHEDULE_DAYS.first())
+    val from = rememberDraft(SCHEDULE_FROM, 0)
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
         when (add) {
-            PolicyAdd.BlockedTag -> TagForm(POLICY_BLOCKED_TAGS, actions, onDismiss)
-            PolicyAdd.AllowedTag -> TagForm(POLICY_ALLOWED_TAGS, actions, onDismiss)
-            PolicyAdd.Schedule -> ScheduleForm(actions, onDismiss)
+            PolicyAdd.BlockedTag -> TagForm(POLICY_BLOCKED_TAGS, actions, onDismiss, tagDraft = tag)
+            PolicyAdd.AllowedTag -> TagForm(POLICY_ALLOWED_TAGS, actions, onDismiss, tagDraft = tag)
+            PolicyAdd.Schedule ->
+                ScheduleForm(actions, onDismiss, stepDraft = step, dayDraft = day, fromDraft = from)
         }
     }
 }
+
+private const val TAG_FORM_TAG = "TagForm.tag"
+private const val SCHEDULE_STEP = "ScheduleForm.step"
+private const val SCHEDULE_DAY = "ScheduleForm.day"
+private const val SCHEDULE_FROM = "ScheduleForm.from"
 
 /** A tag to add to [key]'s list. Saves with its button, and closes. Draws without a window for a frame. */
 @Composable
@@ -260,8 +270,9 @@ internal fun TagForm(
     key: String,
     actions: UsersActions,
     onClose: () -> Unit,
+    tagDraft: MutableState<String> = rememberDraft(TAG_FORM_TAG, ""),
 ) {
-    var tag by rememberSaveable(key = "TagForm.tag") { mutableStateOf("") }
+    var tag by tagDraft
     TextEntrySurface(
         title = stringResource(R.string.users_add_tag),
         value = tag,
@@ -286,10 +297,13 @@ internal fun ScheduleForm(
     startStep: Int = 0,
     startDay: String = SCHEDULE_DAYS.first(),
     startHour: Int = 0,
+    stepDraft: MutableIntState = rememberDraft(SCHEDULE_STEP, startStep),
+    dayDraft: MutableState<String> = rememberDraft(SCHEDULE_DAY, startDay),
+    fromDraft: MutableIntState = rememberDraft(SCHEDULE_FROM, startHour),
 ) {
-    var step by rememberSaveable(key = "ScheduleForm.step") { mutableIntStateOf(startStep) }
-    var day by rememberSaveable(key = "ScheduleForm.day") { mutableStateOf(startDay) }
-    var from by rememberSaveable(key = "ScheduleForm.from") { mutableIntStateOf(startHour) }
+    var step by stepDraft
+    var day by dayDraft
+    var from by fromDraft
     Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(dimensionResource(DesR.dimen.padding_m)),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),

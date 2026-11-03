@@ -10,10 +10,9 @@ import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -43,28 +42,50 @@ internal fun DisplaySheets(
     folderActions: FolderActions,
 ) {
     val sheet = state.sheet ?: return
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }) {
-        when (sheet) {
-            DisplaySheet.ChapterDuration -> ChapterDurationForm(state.configuration.int(METADATA_DUMMY_CHAPTER) ?: 0, actions)
-            DisplaySheet.MetadataPath ->
-                MetadataPathForm(
-                    state.configuration.string(METADATA_PATH).orEmpty(),
-                    folders,
-                    folderActions,
-                    actions,
-                )
-            DisplaySheet.NewEntry -> state.editing?.let { NewEntryForm(it, actions) }
+    val close = { actions.onSheet(null) }
+    // The drafts are held here, above the sheet's window, so they survive the activity being recreated.
+    when (sheet) {
+        DisplaySheet.ChapterDuration -> {
+            val seconds = state.configuration.int(METADATA_DUMMY_CHAPTER) ?: 0
+            val text = rememberDraft(CHAPTER_DURATION_TEXT, seconds.toString())
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                ChapterDurationForm(seconds, actions, textDraft = text)
+            }
+        }
+        DisplaySheet.MetadataPath -> {
+            val current = state.configuration.string(METADATA_PATH).orEmpty()
+            val typing = rememberDraft(METADATA_PATH_TYPING, false)
+            val path = rememberDraft(METADATA_PATH_PATH, current)
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                MetadataPathForm(current, folders, folderActions, actions, typingDraft = typing, pathDraft = path)
+            }
+        }
+        DisplaySheet.NewEntry -> {
+            val step = rememberDraft(NEW_ENTRY_STEP, 0)
+            val first = rememberDraft(NEW_ENTRY_FIRST, "")
+            val second = rememberDraft(NEW_ENTRY_SECOND, "")
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                state.editing?.let { NewEntryForm(it, actions, stepDraft = step, firstDraft = first, secondDraft = second) }
+            }
         }
     }
 }
+
+private const val CHAPTER_DURATION_TEXT = "ChapterDurationForm.text"
+private const val METADATA_PATH_TYPING = "MetadataPathForm.typing"
+private const val METADATA_PATH_PATH = "MetadataPathForm.path"
+private const val NEW_ENTRY_STEP = "NewEntryForm.step"
+private const val NEW_ENTRY_FIRST = "NewEntryForm.first"
+private const val NEW_ENTRY_SECOND = "NewEntryForm.second"
 
 /** The seconds a dummy chapter lasts: whole seconds, 0 for none. Saves with its button, and closes. Draws without a window for a frame. */
 @Composable
 internal fun ChapterDurationForm(
     current: Int,
     actions: LibraryDisplayActions,
+    textDraft: MutableState<String> = rememberDraft(CHAPTER_DURATION_TEXT, current.toString()),
 ) {
-    var text by rememberSaveable(key = "ChapterDurationForm.text") { mutableStateOf(current.toString()) }
+    var text by textDraft
     val seconds = parseChapterSeconds(text)
     TextEntrySurface(
         title = stringResource(R.string.display_dummy_chapters),
@@ -100,9 +121,11 @@ internal fun MetadataPathForm(
     folderActions: FolderActions,
     actions: LibraryDisplayActions,
     startTyping: Boolean = false,
+    typingDraft: MutableState<Boolean> = rememberDraft(METADATA_PATH_TYPING, startTyping),
+    pathDraft: MutableState<String> = rememberDraft(METADATA_PATH_PATH, current),
 ) {
-    var typing by rememberSaveable(key = "MetadataPathForm.typing") { mutableStateOf(startTyping) }
-    var path by rememberSaveable(key = "MetadataPathForm.path") { mutableStateOf(current) }
+    var typing by typingDraft
+    var path by pathDraft
     val choose = { value: String ->
         actions.onText(METADATA_PATH, value.trim())
         actions.onSheet(null)
@@ -142,10 +165,13 @@ internal fun NewEntryForm(
     list: DisplayList,
     actions: LibraryDisplayActions,
     startStep: Int = 0,
+    stepDraft: MutableIntState = rememberDraft(NEW_ENTRY_STEP, startStep),
+    firstDraft: MutableState<String> = rememberDraft(NEW_ENTRY_FIRST, ""),
+    secondDraft: MutableState<String> = rememberDraft(NEW_ENTRY_SECOND, ""),
 ) {
-    var step by rememberSaveable(key = "NewEntryForm.step") { mutableIntStateOf(startStep) }
-    var first by rememberSaveable(key = "NewEntryForm.first") { mutableStateOf("") }
-    var second by rememberSaveable(key = "NewEntryForm.second") { mutableStateOf("") }
+    var step by stepDraft
+    var first by firstDraft
+    var second by secondDraft
     if (list.pairs && step == 1) {
         TextEntrySurface(
             title = stringResource(R.string.display_substitution_to),

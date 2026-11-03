@@ -1,9 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
@@ -19,6 +18,13 @@ import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.tagDelimiters
 import com.cooper.binge.companion.jellyfin.server.whitelistList
 
+private const val RENAME_NAME = "RenameForm.name"
+private const val SEASON_ZERO_NAME = "SeasonZeroForm.name"
+private const val TAG_DELIMITERS_TYPED = "TagDelimitersForm.typed"
+private const val DELIMITER_WHITELIST_TYPED = "DelimiterWhitelistForm.typed"
+private const val ADD_FOLDER_TYPING = "AddFolderForm.typing"
+private const val ADD_FOLDER_PATH = "AddFolderForm.path"
+
 /** Whatever is open over a library's page: a sheet to type in or pick from, or a confirm. */
 @Composable
 internal fun LibraryDialogs(
@@ -30,26 +36,41 @@ internal fun LibraryDialogs(
     val close = { actions.onAsk(null) }
     when (val dialog = state.dialog) {
         null -> Unit
-        LibraryDialog.Rename ->
+        LibraryDialog.Rename -> {
+            // The drafts are held here, above the sheet's window, so they survive the activity being recreated.
+            val name = rememberDraft(RENAME_NAME, state.library.name)
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
-                RenameForm(state.library.name, state.busy, state.nameTaken, actions)
+                RenameForm(state.library.name, state.busy, state.nameTaken, actions, nameDraft = name)
             }
-        LibraryDialog.SeasonZero ->
+        }
+        LibraryDialog.SeasonZero -> {
+            val current = state.options.string(LIBRARY_SEASON_ZERO).orEmpty()
+            val name = rememberDraft(SEASON_ZERO_NAME, current)
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
-                SeasonZeroForm(state.options.string(LIBRARY_SEASON_ZERO).orEmpty(), actions)
+                SeasonZeroForm(current, actions, nameDraft = name)
             }
-        LibraryDialog.TagDelimiters ->
+        }
+        LibraryDialog.TagDelimiters -> {
+            val current = state.options.tagDelimiters()
+            val typed = rememberDraft(TAG_DELIMITERS_TYPED, current)
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
-                TagDelimitersForm(state.options.tagDelimiters(), actions)
+                TagDelimitersForm(current, actions, typedDraft = typed)
             }
-        LibraryDialog.DelimiterWhitelist ->
+        }
+        LibraryDialog.DelimiterWhitelist -> {
+            val current = state.options.delimiterWhitelist().joinToString("\n")
+            val typed = rememberDraft(DELIMITER_WHITELIST_TYPED, current)
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
-                DelimiterWhitelistForm(state.options.delimiterWhitelist().joinToString("\n"), actions)
+                DelimiterWhitelistForm(current, actions, typedDraft = typed)
             }
-        LibraryDialog.AddFolder ->
+        }
+        LibraryDialog.AddFolder -> {
+            val typing = rememberDraft(ADD_FOLDER_TYPING, false)
+            val path = rememberDraft(ADD_FOLDER_PATH, "")
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
-                AddFolderForm(state, folders, folderActions, actions)
+                AddFolderForm(state, folders, folderActions, actions, typingDraft = typing, pathDraft = path)
             }
+        }
         is LibraryDialog.RemoveFolder -> RemoveFolderDialog(dialog.path, actions)
         LibraryDialog.Remove -> RemoveLibraryDialog(state.library.name, actions)
     }
@@ -62,8 +83,9 @@ internal fun RenameForm(
     saving: Boolean,
     taken: Boolean,
     actions: LibraryActions,
+    nameDraft: MutableState<String> = rememberDraft(RENAME_NAME, current),
 ) {
-    var name by rememberSaveable(key = "RenameForm.name") { mutableStateOf(current) }
+    var name by nameDraft
     TextEntrySurface(
         title = stringResource(R.string.library_rename_title),
         value = name,
@@ -85,8 +107,9 @@ internal fun RenameForm(
 internal fun SeasonZeroForm(
     current: String,
     actions: LibraryActions,
+    nameDraft: MutableState<String> = rememberDraft(SEASON_ZERO_NAME, current),
 ) {
-    var name by rememberSaveable(key = "SeasonZeroForm.name") { mutableStateOf(current) }
+    var name by nameDraft
     TextEntrySurface(
         title = stringResource(R.string.library_season_zero),
         value = name,
@@ -109,8 +132,9 @@ internal fun SeasonZeroForm(
 internal fun TagDelimitersForm(
     current: String,
     actions: LibraryActions,
+    typedDraft: MutableState<String> = rememberDraft(TAG_DELIMITERS_TYPED, current),
 ) {
-    var typed by rememberSaveable(key = "TagDelimitersForm.typed") { mutableStateOf(current) }
+    var typed by typedDraft
     TextEntrySurface(
         title = stringResource(R.string.library_delimiters),
         value = typed,
@@ -132,8 +156,9 @@ internal fun TagDelimitersForm(
 internal fun DelimiterWhitelistForm(
     current: String,
     actions: LibraryActions,
+    typedDraft: MutableState<String> = rememberDraft(DELIMITER_WHITELIST_TYPED, current),
 ) {
-    var typed by rememberSaveable(key = "DelimiterWhitelistForm.typed") { mutableStateOf(current) }
+    var typed by typedDraft
     TextEntrySurface(
         title = stringResource(R.string.library_whitelist),
         value = typed,
@@ -161,9 +186,11 @@ internal fun AddFolderForm(
     folderActions: FolderActions,
     actions: LibraryActions,
     startTyping: Boolean = false,
+    typingDraft: MutableState<Boolean> = rememberDraft(ADD_FOLDER_TYPING, startTyping),
+    pathDraft: MutableState<String> = rememberDraft(ADD_FOLDER_PATH, ""),
 ) {
-    var typing by rememberSaveable(key = "AddFolderForm.typing") { mutableStateOf(startTyping) }
-    var path by rememberSaveable(key = "AddFolderForm.path") { mutableStateOf("") }
+    var typing by typingDraft
+    var path by pathDraft
     if (typing) {
         TextEntrySurface(
             title = stringResource(R.string.library_path_title),

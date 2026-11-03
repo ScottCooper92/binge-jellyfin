@@ -4,9 +4,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,34 +55,39 @@ internal fun TranscodingSheets(
     folderActions: FolderActions,
 ) {
     val sheet = state.sheet ?: return
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }) {
-        when (sheet) {
-            is TranscodingSheet.Number ->
-                NumberForm(
-                    sheet.field,
-                    shownNumber(
-                        sheet.field,
-                        if (sheet.field.kind ==
-                            ConfigurationKind.Encoding
-                        ) {
-                            state.encoding
-                        } else {
-                            state.server
-                        },
-                    ),
-                    actions,
-                )
-            is TranscodingSheet.Text -> TextForm(sheet.field, state.encoding.string(sheet.field.key).orEmpty(), actions)
-            TranscodingSheet.TempFolder ->
-                TempFolderForm(
-                    state.encoding.string(ENCODING_TEMP_PATH).orEmpty(),
-                    folders,
-                    folderActions,
-                    actions,
-                )
+    val close = { actions.onSheet(null) }
+    // The drafts are held here, above the sheet's window, so they survive the activity being recreated.
+    when (sheet) {
+        is TranscodingSheet.Number -> {
+            val current =
+                shownNumber(sheet.field, if (sheet.field.kind == ConfigurationKind.Encoding) state.encoding else state.server)
+            val text = rememberDraft(NUMBER_TEXT, current)
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                NumberForm(sheet.field, current, actions, textDraft = text)
+            }
+        }
+        is TranscodingSheet.Text -> {
+            val current = state.encoding.string(sheet.field.key).orEmpty()
+            val text = rememberDraft(TEXT_TEXT, current)
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                TextForm(sheet.field, current, actions, textDraft = text)
+            }
+        }
+        TranscodingSheet.TempFolder -> {
+            val current = state.encoding.string(ENCODING_TEMP_PATH).orEmpty()
+            val typing = rememberDraft(TEMP_FOLDER_TYPING, false)
+            val path = rememberDraft(TEMP_FOLDER_PATH, current)
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                TempFolderForm(current, folders, folderActions, actions, typingDraft = typing, pathDraft = path)
+            }
         }
     }
 }
+
+private const val NUMBER_TEXT = "NumberForm.text"
+private const val TEXT_TEXT = "TextForm.text"
+private const val TEMP_FOLDER_TYPING = "TempFolderForm.typing"
+private const val TEMP_FOLDER_PATH = "TempFolderForm.path"
 
 /** A number in its range and unit, from a sheet: Save keeps it if it is in range, and says what range if it isn't. */
 @Composable
@@ -91,8 +95,9 @@ internal fun NumberForm(
     field: NumberField,
     current: String,
     actions: TranscodingActions,
+    textDraft: MutableState<String> = rememberDraft(NUMBER_TEXT, current),
 ) {
-    var text by rememberSaveable(key = "NumberForm.text") { mutableStateOf(current) }
+    var text by textDraft
     val valid = field.parse(text) != null
     val min = shownBound(field.min)
     val max = shownBound(field.max)
@@ -146,8 +151,9 @@ internal fun TextForm(
     field: TextField,
     current: String,
     actions: TranscodingActions,
+    textDraft: MutableState<String> = rememberDraft(TEXT_TEXT, current),
 ) {
-    var text by rememberSaveable(key = "TextForm.text") { mutableStateOf(current) }
+    var text by textDraft
     TextEntrySurface(
         title =
             stringResource(
@@ -180,9 +186,11 @@ internal fun TempFolderForm(
     folderActions: FolderActions,
     actions: TranscodingActions,
     startTyping: Boolean = false,
+    typingDraft: MutableState<Boolean> = rememberDraft(TEMP_FOLDER_TYPING, startTyping),
+    pathDraft: MutableState<String> = rememberDraft(TEMP_FOLDER_PATH, current),
 ) {
-    var typing by rememberSaveable(key = "TempFolderForm.typing") { mutableStateOf(startTyping) }
-    var path by rememberSaveable(key = "TempFolderForm.path") { mutableStateOf(current) }
+    var typing by typingDraft
+    var path by pathDraft
     val choose = { value: String ->
         actions.onEncoding(ENCODING_TEMP_PATH, JsonPrimitive(value.trim()))
         actions.onSheet(null)
