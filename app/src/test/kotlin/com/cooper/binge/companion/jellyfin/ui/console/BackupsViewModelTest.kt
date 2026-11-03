@@ -77,6 +77,20 @@ class BackupsViewModelTest {
     }
 
     @Test
+    fun `a pull reads the backups again in place, and a pull that fails keeps them and says so`() {
+        val vm = made(BackupsViewModel(connection))
+        assertEquals(2, vm.ready().backups.size)
+        jellyfin.backups = jellyfin.backups.take(1)
+        vm.refresh()
+        assertNull(vm.ready { it.backups.size == 1 && !it.refreshing }.refreshFailed)
+        jellyfin.status["/Backup"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(1, failed.backups.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
     fun `a failed read says so, and can be tried again`() {
         jellyfin.status["/Backup"] = 500
         val vm = viewModel()

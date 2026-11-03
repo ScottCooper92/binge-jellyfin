@@ -17,6 +17,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -57,6 +58,20 @@ class ServerViewModelTest {
             ServerInfo("truenas", "10.11.6", "http://192.168.1.10:8096", "X64", "Linux", false, true, true),
             viewModel().ready().info,
         )
+    }
+
+    @Test
+    fun `a pull reads the info again in place, and a pull that fails keeps it and says so`() {
+        val vm = made(ServerViewModel(connection))
+        assertEquals(true, vm.ready().info.restartPending)
+        jellyfin.systemInfo = jellyfin.systemInfo.replace("\"HasPendingRestart\":true", "\"HasPendingRestart\":false")
+        vm.refresh()
+        assertNull(vm.ready { !it.info.restartPending && !it.refreshing }.refreshFailed)
+        jellyfin.status["/System/Info"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(false, failed.info.restartPending)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
     }
 
     @Test
