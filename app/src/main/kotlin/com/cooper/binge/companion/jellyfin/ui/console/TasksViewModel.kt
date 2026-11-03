@@ -36,6 +36,9 @@ sealed interface TasksUiState {
         val open: String? = null,
         val adding: Boolean = false,
         val saving: Boolean = false,
+        /** True while a pull reads the tasks again; the list stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : TasksUiState
 }
 
@@ -70,6 +73,21 @@ class TasksViewModel(
                         client.taskPushes().collect { pushed -> following(pushed) }
                     }
             }
+    }
+
+    /** A pull: reads the tasks again in place, keeping the page, and says in a message when it couldn't. */
+    fun refresh() {
+        val ready = _state.value as? TasksUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.tasks() }
+                .onSuccess { fresh ->
+                    following(fresh)
+                    update { copy(refreshing = false) }
+                }.onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
+        }
     }
 
     fun run(task: ServerTask) = call(task, run = true)

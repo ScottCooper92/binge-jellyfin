@@ -59,7 +59,12 @@ sealed interface ServerSettingsUiState {
         val saveFailed: ConsoleFailure? = null,
         val submitting: ServerText? = null,
         val sheetFailed: ConsoleFailure? = null,
-    ) : ServerSettingsUiState
+        val serverSave: SaveProgress = SaveProgress(),
+        val brandSave: SaveProgress = SaveProgress(),
+    ) : ServerSettingsUiState {
+        /** Where the page's saves stand, the two writers' together: failed if either is, busy if either is. */
+        val save: SaveProgress get() = combined(serverSave, brandSave)
+    }
 }
 
 /**
@@ -79,7 +84,10 @@ class ServerSettingsViewModel(
             viewModelScope,
             TAG,
             { _, client, json -> client.saveServerConfiguration(json) },
-            onProgress = { progress -> sheetSaved(progress, SERVER_TEXTS) },
+            onProgress = { progress ->
+                update { copy(serverSave = progress) }
+                sheetSaved(progress, SERVER_TEXTS)
+            },
         ) { shown, failure ->
             update { copy(settings = shown.serverSettings()).routed(failure, SERVER_TEXTS) }
         }
@@ -90,10 +98,25 @@ class ServerSettingsViewModel(
             viewModelScope,
             TAG,
             { _, client, json -> client.saveBranding(json) },
-            onProgress = { progress -> sheetSaved(progress, BRANDING_TEXTS) },
+            onProgress = { progress ->
+                update { copy(brandSave = progress) }
+                sheetSaved(progress, BRANDING_TEXTS)
+            },
         ) { shown, failure ->
             update { copy(branding = shown.branding()).routed(failure, BRANDING_TEXTS) }
         }
+
+    /** The login splash image's sheet, which reads the branding configuration again after it changes the image. */
+    internal val splashImage =
+        SplashImageController(
+            connection,
+            viewModelScope,
+            settleBranding = { brand.settle().await() },
+            adoptBranding = { json ->
+                brand.loaded(json)
+                update { copy(branding = json.branding()) }
+            },
+        )
 
     init {
         load()
@@ -131,6 +154,8 @@ class ServerSettingsViewModel(
      * Saves the text the sheet for [text] holds. The sheet stays open while the save runs: it closes when the server
      * takes it, stays open with what was typed and says why if the server refuses it, and closes if the server can't be
      * reached, the change then waiting unsent on the page. A text that is unchanged, or a blank server name, closes it.
+     * So does a branding text while the splash image changes, with nothing sent: a write now would send back the
+     * location the server is about to replace.
      */
     fun saveText(
         text: ServerText,
@@ -142,7 +167,8 @@ class ServerSettingsViewModel(
                 ServerText.LoginDisclaimer -> Triple(brand, LOGIN_DISCLAIMER, JsonPrimitive(value.trim()))
                 ServerText.CustomCss -> Triple(brand, CUSTOM_CSS, JsonPrimitive(value))
             }
-        if ((text == ServerText.Name && json.content.isEmpty()) || saves.shown[key] == json) {
+        val unsendable = (saves === brand && splashImage.state.value.busy) || (text == ServerText.Name && json.content.isEmpty())
+        if (unsendable || saves.shown[key] == json) {
             update { copy(editing = null) }
             return
         }
@@ -181,7 +207,16 @@ class ServerSettingsViewModel(
 
     fun setQuickConnect(on: Boolean) = server.set(QUICK_CONNECT_AVAILABLE, JsonPrimitive(on))
 
-    fun setSplashscreen(on: Boolean) = brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
+    /** Not while the image changes: a write now would send back the location the server is about to replace. */
+    fun setSplashscreen(on: Boolean) {
+        if (!splashImage.state.value.busy) brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
+    }
+
+    /** Sends the changes a failed write left unsent. */
+    fun retrySave() {
+        server.retry()
+        brand.retry()
+    }
 
     /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
     override fun onCleared() {

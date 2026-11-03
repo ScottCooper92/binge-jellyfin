@@ -44,6 +44,7 @@ older server shows less rather than failing on a call it can't answer.
 | Lyrics, lyric management permission | 10.9 | `hasLyrics` |
 | Trickplay settings, per-library trickplay extraction | 10.9 | `hasTrickplay` |
 | Splash screen in branding | 10.9 | `hasSplashscreen` |
+| Whether the branding says a splash image of the user's own is set (`SplashscreenLocation`) | 10.11 | `servesSplashscreenLocation` |
 | Turning a library off without removing it | 10.9 | `canDisableLibraries` |
 | Collection, subtitle and lyric management permissions | 10.9 | `hasContentManagementPermissions` |
 | A user's allowed tags | 10.9 | `hasAllowedTags` |
@@ -65,6 +66,7 @@ older server shows less rather than failing on a call it can't answer.
 | Hardware decoding of the HEVC range extensions, 8/10-bit and 12-bit (encoding options) | 10.10 | `hasHevcRext` |
 | A library's lyric providers, and saving its trickplay images with the media | 10.10 | `hasLibraryLyricFetchers`, `hasLibraryTrickplayWithMedia` |
 | A library's media segment providers (the server lists them from 10.11, and 10.10 misspells the order option) | 10.11 | `hasLibrarySegmentProviders` |
+| A library's metadata downloaders and image fetchers for each item type (`TypeOptions`) | every release from 10.8 | none: the page lists what `Libraries/AvailableOptions` offers for the library, so a type it offers nothing for shows nothing |
 | Backups | 10.11 | `hasBackups` |
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |
 | Grouping movies and shows into collections separately | 10.11 | `hasSeparateCollectionGrouping` |

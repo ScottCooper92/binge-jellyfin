@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -44,6 +46,7 @@ data class DevicesActions(
     val onAskRemove: (ServerDevice?) -> Unit = {},
     val onRemove: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -74,7 +77,12 @@ fun DevicesScreen(
                 DevicesUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is DevicesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is DevicesUiState.Ready -> {
-                    Devices(state, actions, inner, now)
+                    BingePullToRefresh(
+                        isRefreshing = state.refreshing,
+                        onRefresh = actions.onRefresh,
+                        indicatorTopInset = padding.calculateTopPadding(),
+                    ) { Devices(state, actions, inner, now) }
+                    RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                     // A change the server didn't take is said in a message, not in a space the list keeps for it.
                     RefusedMessage(state.actionFailed, host, R.string.devices_not_changed)
                 }
@@ -90,7 +98,11 @@ private fun Devices(
     inner: PaddingValues,
     now: Long,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item { PageIntro(stringResource(R.string.devices_body)) }
         if (state.devices.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }

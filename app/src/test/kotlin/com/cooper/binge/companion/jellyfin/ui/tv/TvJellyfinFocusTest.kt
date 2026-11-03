@@ -273,6 +273,35 @@ class TvJellyfinFocusTest {
         on(R.string.setup_sign_in).assertIsFocused()
     }
 
+    // Back steps back through setup.
+
+    @Test
+    fun `Back from the password form returns to the code, on the control that stays, and asks for a code`() {
+        show(signIn.copy(quickConnectCode = "482913"))
+        ok()
+        // Opening the password cancelled the code in the view model.
+        state = signIn
+        compose.waitForIdle()
+        field(R.string.setup_username).assertIsFocused()
+        calls.clear()
+        back()
+        on(R.string.tv_use_password).assertIsFocused()
+        // The panel is new, so it asks for a code (the view model had cancelled the last one when the password opened).
+        assertEquals(listOf("quickConnect"), calls)
+    }
+
+    @Test
+    fun `Back from the code goes to the server step`() {
+        show(signIn.copy(quickConnectCode = "482913"))
+        calls.clear()
+        back()
+        assertEquals(listOf("changeServer"), calls)
+        // The server step arrives, with the remote on its address field and the address kept.
+        state = UiState.EnterServer(address = "192.168.1.20:8096")
+        compose.waitForIdle()
+        field(R.string.setup_server_field).assertIsFocused()
+    }
+
     // Signed in: the list-and-pane board.
 
     /** The focused node among those named [id]: a row is named in the list and again by its option in the pane. */

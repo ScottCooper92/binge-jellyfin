@@ -19,6 +19,8 @@ data class Branding(
     val customCss: String = "",
     /** Jellyfin's web client shows a splash screen while it loads. Set from 10.9. */
     val splashscreen: Boolean = false,
+    /** The server holds an uploaded splash image (`SplashscreenLocation` is set). Set from 10.9. */
+    val customSplashscreen: Boolean = false,
 )
 
 /** A country the server can read metadata for. */
@@ -34,6 +36,7 @@ internal const val QUICK_CONNECT_AVAILABLE = "QuickConnectAvailable"
 internal const val LOGIN_DISCLAIMER = "LoginDisclaimer"
 internal const val CUSTOM_CSS = "CustomCss"
 internal const val SPLASHSCREEN_ENABLED = "SplashscreenEnabled"
+internal const val SPLASHSCREEN_LOCATION = "SplashscreenLocation"
 
 fun JsonObject.serverSettings(): ServerSettings =
     ServerSettings(
@@ -48,6 +51,7 @@ fun JsonObject.branding(): Branding =
         loginDisclaimer = string(LOGIN_DISCLAIMER).orEmpty(),
         customCss = string(CUSTOM_CSS).orEmpty(),
         splashscreen = bool(SPLASHSCREEN_ENABLED) == true,
+        customSplashscreen = !string(SPLASHSCREEN_LOCATION).isNullOrBlank(),
     )
 
 /** The server's whole configuration, kept whole so a save sends back what it didn't change. */

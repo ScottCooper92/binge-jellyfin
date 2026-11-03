@@ -35,6 +35,9 @@ sealed interface DevicesUiState {
         val actionFailed: ConsoleFailure? = null,
         /** Why the rename form was refused, shown in the form, which stays open with what was typed. */
         val formFailure: ConsoleFailure? = null,
+        /** True while a pull reads the list again; the list stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : DevicesUiState
 }
 
@@ -63,6 +66,19 @@ class DevicesViewModel(
                         onSuccess = { DevicesUiState.Ready(it, thisDevice) },
                         onFailure = { DevicesUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /** A pull: reads the list again in place, keeping the page, and says in a message when it couldn't. */
+    fun refresh() {
+        val ready = _state.value as? DevicesUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.devices() }
+                .onSuccess { fresh -> update { copy(devices = fresh, refreshing = false) } }
+                .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 

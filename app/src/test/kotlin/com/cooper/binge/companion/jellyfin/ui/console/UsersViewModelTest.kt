@@ -84,6 +84,59 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `a pull reads the users and libraries again in place, and a pull that fails keeps them and says so`() {
+        val vm = made(UsersViewModel(connection))
+        assertEquals(2, vm.ready().users.size)
+        val sam = jellyfin.serverUsers.getValue("user-2")
+        jellyfin.serverUsers["user-3"] =
+            kotlinx.serialization.json.JsonObject(
+                sam +
+                    mapOf(
+                        "Id" to kotlinx.serialization.json.JsonPrimitive("user-3"),
+                        "Name" to kotlinx.serialization.json.JsonPrimitive("Tess"),
+                    ),
+            )
+        vm.refresh()
+        val fresh = vm.ready { it.users.size == 3 && !it.refreshing }
+        assertNull(fresh.refreshFailed)
+        jellyfin.status["/Users"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(3, failed.users.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
+    fun `a change saved while a pull is in flight is not undone by the older read`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        val libraries = jellyfin.hold("/Library/VirtualFolders")
+        val before = jellyfin.requests.count { it.url.encodedPath == "/Users" }
+        vm.refresh()
+        libraries.awaitArrival()
+        // The users read has gone out and come back with the old policy; the libraries hold the pair.
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (jellyfin.requests.count { it.url.encodedPath == "/Users" } <=
+                    before
+                ) {
+                    delay(POLL_MILLIS)
+                }
+            }
+        }
+        vm.setCanSignIn(false)
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 1) delay(POLL_MILLIS) } }
+        vm.ready { it.openUser?.disabled == true }
+        libraries.release()
+        val after = vm.ready { !it.refreshing }
+        assertTrue(after.openUser!!.disabled)
+        vm.setAdministrator(true)
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 2) delay(POLL_MILLIS) } }
+        assertEquals("true", policy("user-2").getValue("IsDisabled").jsonPrimitive.content)
+        assertEquals("true", policy("user-2").getValue("IsAdministrator").jsonPrimitive.content)
+    }
+
+    @Test
     fun `a library the server has not given an id yet is not offered`() {
         jellyfin.libraries = JsonArray(jellyfin.libraries + buildJsonObject { put("Name", "New") })
         val ready = made(UsersViewModel(connection)).ready()

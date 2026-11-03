@@ -51,6 +51,7 @@ class JellyfinServerProfileTest {
         assertFalse(v109.hasLibraryLyricFetchers)
         assertFalse(v109.hasLibraryTrickplayWithMedia)
         val v1010 = JellyfinServerProfile.from("10.10.7")
+        assertFalse(v1010.servesSplashscreenLocation)
         assertTrue(v1010.hasMediaSegments)
         assertTrue(v1010.hasQsvDeviceAndDownmix)
         assertTrue(v1010.hasHevcRext)

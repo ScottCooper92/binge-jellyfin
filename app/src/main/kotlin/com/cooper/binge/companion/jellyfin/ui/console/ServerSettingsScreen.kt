@@ -1,21 +1,26 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,22 +28,30 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
+import com.binge.designsystem.component.BingeOutlinedButton
+import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.PageIntro
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.Branding
 import com.binge.designsystem.R as DesR
 
 /** What the server settings page can ask of its view model, and of the console. */
@@ -49,12 +62,14 @@ data class ServerSettingsActions(
     val onMetadataCountry: (String) -> Unit = {},
     val onQuickConnect: (Boolean) -> Unit = {},
     val onSplashscreen: (Boolean) -> Unit = {},
+    val onOpenSplash: (Boolean) -> Unit = {},
+    val onChooseSplash: () -> Unit = {},
+    val onAskRemoveSplash: (Boolean) -> Unit = {},
+    val onRemoveSplash: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
-
-/** Lines a failed save's message takes, so it never moves the rows. */
-private const val SETTINGS_STATUS_LINES = 2
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
 private const val SETTINGS_DETAIL_LINES = 3
@@ -66,27 +81,43 @@ private const val MULTILINE_MIN = 3
 /**
  * The server's general settings (its name, the language and country metadata is fetched for, Quick
  * Connect) and the login branding. Each change saves as it's made; a text saves when its dialog does.
- * The splash screen switch shows only on a server that has one ([splashscreenAvailable], 10.9).
+ * The splash screen switch shows only on a server that has one ([splashscreenAvailable], 10.9). Whether the image is the user's own is
+ * read only where the server says ([splashImageKnown], 10.11); before that the page makes no claim and Remove is always offered.
  */
 @Composable
 fun ServerSettingsScreen(
     state: ServerSettingsUiState,
     actions: ServerSettingsActions,
     splashscreenAvailable: Boolean = true,
+    splashImageKnown: Boolean = true,
+    splash: SplashUiState = SplashUiState(),
 ) {
     var picker by rememberSaveable { mutableStateOf<ServerPicker?>(null) }
-    BingeScreenScaffold(title = stringResource(R.string.server_settings_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+    val host = remember { SnackbarHostState() }
+    val ready = state as? ServerSettingsUiState.Ready
+    FormScreen(
+        title = stringResource(R.string.server_settings_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady =
             when (state) {
-                ServerSettingsUiState.Loading ->
-                    ConsoleLoading(inner, LOADING_ROWS)
-                is ServerSettingsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is ServerSettingsUiState.Ready -> {
-                    ServerSettingsBody(state, actions, splashscreenAvailable, inner) { picker = it }
-                    picker?.let { ServerPickerSheet(it, state, actions) { picker = null } }
-                    state.editing?.let { TextSheet(it, state, actions) }
+                ServerSettingsUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is ServerSettingsUiState.Failed -> { padding ->
+                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
+                is ServerSettingsUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            ServerSettingsBody(ready, actions, splashscreenAvailable, splashImageKnown) { picker = it }
+            // A refusal is said once, in a snackbar; a server that couldn't be reached is the save status's Retry.
+            RefusedMessage(ready.saveFailed?.takeIf { it == ConsoleFailure.Refused }, host)
+            picker?.let { ServerPickerSheet(it, ready, actions) { picker = null } }
+            ready.editing?.let { TextSheet(it, ready, actions) }
+            if (splash.open && splashscreenAvailable) {
+                SplashSheet(ready.branding.customSplashscreen, splash, actions, known = splashImageKnown)
             }
         }
     }
@@ -97,16 +128,13 @@ private fun ServerSettingsBody(
     state: ServerSettingsUiState.Ready,
     actions: ServerSettingsActions,
     splashscreenAvailable: Boolean,
-    inner: PaddingValues,
+    splashImageKnown: Boolean,
     onPick: (ServerPicker) -> Unit,
 ) {
     val settings = state.settings
     val branding = state.branding
     val notSet = stringResource(R.string.server_settings_not_set)
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         PageIntro(stringResource(R.string.server_settings_body))
         ItemGroup(
             title = stringResource(R.string.server_settings_general),
@@ -144,49 +172,65 @@ private fun ServerSettingsBody(
                     ),
                 ),
         )
-        ItemGroup(
-            title = stringResource(R.string.server_settings_branding),
-            rows =
-                listOfNotNull(
-                    ListItem(
-                        icon = Icons.Outlined.Gavel,
-                        label = stringResource(R.string.server_settings_disclaimer),
-                        detail = branding.loginDisclaimer.ifBlank { stringResource(R.string.server_settings_none) },
-                        onClick = { actions.onEdit(ServerText.LoginDisclaimer) },
-                    ),
-                    ListItem(
-                        icon = Icons.Outlined.Code,
-                        label = stringResource(R.string.server_settings_css),
-                        detail =
-                            branding.customCss.lines().count(String::isNotBlank).let { lines ->
-                                if (lines ==
-                                    0
-                                ) {
-                                    stringResource(R.string.server_settings_none)
-                                } else {
-                                    pluralStringResource(R.plurals.server_settings_css_lines, lines, lines)
-                                }
-                            },
-                        onClick = { actions.onEdit(ServerText.CustomCss) },
-                    ),
-                    ListItem(
-                        icon = Icons.Outlined.Wallpaper,
-                        label = stringResource(R.string.server_settings_splashscreen),
-                        detail = stringResource(R.string.server_settings_splashscreen_detail),
-                        supportingMaxLines = SETTINGS_DETAIL_LINES,
-                        toggled = branding.splashscreen,
-                        onClick = { actions.onSplashscreen(!branding.splashscreen) },
-                    ).takeIf { splashscreenAvailable },
-                ),
-        )
-        Text(
-            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, it.text()) }.orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            minLines = SETTINGS_STATUS_LINES,
-            maxLines = SETTINGS_STATUS_LINES,
-        )
+        LoginScreenGroup(branding, actions, splashscreenAvailable, splashImageKnown)
     }
+}
+
+/** The login screen's branding: the disclaimer, custom CSS, and, where the server has them (10.9), the splash screen and its image. */
+@Composable
+private fun LoginScreenGroup(
+    branding: Branding,
+    actions: ServerSettingsActions,
+    splashscreenAvailable: Boolean,
+    splashImageKnown: Boolean,
+) {
+    ItemGroup(
+        title = stringResource(R.string.server_settings_branding),
+        rows =
+            listOfNotNull(
+                ListItem(
+                    icon = Icons.Outlined.Gavel,
+                    label = stringResource(R.string.server_settings_disclaimer),
+                    detail = branding.loginDisclaimer.ifBlank { stringResource(R.string.server_settings_none) },
+                    onClick = { actions.onEdit(ServerText.LoginDisclaimer) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Code,
+                    label = stringResource(R.string.server_settings_css),
+                    detail =
+                        branding.customCss.lines().count(String::isNotBlank).let { lines ->
+                            if (lines ==
+                                0
+                            ) {
+                                stringResource(R.string.server_settings_none)
+                            } else {
+                                pluralStringResource(R.plurals.server_settings_css_lines, lines, lines)
+                            }
+                        },
+                    onClick = { actions.onEdit(ServerText.CustomCss) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Wallpaper,
+                    label = stringResource(R.string.server_settings_splashscreen),
+                    detail = stringResource(R.string.server_settings_splashscreen_detail),
+                    supportingMaxLines = SETTINGS_DETAIL_LINES,
+                    toggled = branding.splashscreen,
+                    onClick = { actions.onSplashscreen(!branding.splashscreen) },
+                ).takeIf { splashscreenAvailable },
+                ListItem(
+                    icon = Icons.Outlined.Image,
+                    label = stringResource(R.string.server_settings_splash_image),
+                    // Before 10.11 the server doesn't say which image is set, so the row doesn't claim to know.
+                    detail =
+                        when {
+                            !splashImageKnown -> null
+                            branding.customSplashscreen -> stringResource(R.string.server_settings_splash_custom)
+                            else -> stringResource(R.string.server_settings_splash_default)
+                        },
+                    onClick = { actions.onOpenSplash(true) },
+                ).takeIf { splashscreenAvailable },
+            ),
+    )
 }
 
 @Composable
@@ -293,3 +337,120 @@ internal fun TextSheet(
 }
 
 private const val LOADING_ROWS = 8
+
+/** The thumbnail's height in the splash image sheet. */
+private val SPLASH_THUMB_HEIGHT = 180.dp
+
+/**
+ * The login splash image: what the server serves now, Choose an image (the system photo picker, so no storage permission), and,
+ * only where a custom image is set ([custom]), Remove, last and red, behind a confirm. A sheet, since it offers a choice.
+ * [inWindow] false draws its body for a frame.
+ */
+@Composable
+internal fun SplashSheet(
+    custom: Boolean,
+    state: SplashUiState,
+    actions: ServerSettingsActions,
+    inWindow: Boolean = true,
+    known: Boolean = true,
+) {
+    ConsoleSheet(onDismissRequest = { actions.onOpenSplash(false) }, inWindow = inWindow) {
+        Column(
+            modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+        ) {
+            BingeSheetHeader(
+                title = stringResource(R.string.server_settings_splash_image),
+                subtitle = stringResource(R.string.server_settings_splash_body),
+            )
+            SplashPreview(state)
+            ItemGroup(
+                title = null,
+                rows =
+                    listOf(
+                        ListItem(
+                            icon = Icons.Outlined.AddPhotoAlternate,
+                            label = stringResource(R.string.server_settings_splash_choose),
+                            destination = ListItemDestination.Action,
+                            loading = state.busy,
+                            onClick = actions.onChooseSplash,
+                        ),
+                    ),
+            )
+            val problem =
+                when {
+                    state.unreadable -> stringResource(R.string.profile_picture_unreadable)
+                    state.refused != null -> stringResource(R.string.server_settings_splash_not_changed, state.refused.text())
+                    else -> null
+                }
+            problem?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+            if (!known) {
+                Text(
+                    stringResource(R.string.server_settings_splash_unknown),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            // Where the server doesn't say whether an image is set, Remove is always offered: it does nothing when there is none.
+            if (custom || !known) {
+                BingeOutlinedButton(
+                    label = stringResource(R.string.server_settings_splash_remove),
+                    onClick = { actions.onAskRemoveSplash(true) },
+                    destructive = true,
+                    enabled = !state.busy,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+    if (state.confirmingRemove) RemoveSplashDialog(actions, inWindow)
+}
+
+/** The image the server serves, or a line saying there is none to show. */
+@Composable
+private fun SplashPreview(state: SplashUiState) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(SPLASH_THUMB_HEIGHT)
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            state.picture != null ->
+                Image(
+                    bitmap = state.picture.asImageBitmap(),
+                    contentDescription = stringResource(R.string.server_settings_splash_image),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            state.loading -> Unit
+            else ->
+                Text(
+                    stringResource(R.string.server_settings_splash_no_preview),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(dimensionResource(DesR.dimen.padding_m)),
+                )
+        }
+    }
+}
+
+/** Removing the custom splash image, as a confirm that opens on Cancel. [inWindow] false draws its body for a frame. */
+@Composable
+internal fun RemoveSplashDialog(
+    actions: ServerSettingsActions,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.server_settings_splash_remove_title),
+        message = stringResource(R.string.server_settings_splash_remove_body),
+        confirmLabel = stringResource(R.string.server_settings_splash_remove),
+        onConfirm = actions.onRemoveSplash,
+        onDismissRequest = { actions.onAskRemoveSplash(false) },
+        destructive = true,
+        inWindow = inWindow,
+    )
+}

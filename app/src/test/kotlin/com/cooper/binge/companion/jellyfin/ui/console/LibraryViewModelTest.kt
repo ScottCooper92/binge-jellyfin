@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_REALTIME
 import com.cooper.binge.companion.jellyfin.server.MetadataSaver
@@ -187,6 +188,49 @@ class LibraryViewModelTest {
             listOf("Open Subtitles", "Podnapisi"),
             savedOptions().getValue("SubtitleFetcherOrder").jsonArray.map { it.jsonPrimitive.content },
         )
+    }
+
+    @Test
+    fun `a fetcher switched off and another moved write the type's whole entry, and the next change builds on it`() {
+        jellyfin.availableOptions =
+            jellyfin.availableOptions.replace(
+                "\"TypeOptions\":[]",
+                "\"TypeOptions\":[{\"Type\":\"Movie\",\"MetadataFetchers\":[{\"Name\":\"TheMovieDb\",\"DefaultEnabled\":true}," +
+                    "{\"Name\":\"OMDb\",\"DefaultEnabled\":false}],\"ImageFetchers\":[{\"Name\":\"TheMovieDb\",\"DefaultEnabled\":true}]}]",
+            )
+        val vm = made(LibraryViewModel(connection, movies))
+        val ready = vm.ready()
+        assertEquals(listOf("Movie"), ready.available.types.map { it.type })
+        vm.fetcherEdits.set(FetcherKind.Metadata, "Movie", "TheMovieDb", enabled = false)
+        jellyfin.awaitBody(OPTIONS) { body ->
+            body["LibraryOptions"]
+                ?.jsonObject
+                ?.get("TypeOptions")
+                ?.jsonArray
+                ?.size == 1
+        }
+
+        fun entry() = savedOptions().getValue("TypeOptions").jsonArray[0].jsonObject
+        assertEquals(listOf<String>(), entry().getValue("MetadataFetchers").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(listOf("TheMovieDb", "OMDb"), entry().getValue("MetadataFetcherOrder").jsonArray.map { it.jsonPrimitive.content })
+        // The image side was written out as the server offered it, so choosing here does not switch it off.
+        assertEquals(listOf("TheMovieDb"), entry().getValue("ImageFetchers").jsonArray.map { it.jsonPrimitive.content })
+        vm.fetcherEdits.move(FetcherKind.Metadata, "Movie", "OMDb", -1)
+        jellyfin.awaitBody(OPTIONS) { body ->
+            body["LibraryOptions"]
+                ?.jsonObject
+                ?.get("TypeOptions")
+                ?.jsonArray
+                ?.firstOrNull()
+                ?.jsonObject
+                ?.get("MetadataFetcherOrder")
+                ?.jsonArray
+                ?.map { it.jsonPrimitive.content } == listOf("OMDb", "TheMovieDb")
+        }
+        // The first change's off switch is still there: it is built on, not redone from the server's defaults.
+        assertEquals(listOf<String>(), entry().getValue("MetadataFetchers").jsonArray.map { it.jsonPrimitive.content })
+        // A type the server doesn't offer is ignored.
+        vm.fetcherEdits.set(FetcherKind.Images, "Gone", "TheMovieDb", enabled = false)
     }
 
     @Test

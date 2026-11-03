@@ -48,6 +48,13 @@ class LibrariesScreenshotTest {
     @Composable
     fun libraries() = LibrariesScreen(previewReady, LibrariesActions(), now = NOW)
 
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = LibrariesScreen(previewReady.copy(refreshing = true), LibrariesActions(), now = NOW)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews

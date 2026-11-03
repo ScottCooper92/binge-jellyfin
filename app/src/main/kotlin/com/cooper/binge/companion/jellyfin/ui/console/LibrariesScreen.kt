@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
@@ -43,6 +45,7 @@ data class LibrariesActions(
     val onAskAdd: (Boolean) -> Unit = {},
     val onAdd: (name: String, kind: String, path: String) -> Unit = { _, _, _ -> },
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -89,13 +92,18 @@ fun LibrariesScreen(
                         host,
                         if (state.stopFailed) R.string.libraries_not_stopped else R.string.libraries_not_started,
                     )
+                    RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                     if (state.libraries.isEmpty()) {
                         EmptyScreen(
                             message = stringResource(R.string.libraries_empty),
                             title = stringResource(R.string.libraries_empty_title),
                         )
                     } else {
-                        Libraries(state, actions, inner, now)
+                        BingePullToRefresh(
+                            isRefreshing = state.refreshing,
+                            onRefresh = actions.onRefresh,
+                            indicatorTopInset = padding.calculateTopPadding(),
+                        ) { Libraries(state, actions, inner, now) }
                     }
                     if (state.adding) {
                         AddLibrarySheet(
@@ -122,7 +130,11 @@ private fun Libraries(
     inner: PaddingValues,
     now: Long,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item {
             PageIntro(stringResource(R.string.libraries_body))
         }
