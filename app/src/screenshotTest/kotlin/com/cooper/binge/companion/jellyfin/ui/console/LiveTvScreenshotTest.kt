@@ -240,6 +240,25 @@ class LiveTvScreenshotTest {
             SdStepContent(SdStep.Lineups("g3", sdCountries, sdCountries.first(), "10001", null), false, SdActions())
         }
 
+    /** A lineup being added: the list is replaced by the loading indicator until the server answers. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdLineupSaving() =
+        Surface {
+            SdStepContent(
+                SdStep.Lineups(
+                    "g3",
+                    sdCountries,
+                    sdCountries.first(),
+                    "10001",
+                    listOf(SdLineup("USA-NY12345-X", "Comcast Digital")),
+                ),
+                true,
+                SdActions(),
+            )
+        }
+
     /** No lineups, which the server also answers for a login that failed. */
     @PreviewTest
     @JellyfinScreenStatePreview

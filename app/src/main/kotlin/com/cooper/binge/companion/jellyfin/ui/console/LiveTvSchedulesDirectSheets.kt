@@ -1,7 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -10,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Subscriptions
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -25,6 +26,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -48,6 +50,7 @@ data class SdActions(
 
 /** The tallest a country or lineup list grows before it scrolls inside the sheet. */
 private val LIST_MAX_HEIGHT = 360.dp
+private const val LINEUP_LOADING_ROWS = 4
 
 /** The Schedules Direct setup over the Live TV page, in a window. */
 @Composable
@@ -197,8 +200,9 @@ private fun LineupsStep(
             )
         }
         when {
-            step.lineups == null || saving ->
-                CircularProgressIndicator(Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)))
+            step.lineups == null ->
+                Box(Modifier.heightIn(max = LIST_MAX_HEIGHT)) { ConsoleLoading(PaddingValues(), LINEUP_LOADING_ROWS) }
+            saving -> BingeLoadingIndicator(Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)))
             step.lineups.isEmpty() ->
                 Text(
                     text = stringResource(R.string.live_tv_sd_no_lineups),
