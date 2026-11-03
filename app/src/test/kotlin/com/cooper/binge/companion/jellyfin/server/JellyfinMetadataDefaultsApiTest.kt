@@ -95,6 +95,61 @@ class JellyfinMetadataDefaultsApiTest {
         assertEquals(JsonArray(listOf(JsonPrimitive("themoviedb"))), twice.entryOf("Movie").getValue("DisabledMetadataFetchers"))
     }
 
+    @Test
+    fun `fetchers show in the order the entry asks, then the rest as the server offers them`() {
+        val offered = listOf("TheMovieDb", "The Open Movie Database", "TheTVDB")
+        val ordered = configuration.withFetcherMoved("Movie", FetcherKind.Metadata, offered, "TheTVDB", -1)
+        val names = ordered.fetchers("Movie", FetcherKind.Metadata, offered).map { it.name }
+
+        assertEquals(listOf("TheMovieDb", "TheTVDB", "The Open Movie Database"), names)
+        assertEquals(
+            JsonArray(listOf("TheMovieDb", "TheTVDB", "The Open Movie Database").map(::JsonPrimitive)),
+            ordered.entryOf("Movie").getValue("MetadataFetcherOrder"),
+        )
+    }
+
+    @Test
+    fun `a name the server no longer offers does not move and nothing is written`() {
+        val offered = listOf("TheMovieDb", "The Open Movie Database")
+        val stale = configuration.withFetcher("Movie", FetcherKind.Metadata, "Old", enabled = false)
+
+        assertEquals(stale, stale.withFetcherMoved("Movie", FetcherKind.Metadata, offered, "Old", -1))
+    }
+
+    @Test
+    fun `a move changes that order list of that entry and nothing else`() {
+        val offered = listOf("a", "b", "c")
+        val changed = configuration.withFetcherMoved("MusicVideo", FetcherKind.Images, offered, "a", 1)
+
+        assertEquals(JsonArray(listOf("b", "a", "c").map(::JsonPrimitive)), changed.entryOf("MusicVideo").getValue("ImageFetcherOrder"))
+        assertEquals(
+            configuration.entryOf("MusicVideo").getValue("DisabledImageFetchers"),
+            changed.entryOf("MusicVideo").getValue("DisabledImageFetchers"),
+        )
+        assertEquals(configuration.entryOf("Movie"), changed.entryOf("Movie"))
+        assertEquals(configuration.getValue("Future"), changed.getValue("Future"))
+    }
+
+    @Test
+    fun `a name at the end cannot move past it and changes nothing, and the first move for a type with no entry writes one`() {
+        val offered = listOf("a", "b")
+
+        assertEquals(configuration, configuration.withFetcherMoved("Series", FetcherKind.Metadata, offered, "a", -1))
+        val moved = configuration.withFetcherMoved("Series", FetcherKind.Metadata, offered, "b", -1)
+        assertEquals(listOf("Movie", "MusicVideo", "Series"), moved.metadataTypes())
+        assertEquals(JsonArray(listOf("b", "a").map(::JsonPrimitive)), moved.entryOf("Series").getValue("MetadataFetcherOrder"))
+    }
+
+    @Test
+    fun `a place counts the offered names only, so a stale disabled name has none and does not widen the others`() {
+        val offered = listOf("a", "b")
+        val stale = configuration.withFetcher("Movie", FetcherKind.Metadata, "Old", enabled = false)
+
+        assertEquals(1 to 2, stale.fetcherPlace("Movie", FetcherKind.Metadata, offered, "b"))
+        assertEquals(null, stale.fetcherPlace("Movie", FetcherKind.Metadata, offered, "Old"))
+        assertEquals(stale, stale.withFetcherMoved("Movie", FetcherKind.Metadata, offered, "b", 1))
+    }
+
     private fun JsonObject.entryOf(type: String): JsonObject =
         getValue("MetadataOptions").let { it as JsonArray }.map { it.jsonObject }.first { it.getValue("ItemType") == JsonPrimitive(type) }
 }

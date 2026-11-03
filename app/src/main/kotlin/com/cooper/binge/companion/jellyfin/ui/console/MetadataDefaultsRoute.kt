@@ -21,7 +21,9 @@ internal fun MetadataDefaultsRoute(
         state,
         MetadataDefaultsActions(
             onOpen = metadata::open,
+            onOpenFetcher = metadata::openFetcher,
             onSet = metadata::set,
+            onMove = metadata::move,
             onRetry = metadata::load,
             onRetrySave = metadata::retrySave,
             onBack = onBack,

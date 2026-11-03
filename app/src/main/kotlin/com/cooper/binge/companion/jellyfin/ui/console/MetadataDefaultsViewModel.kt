@@ -12,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
 import com.cooper.binge.companion.jellyfin.server.serverConfiguration
 import com.cooper.binge.companion.jellyfin.server.typeFetchers
 import com.cooper.binge.companion.jellyfin.server.withFetcher
+import com.cooper.binge.companion.jellyfin.server.withFetcherMoved
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,17 +30,24 @@ sealed interface MetadataDefaultsUiState {
     ) : MetadataDefaultsUiState
 
     /**
-     * The configuration as shown, the fetchers the server offers each item type, and the item type whose page is [type] (null
-     * for the list). [save] is where the saves stand, and [refused] the last the server refused, which was put back.
+     * The configuration as shown, the fetchers the server offers each item type, the item type whose page is [type] (null for
+     * the list) and the fetcher open on it, [provider]. [save] is where the saves stand, and [refused] the last the server refused, which was put back.
      */
     data class Ready(
         val configuration: JsonObject,
         val fetchers: List<TypeFetchers> = emptyList(),
         val type: String? = null,
+        val provider: OpenFetcher? = null,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
     ) : MetadataDefaultsUiState
 }
+
+/** The fetcher whose page is open: its [kind] and its [name]. */
+data class OpenFetcher(
+    val kind: FetcherKind,
+    val name: String,
+)
 
 /** The item types the page lists: those the server's defaults hold an entry for, then any other type a library can hold. */
 fun MetadataDefaultsUiState.Ready.types(): List<String> {
@@ -101,7 +109,10 @@ class MetadataDefaultsViewModel(
     }
 
     /** Opens the page of [type], or goes back to the list for null. */
-    fun open(type: String?) = update { copy(type = type) }
+    fun open(type: String?) = update { copy(type = type, provider = null) }
+
+    /** Opens the page of one fetcher of the open type, or goes back to the type for null. */
+    fun openFetcher(provider: OpenFetcher?) = update { copy(provider = provider) }
 
     /** Switches [name] on or off in [kind]'s list for [type], and saves it. */
     fun set(
@@ -112,6 +123,18 @@ class MetadataDefaultsViewModel(
     ) {
         val changed = saves.shown.withFetcher(type, kind, name, enabled)
         saves.set(METADATA_OPTIONS, changed.getValue(METADATA_OPTIONS))
+    }
+
+    /** Moves [name] [by] places in [kind]'s order for [type]: -1 earlier, 1 later. */
+    fun move(
+        type: String,
+        kind: FetcherKind,
+        name: String,
+        by: Int,
+    ) {
+        val ready = _state.value as? MetadataDefaultsUiState.Ready ?: return
+        val changed = saves.shown.withFetcherMoved(type, kind, ready.offered(type, kind), name, by)
+        if (changed != saves.shown) saves.set(METADATA_OPTIONS, changed.getValue(METADATA_OPTIONS))
     }
 
     fun retrySave() = saves.retry()
