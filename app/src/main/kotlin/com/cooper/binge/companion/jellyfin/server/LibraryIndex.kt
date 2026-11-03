@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import com.binge.companion.sdk.attempt
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -28,6 +29,8 @@ class LibraryIndex(
     private var byKey: Map<IndexKey, JellyfinItem> = emptyMap()
     private var byId: Map<String, IndexKey> = emptyMap()
 
+    private var lacksIds = false
+
     /** How many titles the last build found; null before one has run. */
     val size: Int? get() = if (owner == null) null else byKey.size
 
@@ -40,6 +43,18 @@ class LibraryIndex(
         lock.withLock { byKey[key] }?.let { return it }
         ensure(client, userId, missRefreshMillis)
         return lock.withLock { byKey[key] }
+    }
+
+    /**
+     * Whether the server holds titles this index cannot match, for lack of a TMDB id, as the last build counted them. A
+     * title asked for and not found may be one of them: the index cannot say. False where that count could not be read.
+     */
+    suspend fun serverLacksIds(
+        client: JellyfinClient,
+        userId: String,
+    ): Boolean {
+        ensure(client, userId, maxAgeMillis)
+        return lock.withLock { lacksIds }
     }
 
     /** The TMDB key of a series or movie by its Jellyfin id, from the index as it stands. */
@@ -65,6 +80,7 @@ class LibraryIndex(
             owner = null
             byKey = emptyMap()
             byId = emptyMap()
+            lacksIds = false
             builtAt = 0L
         }
 
@@ -95,6 +111,8 @@ class LibraryIndex(
                     val tmdb = item.tmdbId
                     if (type == null || tmdb == null) null else IndexKey(type, tmdb) to item
                 }
+            // Best-effort: a count that cannot be read leaves the answer "unknown", and never fails the build.
+            lacksIds = attempt { client.tmdbCoverage(userId) }.getOrNull()?.let { it.withoutTmdbId > 0 } == true
             byKey = keyed.toMap()
             byId = keyed.associate { (key, item) -> item.id to key }
             owner = owned
