@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.GUIDE_PATH
 import com.cooper.binge.companion.jellyfin.server.GUIDE_TYPE_XMLTV
 import com.cooper.binge.companion.jellyfin.server.GuideProviderSummary
+import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.deleteListingProvider
 import com.cooper.binge.companion.jellyfin.server.listingProviders
 import com.cooper.binge.companion.jellyfin.server.newXmlTvProvider
@@ -37,16 +38,13 @@ data class GuideForm(
 
 /** What went wrong with a guide change, which decides how the page says it. */
 enum class GuideProblem {
-    /** The server would not keep the provider, almost always because it could not read the address or the file. A dialog says why. */
+    /** The server answered and would not keep the provider, almost always because it could not read the address or the file. A dialog says why. */
     NotSaved,
-
-    /** The change did not go through, and there is nothing more to say than that. */
-    NotChanged,
 }
 
 /**
  * What a guide data change is doing, beside the Live TV page's own state: the [form] open, whether a change is in flight, the provider
- * to remove that the user has not confirmed ([removing]), the last [problem], and [queued], set when the server accepted a change and so
+ * to remove that the user has not confirmed ([removing]), the last [problem] or [failed], and [queued], set when the server accepted a change and so
  * queued a guide refresh. It is data that is always interactive, so it is a flat class and the page's loading and failure stay with it.
  */
 data class GuideUiState(
@@ -54,6 +52,8 @@ data class GuideUiState(
     val saving: Boolean = false,
     val removing: GuideRemoval? = null,
     val problem: GuideProblem? = null,
+    /** Why a change did not go through when the server was not the one that read the provider: unreachable, or refusing the user. */
+    val failed: ConsoleFailure? = null,
     val queued: Boolean = false,
 )
 
@@ -69,7 +69,7 @@ class LiveTvGuideViewModel(
     val state: StateFlow<GuideUiState> = _state.asStateFlow()
 
     /** Opens the form for a new XMLTV guide. */
-    fun add() = _state.update { it.copy(form = GuideForm(), problem = null, queued = false) }
+    fun add() = _state.update { it.copy(form = GuideForm(), problem = null, failed = null, queued = false) }
 
     /** Opens the form for [provider], with an XMLTV one's address or path as the server holds it. */
     fun edit(provider: GuideProviderSummary) {
@@ -87,9 +87,7 @@ class LiveTvGuideViewModel(
             connection.consoleCall(TAG) { _, client -> client.listingProviders() }.fold(
                 onSuccess = { providers ->
                     val path = providers[provider.id]?.string(GUIDE_PATH)
-                    if (path !=
-                        null
-                    ) {
+                    if (path != null) {
                         _state.update {
                             it.copy(
                                 form = GuideForm(provider.id, path, name = provider.label),
@@ -99,17 +97,17 @@ class LiveTvGuideViewModel(
                         }
                     }
                 },
-                onFailure = { _state.update { it.copy(problem = GuideProblem.NotChanged) } },
+                onFailure = { error -> _state.update { it.copy(failed = error.consoleFailure()) } },
             )
         }
     }
 
-    fun dismissForm() = _state.update { it.copy(form = null, problem = null) }
+    fun dismissForm() = _state.update { it.copy(form = null, problem = null, failed = null) }
 
     /** Saves [form]: a new XMLTV guide, or the provider it names with its path changed. */
     fun save(form: GuideForm) {
         if (!form.isXmlTv || form.path.isBlank() || _state.value.saving) return
-        _state.update { it.copy(saving = true, problem = null, queued = false) }
+        _state.update { it.copy(saving = true, problem = null, failed = null, queued = false) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
@@ -124,7 +122,16 @@ class LiveTvGuideViewModel(
                         _state.update { it.copy(saving = false, form = null, queued = true) }
                         onChanged()
                     },
-                    onFailure = { _state.update { it.copy(saving = false, problem = GuideProblem.NotSaved) } },
+                    onFailure = { error ->
+                        _state.update {
+                            // Only the server's own refusal of the provider is about the address; the rest says why it never got there.
+                            if (error.isProviderRefused()) {
+                                it.copy(saving = false, problem = GuideProblem.NotSaved)
+                            } else {
+                                it.copy(saving = false, failed = error.consoleFailure())
+                            }
+                        }
+                    },
                 )
         }
     }
@@ -140,19 +147,19 @@ class LiveTvGuideViewModel(
     /** Removes the provider the user confirmed removing. */
     fun remove() {
         val provider = _state.value.removing ?: return
-        _state.update { it.copy(removing = null, saving = true, problem = null, queued = false) }
+        _state.update { it.copy(removing = null, saving = true, problem = null, failed = null, queued = false) }
         viewModelScope.launch {
             connection.consoleCall(TAG) { _, client -> connection.tracked { client.deleteListingProvider(provider.id) } }.fold(
                 onSuccess = {
                     _state.update { it.copy(saving = false, form = null, queued = true) }
                     onChanged()
                 },
-                onFailure = { _state.update { it.copy(saving = false, problem = GuideProblem.NotChanged) } },
+                onFailure = { error -> _state.update { it.copy(saving = false, failed = error.consoleFailure()) } },
             )
         }
     }
 
-    fun dismissProblem() = _state.update { it.copy(problem = null) }
+    fun dismissProblem() = _state.update { it.copy(problem = null, failed = null) }
 
     fun dismissQueued() = _state.update { it.copy(queued = false) }
 
@@ -160,6 +167,10 @@ class LiveTvGuideViewModel(
         const val TAG = "JellyfinLiveTvGuide"
     }
 }
+
+private const val HTTP_UNAUTHORIZED = 401
+
+private fun Throwable.isProviderRefused(): Boolean = this is JellyfinHttpException && code != HTTP_UNAUTHORIZED
 
 /** The provider the user asked to remove, by the name the page shows for it. */
 data class GuideRemoval(

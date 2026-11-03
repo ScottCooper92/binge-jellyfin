@@ -1048,7 +1048,7 @@
     <string name="live_tv_guide_close">Close</string>
     <string name="live_tv_guide_add_submit">Add</string>
     <string name="live_tv_guide_remove_confirm">Remove</string>
-    <string name="live_tv_guide_not_changed">Not changed. Try again.</string>
+    <string name="live_tv_guide_not_changed">Not changed. %1$s</string>
     <string name="live_tv_type_m3u">M3U playlist</string>
     <string name="live_tv_type_xmltv" translatable="false">XMLTV</string>
     <string name="live_tv_type_schedules_direct" translatable="false">Schedules Direct</string>

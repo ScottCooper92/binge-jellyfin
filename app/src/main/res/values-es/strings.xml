@@ -1044,6 +1044,6 @@
     <string name="live_tv_guide_close">Cerrar</string>
     <string name="live_tv_guide_add_submit">Añadir</string>
     <string name="live_tv_guide_remove_confirm">Quitar</string>
-    <string name="live_tv_guide_not_changed">Sin cambios. Inténtalo de nuevo.</string>
+    <string name="live_tv_guide_not_changed">Sin cambios. %1$s</string>
     <string name="live_tv_type_m3u">Lista M3U</string>
 </resources>
