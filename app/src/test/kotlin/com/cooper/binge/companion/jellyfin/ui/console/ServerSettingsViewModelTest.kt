@@ -134,6 +134,21 @@ class ServerSettingsViewModelTest {
     }
 
     @Test
+    fun `Retry resends the branding write that failed and not the server write that never did`() {
+        val vm = made(ServerSettingsViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += "/System/Configuration/branding"
+        vm.setSplashscreen(false)
+        vm.settled { (it as? ServerSettingsUiState.Ready)?.save?.failed == true }
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        vm.settled { (it as? ServerSettingsUiState.Ready)?.save?.status == SaveStatus.Saved }
+        // The branding went again; the server configuration, which never failed, was not sent at all, so a rename made on the
+        // server meanwhile cannot be put back.
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/System/Configuration" && it.method == "POST" })
+    }
+
+    @Test
     fun `a write that cannot reach the server keeps the change, says so in the save status, and Retry sends it`() {
         val vm = made(ServerSettingsViewModel(connection))
         vm.ready()

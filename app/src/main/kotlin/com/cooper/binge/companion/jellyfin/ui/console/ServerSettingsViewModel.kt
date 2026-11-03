@@ -63,16 +63,7 @@ sealed interface ServerSettingsUiState {
         val brandSave: SaveProgress = SaveProgress(),
     ) : ServerSettingsUiState {
         /** Where the page's saves stand, the two writers' together: failed if either is, busy if either is. */
-        val save: SaveProgress
-            get() {
-                val statuses = listOf(serverSave.status, brandSave.status)
-                val status =
-                    statuses.firstOrNull { it == SaveStatus.Saving }
-                        ?: statuses.firstOrNull { it == SaveStatus.Saved }
-                        ?: statuses.firstOrNull { it != SaveStatus.Idle }
-                        ?: SaveStatus.Idle
-                return SaveProgress(status, serverSave.failed || brandSave.failed)
-            }
+        val save: SaveProgress get() = combined(serverSave, brandSave)
     }
 }
 
