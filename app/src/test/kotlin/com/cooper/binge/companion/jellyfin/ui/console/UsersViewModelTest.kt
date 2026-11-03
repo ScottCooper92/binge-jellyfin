@@ -107,6 +107,36 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `a change saved while a pull is in flight is not undone by the older read`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        val libraries = jellyfin.hold("/Library/VirtualFolders")
+        val before = jellyfin.requests.count { it.url.encodedPath == "/Users" }
+        vm.refresh()
+        libraries.awaitArrival()
+        // The users read has gone out and come back with the old policy; the libraries hold the pair.
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (jellyfin.requests.count { it.url.encodedPath == "/Users" } <=
+                    before
+                ) {
+                    delay(POLL_MILLIS)
+                }
+            }
+        }
+        vm.setCanSignIn(false)
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 1) delay(POLL_MILLIS) } }
+        vm.ready { it.openUser?.disabled == true }
+        libraries.release()
+        val after = vm.ready { !it.refreshing }
+        assertTrue(after.openUser!!.disabled)
+        vm.setAdministrator(true)
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 2) delay(POLL_MILLIS) } }
+        assertEquals("true", policy("user-2").getValue("IsDisabled").jsonPrimitive.content)
+        assertEquals("true", policy("user-2").getValue("IsAdministrator").jsonPrimitive.content)
+    }
+
+    @Test
     fun `a library the server has not given an id yet is not offered`() {
         jellyfin.libraries = JsonArray(jellyfin.libraries + buildJsonObject { put("Name", "New") })
         val ready = made(UsersViewModel(connection)).ready()
