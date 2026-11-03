@@ -2,11 +2,11 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -24,7 +24,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class TranscodingScreenTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private fun encoding(type: String): JsonObject =
         Json

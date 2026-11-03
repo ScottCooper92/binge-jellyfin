@@ -3,9 +3,9 @@ package com.cooper.binge.companion.jellyfin.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
@@ -19,7 +19,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class TmdbCoverageNoteTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private fun show(
         coverage: TmdbCoverage?,

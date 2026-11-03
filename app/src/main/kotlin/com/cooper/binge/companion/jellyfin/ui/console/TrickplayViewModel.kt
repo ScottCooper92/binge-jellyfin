@@ -174,7 +174,7 @@ class TrickplayViewModel(
             submitting && editing != null && failure == ConsoleFailure.Refused ->
                 copy(submitting = false, sheetFailed = failure, refused = null)
             submitting && failure == ConsoleFailure.Unreachable -> copy(submitting = false, editing = null)
-            else -> copy(refused = failure?.takeIf { it == ConsoleFailure.Refused })
+            else -> copy(refused = refusedAfter(refused, failure))
         }
 
     fun setHwAcceleration(on: Boolean) = change(TRICKPLAY_HW_ACCELERATION, JsonPrimitive(on))
