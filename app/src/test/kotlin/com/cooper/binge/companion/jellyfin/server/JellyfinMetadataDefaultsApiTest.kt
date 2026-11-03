@@ -109,6 +109,14 @@ class JellyfinMetadataDefaultsApiTest {
     }
 
     @Test
+    fun `a name the server no longer offers does not move and nothing is written`() {
+        val offered = listOf("TheMovieDb", "The Open Movie Database")
+        val stale = configuration.withFetcher("Movie", FetcherKind.Metadata, "Old", enabled = false)
+
+        assertEquals(stale, stale.withFetcherMoved("Movie", FetcherKind.Metadata, offered, "Old", -1))
+    }
+
+    @Test
     fun `a move changes that order list of that entry and nothing else`() {
         val offered = listOf("a", "b", "c")
         val changed = configuration.withFetcherMoved("MusicVideo", FetcherKind.Images, offered, "a", 1)
