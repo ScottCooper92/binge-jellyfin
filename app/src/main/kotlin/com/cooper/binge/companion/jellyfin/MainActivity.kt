@@ -135,7 +135,7 @@ class MainActivity : ComponentActivity() {
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalFlags provides flags) {
                 if (LocalConfiguration.current.isTelevision()) {
-                    JellyfinTvTheme { TvJellyfinRoot(state, actions, playback = rememberTvPlayback(graph, state)) }
+                    JellyfinTvTheme { TvJellyfinRoot(state, actions, playback = rememberTvPlayback(graph.connection, state)) }
                 } else {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
