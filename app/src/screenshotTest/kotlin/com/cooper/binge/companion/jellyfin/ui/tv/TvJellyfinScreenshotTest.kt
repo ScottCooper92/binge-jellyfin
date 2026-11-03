@@ -22,6 +22,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewEnterServerFound
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerNotJellyfin
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerSearching
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnect
+import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectExpired
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectOff
 import com.cooper.binge.companion.jellyfin.ui.previewSignIn
@@ -79,6 +80,13 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun quickConnectAfterWrongPassword() = TvJellyfinRoot(previewSignInWrongPassword, Actions())
+
+    /** A code the server let go of: its own wording, with Try again where the code was. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun quickConnectExpired() = TvJellyfinRoot(previewQuickConnectExpired, Actions())
 
     @PreviewTest
     @JellyfinTvScreenPreviews
