@@ -155,6 +155,15 @@ class FakeJellyfin : Dispatcher() {
     /** More of the user's policy for `/Users/Me`, as JSON members after `IsAdministrator` (`,"Key":value`). */
     var policy = ""
 
+    /**
+     * The signed-in user's picture, as the file the server holds. Set by a POST to either route, whose body the real server
+     * reads as base64 text (a body that is not base64 is a 400, as it is there); cleared by a DELETE.
+     */
+    var userImage: ByteArray? = null
+
+    /** The `Content-Type` of the last picture sent. */
+    var userImageType: String? = null
+
     /** The user's configuration, as `/Users/Me` answers it and `/Users/Configuration` replaces it. */
     var userConfiguration =
         """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
@@ -510,6 +519,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 503)
             }
             path == "/System/Info" -> json(systemInfo)
+            path == "/UserImage" || path == "/Users/user-1/Images/Primary" -> userImage(request)
             path == "/Items/Counts" -> json(itemCounts)
             path == "/System/Configuration/network" && request.method == "POST" -> {
                 networkConfiguration = request.body?.utf8().orEmpty()
@@ -1022,6 +1032,46 @@ class FakeJellyfin : Dispatcher() {
     ) = """{"ServerVersion":"$serverVersion","BackupEngineVersion":"0.2.0.0","DateCreated":"$created",""" +
         """"Path":"/config/data/backups/$fileName","Options":{"Metadata":$metadata,"Trickplay":$trickplay,""" +
         """"Subtitles":$subtitles,"Database":$database}}"""
+
+    private fun userImage(request: RecordedRequest): MockResponse =
+        when (request.method) {
+            "POST" -> {
+                val type = request.headers["Content-Type"].orEmpty()
+                val decoded =
+                    runCatching {
+                        java.util.Base64
+                            .getDecoder()
+                            .decode(
+                                request.body
+                                    ?.utf8()
+                                    .orEmpty()
+                                    .trim(),
+                            )
+                    }.getOrNull()
+                if (!type.startsWith("image/") || decoded == null) {
+                    MockResponse(code = 400)
+                } else {
+                    userImage = decoded
+                    userImageType = type
+                    MockResponse(code = 204)
+                }
+            }
+            "DELETE" -> {
+                userImage = null
+                MockResponse(code = 204)
+            }
+            else ->
+                userImage?.let {
+                    MockResponse
+                        .Builder()
+                        .code(
+                            200,
+                        ).addHeader("Content-Type", "image/jpeg")
+                        .body(okio.Buffer().write(it))
+                        .build()
+                }
+                    ?: MockResponse(code = 404)
+        }
 
     private fun json(body: String): MockResponse =
         MockResponse

@@ -135,6 +135,16 @@
     <string name="subtitle_mode_always_detail">In your subtitle language, whatever the audio</string>
     <string name="subtitle_mode_none">Off</string>
     <string name="subtitle_mode_none_detail">You can still turn them on while watching</string>
+    <string name="profile_picture_title">Profile picture</string>
+    <string name="profile_picture_body">The picture that shows beside your name in Jellyfin’s apps.</string>
+    <string name="profile_picture_choose">Choose a photo</string>
+    <string name="profile_picture_remove">Remove</string>
+    <string name="profile_picture_remove_title">Remove your picture?</string>
+    <string name="profile_picture_remove_body">Your name shows without a picture until you choose another.</string>
+    <string name="profile_picture_unreadable">That file isn’t a picture this device can read.</string>
+    <string name="profile_picture_not_changed">Picture not changed. %1$s</string>
+    <string name="profile_picture_description">Your profile picture</string>
+    <string name="profile_picture_none">No profile picture</string>
     <string name="password_title">Change password</string>
     <string name="password_body">Changing it signs you out of Jellyfin on your other devices, which will ask for the new one. This app stays signed in.</string>
     <string name="password_current">Current password</string>
