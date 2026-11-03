@@ -126,8 +126,9 @@ class LiveTvGuideViewModel(
                     }
                 }.fold(
                     onSuccess = {
-                        _state.update { it.copy(saving = false, form = null, queued = true) }
+                        // The page is told first, so seeing the change as done means it has been.
                         onChanged()
+                        _state.update { it.copy(saving = false, form = null, queued = true) }
                     },
                     onFailure = { error ->
                         _state.update {
@@ -158,8 +159,8 @@ class LiveTvGuideViewModel(
         viewModelScope.launch {
             connection.consoleCall(TAG) { _, client -> connection.tracked { client.deleteListingProvider(provider.id) } }.fold(
                 onSuccess = {
-                    _state.update { it.copy(saving = false, form = null, queued = true) }
                     onChanged()
+                    _state.update { it.copy(saving = false, form = null, queued = true) }
                 },
                 onFailure = { error -> _state.update { it.copy(saving = false, failed = error.consoleFailure()) } },
             )
