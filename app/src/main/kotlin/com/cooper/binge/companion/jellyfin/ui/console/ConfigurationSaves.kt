@@ -113,3 +113,19 @@ internal class ConfigurationSaves(
         connection.launchSave { owed.await() }
     }
 }
+
+/**
+ * What a page's `refused` becomes when [ConfigurationSaves] reports [failure], given the refusal it already says ([current]). A
+ * refusal is said until the next change: a change (no failure) clears it, a refusal replaces it, and a write that could not reach
+ * the server leaves it as it was, because that says nothing about a refusal, and on a page with two saves the other one's must
+ * stay. Every save-as-made page reads its `refused` through this, so they cannot drift apart.
+ */
+internal fun refusedAfter(
+    current: ConsoleFailure?,
+    failure: ConsoleFailure?,
+): ConsoleFailure? =
+    when (failure) {
+        null -> null
+        ConsoleFailure.Refused -> failure
+        else -> current
+    }

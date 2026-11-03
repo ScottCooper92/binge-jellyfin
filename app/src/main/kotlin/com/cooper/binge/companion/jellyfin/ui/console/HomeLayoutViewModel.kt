@@ -78,10 +78,12 @@ class HomeLayoutViewModel(
             onProgress = { progress -> _state.update { (it as? HomeLayoutUiState.Ready)?.copy(save = progress) ?: it } },
         ) { shown, failure ->
             _state.update {
-                (it as? HomeLayoutUiState.Ready)?.copy(
-                    layout = shown.homeLayout(),
-                    refused = failure?.takeIf { refusal -> refusal == ConsoleFailure.Refused },
-                ) ?: it
+                (it as? HomeLayoutUiState.Ready)?.let { ready ->
+                    ready.copy(
+                        layout = shown.homeLayout(),
+                        refused = refusedAfter(ready.refused, failure),
+                    )
+                } ?: it
             }
         }
 

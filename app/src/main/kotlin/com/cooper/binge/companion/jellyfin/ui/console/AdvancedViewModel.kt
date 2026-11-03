@@ -120,7 +120,7 @@ class AdvancedViewModel(
             { _, client, json -> client.saveServerConfiguration(json) },
             onProgress = { progress -> update { copy(save = progress) } },
         ) { shown, failure ->
-            update { copy(settings = shown.advancedSettings(), refused = failure?.takeIf { it == ConsoleFailure.Refused }) }
+            update { copy(settings = shown.advancedSettings(), refused = refusedAfter(refused, failure)) }
         }
 
     init {
