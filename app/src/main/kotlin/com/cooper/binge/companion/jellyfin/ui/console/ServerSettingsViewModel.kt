@@ -59,7 +59,21 @@ sealed interface ServerSettingsUiState {
         val saveFailed: ConsoleFailure? = null,
         val submitting: ServerText? = null,
         val sheetFailed: ConsoleFailure? = null,
-    ) : ServerSettingsUiState
+        val serverSave: SaveProgress = SaveProgress(),
+        val brandSave: SaveProgress = SaveProgress(),
+    ) : ServerSettingsUiState {
+        /** Where the page's saves stand, the two writers' together: failed if either is, busy if either is. */
+        val save: SaveProgress
+            get() {
+                val statuses = listOf(serverSave.status, brandSave.status)
+                val status =
+                    statuses.firstOrNull { it == SaveStatus.Saving }
+                        ?: statuses.firstOrNull { it == SaveStatus.Saved }
+                        ?: statuses.firstOrNull { it != SaveStatus.Idle }
+                        ?: SaveStatus.Idle
+                return SaveProgress(status, serverSave.failed || brandSave.failed)
+            }
+    }
 }
 
 /**
@@ -79,7 +93,10 @@ class ServerSettingsViewModel(
             viewModelScope,
             TAG,
             { _, client, json -> client.saveServerConfiguration(json) },
-            onProgress = { progress -> sheetSaved(progress, SERVER_TEXTS) },
+            onProgress = { progress ->
+                update { copy(serverSave = progress) }
+                sheetSaved(progress, SERVER_TEXTS)
+            },
         ) { shown, failure ->
             update { copy(settings = shown.serverSettings()).routed(failure, SERVER_TEXTS) }
         }
@@ -90,7 +107,10 @@ class ServerSettingsViewModel(
             viewModelScope,
             TAG,
             { _, client, json -> client.saveBranding(json) },
-            onProgress = { progress -> sheetSaved(progress, BRANDING_TEXTS) },
+            onProgress = { progress ->
+                update { copy(brandSave = progress) }
+                sheetSaved(progress, BRANDING_TEXTS)
+            },
         ) { shown, failure ->
             update { copy(branding = shown.branding()).routed(failure, BRANDING_TEXTS) }
         }
@@ -182,6 +202,12 @@ class ServerSettingsViewModel(
     fun setQuickConnect(on: Boolean) = server.set(QUICK_CONNECT_AVAILABLE, JsonPrimitive(on))
 
     fun setSplashscreen(on: Boolean) = brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
+
+    /** Sends the changes a failed write left unsent. */
+    fun retrySave() {
+        server.retry()
+        brand.retry()
+    }
 
     /** A change still waiting out its delay is sent now, where this page's scope can no longer cancel it. */
     override fun onCleared() {

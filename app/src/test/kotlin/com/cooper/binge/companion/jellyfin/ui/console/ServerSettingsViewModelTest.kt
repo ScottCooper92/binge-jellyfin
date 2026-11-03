@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.Connection
@@ -130,6 +131,27 @@ class ServerSettingsViewModelTest {
                 .jsonPrimitive.booleanOrNull,
         )
         assertEquals(true, vm.ready().branding.splashscreen)
+    }
+
+    @Test
+    fun `a write that cannot reach the server keeps the change, says so in the save status, and Retry sends it`() {
+        val vm = made(ServerSettingsViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += "/System/Configuration"
+        vm.setQuickConnect(false)
+        val failed = vm.settled { (it as? ServerSettingsUiState.Ready)?.save?.failed == true } as ServerSettingsUiState.Ready
+        assertEquals(false, failed.settings.quickConnect)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.settled { (it as? ServerSettingsUiState.Ready)?.save?.status == SaveStatus.Saved } as ServerSettingsUiState.Ready
+        assertEquals(false, saved.save.failed)
+        assertEquals(
+            false,
+            jellyfin
+                .lastBody("/System/Configuration")
+                .getValue("QuickConnectAvailable")
+                .jsonPrimitive.booleanOrNull,
+        )
     }
 
     @Test

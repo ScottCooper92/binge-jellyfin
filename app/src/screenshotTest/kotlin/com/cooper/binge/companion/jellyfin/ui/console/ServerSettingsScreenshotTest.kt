@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
@@ -93,7 +94,20 @@ class ServerSettingsScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun notSaved() = ServerSettingsScreen(previewSettings.copy(saveFailed = ConsoleFailure.Unreachable), ServerSettingsActions())
+    fun saving() = ServerSettingsScreen(previewSettings.copy(serverSave = SaveProgress(SaveStatus.Saving)), ServerSettingsActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun notSaved() =
+        ServerSettingsScreen(
+            previewSettings.copy(
+                saveFailed = ConsoleFailure.Unreachable,
+                serverSave = SaveProgress(failed = true),
+            ),
+            ServerSettingsActions(),
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview

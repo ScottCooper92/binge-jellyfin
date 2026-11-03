@@ -239,6 +239,7 @@ private fun ServerSettingsRoute(
             onQuickConnect = settings::setQuickConnect,
             onSplashscreen = settings::setSplashscreen,
             onRetry = settings::load,
+            onRetrySave = settings::retrySave,
             onBack = onBack,
         ),
         splashscreenAvailable = splashscreenAvailable,
