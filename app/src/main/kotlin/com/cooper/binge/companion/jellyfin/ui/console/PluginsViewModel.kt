@@ -84,10 +84,7 @@ class PluginsViewModel(
         }
     }
 
-    /**
-     * Reads the plugins again without going back to Loading, for a change made elsewhere on the page (an
-     * install). Keeps what the page is showing, and the last on/off sent for a plugin still waiting for a restart.
-     */
+    /** Reads the plugins again for a pull to refresh, keeping the list and reporting a failure. */
     fun pull() {
         val ready = _state.value as? PluginsUiState.Ready ?: return
         if (ready.refreshing) return
@@ -100,6 +97,10 @@ class PluginsViewModel(
         }
     }
 
+    /**
+     * Reads the plugins again without going back to Loading, for a change made elsewhere on the page (an
+     * install). Keeps what the page is showing, and the last on/off sent for a plugin still waiting for a restart.
+     */
     fun refresh() {
         viewModelScope.launch {
             connection
