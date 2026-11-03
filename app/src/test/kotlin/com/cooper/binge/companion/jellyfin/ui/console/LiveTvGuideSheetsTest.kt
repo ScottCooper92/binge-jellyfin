@@ -76,4 +76,71 @@ class LiveTvGuideSheetsTest {
         compose.onNodeWithText("set up in Jellyfin", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Remove guide data").assertIsDisplayed()
     }
+
+    @Test
+    fun `the choice offers XMLTV and Schedules Direct`() {
+        var xml = 0
+        var sd = 0
+        compose.setContent {
+            JellyfinTheme {
+                ChooseGuideContent(
+                    LiveTvGuideActions(onAddXmlTv = { xml++ }, onAddSchedulesDirect = { sd++ }),
+                )
+            }
+        }
+        compose.onNodeWithText("XMLTV").performClick()
+        compose.onNodeWithText("Schedules Direct").performClick()
+        assertEquals(1, xml)
+        assertEquals(1, sd)
+    }
+
+    @Test
+    fun `an account with no lineup offers to finish the setup, above Remove`() {
+        val finished = mutableListOf<String>()
+        form(
+            GuideForm("g2", type = "SchedulesDirect", name = "alice", lineupPending = true),
+            LiveTvGuideActions(onFinishSetup = { finished += it }),
+        )
+        compose.onNodeWithText("no lineup is chosen yet", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Remove guide data").assertIsDisplayed()
+        compose.onNodeWithText("Finish setup").performClick()
+        assertEquals(listOf("g2"), finished)
+    }
+
+    @Test
+    fun `a user without Live TV access is not offered Finish setup`() {
+        compose.setContent {
+            JellyfinTheme {
+                GuideFormContent(
+                    GuideForm("g2", type = "SchedulesDirect", name = "alice", lineupPending = true),
+                    false,
+                    LiveTvGuideActions(),
+                    canFinishSetup = false,
+                )
+            }
+        }
+        compose.onNodeWithText("Finish setup").assertDoesNotExist()
+        compose.onNodeWithText("Remove guide data").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an account with its lineup has no Finish setup`() {
+        form(GuideForm("g2", type = "SchedulesDirect", name = "alice"))
+        compose.onNodeWithText("Finish setup").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a provider with no lineup says so in its row`() {
+        compose.setContent {
+            JellyfinTheme {
+                LiveTvScreen(
+                    LiveTvUiState.Ready(
+                        LiveTvSummary(providers = listOf(GuideProviderSummary("g2", "SchedulesDirect", "alice", lineupPending = true))),
+                    ),
+                    LiveTvActions(),
+                )
+            }
+        }
+        compose.onNodeWithText("Schedules Direct · setup not finished").assertIsDisplayed()
+    }
 }

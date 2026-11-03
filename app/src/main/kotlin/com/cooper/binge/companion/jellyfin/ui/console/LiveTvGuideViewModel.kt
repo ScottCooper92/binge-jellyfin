@@ -29,6 +29,8 @@ data class GuideForm(
     val type: String = GUIDE_TYPE_XMLTV,
     /** What the page calls this provider, for its remove confirm. */
     val name: String = "",
+    /** A Schedules Direct account with no lineup yet: its form offers to finish the setup. */
+    val lineupPending: Boolean = false,
 ) {
     val isXmlTv: Boolean get() = type.equals(GUIDE_TYPE_XMLTV, ignoreCase = true)
 
@@ -55,6 +57,8 @@ data class GuideUiState(
     /** Why a change did not go through when the server was not the one that read the provider: unreachable, or refusing the user. */
     val failed: ConsoleFailure? = null,
     val queued: Boolean = false,
+    /** The choice between an XMLTV guide and a Schedules Direct account, open. */
+    val choosing: Boolean = false,
 )
 
 /**
@@ -69,14 +73,17 @@ class LiveTvGuideViewModel(
     val state: StateFlow<GuideUiState> = _state.asStateFlow()
 
     /** Opens the form for a new XMLTV guide. */
-    fun add() = _state.update { it.copy(form = GuideForm(), problem = null, failed = null, queued = false) }
+    fun add() = _state.update { it.copy(form = GuideForm(), choosing = false, problem = null, failed = null, queued = false) }
+
+    /** Opens the choice of what to add, where Schedules Direct is offered. */
+    fun choose(open: Boolean = true) = _state.update { it.copy(choosing = open, problem = null, failed = null, queued = false) }
 
     /** Opens the form for [provider], with an XMLTV one's address or path as the server holds it. */
     fun edit(provider: GuideProviderSummary) {
         if (!provider.type.equals(GUIDE_TYPE_XMLTV, ignoreCase = true)) {
             _state.update {
                 it.copy(
-                    form = GuideForm(provider.id, type = provider.type, name = provider.label),
+                    form = GuideForm(provider.id, type = provider.type, name = provider.label, lineupPending = provider.lineupPending),
                     problem = null,
                     queued = false,
                 )
@@ -172,7 +179,7 @@ class LiveTvGuideViewModel(
 private const val HTTP_UNAUTHORIZED = 401
 private const val HTTP_FORBIDDEN = 403
 
-private fun Throwable.isProviderRefused(): Boolean = this is JellyfinHttpException && code !in HTTP_UNAUTHORIZED..HTTP_FORBIDDEN
+internal fun Throwable.isProviderRefused(): Boolean = this is JellyfinHttpException && code !in HTTP_UNAUTHORIZED..HTTP_FORBIDDEN
 
 /** The provider the user asked to remove, by the name the page shows for it. */
 data class GuideRemoval(
@@ -183,6 +190,10 @@ data class GuideRemoval(
 /** What the guide data on the Live TV page can ask of its view model. */
 data class LiveTvGuideActions(
     val onAdd: () -> Unit = {},
+    val onAddXmlTv: () -> Unit = {},
+    val onAddSchedulesDirect: () -> Unit = {},
+    val onDismissChoice: () -> Unit = {},
+    val onFinishSetup: (String) -> Unit = {},
     val onEdit: (GuideProviderSummary) -> Unit = {},
     val onSave: (GuideForm) -> Unit = {},
     val onDismissForm: () -> Unit = {},

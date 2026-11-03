@@ -23,6 +23,8 @@ data class GuideProviderSummary(
     val id: String,
     val type: String,
     val label: String,
+    /** A Schedules Direct account saved but with no lineup chosen yet: the setup was not finished, and the server's next guide refresh has nothing to read. */
+    val lineupPending: Boolean = false,
 )
 
 /**
@@ -102,7 +104,8 @@ private fun JsonObject.guideProvider(): GuideProviderSummary? {
     val id = string("Id") ?: return null
     val type = string("Type").orEmpty()
     val label = string("Username")?.takeIf { it.isNotBlank() } ?: string("Path").orEmpty().withoutSecrets()
-    return GuideProviderSummary(id, type, label)
+    val pending = type.equals(GUIDE_TYPE_SCHEDULES_DIRECT, ignoreCase = true) && string("ListingsId").isNullOrBlank()
+    return GuideProviderSummary(id, type, label, pending)
 }
 
 /** [this] as a web address shortened to scheme, host and port, or as it is when it is a file path or not an address at all. */
