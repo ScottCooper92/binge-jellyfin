@@ -7,13 +7,17 @@ import kotlinx.serialization.json.JsonPrimitive
 /** The key of a library's per-type fetcher choices: one entry for each item type that has made a choice. */
 const val LIBRARY_TYPE_OPTIONS = "TypeOptions"
 
-/** The two lists of fetchers a library keeps for each item type: who it downloads metadata from, and where it gets images. */
+/**
+ * The two lists of fetchers an item type keeps: who it downloads metadata from, and where it gets images. A library lists the
+ * ones that are on ([enabledKey]); the server's defaults list the ones that are off ([disabledKey]). Both keep an [orderKey].
+ */
 enum class FetcherKind(
     val enabledKey: String,
+    val disabledKey: String,
     val orderKey: String,
 ) {
-    Metadata("MetadataFetchers", "MetadataFetcherOrder"),
-    Images("ImageFetchers", "ImageFetcherOrder"),
+    Metadata("MetadataFetchers", "DisabledMetadataFetchers", "MetadataFetcherOrder"),
+    Images("ImageFetchers", "DisabledImageFetchers", "ImageFetcherOrder"),
 }
 
 private fun JsonObject.typeEntry(type: String): JsonObject? =
