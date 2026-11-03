@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.QrCode2
@@ -111,6 +112,11 @@ internal fun AccountGroup(
                     detail = stringResource(R.string.console_home_layout_detail),
                     onClick = { actions.onOpenPage(ConsolePage.HomeLayout) },
                 ).takeIf { ConsolePage.HomeLayout.available(state.profile, state.account) },
+                ListItem(
+                    icon = Icons.Outlined.AccountCircle,
+                    label = stringResource(R.string.profile_picture_title),
+                    onClick = { actions.onOpenPage(ConsolePage.ProfilePicture) },
+                ).takeIf { ConsolePage.ProfilePicture.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.Password,
                     label = stringResource(R.string.password_title),

@@ -20,9 +20,66 @@ internal fun LiveTvRoute(
 ) {
     val liveTv: LiveTvViewModel =
         viewModel(factory = viewModelFactory { initializer { LiveTvViewModel(graph.connection, withGuide = account.canAccessLiveTv) } })
+    val guide: LiveTvGuideViewModel =
+        viewModel(factory = viewModelFactory { initializer { LiveTvGuideViewModel(graph.connection, liveTv::refresh) } })
+    val sd: LiveTvSchedulesDirectViewModel =
+        viewModel(factory = viewModelFactory { initializer { LiveTvSchedulesDirectViewModel(graph.connection, liveTv::refresh) } })
     val state by liveTv.state.collectAsStateWithLifecycle()
+    val guideState by guide.state.collectAsStateWithLifecycle()
+    val sdState by sd.state.collectAsStateWithLifecycle()
     LiveTvScreen(
         state,
-        LiveTvActions(onOpenTasks = onOpenTasks, onOpenRecording = onOpenRecording, onRetry = liveTv::load, onBack = onBack),
+        LiveTvActions(
+            onOpenTasks = onOpenTasks,
+            onOpenRecording = onOpenRecording,
+            onRetry = liveTv::load,
+            onBack = onBack,
+            onSheet = liveTv::sheet,
+            onDiscover = liveTv::discover,
+            onForm = liveTv::form,
+            onEdit = liveTv::edit,
+            onSave = liveTv::save,
+            onAskRemove = liveTv::askRemove,
+            onCancelRemove = liveTv::cancelRemove,
+            onRemove = liveTv::remove,
+            onDismissProblem = liveTv::dismissProblem,
+        ),
+        guide = guideState,
+        sd = sdState,
+        canFinishSetup = account.canAccessLiveTv,
+        sdActions =
+            SdActions(
+                onSignIn = sd::signIn,
+                onChooseCountry = sd::chooseCountry,
+                onPickCountry = sd::pickCountry,
+                onPostalCode = sd::typePostalCode,
+                onFind = sd::findLineups,
+                onBackToLocation = sd::backToLocation,
+                onAddLineup = sd::addLineup,
+                onClose = sd::close,
+                onDismissProblem = sd::dismissProblem,
+            ),
+        guideActions =
+            LiveTvGuideActions(
+                // Schedules Direct is offered only where the user may read countries and lineups, which the server needs for its setup.
+                onAdd = { if (account.canAccessLiveTv) guide.choose() else guide.add() },
+                onAddXmlTv = guide::add,
+                onAddSchedulesDirect = {
+                    guide.choose(false)
+                    sd.start()
+                },
+                onDismissChoice = { guide.choose(false) },
+                onFinishSetup = {
+                    guide.dismissForm()
+                    sd.locate(it)
+                },
+                onEdit = guide::edit,
+                onSave = guide::save,
+                onDismissForm = guide::dismissForm,
+                onAskRemove = guide::askRemove,
+                onCancelRemove = guide::cancelRemove,
+                onRemove = guide::remove,
+                onDismissProblem = guide::dismissProblem,
+            ),
     )
 }

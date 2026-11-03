@@ -52,6 +52,21 @@ class ApiKeysViewModelTest {
         settled { it is ApiKeysUiState.Ready && check(it) } as ApiKeysUiState.Ready
 
     @Test
+    fun `a pull reads the keys again in place, and a pull that fails keeps them and says so`() {
+        val vm = made(ApiKeysViewModel(connection))
+        assertEquals(2, vm.ready().keys.size)
+        jellyfin.apiKeys +=
+            """{"AccessToken":"iiiijjjjkkkkllll3333","AppName":"Radarr","DateCreated":"2026-10-25T10:00:00Z"}"""
+        vm.refresh()
+        assertNull(vm.ready { it.keys.size == 3 && !it.refreshing }.refreshFailed)
+        jellyfin.status["/Auth/Keys"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(3, failed.keys.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
     fun `lists the keys newest first, each known by its last four characters`() {
         val ready = made(ApiKeysViewModel(connection)).ready()
         assertEquals(listOf("Home Assistant", "Sonarr"), ready.keys.map { it.app })

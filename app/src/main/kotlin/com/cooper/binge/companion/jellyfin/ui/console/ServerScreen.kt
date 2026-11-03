@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -43,6 +44,7 @@ data class ServerActions(
     val onShutdown: () -> Unit = {},
     val onDismissRestart: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -69,7 +71,12 @@ fun ServerScreen(
                 ServerUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is ServerUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ServerUiState.Ready -> {
-                    Server(state, actions, inner)
+                    BingePullToRefresh(
+                        isRefreshing = state.refreshing,
+                        onRefresh = actions.onRefresh,
+                        indicatorTopInset = padding.calculateTopPadding(),
+                    ) { Server(state, actions, inner) }
+                    RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                     // A restart or shutdown the server didn't take is a short message; a restart that never came back is a dialog.
                     SnackbarMessage(state.refusal()?.let { stringResource(it) }, host)
                 }

@@ -343,6 +343,22 @@ class TranscodingViewModelTest {
     }
 
     @Test
+    fun `Retry resends the writer whose write failed and not the one that never did`() {
+        val vm = made(TranscodingViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += ENCODING
+        vm.setEncoding(ENCODING_ACCELERATION, JsonPrimitive("vaapi"))
+        vm.ready { it.save.failed }
+        val encodingBefore = jellyfin.requests.count { it.url.encodedPath == ENCODING && it.method == "POST" }
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        vm.ready { it.save.status == SaveStatus.Saved && !it.save.failed }
+        // The encoding write went again; the server configuration, which never failed, was not sent at all.
+        assertEquals(encodingBefore + 1, jellyfin.requests.count { it.url.encodedPath == ENCODING && it.method == "POST" })
+        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/System/Configuration" && it.method == "POST" })
+    }
+
+    @Test
     fun `a refused save goes back and says so, and a page that can't read says why`() {
         val vm = made(TranscodingViewModel(connection))
         vm.ready()
