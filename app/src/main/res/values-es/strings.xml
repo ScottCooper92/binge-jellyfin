@@ -360,6 +360,7 @@
     <string name="devices_rename_title">Cambiar nombre del dispositivo</string>
     <string name="devices_rename_body">Déjalo vacío para usar el nombre que se da el propio dispositivo.</string>
     <string name="devices_rename_save">Guardar</string>
+    <string name="console_not_refreshed">No se ha actualizado. %1$s</string>
     <string name="devices_not_changed">No se ha cambiado. %1$s</string>
     <string name="users_title">Usuarios</string>
     <string name="console_users_detail">Quién puede iniciar sesión y qué ve</string>

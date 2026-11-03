@@ -37,6 +37,9 @@ sealed interface BackupsUiState {
         val open: ServerBackup? = null,
         val confirmingRestore: ServerBackup? = null,
         val restore: Restore? = null,
+        /** True while a pull reads again; the page stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : BackupsUiState {
         val creating: Boolean get() = creation is BackupCreation.Creating
     }
@@ -81,6 +84,19 @@ class BackupsViewModel(
                         onSuccess = { BackupsUiState.Ready(it, creation = connection.backupCreation.value) },
                         onFailure = { BackupsUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /** A pull: reads the backups again in place, keeping the page, and says in a message when it couldn't. */
+    fun refresh() {
+        val ready = _state.value as? BackupsUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client -> client.backups() }
+                .onSuccess { fresh -> update { copy(backups = fresh, refreshing = false) } }
+                .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 
