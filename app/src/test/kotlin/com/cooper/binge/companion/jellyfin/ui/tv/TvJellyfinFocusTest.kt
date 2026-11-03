@@ -285,6 +285,10 @@ class TvJellyfinFocusTest {
         calls.clear()
         back()
         assertEquals(listOf("changeServer"), calls)
+        // The server step arrives, with the remote on its address field and the address kept.
+        state = UiState.EnterServer(address = "192.168.1.20:8096")
+        compose.waitForIdle()
+        field(R.string.setup_server_field).assertIsFocused()
     }
 
     // Signed in.
