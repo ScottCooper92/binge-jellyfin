@@ -1049,6 +1049,36 @@
     <string name="live_tv_guide_add_submit">Add</string>
     <string name="live_tv_guide_remove_confirm">Remove</string>
     <string name="live_tv_guide_not_changed">Not changed. %1$s</string>
+    <string name="live_tv_recording_row">Recording</string>
+    <string name="live_tv_recording_row_detail">Folders, padding and the files saved with a recording</string>
+    <string name="live_tv_recording_title">Recording</string>
+    <string name="live_tv_recording_body">How the server records. A change saves as you make it.</string>
+    <string name="live_tv_recording_folders">Folders</string>
+    <string name="live_tv_recording_folder_all">Recordings</string>
+    <string name="live_tv_recording_folder_movies">Movie recordings</string>
+    <string name="live_tv_recording_folder_series">Series recordings</string>
+    <string name="live_tv_recording_folder_unset">Not set</string>
+    <string name="live_tv_recording_folder_note">Changing a folder does not move recordings already made.</string>
+    <string name="live_tv_recording_folder_hint">A folder on the server.</string>
+    <string name="live_tv_recording_padding">Padding</string>
+    <string name="live_tv_recording_pre">Start early</string>
+    <string name="live_tv_recording_post">Stop late</string>
+    <string name="live_tv_recording_files">Files</string>
+    <string name="live_tv_recording_subfolders">A folder for each series</string>
+    <string name="live_tv_recording_original_audio">Keep the original audio</string>
+    <string name="live_tv_recording_original_audio_detail">Add the broadcast\'s audio to a recording that is re-encoded</string>
+    <string name="live_tv_recording_nfo">Save metadata files</string>
+    <string name="live_tv_recording_nfo_detail">An NFO file beside each recording</string>
+    <string name="live_tv_recording_images">Save images</string>
+    <string name="live_tv_recording_images_detail">Artwork beside each recording</string>
+    <string name="live_tv_recording_guide">Guide</string>
+    <string name="live_tv_recording_guide_days">Days of guide</string>
+    <string name="live_tv_recording_guide_auto">Automatic</string>
+    <string name="live_tv_recording_guide_hint">Leave it blank for the server to choose.</string>
+    <plurals name="live_tv_recording_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <string name="live_tv_type_m3u">M3U playlist</string>
     <string name="live_tv_type_xmltv" translatable="false">XMLTV</string>
     <string name="live_tv_type_schedules_direct" translatable="false">Schedules Direct</string>

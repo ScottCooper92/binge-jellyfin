@@ -7,7 +7,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
@@ -20,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** The new trigger form where there is little room, as with the keyboard up. */
 @RunWith(RobolectricTestRunner::class)
@@ -56,6 +59,37 @@ class AddTriggerFormTest {
     @Test
     fun `three hours on the slider is 108000000000 ticks`() {
         assertEquals(108_000_000_000L, trigger(limitHours = 3).maxRuntimeTicks)
+    }
+
+    /** The x-centre of the time-of-day fields and of the time limit's readout below them, in pixels, as drawn. */
+    private fun centres(kind: TriggerKind): Pair<Float, Float> {
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), kind) } }
+        val time = compose.onNodeWithTag(TRIGGER_TIME_TAG).getUnclippedBoundsInRoot()
+        val limit = compose.onNodeWithText("No limit").getUnclippedBoundsInRoot()
+        return (time.left + time.right).value / 2 to (limit.left + limit.right).value / 2
+    }
+
+    @Test
+    fun `the time fields share an axis with the time limit on the daily and weekly forms`() {
+        listOf(TriggerKind.Daily, TriggerKind.Weekly).forEach { kind ->
+            val (time, limit) = centres(kind)
+            assertEquals("$kind", limit, time, 1f)
+            compose.activityRule.scenario.recreate()
+        }
+    }
+
+    @Test
+    @Config(fontScale = 2f)
+    fun `and at twice the font size`() {
+        val (time, limit) = centres(TriggerKind.Daily)
+        assertEquals(limit, time, 1f)
+    }
+
+    @Test
+    @Config(fontScale = 1.5f)
+    fun `and at one and a half times`() {
+        val (time, limit) = centres(TriggerKind.Weekly)
+        assertEquals(limit, time, 1f)
     }
 
     private companion object {

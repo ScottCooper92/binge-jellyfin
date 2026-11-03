@@ -54,6 +54,13 @@ class LiveTvScreenshotTest {
     @Composable
     fun withoutTasks() = LiveTvScreen(LiveTvUiState.Ready(previewSummary.copy(guideEndMillis = null)), LiveTvActions(), now = NOW)
 
+    /** An administrator who manages Live TV also sees the Recording row. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun withRecording() =
+        LiveTvScreen(LiveTvUiState.Ready(previewSummary), LiveTvActions(onOpenTasks = {}, onOpenRecording = {}), now = NOW)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
