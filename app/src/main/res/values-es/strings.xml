@@ -1040,7 +1040,7 @@
     <string name="backups_restore_failed">No se pudo hacer la restauración.</string>
     <string name="live_tv_title">TV en directo</string>
     <string name="console_live_tv_detail">Sintonizadores y guía</string>
-    <string name="live_tv_body">Los sintonizadores y los datos de guía que este servidor usa para la TV en directo. Por ahora esta página solo los muestra.</string>
+    <string name="live_tv_body">Los sintonizadores y los datos de guía que este servidor usa para la TV en directo.</string>
     <string name="live_tv_tuners">Sintonizadores</string>
     <string name="live_tv_no_tuners">Sin sintonizadores</string>
     <string name="live_tv_guide">Datos de guía</string>
@@ -1048,5 +1048,36 @@
     <string name="live_tv_guide_ends">La guía llega hasta</string>
     <string name="live_tv_refresh_guide">Actualizar la guía</string>
     <string name="live_tv_refresh_guide_detail">Se ejecuta desde Tareas programadas</string>
+    <string name="live_tv_recording_row">Grabación</string>
+    <string name="live_tv_recording_row_detail">Carpetas, margen y los archivos que se guardan con una grabación</string>
+    <string name="live_tv_recording_title">Grabación</string>
+    <string name="live_tv_recording_body">Cómo graba el servidor. Un cambio se guarda al hacerlo.</string>
+    <string name="live_tv_recording_folders">Carpetas</string>
+    <string name="live_tv_recording_folder_all">Grabaciones</string>
+    <string name="live_tv_recording_folder_movies">Grabaciones de películas</string>
+    <string name="live_tv_recording_folder_series">Grabaciones de series</string>
+    <string name="live_tv_recording_folder_unset">Sin definir</string>
+    <string name="live_tv_recording_folder_note">Cambiar una carpeta no mueve las grabaciones que ya se hicieron.</string>
+    <string name="live_tv_recording_folder_hint">Una carpeta del servidor.</string>
+    <string name="live_tv_recording_padding">Margen</string>
+    <string name="live_tv_recording_pre">Empezar antes</string>
+    <string name="live_tv_recording_post">Terminar después</string>
+    <string name="live_tv_recording_files">Archivos</string>
+    <string name="live_tv_recording_subfolders">Una carpeta por serie</string>
+    <string name="live_tv_recording_original_audio">Conservar el audio original</string>
+    <string name="live_tv_recording_original_audio_detail">Añade el audio de la emisión a una grabación que se recodifica</string>
+    <string name="live_tv_recording_nfo">Guardar archivos de metadatos</string>
+    <string name="live_tv_recording_nfo_detail">Un archivo NFO junto a cada grabación</string>
+    <string name="live_tv_recording_images">Guardar imágenes</string>
+    <string name="live_tv_recording_images_detail">Las carátulas junto a cada grabación</string>
+    <string name="live_tv_recording_guide">Guía</string>
+    <string name="live_tv_recording_guide_days">Días de guía</string>
+    <string name="live_tv_recording_guide_auto">Automático</string>
+    <string name="live_tv_recording_guide_hint">Déjalo en blanco para que lo elija el servidor.</string>
+    <plurals name="live_tv_recording_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="many">%1$d días</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
     <string name="live_tv_type_m3u">Lista M3U</string>
 </resources>

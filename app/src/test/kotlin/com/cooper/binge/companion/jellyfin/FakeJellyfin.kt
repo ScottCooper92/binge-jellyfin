@@ -256,7 +256,8 @@ class FakeJellyfin : Dispatcher() {
      * HDHomeRun, an XMLTV guide and a Schedules Direct one whose `Password` is a stored hash.
      */
     var liveTvConfiguration =
-        """{"GuideDays":7,"RecordingPath":"/recordings","TunerHosts":[""" +
+        """{"GuideDays":7,"RecordingPath":"/recordings","MovieRecordingPath":"","PrePaddingSeconds":0,"PostPaddingSeconds":180,""" +
+            """"EnableRecordingSubfolders":false,"SaveRecordingNFO":true,"FutureOption":{"keep":"me"},"TunerHosts":[""" +
             """{"Id":"t1","Type":"m3u","FriendlyName":"IPTV","Url":"https://iptv.example:8443/get.php?username=bob&password=hunter2"},""" +
             """{"Id":"t2","Type":"hdhomerun","FriendlyName":"","Url":"http://192.168.1.50"}],"ListingProviders":[""" +
             """{"Id":"g1","Type":"xmltv","Path":"/config/guide.xml"},""" +
