@@ -11,10 +11,13 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isFocusable
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -25,12 +28,19 @@ import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
+import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.SetupError
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
+import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -56,6 +66,7 @@ class TvJellyfinFocusTest {
 
     private var state: UiState by mutableStateOf(UiState.Loading)
     private var promoted = false
+    private var playback: TvPlayback? = null
     private val calls = mutableListOf<String>()
     private val actions =
         Actions(
@@ -87,7 +98,7 @@ class TvJellyfinFocusTest {
         state = initial
         compose.setContent {
             CompositionLocalProvider(LocalFlags provides if (promoted) Flags.AllOn else Flags()) {
-                JellyfinTvTheme { TvJellyfinRoot(state, actions) }
+                JellyfinTvTheme { TvJellyfinRoot(state, actions, playback = playback) }
             }
         }
         compose.waitForIdle()
@@ -262,25 +273,130 @@ class TvJellyfinFocusTest {
         on(R.string.setup_sign_in).assertIsFocused()
     }
 
-    // Signed in.
+    // Signed in: the list-and-pane board.
+
+    /** The focused node among those named [id]: a row is named in the list and again by its option in the pane. */
+    private fun focusedOn(id: Int) = compose.onNode(isFocused() and (hasText(text(id)) or hasAnyDescendant(hasText(text(id)))))
+
+    private fun left() = press(Key.DirectionLeft)
+
+    private fun right() = press(Key.DirectionRight)
 
     @Test
-    fun `signed in lands on Sign out, and OK asks first`() {
+    fun `signed in lands on the account, Down reaches Sign out, and Right then OK asks first`() {
         show(UiState.SignedIn(session = session))
-        on(R.string.settings_sign_out).assertIsFocused()
+        compose.onNode(isFocused() and hasText("Living room")).assertIsFocused()
+        down()
+        focusedOn(R.string.settings_sign_out).assertIsFocused()
+        right()
+        focusedOn(R.string.settings_sign_out).assertIsFocused()
         ok()
         assertEquals("askSignOut", calls.last())
     }
 
     @Test
-    fun `with Binge behind its flag on, the page lands on Refresh and Sign out is below it`() {
+    fun `with Binge behind its flag on, Refresh is the row below the account and Sign out is below it`() {
         promoted = true
         show(UiState.SignedIn(session = session, titles = 1_284))
-        on(R.string.settings_refresh).assertIsFocused()
+        down()
+        focusedOn(R.string.settings_refresh).assertIsFocused()
+        right()
         ok()
         assertEquals("refresh", calls.last())
+        left()
         down()
-        on(R.string.settings_sign_out).assertIsFocused()
+        focusedOn(R.string.settings_sign_out).assertIsFocused()
+    }
+
+    // Playback on the board.
+
+    private val cultures = listOf(Culture("English", "en", listOf("eng")), Culture("French", "fr", listOf("fre", "fra")))
+    private val prefs = PlaybackPreferences(audio = "eng", subtitles = "", subtitleMode = SubtitleMode.Default)
+    private val picks = mutableListOf<String>()
+    private val playbackActions =
+        PlaybackActions(
+            onAudio = { picks += "audio:$it" },
+            onSubtitles = { picks += "subtitles:$it" },
+            onSubtitleMode = { picks += "mode:${it.wire}" },
+            onPlayDefaultAudioTrack = { picks += "defaultAudio:$it" },
+            onRememberAudio = { picks += "rememberAudio:$it" },
+            onRememberSubtitles = { picks += "rememberSubtitles:$it" },
+            onAutoplayNextEpisode = { picks += "autoplay:$it" },
+            onRetry = { picks += "retry" },
+            onRetrySave = { picks += "retrySave" },
+        )
+
+    private fun signedInWith(playbackState: PlaybackUiState) {
+        playback = TvPlayback(playbackState, playbackActions)
+        show(UiState.SignedIn(session = session))
+    }
+
+    @Test
+    fun `the playback rows follow Sign out, and a language is picked in the pane`() {
+        signedInWith(PlaybackUiState.Ready(prefs, cultures))
+        down()
+        focusedOn(R.string.settings_sign_out).assertIsFocused()
+        down()
+        focusedOn(R.string.languages_audio).assertIsFocused()
+        // The pane lists Any language, then the languages; the one in use is marked, and picking one saves it.
+        right()
+        down()
+        down()
+        ok()
+        assertEquals(listOf("audio:fre"), picks)
+    }
+
+    @Test
+    fun `a playback switch flips on OK, and the walk down the list reaches every row in order`() {
+        signedInWith(PlaybackUiState.Ready(prefs, cultures))
+        down()
+        down()
+        listOf(
+            R.string.languages_subtitles,
+            R.string.languages_subtitle_mode,
+            R.string.playback_default_audio,
+            R.string.playback_remember_audio,
+            R.string.playback_remember_subtitles,
+            R.string.playback_autoplay,
+        ).forEach { row ->
+            down()
+            focusedOn(row).assertIsFocused()
+        }
+        right()
+        ok()
+        assertEquals(listOf("autoplay:false"), picks)
+    }
+
+    @Test
+    fun `a playback page that could not be read offers Try again`() {
+        signedInWith(PlaybackUiState.Failed(ConsoleFailure.Unreachable))
+        down()
+        down()
+        focusedOn(R.string.playback_title).assertIsFocused()
+        right()
+        focusedOn(R.string.tv_try_again).assertIsFocused()
+        ok()
+        assertEquals(listOf("retry"), picks)
+    }
+
+    @Test
+    fun `a save that failed offers Retry as the last option in the pane`() {
+        signedInWith(PlaybackUiState.Ready(prefs, cultures, save = SaveProgress(failed = true)))
+        down()
+        down()
+        right()
+        down()
+        down()
+        down()
+        compose.onNode(isFocused() and hasText("Retry")).assertIsFocused()
+        ok()
+        assertEquals(listOf("retrySave"), picks)
+    }
+
+    @Test
+    fun `a user who may not change preferences has no playback rows`() {
+        show(UiState.SignedIn(session = session))
+        compose.onAllNodesWithText(text(R.string.playback_title)).assertCountEquals(0)
     }
 
     @Test

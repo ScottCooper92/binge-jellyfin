@@ -42,6 +42,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageScope
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageStores
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
+import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
 import kotlinx.coroutines.launch
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
@@ -134,7 +135,7 @@ class MainActivity : ComponentActivity() {
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalFlags provides flags) {
                 if (LocalConfiguration.current.isTelevision()) {
-                    JellyfinTvTheme { TvJellyfinRoot(state, actions) }
+                    JellyfinTvTheme { TvJellyfinRoot(state, actions, playback = rememberTvPlayback(graph, state)) }
                 } else {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {

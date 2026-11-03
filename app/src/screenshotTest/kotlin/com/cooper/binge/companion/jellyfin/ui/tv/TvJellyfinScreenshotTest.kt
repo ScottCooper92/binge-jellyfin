@@ -3,12 +3,20 @@ package com.cooper.binge.companion.jellyfin.ui.tv
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvStressPreviews
+import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
+import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
+import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerError
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerFound
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerNotJellyfin
@@ -21,6 +29,9 @@ import com.cooper.binge.companion.jellyfin.ui.previewSignInWrongPassword
 import com.cooper.binge.companion.jellyfin.ui.previewSignedIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInFailed
+import com.cooper.binge.companion.jellyfin.ui.tv.ACCOUNT_KEY
+import com.cooper.binge.companion.jellyfin.ui.tv.AUDIO_KEY
+import com.cooper.binge.companion.jellyfin.ui.tv.AUTOPLAY_KEY
 
 /** The television's screens: each step's main state in Spanish and at large fonts too, every other state once. */
 class TvJellyfinScreenshotTest {
@@ -107,4 +118,53 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun signedInPromoted() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedIn, Actions()) }
+
+    private val cultures = listOf(Culture("English", "en", listOf("eng")), Culture("French", "fr", listOf("fre", "fra")))
+    private val prefs = PlaybackPreferences(audio = "eng", subtitles = "", subtitleMode = SubtitleMode.Default)
+
+    @Composable
+    private fun withPlayback(
+        playback: PlaybackUiState,
+        describing: String = ACCOUNT_KEY,
+    ) = TvJellyfinRoot(previewSignedIn, Actions(), playback = TvPlayback(playback, PlaybackActions()), describing = describing)
+
+    /** The user's own playback settings follow the account on the signed-in page. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun playback() = withPlayback(PlaybackUiState.Ready(prefs, cultures))
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun playbackSaved() = withPlayback(PlaybackUiState.Ready(prefs, cultures, SaveProgress(SaveStatus.Saved)), AUDIO_KEY)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun playbackSaveFailed() = withPlayback(PlaybackUiState.Ready(prefs, cultures, SaveProgress(failed = true)), AUDIO_KEY)
+
+    /** A language row's pane: Any language, then the languages, the one in use ticked. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun playbackLanguages() = withPlayback(PlaybackUiState.Ready(prefs, cultures), AUDIO_KEY)
+
+    /** A switch's pane: its one option, ticked while it is on. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun playbackSwitch() = withPlayback(PlaybackUiState.Ready(prefs, cultures), AUTOPLAY_KEY)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun playbackLoading() = withPlayback(PlaybackUiState.Loading)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun playbackFailed() = withPlayback(PlaybackUiState.Failed(ConsoleFailure.Unreachable))
 }
