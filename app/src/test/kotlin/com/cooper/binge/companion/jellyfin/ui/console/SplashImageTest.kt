@@ -84,6 +84,8 @@ class SplashImageTest {
         val vm = viewModel()
         vm.splashImage.choose { jpeg() }
         vm.ready { it.branding.customSplashscreen }
+        // The page adopts the branding before the upload finishes; a switch touched while it is busy is ignored.
+        vm.splash { !it.busy }
         vm.setSplashscreen(true)
         jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
         assertEquals("/data/splashscreen-upload.jpg", branding().getValue("SplashscreenLocation").jsonPrimitive.content)
