@@ -59,12 +59,12 @@ app:advanced_update_duration  2219633171fc
 app:advanced_update_duration_body  d4683e005979
 app:api_keys_app_field  e6ad39968537
 app:api_keys_body  1fc8ee6e2ee9
+app:api_keys_copied  d874423f4ef1
 app:api_keys_copy  e21f935f11d7
 app:api_keys_create  b6cde9030cef
 app:api_keys_created  dfb6ab2fc302
 app:api_keys_created_body  74f39d0b05e9
 app:api_keys_created_title  4c89a47dc16b
-app:api_keys_done  11a6767d5674
 app:api_keys_empty  5a4f679079d8
 app:api_keys_ends_in  f91c177491ac
 app:api_keys_new  eda5496b306f

@@ -544,7 +544,7 @@
     <string name="api_keys_create">Create key</string>
     <string name="api_keys_created_title">Key for %1$s</string>
     <string name="api_keys_created_body">Copy it now. It is shown only once.</string>
-    <string name="api_keys_done">Done</string>
+    <string name="api_keys_copied">I have copied it</string>
     <string name="api_keys_copy">Copy</string>
     <string name="api_keys_not_changed">Not changed. %1$s</string>
     <string name="tasks_triggers">Triggers</string>
