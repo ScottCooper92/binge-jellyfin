@@ -26,6 +26,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -143,6 +145,32 @@ class LiveTvGuideViewModelTest {
         val failed = vm.until { it.failed != null }
         assertNull(failed.problem)
         assertEquals(ConsoleFailure.Unreachable, failed.failed)
+    }
+
+    /**
+     * The page is told before the change reads as done, so a test (or a screen) that sees `queued` knows the callback has run. The
+     * callback is held on a latch here, which makes the order observable without a sleep: it had run after `queued` was published
+     * before, and a reader on another thread could see `queued` and a count still at 0 (#299).
+     */
+    @Test
+    fun `a change reads as done only after the page has been told`() {
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val vm =
+            made(
+                LiveTvGuideViewModel(connection, {
+                    entered.countDown()
+                    release.await()
+                    changed++
+                }),
+            )
+        vm.add()
+        vm.save(GuideForm(path = "https://guide.example/xmltv.xml"))
+        assertTrue(entered.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+        assertFalse(vm.state.value.queued)
+        release.countDown()
+        vm.until { it.queued }
+        assertEquals(1, changed)
     }
 
     @Test
