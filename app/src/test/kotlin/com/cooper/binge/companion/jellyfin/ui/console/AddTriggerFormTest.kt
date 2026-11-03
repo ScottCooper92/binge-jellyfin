@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.TriggerKind
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -26,7 +28,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 class AddTriggerFormTest {
     @get:Rule
-    val compose = RecreatableTakeDownRule()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     @Test
     fun `the Add button stays in view when the weekly form is taller than the room`() {

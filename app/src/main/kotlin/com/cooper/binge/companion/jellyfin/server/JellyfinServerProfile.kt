@@ -59,6 +59,12 @@ data class JellyfinServerProfile(
     /** The user's libraries are read from `/UserViews`; before 10.9, from `/Users/{id}/Views`. 10.9. */
     val hasUserViewsRoute: Boolean get() = atLeast(TEN, NINE)
 
+    /**
+     * A user's picture is at `/UserImage?userId=`; before 10.9, at `/Users/{id}/Images/Primary`. 10.9. The old route stays as
+     * an alias to 10.11, but is the one marked legacy.
+     */
+    val hasUserImageRoute: Boolean get() = atLeast(TEN, NINE)
+
     /** Trickplay can extract key frames only, from the server's options. 10.10. */
     val hasKeyFrameOnlyTrickplay: Boolean get() = atLeast(TEN, TEN)
 
