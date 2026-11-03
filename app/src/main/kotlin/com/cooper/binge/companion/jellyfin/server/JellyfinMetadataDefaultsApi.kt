@@ -16,15 +16,6 @@ import kotlinx.serialization.json.JsonPrimitive
 const val METADATA_OPTIONS = "MetadataOptions"
 const val METADATA_ITEM_TYPE = "ItemType"
 
-/** The two lists of fetchers a type's defaults switch on and off. */
-enum class FetcherKind(
-    val disabledKey: String,
-    val orderKey: String,
-) {
-    Metadata("DisabledMetadataFetchers", "MetadataFetcherOrder"),
-    Images("DisabledImageFetchers", "ImageFetcherOrder"),
-}
-
 /** The fetchers the server offers an item type, by the names it knows them by, in its default order. */
 data class TypeFetchers(
     val type: String,
@@ -60,10 +51,6 @@ suspend fun JellyfinClient.typeFetchers(): List<TypeFetchers> =
     }
 
 private fun JsonObject.optionNames(key: String): List<String> = array(key).mapNotNull { (it as? JsonObject)?.string("Name") }
-
-private fun JsonObject.names(key: String): List<String> = array(key).mapNotNull { (it as? JsonPrimitive)?.content }
-
-private fun Collection<String>.has(name: String) = any { it.equals(name, ignoreCase = true) }
 
 private fun JsonObject.entries(): List<JsonObject> = array(METADATA_OPTIONS).filterIsInstance<JsonObject>()
 

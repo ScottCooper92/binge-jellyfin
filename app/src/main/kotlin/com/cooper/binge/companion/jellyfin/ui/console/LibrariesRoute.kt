@@ -89,6 +89,8 @@ private fun LibraryRoute(
             onProvider = model::setProvider,
             onJson = model::set,
             onMove = model::moveProvider,
+            onFetcher = model.fetcherEdits::set,
+            onMoveFetcher = model.fetcherEdits::move,
             onRetry = model::load,
             onRetrySave = model::retrySave,
             onBack = onBack,

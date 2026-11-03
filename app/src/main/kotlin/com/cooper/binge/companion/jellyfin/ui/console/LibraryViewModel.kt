@@ -7,6 +7,7 @@ import com.cooper.binge.companion.jellyfin.server.AvailableProviders
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.Country
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
@@ -46,6 +47,18 @@ sealed interface LibraryPage {
 
     data class One(
         val group: ProviderGroup,
+        val name: String,
+    ) : LibraryPage
+
+    /** The metadata downloaders or the image fetchers of each item type the library holds. */
+    data class Fetchers(
+        val kind: FetcherKind,
+    ) : LibraryPage
+
+    /** One fetcher of one item type: whether the library uses it, and its place in that type's order. */
+    data class Fetcher(
+        val kind: FetcherKind,
+        val type: String,
         val name: String,
     ) : LibraryPage
 }
@@ -130,6 +143,9 @@ class LibraryViewModel(
         ) { shown, failure ->
             update { copy(options = shown, refused = refusedAfter(refused, failure)) }
         }
+
+    /** The per-type metadata downloaders and image fetchers, switched and moved through this library's saves. */
+    internal val fetcherEdits = LibraryFetcherEdits(saves) { (_state.value as? LibraryUiState.Ready)?.available?.types.orEmpty() }
 
     init {
         load()

@@ -120,5 +120,71 @@ class JellyfinLibraryOptionsTest {
         assertFalse(libraryHasMovies("tvshows"))
     }
 
+    private val movie =
+        FetcherType(
+            "Movie",
+            metadata = listOf(AvailableFetcher("TheMovieDb", true), AvailableFetcher("OMDb", false)),
+            images = listOf(AvailableFetcher("TheMovieDb", true), AvailableFetcher("Screen Grabber", true)),
+        )
+
+    @Test
+    fun `a library with no entry for a type has each fetcher as the server offers it, in the server's order`() {
+        val library = options("""{"TypeOptions":[{"Type":"Series","MetadataFetchers":[]}]}""")
+        assertEquals(listOf(Provider("TheMovieDb", true), Provider("OMDb", false)), library.fetchers(movie, FetcherKind.Metadata))
+        assertEquals(listOf(Provider("TheMovieDb", true), Provider("Screen Grabber", true)), library.fetchers(movie, FetcherKind.Images))
+    }
+
+    @Test
+    fun `an entry that chose says which are on and the order, and a kind it never chose keeps the server's defaults`() {
+        val library =
+            options(
+                """{"TypeOptions":[{"Type":"movie","MetadataFetchers":["OMDb"],"MetadataFetcherOrder":["OMDb","Gone","TheMovieDb"]}]}""",
+            )
+        assertEquals(listOf(Provider("OMDb", true), Provider("TheMovieDb", false)), library.fetchers(movie, FetcherKind.Metadata))
+        // Its image lists were never written, so the server's defaults hold for them.
+        assertEquals(listOf(Provider("TheMovieDb", true), Provider("Screen Grabber", true)), library.fetchers(movie, FetcherKind.Images))
+    }
+
+    @Test
+    fun `the first change to a type writes its whole entry, both kinds, and leaves the other types alone`() {
+        val library =
+            options("""{"Other":1,"TypeOptions":[{"Type":"Series","MetadataFetchers":["TheTVDB"],"MetadataFetcherOrder":["TheTVDB"]}]}""")
+        val written =
+            library.withFetchers(movie, FetcherKind.Metadata) { fetchers ->
+                fetchers.map { if (it.name == "OMDb") it.copy(enabled = true) else it }
+            }
+        assertEquals(2, written.size)
+        // Series, which was not touched, is as it was.
+        assertEquals(library.getValue("TypeOptions").let { (it as JsonArray)[0] }, written[0])
+        val entry = written[1].jsonObject
+        assertEquals(JsonPrimitive("Movie"), entry["Type"])
+        assertEquals(names("TheMovieDb", "OMDb"), entry["MetadataFetchers"])
+        assertEquals(names("TheMovieDb", "OMDb"), entry["MetadataFetcherOrder"])
+        // The images side is written out too, as the server offered it: an entry that exists means the library has chosen.
+        assertEquals(names("TheMovieDb", "Screen Grabber"), entry["ImageFetchers"])
+        assertEquals(names("TheMovieDb", "Screen Grabber"), entry["ImageFetcherOrder"])
+    }
+
+    @Test
+    fun `a change to an entry keeps its other keys, such as its image options, and its place in the array`() {
+        val library =
+            options(
+                """{"TypeOptions":[{"Type":"Movie","MetadataFetchers":["TheMovieDb"],"MetadataFetcherOrder":["TheMovieDb","OMDb"],""" +
+                    """"ImageFetchers":["TheMovieDb"],"ImageFetcherOrder":["TheMovieDb","Screen Grabber"],""" +
+                    """"ImageOptions":[{"Type":"Backdrop","Limit":2,"MinWidth":1280}],"Future":7},{"Type":"Series"}]}""",
+            )
+        val written = library.withFetchers(movie, FetcherKind.Images) { it.reversed() }
+        val entry = written[0].jsonObject
+        assertEquals(names("Screen Grabber", "TheMovieDb"), entry["ImageFetcherOrder"])
+        // Reordering does not switch anything: Screen Grabber was off in this entry and stays off.
+        assertEquals(names("TheMovieDb"), entry["ImageFetchers"])
+        assertEquals(library.getValue("TypeOptions").let { (it as JsonArray)[0].jsonObject["ImageOptions"] }, entry["ImageOptions"])
+        assertEquals(JsonPrimitive(7), entry["Future"])
+        assertEquals(JsonPrimitive("Series"), written[1].jsonObject["Type"])
+        // The metadata side is as the entry had it.
+        assertEquals(names("TheMovieDb"), entry["MetadataFetchers"])
+        assertEquals(names("TheMovieDb", "OMDb"), entry["MetadataFetcherOrder"])
+    }
+
     private fun names(vararg names: String) = JsonArray(names.map(::JsonPrimitive))
 }
