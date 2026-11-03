@@ -51,6 +51,13 @@ class UsersScreenshotTest {
     @Composable
     fun users() = UsersScreen(previewReady, UsersActions(), now = NOW)
 
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = UsersScreen(previewReady.copy(refreshing = true), UsersActions(), now = NOW)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews

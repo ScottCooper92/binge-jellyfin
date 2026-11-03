@@ -38,6 +38,7 @@ internal fun UsersRoute(
             onSetPassword = users::setPassword,
             onDelete = users::delete,
             onRetry = users::load,
+            onRefresh = users::refresh,
             onBack = onBack,
         ),
         choices = picks,

@@ -183,6 +183,25 @@ class LibrariesViewModelTest {
     }
 
     @Test
+    fun `a pull reads the libraries again in place, and a pull that fails keeps them and says so`() {
+        val vm = made(LibrariesViewModel(connection))
+        assertEquals(2, vm.ready().libraries.size)
+        jellyfin.libraries =
+            Json
+                .parseToJsonElement(FakeJellyfin.LIBRARIES)
+                .jsonArray
+                .take(1)
+                .let(::JsonArray)
+        vm.pull()
+        assertNull(vm.ready { it.libraries.size == 1 && !it.refreshing }.refreshFailed)
+        jellyfin.status["/Library/VirtualFolders"] = 500
+        vm.pull()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(1, failed.libraries.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
     fun `a library opens and closes, and the list is read again quietly`() {
         val vm = made(LibrariesViewModel(connection))
         vm.ready()

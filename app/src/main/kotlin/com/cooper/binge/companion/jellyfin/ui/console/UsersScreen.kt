@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -61,6 +63,7 @@ data class UsersActions(
     val onSetPassword: (String) -> Unit = {},
     val onDelete: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -114,7 +117,12 @@ fun UsersScreen(
                 is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is UsersUiState.Ready ->
                     when {
-                        user == null -> UserList(state, actions, inner, now)
+                        user == null ->
+                            BingePullToRefresh(
+                                isRefreshing = state.refreshing,
+                                onRefresh = actions.onRefresh,
+                                indicatorTopInset = padding.calculateTopPadding(),
+                            ) { UserList(state, actions, inner, now) }
                         section == null -> UserPage(state, user, actions, inner)
                         else -> PolicySection(section, state, user, choices, profile, actions, inner)
                     }
@@ -125,6 +133,7 @@ fun UsersScreen(
         UserDialogs(it, actions)
         // What the last change did, or why it didn't go through, is said in a message, not in a space the page keeps for it.
         RefusedMessage(it.actionFailed, host, R.string.users_not_changed)
+        RefusedMessage(it.refreshFailed, host, R.string.console_not_refreshed)
         SnackbarMessage(it.done?.let { done -> stringResource(done.message) }, host)
     }
 }
@@ -136,7 +145,11 @@ private fun UserList(
     inner: PaddingValues,
     now: Long,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item { PageIntro(stringResource(R.string.users_body)) }
         item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
     }

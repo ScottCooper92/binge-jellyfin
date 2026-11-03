@@ -61,6 +61,9 @@ sealed interface UsersUiState {
         val actionFailed: ConsoleFailure? = null,
         /** Why the open form (a new user, a password) was refused, shown in the form, which stays open with what was typed. */
         val formFailure: ConsoleFailure? = null,
+        /** True while a pull reads the users again; the list stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : UsersUiState {
         val openUser: ServerUser? get() = users.firstOrNull { it.id == open }
     }
@@ -106,6 +109,44 @@ class UsersViewModel(
                         },
                         onFailure = { UsersUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /**
+     * A pull: reads the users and libraries again in place, keeping the page, and says in a message when it couldn't.
+     * A change to a user's policy that is made but not yet answered would be overwritten by an older read, so a read
+     * that lands while one is waiting is dropped, and the next pull gets it.
+     */
+    fun refresh() {
+        val ready = _state.value as? UsersUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client ->
+                    coroutineScope {
+                        val libraries = async { client.libraries().filter { it.id.isNotEmpty() } }
+                        client.users() to libraries.await()
+                    }
+                }.onSuccess { (users, libraries) ->
+                    val settled = pending.values.all { it.isEmpty() } && !saving.isLocked
+                    if (settled) users.forEach { saved[it.id] = it.policy }
+                    update {
+                        if (settled) {
+                            copy(
+                                users = users,
+                                libraries = libraries,
+                                open =
+                                    open?.takeIf { id ->
+                                        users.any { it.id == id }
+                                    },
+                                refreshing = false,
+                            )
+                        } else {
+                            copy(refreshing = false)
+                        }
+                    }
+                }.onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 

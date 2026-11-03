@@ -48,6 +48,7 @@ internal fun LibrariesRoute(
                 onAskAdd = libraries::ask,
                 onAdd = libraries::add,
                 onRetry = libraries::load,
+                onRefresh = libraries::pull,
                 onBack = onBack,
             ),
             folders = folders,

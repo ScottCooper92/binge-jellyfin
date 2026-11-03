@@ -56,6 +56,9 @@ sealed interface LibrariesUiState {
         val saving: Boolean = false,
         val addFailed: ConsoleFailure? = null,
         val folderMissing: Boolean = false,
+        /** True while a pull reads the libraries again; the list stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : LibrariesUiState
 }
 
@@ -132,6 +135,21 @@ class LibrariesViewModel(
 
     /** Opens the new library sheet, or closes it. */
     fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null, folderMissing = false) }
+
+    /** A pull: reads the libraries again in place, keeping the page, and says in a message when it couldn't. */
+    fun pull() {
+        val ready = _state.value as? LibrariesUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        viewModelScope.launch {
+            connection.awaitSaves()
+            connection
+                .consoleCall(TAG) { _, client -> client.libraries() }
+                .onSuccess { fresh ->
+                    update { copy(libraries = fresh, opened = opened?.takeIf { id -> fresh.any { it.id == id } }, refreshing = false) }
+                }.onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
+        }
+    }
 
     /** Reads the libraries again, quietly: the list stays as it is until the answer comes. */
     fun refresh() {

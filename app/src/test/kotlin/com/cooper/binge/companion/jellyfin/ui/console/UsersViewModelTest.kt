@@ -84,6 +84,29 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `a pull reads the users and libraries again in place, and a pull that fails keeps them and says so`() {
+        val vm = made(UsersViewModel(connection))
+        assertEquals(2, vm.ready().users.size)
+        val sam = jellyfin.serverUsers.getValue("user-2")
+        jellyfin.serverUsers["user-3"] =
+            kotlinx.serialization.json.JsonObject(
+                sam +
+                    mapOf(
+                        "Id" to kotlinx.serialization.json.JsonPrimitive("user-3"),
+                        "Name" to kotlinx.serialization.json.JsonPrimitive("Tess"),
+                    ),
+            )
+        vm.refresh()
+        val fresh = vm.ready { it.users.size == 3 && !it.refreshing }
+        assertNull(fresh.refreshFailed)
+        jellyfin.status["/Users"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(3, failed.users.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+    }
+
+    @Test
     fun `a library the server has not given an id yet is not offered`() {
         jellyfin.libraries = JsonArray(jellyfin.libraries + buildJsonObject { put("Name", "New") })
         val ready = made(UsersViewModel(connection)).ready()
