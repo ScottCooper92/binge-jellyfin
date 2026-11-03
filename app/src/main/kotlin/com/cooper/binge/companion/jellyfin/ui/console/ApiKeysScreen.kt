@@ -204,20 +204,24 @@ internal fun NewKeySheet(
     }
 }
 
-/** The key just made, in full, the one time it is shown. Copy is the only way it leaves the screen. */
+/**
+ * The key just made, in full, the one time it is shown. Copy is the only way it leaves the screen. Only its button closes it, not
+ * Back or a tap outside: the list keeps the last four characters, so a stray tap would lose the key and the key would have to be
+ * revoked and made again.
+ */
 @Composable
 internal fun CreatedKeyDialog(
     key: ApiKey,
     actions: ApiKeysActions,
     inWindow: Boolean = true,
 ) {
-    ConsoleConfirm(
+    ConsoleMessage(
         title = stringResource(R.string.api_keys_created_title, key.app),
         message = stringResource(R.string.api_keys_created_body),
-        confirmLabel = stringResource(R.string.api_keys_done),
-        onConfirm = actions.onDismissCreated,
-        onDismissRequest = actions.onDismissCreated,
+        onDismiss = actions.onDismissCreated,
         inWindow = inWindow,
+        confirmLabel = stringResource(R.string.api_keys_copied),
+        dismissible = false,
         extraContent = {
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
                 Text(key.key, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)

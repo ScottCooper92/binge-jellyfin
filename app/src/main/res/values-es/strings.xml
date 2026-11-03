@@ -564,7 +564,7 @@
     <string name="api_keys_create">Crear clave</string>
     <string name="api_keys_created_title">Clave para %1$s</string>
     <string name="api_keys_created_body">Cópiala ahora. Solo se muestra una vez.</string>
-    <string name="api_keys_done">Hecho</string>
+    <string name="api_keys_copied">Ya la he copiado</string>
     <string name="api_keys_copy">Copiar</string>
     <string name="api_keys_not_changed">No se ha cambiado. %1$s</string>
     <string name="tasks_triggers">Activadores</string>
