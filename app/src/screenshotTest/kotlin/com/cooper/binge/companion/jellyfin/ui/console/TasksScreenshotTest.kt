@@ -45,6 +45,13 @@ class TasksScreenshotTest {
     @Composable
     fun tasks() = TasksScreen(previewReady, TasksActions(), now = NOW)
 
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = TasksScreen(previewReady.copy(refreshing = true), TasksActions(), now = NOW)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
