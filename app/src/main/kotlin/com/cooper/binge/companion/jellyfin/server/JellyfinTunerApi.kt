@@ -3,7 +3,6 @@ package com.cooper.binge.companion.jellyfin.server
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 // Tuner hosts are written through `LiveTv/TunerHosts` (policy `LiveTvManagement`, so a manager need not be an administrator),
 // read from the `TunerHosts` array of the Live TV configuration, and found on the network through `LiveTv/Tuners/Discover`.
@@ -40,13 +39,6 @@ suspend fun JellyfinClient.deleteTunerHost(id: String) {
 /** The tuners the server finds on the network that it does not have yet. The server listens for a few seconds before it answers. */
 suspend fun JellyfinClient.discoverTuners(): List<JsonObject> =
     (get(DISCOVER, mapOf("newDevicesOnly" to "true")) as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
-
-/** A host to add: its [type], its [url] and [name] (blank leaves the server to name it by its address). */
-fun newTunerHost(
-    type: String,
-    url: String,
-    name: String,
-): JsonObject = JsonObject(mapOf(TUNER_TYPE to JsonPrimitive(type), TUNER_URL to JsonPrimitive(url), TUNER_NAME to JsonPrimitive(name)))
 
 /** [host] with [key] set to [value]. */
 fun JsonObject.with(

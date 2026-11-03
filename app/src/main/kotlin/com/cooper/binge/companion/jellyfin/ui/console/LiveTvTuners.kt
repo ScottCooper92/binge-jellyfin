@@ -104,8 +104,11 @@ sealed interface TunerSheet {
 
 /** What went wrong with a tuner change, which decides how the page says it. */
 enum class TunerProblem {
-    /** The server could not add the tuner, almost always because it could not reach its address. A dialog says why and what to do. */
-    NotAdded,
+    /** The server could not save the tuner, almost always because it could not reach its address. A dialog says why and what to do. */
+    NotSaved,
+
+    /** The server itself could not be reached. A snackbar names it. */
+    ServerUnreachable,
 
     /** The change did not go through, and there is nothing more to say than that. */
     NotChanged,

@@ -133,19 +133,52 @@ class LiveTvTunersViewModelTest {
     }
 
     @Test
-    fun `a tuner the server cannot reach is not added, keeps the form open, and says so`() {
+    fun `a tuner the server cannot reach is not saved, keeps the form open, and says so`() {
         jellyfin.tunerSaveStatus = 500
         val vm = vm()
         vm.ready()
         vm.form(TunerDraft(TUNER_TYPE_HDHOMERUN))
         vm.save(TunerDraft(TUNER_TYPE_HDHOMERUN, url = "http://10.0.0.9"))
         val ready = vm.ready { it.problem != null }
-        assertEquals(TunerProblem.NotAdded, ready.problem)
+        assertEquals(TunerProblem.NotSaved, ready.problem)
         assertTrue(ready.sheet is TunerSheet.Form)
         assertFalse(ready.saving)
         assertEquals(2, ready.summary.tuners.size)
         vm.dismissProblem()
         assertNull(vm.ready().problem)
+    }
+
+    @Test
+    fun `an edit to an address the server cannot reach is not saved and says so`() {
+        jellyfin.tunerSaveStatus = 500
+        val vm = vm()
+        vm.ready()
+        vm.edit("t1")
+        val draft = ((vm.ready().sheet) as TunerSheet.Form).draft
+        vm.save(draft.copy(url = "https://iptv.example/gone.m3u"))
+        val ready = vm.ready { it.problem != null }
+        assertEquals(TunerProblem.NotSaved, ready.problem)
+        assertTrue(ready.sheet is TunerSheet.Form)
+    }
+
+    @Test
+    fun `a save while the server cannot be reached names the server, not the tuner`() {
+        jellyfin.dropped += HOSTS
+        val vm = vm()
+        vm.ready()
+        vm.form(TunerDraft(TUNER_TYPE_HDHOMERUN))
+        vm.save(TunerDraft(TUNER_TYPE_HDHOMERUN, url = "http://10.0.0.9"))
+        assertEquals(TunerProblem.ServerUnreachable, vm.ready { it.problem != null }.problem)
+    }
+
+    @Test
+    fun `a save the server refuses outright is only not changed`() {
+        jellyfin.tunerSaveStatus = 403
+        val vm = vm()
+        vm.ready()
+        vm.edit("t1")
+        vm.save(((vm.ready().sheet) as TunerSheet.Form).draft.copy(name = "News"))
+        assertEquals(TunerProblem.NotChanged, vm.ready { it.problem != null }.problem)
     }
 
     @Test

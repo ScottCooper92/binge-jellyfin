@@ -162,8 +162,8 @@ class LiveTvScreenshotTest {
     @Composable
     fun notAdded() =
         ConsoleMessage(
-            title = stringResource(R.string.live_tv_not_added_title),
-            message = stringResource(R.string.live_tv_not_added_body),
+            title = stringResource(R.string.live_tv_not_saved_title),
+            message = stringResource(R.string.live_tv_not_saved_body),
             onDismiss = {},
             inWindow = false,
         )

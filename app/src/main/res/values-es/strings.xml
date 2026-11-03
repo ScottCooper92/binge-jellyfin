@@ -1059,9 +1059,10 @@
     <string name="live_tv_remove_title">¿Quitar este sintonizador?</string>
     <string name="live_tv_remove_message">%1$s y sus canales dejarán de estar en la TV en directo. Las grabaciones ya hechas se conservan.</string>
     <string name="live_tv_remove_confirm">Quitar</string>
-    <string name="live_tv_not_added_title">No se añadió el sintonizador</string>
-    <string name="live_tv_not_added_body">El servidor no pudo conectar con él. Comprueba la dirección y que el sintonizador está encendido, e inténtalo de nuevo.</string>
+    <string name="live_tv_not_saved_title">No se guardó el sintonizador</string>
+    <string name="live_tv_not_saved_body">El servidor no pudo conectar con el sintonizador. Comprueba su dirección y que está encendido, e inténtalo de nuevo.</string>
     <string name="live_tv_not_changed">Sin cambios. Inténtalo de nuevo.</string>
+    <string name="live_tv_not_changed_unreachable">Sin cambios. No se pudo conectar con tu servidor.</string>
     <string name="live_tv_discover_failed">No se pudo buscar sintonizadores. Inténtalo de nuevo.</string>
     <string name="live_tv_type_m3u">Lista M3U</string>
 </resources>

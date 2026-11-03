@@ -303,15 +303,16 @@ internal fun TunerMessages(
     SnackbarMessage(
         when (state.problem) {
             TunerProblem.NotChanged -> stringResource(R.string.live_tv_not_changed)
+            TunerProblem.ServerUnreachable -> stringResource(R.string.live_tv_not_changed_unreachable)
             TunerProblem.DiscoverFailed -> stringResource(R.string.live_tv_discover_failed)
             else -> null
         },
         host,
     )
-    if (state.problem == TunerProblem.NotAdded) {
+    if (state.problem == TunerProblem.NotSaved) {
         ConsoleMessage(
-            title = stringResource(R.string.live_tv_not_added_title),
-            message = stringResource(R.string.live_tv_not_added_body),
+            title = stringResource(R.string.live_tv_not_saved_title),
+            message = stringResource(R.string.live_tv_not_saved_body),
             onDismiss = actions.onDismissProblem,
         )
     }

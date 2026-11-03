@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.LiveTvSummary
 import com.cooper.binge.companion.jellyfin.server.TunerHostSummary
 import com.cooper.binge.companion.jellyfin.server.deleteTunerHost
@@ -87,7 +88,7 @@ class LiveTvViewModel(
     /** Opens the form for the tuner [id]. */
     fun edit(id: String) {
         val host = hosts[id] ?: return
-        update { copy(sheet = TunerSheet.Form(TunerDraft.of(host))) }
+        update { copy(sheet = TunerSheet.Form(TunerDraft.of(host)), problem = null) }
     }
 
     /** Asks the server for the tuners it finds on the network that it does not have yet. */
@@ -131,6 +132,7 @@ class LiveTvViewModel(
     /** Saves [draft]: a new tuner when it has no id, else the one it names, with the keys the form does not show as they were. */
     fun save(draft: TunerDraft) {
         if (!draft.valid || (_state.value as? LiveTvUiState.Ready)?.saving != false) return
+        // A found device's own keys (DeviceId and the like) go in only while its address is as found; an edited address is a new host.
         val base = draft.id?.let { hosts[it] } ?: found[draft.url.trim()]
         update { copy(saving = true, problem = null) }
         viewModelScope.launch {
@@ -139,8 +141,8 @@ class LiveTvViewModel(
                     reread()
                     update { copy(saving = false, sheet = null) }
                 },
-                onFailure = {
-                    update { copy(saving = false, problem = if (draft.id == null) TunerProblem.NotAdded else TunerProblem.NotChanged) }
+                onFailure = { error ->
+                    update { copy(saving = false, problem = error.saveProblem()) }
                 },
             )
         }
@@ -163,7 +165,7 @@ class LiveTvViewModel(
                     reread()
                     update { copy(saving = false, sheet = null) }
                 },
-                onFailure = { update { copy(saving = false, problem = TunerProblem.NotChanged) } },
+                onFailure = { error -> update { copy(saving = false, problem = error.changeProblem()) } },
             )
         }
     }
@@ -177,3 +179,13 @@ class LiveTvViewModel(
         const val TAG = "JellyfinLiveTv"
     }
 }
+
+/** A change that failed: the server not answering is its own sentence, any other refusal is the plain "not changed". */
+private fun Throwable.changeProblem(): TunerProblem =
+    if (consoleFailure() == ConsoleFailure.Unreachable) TunerProblem.ServerUnreachable else TunerProblem.NotChanged
+
+/** A save that failed. The server checks a host on every save, so its own error (a 5xx) means it could not reach the tuner. */
+private fun Throwable.saveProblem(): TunerProblem =
+    if (this is JellyfinHttpException && code >= HTTP_SERVER_ERROR) TunerProblem.NotSaved else changeProblem()
+
+private const val HTTP_SERVER_ERROR = 500

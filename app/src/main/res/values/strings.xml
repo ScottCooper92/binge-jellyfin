@@ -1063,9 +1063,10 @@
     <string name="live_tv_remove_title">Remove this tuner?</string>
     <string name="live_tv_remove_message">%1$s and its channels will leave Live TV. Recordings already made stay.</string>
     <string name="live_tv_remove_confirm">Remove</string>
-    <string name="live_tv_not_added_title">The tuner was not added</string>
-    <string name="live_tv_not_added_body">The server could not reach it. Check the address and that the tuner is on, then try again.</string>
+    <string name="live_tv_not_saved_title">The tuner was not saved</string>
+    <string name="live_tv_not_saved_body">The server could not reach the tuner. Check its address and that it is on, then try again.</string>
     <string name="live_tv_not_changed">Not changed. Try again.</string>
+    <string name="live_tv_not_changed_unreachable">Not changed. Couldn\'t reach your server.</string>
     <string name="live_tv_discover_failed">Could not look for tuners. Try again.</string>
     <string name="live_tv_type_m3u">M3U playlist</string>
     <string name="live_tv_type_xmltv" translatable="false">XMLTV</string>
