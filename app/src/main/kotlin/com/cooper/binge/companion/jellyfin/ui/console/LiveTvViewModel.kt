@@ -80,6 +80,11 @@ class LiveTvViewModel(
         }
     }
 
+    /** Reads the setup again, after a change made elsewhere on the page (guide data). */
+    fun refresh() {
+        viewModelScope.launch { reread() }
+    }
+
     fun sheet(sheet: TunerSheet?) = update { copy(sheet = sheet, problem = null) }
 
     /** Opens the form for [draft]: a new tuner of a kind, or one the server found. */

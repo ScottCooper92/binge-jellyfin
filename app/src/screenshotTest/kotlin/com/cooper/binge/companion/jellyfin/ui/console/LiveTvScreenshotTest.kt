@@ -77,6 +77,28 @@ class LiveTvScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
+    fun xmltvForm() = Surface { GuideFormContent(GuideForm(), false, LiveTvGuideActions()) }
+
+    /** An existing XMLTV guide: its path filled, and Remove last. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun xmltvEdit() =
+        Surface {
+            GuideFormContent(GuideForm("g1", "https://guide.example/xmltv.xml", name = "guide"), false, LiveTvGuideActions())
+        }
+
+    /** A Schedules Direct account, which cannot be edited here yet: no field, and the way to remove it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun schedulesDirectForm() =
+        Surface { GuideFormContent(GuideForm("g2", type = "SchedulesDirect", name = "alice"), false, LiveTvGuideActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
     fun addChoice() = Surface { TunerSheetContent(TunerSheet.Choose, false, LiveTvActions()) }
 
     @PreviewTest
@@ -122,6 +144,11 @@ class LiveTvScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
+    fun guideSaving() = Surface { GuideFormContent(GuideForm("g1", "/config/guide.xml"), true, LiveTvGuideActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
     fun m3uForm() = Surface { TunerSheetContent(TunerSheet.Form(TunerDraft(TUNER_TYPE_M3U)), false, LiveTvActions()) }
 
     /** An existing tuner: its fields filled, and Remove last. */
@@ -145,6 +172,20 @@ class LiveTvScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
+    fun guideRemoveConfirm() =
+        ConsoleConfirm(
+            title = stringResource(R.string.live_tv_guide_remove_title),
+            message = stringResource(R.string.live_tv_guide_remove_message, "/config/guide.xml"),
+            confirmLabel = stringResource(R.string.live_tv_guide_remove_confirm),
+            onConfirm = {},
+            onDismissRequest = {},
+            destructive = true,
+            inWindow = false,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
     fun saving() =
         Surface {
             TunerSheetContent(TunerSheet.Form(TunerDraft(TUNER_TYPE_HDHOMERUN, url = "http://192.168.1.77")), true, LiveTvActions())
@@ -161,6 +202,17 @@ class LiveTvScreenshotTest {
             onConfirm = {},
             onDismissRequest = {},
             destructive = true,
+            inWindow = false,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun guideNotSaved() =
+        ConsoleMessage(
+            title = stringResource(R.string.live_tv_guide_not_saved_title),
+            message = stringResource(R.string.live_tv_guide_not_saved_body),
+            onDismiss = {},
             inWindow = false,
         )
 
