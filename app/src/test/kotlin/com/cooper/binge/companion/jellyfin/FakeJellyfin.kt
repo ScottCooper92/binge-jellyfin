@@ -10,8 +10,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -160,6 +163,13 @@ class FakeJellyfin : Dispatcher() {
      * reads as base64 text (a body that is not base64 is a 400, as it is there); cleared by a DELETE.
      */
     var userImage: ByteArray? = null
+
+    /**
+     * The uploaded login splash image. As on the real server, an upload (admin only; base64 body typed as an image) also writes
+     * `SplashscreenLocation` into the branding configuration, a delete clears it, and the image is served only while the
+     * splash screen is on.
+     */
+    var splashImage: ByteArray? = null
 
     /** The `Content-Type` of the last picture sent. */
     var userImageType: String? = null
@@ -575,6 +585,7 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Info" -> json(systemInfo)
             path == "/UserImage" || path == "/Users/user-1/Images/Primary" -> userImage(request)
+            path == "/Branding/Splashscreen" -> splashscreen(request)
             path == "/Items/Counts" -> json(itemCounts)
             path == "/System/Configuration/network" && request.method == "POST" -> {
                 networkConfiguration = request.body?.utf8().orEmpty()
@@ -595,7 +606,7 @@ class FakeJellyfin : Dispatcher() {
                 brandingConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
             }
-            path == "/System/Configuration/branding" -> json(brandingConfiguration)
+            path == "/System/Configuration/branding" -> json(servedBranding())
             path == "/System/Configuration/livetv" && request.method == "POST" -> {
                 liveTvConfiguration = request.body?.utf8().orEmpty()
                 MockResponse(code = 204)
@@ -1126,6 +1137,67 @@ class FakeJellyfin : Dispatcher() {
     ) = """{"ServerVersion":"$serverVersion","BackupEngineVersion":"0.2.0.0","DateCreated":"$created",""" +
         """"Path":"/config/data/backups/$fileName","Options":{"Metadata":$metadata,"Trickplay":$trickplay,""" +
         """"Subtitles":$subtitles,"Database":$database}}"""
+
+    /**
+     * Whether the branding configuration serves `SplashscreenLocation`. The real one does from 10.11; before that the property is
+     * `[JsonIgnore]`d ("Not served via the API"), so the page cannot tell an image of the user's own from the default.
+     */
+    var servesSplashLocation = true
+
+    private fun servedBranding(): String =
+        if (servesSplashLocation) {
+            brandingConfiguration
+        } else {
+            JsonObject(Json.parseToJsonElement(brandingConfiguration).jsonObject - "SplashscreenLocation").toString()
+        }
+
+    private fun splashscreen(request: RecordedRequest): MockResponse {
+        val branding = Json.parseToJsonElement(brandingConfiguration).jsonObject
+
+        fun withLocation(location: JsonElement) {
+            brandingConfiguration = JsonObject(branding + ("SplashscreenLocation" to location)).toString()
+        }
+        if (request.method != "GET" && !administrator) return MockResponse(code = 403)
+        return when (request.method) {
+            "POST" -> {
+                val type = request.headers["Content-Type"].orEmpty()
+                val decoded =
+                    runCatching {
+                        java.util.Base64
+                            .getDecoder()
+                            .decode(
+                                request.body
+                                    ?.utf8()
+                                    .orEmpty()
+                                    .trim(),
+                            )
+                    }.getOrNull()
+                if (!type.startsWith("image/") || decoded == null) {
+                    MockResponse(code = 400)
+                } else {
+                    splashImage = decoded
+                    withLocation(JsonPrimitive("/data/splashscreen-upload.jpg"))
+                    MockResponse(code = 204)
+                }
+            }
+            "DELETE" -> {
+                splashImage = null
+                withLocation(JsonNull)
+                MockResponse(code = 204)
+            }
+            else -> {
+                val on = branding["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true
+                splashImage?.takeIf { on }?.let {
+                    MockResponse
+                        .Builder()
+                        .code(200)
+                        .addHeader("Content-Type", "image/jpeg")
+                        .body(okio.Buffer().write(it))
+                        .build()
+                } ?: MockResponse(code = 404)
+            }
+        }
+    }
 
     private fun userImage(request: RecordedRequest): MockResponse =
         when (request.method) {

@@ -44,6 +44,12 @@ data class JellyfinServerProfile(
     /** The login splash screen in branding. 10.9. */
     val hasSplashscreen: Boolean get() = atLeast(TEN, NINE)
 
+    /**
+     * The branding configuration serves the splash image's location (`SplashscreenLocation`). Before 10.11 it is `[JsonIgnore]`d, so
+     * whether an image of the user's own is set cannot be read. 10.11.
+     */
+    val servesSplashscreenLocation: Boolean get() = atLeast(TEN, ELEVEN)
+
     /** A library can be switched off without removing it. 10.9. */
     val canDisableLibraries: Boolean get() = atLeast(TEN, NINE)
 
