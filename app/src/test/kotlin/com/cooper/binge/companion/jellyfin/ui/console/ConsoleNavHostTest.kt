@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
@@ -33,7 +35,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class ConsoleNavHostTest {
     @get:Rule
-    val compose = RecreatableTakeDownRule()
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     /** A page's view model: it records when it is cleared, which is when its entry leaves the stack. */
     class PageModel : ViewModel() {
