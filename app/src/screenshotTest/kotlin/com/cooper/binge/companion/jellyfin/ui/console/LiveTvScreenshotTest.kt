@@ -185,7 +185,20 @@ class LiveTvScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun sdLocation() = Surface { SdStepContent(SdStep.Location("g3", sdCountries, country = sdCountries.first()), false, SdActions()) }
+    fun sdLocation() =
+        Surface {
+            SdStepContent(
+                SdStep.Location("g3", sdCountries, country = sdCountries.first(), postalCode = "10001"),
+                false,
+                SdActions(),
+            )
+        }
+
+    /** No postal code yet: Find lineups is disabled. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sdLocationEmpty() = Surface { SdStepContent(SdStep.Location("g3", sdCountries, country = sdCountries.first()), false, SdActions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

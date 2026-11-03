@@ -46,8 +46,8 @@ data class SdActions(
     val onDismissProblem: () -> Unit = {},
 )
 
-/** The tallest the country list grows before it scrolls inside the sheet. */
-private val COUNTRY_LIST_MAX_HEIGHT = 360.dp
+/** The tallest a country or lineup list grows before it scrolls inside the sheet. */
+private val LIST_MAX_HEIGHT = 360.dp
 
 /** The Schedules Direct setup over the Live TV page, in a window. */
 @Composable
@@ -117,6 +117,7 @@ private fun LocationStep(
         submitLabel = stringResource(R.string.live_tv_sd_find),
         onSubmit = { if (step.country != null) actions.onFind(step.postalCode) },
         onCancel = actions.onClose,
+        submitEnabled = step.country != null && step.postalCode.isNotBlank(),
     ) {
         ItemGroup(
             title = null,
@@ -157,7 +158,7 @@ private fun CountryList(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(dimensionResource(DesR.dimen.padding_m)),
         )
-        Column(Modifier.heightIn(max = COUNTRY_LIST_MAX_HEIGHT).verticalScroll(rememberScrollState())) {
+        Column(Modifier.heightIn(max = LIST_MAX_HEIGHT).verticalScroll(rememberScrollState())) {
             ItemGroup(
                 title = null,
                 rows =
@@ -205,7 +206,7 @@ private fun LineupsStep(
                     modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
                 )
             else ->
-                Column(Modifier.heightIn(max = COUNTRY_LIST_MAX_HEIGHT).verticalScroll(rememberScrollState())) {
+                Column(Modifier.heightIn(max = LIST_MAX_HEIGHT).verticalScroll(rememberScrollState())) {
                     ItemGroup(
                         title = null,
                         rows =

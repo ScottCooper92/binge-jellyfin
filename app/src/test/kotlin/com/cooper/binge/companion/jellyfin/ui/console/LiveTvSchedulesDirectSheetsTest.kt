@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -78,6 +79,12 @@ class LiveTvSchedulesDirectSheetsTest {
         assertEquals(1, typed.size)
         assertEquals(true, typed.single().contains("10001"))
         assertEquals(listOf("10001"), found)
+    }
+
+    @Test
+    fun `Find lineups is disabled until a country and a postal code are set`() {
+        step(SdStep.Location("g2", listOf(usa), country = usa, postalCode = ""))
+        compose.onNodeWithText("Find lineups").assertIsNotEnabled()
     }
 
     @Test
