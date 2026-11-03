@@ -21,8 +21,9 @@ private fun JsonObject.typeEntry(type: String): JsonObject? =
 
 /**
  * [kind]'s fetchers for [type] as the library has them, in its order: those its entry lists first, then the rest the server offers.
- * A library with no entry for the type, or an entry that never chose these ([kind]'s key absent), has each on as the server
- * offers it, which is what the server does and what jellyfin-web shows. A fetcher the server no longer offers is left out.
+ * A library with no entry for the type has each on as the server offers it. An entry missing [kind]'s key is a state the server
+ * never writes (it writes all four arrays); this reads it the same way, as a defensive choice and not as the server's own rule.
+ * A fetcher the server no longer offers is left out.
  */
 fun JsonObject.fetchers(
     type: FetcherType,
