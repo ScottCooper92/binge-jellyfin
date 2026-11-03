@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -162,7 +163,8 @@ private fun ColumnScope.TvFoundServers(
  * Sign-in, with Quick Connect first: a code the user approves from a Jellyfin app they are already
  * signed in to, since typing a password with a remote is the worst part of a TV setup. A password
  * is one press away, and back. The "use a password" button is there in every state of the code,
- * loading, shown or failed, so the remote can always rest on it.
+ * loading, shown or failed, so the remote can always rest on it. Back goes the other way: from the
+ * password to the code, and from the code to the server step.
  */
 @Composable
 internal fun TvSignInPage(
@@ -172,6 +174,9 @@ internal fun TvSignInPage(
     startWithPassword: Boolean = false,
 ) {
     var usePassword by rememberSaveable(state.baseUrl) { mutableStateOf(startWithPassword) }
+    // Back steps back, as the remote expects: from the password to the code, and from the code to the server step (which
+    // cancels the code). It does not leave the app from the middle of setting it up.
+    BackHandler { if (usePassword) usePassword = false else actions.onChangeServer() }
     val entry = remember { FocusRequester() }
     // Moving between the code and the password moves the remote to the new panel's first control, once.
     LaunchedEffect(usePassword) { entry.requestFocus() }

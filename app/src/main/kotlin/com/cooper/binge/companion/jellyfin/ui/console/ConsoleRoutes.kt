@@ -214,6 +214,7 @@ private fun TasksRoute(
             onAddTrigger = tasks::addTrigger,
             onRemoveTrigger = tasks::removeTrigger,
             onRetry = tasks::load,
+            onRefresh = tasks::refresh,
             onBack = onBack,
         ),
     )
@@ -249,6 +250,7 @@ private fun DevicesRoute(
             onAskRemove = devices::askRemove,
             onRemove = devices::remove,
             onRetry = devices::load,
+            onRefresh = devices::refresh,
             onBack = onBack,
         ),
     )
@@ -285,6 +287,7 @@ private fun ServerSettingsRoute(
             onAskRemoveSplash = settings.splashImage::askRemove,
             onRemoveSplash = settings.splashImage::remove,
             onRetry = settings::load,
+            onRetrySave = settings::retrySave,
             onBack = onBack,
         ),
         splashscreenAvailable = profile.hasSplashscreen,

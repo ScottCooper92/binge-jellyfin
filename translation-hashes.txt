@@ -309,6 +309,7 @@ app:library_embedded_titles  cc89aa3b66cc
 app:library_enabled  92c1cdfdf4cb
 app:library_enabled_detail  495d0fd01134
 app:library_every_days  aa399d5bc122
+app:library_fetchers_body  2a5669e47905
 app:library_folder_add  5bbfc5a69b25
 app:library_folder_choose  0f3b2318287c
 app:library_folder_empty  32b1fe9ca0e6
@@ -320,6 +321,7 @@ app:library_folder_title  5c71b8cd7822
 app:library_folder_type  e502b8b27275
 app:library_folder_up  ef9a7ae0b5be
 app:library_folders  c4d6bb200f4c
+app:library_image_fetchers  08e3feaa02d2
 app:library_images  36262939f5fc
 app:library_kind_books  9da7f76bc81d
 app:library_kind_home_videos  662cfdd6e349
@@ -337,6 +339,7 @@ app:library_loudness_detail  45dbc9854089
 app:library_lyric_providers  465957fb4d80
 app:library_lyrics_with_media  74541e3f8238
 app:library_metadata  9eddf573cb50
+app:library_metadata_fetchers  6a2472e81221
 app:library_music  6eb00b4b2614
 app:library_name  dcd1d5223f73
 app:library_name_hint  dff924b69f96
@@ -383,6 +386,19 @@ app:library_subtitles  0ee695bdeb26
 app:library_trickplay  5b7acd328f1d
 app:library_trickplay_extract  2c5e1368cefa
 app:library_trickplay_with_media  528c66fbd71d
+app:library_type_album  57bca6e1c6d4
+app:library_type_artist  94e3e8a44073
+app:library_type_audiobook  a01be1671e82
+app:library_type_book  9da7f76bc81d
+app:library_type_boxset  9f9feade761d
+app:library_type_episode  83f9722d9bb2
+app:library_type_movie  dff924b69f96
+app:library_type_music_video  0d2d69e25ad5
+app:library_type_season  c15527b19b99
+app:library_type_series  e714ae21d3b4
+app:library_type_song  bc6761357960
+app:library_type_studio  e41cca7d2395
+app:library_type_video  c9a9639463c2
 app:library_whitelist  ffa0299c7324
 app:library_whitelist_count  4fa7549fdcda
 app:library_whitelist_hint  8758e9d95e16

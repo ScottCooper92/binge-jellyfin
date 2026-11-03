@@ -5,13 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.Code
@@ -23,6 +20,7 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,10 +47,9 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.PageIntro
-import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
-import com.binge.designsystem.template.ScreenBody
-import com.binge.designsystem.template.screenListPadding
+import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.Branding
 import com.binge.designsystem.R as DesR
@@ -70,11 +67,9 @@ data class ServerSettingsActions(
     val onAskRemoveSplash: (Boolean) -> Unit = {},
     val onRemoveSplash: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
-
-/** Lines a failed save's message takes, so it never moves the rows. */
-private const val SETTINGS_STATUS_LINES = 2
 
 /** Lines a switch's detail may wrap to, so it reads in full at large fonts. */
 private const val SETTINGS_DETAIL_LINES = 3
@@ -98,23 +93,31 @@ fun ServerSettingsScreen(
     splash: SplashUiState = SplashUiState(),
 ) {
     var picker by rememberSaveable { mutableStateOf<ServerPicker?>(null) }
-    BingeScreenScaffold(title = stringResource(R.string.server_settings_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
-        ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+    val host = remember { SnackbarHostState() }
+    val ready = state as? ServerSettingsUiState.Ready
+    FormScreen(
+        title = stringResource(R.string.server_settings_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady =
             when (state) {
-                ServerSettingsUiState.Loading ->
-                    ConsoleLoading(inner, LOADING_ROWS)
-                is ServerSettingsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is ServerSettingsUiState.Ready -> {
-                    ServerSettingsBody(state, actions, splashscreenAvailable, splashImageKnown, inner) { picker = it }
-                    picker?.let { ServerPickerSheet(it, state, actions) { picker = null } }
-                    state.editing?.let { TextSheet(it, state, actions) }
-                    if (splash.open &&
-                        splashscreenAvailable
-                    ) {
-                        SplashSheet(state.branding.customSplashscreen, splash, actions, known = splashImageKnown)
-                    }
+                ServerSettingsUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is ServerSettingsUiState.Failed -> { padding ->
+                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
+                is ServerSettingsUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            ServerSettingsBody(ready, actions, splashscreenAvailable, splashImageKnown) { picker = it }
+            // A refusal is said once, in a snackbar; a server that couldn't be reached is the save status's Retry.
+            RefusedMessage(ready.saveFailed?.takeIf { it == ConsoleFailure.Refused }, host)
+            picker?.let { ServerPickerSheet(it, ready, actions) { picker = null } }
+            ready.editing?.let { TextSheet(it, ready, actions) }
+            if (splash.open && splashscreenAvailable) {
+                SplashSheet(ready.branding.customSplashscreen, splash, actions, known = splashImageKnown)
             }
         }
     }
@@ -126,16 +129,12 @@ private fun ServerSettingsBody(
     actions: ServerSettingsActions,
     splashscreenAvailable: Boolean,
     splashImageKnown: Boolean,
-    inner: PaddingValues,
     onPick: (ServerPicker) -> Unit,
 ) {
     val settings = state.settings
     val branding = state.branding
     val notSet = stringResource(R.string.server_settings_not_set)
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         PageIntro(stringResource(R.string.server_settings_body))
         ItemGroup(
             title = stringResource(R.string.server_settings_general),
@@ -174,13 +173,6 @@ private fun ServerSettingsBody(
                 ),
         )
         LoginScreenGroup(branding, actions, splashscreenAvailable, splashImageKnown)
-        Text(
-            text = state.saveFailed?.let { stringResource(R.string.settings_not_saved, it.text()) }.orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            minLines = SETTINGS_STATUS_LINES,
-            maxLines = SETTINGS_STATUS_LINES,
-        )
     }
 }
 
@@ -344,6 +336,8 @@ internal fun TextSheet(
     }
 }
 
+private const val LOADING_ROWS = 8
+
 /** The thumbnail's height in the splash image sheet. */
 private val SPLASH_THUMB_HEIGHT = 180.dp
 
@@ -460,5 +454,3 @@ internal fun RemoveSplashDialog(
         inWindow = inWindow,
     )
 }
-
-private const val LOADING_ROWS = 8

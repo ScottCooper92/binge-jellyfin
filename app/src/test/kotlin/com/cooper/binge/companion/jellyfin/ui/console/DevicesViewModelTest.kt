@@ -62,6 +62,26 @@ class DevicesViewModelTest {
     }
 
     @Test
+    fun `a pull reads the list again in place, and a pull that fails keeps the list and says so once`() {
+        val vm = made(DevicesViewModel(connection))
+        assertEquals(3, vm.ready().devices.size)
+        jellyfin.devices = jellyfin.devices +
+            """{"Id":"d-new","Name":"Tablet","AppName":"Jellyfin Android","LastUserName":"sam","DateLastActivity":"2026-11-01T10:00:00Z"}"""
+        vm.refresh()
+        val fresh = vm.ready { it.devices.size == 4 && !it.refreshing }
+        assertNull(fresh.refreshFailed)
+        jellyfin.status["/Devices"] = 500
+        vm.refresh()
+        val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
+        assertEquals(4, failed.devices.size)
+        assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+        // The next pull starts clean, so a second failure is said again.
+        jellyfin.status.remove("/Devices")
+        vm.refresh()
+        assertNull(vm.ready { it.devices.size == 4 && !it.refreshing }.refreshFailed)
+    }
+
+    @Test
     fun `a rename saves the name, trimmed, and the row reads it back`() {
         val vm = made(DevicesViewModel(connection))
         val tv = vm.ready().devices.first()

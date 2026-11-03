@@ -61,6 +61,9 @@ sealed interface UsersUiState {
         val actionFailed: ConsoleFailure? = null,
         /** Why the open form (a new user, a password) was refused, shown in the form, which stays open with what was typed. */
         val formFailure: ConsoleFailure? = null,
+        /** True while a pull reads the users again; the list stays as it is. [refreshFailed] says why a pull didn't. */
+        val refreshing: Boolean = false,
+        val refreshFailed: ConsoleFailure? = null,
     ) : UsersUiState {
         val openUser: ServerUser? get() = users.firstOrNull { it.id == open }
     }
@@ -85,6 +88,9 @@ class UsersViewModel(
     /** Each user's changes that are made but not yet answered, oldest first. */
     private val pending = mutableMapOf<String, MutableList<(JsonObject) -> JsonObject>>()
 
+    /** Counts every start and finish of a policy change, create, password or delete, so a read can tell one happened while it was in flight. */
+    private var changes = 0
+
     init {
         load()
     }
@@ -106,6 +112,49 @@ class UsersViewModel(
                         },
                         onFailure = { UsersUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /**
+     * A pull: reads the users and libraries again in place, keeping the page, and says in a message when it couldn't.
+     * A change that is waiting, or that started or finished while the read was in flight, could be newer than the
+     * read, so that read is dropped, and the next pull gets it.
+     */
+    fun refresh() {
+        val ready = _state.value as? UsersUiState.Ready ?: return
+        if (ready.refreshing) return
+        update { copy(refreshing = true, refreshFailed = null) }
+        val changesAtStart = changes
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client ->
+                    coroutineScope {
+                        val libraries = async { client.libraries().filter { it.id.isNotEmpty() } }
+                        client.users() to libraries.await()
+                    }
+                }.onSuccess { (users, libraries) ->
+                    val settled =
+                        changes == changesAtStart &&
+                            pending.values.all { it.isEmpty() } &&
+                            !saving.isLocked &&
+                            (_state.value as? UsersUiState.Ready)?.busy == false
+                    if (settled) users.forEach { saved[it.id] = it.policy }
+                    update {
+                        if (settled) {
+                            copy(
+                                users = users,
+                                libraries = libraries,
+                                open =
+                                    open?.takeIf { id ->
+                                        users.any { it.id == id }
+                                    },
+                                refreshing = false,
+                            )
+                        } else {
+                            copy(refreshing = false)
+                        }
+                    }
+                }.onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 
@@ -176,9 +225,11 @@ class UsersViewModel(
     ) {
         if ((_state.value as? UsersUiState.Ready)?.busy != false) return
         update { copy(dialog = if (form != null) dialog else null, busy = true, done = null, formFailure = null, actionFailed = null) }
+        changes++
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> call(client) }
+                .also { changes++ }
                 .onSuccess { update { copy(busy = false, done = done, dialog = if (form != null && form()) null else dialog) } }
                 .onFailure { error ->
                     // A form left meanwhile has nowhere to say it, so the page does.
@@ -206,12 +257,14 @@ class UsersViewModel(
         if (!mineAllowed && user.id == ready.me) return
         update { copy(users = users.withPolicy(user.id, change(user.policy)), done = null, actionFailed = null) }
         pending.getOrPut(user.id) { mutableListOf() }.add(change)
+        changes++
         viewModelScope.launch {
             saving.withLock {
                 val next = change(saved[user.id] ?: user.policy)
                 val result = connection.consoleCall(TAG) { _, client -> client.savePolicy(user.id, next) }
                 result.onSuccess { saved[user.id] = next }
                 val queued = pending.getValue(user.id).also { it.remove(change) }
+                changes++
                 // What the screen shows is what the server holds, plus the changes still waiting their turn.
                 val shown = queued.fold(saved[user.id] ?: next) { policy, queuedChange -> queuedChange(policy) }
                 update {

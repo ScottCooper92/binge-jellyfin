@@ -9,9 +9,12 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.server.AvailableFetcher
 import com.cooper.binge.companion.jellyfin.server.AvailableProviders
 import com.cooper.binge.companion.jellyfin.server.Country
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
+import com.cooper.binge.companion.jellyfin.server.FetcherType
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.MetadataSaver
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
@@ -68,6 +71,29 @@ private fun ready(
         ),
     countries = listOf(Country("GB", "United Kingdom")),
 )
+
+private val fetcherTypes =
+    listOf(
+        FetcherType(
+            "Series",
+            metadata = listOf(AvailableFetcher("TheMovieDb", true), AvailableFetcher("TheTVDB", true)),
+            images = listOf(AvailableFetcher("TheMovieDb", false), AvailableFetcher("TheTVDB", true)),
+        ),
+        FetcherType(
+            "Episode",
+            metadata = listOf(AvailableFetcher("TheMovieDb", false), AvailableFetcher("TheTVDB", true)),
+            images = listOf(AvailableFetcher("TheTVDB", true), AvailableFetcher("Screen Grabber", true)),
+        ),
+    )
+
+/** A shows library whose Series has chosen its metadata downloaders (the TVDB first, the Movie Database off) and Episode has not. */
+private fun fetchersReady() =
+    ready(
+        "tvshows",
+        "Shows",
+        """{"Enabled":true,"TypeOptions":[{"Type":"Series","MetadataFetchers":["TheTVDB"],"MetadataFetcherOrder":["TheTVDB","TheMovieDb"],
+        "ImageFetchers":["TheTVDB"],"ImageFetcherOrder":["TheTVDB","TheMovieDb"]}]}""",
+    ).let { it.copy(available = it.available.copy(types = fetcherTypes)) }
 
 /** A library's page: movies across the matrix, then each kind, an older server, the pages of its providers, its sheets and confirms, and the read states. */
 class LibraryScreenshotTest {
@@ -160,6 +186,41 @@ class LibraryScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun saving() = LibraryScreen(ready().copy(save = SaveProgress(SaveStatus.Saving)), LibraryActions(), newest)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun fetchersRows() = Surface { Column { MetadataGroup(fetchersReady(), LibraryActions(), newest) {} } }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun metadataFetchers() =
+        LibraryScreen(fetchersReady().copy(page = LibraryPage.Fetchers(FetcherKind.Metadata)), LibraryActions(), newest)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun imageFetchers() = LibraryScreen(fetchersReady().copy(page = LibraryPage.Fetchers(FetcherKind.Images)), LibraryActions(), newest)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun fetcher() =
+        LibraryScreen(fetchersReady().copy(page = LibraryPage.Fetcher(FetcherKind.Metadata, "Series", "TheTVDB")), LibraryActions(), newest)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun fetcherOffAndLast() =
+        LibraryScreen(
+            fetchersReady().copy(page = LibraryPage.Fetcher(FetcherKind.Metadata, "Series", "TheMovieDb")),
+            LibraryActions(),
+            newest,
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview

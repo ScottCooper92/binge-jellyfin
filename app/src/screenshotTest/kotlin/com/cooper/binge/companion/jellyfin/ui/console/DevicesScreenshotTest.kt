@@ -67,6 +67,13 @@ class DevicesScreenshotTest {
     @Composable
     fun changing() = DevicesScreen(previewReady.copy(busy = setOf("kodi")), DevicesActions(), now = NOW)
 
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = DevicesScreen(previewReady.copy(refreshing = true), DevicesActions(), now = NOW)
+
     /** The server listed no devices, which it can when every item it sent was one this app could not read. */
     @PreviewTest
     @JellyfinScreenStatePreview

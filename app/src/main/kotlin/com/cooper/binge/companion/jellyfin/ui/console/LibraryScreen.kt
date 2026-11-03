@@ -33,6 +33,7 @@ import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
@@ -54,6 +55,8 @@ data class LibraryActions(
     val onProvider: (ProviderGroup, String, Boolean) -> Unit = { _, _, _ -> },
     val onJson: (key: String, value: JsonElement) -> Unit = { _, _ -> },
     val onMove: (ProviderGroup, String, Int) -> Unit = { _, _, _ -> },
+    val onFetcher: (FetcherKind, type: String, name: String, enabled: Boolean) -> Unit = { _, _, _, _ -> },
+    val onMoveFetcher: (FetcherKind, type: String, name: String, by: Int) -> Unit = { _, _, _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
@@ -104,6 +107,8 @@ fun LibraryScreen(
                 LibraryPage.Languages -> LanguagesPage(ready, actions, padding)
                 is LibraryPage.Providers -> ProvidersPage(page.group, ready, actions)
                 is LibraryPage.One -> ProviderPage(page, ready, actions)
+                is LibraryPage.Fetchers -> FetchersPage(page.kind, ready, actions)
+                is LibraryPage.Fetcher -> FetcherPage(page, ready, actions)
             }
             LibraryDialogs(ready, actions, folders, folderActions)
             RefusedMessage(ready.refused, host)
@@ -118,6 +123,8 @@ private fun LibraryPage.parent(): LibraryPage =
         LibraryPage.Languages -> LibraryPage.Main
         is LibraryPage.Providers -> LibraryPage.Main
         is LibraryPage.One -> LibraryPage.Providers(group)
+        is LibraryPage.Fetchers -> LibraryPage.Main
+        is LibraryPage.Fetcher -> LibraryPage.Fetchers(kind)
     }
 
 @Composable
@@ -127,6 +134,8 @@ private fun LibraryPage.title(ready: LibraryUiState.Ready?): String =
         LibraryPage.Languages -> stringResource(R.string.library_download_languages)
         is LibraryPage.Providers -> stringResource(group.title())
         is LibraryPage.One -> name
+        is LibraryPage.Fetchers -> stringResource(kind.title())
+        is LibraryPage.Fetcher -> name
     }
 
 @Composable
