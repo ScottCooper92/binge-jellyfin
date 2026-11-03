@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -230,10 +231,16 @@ internal fun AddTriggerSheet(actions: TasksActions) {
 internal fun AddTriggerForm(
     actions: TasksActions,
     startKind: TriggerKind = TriggerKind.Daily,
+    is24Hour: Boolean = DateFormat.is24HourFormat(LocalContext.current),
 ) {
     var kindIndex by rememberSaveable { mutableIntStateOf(startKind.ordinal) }
-    val context = LocalContext.current
-    val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, DateFormat.is24HourFormat(context))
+    // A 24-hour device uses Material's time input. A 12-hour one uses ours, whose period is a pair of chips that grow with the font.
+    val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, true)
+    var hourText by rememberSaveable(key = "AddTriggerForm.hour") { mutableStateOf(DEFAULT_HOUR.toString()) }
+    var minuteText by rememberSaveable(key = "AddTriggerForm.minute") { mutableStateOf("00") }
+    var afternoon by rememberSaveable(key = "AddTriggerForm.afternoon") { mutableStateOf(false) }
+    val minutes =
+        if (is24Hour) timeState.hour * MINUTES_PER_HOUR + timeState.minute else twelveHourMinutes(hourText, minuteText, afternoon)
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
     var intervalTicks by rememberSaveable { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
     var limitHours by rememberSaveable { mutableIntStateOf(0) }
@@ -258,7 +265,19 @@ internal fun AddTriggerForm(
             if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) {
                 // Centred, to share an axis with the time limit's readout and slider below, which fill the width.
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    TimeInput(timeState, modifier = Modifier.testTag(TRIGGER_TIME_TAG))
+                    if (is24Hour) {
+                        TimeInput(timeState, modifier = Modifier.testTag(TRIGGER_TIME_TAG))
+                    } else {
+                        TwelveHourTimeInput(
+                            hour = hourText,
+                            minute = minuteText,
+                            afternoon = afternoon,
+                            onHour = { hourText = it },
+                            onMinute = { minuteText = it },
+                            onAfternoon = { afternoon = it },
+                            modifier = Modifier.testTag(TRIGGER_TIME_TAG),
+                        )
+                    }
                 }
             }
             if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
@@ -267,8 +286,10 @@ internal fun AddTriggerForm(
         }
         BingeFilledButton(
             label = stringResource(R.string.tasks_trigger_create),
+            // A time of day has to be a real one; the other kinds have none.
+            enabled = minutes != null || (kind != TriggerKind.Daily && kind != TriggerKind.Weekly),
             onClick = {
-                val timeTicks = { (timeState.hour * MINUTES_PER_HOUR + timeState.minute) * TICKS_PER_MINUTE }
+                val timeTicks = { (minutes ?: 0) * TICKS_PER_MINUTE }
                 actions.onAddTrigger(
                     when (kind) {
                         TriggerKind.Daily -> TaskTrigger.daily(timeTicks(), limit)

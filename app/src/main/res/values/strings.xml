@@ -555,6 +555,11 @@
     <string name="tasks_trigger_new_title">New trigger</string>
     <string name="tasks_trigger_new_body">When should this task run by itself?</string>
     <string name="tasks_trigger_create">Add</string>
+    <string name="tasks_trigger_hour">Hour</string>
+    <string name="tasks_trigger_minute">Minute</string>
+    <string name="tasks_trigger_am">a.m.</string>
+    <string name="tasks_trigger_pm">p.m.</string>
+    <string name="tasks_trigger_time_invalid">Use an hour from 1 to 12 and minutes from 0 to 59.</string>
     <string name="tasks_trigger_limit">Time limit</string>
     <string name="tasks_trigger_no_limit">No limit</string>
     <string name="trigger_kind_daily">Daily</string>

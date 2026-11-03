@@ -89,4 +89,10 @@ class TaskTriggersScreenshotTest {
     @JellyfinFontScalePreviews
     @Composable
     fun newStartupTrigger() = Surface { AddTriggerForm(TasksActions(), TriggerKind.Startup) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun newTriggerTwentyFourHour() = Surface { AddTriggerForm(TasksActions(), is24Hour = true) }
 }
