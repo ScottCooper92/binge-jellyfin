@@ -67,6 +67,20 @@ class LiveTvScreenTest {
     }
 
     @Test
+    fun `Recording opens the recording page where the user may change it, and is not offered where they may not`() {
+        var opened = 0
+        show(LiveTvUiState.Ready(summary), LiveTvActions(onOpenRecording = { opened++ }))
+        compose.onNodeWithText("Folders, padding and the files saved with a recording").performScrollTo().performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `Recording is not offered to a manager who is not an administrator`() {
+        show(LiveTvUiState.Ready(summary), LiveTvActions(onOpenRecording = null))
+        compose.onNodeWithText("Folders, padding and the files saved with a recording").assertDoesNotExist()
+    }
+
+    @Test
     fun `a failure offers Retry`() {
         var retried = 0
         show(LiveTvUiState.Failed(ConsoleFailure.Unreachable), LiveTvActions(onRetry = { retried++ }))
