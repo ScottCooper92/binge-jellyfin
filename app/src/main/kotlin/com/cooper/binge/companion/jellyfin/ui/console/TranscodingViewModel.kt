@@ -172,7 +172,7 @@ class TranscodingViewModel(
             { _, client, json -> client.saveEncodingConfiguration(json) },
             onProgress = { progress -> update { copy(encodingSave = progress) } },
         ) { shown, failure ->
-            update { copy(encoding = shown, refused = refusedOr(refused, failure)) }
+            update { copy(encoding = shown, refused = refusedAfter(refused, failure)) }
         }
     private val server =
         ConfigurationSaves(
@@ -182,7 +182,7 @@ class TranscodingViewModel(
             { _, client, json -> client.saveServerConfiguration(json) },
             onProgress = { progress -> update { copy(serverSave = progress) } },
         ) { shown, failure ->
-            update { copy(server = shown, refused = refusedOr(refused, failure)) }
+            update { copy(server = shown, refused = refusedAfter(refused, failure)) }
         }
 
     init {
@@ -259,12 +259,6 @@ class TranscodingViewModel(
 
     private fun update(change: TranscodingUiState.Ready.() -> TranscodingUiState.Ready) =
         _state.update { (it as? TranscodingUiState.Ready)?.change() ?: it }
-
-    /** A refused save is said until the next change; a change or a failure to reach the server clears it. */
-    private fun refusedOr(
-        current: ConsoleFailure?,
-        failure: ConsoleFailure?,
-    ) = if (failure == null) null else failure.takeIf { it == ConsoleFailure.Refused } ?: current
 
     private companion object {
         const val TAG = "JellyfinTranscoding"
