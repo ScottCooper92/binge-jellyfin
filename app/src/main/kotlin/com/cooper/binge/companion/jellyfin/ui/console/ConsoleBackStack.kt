@@ -9,10 +9,20 @@ data class ConsoleEntry(
     val opening: Int,
 )
 
+/** What Navigation 3 shows: the home, or one open page under its opening number. A key's identity is its content. */
+sealed interface ConsoleKey {
+    data object Home : ConsoleKey
+
+    data class Page(
+        val page: ConsolePage,
+        val opening: Int,
+    ) : ConsoleKey
+}
+
 /**
  * The console pages that are open, the last on top. A page that opens another stays under it, so Back returns to
  * the page that opened the current one, and to the home from the first. Each entry has its own opening number,
- * which `ConsolePageStores` keeps that page's view models under while it is on the stack.
+ * which Navigation 3 keeps that page's view models under while it is on the stack.
  *
  * A value: every change makes a new stack. It saves through [Saver] across a rotation and a process death.
  */
@@ -25,6 +35,9 @@ data class ConsoleBackStack(
 
     /** The openings still on the stack: the ones whose view models are kept. */
     val openings: Set<Int> get() = entries.map { it.opening }.toSet()
+
+    /** The stack as Navigation 3 shows it: the home at the bottom, then each open page. */
+    val keys: List<ConsoleKey> get() = listOf<ConsoleKey>(ConsoleKey.Home) + entries.map { ConsoleKey.Page(it.page, it.opening) }
 
     /** [page] opened from the page on top, or from the home. Opening the page already on top does nothing. */
     fun open(page: ConsolePage): ConsoleBackStack =

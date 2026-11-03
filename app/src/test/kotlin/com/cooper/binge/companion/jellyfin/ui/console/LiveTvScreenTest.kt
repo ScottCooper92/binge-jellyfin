@@ -15,8 +15,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(qualifiers = "w411dp-h2000dp")
 class LiveTvScreenTest {
     @get:Rule
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
@@ -40,7 +42,7 @@ class LiveTvScreenTest {
         compose.onNodeWithText("M3U playlist", substring = true).assertIsDisplayed()
         compose.onNodeWithText("alice").assertIsDisplayed()
         compose.onNodeWithText("Schedules Direct").assertIsDisplayed()
-        compose.onNodeWithText("Guide runs until").assertIsDisplayed()
+        compose.onNodeWithText("Guide runs until").performScrollTo().assertIsDisplayed()
     }
 
     @Test
