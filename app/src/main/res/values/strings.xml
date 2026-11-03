@@ -712,6 +712,31 @@
     <string name="transcoding_unit_mbps" translatable="false">%1$s Mbps</string>
     <string name="console_display_detail">Sorting, collections, metadata and paths</string>
     <string name="display_title">Library display and metadata</string>
+    <string name="console_metadata_detail">Which metadata and image providers each kind of title uses</string>
+    <string name="metadata_title">Metadata providers by type</string>
+    <string name="metadata_body">What the server uses for each kind of title in a library that has not chosen its own providers. A library\'s own settings take the place of these, so changing them does not change a library that has set its own.</string>
+    <string name="metadata_type_body">Turn a provider off to stop the server asking it for this kind of title.</string>
+    <string name="metadata_type_empty">The server did not list any providers for this kind of title.</string>
+    <string name="metadata_fetchers">Metadata providers</string>
+    <string name="metadata_images">Image providers</string>
+    <string name="metadata_all_on">All on</string>
+    <plurals name="metadata_turned_off">
+        <item quantity="one">%1$d turned off</item>
+        <item quantity="other">%1$d turned off</item>
+    </plurals>
+    <string name="metadata_type_movie">Movies</string>
+    <string name="metadata_type_series">Series</string>
+    <string name="metadata_type_season">Seasons</string>
+    <string name="metadata_type_episode">Episodes</string>
+    <string name="metadata_type_book">Books</string>
+    <string name="metadata_type_music_video">Music videos</string>
+    <string name="metadata_type_artist">Artists</string>
+    <string name="metadata_type_album">Albums</string>
+    <string name="metadata_type_song">Songs</string>
+    <string name="metadata_type_video">Videos</string>
+    <string name="metadata_type_photo">Photos</string>
+    <string name="metadata_type_collection">Collections</string>
+    <string name="metadata_type_playlist">Playlists</string>
     <string name="display_body">Defaults for every library on this server. Each change saves as you make it.</string>
     <string name="display_group">Display</string>
     <string name="display_language">Display language</string>
