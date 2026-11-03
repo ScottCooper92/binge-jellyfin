@@ -572,8 +572,8 @@
     <string name="api_keys_new">New key</string>
     <string name="api_keys_empty">This server has no API keys.</string>
     <string name="api_keys_unnamed">Unnamed app</string>
-    <string name="api_keys_ends_in">Ends in %1$s</string>
-    <string name="api_keys_created">made %1$s</string>
+    <string name="api_keys_ends_in">****%1$s</string>
+    <string name="api_keys_created">Created %1$s</string>
     <string name="api_keys_revoke">Revoke</string>
     <string name="api_keys_revoke_title">Revoke %1$s?</string>
     <string name="api_keys_revoke_body">Anything using this key is refused from then on.</string>

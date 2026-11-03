@@ -143,8 +143,9 @@ private fun ApiKey.row(
     return ListItem(
         icon = Icons.Outlined.Key,
         label = app.ifBlank { stringResource(R.string.api_keys_unnamed) },
-        detail = listOfNotNull(stringResource(R.string.api_keys_ends_in, lastFour), made).joinToString(" · "),
-        supportingMaxLines = 2,
+        detail = listOfNotNull(stringResource(R.string.api_keys_ends_in, lastFour), made).joinToString("\n"),
+        // Two lines, either of which wraps at a large font: the key's ending, then the date.
+        supportingMaxLines = 4,
         trailingContent =
             if (state.busy) {
                 null

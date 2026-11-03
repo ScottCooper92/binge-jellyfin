@@ -878,7 +878,7 @@ class ConsoleScreensTest {
             )
         compose.setContent { JellyfinTheme { ApiKeysScreen(state, actions) } }
         compose.onNodeWithText("Sonarr").assertExists()
-        compose.onNodeWithText("Ends in 1111", substring = true).assertExists()
+        compose.onNodeWithText("****1111", substring = true).assertExists()
         compose.onNodeWithText("aaaabbbbccccdddd1111", substring = true).assertDoesNotExist()
         compose.onNodeWithText("New key").performClick()
         compose.onNodeWithText("App name").performTextInput("Radarr")
