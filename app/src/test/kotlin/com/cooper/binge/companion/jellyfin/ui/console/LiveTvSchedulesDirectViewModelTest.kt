@@ -168,6 +168,18 @@ class LiveTvSchedulesDirectViewModelTest {
         val back = vm.until { it.step is SdStep.Location }.step as SdStep.Location
         assertEquals(usa, back.country)
         assertEquals(2, back.countries?.size)
+        assertEquals("99999", back.postalCode)
+    }
+
+    @Test
+    fun `the postal code typed survives choosing a country`() {
+        val vm = vm()
+        signedIn(vm)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.typePostalCode("90210")
+        vm.chooseCountry(true)
+        vm.pickCountry(usa)
+        assertEquals("90210", (vm.state.value.step as SdStep.Location).postalCode)
     }
 
     @Test

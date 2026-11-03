@@ -66,11 +66,17 @@ class LiveTvSchedulesDirectSheetsTest {
     }
 
     @Test
-    fun `a country and a postal code find lineups`() {
+    fun `a typed postal code is reported, and Find sends the one the step holds`() {
+        val typed = mutableListOf<String>()
         val found = mutableListOf<String>()
-        step(SdStep.Location("g2", listOf(usa), country = usa), SdActions(onFind = { found += it }))
-        compose.onNodeWithText("Postal code").performTextInput("10001")
+        step(
+            SdStep.Location("g2", listOf(usa), country = usa, postalCode = "10001"),
+            SdActions(onPostalCode = { typed += it }, onFind = { found += it }),
+        )
+        compose.onNodeWithText("Postal code").performTextInput("2")
         compose.onNodeWithText("Find lineups").performClick()
+        assertEquals(1, typed.size)
+        assertEquals(true, typed.single().contains("10001"))
         assertEquals(listOf("10001"), found)
     }
 

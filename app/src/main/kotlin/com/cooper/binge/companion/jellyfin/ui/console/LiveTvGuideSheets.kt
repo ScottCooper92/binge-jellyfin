@@ -30,13 +30,14 @@ import com.binge.designsystem.R as DesR
 internal fun GuideSheet(
     state: GuideUiState,
     actions: LiveTvGuideActions,
+    canFinishSetup: Boolean = true,
 ) {
     if (state.choosing) {
         ConsoleSheet(onDismissRequest = actions.onDismissChoice) { ChooseGuideContent(actions) }
         return
     }
     val form = state.form ?: return
-    ConsoleSheet(onDismissRequest = actions.onDismissForm) { GuideFormContent(form, state.saving, actions) }
+    ConsoleSheet(onDismissRequest = actions.onDismissForm) { GuideFormContent(form, state.saving, actions, canFinishSetup) }
 }
 
 /** What to add: an XMLTV guide, or a Schedules Direct account. Only offered where the user may read lineups. */
@@ -86,7 +87,9 @@ internal fun GuideFormContent(
     form: GuideForm,
     saving: Boolean,
     actions: LiveTvGuideActions,
+    canFinishSetup: Boolean = true,
 ) {
+    val finishable = form.lineupPending && canFinishSetup
     var path by rememberSaveable(form) { mutableStateOf(form.path) }
     ConsoleFieldsForm(
         title = stringResource(if (form.id == null) R.string.live_tv_guide_form_add else R.string.live_tv_guide_form_edit),
@@ -94,7 +97,8 @@ internal fun GuideFormContent(
             stringResource(
                 when {
                     form.isXmlTv -> R.string.live_tv_guide_path_detail
-                    form.lineupPending -> R.string.live_tv_guide_pending_detail
+                    finishable -> R.string.live_tv_guide_pending_detail
+                    form.lineupPending -> R.string.live_tv_guide_pending_locked_detail
                     else -> R.string.live_tv_guide_other_detail
                 },
             ),
@@ -128,7 +132,7 @@ internal fun GuideFormContent(
                             icon = Icons.Outlined.PlaylistAdd,
                             label = stringResource(R.string.live_tv_guide_finish),
                             onClick = { actions.onFinishSetup(form.id) },
-                        ).takeIf { form.lineupPending },
+                        ).takeIf { finishable },
                         ListItem(
                             icon = Icons.Outlined.Delete,
                             iconTint = MaterialTheme.colorScheme.error,

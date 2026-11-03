@@ -157,6 +157,20 @@ class LiveTvScreenshotTest {
             )
         }
 
+    /** A manager without Live TV access: the unfinished account can only be removed. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun unfinishedFormWithoutLiveTvAccess() =
+        Surface {
+            GuideFormContent(
+                GuideForm("g3", type = "SchedulesDirect", name = "carol", lineupPending = true),
+                false,
+                LiveTvGuideActions(),
+                canFinishSetup = false,
+            )
+        }
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews

@@ -1046,6 +1046,7 @@
     <string name="live_tv_guide_remove_confirm">Quitar</string>
     <string name="live_tv_guide_choose_body">Elige el tipo de datos de guía que quieres añadir.</string>
     <string name="live_tv_guide_sd_detail">Una cuenta de Schedules Direct, con su alineación</string>
+    <string name="live_tv_guide_pending_locked_detail">La cuenta está guardada, pero aún no hay una alineación elegida, así que el servidor no tiene guía que leer. Tu cuenta no puede terminar la configuración aquí, pero puedes quitar la cuenta.</string>
     <string name="live_tv_guide_pending_detail">La cuenta está guardada, pero aún no hay una alineación elegida, así que el servidor no tiene guía que leer. Termina la configuración o quita la cuenta.</string>
     <string name="live_tv_guide_finish">Terminar la configuración</string>
     <string name="live_tv_guide_pending_row">%1$s · configuración sin terminar</string>

@@ -38,6 +38,7 @@ data class SdActions(
     val onSignIn: (username: String, password: String) -> Unit = { _, _ -> },
     val onChooseCountry: (Boolean) -> Unit = {},
     val onPickCountry: (SdCountry) -> Unit = {},
+    val onPostalCode: (String) -> Unit = {},
     val onFind: (postalCode: String) -> Unit = {},
     val onBackToLocation: () -> Unit = {},
     val onAddLineup: (SdLineup) -> Unit = {},
@@ -110,12 +111,11 @@ private fun LocationStep(
     step: SdStep.Location,
     actions: SdActions,
 ) {
-    var postalCode by rememberSaveable { mutableStateOf("") }
     ConsoleFieldsForm(
         title = stringResource(R.string.live_tv_sd_location_title),
         body = stringResource(R.string.live_tv_sd_location_body),
         submitLabel = stringResource(R.string.live_tv_sd_find),
-        onSubmit = { if (step.country != null) actions.onFind(postalCode) },
+        onSubmit = { if (step.country != null) actions.onFind(step.postalCode) },
         onCancel = actions.onClose,
     ) {
         ItemGroup(
@@ -138,8 +138,8 @@ private fun LocationStep(
                 ),
         )
         ConsoleTextField(
-            value = postalCode,
-            onValueChange = { postalCode = it },
+            value = step.postalCode,
+            onValueChange = actions.onPostalCode,
             label = stringResource(R.string.live_tv_sd_postal_code),
             supporting = stringResource(R.string.live_tv_sd_postal_code_detail),
         )

@@ -402,6 +402,7 @@ app:live_tv_guide_other_detail  002e1107c2db
 app:live_tv_guide_path  e4407118da8c
 app:live_tv_guide_path_detail  955b13f2a628
 app:live_tv_guide_pending_detail  3b7deb4de234
+app:live_tv_guide_pending_locked_detail  8f18887178cf
 app:live_tv_guide_pending_row  35352542a8a0
 app:live_tv_guide_queued  d8c2176657ab
 app:live_tv_guide_remove  0218073df811

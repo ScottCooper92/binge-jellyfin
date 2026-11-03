@@ -32,11 +32,13 @@ internal fun LiveTvRoute(
         LiveTvActions(onOpenTasks = onOpenTasks, onOpenRecording = onOpenRecording, onRetry = liveTv::load, onBack = onBack),
         guide = guideState,
         sd = sdState,
+        canFinishSetup = account.canAccessLiveTv,
         sdActions =
             SdActions(
                 onSignIn = sd::signIn,
                 onChooseCountry = sd::chooseCountry,
                 onPickCountry = sd::pickCountry,
+                onPostalCode = sd::typePostalCode,
                 onFind = sd::findLineups,
                 onBackToLocation = sd::backToLocation,
                 onAddLineup = sd::addLineup,

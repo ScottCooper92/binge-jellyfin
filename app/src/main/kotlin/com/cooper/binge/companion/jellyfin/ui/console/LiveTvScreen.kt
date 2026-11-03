@@ -54,6 +54,7 @@ fun LiveTvScreen(
     guideActions: LiveTvGuideActions = LiveTvGuideActions(),
     sd: SdUiState = SdUiState(),
     sdActions: SdActions = SdActions(),
+    canFinishSetup: Boolean = true,
 ) {
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -69,7 +70,7 @@ fun LiveTvScreen(
                 is LiveTvUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LiveTvUiState.Ready -> {
                     LiveTvContent(state.summary, actions, guideActions, inner, now)
-                    GuideSheet(guide, guideActions)
+                    GuideSheet(guide, guideActions, canFinishSetup)
                     GuideMessages(guide, guideActions, host)
                     SdSheet(sd, sdActions)
                     SdMessages(sd, sdActions, host)

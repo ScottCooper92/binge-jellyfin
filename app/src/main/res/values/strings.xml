@@ -1050,6 +1050,7 @@
     <string name="live_tv_guide_remove_confirm">Remove</string>
     <string name="live_tv_guide_choose_body">Choose the kind of guide data to add.</string>
     <string name="live_tv_guide_sd_detail">A Schedules Direct account, with its lineup</string>
+    <string name="live_tv_guide_pending_locked_detail">The account is saved, but no lineup is chosen yet, so the server has no guide to read. Your account can\'t finish the setup here, but you can remove the account.</string>
     <string name="live_tv_guide_pending_detail">The account is saved, but no lineup is chosen yet, so the server has no guide to read. Finish the setup, or remove the account.</string>
     <string name="live_tv_guide_finish">Finish setup</string>
     <string name="live_tv_guide_pending_row">%1$s · setup not finished</string>

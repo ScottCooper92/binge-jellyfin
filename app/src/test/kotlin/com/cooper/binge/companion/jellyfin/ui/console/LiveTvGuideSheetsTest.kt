@@ -108,6 +108,22 @@ class LiveTvGuideSheetsTest {
     }
 
     @Test
+    fun `a user without Live TV access is not offered Finish setup`() {
+        compose.setContent {
+            JellyfinTheme {
+                GuideFormContent(
+                    GuideForm("g2", type = "SchedulesDirect", name = "alice", lineupPending = true),
+                    false,
+                    LiveTvGuideActions(),
+                    canFinishSetup = false,
+                )
+            }
+        }
+        compose.onNodeWithText("Finish setup").assertDoesNotExist()
+        compose.onNodeWithText("Remove guide data").assertIsDisplayed()
+    }
+
+    @Test
     fun `an account with its lineup has no Finish setup`() {
         form(GuideForm("g2", type = "SchedulesDirect", name = "alice"))
         compose.onNodeWithText("Finish setup").assertDoesNotExist()

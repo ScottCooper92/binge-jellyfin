@@ -32,6 +32,8 @@ sealed interface SdStep {
         val countries: List<SdCountry>?,
         val country: SdCountry? = null,
         val choosing: Boolean = false,
+        /** What the user has typed, kept here so choosing a country, or coming back from the lineups, does not empty the field. */
+        val postalCode: String = "",
     ) : SdStep
 
     /** The lineups for [postalCode] in [country]: [lineups] is null while they are read. An empty list may be a login that failed. */
@@ -124,6 +126,8 @@ class LiveTvSchedulesDirectViewModel(
 
     fun chooseCountry(open: Boolean) = updateStep<SdStep.Location> { copy(choosing = open) }
 
+    fun typePostalCode(postalCode: String) = updateStep<SdStep.Location> { copy(postalCode = postalCode) }
+
     fun pickCountry(country: SdCountry) = updateStep<SdStep.Location> { copy(country = country, choosing = false) }
 
     /** Reads the lineups for [postalCode] in the chosen country. */
@@ -139,15 +143,21 @@ class LiveTvSchedulesDirectViewModel(
         viewModelScope.launch {
             connection.consoleCall(TAG) { _, client -> client.schedulesDirectLineups(location.providerId, country.code, code) }.fold(
                 onSuccess = { lineups -> updateStep<SdStep.Lineups> { copy(lineups = lineups) } },
-                onFailure = { error -> _state.update { it.copy(step = location, failed = error.consoleFailure()) } },
+                onFailure = { error ->
+                    _state.update { it.copy(step = location.copy(postalCode = postalCode), failed = error.consoleFailure()) }
+                },
             )
         }
     }
 
-    /** Back from the lineups to the location, with the country as it was. */
+    /** Back from the lineups to the location, with the country and postal code as they were. */
     fun backToLocation() {
         val lineups = _state.value.step as? SdStep.Lineups ?: return
-        _state.update { it.copy(step = SdStep.Location(lineups.providerId, lineups.countries, lineups.country)) }
+        _state.update {
+            it.copy(
+                step = SdStep.Location(lineups.providerId, lineups.countries, lineups.country, postalCode = lineups.postalCode),
+            )
+        }
     }
 
     /** Adds [lineup] to the account: the provider as the server holds it with the lineup, country and postal code chosen. */
