@@ -1,11 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -17,7 +15,7 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class ConsoleBackStackTest {
     @get:Rule
-    val compose = createAndroidComposeRule<ComponentActivity>()
+    val compose = RecreatableTakeDownRule()
 
     private fun ConsoleBackStack.pages() = entries.map { it.page }
 
@@ -74,7 +72,7 @@ class ConsoleBackStackTest {
         compose.runOnIdle { change(ConsoleBackStack().open(ConsolePage.Plugins).open(ConsolePage.Server)) }
         compose.waitForIdle()
         // Rotation and process death both recreate the Activity, which gets back what it saved and nothing else.
-        compose.activityRule.scenario.recreate()
+        compose.scenario.recreate()
         compose.setContent(content)
         compose.waitForIdle()
         assertEquals(listOf(ConsolePage.Plugins, ConsolePage.Server), stack.pages())

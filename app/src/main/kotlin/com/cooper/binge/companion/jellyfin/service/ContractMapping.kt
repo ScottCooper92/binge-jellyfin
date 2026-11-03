@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.service
 
 import android.util.Log
 import com.binge.companion.contracts.library.v1.Availability
+import com.binge.companion.contracts.library.v1.AvailabilityReason
 import com.binge.companion.contracts.library.v1.AvailabilityState
 import com.binge.companion.contracts.library.v1.EpisodeRef
 import com.binge.companion.contracts.library.v1.WatchState
@@ -25,7 +26,16 @@ private const val TAG = "JellyfinContract"
 /** The reason the host reads on UNAUTHENTICATED to send the user to sign in. */
 internal const val REASON_SIGNED_OUT = "SIGNED_OUT"
 
-internal fun notInLibrary(): Availability = Availability.newBuilder().setState(AvailabilityState.AVAILABILITY_STATE_NOT_IN_LIBRARY).build()
+/** NOT_IN_LIBRARY, saying so when the server holds titles with no TMDB id, one of which this may be. */
+internal fun notInLibrary(serverLacksIds: Boolean = false): Availability {
+    val reason =
+        if (serverLacksIds) AvailabilityReason.AVAILABILITY_REASON_SERVER_LACKS_IDS else AvailabilityReason.AVAILABILITY_REASON_UNSPECIFIED
+    return Availability
+        .newBuilder()
+        .setState(AvailabilityState.AVAILABILITY_STATE_NOT_IN_LIBRARY)
+        .setReason(reason)
+        .build()
+}
 
 internal fun notFound(): StatusException = StatusException(Status.NOT_FOUND.withDescription("not on this Jellyfin server"))
 
