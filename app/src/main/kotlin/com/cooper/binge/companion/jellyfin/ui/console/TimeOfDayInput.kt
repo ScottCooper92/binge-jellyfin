@@ -69,7 +69,11 @@ internal fun TwelveHourTimeInput(
                 keyboardType = KeyboardType.Number,
                 modifier = Modifier.widthIn(max = FIELD_MAX_WIDTH).weight(1f, fill = false),
             )
-            Text(":", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 12.dp))
+            Text(
+                ":",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(top = dimensionResource(DesR.dimen.padding_sm)),
+            )
             ConsoleTextField(
                 value = minute,
                 onValueChange = { onMinute(it.filter(Char::isDigit).take(MAX_FIELD_DIGITS)) },
