@@ -95,4 +95,13 @@ class TaskTriggersScreenshotTest {
     @JellyfinFontScalePreviews
     @Composable
     fun newTriggerTwentyFourHour() = Surface { AddTriggerForm(TasksActions(), is24Hour = true) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun newTriggerInvalidTime() =
+        Surface {
+            TwelveHourTimeInput("13", "00", afternoon = false, onHour = {}, onMinute = {}, onAfternoon = {})
+        }
 }

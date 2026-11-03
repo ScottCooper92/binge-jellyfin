@@ -20,7 +20,6 @@ import com.cooper.binge.companion.jellyfin.R
 import com.binge.designsystem.R as DesR
 
 private const val HALF_DAY_HOURS = 12
-private const val MINUTES_PER_HOUR_VALUE = 60
 private const val MAX_FIELD_DIGITS = 2
 
 /** The widest a time field grows: two digits, however large the font. */
@@ -36,8 +35,8 @@ internal fun twelveHourMinutes(
     afternoon: Boolean,
 ): Int? {
     val h = hour.toIntOrNull()?.takeIf { it in 1..HALF_DAY_HOURS } ?: return null
-    val m = minute.toIntOrNull()?.takeIf { it in 0 until MINUTES_PER_HOUR_VALUE } ?: return null
-    return (h % HALF_DAY_HOURS + if (afternoon) HALF_DAY_HOURS else 0) * MINUTES_PER_HOUR_VALUE + m
+    val m = minute.toIntOrNull()?.takeIf { it in 0 until MINUTES_PER_HOUR } ?: return null
+    return (h % HALF_DAY_HOURS + if (afternoon) HALF_DAY_HOURS else 0) * MINUTES_PER_HOUR + m
 }
 
 /**
@@ -66,7 +65,7 @@ internal fun TwelveHourTimeInput(
                 value = hour,
                 onValueChange = { onHour(it.filter(Char::isDigit).take(MAX_FIELD_DIGITS)) },
                 label = stringResource(R.string.tasks_trigger_hour),
-                isError = hour.isNotEmpty() && hour.toIntOrNull()?.let { it in 1..HALF_DAY_HOURS } != true,
+                isError = hour.toIntOrNull()?.let { it in 1..HALF_DAY_HOURS } != true,
                 keyboardType = KeyboardType.Number,
                 modifier = Modifier.widthIn(max = FIELD_MAX_WIDTH).weight(1f, fill = false),
             )
@@ -75,7 +74,7 @@ internal fun TwelveHourTimeInput(
                 value = minute,
                 onValueChange = { onMinute(it.filter(Char::isDigit).take(MAX_FIELD_DIGITS)) },
                 label = stringResource(R.string.tasks_trigger_minute),
-                isError = minute.isNotEmpty() && minute.toIntOrNull()?.let { it in 0 until MINUTES_PER_HOUR_VALUE } != true,
+                isError = minute.toIntOrNull()?.let { it in 0 until MINUTES_PER_HOUR } != true,
                 keyboardType = KeyboardType.Number,
                 modifier = Modifier.widthIn(max = FIELD_MAX_WIDTH).weight(1f, fill = false),
             )
@@ -84,7 +83,7 @@ internal fun TwelveHourTimeInput(
             BingeFilterChip(label = stringResource(R.string.tasks_trigger_am), selected = !afternoon, onClick = { onAfternoon(false) })
             BingeFilterChip(label = stringResource(R.string.tasks_trigger_pm), selected = afternoon, onClick = { onAfternoon(true) })
         }
-        if (!valid && hour.isNotEmpty() && minute.isNotEmpty()) {
+        if (!valid) {
             Text(
                 stringResource(R.string.tasks_trigger_time_invalid),
                 style = MaterialTheme.typography.bodyMedium,

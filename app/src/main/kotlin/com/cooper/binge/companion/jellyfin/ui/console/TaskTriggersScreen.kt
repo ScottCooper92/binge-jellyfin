@@ -67,7 +67,7 @@ import java.util.TimeZone
 import com.binge.designsystem.R as DesR
 
 private const val MILLIS_PER_TICK = 10_000L
-private const val MINUTES_PER_HOUR = 60
+internal const val MINUTES_PER_HOUR = 60
 
 /** The run-every choices: 15, 30 and 45 minutes, then whole hours. */
 private val INTERVAL_MINUTES = listOf(15, 30, 45)

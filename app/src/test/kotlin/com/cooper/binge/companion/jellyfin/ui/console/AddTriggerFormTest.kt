@@ -117,6 +117,9 @@ class AddTriggerFormTest {
         compose.onNodeWithText("3").performTextReplacement("13")
         compose.onNodeWithText("Use an hour from 1 to 12 and minutes from 0 to 59.").assertIsDisplayed()
         compose.onNodeWithText("Add").assertIsNotEnabled()
+        compose.onNodeWithText("13").performTextReplacement("")
+        compose.onNodeWithText("Use an hour from 1 to 12 and minutes from 0 to 59.").assertIsDisplayed()
+        compose.onNodeWithText("Add").assertIsNotEnabled()
     }
 
     @Test
