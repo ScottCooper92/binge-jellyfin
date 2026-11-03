@@ -146,8 +146,21 @@ internal fun AddRepositorySheet(
     saving: Boolean,
     actions: RepositoriesActions,
 ) {
+    // Saved out here, not in the form: the sheet is a window, and what a window's content saves is not restored with it.
+    var step by rememberSaveable(key = "AddRepositorySheet.step") { mutableIntStateOf(0) }
+    var name by rememberSaveable(key = "AddRepositorySheet.name") { mutableStateOf("") }
+    var url by rememberSaveable(key = "AddRepositorySheet.url") { mutableStateOf("") }
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onAskAdd(false) }) {
-        AddRepositoryForm(saving, actions)
+        AddRepositoryFields(
+            step = step,
+            name = name,
+            url = url,
+            saving = saving,
+            actions = actions,
+            onStep = { step = it },
+            onName = { name = it },
+            onUrl = { url = it },
+        )
     }
 }
 
@@ -165,13 +178,36 @@ internal fun AddRepositoryForm(
     var step by rememberSaveable(key = "AddRepositoryForm.step") { mutableIntStateOf(startStep) }
     var name by rememberSaveable(key = "AddRepositoryForm.name") { mutableStateOf("") }
     var url by rememberSaveable(key = "AddRepositoryForm.url") { mutableStateOf("") }
+    AddRepositoryFields(
+        step = step,
+        name = name,
+        url = url,
+        saving = saving,
+        actions = actions,
+        onStep = { step = it },
+        onName = { name = it },
+        onUrl = { url = it },
+    )
+}
+
+@Composable
+private fun AddRepositoryFields(
+    step: Int,
+    name: String,
+    url: String,
+    saving: Boolean,
+    actions: RepositoriesActions,
+    onStep: (Int) -> Unit,
+    onName: (String) -> Unit,
+    onUrl: (String) -> Unit,
+) {
     val valid = repositoryUrl(url) != null
     if (step == 0) {
         TextEntrySurface(
             title = stringResource(R.string.repositories_name_title),
             value = name,
-            onValueChange = { name = it },
-            onSubmit = { step = 1 },
+            onValueChange = onName,
+            onSubmit = { onStep(1) },
             onCancel = { actions.onAskAdd(false) },
             submitLabel = stringResource(R.string.repositories_next),
             hint = stringResource(R.string.repositories_name_hint),
@@ -183,9 +219,9 @@ internal fun AddRepositoryForm(
         TextEntrySurface(
             title = stringResource(R.string.repositories_url_title),
             value = url,
-            onValueChange = { url = it },
+            onValueChange = onUrl,
             onSubmit = { actions.onAdd(name, url) },
-            onCancel = { step = 0 },
+            onCancel = { onStep(0) },
             cancelLabel = stringResource(R.string.repositories_back),
             submitLabel = stringResource(R.string.repositories_add_submit),
             hint = stringResource(R.string.repositories_url_hint),
