@@ -266,6 +266,12 @@ class FakeJellyfin : Dispatcher() {
             """{"Id":"g1","Type":"xmltv","Path":"/config/guide.xml"},""" +
             """{"Id":"g2","Type":"SchedulesDirect","Username":"alice","Password":"5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8"}]}"""
 
+    /** The status `POST /LiveTv/TunerHosts` answers with, 200 when it keeps the host; the server answers 500 for one it cannot reach. */
+    var tunerSaveStatus = 200
+
+    /** The tuners `GET /LiveTv/Tuners/Discover` finds. */
+    var discoveredTuners = """[{"Type":"hdhomerun","Url":"http://192.168.1.77","FriendlyName":"HDHomeRun PRIME","DeviceId":"1070A1B2"}]"""
+
     /** What `/LiveTv/GuideInfo` answers, or the status code that replaces it. */
     var guideInfo = """{"StartDate":"2026-11-01T00:00:00.0000000Z","EndDate":"2026-11-08T00:00:00.0000000Z"}"""
     var guideInfoStatus = 200
@@ -455,6 +461,23 @@ class FakeJellyfin : Dispatcher() {
             ?.utf8()
             .orEmpty()
 
+    /** Keeps a tuner host as the server does: a new one gets an `Id`, one with an `Id` replaces that host whole. */
+    private fun saveTunerHost(body: String): MockResponse {
+        if (tunerSaveStatus != 200) return MockResponse(code = tunerSaveStatus)
+        val host = Json.parseToJsonElement(body).jsonObject
+        val id = host["Id"]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: "new${requests.size}"
+        val saved = JsonObject(host + ("Id" to JsonPrimitive(id)))
+        val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+        val hosts =
+            config.getValue("TunerHosts").jsonArray.filter {
+                it.jsonObject
+                    .getValue("Id")
+                    .jsonPrimitive.content != id
+            }
+        liveTvConfiguration = JsonObject(config + ("TunerHosts" to JsonArray(hosts + saved))).toString()
+        return json(saved.toString())
+    }
+
     fun hits(path: String): Int = requests.count { it.url.encodedPath == path }
 
     /**
@@ -557,6 +580,20 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Configuration/livetv" -> json(liveTvConfiguration)
+            path == "/LiveTv/TunerHosts" && request.method == "POST" -> saveTunerHost(request.body?.utf8().orEmpty())
+            path == "/LiveTv/TunerHosts" && request.method == "DELETE" -> {
+                val id = request.url.queryParameter("id")
+                val config = Json.parseToJsonElement(liveTvConfiguration).jsonObject
+                val kept =
+                    config.getValue("TunerHosts").jsonArray.filter {
+                        it.jsonObject
+                            .getValue("Id")
+                            .jsonPrimitive.content != id
+                    }
+                liveTvConfiguration = JsonObject(config + ("TunerHosts" to JsonArray(kept))).toString()
+                MockResponse(code = 204)
+            }
+            path == "/LiveTv/Tuners/Discover" -> json(discoveredTuners)
             path == "/LiveTv/GuideInfo" -> if (guideInfoStatus == 200) json(guideInfo) else MockResponse(code = guideInfoStatus)
             path == "/Localization/Countries" ->
                 json(

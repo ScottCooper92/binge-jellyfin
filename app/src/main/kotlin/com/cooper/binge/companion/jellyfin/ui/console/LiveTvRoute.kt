@@ -23,6 +23,20 @@ internal fun LiveTvRoute(
     val state by liveTv.state.collectAsStateWithLifecycle()
     LiveTvScreen(
         state,
-        LiveTvActions(onOpenTasks = onOpenTasks, onOpenRecording = onOpenRecording, onRetry = liveTv::load, onBack = onBack),
+        LiveTvActions(
+            onOpenTasks = onOpenTasks,
+            onOpenRecording = onOpenRecording,
+            onRetry = liveTv::load,
+            onBack = onBack,
+            onSheet = liveTv::sheet,
+            onDiscover = liveTv::discover,
+            onForm = liveTv::form,
+            onEdit = liveTv::edit,
+            onSave = liveTv::save,
+            onAskRemove = liveTv::askRemove,
+            onCancelRemove = liveTv::cancelRemove,
+            onRemove = liveTv::remove,
+            onDismissProblem = liveTv::dismissProblem,
+        ),
     )
 }

@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -34,12 +37,22 @@ data class LiveTvActions(
     val onOpenRecording: (() -> Unit)? = null,
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
+    val onSheet: (TunerSheet?) -> Unit = {},
+    val onDiscover: () -> Unit = {},
+    val onForm: (TunerDraft) -> Unit = {},
+    val onEdit: (String) -> Unit = {},
+    val onSave: (TunerDraft) -> Unit = {},
+    val onAskRemove: (String) -> Unit = {},
+    val onCancelRemove: () -> Unit = {},
+    val onRemove: () -> Unit = {},
+    val onDismissProblem: () -> Unit = {},
 )
 
 /**
- * The server's Live TV setup: its tuners, its guide data, when the guide ends, and a way to Scheduled tasks, where Refresh Guide is.
- * Its Recording page, for an administrator, changes how it records. A web address shows as its host only, since a playlist's address often carries the
- * provider's account in it.
+ * The server's Live TV setup: its tuners, which a tap edits and Add tuner adds to, its guide data, when the guide ends, and a way to
+ * Scheduled tasks, where Refresh Guide is. Its Recording page, for an administrator, changes how it records. A web address shows as its
+ * host only, since a playlist's address often carries the provider's account in it. Removing a tuner asks first, and a tuner the server
+ * could not add says why in a dialog.
  */
 @Composable
 fun LiveTvScreen(
@@ -47,17 +60,32 @@ fun LiveTvScreen(
     actions: LiveTvActions,
     now: Long = System.currentTimeMillis(),
 ) {
+    val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = stringResource(R.string.live_tv_title),
         bar = ScreenBar.Small,
         onBack = actions.onBack,
+        snackbarHostState = host,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.live_tv_add_tuner),
+                icon = Icons.Outlined.Add,
+                onClick = { actions.onSheet(TunerSheet.Choose) },
+                visible = state !is LiveTvUiState.Failed,
+                enabled = state is LiveTvUiState.Ready,
+            )
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
                 LiveTvUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is LiveTvUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is LiveTvUiState.Ready -> LiveTvContent(state.summary, actions, inner, now)
+                is LiveTvUiState.Ready -> {
+                    LiveTvContent(state.summary, actions, inner, now)
+                    TunerSheets(state, actions)
+                    TunerMessages(state, actions, host)
+                }
             }
         }
     }
@@ -75,7 +103,7 @@ private fun LiveTvContent(
         item(key = "tuners") {
             ItemGroup(
                 title = stringResource(R.string.live_tv_tuners),
-                rows = summary.tuners.map { it.row() }.ifEmpty { listOf(emptyRow(R.string.live_tv_no_tuners)) },
+                rows = summary.tuners.map { it.row(actions) }.ifEmpty { listOf(emptyRow(R.string.live_tv_no_tuners)) },
             )
         }
         actions.onOpenRecording?.let { open ->
@@ -132,13 +160,13 @@ private fun guideRows(
     )
 
 @Composable
-private fun TunerHostSummary.row(): ListItem =
+private fun TunerHostSummary.row(actions: LiveTvActions): ListItem =
     ListItem(
         icon = Icons.Outlined.LiveTv,
         label = name,
         detail = listOf(tunerTypeLabel(type), address.takeIf { it != name }).filterNotNull().joinToString(" · "),
         supportingMaxLines = ADDRESS_LINES,
-        clickable = false,
+        onClick = { actions.onEdit(id) },
     )
 
 @Composable
