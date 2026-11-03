@@ -12,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.schedulesDirectCountries
 import com.cooper.binge.companion.jellyfin.server.schedulesDirectLineups
 import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.withLineup
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -140,19 +141,22 @@ class LiveTvSchedulesDirectViewModel(
         _state.update {
             it.copy(step = SdStep.Lineups(location.providerId, countries, country, code, lineups = null), problem = null, failed = null)
         }
-        viewModelScope.launch {
-            connection.consoleCall(TAG) { _, client -> client.schedulesDirectLineups(location.providerId, country.code, code) }.fold(
-                onSuccess = { lineups -> updateStep<SdStep.Lineups> { copy(lineups = lineups) } },
-                onFailure = { error ->
-                    _state.update { it.copy(step = location.copy(postalCode = postalCode), failed = error.consoleFailure()) }
-                },
-            )
-        }
+        lineupsLookup?.cancel()
+        lineupsLookup =
+            viewModelScope.launch {
+                connection.consoleCall(TAG) { _, client -> client.schedulesDirectLineups(location.providerId, country.code, code) }.fold(
+                    onSuccess = { lineups -> updateStep<SdStep.Lineups> { copy(lineups = lineups) } },
+                    onFailure = { error ->
+                        _state.update { it.copy(step = location.copy(postalCode = postalCode), failed = error.consoleFailure()) }
+                    },
+                )
+            }
     }
 
     /** Back from the lineups to the location, with the country and postal code as they were. */
     fun backToLocation() {
         val lineups = _state.value.step as? SdStep.Lineups ?: return
+        lineupsLookup?.cancel()
         _state.update {
             it.copy(
                 step = SdStep.Location(lineups.providerId, lineups.countries, lineups.country, postalCode = lineups.postalCode),
@@ -187,6 +191,8 @@ class LiveTvSchedulesDirectViewModel(
         error: Throwable,
         problem: SdProblem,
     ) = if (error.isProviderRefused()) copy(problem = problem) else copy(failed = error.consoleFailure())
+
+    private var lineupsLookup: Job? = null
 
     private inline fun <reified S : SdStep> updateStep(change: S.() -> S) =
         _state.update { current -> (current.step as? S)?.let { current.copy(step = it.change()) } ?: current }
