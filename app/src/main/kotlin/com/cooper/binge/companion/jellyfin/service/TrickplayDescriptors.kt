@@ -21,8 +21,9 @@ internal object TrickplayDescriptors {
 
     /**
      * The descriptor for [sets], the item's trickplay for one media source. [mediaSourceId] is also the item id in the path:
-     * an alternate version is an item of its own, and its sheets are under its id. The template names no credential: the
-     * source's `Authorization` header carries it, as it does for the stream.
+     * an alternate version is an item of its own, and the tile route reads its sheets from the item the path names. The
+     * route's `mediaSourceId` query is read for the HLS playlist only, so the template carries none. It names no credential:
+     * the source's `Authorization` header carries it, as it does for the stream.
      */
     fun descriptor(
         client: JellyfinClient,
@@ -32,7 +33,7 @@ internal object TrickplayDescriptors {
         val chosen = choose(sets) ?: return null
         val template =
             client
-                .url("Videos/$mediaSourceId/Trickplay/${chosen.width}/$INDEX.jpg", mapOf("mediaSourceId" to mediaSourceId))
+                .url("Videos/$mediaSourceId/Trickplay/${chosen.width}/$INDEX.jpg")
                 .toString()
                 .replace(INDEX, "{index}")
         val descriptor =

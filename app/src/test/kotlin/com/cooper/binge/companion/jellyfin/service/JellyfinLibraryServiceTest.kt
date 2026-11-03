@@ -364,7 +364,7 @@ class JellyfinLibraryServiceTest {
 
         val trickplay = playbackSource().trickplay
 
-        assertEquals("${jellyfin.baseUrl}/Videos/source-1/Trickplay/320/{index}.jpg?mediaSourceId=source-1", trickplay.urlTemplate)
+        assertEquals("${jellyfin.baseUrl}/Videos/source-1/Trickplay/320/{index}.jpg", trickplay.urlTemplate)
         assertEquals(320, trickplay.thumbnailWidth)
         assertEquals(180, trickplay.thumbnailHeight)
         assertEquals(10, trickplay.tileColumns)
