@@ -31,6 +31,17 @@ class ConsolePageTest {
     }
 
     @Test
+    fun `recording settings need an administrator who also manages Live TV, since the server saves them for administrators only`() {
+        val manager = account("""{"IsAdministrator":false,"EnableLiveTvManagement":true}""")
+        val adminWithout = account("""{"IsAdministrator":true,"EnableLiveTvManagement":false}""")
+        val admin = account("""{"IsAdministrator":true,"EnableLiveTvManagement":true}""")
+        assertFalse(ConsolePage.LiveTvRecording.available(server, manager))
+        assertFalse(ConsolePage.LiveTvRecording.available(server, adminWithout))
+        assertTrue(ConsolePage.LiveTvRecording.available(server, admin))
+        assertFalse(ConsolePage.LiveTvRecording.isAdmin)
+    }
+
+    @Test
     fun `a user gets only their own pages`() {
         val user = account("""{"IsAdministrator":false}""")
         assertEquals(

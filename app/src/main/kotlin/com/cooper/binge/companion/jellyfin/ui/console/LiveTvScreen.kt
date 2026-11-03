@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -30,16 +31,18 @@ import com.cooper.binge.companion.jellyfin.server.LiveTvSummary
 import com.cooper.binge.companion.jellyfin.server.TunerHostSummary
 import com.binge.designsystem.R as DesR
 
-/** What the Live TV page can ask of the console. [onOpenTasks] is null where the user cannot open the Scheduled tasks page. */
+/** What the Live TV page can ask of the console. [onOpenTasks] and [onOpenRecording] are null where the user cannot open the Scheduled tasks or Recording page. */
 data class LiveTvActions(
     val onOpenTasks: (() -> Unit)? = null,
+    val onOpenRecording: (() -> Unit)? = null,
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
 /**
  * The server's Live TV setup: its tuners, its guide data, when the guide ends, and a way to Scheduled tasks, where Refresh Guide is.
- * A guide provider's row opens its form, and Add guide data adds an XMLTV one. A web address shows as its host only, since a playlist's address often carries the
+ * A guide provider's row opens its form, and Add guide data adds an XMLTV one.
+ * Its Recording page, for an administrator, changes how it records. A web address shows as its host only, since a playlist's address often carries the
  * provider's account in it.
  */
 @Composable
@@ -91,6 +94,23 @@ private fun LiveTvContent(
                 title = stringResource(R.string.live_tv_tuners),
                 rows = summary.tuners.map { it.row() }.ifEmpty { listOf(emptyRow(R.string.live_tv_no_tuners)) },
             )
+        }
+        actions.onOpenRecording?.let { open ->
+            item(key = "recording") {
+                ItemGroup(
+                    title = stringResource(R.string.live_tv_recording_title),
+                    rows =
+                        listOf(
+                            ListItem(
+                                icon = Icons.Outlined.Videocam,
+                                label = stringResource(R.string.live_tv_recording_row),
+                                detail = stringResource(R.string.live_tv_recording_row_detail),
+                                supportingMaxLines = RECORDING_DETAIL_LINES,
+                                onClick = open,
+                            ),
+                        ),
+                )
+            }
         }
         item(key = "guide") {
             ItemGroup(
@@ -184,3 +204,6 @@ private const val LOADING_ROWS = 4
 
 /** An address is what tells two tuners apart, so a larger font wraps it instead of cutting it off. */
 private const val ADDRESS_LINES = 3
+
+/** The Recording row's detail names three things, so a larger font wraps it instead of cutting it off. */
+private const val RECORDING_DETAIL_LINES = 3

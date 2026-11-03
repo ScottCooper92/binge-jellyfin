@@ -42,6 +42,25 @@ data class LiveTvSummary(
 suspend fun JellyfinClient.liveTvConfiguration(): JsonObject = getObject(LIVE_TV_CONFIGURATION)
 
 /**
+ * Saves the Live TV configuration. The server takes administrators only. The whole object goes back, so the tuner hosts and guide
+ * providers (and the password a provider holds) return as they came.
+ */
+suspend fun JellyfinClient.saveLiveTvConfiguration(configuration: JsonObject) {
+    post(LIVE_TV_CONFIGURATION, configuration)
+}
+
+const val LIVE_TV_RECORDING_PATH = "RecordingPath"
+const val LIVE_TV_MOVIE_PATH = "MovieRecordingPath"
+const val LIVE_TV_SERIES_PATH = "SeriesRecordingPath"
+const val LIVE_TV_PRE_PADDING = "PrePaddingSeconds"
+const val LIVE_TV_POST_PADDING = "PostPaddingSeconds"
+const val LIVE_TV_SUBFOLDERS = "EnableRecordingSubfolders"
+const val LIVE_TV_ORIGINAL_AUDIO = "EnableOriginalAudioWithEncodedRecordings"
+const val LIVE_TV_SAVE_NFO = "SaveRecordingNFO"
+const val LIVE_TV_SAVE_IMAGES = "SaveRecordingImages"
+const val LIVE_TV_GUIDE_DAYS = "GuideDays"
+
+/**
  * The Live TV setup, with when the guide ends where the user has Live TV access (the server refuses `GuideInfo` to anyone else, and
  * a guide read that fails leaves the rest of the page standing).
  */

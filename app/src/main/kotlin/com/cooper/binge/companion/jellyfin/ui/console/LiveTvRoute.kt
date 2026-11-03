@@ -15,6 +15,7 @@ internal fun LiveTvRoute(
     graph: AppGraph,
     account: JellyfinAccount,
     onOpenTasks: (() -> Unit)?,
+    onOpenRecording: (() -> Unit)?,
     onBack: () -> Unit,
 ) {
     val liveTv: LiveTvViewModel =
@@ -28,7 +29,7 @@ internal fun LiveTvRoute(
     val sdState by sd.state.collectAsStateWithLifecycle()
     LiveTvScreen(
         state,
-        LiveTvActions(onOpenTasks = onOpenTasks, onRetry = liveTv::load, onBack = onBack),
+        LiveTvActions(onOpenTasks = onOpenTasks, onOpenRecording = onOpenRecording, onRetry = liveTv::load, onBack = onBack),
         guide = guideState,
         sd = sdState,
         sdActions =
