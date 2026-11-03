@@ -1,7 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -201,7 +200,7 @@ private fun LineupsStep(
         }
         when {
             step.lineups == null ->
-                Box(Modifier.heightIn(max = LIST_MAX_HEIGHT)) { ConsoleLoading(PaddingValues(), LINEUP_LOADING_ROWS) }
+                ConsoleLoading(PaddingValues(), LINEUP_LOADING_ROWS, Modifier.heightIn(max = LIST_MAX_HEIGHT))
             saving -> BingeLoadingIndicator(Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)))
             step.lineups.isEmpty() ->
                 Text(
