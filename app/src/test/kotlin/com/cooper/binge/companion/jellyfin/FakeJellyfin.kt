@@ -201,6 +201,9 @@ class FakeJellyfin : Dispatcher() {
             """"LyricFetchers":[{"Name":"LrcLib","DefaultEnabled":true}],""" +
             """"MediaSegmentProviders":[{"Name":"Chapter Segments","DefaultEnabled":true}],"TypeOptions":[]}"""
 
+    /** What `/Libraries/AvailableOptions` answers for one `libraryContentType`, where it differs from [availableOptions]. */
+    val availableOptionsByType = mutableMapOf<String, String>()
+
     /** The folders `/Environment/DirectoryContents` lists, by parent: `""` holds the drives. */
     var serverFolders: Map<String, List<String>> =
         mapOf("" to listOf("/media"), "/media" to listOf("/media/movies", "/media/tv"), "/media/movies" to emptyList())
@@ -985,7 +988,10 @@ class FakeJellyfin : Dispatcher() {
                             404
                         },
                 )
-            path == "/Libraries/AvailableOptions" -> json(availableOptions)
+            path == "/Libraries/AvailableOptions" ->
+                json(
+                    availableOptionsByType[request.url.queryParameter("libraryContentType")] ?: availableOptions,
+                )
             path == "/Library/VirtualFolders" && request.method == "POST" -> {
                 val paths = query.queryParameter("paths")?.split(',').orEmpty()
                 val entry =
