@@ -1,0 +1,160 @@
+package com.cooper.binge.companion.jellyfin.ui.console
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.ItemGroup
+import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListRowSkeletonColumn
+import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.template.FormScreen
+import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.formSaveStatus
+import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
+import com.cooper.binge.companion.jellyfin.server.fetchers
+import com.binge.designsystem.R as DesR
+
+/** What the metadata defaults page can ask of its view model, and of the console. */
+data class MetadataDefaultsActions(
+    val onOpen: (String?) -> Unit = {},
+    val onSet: (type: String, kind: FetcherKind, name: String, enabled: Boolean) -> Unit = { _, _, _, _ -> },
+    val onRetry: () -> Unit = {},
+    val onRetrySave: () -> Unit = {},
+    val onBack: () -> Unit = {},
+)
+
+private const val LOADING_ROWS = 8
+private const val DETAIL_LINES = 3
+
+/** The words for an item type as the server names it, or the name itself for one this app has no word for. */
+@Composable
+internal fun itemTypeName(type: String): String =
+    when (type) {
+        "Movie" -> stringResource(R.string.metadata_type_movie)
+        "Series" -> stringResource(R.string.metadata_type_series)
+        "Season" -> stringResource(R.string.metadata_type_season)
+        "Episode" -> stringResource(R.string.metadata_type_episode)
+        "Book" -> stringResource(R.string.metadata_type_book)
+        "MusicVideo" -> stringResource(R.string.metadata_type_music_video)
+        "MusicArtist" -> stringResource(R.string.metadata_type_artist)
+        "MusicAlbum" -> stringResource(R.string.metadata_type_album)
+        "Audio" -> stringResource(R.string.metadata_type_song)
+        "Video" -> stringResource(R.string.metadata_type_video)
+        "Photo" -> stringResource(R.string.metadata_type_photo)
+        "BoxSet" -> stringResource(R.string.metadata_type_collection)
+        "Playlist" -> stringResource(R.string.metadata_type_playlist)
+        else -> type
+    }
+
+/**
+ * The server's metadata and image provider defaults for each kind of title: a list of the kinds, and a page for one with a
+ * switch for each provider. Each switch saves as it's made.
+ */
+@Composable
+fun MetadataDefaultsScreen(
+    state: MetadataDefaultsUiState,
+    actions: MetadataDefaultsActions,
+) {
+    val ready = state as? MetadataDefaultsUiState.Ready
+    val type = ready?.type
+    BackHandler(enabled = type != null) { actions.onOpen(null) }
+    val host = remember { SnackbarHostState() }
+    FormScreen(
+        title = type?.let { itemTypeName(it) } ?: stringResource(R.string.metadata_title),
+        bar = ScreenBar.Small,
+        onBack = if (type != null) ({ actions.onOpen(null) }) else actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady =
+            when (state) {
+                MetadataDefaultsUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+                is MetadataDefaultsUiState.Failed -> { padding ->
+                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
+                }
+                is MetadataDefaultsUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null) {
+            if (type == null) TypeList(ready, actions) else TypePage(type, ready, actions)
+            RefusedMessage(ready.refused, host)
+        }
+    }
+}
+
+@Composable
+private fun TypeList(
+    state: MetadataDefaultsUiState.Ready,
+    actions: MetadataDefaultsActions,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+        PageIntro(stringResource(R.string.metadata_body))
+        ItemGroup(
+            title = null,
+            rows =
+                state.types().map { type ->
+                    val off = FetcherKind.entries.sumOf { kind -> state.fetchers(type, kind).count { !it.enabled } }
+                    ListItem(
+                        icon = Icons.Outlined.Tune,
+                        label = itemTypeName(type),
+                        detail =
+                            if (off == 0) {
+                                stringResource(R.string.metadata_all_on)
+                            } else {
+                                pluralStringResource(R.plurals.metadata_turned_off, off, off)
+                            },
+                        onClick = { actions.onOpen(type) },
+                    )
+                },
+        )
+    }
+}
+
+@Composable
+private fun TypePage(
+    type: String,
+    state: MetadataDefaultsUiState.Ready,
+    actions: MetadataDefaultsActions,
+) {
+    val groups = FetcherKind.entries.map { kind -> kind to state.fetchers(type, kind) }
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+        PageIntro(stringResource(R.string.metadata_type_body))
+        if (groups.all { (_, providers) -> providers.isEmpty() }) {
+            PageIntro(stringResource(R.string.metadata_type_empty))
+        }
+        groups.forEach { (kind, providers) ->
+            if (providers.isNotEmpty()) {
+                ItemGroup(
+                    title = stringResource(if (kind == FetcherKind.Metadata) R.string.metadata_fetchers else R.string.metadata_images),
+                    rows =
+                        providers.map { provider ->
+                            ListItem(
+                                icon = if (kind == FetcherKind.Metadata) Icons.Outlined.Extension else Icons.Outlined.Image,
+                                label = provider.name,
+                                supportingMaxLines = DETAIL_LINES,
+                                toggled = provider.enabled,
+                                onClick = { actions.onSet(type, kind, provider.name, !provider.enabled) },
+                            )
+                        },
+                )
+            }
+        }
+    }
+}
+
+private fun MetadataDefaultsUiState.Ready.fetchers(
+    type: String,
+    kind: FetcherKind,
+) = configuration.fetchers(type, kind, offered(type, kind))

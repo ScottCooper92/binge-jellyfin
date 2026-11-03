@@ -66,6 +66,9 @@ enum class ConsolePage {
     /** The server's library display and metadata defaults. Admin only. */
     LibraryDisplay,
 
+    /** The server's per-item-type metadata and image provider defaults. Admin only. */
+    MetadataDefaults,
+
     /** The server's backups: made, and restored from. Admin only, on a server with backups. */
     Backups,
 
@@ -101,7 +104,7 @@ enum class ConsolePage {
             LiveTvRecording -> account.isAdministrator && account.canManageLiveTv
             Backups -> account.isAdministrator && profile.hasBackups
             Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
-            ServerSettings, Network, LibraryDisplay, Transcoding, Server,
+            ServerSettings, Network, LibraryDisplay, MetadataDefaults, Transcoding, Server,
             -> account.isAdministrator
         }
 
@@ -120,6 +123,7 @@ enum class ConsolePage {
                 Network,
                 Advanced,
                 LibraryDisplay,
+                MetadataDefaults,
                 Transcoding,
                 Trickplay,
                 Plugins,

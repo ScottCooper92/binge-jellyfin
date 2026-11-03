@@ -74,6 +74,7 @@ older server shows less rather than failing on a call it can't answer.
 |---|---|---|
 | The server's pages (libraries, tasks, activity, logs, API keys, plugins, devices, users, server) | administrators | `isAdministrator` |
 | Trickplay settings (its own page) | administrators, on a server that has trickplay | `isAdministrator` and `hasTrickplay` |
+| Metadata providers by type (its own page). `MetadataOptions` is in `/System/Configuration` at 10.8.13, 10.9.0, 10.10.0 and 10.11.0, so there is no version gate. A fetcher's on/off there applies to an item only when its library has no `TypeOptions` for the type; a library with its own takes the place of it (`BaseItemManager.IsMetadataFetcherEnabled`, read at 10.9.11 and 10.11.0). The names come from `GET /Libraries/AvailableOptions` per `libraryContentType` | administrators | `isAdministrator` |
 | Networking (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasInternalPortNames` and `hasUpnpOption` |
 | Advanced options (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasAdvancedPerformance` and `hasCacheAndLegacyAuth` per row |
 | Their own preferences (languages, playback, the home screen) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |
