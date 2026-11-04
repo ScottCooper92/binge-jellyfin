@@ -2,10 +2,14 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.LocalIsSinglePaneNav
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LiveChannel
 import com.cooper.binge.companion.jellyfin.server.ParentalRating
@@ -160,4 +164,42 @@ class UserPolicyScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun scheduleEnd() = Surface { ScheduleForm(UsersActions(), {}, startStep = 2, startDay = "Weekday", startHour = 8) }
+}
+
+private const val SPLIT_NOW = 1_793_534_400_000L // 31 Oct 2026, 12:00 UTC
+
+/** The list beside the user whose page it is, with a second user above, and a section of theirs if [section] is set. */
+@Composable
+private fun SplitUser(section: UserSection?) =
+    CompositionLocalProvider(LocalPageSpansTwoPanes provides true, LocalIsSinglePaneNav provides false) {
+        UsersScreen(
+            UsersUiState.Ready(
+                listOf(ServerUser("ana", "Ana", true, SPLIT_NOW - 30 * 60_000L, policy), user),
+                libraries,
+                me = "me",
+                open = "sam",
+                section = section,
+            ),
+            UsersActions(),
+            now = SPLIT_NOW,
+            choices = choices,
+            profile = newest,
+        )
+    }
+
+/** The users page on a window with room for two panes, with a user open: their page, or a section of their settings. */
+class UserPolicySplitScreenshotTest {
+    /** A user open: their name and page with the sections of their settings, their row marked and Add a user under the list. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun userOpen() = SplitUser(null)
+
+    /** A section of their settings open, with its own Back to their page, since the bar's is not shown beside the home. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun sectionOpen() = SplitUser(UserSection.Playback)
 }

@@ -2,12 +2,16 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.LocalIsSinglePaneNav
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import kotlinx.serialization.json.Json
@@ -136,4 +140,26 @@ class UsersScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = UsersScreen(UsersUiState.Failed(ConsoleFailure.Refused), UsersActions())
+}
+
+/**
+ * The users without the one last seen 900 hours ago, whose row shows a date: a date's format in Spanish differs between
+ * JDKs, and a frame recorded on one would fail on another.
+ */
+private val splitReady = previewReady.copy(users = previewUsers.filterNot { it.id == "old" })
+
+@Composable
+private fun SplitUsers(state: UsersUiState.Ready) =
+    CompositionLocalProvider(LocalPageSpansTwoPanes provides true, LocalIsSinglePaneNav provides false) {
+        UsersScreen(state, UsersActions(), now = NOW)
+    }
+
+/** The users page on a window with room for two panes: the list beside the invitation to pick a user. A user open is in `UserPolicyScreenshotTest`, whose users have the policy that fills their page. */
+class UsersSplitScreenshotTest {
+    /** Nothing open: the list beside the invitation to pick a user. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun nothingOpen() = SplitUsers(splitReady)
 }
