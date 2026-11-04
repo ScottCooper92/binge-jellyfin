@@ -389,6 +389,8 @@
     <string name="devices_not_changed">No se ha cambiado. %1$s</string>
     <string name="users_title">Usuarios</string>
     <string name="console_users_detail">Quién puede iniciar sesión y qué ve</string>
+    <string name="users_select_title">Ningún usuario seleccionado</string>
+    <string name="users_select">Selecciona un usuario para ver su acceso y sus ajustes.</string>
     <string name="users_body">Todas las personas que pueden iniciar sesión en este servidor. Toca una para cambiar lo que puede hacer.</string>
     <string name="users_add">Añadir un usuario</string>
     <string name="users_add_body">Al principio ve todas las bibliotecas. Cámbialo en su página.</string>

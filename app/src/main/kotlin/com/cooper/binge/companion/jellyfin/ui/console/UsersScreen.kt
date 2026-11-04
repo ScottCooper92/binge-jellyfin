@@ -2,12 +2,17 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Delete
@@ -24,12 +29,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
+import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
@@ -94,39 +102,72 @@ fun UsersScreen(
     BackHandler(enabled = user != null, onBack = back)
     val ready = state as? UsersUiState.Ready
     val host = remember { SnackbarHostState() }
+    // On a window with room for it the list and the open user sit side by side, under the page's own title.
+    val split = LocalPageSpansTwoPanes.current
+    val addUser: @Composable () -> Unit = {
+        CreateFooter(
+            label = stringResource(R.string.users_add),
+            icon = Icons.Outlined.PersonAdd,
+            onClick = { actions.onShow(UserDialog.Create) },
+            visible = state !is UsersUiState.Failed,
+            enabled = ready != null,
+            loading = ready?.busy == true,
+        )
+    }
     BingeScreenScaffold(
-        title = section?.let { stringResource(it.title()) } ?: user?.name ?: stringResource(R.string.users_title),
+        title =
+            if (split) {
+                stringResource(R.string.users_title)
+            } else {
+                section?.let { stringResource(it.title()) } ?: user?.name
+                    ?: stringResource(R.string.users_title)
+            },
         bar = ScreenBar.Small,
-        onBack = back,
+        onBack = if (split) actions.onBack else back,
         snackbarHostState = host,
         bottomBar = {
-            CreateFooter(
-                label = stringResource(R.string.users_add),
-                icon = Icons.Outlined.PersonAdd,
-                onClick = { actions.onShow(UserDialog.Create) },
-                // On the list only: a user's own page and its sections have nothing to create.
-                visible = state !is UsersUiState.Failed && user == null,
-                enabled = ready != null,
-                loading = ready?.busy == true,
-            )
+            // On the list only: a user's own page and its sections have nothing to create. Beside the list the button
+            // sits under the list, not across both panes.
+            if (!split && user == null) addUser()
         },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                UsersUiState.Loading ->
+                    if (split) {
+                        // The button is part of the page from its first frame, disabled until the list is ready.
+                        ListDetailBody(
+                            detailOpen = false,
+                            list = {
+                                Column(Modifier.fillMaxSize()) {
+                                    Box(Modifier.weight(1f)) { ConsoleLoading(inner, LOADING_ROWS) }
+                                    addUser()
+                                }
+                            },
+                            detail = {},
+                        )
+                    } else {
+                        ConsoleLoading(inner, LOADING_ROWS)
+                    }
                 is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is UsersUiState.Ready ->
-                    when {
-                        user == null ->
-                            BingePullToRefresh(
-                                isRefreshing = state.refreshing,
-                                onRefresh = actions.onRefresh,
-                                indicatorTopInset = padding.calculateTopPadding(),
-                            ) { UserList(state, actions, inner, now, avatar) }
-                        section == null -> UserPage(state, user, actions, inner)
-                        else -> PolicySection(section, state, user, choices, profile, actions, inner)
-                    }
+                    ListDetailBody(
+                        detailOpen = user != null,
+                        list = {
+                            Column(Modifier.fillMaxSize()) {
+                                Box(Modifier.weight(1f)) {
+                                    BingePullToRefresh(
+                                        isRefreshing = state.refreshing,
+                                        onRefresh = actions.onRefresh,
+                                        indicatorTopInset = padding.calculateTopPadding(),
+                                    ) { UserList(state, actions, inner, now, avatar) }
+                                }
+                                if (split) addUser()
+                            }
+                        },
+                        detail = { UserDetailPane(state, user, section, choices, profile, actions, inner) },
+                    )
             }
         }
     }
@@ -137,6 +178,74 @@ fun UsersScreen(
         RefusedMessage(it.refreshFailed, host, R.string.console_not_refreshed)
         SnackbarMessage(it.done?.let { done -> stringResource(done.message) }, host)
     }
+}
+
+/**
+ * The open user: their page, or the section of their settings it opened. In place of the list on one pane, and beside it
+ * under their name on a wider one, where a section has a Back of its own to their page. While none is open the wider
+ * pane says to pick a user.
+ */
+@Composable
+private fun UserDetailPane(
+    state: UsersUiState.Ready,
+    user: ServerUser?,
+    section: UserSection?,
+    choices: UserChoices,
+    profile: JellyfinServerProfile,
+    actions: UsersActions,
+    inner: PaddingValues,
+) {
+    val split = LocalPageSpansTwoPanes.current
+    when {
+        user == null ->
+            NothingSelected(
+                stringResource(R.string.users_select_title),
+                stringResource(R.string.users_select),
+                Icons.Outlined.Person,
+                inner,
+            )
+        !split -> UserBody(state, user, section, choices, profile, actions, inner)
+        else ->
+            Column(Modifier.fillMaxSize()) {
+                if (section == null) {
+                    DetailHeading(user.name, inner)
+                } else {
+                    Row(
+                        Modifier.padding(
+                            top = inner.calculateTopPadding(),
+                            start = inner.calculateStartPadding(LocalLayoutDirection.current),
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        ExpressiveIconButton(
+                            onClick = { actions.onSection(null) },
+                            icon = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = stringResource(DesR.string.cd_navigate_back),
+                        )
+                        DetailHeading(
+                            stringResource(section.title()),
+                            PaddingValues(),
+                            Modifier.padding(start = dimensionResource(DesR.dimen.padding_s)),
+                        )
+                    }
+                }
+                Box(Modifier.weight(1f)) { UserBody(state, user, section, choices, profile, actions, inner.belowHeading()) }
+            }
+    }
+}
+
+/** A user's page, or the section of their settings it opened. */
+@Composable
+private fun UserBody(
+    state: UsersUiState.Ready,
+    user: ServerUser,
+    section: UserSection?,
+    choices: UserChoices,
+    profile: JellyfinServerProfile,
+    actions: UsersActions,
+    inner: PaddingValues,
+) {
+    if (section == null) UserPage(state, user, actions, inner) else PolicySection(section, state, user, choices, profile, actions, inner)
 }
 
 @Composable
@@ -153,13 +262,14 @@ private fun UserList(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { PageIntro(stringResource(R.string.users_body)) }
-        item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions, avatar) }) }
+        item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, it.id == state.openUser?.id, now, actions, avatar) }) }
     }
 }
 
 @Composable
 private fun ServerUser.row(
     me: String,
+    open: Boolean,
     now: Long,
     actions: UsersActions,
     avatar: @Composable (ServerUser) -> Unit,
@@ -181,6 +291,7 @@ private fun ServerUser.row(
         leadingContent = { avatar(this) },
         label = if (id == me) stringResource(R.string.users_you, name) else name,
         detail = listOfNotNull(role, seen).joinToString(" · ").ifBlank { stringResource(R.string.users_never_seen) },
+        selected = open && LocalPageSpansTwoPanes.current,
         onClick = { actions.onOpen(this) },
     )
 }

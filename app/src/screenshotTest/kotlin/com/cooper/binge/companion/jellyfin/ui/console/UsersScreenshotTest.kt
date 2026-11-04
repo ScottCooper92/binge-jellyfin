@@ -2,12 +2,15 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import kotlinx.serialization.json.Json
@@ -136,4 +139,39 @@ class UsersScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = UsersScreen(UsersUiState.Failed(ConsoleFailure.Refused), UsersActions())
+}
+
+@Composable
+private fun SplitUsers(state: UsersUiState) =
+    CompositionLocalProvider(LocalPageSpansTwoPanes provides true) { UsersScreen(state, UsersActions(), now = NOW) }
+
+/** The users page on a window with room for two panes: the list beside the open user, a section of theirs, or the empty state. */
+class UsersSplitScreenshotTest {
+    /** Nothing open: the list beside the invitation to pick a user. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun nothingOpen() = SplitUsers(previewReady)
+
+    /** A user open: their row marked in the list, their heading and page beside it. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun userOpen() = SplitUsers(previewReady.copy(open = "kids"))
+
+    /** A section open: the Back arrow and the section's heading over its settings. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun sectionOpen() = SplitUsers(previewReady.copy(open = "kids", section = UserSection.Playback))
+
+    /** Loading: the skeleton beside nothing, with the Add a user button already in place, disabled. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun loading() = SplitUsers(UsersUiState.Loading)
 }
