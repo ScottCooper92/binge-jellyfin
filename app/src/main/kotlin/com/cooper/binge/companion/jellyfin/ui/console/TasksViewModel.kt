@@ -94,10 +94,7 @@ class TasksViewModel(
 
     fun stop(task: ServerTask) = call(task, run = false)
 
-    /**
-     * A task is being opened: what the last screen said went wrong, and a sheet it left open, are not this one's. The
-     * failures live here, shared by the list and the task, so a screen composed afresh would say them again.
-     */
+    /** A task is opening: what the list or another task reported is not this one's to show. */
     fun opened() = update { copy(actionFailed = null, triggerFailed = null, adding = false) }
 
     fun askAdd(on: Boolean) = update { copy(adding = on, triggerFailed = null) }

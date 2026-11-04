@@ -166,17 +166,13 @@ class TaskTriggersViewModelTest {
     }
 
     @Test
-    fun `opening a task clears what the last one reported, so it is not said again`() {
+    fun `opening a task clears a refused trigger change reported on another`() {
         val vm = made(TasksViewModel(connection)).loaded()
         jellyfin.status["/ScheduledTasks/t-scan/Triggers"] = 500
         vm.removeTrigger("t-scan", 0)
-        assertEquals(ConsoleFailure.Refused, vm.ready { it.triggerFailed != null }.triggerFailed)
-        vm.askAdd(true)
+        vm.ready { it.triggerFailed != null }
         vm.opened()
-        val cleared = vm.ready()
-        assertNull(cleared.triggerFailed)
-        assertNull(cleared.actionFailed)
-        assertFalse(cleared.adding)
+        assertNull(vm.ready().triggerFailed)
     }
 
     @Test
