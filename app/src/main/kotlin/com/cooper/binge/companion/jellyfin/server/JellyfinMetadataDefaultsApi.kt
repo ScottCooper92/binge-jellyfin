@@ -122,12 +122,10 @@ fun JsonObject.withFetcherMoved(
     name: String,
     by: Int,
 ): JsonObject {
-    val names = fetchers(type, kind, offered).map { it.name }.filter { offered.has(it) }.toMutableList()
-    val from = names.indexOfFirst { it.equals(name, ignoreCase = true) }
-    val to = from + by
-    if (from < 0 || to !in names.indices) return this
-    names.add(to, names.removeAt(from))
-    return withEntryList(type, kind.orderKey, names)
+    val names = fetchers(type, kind, offered).map { it.name }.filter { offered.has(it) }
+    val moved = names.moved(name, by) { it }
+    if (moved === names) return this
+    return withEntryList(type, kind.orderKey, moved)
 }
 
 private fun JsonObject.withEntryList(

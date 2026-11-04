@@ -330,7 +330,6 @@
     <string name="library_provider_off">Desactivado</string>
     <string name="library_provider_use">Usar este proveedor</string>
     <string name="library_remove">Quitar biblioteca</string>
-    <string name="library_remove_detail">El servidor olvida esta biblioteca. Los archivos siguen donde están.</string>
     <string name="library_remove_title">¿Quitar %1$s?</string>
     <string name="library_remove_body">El servidor deja de mostrar esta biblioteca y descarta lo que sabe de sus elementos. Los archivos no se borran.</string>
     <plurals name="library_every_days">
@@ -1213,4 +1212,6 @@
     <string name="logs_show_full_name">Mostrar el nombre completo</string>
     <string name="logs_full_name">Nombre completo del registro</string>
     <string name="logs_full_name_body">Mantén pulsado el nombre para seleccionarlo y copiarlo.</string>
+    <string name="library_languages_search">Buscar idiomas</string>
+    <string name="library_languages_no_match">Ningún idioma coincide con la búsqueda</string>
 </resources>

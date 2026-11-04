@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
@@ -97,6 +98,14 @@ private fun fetchersReady() =
 
 /** A library's page: movies across the matrix, then each kind, an older server, the pages of its providers, its sheets and confirms, and the read states. */
 class LibraryScreenshotTest {
+    /** The bottom of the library page, without the explanation repeated above its action. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun removeAction() = Surface { LibraryRemoveAction(ready(), LibraryActions()) }
+
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews
@@ -125,6 +134,17 @@ class LibraryScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun languages() = LibraryScreen(ready().copy(page = LibraryPage.Languages), LibraryActions(), newest)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun languagesSearch() = Surface { LanguagesBody(ready(), LibraryActions(), PaddingValues(), "French", {}) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun languagesNoMatch() = Surface { LanguagesBody(ready(), LibraryActions(), PaddingValues(), "Klingon", {}) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

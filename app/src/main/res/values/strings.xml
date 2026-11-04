@@ -327,7 +327,6 @@
     <string name="library_provider_off">Off</string>
     <string name="library_provider_use">Use this provider</string>
     <string name="library_remove">Remove library</string>
-    <string name="library_remove_detail">The server forgets this library. The files stay where they are.</string>
     <string name="library_remove_title">Remove %1$s?</string>
     <string name="library_remove_body">The server stops showing this library and drops what it knows of its items. The media files are not deleted.</string>
     <plurals name="library_every_days">
@@ -1217,4 +1216,6 @@
     <string name="logs_show_full_name">Show full name</string>
     <string name="logs_full_name">Full log name</string>
     <string name="logs_full_name_body">Touch and hold the name to select and copy it.</string>
+    <string name="library_languages_search">Search languages</string>
+    <string name="library_languages_no_match">No languages match that search</string>
 </resources>

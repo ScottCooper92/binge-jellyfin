@@ -13,7 +13,6 @@ import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.Power
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -154,17 +153,25 @@ private fun LibraryBody(
         AudioTagsGroup(state, actions, profile)
         SegmentsGroup(state, actions, profile)
         // Remove is last, red, and behind a confirm that opens on Cancel.
-        Text(stringResource(R.string.library_remove_detail), style = MaterialTheme.typography.bodyMedium)
-        BingeTextButton(
-            label = stringResource(R.string.library_remove),
-            onClick = { actions.onAsk(LibraryDialog.Remove) },
-            leadingIcon = Icons.Outlined.Delete,
-            enabled = !state.busy,
-            destructive = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        LibraryRemoveAction(state, actions)
     }
     picker?.let { LibraryPickerSheet(it, state, actions) { picker = null } }
+}
+
+/** The page's last action. Its confirm explains what removing the library does. */
+@Composable
+internal fun LibraryRemoveAction(
+    state: LibraryUiState.Ready,
+    actions: LibraryActions,
+) {
+    BingeTextButton(
+        label = stringResource(R.string.library_remove),
+        onClick = { actions.onAsk(LibraryDialog.Remove) },
+        leadingIcon = Icons.Outlined.Delete,
+        enabled = !state.busy,
+        destructive = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
