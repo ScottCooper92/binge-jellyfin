@@ -161,6 +161,7 @@ private fun ItemPlaceholderPane(page: ConsolePage) {
         PaneContent(innerEdge = PaneEdge.Start) {
             when (page) {
                 ConsolePage.Tasks -> TaskPlaceholder()
+                ConsolePage.Logs -> LogPlaceholder()
                 else -> Unit
             }
         }

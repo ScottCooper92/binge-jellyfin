@@ -37,7 +37,7 @@ class ConsoleThreePaneTest {
                 stack = stack,
                 signedIn = true,
                 onBack = { stack = stack.back() },
-                home = { Column { Text("home", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Logs) }) } },
+                home = { Column { Text("home", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Plugins) }) } },
                 defaultPage = { Text("default page") },
                 page = {
                     ListDetailBody(detailOpen = false, list = { Text("the list") }, detail = { Text("the detail") })

@@ -446,32 +446,45 @@ class ConsoleScreensTest {
     }
 
     @Test
-    fun `logs list the files, open one to read, search it and share it`() {
+    fun `logs list the files and open one on a tap`() {
         var opened: String? = null
+        val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L), LogFile("log_20261030.log", 2048, null))
+        var state by mutableStateOf<LogsUiState>(LogsUiState.Ready(files))
+        compose.setContent { JellyfinTheme { LogsScreen(state, LogsActions(onOpen = { opened = it }), zone = java.time.ZoneOffset.UTC) } }
+        compose.onNodeWithText("log_20261030.log").assertExists()
+        compose.onNodeWithText("log_20261031.log").performClick()
+        assertEquals("log_20261031.log", opened)
+        state = LogsUiState.Ready(emptyList())
+        compose.onNodeWithText("The server has no log files.").assertExists()
+        state = LogsUiState.Failed(ConsoleFailure.Unreachable)
+        compose.onNodeWithText("Try again").assertExists()
+    }
+
+    @Test
+    fun `a log's screen reads it, searches it and shares it`() {
         var query = ""
         var shared: Pair<String, String>? = null
         var copied: String? = null
-        var closed = 0
-        val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L), LogFile("log_20261030.log", 2048, null))
+        val read = mutableListOf<String>()
+        val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L))
         var state by mutableStateOf<LogsUiState>(LogsUiState.Ready(files))
         compose.setContent {
             JellyfinTheme {
-                LogsScreen(
+                LogScreen(
                     state,
+                    "log_20261031.log",
                     LogsActions(
-                        onOpen = { opened = it },
-                        onCloseLog = { closed++ },
+                        onRead = { read += it },
                         onQuery = { query = it },
                         onCopy = { copied = it },
                         onShare = { name, text -> shared = name to text },
                     ),
-                    zone = java.time.ZoneOffset.UTC,
                 )
             }
         }
-        compose.onNodeWithText("log_20261030.log").assertExists()
-        compose.onNodeWithText("log_20261031.log").performClick()
-        assertEquals("log_20261031.log", opened)
+        // The files are known but the log isn't being read yet: the screen asks the view model to read it.
+        compose.waitForIdle()
+        assertEquals(listOf("log_20261031.log"), read)
         val lines = listOf("$STAMP [INF] [1] Main: Server started", "$STAMP [ERR] [2] Main: Boom")
         val entries = parseLogEntries(redactLog(lines.joinToString("\n")))
         state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(entries, truncated = true)))
@@ -487,34 +500,26 @@ class ConsoleScreensTest {
         compose.onNodeWithContentDescription("Share this log").assertIsNotEnabled()
         state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Failed(ConsoleFailure.Unreachable)))
         compose.onNodeWithContentDescription("Share this log").assertIsNotEnabled()
-        state = LogsUiState.Ready(emptyList())
-        compose.onNodeWithText("The server has no log files.").assertExists()
         state = LogsUiState.Failed(ConsoleFailure.Unreachable)
         compose.onNodeWithText("Try again").assertExists()
     }
 
     @Test
-    fun `system back with a log open closes the log, not the page`() {
-        var closed = 0
-        var left = 0
-        val open =
-            OpenLog(
-                "log_20261031.log",
-                LogContent.Ready(parseLogEntries(redactLog("$STAMP [INF] [1] Main: Server started")), truncated = false),
-            )
+    fun `a log the view model is reading under another name is not shown, and is asked for`() {
+        val read = mutableListOf<String>()
+        val other = OpenLog("older.log", LogContent.Ready(emptyList(), truncated = false))
         compose.setContent {
             JellyfinTheme {
-                LogsScreen(
-                    LogsUiState.Ready(listOf(LogFile("log_20261031.log", 4096, null)), open),
-                    LogsActions(onCloseLog = { closed++ }, onBack = { left++ }),
+                LogScreen(
+                    LogsUiState.Ready(listOf(LogFile("log_20261031.log", 1, null)), other),
+                    "log_20261031.log",
+                    LogsActions(onRead = { read += it }),
                 )
             }
         }
         compose.waitForIdle()
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        compose.waitForIdle()
-        assertEquals(1, closed)
-        assertEquals(0, left)
+        assertEquals(listOf("log_20261031.log"), read)
+        compose.onAllNodesWithContentDescription("Share this log").assertCountEquals(0)
     }
 
     private val aniDb =

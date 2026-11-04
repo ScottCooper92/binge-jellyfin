@@ -1,0 +1,74 @@
+package com.cooper.binge.companion.jellyfin.ui.console
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.cooper.binge.companion.jellyfin.AppGraph
+
+/** One task's screen, with the page's view model: the one its list shows, whose triggers it changes. */
+@Composable
+internal fun TaskItemRoute(
+    graph: AppGraph,
+    taskId: String,
+    onBack: () -> Unit,
+) {
+    val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
+    val state by tasks.state.collectAsStateWithLifecycle()
+    TaskScreen(
+        state,
+        taskId,
+        TasksActions(
+            onAskAdd = tasks::askAdd,
+            onAddTrigger = { tasks.addTrigger(taskId, it) },
+            onRemoveTrigger = { tasks.removeTrigger(taskId, it) },
+            onRetry = tasks::load,
+            onBack = onBack,
+        ),
+    )
+}
+
+/** One log's screen, with the page's view model: the one its list shows, which reads the log. */
+@Composable
+internal fun LogItemRoute(
+    graph: AppGraph,
+    name: String,
+    onBack: () -> Unit,
+) {
+    val logs: LogsViewModel = viewModel(factory = viewModelFactory { initializer { LogsViewModel(graph.connection) } })
+    val state by logs.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    LogScreen(
+        state,
+        name,
+        LogsActions(
+            onRead = logs::open,
+            onQuery = logs::setQuery,
+            onLevel = logs::setLevel,
+            onCopy = { text -> copyLogEntry(context, text) },
+            onShare = { shared, text -> context.startActivity(shareLogIntent(context, shared, text)) },
+            onRetry = logs::load,
+            onRetryOpen = logs::retryOpen,
+            onBack = onBack,
+        ),
+    )
+}
+
+/** The screen of an item open in a page: stacked above the page's own, under the same opening, sharing its view models. */
+@Composable
+internal fun ConsoleItemRoute(
+    entry: ConsoleEntry,
+    graph: AppGraph,
+    close: () -> Unit,
+) {
+    val item = entry.item ?: return
+    when (entry.page) {
+        ConsolePage.Tasks -> TaskItemRoute(graph, item, close)
+        ConsolePage.Logs -> LogItemRoute(graph, item, close)
+        else -> Unit
+    }
+}

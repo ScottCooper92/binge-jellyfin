@@ -8,8 +8,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import com.binge.designsystem.LocalIsSinglePaneNav
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
-import com.cooper.binge.companion.jellyfin.server.LogFile
+import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,10 +26,10 @@ class PageItemDepthTest {
     @get:Rule
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
-    private val files = listOf(LogFile("server.log", 100, null))
     private val closed = mutableListOf<String>()
+    private val user = ServerUser("a", "Sam", hasPassword = true, lastSeenMillis = null, policy = JsonObject(emptyMap()))
 
-    /** The logs page as the console's host shows it: the home beside it, so the page is not alone on screen. */
+    /** The users page as the console's host shows it: the home beside it, so the page is not alone on screen. */
     private fun besideHome(
         open: Boolean,
         twoPanes: Boolean = false,
@@ -36,10 +37,9 @@ class PageItemDepthTest {
         JellyfinTheme {
             CompositionLocalProvider(LocalIsSinglePaneNav provides false, LocalPageSpansTwoPanes provides twoPanes) {
                 PageItemDepth(open = open) {
-                    val reading = OpenLog("server.log", LogContent.Ready(emptyList(), false)).takeIf { open }
-                    LogsScreen(
-                        LogsUiState.Ready(files, reading),
-                        LogsActions(onCloseLog = { closed += "log" }, onBack = { closed += "page" }),
+                    UsersScreen(
+                        UsersUiState.Ready(listOf(user), emptyList(), me = "me", open = "a".takeIf { open }),
+                        UsersActions(onOpen = { closed += "user" }, onBack = { closed += "page" }),
                     )
                 }
             }
@@ -56,7 +56,7 @@ class PageItemDepthTest {
     fun `beside the home an open item keeps a Back that returns to the page's list`() {
         besideHome(open = true)
         compose.onNodeWithContentDescription("Back").performClick()
-        assertEquals(listOf("log"), closed)
+        assertEquals(listOf("user"), closed)
     }
 
     @Test

@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
-import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -51,23 +50,6 @@ class ConsoleListDetailBackTest {
     }
 
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-
-    @Test
-    fun `Back closes the log before the first page beside the home`() {
-        var state by mutableStateOf(
-            LogsUiState.Ready(listOf(LogFile("server.log", 100, null)), OpenLog("server.log", LogContent.Ready(emptyList(), false))),
-        )
-        host(ConsolePage.Logs) { leave ->
-            LogsScreen(state, LogsActions(onCloseLog = { state = state.copy(open = null) }, onBack = leave))
-        }
-        back()
-        compose.onNodeWithText("Select a log to read it.").assertIsDisplayed()
-        assertEquals(ConsolePage.Logs, current.top?.page)
-        back()
-        compose.onNodeWithText("Default page").assertIsDisplayed()
-        compose.onNodeWithText("Console home").assertIsDisplayed()
-        assertEquals(0, current.entries.size)
-    }
 
     @Test
     fun `Back closes the plugin before the first page beside the home`() {
