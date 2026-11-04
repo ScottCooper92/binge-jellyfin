@@ -134,6 +134,8 @@ private fun HomeLayoutRoute(
     val home: HomeLayoutViewModel =
         viewModel(factory = viewModelFactory { initializer { HomeLayoutViewModel(graph.connection, profile) } })
     val state by home.state.collectAsStateWithLifecycle()
+    val open = LocalOpenItem.current
+    LaunchedEffect(open == null) { if (open == null) home.itemClosed() }
     HomeLayoutScreen(
         state,
         homeLayoutActions(

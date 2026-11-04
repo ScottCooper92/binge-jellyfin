@@ -215,7 +215,7 @@ class ConsoleScreensTest {
     }
 
     @Test
-    fun `a library's screen hands its changes on, and a library the server no longer lists closes it`() {
+    fun `a library's screen hands its changes on`() {
         val calls = mutableListOf<String>()
         val actions =
             HomeLayoutActions(

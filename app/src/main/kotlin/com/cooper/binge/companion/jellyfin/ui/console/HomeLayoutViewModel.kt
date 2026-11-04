@@ -150,6 +150,9 @@ class HomeLayoutViewModel(
      */
     fun itemOpened() = _state.update { (it as? HomeLayoutUiState.Ready)?.copy(refused = null) ?: it }
 
+    /** The library's screen has closed: what it reported is not the list's to say again. */
+    fun itemClosed() = itemOpened()
+
     fun retrySave() = saves.retry()
 
     override fun onCleared() = saves.cleared()
