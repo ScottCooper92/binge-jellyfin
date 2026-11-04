@@ -4,6 +4,8 @@ import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,11 +20,8 @@ import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Today
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimeInput
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,6 +42,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeFilterChip
+import com.binge.designsystem.component.BingeTimeInput
+import com.binge.designsystem.component.timeOfDayMinutes
 import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.BingeSheetKind
@@ -69,9 +70,9 @@ import com.binge.designsystem.R as DesR
 private const val MILLIS_PER_TICK = 10_000L
 internal const val MINUTES_PER_HOUR = 60
 
-/** The run-every choices: 15, 30 and 45 minutes, then whole hours. */
-private val INTERVAL_MINUTES = listOf(15, 30, 45)
-private val INTERVAL_HOURS = listOf(1, 2, 3, 4, 6, 8, 12, 24)
+/** One quarter-hour through one day, at quarter-hour stops. */
+private val INTERVAL_MINUTES = 15..1440
+private const val INTERVAL_STEP_MINUTES = 15
 
 /** Marks the time-of-day fields, for the test that they are centred. */
 internal const val TRIGGER_TIME_TAG = "trigger-time"
@@ -226,7 +227,6 @@ internal fun AddTriggerSheet(actions: TasksActions) {
  * optional time limit. The time is entered in the form itself, in the device's 24-hour setting.
  * It is the content of [AddTriggerSheet], and draws without a window for a frame.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AddTriggerForm(
     actions: TasksActions,
@@ -234,13 +234,10 @@ internal fun AddTriggerForm(
     is24Hour: Boolean = DateFormat.is24HourFormat(LocalContext.current),
 ) {
     var kindIndex by rememberSaveable { mutableIntStateOf(startKind.ordinal) }
-    // A 24-hour device uses Material's time input. A 12-hour one uses ours, whose period is a pair of chips that grow with the font.
-    val timeState = rememberTimePickerState(DEFAULT_HOUR, 0, true)
-    var hourText by rememberSaveable(key = "AddTriggerForm.hour") { mutableStateOf(DEFAULT_HOUR.toString()) }
+    var hourText by rememberSaveable(key = "AddTriggerForm.hour") { mutableStateOf(DEFAULT_HOUR.toString().padStart(2, '0')) }
     var minuteText by rememberSaveable(key = "AddTriggerForm.minute") { mutableStateOf("00") }
     var afternoon by rememberSaveable(key = "AddTriggerForm.afternoon") { mutableStateOf(false) }
-    val minutes =
-        if (is24Hour) timeState.hour * MINUTES_PER_HOUR + timeState.minute else twelveHourMinutes(hourText, minuteText, afternoon)
+    val minutes = timeOfDayMinutes(hourText, minuteText, is24Hour, afternoon)
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
     var intervalTicks by rememberSaveable { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
     var limitHours by rememberSaveable { mutableIntStateOf(0) }
@@ -257,23 +254,23 @@ internal fun AddTriggerForm(
             modifier =
                 Modifier
                     .weight(1f, fill = false)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
         ) {
-            KindChips(kind) { kindIndex = it.ordinal }
-            if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) {
-                // Centred, to share an axis with the time limit's readout and slider below, which fill the width.
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    if (is24Hour) {
-                        TimeInput(timeState, modifier = Modifier.testTag(TRIGGER_TIME_TAG))
-                    } else {
-                        TwelveHourTimeInput(
+            Column(
+                modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+            ) {
+                KindChips(kind) { kindIndex = it.ordinal }
+                if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        BingeTimeInput(
                             hour = hourText,
                             minute = minuteText,
-                            afternoon = afternoon,
                             onHour = { hourText = it },
                             onMinute = { minuteText = it },
+                            is24Hour = is24Hour,
+                            afternoon = afternoon,
                             onAfternoon = { afternoon = it },
                             modifier = Modifier.testTag(TRIGGER_TIME_TAG),
                         )
@@ -281,8 +278,13 @@ internal fun AddTriggerForm(
                 }
             }
             if (kind == TriggerKind.Weekly) DayChips(dayIndex) { dayIndex = it }
-            if (kind == TriggerKind.Interval) IntervalChips(intervalTicks) { intervalTicks = it }
-            LimitSlider(limitHours) { limitHours = it }
+            Column(
+                modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+            ) {
+                if (kind == TriggerKind.Interval) IntervalSlider(intervalTicks) { intervalTicks = it }
+                LimitSlider(limitHours) { limitHours = it }
+            }
         }
         BingeFilledButton(
             label = stringResource(R.string.tasks_trigger_create),
@@ -331,7 +333,10 @@ private fun DayChips(
     selected: Int,
     onSelect: (Int) -> Unit,
 ) {
-    WrappingRow {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
+    ) {
         TRIGGER_DAYS.forEachIndexed { index, day ->
             BingeFilterChip(label = dayName(day, TextStyle.SHORT), selected = index == selected, onClick = { onSelect(index) })
         }
@@ -339,27 +344,22 @@ private fun DayChips(
 }
 
 @Composable
-private fun IntervalChips(
-    selected: Long,
-    onSelect: (Long) -> Unit,
-) {
-    WrappingRow {
-        INTERVAL_MINUTES.forEach { minutes ->
-            val ticks = minutes * TICKS_PER_MINUTE
-            BingeFilterChip(
-                label = stringResource(R.string.trigger_minutes_short, minutes),
-                selected = ticks == selected,
-                onClick = { onSelect(ticks) },
-            )
-        }
-        INTERVAL_HOURS.forEach { hours ->
-            val ticks = hours * TICKS_PER_HOUR
-            BingeFilterChip(
-                label = stringResource(R.string.trigger_hours_short, hours),
-                selected = ticks == selected,
-                onClick = { onSelect(ticks) },
-            )
-        }
+private fun IntervalSlider(selected: Long, onSelect: (Long) -> Unit) {
+    val resources = LocalContext.current.resources
+    val title = stringResource(R.string.trigger_kind_interval)
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
+        Text(title, style = MaterialTheme.typography.labelLarge)
+        BingeNumberSlider(
+            value = (selected / TICKS_PER_MINUTE).toInt(),
+            onValueChange = { it?.let { minutes -> onSelect(minutes * TICKS_PER_MINUTE) } },
+            range = INTERVAL_MINUTES,
+            step = INTERVAL_STEP_MINUTES,
+            format = {
+                if (it % MINUTES_PER_HOUR == 0) resources.getString(R.string.trigger_hours_short, it / MINUTES_PER_HOUR)
+                else resources.getString(R.string.trigger_minutes_short, it)
+            },
+            description = title,
+        )
     }
 }
 
