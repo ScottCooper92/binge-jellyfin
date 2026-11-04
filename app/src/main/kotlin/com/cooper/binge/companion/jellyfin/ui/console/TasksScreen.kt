@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,21 +21,17 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
-import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -111,7 +105,18 @@ fun TasksScreen(
                                 indicatorTopInset = padding.calculateTopPadding(),
                             ) { Tasks(ready, actions, inner, now) }
                         },
-                        detail = { if (open != null) TaskDetail(open, ready, actions, inner, split) else NothingSelected(inner) },
+                        detail = {
+                            if (open != null) {
+                                TaskDetail(open, ready, actions, inner, split)
+                            } else {
+                                NothingSelected(
+                                    stringResource(R.string.tasks_select_title),
+                                    stringResource(R.string.tasks_select),
+                                    Icons.Outlined.Schedule,
+                                    inner,
+                                )
+                            }
+                        },
                     )
             }
             // A change or run the server didn't take is said in a message, not in a space kept in the list for it.
@@ -134,38 +139,14 @@ private fun TaskDetail(
         TaskTriggers(task, state, actions, inner)
         return
     }
-    val direction = LocalLayoutDirection.current
-    // The heading takes the top inset, so the triggers under it take none.
-    val below =
-        PaddingValues(
-            start = inner.calculateStartPadding(direction),
-            end = inner.calculateEndPadding(direction),
-            bottom = inner.calculateBottomPadding(),
-        )
     Column(Modifier.fillMaxSize()) {
-        Text(
-            task.name,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(top = inner.calculateTopPadding(), start = inner.calculateStartPadding(direction)),
-        )
-        Box(Modifier.weight(1f)) { TaskTriggers(task, state, actions, below) }
+        DetailHeading(task.name, inner)
+        Box(Modifier.weight(1f)) { TaskTriggers(task, state, actions, inner.belowHeading()) }
         CreateFooter(
             label = stringResource(R.string.tasks_trigger_add),
             icon = Icons.Outlined.Add,
             onClick = { actions.onAskAdd(true) },
             loading = state.saving,
-        )
-    }
-}
-
-/** The detail pane while the list beside it has nothing open. */
-@Composable
-private fun NothingSelected(inner: PaddingValues) {
-    Box(Modifier.fillMaxSize().padding(inner)) {
-        EmptyScreen(
-            message = stringResource(R.string.tasks_select),
-            title = stringResource(R.string.tasks_select_title),
-            icon = Icons.Outlined.Schedule,
         )
     }
 }
