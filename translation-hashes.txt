@@ -1100,6 +1100,8 @@ app:users_section_devices  4ba5121d4d1b
 app:users_section_live_tv  d451ef69d283
 app:users_section_parental  33d8fe56b46d
 app:users_section_playback  2db1db07062e
+app:users_select  a129b52bd6d2
+app:users_select_title  29f2cd983e2d
 app:users_sessions_at_once  0896d9773f40
 app:users_set_password  887a560b8253
 app:users_settings  74a883a037bc

@@ -384,6 +384,8 @@
     <string name="devices_not_changed">Not changed. %1$s</string>
     <string name="users_title">Users</string>
     <string name="console_users_detail">Who can sign in, and what they see</string>
+    <string name="users_select_title">No user selected</string>
+    <string name="users_select">Select a user to see their access and settings.</string>
     <string name="users_body">Everyone who can sign in to this server. Tap one to change what they can do.</string>
     <string name="users_add">Add a user</string>
     <string name="users_add_body">They can see every library to begin with. Change that on their page.</string>
