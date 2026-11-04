@@ -162,6 +162,7 @@ private fun ItemPlaceholderPane(page: ConsolePage) {
             when (page) {
                 ConsolePage.Tasks -> TaskPlaceholder()
                 ConsolePage.Logs -> LogPlaceholder()
+                ConsolePage.Plugins -> PluginPlaceholder()
                 else -> Unit
             }
         }

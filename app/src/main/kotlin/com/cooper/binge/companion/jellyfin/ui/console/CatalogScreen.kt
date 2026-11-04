@@ -1,21 +1,22 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -24,41 +25,43 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
+import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.ScreenBody
+import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.binge.designsystem.R as DesR
 
 /** What the catalog tab can ask of its view model. */
 data class CatalogActions(
-    val onOpen: (String?) -> Unit = {},
+    val onOpen: (String) -> Unit = {},
     val onInstall: (CatalogPackage) -> Unit = {},
     val onCancel: (CatalogPackage) -> Unit = {},
     val onRetry: () -> Unit = {},
 )
 
-/** The catalog: packages by category, and a package's own page with Install. */
+/** The catalog: packages by category, the one open beside it marked. A tap opens the package's own screen ([PackageScreen]). */
 @Composable
 internal fun CatalogTab(
     state: CatalogUiState,
-    open: CatalogPackage?,
     actions: CatalogActions,
     inner: PaddingValues,
     listState: LazyListState,
-    detailState: LazyListState,
+    openPackage: String?,
 ) {
     when (state) {
         CatalogUiState.Loading -> PluginsLoading(inner)
         is CatalogUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is CatalogUiState.Ready ->
             when {
-                open != null -> PackagePage(open, state, actions, inner, detailState)
                 state.packages.isEmpty() ->
                     EmptyScreen(
                         message = stringResource(R.string.catalog_empty),
                         title = stringResource(R.string.catalog_empty_title),
                     )
-                else -> PackageList(state, actions, inner, listState)
+                else -> PackageList(state, actions, inner, listState, openPackage)
             }
     }
 }
@@ -69,6 +72,7 @@ private fun PackageList(
     actions: CatalogActions,
     inner: PaddingValues,
     listState: LazyListState,
+    openPackage: String?,
 ) {
     LazyColumn(
         state = listState,
@@ -77,7 +81,7 @@ private fun PackageList(
     ) {
         state.packages.groupBy { it.category }.forEach { (category, packages) ->
             item(key = "category:$category") {
-                ItemGroup(title = category.ifBlank { null }, rows = packages.map { it.row(state, actions) })
+                ItemGroup(title = category.ifBlank { null }, rows = packages.map { it.row(state, actions, it.name == openPackage) })
             }
         }
     }
@@ -87,6 +91,7 @@ private fun PackageList(
 private fun CatalogPackage.row(
     state: CatalogUiState.Ready,
     actions: CatalogActions,
+    open: Boolean,
 ): ListItem {
     val note =
         when {
@@ -99,37 +104,68 @@ private fun CatalogPackage.row(
         label = name,
         detail = description.ifBlank { null },
         note = note?.let { ListItemNote(it, icon = if (name in state.installing) Icons.Outlined.Download else Icons.Outlined.CheckCircle) },
-        selected = LocalPageSpansTwoPanes.current && name == state.open,
+        selected = open,
         onClick = { actions.onOpen(name) },
     )
 }
 
 /**
  * One package: what it is and who made it, the version Install would put on this server (the newest built
- * for its release or older), and Install, or its progress with Cancel. A package with no such version says so.
- * On a wide window, Install sits in the detail pane's footer.
+ * for its release or older), and Install, in the footer, or its progress with Cancel. A package with no such version says so.
+ * A screen of its own above the catalog on the stack, so Back returns to it.
  */
 @Composable
-private fun PackagePage(
-    pkg: CatalogPackage,
-    state: CatalogUiState.Ready,
+fun PackageScreen(
+    state: CatalogUiState,
+    name: String,
     actions: CatalogActions,
-    inner: PaddingValues,
-    listState: LazyListState,
+    onBack: () -> Unit,
 ) {
-    if (!LocalPageSpansTwoPanes.current) {
-        PackageContent(pkg, state, actions, inner, listState, inlineInstall = true)
-        return
+    val ready = state as? CatalogUiState.Ready
+    val pkg = ready?.packages?.firstOrNull { it.name == name }
+    val gone = ready != null && pkg == null
+    LaunchedEffect(gone) { if (gone) onBack() }
+    val host = remember { SnackbarHostState() }
+    val listState = rememberLazyListState()
+    BingeScreenScaffold(
+        title = pkg?.name ?: stringResource(R.string.plugins_title),
+        bar = ScreenBar.Small,
+        onBack = onBack,
+        snackbarHostState = host,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.catalog_install),
+                icon = Icons.Outlined.Download,
+                onClick = { pkg?.let(actions.onInstall) },
+                visible =
+                    ready != null &&
+                        pkg != null &&
+                        pkg.installable(ready.server) != null &&
+                        pkg.name !in ready.installed &&
+                        pkg.name !in ready.installing,
+            )
+        },
+    ) { padding ->
+        ScreenBody(padding) { _ ->
+            val inner = padding.screenListPadding()
+            when {
+                state is CatalogUiState.Loading -> PluginsLoading(inner)
+                state is CatalogUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
+                ready != null && pkg != null -> PackageContent(pkg, ready, actions, inner, listState, inlineInstall = false)
+            }
+            RefusedMessage(ready?.actionFailed, host, R.string.plugins_not_changed)
+        }
     }
-    Column(Modifier.fillMaxSize()) {
-        Box(Modifier.weight(1f)) { PackageContent(pkg, state, actions, inner, listState, inlineInstall = false) }
-        CreateFooter(
-            label = stringResource(R.string.catalog_install),
-            icon = Icons.Outlined.Download,
-            onClick = { actions.onInstall(pkg) },
-            visible = pkg.installable(state.server) != null && pkg.name !in state.installed && pkg.name !in state.installing,
-        )
-    }
+}
+
+/** What fills a landscape tablet's third pane while no plugin or package is open. */
+@Composable
+internal fun PluginPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.plugins_select),
+        title = stringResource(R.string.plugins_select_title),
+        icon = Icons.Outlined.Extension,
+    )
 }
 
 @Composable

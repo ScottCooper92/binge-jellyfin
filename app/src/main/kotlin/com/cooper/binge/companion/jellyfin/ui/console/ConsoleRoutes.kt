@@ -61,7 +61,7 @@ internal fun ConsolePageRoute(
                 { open(ConsolePage.Server) },
                 close,
             )
-        ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
+        ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, openItem, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
         ConsolePage.MetadataDefaults -> MetadataDefaultsRoute(graph, close)

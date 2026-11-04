@@ -10,8 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
-import com.cooper.binge.companion.jellyfin.server.PluginStatus
-import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -50,29 +48,6 @@ class ConsoleListDetailBackTest {
     }
 
     private fun back() = compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-
-    @Test
-    fun `Back closes the plugin before the first page beside the home`() {
-        val plugin = ServerPlugin("a", "AniDB", "1.0", "Metadata.", PluginStatus.Active, true, true)
-        var state by mutableStateOf(PluginsUiState.Ready(listOf(plugin), open = "a"))
-        host(ConsolePage.Plugins) { leave ->
-            PluginsScreen(
-                state,
-                CatalogUiState.Ready(emptyList()),
-                RepositoriesUiState.Ready(emptyList()),
-                PluginsActions(onOpen = { state = state.copy(open = it?.id) }),
-                CatalogActions(),
-                RepositoriesActions(),
-                onBack = leave,
-            )
-        }
-        back()
-        compose.onNodeWithText("Select a plugin or a package to see its details.").assertIsDisplayed()
-        assertEquals(ConsolePage.Plugins, current.top?.page)
-        back()
-        compose.onNodeWithText("Default page").assertIsDisplayed()
-        assertEquals(0, current.entries.size)
-    }
 
     @Test
     fun `two Backs in one frame on the first page leave the home and default pane intact`() {
