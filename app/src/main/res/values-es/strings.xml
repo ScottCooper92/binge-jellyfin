@@ -601,11 +601,6 @@
     <string name="tasks_trigger_new_title">Nuevo activador</string>
     <string name="tasks_trigger_new_body">¿Cuándo debe ejecutarse esta tarea por sí sola?</string>
     <string name="tasks_trigger_create">Añadir</string>
-    <string name="tasks_trigger_hour">Hora</string>
-    <string name="tasks_trigger_minute">Minuto</string>
-    <string name="tasks_trigger_am">a. m.</string>
-    <string name="tasks_trigger_pm">p. m.</string>
-    <string name="tasks_trigger_time_invalid">Usa una hora de 1 a 12 y minutos de 0 a 59.</string>
     <string name="tasks_trigger_limit">Límite de tiempo</string>
     <string name="tasks_trigger_no_limit">Sin límite</string>
     <string name="trigger_kind_daily">Diario</string>
