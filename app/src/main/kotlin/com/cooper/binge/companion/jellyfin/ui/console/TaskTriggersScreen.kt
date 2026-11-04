@@ -234,9 +234,9 @@ internal fun AddTriggerForm(
     is24Hour: Boolean = DateFormat.is24HourFormat(LocalContext.current),
 ) {
     var kindIndex by rememberSaveable { mutableIntStateOf(startKind.ordinal) }
-    var hourText by rememberSaveable(key = "AddTriggerForm.hour") { mutableStateOf(DEFAULT_HOUR.toString().padStart(2, '0')) }
-    var minuteText by rememberSaveable(key = "AddTriggerForm.minute") { mutableStateOf("00") }
-    var afternoon by rememberSaveable(key = "AddTriggerForm.afternoon") { mutableStateOf(false) }
+    var hourText by rememberSaveable { mutableStateOf(DEFAULT_HOUR.toString().padStart(2, '0')) }
+    var minuteText by rememberSaveable { mutableStateOf("00") }
+    var afternoon by rememberSaveable { mutableStateOf(false) }
     val minutes = timeOfDayMinutes(hourText, minuteText, is24Hour, afternoon)
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
     var intervalTicks by rememberSaveable { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
