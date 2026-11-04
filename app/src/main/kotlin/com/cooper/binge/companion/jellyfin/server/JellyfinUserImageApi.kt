@@ -40,6 +40,22 @@ suspend fun JellyfinClient.userImage(
 }
 
 /**
+ * A tagged list thumbnail. The legacy route remains supported on 10.11 and is the user-image route that accepts sizing;
+ * `/UserImage` accepts only userId, tag and format. Both routes use the same authenticated image handler.
+ */
+internal suspend fun JellyfinClient.userThumbnail(
+    userId: String,
+    tag: String,
+): ByteArray? =
+    getBytes(
+        "Users/$userId/Images/Primary",
+        mapOf("tag" to tag, "maxWidth" to USER_THUMBNAIL_SIZE.toString(), "maxHeight" to USER_THUMBNAIL_SIZE.toString(), "format" to "jpg"),
+        MAX_PICTURE_BYTES,
+    )
+
+internal const val USER_THUMBNAIL_SIZE = 128
+
+/**
  * Sets [userId]'s picture to [jpeg]. Jellyfin reads the body as base64 text, not as the file's bytes, and takes the file
  * type from the `Content-Type`. The server allows the user themselves and an administrator, and answers 403 to anyone else.
  */
