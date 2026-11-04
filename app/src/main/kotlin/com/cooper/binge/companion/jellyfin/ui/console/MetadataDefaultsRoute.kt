@@ -17,16 +17,18 @@ internal fun MetadataDefaultsRoute(
     val metadata: MetadataDefaultsViewModel =
         viewModel(factory = viewModelFactory { initializer { MetadataDefaultsViewModel(graph.connection) } })
     val state by metadata.state.collectAsStateWithLifecycle()
-    MetadataDefaultsScreen(
-        state,
-        MetadataDefaultsActions(
-            onOpen = metadata::open,
-            onOpenFetcher = metadata::openFetcher,
-            onSet = metadata::set,
-            onMove = metadata::move,
-            onRetry = metadata::load,
-            onRetrySave = metadata::retrySave,
-            onBack = onBack,
-        ),
-    )
+    PageItemDepth(open = (state as? MetadataDefaultsUiState.Ready)?.type != null) {
+        MetadataDefaultsScreen(
+            state,
+            MetadataDefaultsActions(
+                onOpen = metadata::open,
+                onOpenFetcher = metadata::openFetcher,
+                onSet = metadata::set,
+                onMove = metadata::move,
+                onRetry = metadata::load,
+                onRetrySave = metadata::retrySave,
+                onBack = onBack,
+            ),
+        )
+    }
 }

@@ -23,26 +23,28 @@ internal fun UsersRoute(
     val picks by choices.state.collectAsStateWithLifecycle()
     // A section reads what it picks from the first time it opens.
     LaunchedEffect((state as? UsersUiState.Ready)?.section) { choices.ensure((state as? UsersUiState.Ready)?.section) }
-    UsersScreen(
-        state,
-        UsersActions(
-            onOpen = users::open,
-            onShow = users::show,
-            onAdministrator = users::setAdministrator,
-            onCanSignIn = users::setCanSignIn,
-            onPolicy = users::setPolicy,
-            onList = users::editList,
-            onSection = users::section,
-            onChoicesRetry = choices::retry,
-            onCreate = users::create,
-            onSetPassword = users::setPassword,
-            onDelete = users::delete,
-            onRetry = users::load,
-            onRefresh = users::refresh,
-            onBack = onBack,
-        ),
-        choices = picks,
-        profile = profile,
-        avatar = { ServerUserAvatar(it, graph.userPictures) },
-    )
+    PageItemDepth(open = (state as? UsersUiState.Ready)?.open != null) {
+        UsersScreen(
+            state,
+            UsersActions(
+                onOpen = users::open,
+                onShow = users::show,
+                onAdministrator = users::setAdministrator,
+                onCanSignIn = users::setCanSignIn,
+                onPolicy = users::setPolicy,
+                onList = users::editList,
+                onSection = users::section,
+                onChoicesRetry = choices::retry,
+                onCreate = users::create,
+                onSetPassword = users::setPassword,
+                onDelete = users::delete,
+                onRetry = users::load,
+                onRefresh = users::refresh,
+                onBack = onBack,
+            ),
+            choices = picks,
+            profile = profile,
+            avatar = { ServerUserAvatar(it, graph.userPictures) },
+        )
+    }
 }
