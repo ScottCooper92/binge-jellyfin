@@ -27,6 +27,8 @@ internal fun LibraryDisplayRoute(
     val state by display.state.collectAsStateWithLifecycle()
     val folders by browser.state.collectAsStateWithLifecycle()
     val sheet = (state as? LibraryDisplayUiState.Ready)?.sheet
+    val open = LocalOpenItem.current
+    LaunchedEffect(open == null) { if (open == null) display.itemClosed() }
     // The metadata folder sheet browses from the server's roots each time it opens.
     LaunchedEffect(sheet) { if (sheet == DisplaySheet.MetadataPath) browser.start() }
     LibraryDisplayScreen(
