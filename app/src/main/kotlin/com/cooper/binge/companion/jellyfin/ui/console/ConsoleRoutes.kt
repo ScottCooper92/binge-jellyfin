@@ -216,7 +216,10 @@ private fun TasksRoute(
         TasksActions(
             onRun = tasks::run,
             onStop = tasks::stop,
-            onOpen = { openItem(it.id) },
+            onOpen = {
+                tasks.opened()
+                openItem(it.id)
+            },
             onRetry = tasks::load,
             onRefresh = tasks::refresh,
             onBack = onBack,
