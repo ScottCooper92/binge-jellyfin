@@ -224,6 +224,21 @@ class UsersViewModelTest {
     }
 
     @Test
+    fun `the user just created is opened once, so Back to the list does not open them again`() {
+        val vm = made(UsersViewModel(connection))
+        vm.ready()
+        vm.show(UserDialog.Create)
+        vm.create("Ana", "secret")
+        val made = vm.ready { it.done == UserDone.Created }
+        assertEquals(made.open, made.created)
+        vm.createdOpened()
+        val after = vm.ready()
+        assertNull(after.created)
+        assertNull(after.done)
+        assertEquals(made.open, after.open)
+    }
+
+    @Test
     fun `a new user is created, added in order and opened`() {
         val vm = made(UsersViewModel(connection))
         vm.ready()

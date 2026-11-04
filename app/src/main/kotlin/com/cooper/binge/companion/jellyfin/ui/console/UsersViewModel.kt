@@ -58,6 +58,8 @@ sealed interface UsersUiState {
         val dialog: UserDialog? = null,
         val busy: Boolean = false,
         val done: UserDone? = null,
+        /** The user just created, until the page has opened their screen; opening it once keeps Back from opening it again. */
+        val created: String? = null,
         val actionFailed: ConsoleFailure? = null,
         /** Why the open form (a new user, a password) was refused, shown in the form, which stays open with what was typed. */
         val formFailure: ConsoleFailure? = null,
@@ -167,6 +169,9 @@ class UsersViewModel(
      */
     fun itemOpened() = update { copy(dialog = null, done = null, actionFailed = null, formFailure = null) }
 
+    /** The page has opened the screen of the user just created; the list they return to is as it was. */
+    fun createdOpened() = update { copy(created = null, done = null) }
+
     fun show(dialog: UserDialog?) = update { copy(dialog = dialog, done = null, formFailure = null, actionFailed = null) }
 
     fun setAdministrator(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_ADMINISTRATOR to JsonPrimitive(on)) }
@@ -193,7 +198,7 @@ class UsersViewModel(
         act(UserDone.Created, form = { dialog == UserDialog.Create }) { client ->
             val user = client.createUser(name.trim(), password)
             saved[user.id] = user.policy
-            update { copy(users = (users + user).sortedBy { it.name.lowercase() }, open = user.id) }
+            update { copy(users = (users + user).sortedBy { it.name.lowercase() }, open = user.id, created = user.id) }
         }
     }
 

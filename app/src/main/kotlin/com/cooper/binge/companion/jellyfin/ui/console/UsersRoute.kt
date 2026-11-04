@@ -26,8 +26,11 @@ internal fun UsersRoute(
     LaunchedEffect(open == null) { if (open == null) users.select(null) }
     // A user just created is opened, as a new user's page always was.
     val ready = state as? UsersUiState.Ready
-    LaunchedEffect(ready?.done) {
-        if (ready?.done == UserDone.Created) ready.open?.let { openItem(userItem(it)) }
+    LaunchedEffect(ready?.created) {
+        ready?.created?.let {
+            users.createdOpened()
+            openItem(userItem(it))
+        }
     }
     UsersScreen(
         state,
