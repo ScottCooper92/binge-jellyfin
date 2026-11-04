@@ -7,7 +7,10 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
 
-/** The console on a window wide enough for two panes: the home beside the default page, then beside an open page. */
+/**
+ * The console on a window wide enough for two panes: the home beside the default page, then beside an open page. On a
+ * landscape tablet a page that opens its items as entries is the middle pane, with its item, or the invitation to pick one, as the third.
+ */
 class ConsoleNavHostScreenshotTest {
     @Composable
     private fun Console(stack: ConsoleBackStack) =
@@ -24,6 +27,7 @@ class ConsoleNavHostScreenshotTest {
                 },
                 defaultPage = { Text("Now playing") },
                 page = { entry -> Text(entry.page.name) },
+                item = { entry -> Text("${entry.page.name} ${entry.item}") },
             )
         }
 
@@ -36,4 +40,14 @@ class ConsoleNavHostScreenshotTest {
     @JellyfinWidePreview
     @Composable
     fun pageOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.Logs))
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @Composable
+    fun itemPageNothingOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.Tasks))
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @Composable
+    fun itemOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.Tasks).openItem("scan"))
 }

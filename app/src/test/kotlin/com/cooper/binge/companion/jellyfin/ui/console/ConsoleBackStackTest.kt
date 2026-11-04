@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
@@ -87,8 +88,9 @@ class ConsoleBackStackTest {
     fun `a saved stack that can't be read is dropped rather than half restored`() {
         with(ConsoleBackStack.Saver) {
             assertNull(restore(emptyList()))
-            assertNull(restore(listOf(1, "NoSuchPage", 0)))
-            assertNull(restore(listOf(1, "Server", "zero")))
+            assertNull(restore(listOf(1, "NoSuchPage", 0, "")))
+            assertNull(restore(listOf(1, "Server", "zero", "")))
+            assertNull(restore(listOf(1, "Server", 0)))
         }
     }
 
@@ -117,5 +119,50 @@ class ConsoleBackStackTest {
         assertEquals(ConsoleKey.Home, stack.keys(signedIn = false).first())
         assertEquals(ConsoleKey.Hub, stack.keys(signedIn = true).first())
         assertEquals(stack.keys(false).drop(1), stack.keys(true).drop(1))
+    }
+
+    @Test
+    fun `an item opens above its page under the same opening, and Back returns to the page`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Tasks).openItem("scan")
+        assertEquals(listOf(ConsolePage.Tasks, ConsolePage.Tasks), stack.pages())
+        assertEquals(setOf(0), stack.openings)
+        assertEquals("scan", stack.topItem?.item)
+        assertEquals(
+            listOf(ConsoleKey.Hub, ConsoleKey.Page(ConsolePage.Tasks, 0), ConsoleKey.Item(ConsolePage.Tasks, 0, "scan")),
+            stack.keys(signedIn = true),
+        )
+        assertNull(stack.back().topItem)
+        assertEquals(listOf(ConsolePage.Tasks), stack.back().pages())
+    }
+
+    @Test
+    fun `opening another item replaces the one open, and opening the one open does nothing`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Tasks).openItem("scan")
+        assertSame(stack, stack.openItem("scan"))
+        val other = stack.openItem("clean")
+        assertEquals(listOf(null, "clean"), other.entries.map { it.item })
+        assertEquals(listOf(ConsolePage.Tasks), other.back().pages())
+    }
+
+    @Test
+    fun `with no page open there is nowhere to open an item`() {
+        val empty = ConsoleBackStack()
+        assertSame(empty, empty.openItem("scan"))
+    }
+
+    @Test
+    fun `a page opened from the home closes the item its predecessor had open`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Tasks).openItem("scan").openFromHome(ConsolePage.Logs)
+        assertEquals(listOf(ConsolePage.Logs), stack.pages())
+        assertNull(stack.topItem)
+    }
+
+    @Test
+    fun `an item survives the save and restore`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Tasks).openItem("scan").open(ConsolePage.Server)
+        with(ConsoleBackStack.Saver) {
+            val saved = SaverScope { true }.save(stack)
+            assertEquals(stack, restore(checkNotNull(saved)))
+        }
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneSt
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -59,6 +61,7 @@ fun ConsoleNavHost(
     home: @Composable () -> Unit,
     defaultPage: @Composable () -> Unit,
     page: @Composable (ConsoleEntry) -> Unit,
+    item: @Composable (ConsoleEntry) -> Unit = {},
 ) {
     // One directive for the strategy and for the Back-arrow rule, so the two cannot disagree about whether the home
     // is on screen beside a page.
@@ -73,12 +76,17 @@ fun ConsoleNavHost(
     val homeNow by rememberUpdatedState(home)
     val defaultPageNow by rememberUpdatedState(defaultPage)
     val pageNow by rememberUpdatedState(page)
+    val itemNow by rememberUpdatedState(item)
+    // A page and the items open in it share their view models, kept by opening.
+    val stores: ConsolePageStores = viewModel()
+    LaunchedEffect(stack.openings) { stores.retain(stack.openings) }
+    val openItem by rememberUpdatedState(stack.topItem)
     NavDisplay(
         backStack = stack.keys(signedIn),
         onBack = onBack,
         sceneStrategies =
             listOf(
-                ConsoleThreePaneStrategy(threePane) { DefaultPane(defaultPageNow) },
+                ConsoleThreePaneStrategy(threePane, { DefaultPane(defaultPageNow) }) { ItemPlaceholderPane(it) },
                 rememberConsolePaneStrategy(directive),
             ),
         entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
@@ -98,14 +106,33 @@ fun ConsoleNavHost(
                         }
                     }
                 is ConsoleKey.Page ->
-                    NavEntry(key, metadata = DetailPane) {
+                    NavEntry(key, metadata = DetailPane + pageRole(key.page)) {
+                        // A page that opens its items as entries is a pane of its own beside them on a tablet; one
+                        // that does not is given the two panes' width and draws its list and item itself.
+                        val ownPane = threePaneNow && key.page.opensItems
                         CompositionLocalProvider(
+                            LocalViewModelStoreOwner provides stores.owner(key.opening),
                             LocalIsSinglePaneNav provides !hubBeside,
-                            LocalPaneDepth provides depth,
-                            LocalPageSpansTwoPanes provides threePaneNow,
+                            LocalPaneDepth provides if (ownPane) 1 else depth,
+                            LocalPageSpansTwoPanes provides (threePaneNow && !key.page.opensItems),
+                            LocalOpenItem provides openItem?.takeIf { it.opening == key.opening }?.item,
+                        ) {
+                            PaneContent(innerEdge = if (ownPane) PaneEdge.Both else PaneEdge.Start) {
+                                pageNow(ConsoleEntry(key.page, key.opening))
+                            }
+                        }
+                    }
+                is ConsoleKey.Item ->
+                    NavEntry(key, metadata = DetailPane + ItemRole) {
+                        // Beside its page on a tablet the item never leaves the screen, so it offers no Back of its own;
+                        // anywhere else it is stacked above its page and does.
+                        CompositionLocalProvider(
+                            LocalViewModelStoreOwner provides stores.owner(key.opening),
+                            LocalIsSinglePaneNav provides !hubBeside,
+                            LocalPaneDepth provides if (threePaneNow) 1 else depth,
                         ) {
                             PaneContent(innerEdge = PaneEdge.Start) {
-                                pageNow(ConsoleEntry(key.page, key.opening))
+                                itemNow(ConsoleEntry(key.page, key.opening, key.item))
                             }
                         }
                     }
@@ -123,6 +150,19 @@ private fun DefaultPane(defaultPage: @Composable () -> Unit) {
     CompositionLocalProvider(LocalIsSinglePaneNav provides false, LocalPaneDepth provides 1) {
         PaneContent(innerEdge = PaneEdge.Start) {
             OwnViewModelStore { defaultPage() }
+        }
+    }
+}
+
+/** What fills a page's item pane on a landscape tablet while none is open. Not an entry, so it has no Back of its own. */
+@Composable
+private fun ItemPlaceholderPane(page: ConsolePage) {
+    CompositionLocalProvider(LocalIsSinglePaneNav provides false, LocalPaneDepth provides 1) {
+        PaneContent(innerEdge = PaneEdge.Start) {
+            when (page) {
+                ConsolePage.Tasks -> TaskPlaceholder()
+                else -> Unit
+            }
         }
     }
 }
