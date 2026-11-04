@@ -116,7 +116,13 @@ enum class ConsolePage {
      * than state the page keeps. Such a page is a pane of its own beside its item on a landscape tablet, and an item's Back
      * and depth come from the stack.
      */
-    val opensItems: Boolean get() = this == Tasks || this == Logs || this == Plugins || this == Users || this == HomeLayout
+    val opensItems: Boolean get() =
+        this == Tasks ||
+            this == Logs ||
+            this == Plugins ||
+            this == Users ||
+            this == HomeLayout ||
+            this == LibraryDisplay
 
     /** One of the administrator's pages, listed together on the home. */
     val isAdmin: Boolean get() =
