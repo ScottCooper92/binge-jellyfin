@@ -47,7 +47,8 @@ sealed interface ServerSettingsUiState {
     ) : ServerSettingsUiState
 
     /**
-     * The settings as shown, what the pickers offer, and the last save that failed ([saveFailed]). A text sheet that is
+     * The settings as shown, what the pickers offer, and the last save that failed ([saveFailed]). [refused] keeps a page
+     * refusal until the next edit, even if the other writer cannot reach the server. A text sheet that is
      * [submitting] stays open while its save runs; if the server refuses it, [sheetFailed] says why in the sheet.
      */
     data class Ready(
@@ -57,6 +58,7 @@ sealed interface ServerSettingsUiState {
         val countries: List<Country> = emptyList(),
         val editing: ServerText? = null,
         val saveFailed: ConsoleFailure? = null,
+        val refused: ConsoleFailure? = null,
         val submitting: ServerText? = null,
         val sheetFailed: ConsoleFailure? = null,
         val serverSave: SaveProgress = SaveProgress(),
@@ -172,7 +174,7 @@ class ServerSettingsViewModel(
             update { copy(editing = null) }
             return
         }
-        update { copy(submitting = text, sheetFailed = null, saveFailed = null) }
+        update { copy(submitting = text, sheetFailed = null, saveFailed = null, refused = null) }
         saves.set(key, json)
     }
 
@@ -196,8 +198,9 @@ class ServerSettingsViewModel(
         return when {
             waiting && editing != null && failure == ConsoleFailure.Refused ->
                 copy(submitting = null, sheetFailed = failure, saveFailed = null)
-            waiting && failure == ConsoleFailure.Unreachable -> copy(submitting = null, editing = null, saveFailed = failure)
-            else -> copy(saveFailed = failure)
+            waiting && failure == ConsoleFailure.Unreachable ->
+                copy(submitting = null, editing = null, saveFailed = failure, refused = refusedAfter(refused, failure))
+            else -> copy(saveFailed = failure, refused = refusedAfter(refused, failure))
         }
     }
 

@@ -181,6 +181,25 @@ class ServerSettingsViewModelTest {
     }
 
     @Test
+    fun `an unreachable branding write does not clear the other writer's refusal`() {
+        val vm = made(ServerSettingsViewModel(connection))
+        vm.ready()
+        val branding = jellyfin.hold("/System/Configuration/branding", method = "POST")
+        vm.setSplashscreen(false)
+        branding.awaitArrival()
+        jellyfin.status["/System/Configuration"] = 500
+        vm.setMetadataLanguage("fr")
+        vm.sheet { it.refused == ConsoleFailure.Refused }
+        branding.cut()
+        val failed = vm.sheet { it.saveFailed == ConsoleFailure.Unreachable }
+        assertEquals(ConsoleFailure.Refused, failed.refused)
+        assertEquals(true, failed.brandSave.failed)
+        jellyfin.status.clear()
+        vm.setMetadataCountry("GB")
+        assertNull(vm.ready().refused)
+    }
+
+    @Test
     fun `countries that can't be read leave the rest of the page`() {
         jellyfin.status["/Localization/Countries"] = 500
         val ready = made(ServerSettingsViewModel(connection)).ready()
@@ -224,6 +243,7 @@ class ServerSettingsViewModelTest {
         assertNull(failed.submitting)
         // The sheet says it, so the page doesn't, and the saved value is back.
         assertNull(failed.saveFailed)
+        assertNull(failed.refused)
         assertEquals("", failed.branding.customCss)
     }
 

@@ -113,7 +113,7 @@ fun ServerSettingsScreen(
         if (ready != null) {
             ServerSettingsBody(ready, actions, splashscreenAvailable, splashImageKnown) { picker = it }
             // A refusal is said once, in a snackbar; a server that couldn't be reached is the save status's Retry.
-            RefusedMessage(ready.saveFailed?.takeIf { it == ConsoleFailure.Refused }, host)
+            RefusedMessage(ready.refused, host)
             picker?.let { ServerPickerSheet(it, ready, actions) { picker = null } }
             ready.editing?.let { TextSheet(it, ready, actions) }
             if (splash.open && splashscreenAvailable) {
