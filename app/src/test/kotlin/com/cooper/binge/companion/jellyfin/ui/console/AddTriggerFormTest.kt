@@ -6,25 +6,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertIsNotFocused
-import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
-import com.cooper.binge.companion.jellyfin.server.TICKS_PER_MINUTE
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
+import com.cooper.binge.companion.jellyfin.server.TICKS_PER_MINUTE
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.TriggerKind
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -152,7 +152,8 @@ class AddTriggerFormTest {
     fun `an interval slider draft becomes the same minutes in the added trigger`() {
         val added = mutableListOf<TaskTrigger>()
         compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(onAddTrigger = { added += it }), TriggerKind.Interval) } }
-        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))[0]
+        compose
+            .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))[0]
             .performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
         compose.onNodeWithText("45 min").assertIsDisplayed()
         compose.onNodeWithText("Add").performClick()
@@ -163,7 +164,15 @@ class AddTriggerFormTest {
     @Config(fontScale = 2f)
     fun `the last weekday can scroll into view and is the day added`() {
         val added = mutableListOf<TaskTrigger>()
-        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(onAddTrigger = { added += it }), TriggerKind.Weekly, is24Hour = true) } }
+        compose.setContent {
+            JellyfinTheme {
+                AddTriggerForm(
+                    TasksActions(onAddTrigger = { added += it }),
+                    TriggerKind.Weekly,
+                    is24Hour = true,
+                )
+            }
+        }
         // The horizontal row is the second scroll container after the whole form.
         compose.onAllNodes(hasScrollAction())[1].performScrollToNode(hasText("Sun"))
         compose.onNodeWithText("Sun").assertIsDisplayed().performClick()

@@ -1,12 +1,12 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.text.format.DateFormat
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -42,15 +42,15 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeFilterChip
-import com.binge.designsystem.component.BingeTimeInput
-import com.binge.designsystem.component.timeOfDayMinutes
 import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.BingeSheetKind
+import com.binge.designsystem.component.BingeTimeInput
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.WrappingRow
+import com.binge.designsystem.component.timeOfDayMinutes
 import com.binge.designsystem.template.EmptyScreen
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerTask
@@ -344,7 +344,10 @@ private fun DayChips(
 }
 
 @Composable
-private fun IntervalSlider(selected: Long, onSelect: (Long) -> Unit) {
+private fun IntervalSlider(
+    selected: Long,
+    onSelect: (Long) -> Unit,
+) {
     val resources = LocalContext.current.resources
     val title = stringResource(R.string.trigger_kind_interval)
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
@@ -355,8 +358,11 @@ private fun IntervalSlider(selected: Long, onSelect: (Long) -> Unit) {
             range = INTERVAL_MINUTES,
             step = INTERVAL_STEP_MINUTES,
             format = {
-                if (it % MINUTES_PER_HOUR == 0) resources.getString(R.string.trigger_hours_short, it / MINUTES_PER_HOUR)
-                else resources.getString(R.string.trigger_minutes_short, it)
+                if (it % MINUTES_PER_HOUR == 0) {
+                    resources.getString(R.string.trigger_hours_short, it / MINUTES_PER_HOUR)
+                } else {
+                    resources.getString(R.string.trigger_minutes_short, it)
+                }
             },
             description = title,
         )
