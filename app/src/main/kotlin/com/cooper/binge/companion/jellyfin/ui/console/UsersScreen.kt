@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -132,7 +134,22 @@ fun UsersScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                UsersUiState.Loading ->
+                    if (split) {
+                        // The button is part of the page from its first frame, disabled until the list is ready.
+                        ListDetailBody(
+                            detailOpen = false,
+                            list = {
+                                Column(Modifier.fillMaxSize()) {
+                                    Box(Modifier.weight(1f)) { ConsoleLoading(inner, LOADING_ROWS) }
+                                    addUser()
+                                }
+                            },
+                            detail = {},
+                        )
+                    } else {
+                        ConsoleLoading(inner, LOADING_ROWS)
+                    }
                 is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is UsersUiState.Ready ->
                     ListDetailBody(
@@ -193,7 +210,13 @@ private fun UserDetailPane(
                 if (section == null) {
                     DetailHeading(user.name, inner)
                 } else {
-                    Row(Modifier.padding(top = inner.calculateTopPadding()), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.padding(
+                            top = inner.calculateTopPadding(),
+                            start = inner.calculateStartPadding(LocalLayoutDirection.current),
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         ExpressiveIconButton(
                             onClick = { actions.onSection(null) },
                             icon = Icons.AutoMirrored.Outlined.ArrowBack,

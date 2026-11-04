@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.onAllNodesWithText
@@ -66,6 +67,18 @@ class UsersSplitTest {
     fun `beside the list the add button sits under the list, whether or not a user is open`() {
         show(ready(open = "a"), split = true)
         compose.onNodeWithText("Add a user").assertIsDisplayed()
+    }
+
+    @Test
+    fun `beside the list the add button is there from the first frame, disabled while the list loads`() {
+        compose.setContent {
+            JellyfinTheme {
+                CompositionLocalProvider(LocalPageSpansTwoPanes provides true, LocalIsSinglePaneNav provides false) {
+                    UsersScreen(UsersUiState.Loading, UsersActions())
+                }
+            }
+        }
+        compose.onNodeWithText("Add a user").assertIsDisplayed().assertIsNotEnabled()
     }
 
     @Test
