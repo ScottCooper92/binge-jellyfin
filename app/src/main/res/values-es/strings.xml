@@ -1209,4 +1209,6 @@
         <item quantity="other">%1$d días</item>
     </plurals>
     <string name="live_tv_type_m3u">Lista M3U</string>
+    <string name="library_languages_search">Buscar idiomas</string>
+    <string name="library_languages_no_match">Ningún idioma coincide con la búsqueda</string>
 </resources>
