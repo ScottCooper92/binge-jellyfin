@@ -171,8 +171,12 @@ class TaskTriggersViewModelTest {
         jellyfin.status["/ScheduledTasks/t-scan/Triggers"] = 500
         vm.removeTrigger("t-scan", 0)
         vm.ready { it.triggerFailed != null }
+        jellyfin.status["/ScheduledTasks"] = 500
+        vm.refresh()
+        vm.ready { it.refreshFailed != null && !it.refreshing }
         vm.opened()
         assertNull(vm.ready().triggerFailed)
+        assertNull(vm.ready().refreshFailed)
     }
 
     @Test
