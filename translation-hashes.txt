@@ -364,7 +364,6 @@ app:library_realtime_detail  1a61b5920e0c
 app:library_refresh  024000f113f7
 app:library_remove  df40e52d53ae
 app:library_remove_body  d189c6de1a45
-app:library_remove_detail  343b3b0ef259
 app:library_remove_title  e4dd7c24e78a
 app:library_rename  3064d79a295c
 app:library_rename_title  0f36d3cce0fd

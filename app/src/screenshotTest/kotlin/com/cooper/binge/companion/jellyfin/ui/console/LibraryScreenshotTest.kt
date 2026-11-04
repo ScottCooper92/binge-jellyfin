@@ -97,6 +97,14 @@ private fun fetchersReady() =
 
 /** A library's page: movies across the matrix, then each kind, an older server, the pages of its providers, its sheets and confirms, and the read states. */
 class LibraryScreenshotTest {
+    /** The bottom of the library page, without the explanation repeated above its action. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun removeAction() = Surface { LibraryRemoveAction(ready(), LibraryActions()) }
+
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews
