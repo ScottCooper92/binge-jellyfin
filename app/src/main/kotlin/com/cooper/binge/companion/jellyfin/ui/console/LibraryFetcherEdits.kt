@@ -4,6 +4,7 @@ import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.FetcherType
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TYPE_OPTIONS
 import com.cooper.binge.companion.jellyfin.server.Provider
+import com.cooper.binge.companion.jellyfin.server.moved
 import com.cooper.binge.companion.jellyfin.server.withFetchers
 
 /**
@@ -30,9 +31,7 @@ internal class LibraryFetcherEdits(
         name: String,
         by: Int,
     ) = change(kind, type) { fetchers ->
-        val from = fetchers.indexOfFirst { it.name.equals(name, ignoreCase = true) }
-        val to = from + by
-        if (from >= 0 && to in fetchers.indices) fetchers.toMutableList().also { it.add(to, it.removeAt(from)) } else fetchers
+        fetchers.moved(name, by) { it.name }
     }
 
     private fun change(

@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowDownward
-import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.PowerSettingsNew
@@ -20,7 +18,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.FormScreen
@@ -179,41 +176,21 @@ private fun FetcherPage(
     val all = state.fetchers(type, open.kind)
     val fetcher = all.firstOrNull { it.name.equals(open.name, ignoreCase = true) } ?: return
     val place = state.configuration.fetcherPlace(type, open.kind, state.offered(type, open.kind), fetcher.name)
-    val index = place?.first ?: 0
-    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        ItemGroup(
-            title = null,
-            rows =
-                listOf(
-                    ListItem(
-                        icon = Icons.Outlined.PowerSettingsNew,
-                        label = stringResource(R.string.library_provider_use),
-                        toggled = fetcher.enabled,
-                        onClick = { actions.onSet(type, open.kind, fetcher.name, !fetcher.enabled) },
-                    ),
+    OrderedSettingsPage(
+        title = null,
+        switches =
+            listOf(
+                ListItem(
+                    icon = Icons.Outlined.PowerSettingsNew,
+                    label = stringResource(R.string.library_provider_use),
+                    toggled = fetcher.enabled,
+                    onClick = { actions.onSet(type, open.kind, fetcher.name, !fetcher.enabled) },
                 ),
-        )
-        ItemGroup(
-            title = stringResource(R.string.home_layout_order),
-            rows =
-                listOf(
-                    ListItem(
-                        icon = Icons.Outlined.ArrowUpward,
-                        label = stringResource(R.string.home_layout_move_up),
-                        enabled = place != null && index > 0,
-                        destination = ListItemDestination.Action,
-                        onClick = { actions.onMove(type, open.kind, fetcher.name, -1) },
-                    ),
-                    ListItem(
-                        icon = Icons.Outlined.ArrowDownward,
-                        label = stringResource(R.string.home_layout_move_down),
-                        enabled = place != null && index < place.second - 1,
-                        destination = ListItemDestination.Action,
-                        onClick = { actions.onMove(type, open.kind, fetcher.name, 1) },
-                    ),
-                ),
-        )
-    }
+            ),
+        place = place?.first,
+        size = place?.second ?: 0,
+        onMove = { actions.onMove(type, open.kind, fetcher.name, it) },
+    )
 }
 
 private fun MetadataDefaultsUiState.Ready.fetchers(
