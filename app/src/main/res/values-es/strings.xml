@@ -202,6 +202,8 @@
     <string name="libraries_not_stopped">El escaneo no se ha detenido. %1$s</string>
     <string name="libraries_add">Añadir biblioteca</string>
     <string name="libraries_empty_title">Sin bibliotecas</string>
+    <string name="libraries_select_title">Ninguna biblioteca seleccionada</string>
+    <string name="libraries_select">Selecciona una biblioteca para ver y cambiar sus ajustes.</string>
     <string name="libraries_empty">Este servidor aún no tiene bibliotecas. Añade una para empezar con sus carpetas.</string>
     <string name="library_name">Nombre</string>
     <string name="library_enabled">Activada</string>

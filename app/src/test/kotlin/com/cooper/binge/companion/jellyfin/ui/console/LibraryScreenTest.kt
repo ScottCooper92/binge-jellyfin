@@ -59,9 +59,8 @@ class LibraryScreenTest {
                 available = available,
                 dialog = dialog,
                 cultures = cultures,
-                page = page,
             )
-        compose.setContent { JellyfinTheme { LibraryScreen(state, actions, JellyfinServerProfile.from(version)) } }
+        compose.setContent { JellyfinTheme { LibraryScreen(state, actions, JellyfinServerProfile.from(version), page = page) } }
     }
 
     @Test
@@ -293,7 +292,6 @@ class LibraryScreenTest {
                 options = json,
                 available = savers,
                 cultures = languages,
-                page = LibraryPage.Languages,
             ),
         )
         val actions = LibraryActions(onJson = { key, value -> state = state.copy(options = JsonObject(state.options + (key to value))) })
