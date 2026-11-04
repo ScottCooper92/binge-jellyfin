@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -138,21 +139,25 @@ internal fun RecordingPaddingSlider(
             value = draft,
             onValueChange = { it?.let { picked -> draft = picked } },
             range = field.min..field.max,
-            step = PADDING_STEP_SECONDS,
-            format = {
-                if (it % SECONDS_PER_MINUTE == 0) {
-                    resources.getString(R.string.transcoding_unit_minutes, (it / SECONDS_PER_MINUTE).toString())
-                } else {
-                    resources.getString(R.string.transcoding_unit_seconds, it.toString())
-                }
-            },
+            step = SECONDS_PER_MINUTE,
+            format = { paddingLabel(resources, it) },
             description = title,
             onValueChangeFinished = { field.parse(draft.toString())?.let { actions.onSet(field.key, it) } },
         )
     }
 }
 
-private const val PADDING_STEP_SECONDS = 60
+/** A padding as the page row and the slider both show it: "N min" for a whole minute, otherwise the exact "N s". */
+internal fun paddingLabel(
+    resources: Resources,
+    seconds: Int,
+): String =
+    if (seconds % SECONDS_PER_MINUTE == 0) {
+        resources.getString(R.string.transcoding_unit_minutes, (seconds / SECONDS_PER_MINUTE).toString())
+    } else {
+        resources.getString(R.string.transcoding_unit_seconds, seconds.toString())
+    }
+
 private const val SECONDS_PER_MINUTE = 60
 
 internal fun RecordingNumber.title(): Int =
