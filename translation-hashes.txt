@@ -689,6 +689,8 @@ app:plugins_loading  52fabe38c01f
 app:plugins_not_changed  f770f37ad5b3
 app:plugins_restart_detail  229fb0714bc1
 app:plugins_restart_needed  b4eb54314e9a
+app:plugins_select  343486c702d0
+app:plugins_select_title  b16ac43236b0
 app:plugins_settings  74a883a037bc
 app:plugins_settings_detail  df95297ca121
 app:plugins_tab_catalog  3877d14889a9

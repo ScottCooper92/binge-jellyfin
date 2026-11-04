@@ -95,6 +95,7 @@ private fun CatalogPackage.row(
         label = name,
         detail = description.ifBlank { null },
         note = note?.let { ListItemNote(it, icon = if (name in state.installing) Icons.Outlined.Download else Icons.Outlined.CheckCircle) },
+        selected = LocalPageSpansTwoPanes.current && name == state.open,
         onClick = { actions.onOpen(name) },
     )
 }

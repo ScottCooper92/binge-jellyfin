@@ -123,10 +123,12 @@ fun PluginsScreen(
     val leaveDetail: () -> Unit = { if (tab == 0) actions.onOpen(null) else catalogActions.onOpen(null) }
     BackHandler(enabled = detail != null, onBack = leaveDetail)
     val host = remember { SnackbarHostState() }
+    // On a window with room for it the tabs and the open plugin or package sit side by side, under the page's own title.
+    val split = LocalPageSpansTwoPanes.current
     BingeScreenScaffold(
-        title = detail ?: stringResource(R.string.plugins_title),
+        title = if (split) stringResource(R.string.plugins_title) else detail ?: stringResource(R.string.plugins_title),
         bar = ScreenBar.Small,
-        onBack = if (detail != null) leaveDetail else onBack,
+        onBack = if (detail != null && !split) leaveDetail else onBack,
         snackbarHostState = host,
         bottomBar = {
             // Only the Repositories tab creates anything; the other tabs have no footer.
@@ -142,7 +144,8 @@ fun PluginsScreen(
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
-            val content = if (detail == null) inner.belowTabRow(LocalLayoutDirection.current) else inner
+            // The lists sit under the tab row, which has taken the top inset, whether or not a plugin is open beside them.
+            val content = inner.belowTabRow(LocalLayoutDirection.current)
             // A change the server didn't take is said once, by the tab that made it. One message per
             // state, so switching tabs doesn't change a key and say an old refusal again.
             RefusedMessage((installed as? PluginsUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
@@ -150,51 +153,95 @@ fun PluginsScreen(
             RefusedMessage((repositories as? RepositoriesUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
             RefusedMessage((installed as? PluginsUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
             RefusedMessage((repositories as? RepositoriesUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
-            Column(Modifier.fillMaxSize()) {
-                if (detail == null) {
-                    BingeTabRow(
-                        tabs = TABS.map { stringResource(it) },
-                        selectedIndex = pager.currentPage,
-                        // The pager alone writes `tab`, when it settles: a tap a swipe interrupts lands where the swipe did.
-                        onSelect = { page -> scope.launch { pager.animateScrollToPage(page) } },
-                        modifier = Modifier.padding(top = inner.calculateTopPadding()),
-                    )
-                    HorizontalPager(
-                        state = pager,
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                    ) { page ->
-                        PluginsPage(
-                            page,
-                            installed,
-                            catalog,
-                            repositories,
-                            actions,
-                            catalogActions,
-                            repositoryActions,
-                            content,
-                            listStates,
-                            plugin,
-                            pkg,
+            ListDetailBody(
+                detailOpen = detail != null,
+                list = {
+                    Column(Modifier.fillMaxSize()) {
+                        BingeTabRow(
+                            tabs = TABS.map { stringResource(it) },
+                            selectedIndex = pager.currentPage,
+                            // The pager alone writes `tab`, when it settles: a tap a swipe interrupts lands where the swipe did.
+                            onSelect = { page -> scope.launch { pager.animateScrollToPage(page) } },
+                            modifier = Modifier.padding(top = inner.calculateTopPadding()),
                         )
+                        HorizontalPager(
+                            state = pager,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            verticalAlignment = Alignment.Top,
+                        ) { page ->
+                            // The list pages only: what is open shows in the detail, or in place of the tabs on one pane.
+                            PluginsPage(
+                                page,
+                                PluginsStates(installed, catalog, repositories),
+                                PluginsHandlers(actions, catalogActions, repositoryActions),
+                                content,
+                                listStates,
+                                null,
+                                null,
+                            )
+                        }
                     }
-                } else {
-                    PluginsPage(
+                },
+                detail = {
+                    PluginDetailPane(
+                        detail,
                         tab,
-                        installed,
-                        catalog,
-                        repositories,
-                        actions,
-                        catalogActions,
-                        repositoryActions,
-                        content,
+                        PluginsStates(installed, catalog, repositories),
+                        PluginsHandlers(actions, catalogActions, repositoryActions),
+                        inner,
                         listStates,
                         plugin,
                         pkg,
                     )
-                }
-            }
+                },
+            )
         }
+    }
+}
+
+/** The three tabs' states, together. */
+private class PluginsStates(
+    val installed: PluginsUiState,
+    val catalog: CatalogUiState,
+    val repositories: RepositoriesUiState,
+)
+
+/** What the three tabs can ask, together. */
+private class PluginsHandlers(
+    val installed: PluginsActions,
+    val catalog: CatalogActions,
+    val repositories: RepositoriesActions,
+)
+
+/**
+ * The open plugin or package: in place of the tabs on one pane, and beside them under its name on a wider one. While
+ * none is open ([title] null) the wider pane says to pick one.
+ */
+@Composable
+private fun PluginDetailPane(
+    title: String?,
+    tab: Int,
+    states: PluginsStates,
+    handlers: PluginsHandlers,
+    inner: PaddingValues,
+    listStates: PluginsListStates,
+    plugin: ServerPlugin?,
+    pkg: CatalogPackage?,
+) {
+    when {
+        title == null ->
+            NothingSelected(
+                stringResource(R.string.plugins_select_title),
+                stringResource(R.string.plugins_select),
+                Icons.Outlined.Extension,
+                inner,
+            )
+        LocalPageSpansTwoPanes.current ->
+            Column(Modifier.fillMaxSize()) {
+                DetailHeading(title, inner)
+                Box(Modifier.weight(1f)) { PluginsPage(tab, states, handlers, inner.belowHeading(), listStates, plugin, pkg) }
+            }
+        else -> PluginsPage(tab, states, handlers, inner, listStates, plugin, pkg)
     }
 }
 
@@ -212,12 +259,8 @@ private fun PaddingValues.belowTabRow(direction: LayoutDirection) =
 @Composable
 private fun PluginsPage(
     page: Int,
-    installed: PluginsUiState,
-    catalog: CatalogUiState,
-    repositories: RepositoriesUiState,
-    actions: PluginsActions,
-    catalogActions: CatalogActions,
-    repositoryActions: RepositoriesActions,
+    states: PluginsStates,
+    handlers: PluginsHandlers,
     content: PaddingValues,
     listStates: PluginsListStates,
     plugin: ServerPlugin?,
@@ -226,9 +269,9 @@ private fun PluginsPage(
     // Full height, so a page lays out as it did before the pager: a list fills it and a message sits where it always did.
     Box(Modifier.fillMaxSize()) {
         when (page) {
-            0 -> InstalledTab(installed, plugin, actions, content, listStates.installed)
-            1 -> CatalogTab(catalog, pkg, catalogActions, content, listStates.catalog)
-            else -> RepositoriesTab(repositories, repositoryActions, content, listStates.repositories)
+            0 -> InstalledTab(states.installed, plugin, handlers.installed, content, listStates.installed)
+            1 -> CatalogTab(states.catalog, pkg, handlers.catalog, content, listStates.catalog)
+            else -> RepositoriesTab(states.repositories, handlers.repositories, content, listStates.repositories)
         }
     }
 }
@@ -314,6 +357,7 @@ private fun ServerPlugin.row(
         label = name,
         detail = listOf(version, statusLabel(status)).filter { it.isNotBlank() }.joinToString(" · "),
         loading = id in state.busy,
+        selected = LocalPageSpansTwoPanes.current && id == state.open,
         onClick = { actions.onOpen(this) },
     )
 
