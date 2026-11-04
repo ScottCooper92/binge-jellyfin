@@ -94,6 +94,9 @@ class TasksViewModel(
 
     fun stop(task: ServerTask) = call(task, run = false)
 
+    /** A task is opening: what the list or another task reported is not this one's to show. */
+    fun opened() = update { copy(actionFailed = null, triggerFailed = null, adding = false) }
+
     fun askAdd(on: Boolean) = update { copy(adding = on, triggerFailed = null) }
 
     /** Adds [trigger] to task [taskId]'s triggers, after the ones it has. */

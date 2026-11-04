@@ -20,6 +20,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -162,6 +163,16 @@ class TaskTriggersViewModelTest {
                 .first { it.id == "t-scan" }
                 .triggers.size,
         )
+    }
+
+    @Test
+    fun `opening a task clears a refused trigger change reported on another`() {
+        val vm = made(TasksViewModel(connection)).loaded()
+        jellyfin.status["/ScheduledTasks/t-scan/Triggers"] = 500
+        vm.removeTrigger("t-scan", 0)
+        vm.ready { it.triggerFailed != null }
+        vm.opened()
+        assertNull(vm.ready().triggerFailed)
     }
 
     @Test
