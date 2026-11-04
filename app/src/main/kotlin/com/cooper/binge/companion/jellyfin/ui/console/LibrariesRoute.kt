@@ -133,10 +133,11 @@ private fun LibraryLoadedRoute(
         }
     }
     // A refusal left on a page isn't replayed on the screen Back returns to, whether Back is the bar's or the system's.
-    BackHandler(enabled = page != LibraryPage.Main) {
-        model.itemOpened()
+    val back = {
+        if (page != LibraryPage.Main) model.itemOpened()
         onBack()
     }
+    BackHandler(enabled = page != LibraryPage.Main, onBack = back)
     LaunchedEffect(ready?.dialog) { if (ready?.dialog == LibraryDialog.AddFolder) browse() }
     // A removed library has no page to stay on.
     LaunchedEffect(ready?.gone) { if (ready?.gone == true) onBack() }
@@ -154,7 +155,11 @@ private fun LibraryLoadedRoute(
             onFlag = { key, on -> model.set(key, JsonPrimitive(on)) },
             onText = { key, text -> model.set(key, JsonPrimitive(text)) },
             onDays = { model.set(LIBRARY_REFRESH_DAYS, JsonPrimitive(it)) },
-            onPage = { openSubItem(libraryPageItem(library.id, it)) },
+            onPage = {
+                // What this screen reported isn't replayed on the page it opens.
+                model.itemOpened()
+                openSubItem(libraryPageItem(library.id, it))
+            },
             onAsk = model::ask,
             onRename = model::rename,
             onAddFolder = model::addFolder,
@@ -167,7 +172,7 @@ private fun LibraryLoadedRoute(
             onMoveFetcher = model.fetcherEdits::move,
             onRetry = model::load,
             onRetrySave = model::retrySave,
-            onBack = onBack,
+            onBack = back,
         ),
         profile,
         folders,
