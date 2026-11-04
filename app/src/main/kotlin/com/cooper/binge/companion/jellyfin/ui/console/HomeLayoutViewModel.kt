@@ -17,6 +17,7 @@ import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.server.groupingOptions
 import com.cooper.binge.companion.jellyfin.server.homeLayout
 import com.cooper.binge.companion.jellyfin.server.idList
+import com.cooper.binge.companion.jellyfin.server.moved
 import com.cooper.binge.companion.jellyfin.server.userConfiguration
 import com.cooper.binge.companion.jellyfin.server.userViews
 import kotlinx.coroutines.async
@@ -135,12 +136,10 @@ class HomeLayoutViewModel(
         id: String,
         by: Int,
     ) {
-        val ids = ready()?.libraries?.map { it.id }?.toMutableList() ?: return
-        val from = ids.indexOf(id)
-        val to = from + by
-        if (from < 0 || to !in ids.indices) return
-        ids.add(to, ids.removeAt(from))
-        save(ORDERED_VIEWS, idList(ids))
+        val ids = ready()?.libraries?.map { it.id } ?: return
+        val moved = ids.moved(id, by) { it }
+        if (moved === ids) return
+        save(ORDERED_VIEWS, idList(moved))
     }
 
     fun setHidePlayedInLatest(on: Boolean) = save(HIDE_PLAYED_IN_LATEST, JsonPrimitive(on))

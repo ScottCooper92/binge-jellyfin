@@ -90,10 +90,7 @@ fun JsonObject.providerOrder(
     name: String,
     by: Int,
 ): JsonArray {
-    val names = providers(group, available).map { it.name }.toMutableList()
-    val from = names.indexOfFirst { it.equals(name, ignoreCase = true) }
-    val to = from + by
-    if (from >= 0 && to in names.indices) names.add(to, names.removeAt(from))
+    val names = providers(group, available).map { it.name }.moved(name, by) { it }
     return JsonArray(names.map(::JsonPrimitive))
 }
 
