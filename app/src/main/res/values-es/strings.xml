@@ -749,6 +749,8 @@
     <string name="metadata_body">Lo que usa el servidor para cada tipo de título en una biblioteca que no ha elegido sus propios proveedores. Los ajustes propios de una biblioteca sustituyen a estos, así que cambiarlos no modifica una biblioteca que ya tiene los suyos.</string>
     <string name="metadata_type_body">Desactiva un proveedor para que el servidor deje de consultarlo para este tipo de título.</string>
     <string name="metadata_type_empty">El servidor no indicó ningún proveedor para este tipo de título.</string>
+    <string name="metadata_select_title">Ningún tipo de título seleccionado</string>
+    <string name="metadata_select">Selecciona un tipo de título para elegir sus proveedores.</string>
     <string name="metadata_fetchers">Proveedores de metadatos</string>
     <string name="metadata_images">Proveedores de imágenes</string>
     <string name="metadata_all_on">Todos activados</string>

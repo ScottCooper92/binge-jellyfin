@@ -755,6 +755,8 @@
     <string name="metadata_body">What the server uses for each kind of title in a library that has not chosen its own providers. A library\'s own settings take the place of these, so changing them does not change a library that has set its own.</string>
     <string name="metadata_type_body">Turn a provider off to stop the server asking it for this kind of title.</string>
     <string name="metadata_type_empty">The server did not list any providers for this kind of title.</string>
+    <string name="metadata_select_title">No kind of title selected</string>
+    <string name="metadata_select">Select a kind of title to choose its providers.</string>
     <string name="metadata_fetchers">Metadata providers</string>
     <string name="metadata_images">Image providers</string>
     <string name="metadata_all_on">All on</string>
