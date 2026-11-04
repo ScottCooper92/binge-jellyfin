@@ -234,14 +234,15 @@ class LibraryViewModelTest {
     }
 
     @Test
-    fun `pages and dialogs open and close`() {
+    fun `dialogs open and close, and opening the library's screen closes one left open`() {
         val vm = made(LibraryViewModel(connection, movies))
         vm.ready()
-        vm.show(LibraryPage.Providers(ProviderGroup.Subtitles))
-        assertEquals(LibraryPage.Providers(ProviderGroup.Subtitles), vm.ready().page)
         vm.ask(LibraryDialog.Remove)
         assertEquals(LibraryDialog.Remove, vm.ready().dialog)
         vm.ask(null)
+        assertNull(vm.ready().dialog)
+        vm.ask(LibraryDialog.Rename)
+        vm.itemOpened()
         assertNull(vm.ready().dialog)
     }
 

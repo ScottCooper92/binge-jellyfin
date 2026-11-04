@@ -45,7 +45,7 @@ internal fun ConsolePageRoute(
                 signedIn.account,
                 close,
             )
-        ConsolePage.Libraries -> LibrariesRoute(graph, signedIn.profile, close)
+        ConsolePage.Libraries -> LibrariesRoute(graph, openItem, close)
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)

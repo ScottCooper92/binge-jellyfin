@@ -201,6 +201,8 @@
     <string name="libraries_not_stopped">The scan didn\'t stop. %1$s</string>
     <string name="libraries_add">Add library</string>
     <string name="libraries_empty_title">No libraries</string>
+    <string name="libraries_select_title">No library selected</string>
+    <string name="libraries_select">Select a library to see and change its settings.</string>
     <string name="libraries_empty">This server has no libraries yet. Add one to start with its folders.</string>
     <string name="library_name">Name</string>
     <string name="library_enabled">Enabled</string>
