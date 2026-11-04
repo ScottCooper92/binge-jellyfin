@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Description
@@ -99,8 +100,11 @@ fun LogsScreen(
     val open = (state as? LogsUiState.Ready)?.open
     BackHandler(enabled = open != null) { actions.onCloseLog() }
     val host = remember { SnackbarHostState() }
+    var showFullName by rememberSaveable(open?.name) { mutableStateOf(false) }
     BingeScreenScaffold(
         title = open?.name?.middleEllipsised() ?: stringResource(R.string.logs_title),
+        onTitleLongClick = open?.let { { showFullName = true } },
+        onTitleLongClickLabel = stringResource(R.string.logs_show_full_name),
         bar = ScreenBar.Small,
         onBack = if (open != null) actions.onCloseLog else actions.onBack,
         snackbarHostState = host,
@@ -126,6 +130,23 @@ fun LogsScreen(
             RefusedMessage((state as? LogsUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
         }
     }
+    if (showFullName && open != null) LogNameDialog(open.name, { showFullName = false })
+}
+
+/** The full file name remains selectable even when the bar shortens it. */
+@Composable
+internal fun LogNameDialog(
+    name: String,
+    onDismiss: () -> Unit,
+    inWindow: Boolean = true,
+) {
+    ConsoleMessage(
+        title = stringResource(R.string.logs_full_name),
+        message = stringResource(R.string.logs_full_name_body),
+        onDismiss = onDismiss,
+        inWindow = inWindow,
+        extraContent = { SelectionContainer { Text(name) } },
+    )
 }
 
 @Composable
@@ -256,7 +277,6 @@ private fun Reader(
             LogContent.Loading -> ConsoleLoading(PaddingValues(), LOG_ROWS)
             is LogContent.Failed -> ConsoleFailureScreen(content.failure, actions.onRetryOpen)
             is LogContent.Ready -> {
-                LogIntro(open.name)
                 BingeSearchField(
                     query = open.query,
                     onQueryChange = actions.onQuery,
@@ -274,19 +294,6 @@ private fun Reader(
                 Entries(open.visible, actions.onCopy, Modifier.weight(1f))
             }
         }
-    }
-}
-
-/** The log's full name, which the bar may have shortened, and what Share promises, next to the action that makes it. */
-@Composable
-private fun LogIntro(name: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
-        Text(name, style = MaterialTheme.typography.titleSmall)
-        Text(
-            stringResource(R.string.logs_share_note),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

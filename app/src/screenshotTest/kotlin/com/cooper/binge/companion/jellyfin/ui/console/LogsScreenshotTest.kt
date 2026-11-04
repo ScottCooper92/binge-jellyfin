@@ -58,6 +58,13 @@ private fun open(
 /** Logs: the file list across the matrix, then a log open, cut short, searched with no match, and the read states. */
 class LogsScreenshotTest {
     @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun fullName() = Surface { LogNameDialog(LONG_NAME, {}, inWindow = false) }
+
+    @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
