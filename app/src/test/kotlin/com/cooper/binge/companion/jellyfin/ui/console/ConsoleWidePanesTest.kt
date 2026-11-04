@@ -12,6 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.binge.designsystem.LocalIsSinglePaneNav
+import com.binge.designsystem.LocalPaneDepth
+import com.binge.designsystem.LocalPaneInnerEdge
+import com.binge.designsystem.PaneEdge
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -28,6 +32,7 @@ class ConsoleWidePanesTest {
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private var stackNow = ConsoleBackStack()
+    private val seen = mutableMapOf<String, Triple<PaneEdge?, Boolean, Int>>()
 
     private fun host(signedIn: Boolean = true) {
         compose.setContent {
@@ -38,14 +43,21 @@ class ConsoleWidePanesTest {
                 signedIn = signedIn,
                 onBack = { stack = stack.back() },
                 home = {
+                    seen["home"] = Triple(LocalPaneInnerEdge.current, LocalIsSinglePaneNav.current, LocalPaneDepth.current)
                     Column {
                         Text("home")
                         Text("open logs", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Logs) })
                         Text("open tasks", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Tasks) })
                     }
                 },
-                defaultPage = { Text("default page") },
-                page = { entry -> Text("page ${entry.page.name}") },
+                defaultPage = {
+                    seen["default"] = Triple(LocalPaneInnerEdge.current, LocalIsSinglePaneNav.current, LocalPaneDepth.current)
+                    Text("default page")
+                },
+                page = { entry ->
+                    seen["page"] = Triple(LocalPaneInnerEdge.current, LocalIsSinglePaneNav.current, LocalPaneDepth.current)
+                    Text("page ${entry.page.name}")
+                },
             )
         }
     }
@@ -73,5 +85,22 @@ class ConsoleWidePanesTest {
         host(signedIn = false)
         compose.onNodeWithText("home").assertIsDisplayed()
         compose.onNodeWithText("default page").assertDoesNotExist()
+    }
+
+    @Test
+    fun `each pane knows the edge it shares with the one beside it`() {
+        host()
+        assertEquals(PaneEdge.End, seen["home"]?.first)
+        assertEquals(PaneEdge.Start, seen["default"]?.first)
+        compose.onNodeWithText("open logs").performClick()
+        compose.waitForIdle()
+        assertEquals(PaneEdge.Start, seen["page"]?.first)
+        assertEquals(false, seen["page"]?.second)
+    }
+
+    @Test
+    fun `before sign-in the home has no inner edge`() {
+        host(signedIn = false)
+        assertEquals(null, seen["home"]?.first)
     }
 }

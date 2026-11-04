@@ -11,11 +11,16 @@ import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -78,21 +83,24 @@ fun ConsoleNavHost(
                         metadata =
                             ListDetailSceneStrategy.listPane(
                                 detailPlaceholder = {
-                                    PaneContent(innerEdge = PaneEdge.Start) {
-                                        // Not an entry, so it is not on the stack and has no Back of its own to offer.
-                                        CompositionLocalProvider(LocalIsSinglePaneNav provides false, LocalPaneDepth provides 1) {
-                                            defaultPage()
+                                    // Not an entry, so it is not on the stack and has no Back of its own to offer. The
+                                    // locals wrap PaneContent, which reads LocalIsSinglePaneNav where it is called.
+                                    CompositionLocalProvider(LocalIsSinglePaneNav provides false, LocalPaneDepth provides 1) {
+                                        PaneContent(innerEdge = PaneEdge.Start) {
+                                            OwnViewModelStore { defaultPage() }
                                         }
                                     }
                                 },
                             ),
                     ) {
-                        PaneContent(innerEdge = PaneEdge.End) { home() }
+                        CompositionLocalProvider(LocalIsSinglePaneNav provides !hubBeside) {
+                            PaneContent(innerEdge = PaneEdge.End) { home() }
+                        }
                     }
                 is ConsoleKey.Page ->
                     NavEntry(key, metadata = DetailPane) {
-                        PaneContent(innerEdge = PaneEdge.Start) {
-                            CompositionLocalProvider(LocalIsSinglePaneNav provides !hubBeside, LocalPaneDepth provides depth) {
+                        CompositionLocalProvider(LocalIsSinglePaneNav provides !hubBeside, LocalPaneDepth provides depth) {
+                            PaneContent(innerEdge = PaneEdge.Start) {
                                 page(ConsoleEntry(key.page, key.opening))
                             }
                         }
@@ -121,4 +129,21 @@ private fun equalPaneWidth(directive: PaneScaffoldDirective): Dp {
     val windowWidthPx = LocalWindowInfo.current.containerSize.width
     val windowWidth = with(LocalDensity.current) { windowWidthPx.toDp() }
     return (windowWidth - directive.horizontalPartitionSpacerSize) / 2
+}
+
+/**
+ * A view-model store of its own for [content], cleared when it leaves the composition. The detail placeholder is not
+ * a navigation entry, so no decorator scopes it and its view models would otherwise land in the Activity's store and
+ * outlive it: an open event socket after a page replaces it, and the previous user's feed after another signs in.
+ */
+@Composable
+private fun OwnViewModelStore(content: @Composable () -> Unit) {
+    val owner =
+        remember {
+            object : ViewModelStoreOwner {
+                override val viewModelStore = ViewModelStore()
+            }
+        }
+    DisposableEffect(owner) { onDispose { owner.viewModelStore.clear() } }
+    CompositionLocalProvider(LocalViewModelStoreOwner provides owner) { content() }
 }
