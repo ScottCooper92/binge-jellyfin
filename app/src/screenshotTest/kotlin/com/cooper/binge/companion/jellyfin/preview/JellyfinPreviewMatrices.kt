@@ -62,6 +62,11 @@ annotation class JellyfinScreenStateLightPreview
 @Preview(name = "tablet", device = TABLET_LANDSCAPE_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class JellyfinWidePreview
 
+/** The wide window in Spanish, whose copy runs longer than English. */
+@PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
+@Preview(name = "tablet-es", device = TABLET_LANDSCAPE_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = "es")
+annotation class JellyfinWideSpanishPreview
+
 /** The TV harness painting the window's black, for a screen root, wearing [JellyfinBrand]. */
 class JellyfinTvScreenshotThemeOnBlackWrapper : TvScreenshotThemeOnBlackWrapper() {
     override val brand: BingeBrand = JellyfinBrand

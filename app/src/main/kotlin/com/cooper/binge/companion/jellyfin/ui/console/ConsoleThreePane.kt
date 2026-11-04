@@ -87,11 +87,22 @@ private fun ThreePaneRow(
     hub: @Composable () -> Unit,
     page: @Composable () -> Unit,
 ) {
+    PaneRow(1f, hub, 2f, page)
+}
+
+/** Two panes in a row, [first] and [second] sharing the width by their weights, with the design system's gap between them. */
+@Composable
+private fun PaneRow(
+    firstWeight: Float,
+    first: @Composable () -> Unit,
+    secondWeight: Float,
+    second: @Composable () -> Unit,
+) {
     val gap = dimensionResource(DesR.dimen.pane_spacer)
     Row(Modifier.fillMaxSize()) {
-        Box(Modifier.weight(1f).fillMaxHeight()) { hub() }
+        Box(Modifier.weight(firstWeight).fillMaxHeight()) { first() }
         Spacer(Modifier.width(gap))
-        Box(Modifier.weight(2f).fillMaxHeight()) { page() }
+        Box(Modifier.weight(secondWeight).fillMaxHeight()) { second() }
     }
 }
 
@@ -107,12 +118,7 @@ internal fun ListDetailBody(
     detail: @Composable () -> Unit,
 ) {
     if (LocalPageSpansTwoPanes.current) {
-        val gap = dimensionResource(DesR.dimen.pane_spacer)
-        Row(Modifier.fillMaxSize()) {
-            Box(Modifier.weight(1f).fillMaxHeight()) { list() }
-            Spacer(Modifier.width(gap))
-            Box(Modifier.weight(1f).fillMaxHeight()) { detail() }
-        }
+        PaneRow(1f, list, 1f, detail)
     } else if (detailOpen) {
         detail()
     } else {
