@@ -110,6 +110,9 @@ class MetadataDefaultsViewModel(
     /** A type's or provider's page opened: what the last screen reported was said there, and isn't replayed here. */
     fun itemOpened() = update { copy(refused = null) }
 
+    /** A type's or provider's page closed: what it reported was said there, and isn't replayed by the screen beneath it. */
+    fun itemClosed() = itemOpened()
+
     /** Switches [name] on or off in [kind]'s list for [type], and saves it. */
     fun set(
         type: String,

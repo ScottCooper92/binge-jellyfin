@@ -157,6 +157,20 @@ class LibraryDisplayViewModelTest {
     }
 
     @Test
+    fun `a refusal on a list's editor is cleared when the editor closes, and a page sheet stays`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        jellyfin.status[CONFIGURATION] = 500
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        vm.ready { it.refused != null }
+        vm.sheet(DisplaySheet.NewEntry)
+        vm.itemClosed()
+        val ready = vm.ready()
+        assertNull(ready.refused)
+        assertEquals(DisplaySheet.NewEntry, ready.sheet)
+    }
+
+    @Test
     fun `opening a list's editor clears what the last screen reported`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
