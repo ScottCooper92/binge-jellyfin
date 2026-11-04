@@ -29,6 +29,7 @@ internal fun ConsolePageRoute(
     close: () -> Unit,
     open: (ConsolePage) -> Unit = {},
     actions: Actions = Actions(),
+    openItem: (String) -> Unit = {},
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
@@ -44,7 +45,7 @@ internal fun ConsolePageRoute(
                 close,
             )
         ConsolePage.Libraries -> LibrariesRoute(graph, signedIn.profile, close)
-        ConsolePage.Tasks -> TasksRoute(graph, close)
+        ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
         ConsolePage.Logs -> LogsRoute(graph, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
@@ -197,30 +198,64 @@ private fun PasswordRoute(
     )
 }
 
-/** The scheduled tasks page, whose event socket closes with the page. */
+/**
+ * The scheduled tasks page, whose event socket closes with the page. A task opens as an entry above it on the stack
+ * ([openItem]), and its screen ([TaskItemRoute]) reads this same view model.
+ */
 @Composable
 private fun TasksRoute(
     graph: AppGraph,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
     val state by tasks.state.collectAsStateWithLifecycle()
-    PageItemDepth(open = (state as? TasksUiState.Ready)?.open != null) {
-        TasksScreen(
-            state,
-            TasksActions(
-                onRun = tasks::run,
-                onStop = tasks::stop,
-                onOpen = tasks::open,
-                onCloseTask = { tasks.open(null) },
-                onAskAdd = tasks::askAdd,
-                onAddTrigger = tasks::addTrigger,
-                onRemoveTrigger = tasks::removeTrigger,
-                onRetry = tasks::load,
-                onRefresh = tasks::refresh,
-                onBack = onBack,
-            ),
-        )
+    TasksScreen(
+        state,
+        TasksActions(
+            onRun = tasks::run,
+            onStop = tasks::stop,
+            onOpen = { openItem(it.id) },
+            onRetry = tasks::load,
+            onRefresh = tasks::refresh,
+            onBack = onBack,
+        ),
+    )
+}
+
+/** One task's screen, with the page's view model: the one its list shows, whose triggers it changes. */
+@Composable
+private fun TaskItemRoute(
+    graph: AppGraph,
+    taskId: String,
+    onBack: () -> Unit,
+) {
+    val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
+    val state by tasks.state.collectAsStateWithLifecycle()
+    TaskScreen(
+        state,
+        taskId,
+        TasksActions(
+            onAskAdd = tasks::askAdd,
+            onAddTrigger = { tasks.addTrigger(taskId, it) },
+            onRemoveTrigger = { tasks.removeTrigger(taskId, it) },
+            onRetry = tasks::load,
+            onBack = onBack,
+        ),
+    )
+}
+
+/** The screen of an item open in a page: stacked above the page's own, under the same opening, sharing its view models. */
+@Composable
+internal fun ConsoleItemRoute(
+    entry: ConsoleEntry,
+    graph: AppGraph,
+    close: () -> Unit,
+) {
+    val item = entry.item ?: return
+    when (entry.page) {
+        ConsolePage.Tasks -> TaskItemRoute(graph, item, close)
+        else -> Unit
     }
 }
 

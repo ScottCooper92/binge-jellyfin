@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
@@ -138,22 +140,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                            ConsoleNavHost(
-                                stack = if (signedIn) stack else ConsoleBackStack(),
-                                signedIn = signedIn,
-                                onBack = { stack = stack.back() },
-                                home = { JellyfinRoot(state, homeActions) },
-                                defaultPage = {
-                                    (state as? UiState.SignedIn)?.let { gated ->
-                                        ConsolePageRoute(ConsolePage.NowPlaying, graph, gated, {}, actions.onOpenPage, actions)
-                                    }
-                                },
-                                page = { entry ->
-                                    (state as? UiState.SignedIn)?.let { gated ->
-                                        ConsolePageRoute(entry.page, graph, gated, { stack = stack.back() }, actions.onOpenPage, actions)
-                                    }
-                                },
-                            )
+                            ConsoleHost(state, stack, { stack = it }, graph, actions, homeActions)
                         }
                     }
                 }
@@ -166,6 +153,48 @@ class MainActivity : ComponentActivity() {
         const val LOCAL_NETWORK_SDK = 37
         const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
     }
+}
+
+/** The console: the home, and the pages and items open over it, on [stack], whose changes [onStack] takes. */
+@Composable
+private fun ConsoleHost(
+    state: UiState,
+    stack: ConsoleBackStack,
+    onStack: (ConsoleBackStack) -> Unit,
+    graph: AppGraph,
+    actions: Actions,
+    homeActions: Actions,
+) {
+    val signedIn = state is UiState.SignedIn
+    // A tap acts on the stack as it is then, not as it was when the screen under it was composed.
+    val latest by rememberUpdatedState(stack)
+    ConsoleNavHost(
+        stack = if (signedIn) stack else ConsoleBackStack(),
+        signedIn = signedIn,
+        onBack = { onStack(latest.back()) },
+        home = { JellyfinRoot(state, homeActions) },
+        defaultPage = {
+            (state as? UiState.SignedIn)?.let { gated ->
+                ConsolePageRoute(ConsolePage.NowPlaying, graph, gated, {}, actions.onOpenPage, actions)
+            }
+        },
+        page = { entry ->
+            (state as? UiState.SignedIn)?.let { gated ->
+                ConsolePageRoute(
+                    entry.page,
+                    graph,
+                    gated,
+                    { onStack(latest.back()) },
+                    actions.onOpenPage,
+                    actions,
+                    { onStack(latest.openItem(it)) },
+                )
+            }
+        },
+        item = { entry ->
+            (state as? UiState.SignedIn)?.let { ConsoleItemRoute(entry, graph, { onStack(latest.back()) }) }
+        },
+    )
 }
 
 /**

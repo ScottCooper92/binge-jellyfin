@@ -118,15 +118,18 @@ class CreateFooterTest {
     }
 
     @Test
-    fun `a task's triggers page has Add trigger in the footer, and the task list has none`() {
+    fun `a task's screen has Add trigger in the footer, and the task list has none`() {
         var adding = false
         val task = ServerTask("t", "k", "Scan", "", "Library", false, false, null, null)
-        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(task))))
-        compose.setContent { JellyfinTheme { TasksScreen(state, TasksActions(onAskAdd = { adding = it })) } }
-        compose.onAllNodesWithText("Add trigger").assertCountEquals(0)
-        state = TasksUiState.Ready(TaskBoard(listOf(task)), open = "t")
+        val state = TasksUiState.Ready(TaskBoard(listOf(task)))
+        compose.setContent {
+            JellyfinTheme {
+                TasksScreen(state, TasksActions())
+                TaskScreen(state, "t", TasksActions(onAskAdd = { adding = it }))
+            }
+        }
         compose.waitForIdle()
-        // The task has no triggers: its empty state doesn't carry a second Add.
+        // The task has no triggers: its empty state doesn't carry a second Add, and the list has none at all.
         compose.onAllNodesWithText("Add trigger").assertCountEquals(1)
         compose.onNodeWithText("Add trigger").assertIsEnabled().performClick()
         assertEquals(true, adding)

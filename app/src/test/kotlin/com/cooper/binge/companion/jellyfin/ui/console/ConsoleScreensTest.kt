@@ -735,11 +735,20 @@ class ConsoleScreensTest {
     }
 
     @Test
-    fun `a task opens its triggers, each described, removed in place, and added from a form`() {
+    fun `a task in the list opens its own screen`() {
         val opened = mutableListOf<String>()
+        val scan = ServerTask("t", LIBRARY_SCAN_TASK, "Scan Media Library", "Scans for new files.", "Library", false, false, null, null)
+        compose.setContent {
+            JellyfinTheme { TasksScreen(TasksUiState.Ready(TaskBoard(listOf(scan))), TasksActions(onOpen = { opened += it.id })) }
+        }
+        compose.onNodeWithText("Scan Media Library").performClick()
+        assertEquals(listOf("t"), opened)
+    }
+
+    @Test
+    fun `a task's screen describes each trigger, removes one in place, and adds one from a form`() {
         val removed = mutableListOf<Int>()
         val added = mutableListOf<TaskTrigger>()
-        var closed = 0
         val triggers =
             listOf(
                 TaskTrigger.daily(3 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR),
@@ -754,16 +763,11 @@ class ConsoleScreensTest {
         var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(scan))))
         val actions =
             TasksActions(
-                onOpen = { opened += it.id },
-                onCloseTask = { closed++ },
                 onAskAdd = { state = state.copy(adding = it) },
                 onAddTrigger = { added += it },
                 onRemoveTrigger = { removed += it },
             )
-        compose.setContent { JellyfinTheme { TasksScreen(state, actions) } }
-        compose.onNodeWithText("Scan Media Library").performClick()
-        assertEquals(listOf("t"), opened)
-        state = state.copy(open = "t")
+        compose.setContent { JellyfinTheme { TaskScreen(state, "t", actions) } }
         compose.onNodeWithText("Scans for new files.").assertExists()
         compose.onNodeWithText("Every day at", substring = true).assertExists()
         compose.onNodeWithText("Stops after 2 hours").assertExists()
@@ -774,9 +778,6 @@ class ConsoleScreensTest {
         compose.onNodeWithText("SystemEventTrigger").assertExists()
         compose.onAllNodesWithContentDescription("Remove")[1].performClick()
         assertEquals(listOf(1), removed)
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        compose.waitForIdle()
-        assertEquals(1, closed)
         compose.onNodeWithText("Add trigger").performClick()
         compose.onNodeWithText("New trigger").assertExists()
         compose.onNodeWithText("Every so often").performClick()
@@ -793,20 +794,29 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Add").performClick()
         // The time limit chosen a moment ago is still chosen: the form keeps what was picked.
         assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
-        state = state.copy(saving = true, actionFailed = ConsoleFailure.Refused, adding = false)
+        state = state.copy(saving = true, triggerFailed = ConsoleFailure.Refused, adding = false)
         compose.onAllNodesWithContentDescription("Remove").assertCountEquals(0)
         compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
-        state = TasksUiState.Ready(TaskBoard(emptyList()), open = "gone")
-        compose.onNodeWithText("Scan Media Library").assertDoesNotExist()
-        // A task with none says so, with Add trigger as its one action; a failed change says so in a message, and the page stays.
-        state = TasksUiState.Ready(TaskBoard(listOf(scan.copy(triggers = emptyList()))), open = "t")
+        // A task with none says so, with Add trigger as its one action; a failed change says so in a message, and the screen stays.
+        state = TasksUiState.Ready(TaskBoard(listOf(scan.copy(triggers = emptyList()))))
         compose.onNodeWithText("No triggers").assertExists()
         compose.onNodeWithText("This task only runs when you start it.").assertExists()
-        state = state.copy(actionFailed = ConsoleFailure.Refused)
+        state = state.copy(triggerFailed = ConsoleFailure.Refused)
         compose.onNodeWithText("This task only runs when you start it.").assertExists()
         compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
         compose.onNodeWithText("Add trigger").performClick()
         assertTrue(state.adding)
+    }
+
+    @Test
+    fun `a task the server no longer lists closes its screen`() {
+        var closed = 0
+        val scan = ServerTask("t", LIBRARY_SCAN_TASK, "Scan", "", "Library", false, false, null, null)
+        compose.setContent {
+            JellyfinTheme { TaskScreen(TasksUiState.Ready(TaskBoard(listOf(scan))), "gone", TasksActions(onBack = { closed++ })) }
+        }
+        compose.waitForIdle()
+        assertEquals(1, closed)
     }
 
     @Test
