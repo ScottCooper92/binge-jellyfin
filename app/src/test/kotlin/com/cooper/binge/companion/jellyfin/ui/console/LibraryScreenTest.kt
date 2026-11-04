@@ -1,6 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
@@ -16,6 +21,7 @@ import com.cooper.binge.companion.jellyfin.server.MetadataSaver
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -258,6 +264,40 @@ class LibraryScreenTest {
     fun `the languages page says so when the server listed no languages`() {
         show("movies", """{"SubtitleDownloadLanguages":[]}""", page = LibraryPage.Languages)
         compose.onNodeWithText("The server did not list any languages.").assertExists()
+    }
+
+    @Test
+    fun `language search matches trimmed names and removes empty letter headings`() {
+        show("movies", """{"SubtitleDownloadLanguages":[]}""", cultures = languages, page = LibraryPage.Languages)
+        compose.onNode(hasSetTextAction()).performTextReplacement(" fRe ")
+        compose.onNodeWithText("French").assertExists()
+        compose.onNodeWithText("F").assertExists()
+        compose.onNodeWithText("E").assertDoesNotExist()
+        compose.onNodeWithText("S").assertDoesNotExist()
+        compose.onNode(hasSetTextAction()).performTextReplacement("Klingon")
+        compose.onNodeWithText("No languages match that search").assertExists()
+    }
+
+    @Test
+    fun `a selected language stays on when the search clears and appears before the alphabet`() {
+        val json = Json.parseToJsonElement("""{"SubtitleDownloadLanguages":[]}""").jsonObject
+        var state by mutableStateOf(
+            LibraryUiState.Ready(
+                library = ServerLibrary("id", "Library", "movies", emptyList(), json),
+                options = json,
+                available = savers,
+                cultures = languages,
+                page = LibraryPage.Languages,
+            ),
+        )
+        val actions = LibraryActions(onJson = { key, value -> state = state.copy(options = JsonObject(state.options + (key to value))) })
+        compose.setContent { JellyfinTheme { LanguagesPage(state, actions, PaddingValues()) } }
+        compose.onNode(hasSetTextAction()).performTextReplacement("Spanish")
+        compose.onNodeWithText("Spanish").performClick()
+        compose.onNode(hasSetTextAction()).performTextReplacement("")
+        compose.onNodeWithText("Selected").assertExists()
+        compose.onNodeWithText("Spanish").assertIsOn()
+        compose.onNodeWithText("English").assertExists()
     }
 
     @Test
