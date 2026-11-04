@@ -404,10 +404,12 @@ app:library_whitelist  ffa0299c7324
 app:library_whitelist_count  4fa7549fdcda
 app:library_whitelist_hint  8758e9d95e16
 app:live_tv_add_body  f7c1f6fd17d8
+app:live_tv_add_by_address  fb56fe2c76fc
 app:live_tv_add_title  9c892e2f98d0
 app:live_tv_add_tuner  b37ee240d868
 app:live_tv_body  2745b5553bce
 app:live_tv_discover_failed  4fa20d0dc309
+app:live_tv_discover_retry  942087cc2d41
 app:live_tv_favorites_only  1fa9742f41c4
 app:live_tv_field_address  56ef8f20955f
 app:live_tv_field_address_detail  59c851a2a41e
@@ -428,6 +430,7 @@ app:live_tv_form_add_hdhomerun  312efb889de8
 app:live_tv_form_add_m3u  7219ebe7f2f8
 app:live_tv_form_edit  e2948d510330
 app:live_tv_found_none  5ea3fc382c2f
+app:live_tv_found_none_title  f1c2329abf72
 app:live_tv_found_title  03da06027a8c
 app:live_tv_guide  99c0191df522
 app:live_tv_guide_add  2b346acb7f06

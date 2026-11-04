@@ -2,10 +2,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
@@ -24,12 +24,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
@@ -110,21 +110,26 @@ private fun ChooseTuner(actions: LiveTvActions) {
 
 /** All discovery outcomes share their header, body slot and always-present actions. */
 @Composable
-private fun TunerDiscovery(sheet: TunerSheet, actions: LiveTvActions) {
+private fun TunerDiscovery(
+    sheet: TunerSheet,
+    actions: LiveTvActions,
+) {
     val searching = sheet == TunerSheet.Discovering
     val devices = (sheet as? TunerSheet.Found)?.devices.orEmpty()
     val failure = (sheet as? TunerSheet.Failed)?.failure
-    val title = when {
-        searching -> R.string.live_tv_finding_title
-        failure != null -> R.string.live_tv_discover_failed
-        devices.isEmpty() -> R.string.live_tv_found_none_title
-        else -> R.string.live_tv_found_title
-    }
-    val subtitle = when {
-        failure != null -> failure.text()
-        !searching && devices.isEmpty() -> stringResource(R.string.live_tv_found_none)
-        else -> stringResource(R.string.live_tv_finding_body)
-    }
+    val title =
+        when {
+            searching -> R.string.live_tv_finding_title
+            failure != null -> R.string.live_tv_discover_failed
+            devices.isEmpty() -> R.string.live_tv_found_none_title
+            else -> R.string.live_tv_found_title
+        }
+    val subtitle =
+        when {
+            failure != null -> failure.text()
+            !searching && devices.isEmpty() -> stringResource(R.string.live_tv_found_none)
+            else -> stringResource(R.string.live_tv_finding_body)
+        }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
         SheetHeader(stringResource(title), subtitle)
         Box(
@@ -136,15 +141,16 @@ private fun TunerDiscovery(sheet: TunerSheet, actions: LiveTvActions) {
                 ItemGroup(
                     title = null,
                     modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
-                    rows = devices.map { device ->
-                        ListItem(
-                            icon = Icons.Outlined.LiveTv,
-                            label = device.name.ifBlank { device.url.withoutSecrets() },
-                            detail = device.url.withoutSecrets().takeIf { device.name.isNotBlank() },
-                            supportingMaxLines = DETAIL_LINES,
-                            onClick = { actions.onForm(device) },
-                        )
-                    },
+                    rows =
+                        devices.map { device ->
+                            ListItem(
+                                icon = Icons.Outlined.LiveTv,
+                                label = device.name.ifBlank { device.url.withoutSecrets() },
+                                detail = device.url.withoutSecrets().takeIf { device.name.isNotBlank() },
+                                supportingMaxLines = DETAIL_LINES,
+                                onClick = { actions.onForm(device) },
+                            )
+                        },
                 )
             }
         }

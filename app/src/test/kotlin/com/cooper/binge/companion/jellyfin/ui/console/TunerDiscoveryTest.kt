@@ -49,7 +49,10 @@ class TunerDiscoveryTest {
 
     @After fun after() = teardown.close(server)
 
-    private fun await(vm: LiveTvViewModel, check: (LiveTvUiState.Ready) -> Boolean): LiveTvUiState.Ready =
+    private fun await(
+        vm: LiveTvViewModel,
+        check: (LiveTvUiState.Ready) -> Boolean,
+    ): LiveTvUiState.Ready =
         runBlocking { withTimeout(10_000) { vm.state.first { it is LiveTvUiState.Ready && check(it) } } } as LiveTvUiState.Ready
 
     @Test fun `held discovery found none and failed keep actions and retry or address works`() {

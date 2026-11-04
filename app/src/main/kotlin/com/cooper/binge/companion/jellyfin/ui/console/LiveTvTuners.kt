@@ -97,7 +97,9 @@ sealed interface TunerSheet {
     ) : TunerSheet
 
     /** Discovery failed; its cause stays alongside Retry in the search sheet. */
-    data class Failed(val failure: ConsoleFailure) : TunerSheet
+    data class Failed(
+        val failure: ConsoleFailure,
+    ) : TunerSheet
 
     /** A tuner's form: a new one, or the one with [TunerDraft.id]. */
     data class Form(
@@ -115,5 +117,4 @@ enum class TunerProblem {
 
     /** The change did not go through, and there is nothing more to say than that. */
     NotChanged,
-
 }

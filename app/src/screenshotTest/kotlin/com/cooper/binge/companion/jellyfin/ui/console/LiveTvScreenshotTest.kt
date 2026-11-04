@@ -136,7 +136,6 @@ class LiveTvScreenshotTest {
     @Composable
     fun discoveryFailed() = Surface { TunerSheetContent(TunerSheet.Failed(ConsoleFailure.Unreachable), false, LiveTvActions()) }
 
-
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
