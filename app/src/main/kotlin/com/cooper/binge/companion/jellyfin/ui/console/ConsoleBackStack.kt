@@ -66,14 +66,25 @@ data class ConsoleBackStack(
     val topItem: ConsoleEntry? get() = top?.takeIf { it.item != null }
 
     /**
-     * [item] opened in the page on top, above its own entry. One item is open at a time: opening another replaces it, and
-     * opening the one showing does nothing. Back from it returns to the page's list.
+     * [item] opened in the page on top, above its own entry. One item is open at a time: opening another replaces the one
+     * open, and anything opened above it, and opening the one showing does nothing. Back from it returns to the page's list.
      */
     fun openItem(item: String): ConsoleBackStack {
-        val page = entries.lastOrNull { it.item == null } ?: return this
-        if (top?.item == item) return this
-        val base = if (top?.item != null) entries.dropLast(1) else entries
-        return copy(entries = base + ConsoleEntry(page.page, page.opening, item))
+        val at = entries.indexOfLast { it.item == null }
+        if (at < 0) return this
+        if (entries.lastIndex > at && top?.item == item) return this
+        val page = entries[at]
+        return copy(entries = entries.take(at + 1) + ConsoleEntry(page.page, page.opening, item))
+    }
+
+    /**
+     * [item] opened above the item showing, as a user's section is above the user: Back returns to that item. With none
+     * showing there is nothing to open it over.
+     */
+    fun openSubItem(item: String): ConsoleBackStack {
+        val on = top?.takeIf { it.item != null } ?: return this
+        if (on.item == item) return this
+        return copy(entries = entries + ConsoleEntry(on.page, on.opening, item))
     }
 
     /** [page] opened from the page on top, or from the home. Opening the page already on top does nothing. */

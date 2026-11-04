@@ -41,8 +41,16 @@ class UserPolicyScreensTest {
     ) {
         val sam = ServerUser("sam", "Sam", false, null, policy)
         val libraries = listOf(ServerLibrary("m", "Movies", "movies", emptyList()), ServerLibrary("s", "Shows", "tvshows", emptyList()))
-        val state = UsersUiState.Ready(listOf(sam), libraries, me = "me", open = "sam", section = section)
-        compose.setContent { JellyfinTheme { UsersScreen(state, actions, choices = choices, profile = profile) } }
+        val state = UsersUiState.Ready(listOf(sam), libraries, me = "me", open = "sam")
+        compose.setContent {
+            JellyfinTheme {
+                if (section == null) {
+                    UserScreen(state, "sam", actions)
+                } else {
+                    UserSectionScreen(state, "sam", section, choices, profile, actions)
+                }
+            }
+        }
     }
 
     @Test

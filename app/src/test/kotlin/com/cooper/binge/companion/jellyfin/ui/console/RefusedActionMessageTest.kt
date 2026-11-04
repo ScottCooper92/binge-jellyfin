@@ -134,14 +134,29 @@ class RefusedActionMessageTest {
     }
 
     @Test
-    fun `a user change the server refused says so`() {
+    fun `a user change the server refused says so, on the user's screen`() {
+        val ana = ServerUser("ana", "Ana", true, null, kotlinx.serialization.json.JsonObject(emptyMap()))
+        compose.setContent {
+            JellyfinTheme {
+                UserScreen(
+                    UsersUiState.Ready(listOf(ana), emptyList(), me = "me", actionFailed = ConsoleFailure.Refused),
+                    "ana",
+                    UsersActions(),
+                )
+            }
+        }
+        compose.onNodeWithText("Not changed. Something went wrong. Try again.").assertExists()
+    }
+
+    @Test
+    fun `the users list does not say a user's refusal, since their own screen does`() {
         val ana = ServerUser("ana", "Ana", true, null, kotlinx.serialization.json.JsonObject(emptyMap()))
         compose.setContent {
             JellyfinTheme {
                 UsersScreen(UsersUiState.Ready(listOf(ana), emptyList(), me = "me", actionFailed = ConsoleFailure.Refused), UsersActions())
             }
         }
-        compose.onNodeWithText("Not changed. Something went wrong. Try again.").assertExists()
+        compose.onAllNodesWithText("Not changed. Something went wrong. Try again.").assertCountEquals(0)
     }
 
     @Test

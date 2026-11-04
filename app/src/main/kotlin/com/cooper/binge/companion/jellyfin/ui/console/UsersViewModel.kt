@@ -45,8 +45,9 @@ sealed interface UsersUiState {
     ) : UsersUiState
 
     /**
-     * The users, and the libraries a user may be given; [me], the signed-in user's id; [open], the user
-     * whose page is showing, and [section], the page of their settings that is; [dialog] over it; [busy] while a create, password or delete is on its way;
+     * The users, and the libraries a user may be given; [me], the signed-in user's id; [open], the user the screens
+     * are showing (which user, and which section of their settings, is an entry on the stack; the screen of one
+     * says so here with [UsersViewModel.select], so the changes made on it act on them); [dialog] over it; [busy] while a create, password or delete is on its way;
      * [done] what the last one did; [actionFailed] the last change that didn't go through.
      */
     data class Ready(
@@ -54,7 +55,6 @@ sealed interface UsersUiState {
         val libraries: List<ServerLibrary>,
         val me: String,
         val open: String? = null,
-        val section: UserSection? = null,
         val dialog: UserDialog? = null,
         val busy: Boolean = false,
         val done: UserDone? = null,
@@ -158,7 +158,14 @@ class UsersViewModel(
         }
     }
 
-    fun open(user: ServerUser?) = update { copy(open = user?.id, section = null, dialog = null, done = null, actionFailed = null) }
+    /** The screen of user [id], or none (null), is showing: the changes the policy screens make are to them. */
+    fun select(id: String?) = update { copy(open = id) }
+
+    /**
+     * A user is being opened: what the last screen reported, and a dialog it left open, are not this one's. They live
+     * here, shared by the list and the user, so a screen composed afresh would say them again.
+     */
+    fun itemOpened() = update { copy(dialog = null, done = null, actionFailed = null, formFailure = null) }
 
     fun show(dialog: UserDialog?) = update { copy(dialog = dialog, done = null, formFailure = null, actionFailed = null) }
 
@@ -177,9 +184,6 @@ class UsersViewModel(
         key: String,
         change: (List<JsonElement>) -> List<JsonElement>,
     ) = changePolicy { policy -> policy + (key to JsonArray(change((policy[key] as? JsonArray).orEmpty()))) }
-
-    /** Opens [section] of the open user's settings, or their page for null. */
-    fun section(section: UserSection?) = update { copy(section = section, done = null, actionFailed = null) }
 
     fun create(
         name: String,

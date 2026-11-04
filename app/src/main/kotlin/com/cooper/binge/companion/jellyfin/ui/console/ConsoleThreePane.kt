@@ -1,32 +1,22 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
 import com.binge.designsystem.LocalPaneDepth
-import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.R as DesR
 
 private const val HUB_ROLE = "console.threePane.hub"
@@ -53,13 +43,6 @@ internal val LocalOpenItem = staticCompositionLocalOf<String?> { null }
 internal fun isThreePaneWindow(): Boolean = booleanResource(DesR.bool.binge_nav_rail_expanded)
 
 /**
- * Whether the page showing is given two panes' width: a page that lists and opens things (users, logs, tasks) then
- * draws the list and what it opened side by side, the home still a pane of its own beside them. False everywhere else,
- * where the page is one pane and opens an item in place of its list.
- */
-internal val LocalPageSpansTwoPanes = staticCompositionLocalOf { false }
-
-/**
  * The home as the first pane, a third of the window, and the newest page, or [defaultPage] while none is open, as the
  * other two thirds. A page whose items are entries ([ConsolePage.opensItems]) is the second pane alone, with its newest
  * item, or [itemPlaceholder] while none is open, as the third: each a third of the window. Only on an [enabled] window;
@@ -78,7 +61,8 @@ internal class ConsoleThreePaneStrategy(
         if (hub == -1) return null
         val top = entries.lastOrNull()?.takeIf { entries.lastIndex > hub }
         val topIsItem = top?.metadata?.get(ITEM_ROLE) == true
-        val page = if (topIsItem) entries.getOrNull(entries.lastIndex - 1) else top
+        // The page is the last page entry, not the one under the top: an item may be open over another (a user's section).
+        val page = if (topIsItem) entries.lastOrNull { it.metadata[PAGE_ROLE] != null } else top
         val page2 = page?.metadata?.get(PAGE_ROLE) as? ConsolePage
         return if (page2?.opensItems == true) {
             ConsoleThreePaneScene(entries, entries[hub], page, top.takeIf { topIsItem }, page2, defaultPage, itemPlaceholder)
@@ -144,79 +128,15 @@ private fun PaneRow(
 }
 
 /**
- * A list-detail page's body: on a page given two panes' width ([LocalPageSpansTwoPanes]), the [list] and the [detail]
- * side by side, each a third of the window; anywhere else [detail] while [detailOpen] and [list] otherwise, as the page
- * has always done, with its own Back to close the detail.
- */
-@Composable
-internal fun ListDetailBody(
-    detailOpen: Boolean,
-    list: @Composable () -> Unit,
-    detail: @Composable () -> Unit,
-) {
-    if (LocalPageSpansTwoPanes.current) {
-        PaneRow(1f, list, 1f, detail)
-    } else if (detailOpen) {
-        detail()
-    } else {
-        list()
-    }
-}
-
-/** The padding under a detail pane's [DetailHeading]: [this] without its top, which the heading took. */
-@Composable
-internal fun PaddingValues.belowHeading(): PaddingValues {
-    val direction = LocalLayoutDirection.current
-    return PaddingValues(
-        start = calculateStartPadding(direction),
-        end = calculateEndPadding(direction),
-        bottom = calculateBottomPadding(),
-    )
-}
-
-/** The title of the item open in the detail pane beside its list, where alone it would be the page's own title. */
-@Composable
-internal fun DetailHeading(
-    text: String,
-    inner: PaddingValues,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier =
-            modifier.padding(
-                top = inner.calculateTopPadding(),
-                start = inner.calculateStartPadding(LocalLayoutDirection.current),
-            ),
-    )
-}
-
-/** The detail pane while the list beside it has nothing open. */
-@Composable
-internal fun NothingSelected(
-    title: String,
-    message: String,
-    icon: ImageVector,
-    inner: PaddingValues,
-) {
-    Box(Modifier.fillMaxSize().padding(inner)) { EmptyScreen(message = message, title = title, icon = icon) }
-}
-
-/**
  * Marks [content] as one level deeper than its page while an item is open inside it ([open]): a task, a log, a user, a
  * section. Beside the home a page has no Back of its own, since the home never leaves the screen. But an open item is
  * not that: Back from it returns to the page's list, which is the only way there on screen. A level deeper is what the
- * design system's rule keeps the Back arrow for. Where the page spans two panes ([LocalPageSpansTwoPanes]) the item is
- * beside its list, not over it, so nothing changes.
+ * design system's rule keeps the Back arrow for.
  */
 @Composable
 internal fun PageItemDepth(
     open: Boolean,
     content: @Composable () -> Unit,
 ) {
-    val deeper = open && !LocalPageSpansTwoPanes.current
-    CompositionLocalProvider(LocalPaneDepth provides LocalPaneDepth.current + if (deeper) 1 else 0, content = content)
+    CompositionLocalProvider(LocalPaneDepth provides LocalPaneDepth.current + if (open) 1 else 0, content = content)
 }

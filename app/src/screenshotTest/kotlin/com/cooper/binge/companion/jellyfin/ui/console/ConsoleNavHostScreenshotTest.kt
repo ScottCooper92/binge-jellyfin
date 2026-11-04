@@ -39,7 +39,7 @@ class ConsoleNavHostScreenshotTest {
     @PreviewTest
     @JellyfinWidePreview
     @Composable
-    fun pageOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.Users))
+    fun pageOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.NowPlaying))
 
     @PreviewTest
     @JellyfinWidePreview

@@ -70,7 +70,7 @@ class UsersViewModelTest {
 
     private fun saves() = jellyfin.requests.count { it.url.encodedPath.endsWith("/Policy") }
 
-    private fun UsersViewModel.openSam() = ready().users.first { it.name == "Sam" }.also(::open)
+    private fun UsersViewModel.openSam() = ready().users.first { it.name == "Sam" }.also { select(it.id) }
 
     @Test
     fun `reads the users by name and the libraries, knowing which is me`() {
@@ -207,7 +207,13 @@ class UsersViewModelTest {
     @Test
     fun `my own sign-in and administrator switches can't be changed, nor can I be deleted`() {
         val vm = made(UsersViewModel(connection))
-        vm.open(vm.ready().users.first())
+        vm.select(
+            vm
+                .ready()
+                .users
+                .first()
+                .id,
+        )
         vm.setAdministrator(false)
         vm.setCanSignIn(false)
         vm.show(UserDialog.Delete)
@@ -292,7 +298,7 @@ class UsersViewModelTest {
     fun `the signed-in user's own password is left to the Password page`() {
         val vm = made(UsersViewModel(connection))
         val me = vm.ready().users.first { it.id == "user-1" }
-        vm.open(me)
+        vm.select(me.id)
         vm.setPassword("mine")
         assertEquals(0, jellyfin.hits("/Users/Password"))
         assertNull(vm.ready().done)
@@ -356,7 +362,7 @@ class UsersViewModelTest {
         held.awaitArrival()
         // Another user is opened and their own Password form shown, then Sam's call fails.
         val other = vm.ready().users.first { it.id != sam.id && it.id != vm.ready().me }
-        vm.open(other)
+        vm.select(other.id)
         vm.show(UserDialog.Password)
         held.refuse(500)
         val failed = vm.ready { it.actionFailed != null }
