@@ -47,7 +47,8 @@ private val DetailPane: Map<String, Any> = ListDetailSceneStrategy.detailPane()
  *
  * Signed in ([signedIn]), the home is the list pane: on a window wide enough for two panes (an unfolded Fold, a
  * tablet) the open page, and every page it opens, shows beside it, and [defaultPage] fills the detail pane while
- * none is open so it is never empty. On a narrow window each is the whole window, as before.
+ * none is open so it is never empty. On a narrow window each is the whole window, as before. On a landscape tablet
+ * the page is given two thirds of the window ([ConsoleThreePaneStrategy]), for a list and what it opened.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -65,49 +66,65 @@ fun ConsoleNavHost(
     // An entry is built once for its key and keeps its metadata and content for as long as the key is on the stack, so
     // what changes later (a fold, a page opened) is read inside the content, through these.
     val hubBeside by rememberUpdatedState(signedIn && directive.maxHorizontalPartitions > 1)
+    // A landscape tablet: the page gets two thirds of the window, for a list and what it opened.
+    val threePane = hubBeside && isThreePaneWindow()
+    val threePaneNow by rememberUpdatedState(threePane)
     val depth by rememberUpdatedState(stack.entries.size)
+    val homeNow by rememberUpdatedState(home)
+    val defaultPageNow by rememberUpdatedState(defaultPage)
+    val pageNow by rememberUpdatedState(page)
     NavDisplay(
         backStack = stack.keys(signedIn),
         onBack = onBack,
-        sceneStrategies = listOf(rememberConsolePaneStrategy(directive)),
+        sceneStrategies =
+            listOf(
+                ConsoleThreePaneStrategy(threePane) { DefaultPane(defaultPageNow) },
+                rememberConsolePaneStrategy(directive),
+            ),
         entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
         transitionSpec = { Instant },
         popTransitionSpec = { Instant },
         predictivePopTransitionSpec = { Instant },
         entryProvider = { key ->
             when (key) {
-                ConsoleKey.Home -> NavEntry(key) { home() }
+                ConsoleKey.Home -> NavEntry(key) { homeNow() }
                 ConsoleKey.Hub ->
                     NavEntry(
                         key,
-                        metadata =
-                            ListDetailSceneStrategy.listPane(
-                                detailPlaceholder = {
-                                    // Not an entry, so it is not on the stack and has no Back of its own to offer. The
-                                    // locals wrap PaneContent, which reads LocalIsSinglePaneNav where it is called.
-                                    CompositionLocalProvider(LocalIsSinglePaneNav provides false, LocalPaneDepth provides 1) {
-                                        PaneContent(innerEdge = PaneEdge.Start) {
-                                            OwnViewModelStore { defaultPage() }
-                                        }
-                                    }
-                                },
-                            ),
+                        metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { DefaultPane(defaultPageNow) }) + ThreePaneHub,
                     ) {
                         CompositionLocalProvider(LocalIsSinglePaneNav provides !hubBeside) {
-                            PaneContent(innerEdge = PaneEdge.End) { home() }
+                            PaneContent(innerEdge = PaneEdge.End) { homeNow() }
                         }
                     }
                 is ConsoleKey.Page ->
                     NavEntry(key, metadata = DetailPane) {
-                        CompositionLocalProvider(LocalIsSinglePaneNav provides !hubBeside, LocalPaneDepth provides depth) {
+                        CompositionLocalProvider(
+                            LocalIsSinglePaneNav provides !hubBeside,
+                            LocalPaneDepth provides depth,
+                            LocalPageSpansTwoPanes provides threePaneNow,
+                        ) {
                             PaneContent(innerEdge = PaneEdge.Start) {
-                                page(ConsoleEntry(key.page, key.opening))
+                                pageNow(ConsoleEntry(key.page, key.opening))
                             }
                         }
                     }
             }
         },
     )
+}
+
+/**
+ * What fills the detail pane while no page is open. Not an entry, so it is not on the stack and has no Back of its own
+ * to offer. The locals wrap PaneContent, which reads LocalIsSinglePaneNav where it is called.
+ */
+@Composable
+private fun DefaultPane(defaultPage: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalIsSinglePaneNav provides false, LocalPaneDepth provides 1) {
+        PaneContent(innerEdge = PaneEdge.Start) {
+            OwnViewModelStore { defaultPage() }
+        }
+    }
 }
 
 /**

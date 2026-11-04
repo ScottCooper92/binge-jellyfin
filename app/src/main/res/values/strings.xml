@@ -916,6 +916,8 @@
     <string name="repositories_add_submit">Add</string>
     <string name="devices_empty">No devices are signed in to this server.</string>
     <string name="tasks_empty">This server has no scheduled tasks to show.</string>
+    <string name="tasks_select_title">No task selected</string>
+    <string name="tasks_select">Select a task to see its triggers.</string>
     <string name="advanced_title">Advanced</string>
     <string name="console_advanced_detail">Scanning, caches, log retention and CORS</string>
     <string name="advanced_body">Options most servers never change. A change saves as you make it. Check what an option does before you change it.</string>

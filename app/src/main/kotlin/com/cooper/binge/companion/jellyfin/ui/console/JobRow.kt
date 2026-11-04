@@ -37,6 +37,8 @@ data class JobRow(
     val onStop: (() -> Unit)? = null,
     /** Opens the job, when it has a page of its own; null leaves the row as plain text. */
     val onOpen: (() -> Unit)? = null,
+    /** The job open beside this list, marked as the one showing. */
+    val selected: Boolean = false,
 )
 
 /**
@@ -63,6 +65,7 @@ internal fun JobRow.item(): ListItem =
                 else -> idleDetail
             },
         detailColor = if (outcome == JobOutcome.Failed) BingeSentiment.Negative.accent() else null,
+        selected = selected,
         clickable = onOpen != null,
         onClick = onOpen ?: {},
         trailingContent = { JobAction(this) },
