@@ -9,6 +9,7 @@ import com.binge.designsystem.preview.PHONE_LANDSCAPE_SPEC
 import com.binge.designsystem.preview.PHONE_PORTRAIT_SPEC
 import com.binge.designsystem.preview.SOURCE_LOCALE
 import com.binge.designsystem.preview.ScreenshotThemeWrapper
+import com.binge.designsystem.preview.TABLET_LANDSCAPE_SPEC
 import com.binge.designsystem.theme.BingeBrand
 import com.binge.designsystem.tv.preview.TV_PREVIEW_SPEC
 import com.binge.designsystem.tv.preview.TvScreenshotThemeOnBlackWrapper
@@ -55,6 +56,11 @@ annotation class JellyfinScreenStatePreview
 @PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
 @Preview(name = "phone-light", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_NO, locale = SOURCE_LOCALE)
 annotation class JellyfinScreenStateLightPreview
+
+/** The wide window the console shows two panes on: a landscape tablet, in the dark. */
+@PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
+@Preview(name = "tablet", device = TABLET_LANDSCAPE_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+annotation class JellyfinWidePreview
 
 /** The TV harness painting the window's black, for a screen root, wearing [JellyfinBrand]. */
 class JellyfinTvScreenshotThemeOnBlackWrapper : TvScreenshotThemeOnBlackWrapper() {
