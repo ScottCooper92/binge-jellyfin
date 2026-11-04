@@ -43,5 +43,6 @@ internal fun UsersRoute(
         ),
         choices = picks,
         profile = profile,
+        avatar = { ServerUserAvatar(it, graph.userPictures) },
     )
 }

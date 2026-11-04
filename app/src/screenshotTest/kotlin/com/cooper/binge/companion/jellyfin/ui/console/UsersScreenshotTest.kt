@@ -49,7 +49,13 @@ class UsersScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun users() = UsersScreen(previewReady, UsersActions(), now = NOW)
+    fun users() =
+        UsersScreen(
+            previewReady,
+            UsersActions(),
+            now = NOW,
+            avatar = { UserAvatar(it.name, profilePictureFixture.takeIf { _ -> it.id == "ana" }) },
+        )
 
     /** A pull in progress: the list stays, with the pull spinner over it. */
     @PreviewTest

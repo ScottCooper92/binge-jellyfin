@@ -79,6 +79,7 @@ fun UsersScreen(
     now: Long = System.currentTimeMillis(),
     choices: UserChoices = UserChoices(),
     profile: JellyfinServerProfile = JellyfinServerProfile.from(null),
+    avatar: @Composable (ServerUser) -> Unit = { UserAvatar(it.name) },
 ) {
     val user = (state as? UsersUiState.Ready)?.openUser
     val section = (state as? UsersUiState.Ready)?.section.takeIf { user != null }
@@ -122,7 +123,7 @@ fun UsersScreen(
                                 isRefreshing = state.refreshing,
                                 onRefresh = actions.onRefresh,
                                 indicatorTopInset = padding.calculateTopPadding(),
-                            ) { UserList(state, actions, inner, now) }
+                            ) { UserList(state, actions, inner, now, avatar) }
                         section == null -> UserPage(state, user, actions, inner)
                         else -> PolicySection(section, state, user, choices, profile, actions, inner)
                     }
@@ -144,6 +145,7 @@ private fun UserList(
     actions: UsersActions,
     inner: PaddingValues,
     now: Long,
+    avatar: @Composable (ServerUser) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -151,7 +153,7 @@ private fun UserList(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { PageIntro(stringResource(R.string.users_body)) }
-        item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
+        item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions, avatar) }) }
     }
 }
 
@@ -160,6 +162,7 @@ private fun ServerUser.row(
     me: String,
     now: Long,
     actions: UsersActions,
+    avatar: @Composable (ServerUser) -> Unit,
 ): ListItem {
     val seen = formatRelativeOrAbsolute(lastSeenMillis, now)?.let { stringResource(R.string.devices_seen, it) }
     val role =
@@ -175,6 +178,7 @@ private fun ServerUser.row(
                 administrator -> Icons.Outlined.AdminPanelSettings
                 else -> Icons.Outlined.Person
             },
+        leadingContent = { avatar(this) },
         label = if (id == me) stringResource(R.string.users_you, name) else name,
         detail = listOfNotNull(role, seen).joinToString(" · ").ifBlank { stringResource(R.string.users_never_seen) },
         onClick = { actions.onOpen(this) },
