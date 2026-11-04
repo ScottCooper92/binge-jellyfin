@@ -2,11 +2,15 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.LocalIsSinglePaneNav
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.LogEntry
 import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.LogLevel
@@ -171,4 +175,39 @@ class LogsScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = LogsScreen(LogsUiState.Failed(ConsoleFailure.Refused), LogsActions())
+}
+
+/**
+ * The files without a modified time, so a frame shows no date: a date's format in Spanish differs between JDKs, and a
+ * frame recorded on one would fail on another.
+ */
+private val splitFiles = previewFiles.map { it.copy(modifiedMillis = null) }
+
+@Composable
+private fun SplitLogs(state: LogsUiState) =
+    CompositionLocalProvider(LocalPageSpansTwoPanes provides true, LocalIsSinglePaneNav provides false) {
+        LogsScreen(state, LogsActions(), zone = ZoneOffset.UTC)
+    }
+
+/** The logs page on a window with room for two panes: the files beside the open log, or beside its invitation. */
+class LogsSplitScreenshotTest {
+    /** A log open: its name and entries with their search and chips, and its file marked in the list. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun logOpen() = SplitLogs(open().copy(files = splitFiles))
+
+    /** Nothing open: the files beside the invitation to pick a log. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun nothingOpen() = SplitLogs(LogsUiState.Ready(splitFiles))
+
+    /** The open log could not be read: the files stay, and the failure and its Retry fill the detail. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @Composable
+    fun readFailed() = SplitLogs(open(content = LogContent.Failed(ConsoleFailure.Unreachable)).copy(files = splitFiles))
 }

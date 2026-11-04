@@ -365,6 +365,8 @@
     <string name="logs_retention_invalid">Introduce un número entero de días de %1$d a %2$d.</string>
     <string name="logs_retention_save">Guardar</string>
     <string name="console_logs_detail">Los archivos de registro del servidor</string>
+    <string name="logs_select_title">Ningún registro seleccionado</string>
+    <string name="logs_select">Selecciona un registro para leerlo.</string>
     <string name="logs_empty">El servidor no tiene archivos de registro.</string>
     <string name="logs_search">Buscar en este registro</string>
     <string name="logs_truncated">Se muestran los últimos %1$d KB de este registro.</string>
