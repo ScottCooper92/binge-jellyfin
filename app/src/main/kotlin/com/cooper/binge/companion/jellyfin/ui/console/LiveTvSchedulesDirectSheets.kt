@@ -161,7 +161,7 @@ private fun CountryList(
             modifier = Modifier.padding(dimensionResource(DesR.dimen.padding_m)),
         )
         Column(Modifier.heightIn(max = LIST_MAX_HEIGHT).verticalScroll(rememberScrollState())) {
-            ItemGroup(
+            ConsoleSheetGroup(
                 title = null,
                 rows =
                     step.countries.orEmpty().map { country ->
@@ -210,7 +210,7 @@ private fun LineupsStep(
                 )
             else ->
                 Column(Modifier.heightIn(max = LIST_MAX_HEIGHT).verticalScroll(rememberScrollState())) {
-                    ItemGroup(
+                    ConsoleSheetGroup(
                         title = null,
                         rows =
                             step.lineups.map { lineup ->
