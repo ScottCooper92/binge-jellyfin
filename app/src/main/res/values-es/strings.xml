@@ -867,6 +867,8 @@
     <string name="plugins_tab_repositories">Repositorios</string>
     <string name="plugins_loading">Cargando plugins</string>
     <string name="console_loading">Cargando</string>
+    <string name="plugins_select_title">Ningún plugin seleccionado</string>
+    <string name="plugins_select">Selecciona un plugin o un paquete para ver sus detalles.</string>
     <string name="plugins_empty_title">Sin plugins</string>
     <string name="plugins_empty">Este servidor no tiene plugins instalados. Busca alguno en el catálogo.</string>
     <string name="plugins_restart_needed">Hace falta reiniciar</string>

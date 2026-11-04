@@ -2,11 +2,15 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.LocalIsSinglePaneNav
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.PackageVersion
@@ -233,3 +237,44 @@ private fun TabOpened(
     onBack = {},
     initialTab = tab,
 )
+
+@Composable
+private fun SplitPlugins(
+    installed: PluginsUiState = PluginsUiState.Ready(installedPlugins),
+    catalog: CatalogUiState = CatalogUiState.Ready(catalogPackages, server = server),
+    tab: Int = 0,
+) = CompositionLocalProvider(LocalPageSpansTwoPanes provides true, LocalIsSinglePaneNav provides false) {
+    PluginsScreen(
+        installed,
+        catalog,
+        RepositoriesUiState.Ready(repositories),
+        PluginsActions(),
+        CatalogActions(),
+        RepositoriesActions(),
+        onBack = {},
+        initialTab = tab,
+    )
+}
+
+/** The plugins page on a window with room for two panes: the tabs beside the open plugin or package, or beside the invitation. */
+class PluginsSplitScreenshotTest {
+    /** A plugin open: its name and page, and its row marked in the installed list. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun pluginOpen() = SplitPlugins(PluginsUiState.Ready(installedPlugins, open = "a"))
+
+    /** Nothing open: the installed list beside the invitation to pick one. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun nothingOpen() = SplitPlugins()
+
+    /** A catalog package open: the catalog tab beside its page, with Install. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @Composable
+    fun packageOpen() = SplitPlugins(catalog = CatalogUiState.Ready(catalogPackages, open = "Playback Reporting", server = server), tab = 1)
+}
