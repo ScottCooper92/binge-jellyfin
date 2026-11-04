@@ -278,3 +278,67 @@ class PluginsSplitScreenshotTest {
     @Composable
     fun packageOpen() = SplitPlugins(catalog = CatalogUiState.Ready(catalogPackages, open = "Playback Reporting", server = server), tab = 1)
 }
+
+/** Full navigation-host previews for the pane state and contextual actions. */
+class PluginsPaneStateScreenshotTest {
+    @Composable
+    private fun SplitPlugins(
+        tab: Int = 0,
+        openPlugin: String? = null,
+        openPackage: String? = null,
+        installing: Boolean = false,
+    ) = ConsoleListDetailPreview(ConsolePage.Plugins) {
+        PluginsScreen(
+            PluginsUiState.Ready(installedPlugins, open = openPlugin),
+            CatalogUiState.Ready(
+                catalogPackages,
+                installed = setOf("AniDB"),
+                server = server,
+                open = openPackage,
+                installing = if (installing) mapOf("Playback Reporting" to "install-id") else emptyMap(),
+            ),
+            RepositoriesUiState.Ready(repositories),
+            PluginsActions(),
+            CatalogActions(),
+            RepositoriesActions(),
+            onBack = {},
+            initialTab = tab,
+        )
+    }
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun nothingOpen() = SplitPlugins()
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun pluginOpen() = SplitPlugins(openPlugin = "a")
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun catalogNothingOpen() = SplitPlugins(tab = 1)
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun packageOpen() = SplitPlugins(tab = 1, openPackage = "Playback Reporting")
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun installingPackage() = SplitPlugins(tab = 1, openPackage = "Playback Reporting", installing = true)
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun repositoriesTab() = SplitPlugins(tab = REPOSITORIES_TAB)
+}

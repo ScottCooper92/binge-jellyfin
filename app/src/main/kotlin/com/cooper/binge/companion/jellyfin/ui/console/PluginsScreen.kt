@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -81,10 +82,21 @@ class PluginsListStates(
     val installed: LazyListState,
     val catalog: LazyListState,
     val repositories: LazyListState,
+    val installedDetail: LazyListState,
+    val catalogDetail: LazyListState,
 )
 
 @Composable
-fun rememberPluginsListStates() = PluginsListStates(rememberLazyListState(), rememberLazyListState(), rememberLazyListState())
+fun rememberPluginsListStates(
+    openPlugin: String? = null,
+    openPackage: String? = null,
+) = PluginsListStates(
+    installed = rememberLazyListState(),
+    catalog = rememberLazyListState(),
+    repositories = rememberLazyListState(),
+    installedDetail = key(openPlugin) { rememberLazyListState() },
+    catalogDetail = key(openPackage) { rememberLazyListState() },
+)
 
 private val TABS = listOf(R.string.plugins_tab_installed, R.string.plugins_tab_catalog, R.string.plugins_tab_repositories)
 
@@ -103,7 +115,11 @@ fun PluginsScreen(
     onBack: () -> Unit,
     /** The tab it opens on: the installed plugins, unless a frame opens another. */
     initialTab: Int = 0,
-    listStates: PluginsListStates = rememberPluginsListStates(),
+    listStates: PluginsListStates =
+        rememberPluginsListStates(
+            (installed as? PluginsUiState.Ready)?.open,
+            (catalog as? CatalogUiState.Ready)?.open,
+        ),
 ) {
     var tab by rememberSaveable { mutableIntStateOf(initialTab) }
     // The pager and the tab row are one control: a swipe settles on a page and sets the tab, a tap on a tab animates the pager.
@@ -269,8 +285,8 @@ private fun PluginsPage(
     // Full height, so a page lays out as it did before the pager: a list fills it and a message sits where it always did.
     Box(Modifier.fillMaxSize()) {
         when (page) {
-            0 -> InstalledTab(states.installed, plugin, handlers.installed, content, listStates.installed)
-            1 -> CatalogTab(states.catalog, pkg, handlers.catalog, content, listStates.catalog)
+            0 -> InstalledTab(states.installed, plugin, handlers.installed, content, listStates.installed, listStates.installedDetail)
+            1 -> CatalogTab(states.catalog, pkg, handlers.catalog, content, listStates.catalog, listStates.catalogDetail)
             else -> RepositoriesTab(states.repositories, handlers.repositories, content, listStates.repositories)
         }
     }
@@ -291,13 +307,14 @@ private fun InstalledTab(
     actions: PluginsActions,
     inner: PaddingValues,
     listState: LazyListState,
+    detailState: LazyListState,
 ) {
     when (state) {
         PluginsUiState.Loading -> PluginsLoading(inner)
         is PluginsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is PluginsUiState.Ready ->
             when {
-                open != null -> PluginPage(open, state, actions, inner)
+                open != null -> PluginPage(open, state, actions, inner, detailState)
                 state.plugins.isEmpty() ->
                     EmptyScreen(
                         message = stringResource(R.string.plugins_empty),
@@ -383,9 +400,14 @@ private fun PluginPage(
     state: PluginsUiState.Ready,
     actions: PluginsActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
     val busy = plugin.id in state.busy
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         if (plugin.description.isNotBlank()) item { Text(plugin.description, style = MaterialTheme.typography.bodyMedium) }
         item {
             ItemGroup(

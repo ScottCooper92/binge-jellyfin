@@ -211,3 +211,48 @@ class LogsSplitScreenshotTest {
     @Composable
     fun readFailed() = SplitLogs(open(content = LogContent.Failed(ConsoleFailure.Unreachable)).copy(files = splitFiles))
 }
+
+/** Full navigation-host previews for the pane state and contextual actions. */
+class LogsPaneStateScreenshotTest {
+    @Composable
+    private fun Logs(state: LogsUiState.Ready) =
+        ConsoleListDetailPreview(ConsolePage.Logs) {
+            LogsScreen(state.copy(files = state.files.map { it.copy(modifiedMillis = null) }), LogsActions(), zone = ZoneOffset.UTC)
+        }
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun nothingOpen() = Logs(LogsUiState.Ready(previewFiles))
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun logOpen() = Logs(open())
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun loadingReader() = Logs(open(content = LogContent.Loading))
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun failedReader() = Logs(open(content = LogContent.Failed(ConsoleFailure.Unreachable)))
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun noMatchingEntries() = Logs(open(query = "nothing like this"))
+
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun longName() = Logs(open(name = LONG_NAME))
+}
