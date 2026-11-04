@@ -142,6 +142,12 @@ class LogsViewModel(
         read(name)
     }
 
+    /**
+     * A log is being opened: what the list last reported (a refused change, a pull that failed) is not this screen's, and
+     * would be said again by any screen composed afresh over this shared view model.
+     */
+    fun opened() = update { copy(refused = null, refreshFailed = null) }
+
     /** Reads the open log again, after it failed. */
     fun retryOpen() {
         val name = (_state.value as? LogsUiState.Ready)?.open?.name ?: return

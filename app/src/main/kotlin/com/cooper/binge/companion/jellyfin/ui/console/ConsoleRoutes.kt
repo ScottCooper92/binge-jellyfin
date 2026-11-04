@@ -379,7 +379,10 @@ private fun LogsRoute(
     LogsScreen(
         state,
         LogsActions(
-            onOpen = openItem,
+            onOpen = {
+                logs.opened()
+                openItem(it)
+            },
             onEditRetention = logs::editRetention,
             onSaveRetention = logs::saveRetention,
             onRetrySave = logs::retrySave,

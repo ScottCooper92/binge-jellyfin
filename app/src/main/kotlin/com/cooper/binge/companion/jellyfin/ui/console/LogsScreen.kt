@@ -165,7 +165,6 @@ fun LogScreen(
                 open != null -> Reader(open, actions, inner, entriesList)
                 else -> ConsoleLoading(inner, FILE_ROWS)
             }
-            RefusedMessage(ready?.refreshFailed, host, R.string.console_not_refreshed)
         }
     }
     if (showFullName) LogNameDialog(name, { showFullName = false })
