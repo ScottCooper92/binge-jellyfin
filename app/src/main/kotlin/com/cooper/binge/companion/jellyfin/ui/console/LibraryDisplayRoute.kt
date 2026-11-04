@@ -27,22 +27,24 @@ internal fun LibraryDisplayRoute(
     val sheet = (state as? LibraryDisplayUiState.Ready)?.sheet
     // The metadata folder sheet browses from the server's roots each time it opens.
     LaunchedEffect(sheet) { if (sheet == DisplaySheet.MetadataPath) browser.start() }
-    LibraryDisplayScreen(
-        state,
-        LibraryDisplayActions(
-            onFlag = { key, on -> display.set(key, JsonPrimitive(on)) },
-            onText = { key, text -> display.set(key, JsonPrimitive(text)) },
-            onSeconds = { display.set(METADATA_DUMMY_CHAPTER, JsonPrimitive(it)) },
-            onSheet = display::sheet,
-            onEdit = display::edit,
-            onAdd = display::add,
-            onRemove = display::remove,
-            onRetry = display::load,
-            onRetrySave = display::retrySave,
-            onBack = onBack,
-        ),
-        profile,
-        folders,
-        FolderActions(onEnter = browser::enter, onUp = browser::up, onRetry = browser::retry),
-    )
+    PageItemDepth(open = (state as? LibraryDisplayUiState.Ready)?.editing != null) {
+        LibraryDisplayScreen(
+            state,
+            LibraryDisplayActions(
+                onFlag = { key, on -> display.set(key, JsonPrimitive(on)) },
+                onText = { key, text -> display.set(key, JsonPrimitive(text)) },
+                onSeconds = { display.set(METADATA_DUMMY_CHAPTER, JsonPrimitive(it)) },
+                onSheet = display::sheet,
+                onEdit = display::edit,
+                onAdd = display::add,
+                onRemove = display::remove,
+                onRetry = display::load,
+                onRetrySave = display::retrySave,
+                onBack = onBack,
+            ),
+            profile,
+            folders,
+            FolderActions(onEnter = browser::enter, onUp = browser::up, onRetry = browser::retry),
+        )
+    }
 }

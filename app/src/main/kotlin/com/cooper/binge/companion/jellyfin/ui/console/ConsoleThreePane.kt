@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -24,6 +25,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
+import com.binge.designsystem.LocalPaneDepth
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.R as DesR
 
@@ -166,4 +168,20 @@ internal fun NothingSelected(
     inner: PaddingValues,
 ) {
     Box(Modifier.fillMaxSize().padding(inner)) { EmptyScreen(message = message, title = title, icon = icon) }
+}
+
+/**
+ * Marks [content] as one level deeper than its page while an item is open inside it ([open]): a task, a log, a user, a
+ * section. Beside the home a page has no Back of its own, since the home never leaves the screen. But an open item is
+ * not that: Back from it returns to the page's list, which is the only way there on screen. A level deeper is what the
+ * design system's rule keeps the Back arrow for. Where the page spans two panes ([LocalPageSpansTwoPanes]) the item is
+ * beside its list, not over it, so nothing changes.
+ */
+@Composable
+internal fun PageItemDepth(
+    open: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val deeper = open && !LocalPageSpansTwoPanes.current
+    CompositionLocalProvider(LocalPaneDepth provides LocalPaneDepth.current + if (deeper) 1 else 0, content = content)
 }

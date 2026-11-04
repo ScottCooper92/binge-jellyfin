@@ -128,22 +128,24 @@ private fun HomeLayoutRoute(
     val home: HomeLayoutViewModel =
         viewModel(factory = viewModelFactory { initializer { HomeLayoutViewModel(graph.connection, profile) } })
     val state by home.state.collectAsStateWithLifecycle()
-    HomeLayoutScreen(
-        state,
-        HomeLayoutActions(
-            onOpen = home::open,
-            onInMyMedia = home::setInMyMedia,
-            onInLatest = home::setInLatest,
-            onGrouped = home::setGrouped,
-            onMove = home::move,
-            onHidePlayedInLatest = home::setHidePlayedInLatest,
-            onDisplayMissingEpisodes = home::setDisplayMissingEpisodes,
-            onDisplayCollectionsView = home::setDisplayCollectionsView,
-            onRetry = home::load,
-            onRetrySave = home::retrySave,
-            onBack = onBack,
-        ),
-    )
+    PageItemDepth(open = (state as? HomeLayoutUiState.Ready)?.openLibrary != null) {
+        HomeLayoutScreen(
+            state,
+            HomeLayoutActions(
+                onOpen = home::open,
+                onInMyMedia = home::setInMyMedia,
+                onInLatest = home::setInLatest,
+                onGrouped = home::setGrouped,
+                onMove = home::move,
+                onHidePlayedInLatest = home::setHidePlayedInLatest,
+                onDisplayMissingEpisodes = home::setDisplayMissingEpisodes,
+                onDisplayCollectionsView = home::setDisplayCollectionsView,
+                onRetry = home::load,
+                onRetrySave = home::retrySave,
+                onBack = onBack,
+            ),
+        )
+    }
 }
 
 /** The profile picture page: the system photo picker feeds the view model the picked file's bytes. */
@@ -203,21 +205,23 @@ private fun TasksRoute(
 ) {
     val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
     val state by tasks.state.collectAsStateWithLifecycle()
-    TasksScreen(
-        state,
-        TasksActions(
-            onRun = tasks::run,
-            onStop = tasks::stop,
-            onOpen = tasks::open,
-            onCloseTask = { tasks.open(null) },
-            onAskAdd = tasks::askAdd,
-            onAddTrigger = tasks::addTrigger,
-            onRemoveTrigger = tasks::removeTrigger,
-            onRetry = tasks::load,
-            onRefresh = tasks::refresh,
-            onBack = onBack,
-        ),
-    )
+    PageItemDepth(open = (state as? TasksUiState.Ready)?.open != null) {
+        TasksScreen(
+            state,
+            TasksActions(
+                onRun = tasks::run,
+                onStop = tasks::stop,
+                onOpen = tasks::open,
+                onCloseTask = { tasks.open(null) },
+                onAskAdd = tasks::askAdd,
+                onAddTrigger = tasks::addTrigger,
+                onRemoveTrigger = tasks::removeTrigger,
+                onRetry = tasks::load,
+                onRefresh = tasks::refresh,
+                onBack = onBack,
+            ),
+        )
+    }
 }
 
 /** The activity page, read a page at a time. */
@@ -329,28 +333,30 @@ private fun NowPlayingRoute(
     val nowPlaying: NowPlayingViewModel =
         viewModel(factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection, account) } })
     val state by nowPlaying.state.collectAsStateWithLifecycle()
-    NowPlayingScreen(
-        state,
-        account.isAdministrator,
-        NowPlayingActions(
-            onSelect = nowPlaying::select,
-            onDeselect = nowPlaying::deselect,
-            onPlayPause = nowPlaying.remote::playPause,
-            onSkip = nowPlaying.remote::skip,
-            onSeekBy = nowPlaying.remote::seekBy,
-            onSeekTo = nowPlaying.remote::seekTo,
-            onVolume = nowPlaying.remote::setVolume,
-            onToggleMute = nowPlaying.remote::toggleMute,
-            onAskMessage = nowPlaying.remote::askMessage,
-            onCancelMessage = nowPlaying.remote::cancelMessage,
-            onSendMessage = nowPlaying.remote::sendMessage,
-            onStop = nowPlaying::askStop,
-            onConfirmStop = nowPlaying::stop,
-            onCancelStop = nowPlaying::cancelStop,
-            onRetry = nowPlaying::load,
-            onBack = onBack,
-        ),
-    )
+    PageItemDepth(open = (state as? NowPlayingUiState.Ready)?.selectedSession != null) {
+        NowPlayingScreen(
+            state,
+            account.isAdministrator,
+            NowPlayingActions(
+                onSelect = nowPlaying::select,
+                onDeselect = nowPlaying::deselect,
+                onPlayPause = nowPlaying.remote::playPause,
+                onSkip = nowPlaying.remote::skip,
+                onSeekBy = nowPlaying.remote::seekBy,
+                onSeekTo = nowPlaying.remote::seekTo,
+                onVolume = nowPlaying.remote::setVolume,
+                onToggleMute = nowPlaying.remote::toggleMute,
+                onAskMessage = nowPlaying.remote::askMessage,
+                onCancelMessage = nowPlaying.remote::cancelMessage,
+                onSendMessage = nowPlaying.remote::sendMessage,
+                onStop = nowPlaying::askStop,
+                onConfirmStop = nowPlaying::stop,
+                onCancelStop = nowPlaying::cancelStop,
+                onRetry = nowPlaying::load,
+                onBack = onBack,
+            ),
+        )
+    }
 }
 
 /** The logs page, with the share sheet it opens for a log. */
@@ -362,22 +368,24 @@ private fun LogsRoute(
     val logs: LogsViewModel = viewModel(factory = viewModelFactory { initializer { LogsViewModel(graph.connection) } })
     val state by logs.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    LogsScreen(
-        state,
-        LogsActions(
-            onOpen = logs::open,
-            onCloseLog = logs::closeLog,
-            onQuery = logs::setQuery,
-            onLevel = logs::setLevel,
-            onCopy = { text -> copyLogEntry(context, text) },
-            onShare = { name, text -> context.startActivity(shareLogIntent(context, name, text)) },
-            onEditRetention = logs::editRetention,
-            onSaveRetention = logs::saveRetention,
-            onRetrySave = logs::retrySave,
-            onRetry = logs::load,
-            onRefresh = logs::refresh,
-            onRetryOpen = logs::retryOpen,
-            onBack = onBack,
-        ),
-    )
+    PageItemDepth(open = (state as? LogsUiState.Ready)?.open != null) {
+        LogsScreen(
+            state,
+            LogsActions(
+                onOpen = logs::open,
+                onCloseLog = logs::closeLog,
+                onQuery = logs::setQuery,
+                onLevel = logs::setLevel,
+                onCopy = { text -> copyLogEntry(context, text) },
+                onShare = { name, text -> context.startActivity(shareLogIntent(context, name, text)) },
+                onEditRetention = logs::editRetention,
+                onSaveRetention = logs::saveRetention,
+                onRetrySave = logs::retrySave,
+                onRetry = logs::load,
+                onRefresh = logs::refresh,
+                onRetryOpen = logs::retryOpen,
+                onBack = onBack,
+            ),
+        )
+    }
 }

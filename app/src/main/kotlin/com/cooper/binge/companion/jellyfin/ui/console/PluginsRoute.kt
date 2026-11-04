@@ -49,37 +49,39 @@ internal fun PluginsRoute(
             installed.settingsOpened()
         }
     }
-    PluginsScreen(
-        installed = installedState,
-        catalog = catalogState,
-        repositories = repositoriesState,
-        actions =
-            PluginsActions(
-                onOpen = installed::open,
-                onToggle = installed::setEnabled,
-                onAskUninstall = installed::askUninstall,
-                onUninstall = installed::uninstall,
-                onOpenSettings = installed::openSettings,
-                onRestart = onOpenServer,
-                onRetry = installed::load,
-                onRefresh = installed::pull,
-            ),
-        catalogActions =
-            CatalogActions(
-                onOpen = catalog::open,
-                onInstall = catalog::install,
-                onCancel = catalog::cancel,
-                onRetry = catalog::load,
-            ),
-        repositoryActions =
-            RepositoriesActions(
-                onAskAdd = repositories::askAdd,
-                onAdd = repositories::add,
-                onAskRemove = repositories::askRemove,
-                onRemove = repositories::remove,
-                onRetry = repositories::load,
-                onRefresh = repositories::refresh,
-            ),
-        onBack = onBack,
-    )
+    PageItemDepth(open = (installedState as? PluginsUiState.Ready)?.open != null || (catalogState as? CatalogUiState.Ready)?.open != null) {
+        PluginsScreen(
+            installed = installedState,
+            catalog = catalogState,
+            repositories = repositoriesState,
+            actions =
+                PluginsActions(
+                    onOpen = installed::open,
+                    onToggle = installed::setEnabled,
+                    onAskUninstall = installed::askUninstall,
+                    onUninstall = installed::uninstall,
+                    onOpenSettings = installed::openSettings,
+                    onRestart = onOpenServer,
+                    onRetry = installed::load,
+                    onRefresh = installed::pull,
+                ),
+            catalogActions =
+                CatalogActions(
+                    onOpen = catalog::open,
+                    onInstall = catalog::install,
+                    onCancel = catalog::cancel,
+                    onRetry = catalog::load,
+                ),
+            repositoryActions =
+                RepositoriesActions(
+                    onAskAdd = repositories::askAdd,
+                    onAdd = repositories::add,
+                    onAskRemove = repositories::askRemove,
+                    onRemove = repositories::remove,
+                    onRetry = repositories::load,
+                    onRefresh = repositories::refresh,
+                ),
+            onBack = onBack,
+        )
+    }
 }

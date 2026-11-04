@@ -75,29 +75,31 @@ private fun LibraryRoute(
     LaunchedEffect(ready?.dialog) { if (ready?.dialog == LibraryDialog.AddFolder) browse() }
     // A removed library has no page to stay on.
     LaunchedEffect(ready?.gone) { if (ready?.gone == true) onBack() }
-    LibraryScreen(
-        state,
-        LibraryActions(
-            onFlag = { key, on -> model.set(key, JsonPrimitive(on)) },
-            onText = { key, text -> model.set(key, JsonPrimitive(text)) },
-            onDays = { model.set(LIBRARY_REFRESH_DAYS, JsonPrimitive(it)) },
-            onPage = model::show,
-            onAsk = model::ask,
-            onRename = model::rename,
-            onAddFolder = model::addFolder,
-            onRemoveFolder = model::removeFolder,
-            onRemove = model::remove,
-            onProvider = model::setProvider,
-            onJson = model::set,
-            onMove = model::moveProvider,
-            onFetcher = model.fetcherEdits::set,
-            onMoveFetcher = model.fetcherEdits::move,
-            onRetry = model::load,
-            onRetrySave = model::retrySave,
-            onBack = onBack,
-        ),
-        profile,
-        folders,
-        folderActions,
-    )
+    PageItemDepth(open = ready != null && ready.page != LibraryPage.Main) {
+        LibraryScreen(
+            state,
+            LibraryActions(
+                onFlag = { key, on -> model.set(key, JsonPrimitive(on)) },
+                onText = { key, text -> model.set(key, JsonPrimitive(text)) },
+                onDays = { model.set(LIBRARY_REFRESH_DAYS, JsonPrimitive(it)) },
+                onPage = model::show,
+                onAsk = model::ask,
+                onRename = model::rename,
+                onAddFolder = model::addFolder,
+                onRemoveFolder = model::removeFolder,
+                onRemove = model::remove,
+                onProvider = model::setProvider,
+                onJson = model::set,
+                onMove = model::moveProvider,
+                onFetcher = model.fetcherEdits::set,
+                onMoveFetcher = model.fetcherEdits::move,
+                onRetry = model::load,
+                onRetrySave = model::retrySave,
+                onBack = onBack,
+            ),
+            profile,
+            folders,
+            folderActions,
+        )
+    }
 }
