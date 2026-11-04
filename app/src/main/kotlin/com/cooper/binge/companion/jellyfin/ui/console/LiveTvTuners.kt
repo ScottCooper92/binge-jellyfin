@@ -96,6 +96,9 @@ sealed interface TunerSheet {
         val devices: List<TunerDraft>,
     ) : TunerSheet
 
+    /** Discovery failed; its cause stays alongside Retry in the search sheet. */
+    data class Failed(val failure: ConsoleFailure) : TunerSheet
+
     /** A tuner's form: a new one, or the one with [TunerDraft.id]. */
     data class Form(
         val draft: TunerDraft,
@@ -113,6 +116,4 @@ enum class TunerProblem {
     /** The change did not go through, and there is nothing more to say than that. */
     NotChanged,
 
-    /** The server did not answer when asked to look for tuners. */
-    DiscoverFailed,
 }

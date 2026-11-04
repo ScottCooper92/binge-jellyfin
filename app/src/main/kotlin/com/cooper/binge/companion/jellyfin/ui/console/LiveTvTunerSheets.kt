@@ -1,6 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,11 +23,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import com.binge.designsystem.component.BingeFilledButton
+import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
@@ -52,8 +59,7 @@ internal fun TunerSheetContent(
 ) {
     when (sheet) {
         TunerSheet.Choose -> ChooseTuner(actions)
-        TunerSheet.Discovering -> Discovering()
-        is TunerSheet.Found -> FoundTuners(sheet.devices, actions)
+        TunerSheet.Discovering, is TunerSheet.Found, is TunerSheet.Failed -> TunerDiscovery(sheet, actions)
         is TunerSheet.Form -> TunerForm(sheet.draft, saving, actions)
     }
 }
@@ -102,35 +108,35 @@ private fun ChooseTuner(actions: LiveTvActions) {
     }
 }
 
+/** All discovery outcomes share their header, body slot and always-present actions. */
 @Composable
-private fun Discovering() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
-    ) {
-        SheetHeader(stringResource(R.string.live_tv_finding_title), stringResource(R.string.live_tv_finding_body))
-        CircularProgressIndicator(Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)))
+private fun TunerDiscovery(sheet: TunerSheet, actions: LiveTvActions) {
+    val searching = sheet == TunerSheet.Discovering
+    val devices = (sheet as? TunerSheet.Found)?.devices.orEmpty()
+    val failure = (sheet as? TunerSheet.Failed)?.failure
+    val title = when {
+        searching -> R.string.live_tv_finding_title
+        failure != null -> R.string.live_tv_discover_failed
+        devices.isEmpty() -> R.string.live_tv_found_none_title
+        else -> R.string.live_tv_found_title
     }
-}
-
-@Composable
-private fun FoundTuners(
-    devices: List<TunerDraft>,
-    actions: LiveTvActions,
-) {
+    val subtitle = when {
+        failure != null -> failure.text()
+        !searching && devices.isEmpty() -> stringResource(R.string.live_tv_found_none)
+        else -> stringResource(R.string.live_tv_finding_body)
+    }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
-        if (devices.isEmpty()) {
-            SheetHeader(stringResource(R.string.live_tv_found_title), stringResource(R.string.live_tv_found_none))
-        } else {
-            Text(
-                text = stringResource(R.string.live_tv_found_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(dimensionResource(DesR.dimen.padding_m)),
-            )
-            ItemGroup(
-                title = null,
-                rows =
-                    devices.map { device ->
+        SheetHeader(stringResource(title), subtitle)
+        Box(
+            modifier = Modifier.fillMaxWidth().heightIn(min = DISCOVERY_BODY_HEIGHT),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (searching) CircularProgressIndicator()
+            if (devices.isNotEmpty()) {
+                ItemGroup(
+                    title = null,
+                    modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+                    rows = devices.map { device ->
                         ListItem(
                             icon = Icons.Outlined.LiveTv,
                             label = device.name.ifBlank { device.url.withoutSecrets() },
@@ -139,10 +145,30 @@ private fun FoundTuners(
                             onClick = { actions.onForm(device) },
                         )
                     },
+                )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(dimensionResource(DesR.dimen.padding_m)),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
+        ) {
+            BingeOutlinedButton(
+                label = stringResource(R.string.live_tv_discover_retry),
+                onClick = actions.onDiscover,
+                enabled = !searching,
+                modifier = Modifier.weight(1f),
+            )
+            BingeFilledButton(
+                label = stringResource(R.string.live_tv_add_by_address),
+                onClick = { actions.onForm(TunerDraft(TUNER_TYPE_HDHOMERUN)) },
+                enabled = !searching,
+                modifier = Modifier.weight(1f),
             )
         }
     }
 }
+
+private val DISCOVERY_BODY_HEIGHT = 96.dp
 
 /** A tuner's form: its address and what that kind of tuner takes, with Remove last, behind a confirm, for one that exists. */
 @Composable
@@ -304,7 +330,6 @@ internal fun TunerMessages(
         when (state.problem) {
             TunerProblem.NotChanged -> stringResource(R.string.live_tv_not_changed)
             TunerProblem.ServerUnreachable -> stringResource(R.string.live_tv_not_changed_unreachable)
-            TunerProblem.DiscoverFailed -> stringResource(R.string.live_tv_discover_failed)
             else -> null
         },
         host,

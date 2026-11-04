@@ -232,7 +232,7 @@ class LiveTvTunersViewModelTest {
     }
 
     @Test
-    fun `finding nothing says so, and a search the server fails goes back to the choice with a problem`() {
+    fun `finding nothing says so, and a search failure stays in the discovery sheet`() {
         jellyfin.discoveredTuners = "[]"
         val vm = vm()
         vm.ready()
@@ -240,8 +240,9 @@ class LiveTvTunersViewModelTest {
         assertEquals(emptyList<TunerDraft>(), (vm.ready { it.sheet is TunerSheet.Found }.sheet as TunerSheet.Found).devices)
         jellyfin.discoveredTuners = "not json"
         vm.discover()
-        val ready = vm.ready { it.problem == TunerProblem.DiscoverFailed }
-        assertEquals(TunerSheet.Choose, ready.sheet)
+        val ready = vm.ready { it.sheet is TunerSheet.Failed }
+        assertEquals(ConsoleFailure.Unreachable, (ready.sheet as TunerSheet.Failed).failure)
+        assertNull(ready.problem)
     }
 
     private fun awaitDiscoveryAnswered() {

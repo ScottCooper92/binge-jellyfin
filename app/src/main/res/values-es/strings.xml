@@ -1211,4 +1211,7 @@
     <string name="live_tv_type_m3u">Lista M3U</string>
     <string name="library_languages_search">Buscar idiomas</string>
     <string name="library_languages_no_match">Ningún idioma coincide con la búsqueda</string>
+    <string name="live_tv_found_none_title">No hay sintonizadores nuevos</string>
+    <string name="live_tv_discover_retry">Reintentar</string>
+    <string name="live_tv_add_by_address">Añadir por dirección</string>
 </resources>

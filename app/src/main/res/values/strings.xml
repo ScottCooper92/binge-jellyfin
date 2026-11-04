@@ -1215,4 +1215,7 @@
     <string name="live_tv_type_schedules_direct" translatable="false">Schedules Direct</string>
     <string name="library_languages_search">Search languages</string>
     <string name="library_languages_no_match">No languages match that search</string>
+    <string name="live_tv_found_none_title">No new tuners</string>
+    <string name="live_tv_discover_retry">Retry</string>
+    <string name="live_tv_add_by_address">Add by address</string>
 </resources>
