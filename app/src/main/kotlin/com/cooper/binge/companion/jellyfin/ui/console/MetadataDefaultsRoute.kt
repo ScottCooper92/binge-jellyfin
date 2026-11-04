@@ -1,6 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,6 +21,8 @@ internal fun MetadataDefaultsRoute(
     val metadata: MetadataDefaultsViewModel =
         viewModel(factory = viewModelFactory { initializer { MetadataDefaultsViewModel(graph.connection) } })
     val state by metadata.state.collectAsStateWithLifecycle()
+    val open = LocalOpenItem.current
+    LaunchedEffect(open == null) { if (open == null) metadata.itemClosed() }
     MetadataDefaultsScreen(
         state,
         metadataActions(
@@ -43,6 +47,9 @@ internal fun MetadataItemRoute(
     val metadata: MetadataDefaultsViewModel =
         viewModel(factory = viewModelFactory { initializer { MetadataDefaultsViewModel(graph.connection) } })
     val state by metadata.state.collectAsStateWithLifecycle()
+    // What this screen reported is said here and isn't replayed by the screen beneath it once this one closes. Back clears it
+    // before the screen beneath is shown; leaving by any other way clears it on disposal.
+    DisposableEffect(Unit) { onDispose { metadata.itemClosed() } }
     val type = metadataItemType(item)
     val actions =
         metadataActions(
@@ -51,7 +58,10 @@ internal fun MetadataItemRoute(
                 metadata.itemOpened()
                 openSubItem(metadataFetcherItem(openType, fetcher))
             },
-            onBack = onBack,
+            onBack = {
+                metadata.itemClosed()
+                onBack()
+            },
         )
     val fetcher = metadataItemFetcher(item)
     if (fetcher == null) MetadataTypeScreen(state, type, actions) else MetadataFetcherScreen(state, type, fetcher, actions)
