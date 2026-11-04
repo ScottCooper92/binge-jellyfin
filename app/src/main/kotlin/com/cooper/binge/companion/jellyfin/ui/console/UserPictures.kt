@@ -10,11 +10,11 @@ import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.server.USER_THUMBNAIL_SIZE
 import com.cooper.binge.companion.jellyfin.server.userThumbnail
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
@@ -31,34 +31,41 @@ class UserPictures(
     private val locks = ConcurrentHashMap<String, Mutex>()
     private val memory =
         object : LruCache<String, Bitmap>(MEMORY_BYTES) {
-            override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+            override fun sizeOf(
+                key: String,
+                value: Bitmap,
+            ): Int = value.byteCount
         }
 
     /** No image tag means no request. An absent, unreadable or failed image stays the caller's initials. */
-    suspend fun read(user: ServerUser): Bitmap? = withContext(Dispatchers.IO) {
-        val tag = user.imageTag?.takeIf { it.isNotBlank() } ?: return@withContext null
-        connection
-            .consoleCall(TAG) { session, client ->
-                val key = cacheKey("${client.baseUrl}|${session.userId}|${user.id}|$tag")
-                permits.withPermit {
-                    locks.getOrPut(key) { Mutex() }.withLock {
-                        memory.get(key) ?: run {
-                            val file = File(directory, "$key.image")
-                            val bytes =
-                                if (file.isFile && file.length() <= MAX_PICTURE_BYTES) {
-                                    file.setLastModified(System.currentTimeMillis())
-                                    file.readBytes()
-                                } else {
-                                    client.userThumbnail(user.id, tag)?.also { bytes -> attempt { save(file, bytes) } }
-                                }
-                            bytes?.let(::decode)?.also { memory.put(key, it) }
+    suspend fun read(user: ServerUser): Bitmap? =
+        withContext(Dispatchers.IO) {
+            val tag = user.imageTag?.takeIf { it.isNotBlank() } ?: return@withContext null
+            connection
+                .consoleCall(TAG) { session, client ->
+                    val key = cacheKey("${client.baseUrl}|${session.userId}|${user.id}|$tag")
+                    permits.withPermit {
+                        locks.getOrPut(key) { Mutex() }.withLock {
+                            memory.get(key) ?: run {
+                                val file = File(directory, "$key.image")
+                                val bytes =
+                                    if (file.isFile && file.length() <= MAX_PICTURE_BYTES) {
+                                        file.setLastModified(System.currentTimeMillis())
+                                        file.readBytes()
+                                    } else {
+                                        client.userThumbnail(user.id, tag)?.also { bytes -> attempt { save(file, bytes) } }
+                                    }
+                                bytes?.let(::decode)?.also { memory.put(key, it) }
+                            }
                         }
                     }
-                }
-            }.getOrNull()
-    }
+                }.getOrNull()
+        }
 
-    private fun save(file: File, bytes: ByteArray) {
+    private fun save(
+        file: File,
+        bytes: ByteArray,
+    ) {
         directory.mkdirs()
         val temporary = File(directory, "${file.name}.tmp")
         try {

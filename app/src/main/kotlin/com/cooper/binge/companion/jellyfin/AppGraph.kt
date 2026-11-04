@@ -17,13 +17,13 @@ import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
 import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
 import com.cooper.binge.companion.jellyfin.server.lanTargets
+import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import java.io.File
-import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import java.util.concurrent.TimeUnit
 
 /** The app's object graph, built by hand. One of each for the life of the process. */

@@ -44,7 +44,8 @@ class ProfilePictureScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun uploading() = ProfilePictureScreen(ProfilePictureUiState.Ready(picture = profilePictureFixture, busy = true), ProfilePictureActions())
+    fun uploading() =
+        ProfilePictureScreen(ProfilePictureUiState.Ready(picture = profilePictureFixture, busy = true), ProfilePictureActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

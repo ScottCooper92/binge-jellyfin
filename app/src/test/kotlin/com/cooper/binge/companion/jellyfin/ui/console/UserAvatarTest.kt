@@ -35,7 +35,10 @@ class UserAvatarTest {
                 Box(Modifier.testTag("row")) {
                     ItemGroup(
                         title = null,
-                        rows = listOf(ListItem(icon = Icons.Outlined.Person, label = "Ana", leadingContent = { UserAvatar("Ana", picture) })),
+                        rows =
+                            listOf(
+                                ListItem(icon = Icons.Outlined.Person, label = "Ana", leadingContent = { UserAvatar("Ana", picture) }),
+                            ),
                     )
                 }
             }
