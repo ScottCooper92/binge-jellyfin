@@ -165,6 +165,7 @@ private fun ItemPlaceholderPane(page: ConsolePage) {
                 ConsolePage.Users -> UserPlaceholder()
                 ConsolePage.HomeLayout -> HomeLayoutPlaceholder()
                 ConsolePage.LibraryDisplay -> LibraryDisplayPlaceholder()
+                ConsolePage.MetadataDefaults -> MetadataDefaultsPlaceholder()
                 else -> Unit
             }
         }

@@ -32,6 +32,7 @@ import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.DisplayList
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
@@ -59,6 +60,7 @@ import com.cooper.binge.companion.jellyfin.server.TaskRun
 import com.cooper.binge.companion.jellyfin.server.TaskStatus
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
+import com.cooper.binge.companion.jellyfin.server.TypeFetchers
 import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.server.parseLogEntries
 import com.cooper.binge.companion.jellyfin.server.redactLog
@@ -283,6 +285,51 @@ class ConsoleScreensTest {
         compose.onNodeWithText("the").assertExists()
         compose.onAllNodesWithContentDescription("Remove")[1].performClick()
         assertEquals(listOf("remove:RemoveWords:1"), calls)
+    }
+
+    private val metadataReady =
+        MetadataDefaultsUiState.Ready(
+            JsonObject(emptyMap()),
+            listOf(TypeFetchers("Series", listOf("TheTVDB", "TheMovieDb"), listOf("TheTVDB"))),
+        )
+
+    @Test
+    fun `the metadata page opens a type on a tap, and a type's screen opens a provider`() {
+        val calls = mutableListOf<String>()
+        val actions =
+            MetadataDefaultsActions(
+                onOpen = { calls += "type:$it" },
+                onOpenFetcher = { type, fetcher -> calls += "fetcher:$type:${fetcher.kind}:${fetcher.name}" },
+            )
+        compose.setContent { JellyfinTheme { MetadataDefaultsScreen(metadataReady, actions, open = null) } }
+        compose.onNodeWithText("Series").performClick()
+        assertEquals(listOf("type:Series"), calls)
+    }
+
+    @Test
+    fun `a type's screen opens a provider`() {
+        val calls = mutableListOf<String>()
+        val actions = MetadataDefaultsActions(onOpenFetcher = { type, fetcher -> calls += "fetcher:$type:${fetcher.kind}:${fetcher.name}" })
+        compose.setContent { JellyfinTheme { MetadataTypeScreen(metadataReady, "Series", actions) } }
+        compose.onAllNodesWithText("TheTVDB")[0].performClick()
+        assertEquals(listOf("fetcher:Series:Metadata:TheTVDB"), calls)
+    }
+
+    @Test
+    fun `a provider the server no longer offers closes its screen`() {
+        var closed = 0
+        compose.setContent {
+            JellyfinTheme {
+                MetadataFetcherScreen(
+                    metadataReady,
+                    "Series",
+                    OpenFetcher(FetcherKind.Metadata, "Gone"),
+                    MetadataDefaultsActions(onBack = { closed++ }),
+                )
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(1, closed)
     }
 
     @Test

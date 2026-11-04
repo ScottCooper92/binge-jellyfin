@@ -30,14 +30,13 @@ sealed interface MetadataDefaultsUiState {
     ) : MetadataDefaultsUiState
 
     /**
-     * The configuration as shown, the fetchers the server offers each item type, the item type whose page is [type] (null for
-     * the list) and the fetcher open on it, [provider]. [save] is where the saves stand, and [refused] the last the server refused, which was put back.
+     * The configuration as shown and the fetchers the server offers each item type. A type's page, and a provider's, are
+     * screens of their own over the page. [save] is where the saves stand, and [refused] the last the server refused,
+     * which was put back.
      */
     data class Ready(
         val configuration: JsonObject,
         val fetchers: List<TypeFetchers> = emptyList(),
-        val type: String? = null,
-        val provider: OpenFetcher? = null,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
     ) : MetadataDefaultsUiState
@@ -108,11 +107,8 @@ class MetadataDefaultsViewModel(
         }
     }
 
-    /** Opens the page of [type], or goes back to the list for null. */
-    fun open(type: String?) = update { copy(type = type, provider = null) }
-
-    /** Opens the page of one fetcher of the open type, or goes back to the type for null. */
-    fun openFetcher(provider: OpenFetcher?) = update { copy(provider = provider) }
+    /** A type's or provider's page opened: what the last screen reported was said there, and isn't replayed here. */
+    fun itemOpened() = update { copy(refused = null) }
 
     /** Switches [name] on or off in [kind]'s list for [type], and saves it. */
     fun set(
