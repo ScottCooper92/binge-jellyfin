@@ -2,9 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
-import com.binge.designsystem.LocalIsSinglePaneNav
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -87,49 +85,49 @@ class LogsScreenshotTest {
     @JellyfinSpanishPreviews
     @JellyfinFontScalePreviews
     @Composable
-    fun openLog() = LogsScreen(open(), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLog() = LogScreen(open(), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @Composable
-    fun openLogLongName() = LogsScreen(open(name = LONG_NAME), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLogLongName() = LogScreen(open(name = LONG_NAME), LONG_NAME, LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun openLogLoading() = LogsScreen(open(content = LogContent.Loading), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLogLoading() = LogScreen(open(content = LogContent.Loading), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun openLogFailed() = LogsScreen(open(content = LogContent.Failed(ConsoleFailure.Unreachable)), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLogFailed() = LogScreen(open(content = LogContent.Failed(ConsoleFailure.Unreachable)), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun truncated() = LogsScreen(open(truncated = true), LogsActions(), zone = ZoneOffset.UTC)
+    fun truncated() = LogScreen(open(truncated = true), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun warningsUp() = LogsScreen(open(level = LogLevel.Warn), LogsActions(), zone = ZoneOffset.UTC)
+    fun warningsUp() = LogScreen(open(level = LogLevel.Warn), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun unlabelledEntry() =
-        LogsScreen(
+        LogScreen(
             open(entries = fixedTimes(parseLogEntries(redactLog("   at the tail of a cut trace\n" + previewText.lines().first())))),
+            "log_20261031.log",
             LogsActions(),
-            zone = ZoneOffset.UTC,
         )
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun noMatch() = LogsScreen(open(query = "nothing like this"), LogsActions(), zone = ZoneOffset.UTC)
+    fun noMatch() = LogScreen(open(query = "nothing like this"), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -177,82 +175,11 @@ class LogsScreenshotTest {
     fun failed() = LogsScreen(LogsUiState.Failed(ConsoleFailure.Refused), LogsActions())
 }
 
-/**
- * The files without a modified time, so a frame shows no date: a date's format in Spanish differs between JDKs, and a
- * frame recorded on one would fail on another.
- */
-private val splitFiles = previewFiles.map { it.copy(modifiedMillis = null) }
-
-@Composable
-private fun SplitLogs(state: LogsUiState) =
-    CompositionLocalProvider(LocalPageSpansTwoPanes provides true, LocalIsSinglePaneNav provides false) {
-        LogsScreen(state, LogsActions(), zone = ZoneOffset.UTC)
-    }
-
-/** The logs page on a window with room for two panes: the files beside the open log, or beside its invitation. */
-class LogsSplitScreenshotTest {
-    /** A log open: its name and entries with their search and chips, and its file marked in the list. */
+/** The logs page on a landscape tablet, where a log opens in a third pane: the invitation to pick one while none is. */
+class LogsPaneScreenshotTest {
     @PreviewTest
     @JellyfinWidePreview
     @JellyfinWideSpanishPreview
     @Composable
-    fun logOpen() = SplitLogs(open().copy(files = splitFiles))
-
-    /** Nothing open: the files beside the invitation to pick a log. */
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun nothingOpen() = SplitLogs(LogsUiState.Ready(splitFiles))
-
-    /** The open log could not be read: the files stay, and the failure and its Retry fill the detail. */
-    @PreviewTest
-    @JellyfinWidePreview
-    @Composable
-    fun readFailed() = SplitLogs(open(content = LogContent.Failed(ConsoleFailure.Unreachable)).copy(files = splitFiles))
-}
-
-/** Full navigation-host previews for the pane state and contextual actions. */
-class LogsPaneStateScreenshotTest {
-    @Composable
-    private fun Logs(state: LogsUiState.Ready) =
-        ConsoleListDetailPreview(ConsolePage.Logs) {
-            LogsScreen(state.copy(files = state.files.map { it.copy(modifiedMillis = null) }), LogsActions(), zone = ZoneOffset.UTC)
-        }
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun nothingOpen() = Logs(LogsUiState.Ready(previewFiles))
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun logOpen() = Logs(open())
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun loadingReader() = Logs(open(content = LogContent.Loading))
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun failedReader() = Logs(open(content = LogContent.Failed(ConsoleFailure.Unreachable)))
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun noMatchingEntries() = Logs(open(query = "nothing like this"))
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun longName() = Logs(open(name = LONG_NAME))
+    fun placeholder() = Surface { LogPlaceholder() }
 }

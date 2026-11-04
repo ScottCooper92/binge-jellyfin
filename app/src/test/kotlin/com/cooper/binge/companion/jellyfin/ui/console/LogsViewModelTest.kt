@@ -74,6 +74,9 @@ class LogsViewModelTest {
         val failed = vm.ready { it.refreshFailed != null && !it.refreshing }
         assertEquals(1, failed.files.size)
         assertEquals(ConsoleFailure.Refused, failed.refreshFailed)
+        // Opening a log clears it: the list shared with the log's screen would otherwise say it again.
+        vm.itemOpened()
+        assertNull(vm.ready().refreshFailed)
     }
 
     @Test

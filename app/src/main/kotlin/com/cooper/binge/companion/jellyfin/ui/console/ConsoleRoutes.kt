@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -47,7 +48,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Libraries -> LibrariesRoute(graph, signedIn.profile, close)
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
-        ConsolePage.Logs -> LogsRoute(graph, close)
+        ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
         ConsolePage.Users -> UsersRoute(graph, signedIn.profile, close)
@@ -226,42 +227,6 @@ private fun TasksRoute(
     )
 }
 
-/** One task's screen, with the page's view model: the one its list shows, whose triggers it changes. */
-@Composable
-private fun TaskItemRoute(
-    graph: AppGraph,
-    taskId: String,
-    onBack: () -> Unit,
-) {
-    val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
-    val state by tasks.state.collectAsStateWithLifecycle()
-    TaskScreen(
-        state,
-        taskId,
-        TasksActions(
-            onAskAdd = tasks::askAdd,
-            onAddTrigger = { tasks.addTrigger(taskId, it) },
-            onRemoveTrigger = { tasks.removeTrigger(taskId, it) },
-            onRetry = tasks::load,
-            onBack = onBack,
-        ),
-    )
-}
-
-/** The screen of an item open in a page: stacked above the page's own, under the same opening, sharing its view models. */
-@Composable
-internal fun ConsoleItemRoute(
-    entry: ConsoleEntry,
-    graph: AppGraph,
-    close: () -> Unit,
-) {
-    val item = entry.item ?: return
-    when (entry.page) {
-        ConsolePage.Tasks -> TaskItemRoute(graph, item, close)
-        else -> Unit
-    }
-}
-
 /** The activity page, read a page at a time. */
 @Composable
 private fun ActivityRoute(
@@ -397,33 +362,33 @@ private fun NowPlayingRoute(
     }
 }
 
-/** The logs page, with the share sheet it opens for a log. */
+/**
+ * The logs page, with the share sheet it opens for a log. A log opens as an entry above it on the stack ([openItem]), and
+ * its screen ([LogItemRoute]) reads this same view model. With none open the view model reads none.
+ */
 @Composable
 private fun LogsRoute(
     graph: AppGraph,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val logs: LogsViewModel = viewModel(factory = viewModelFactory { initializer { LogsViewModel(graph.connection) } })
     val state by logs.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    PageItemDepth(open = (state as? LogsUiState.Ready)?.open != null) {
-        LogsScreen(
-            state,
-            LogsActions(
-                onOpen = logs::open,
-                onCloseLog = logs::closeLog,
-                onQuery = logs::setQuery,
-                onLevel = logs::setLevel,
-                onCopy = { text -> copyLogEntry(context, text) },
-                onShare = { name, text -> context.startActivity(shareLogIntent(context, name, text)) },
-                onEditRetention = logs::editRetention,
-                onSaveRetention = logs::saveRetention,
-                onRetrySave = logs::retrySave,
-                onRetry = logs::load,
-                onRefresh = logs::refresh,
-                onRetryOpen = logs::retryOpen,
-                onBack = onBack,
-            ),
-        )
-    }
+    val open = LocalOpenItem.current
+    LaunchedEffect(open == null) { if (open == null) logs.closeLog() }
+    LogsScreen(
+        state,
+        LogsActions(
+            onOpen = {
+                logs.itemOpened()
+                openItem(it)
+            },
+            onEditRetention = logs::editRetention,
+            onSaveRetention = logs::saveRetention,
+            onRetrySave = logs::retrySave,
+            onRetry = logs::load,
+            onRefresh = logs::refresh,
+            onBack = onBack,
+        ),
+    )
 }
