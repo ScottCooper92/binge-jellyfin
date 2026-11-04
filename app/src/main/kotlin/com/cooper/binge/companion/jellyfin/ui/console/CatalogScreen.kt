@@ -1,7 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -42,13 +45,14 @@ internal fun CatalogTab(
     actions: CatalogActions,
     inner: PaddingValues,
     listState: LazyListState,
+    detailState: LazyListState,
 ) {
     when (state) {
         CatalogUiState.Loading -> PluginsLoading(inner)
         is CatalogUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is CatalogUiState.Ready ->
             when {
-                open != null -> PackagePage(open, state, actions, inner)
+                open != null -> PackagePage(open, state, actions, inner, detailState)
                 state.packages.isEmpty() ->
                     EmptyScreen(
                         message = stringResource(R.string.catalog_empty),
@@ -103,6 +107,7 @@ private fun CatalogPackage.row(
 /**
  * One package: what it is and who made it, the version Install would put on this server (the newest built
  * for its release or older), and Install, or its progress with Cancel. A package with no such version says so.
+ * On a wide window, Install sits in the detail pane's footer.
  */
 @Composable
 private fun PackagePage(
@@ -110,11 +115,40 @@ private fun PackagePage(
     state: CatalogUiState.Ready,
     actions: CatalogActions,
     inner: PaddingValues,
+    listState: LazyListState,
+) {
+    if (!LocalPageSpansTwoPanes.current) {
+        PackageContent(pkg, state, actions, inner, listState, inlineInstall = true)
+        return
+    }
+    Column(Modifier.fillMaxSize()) {
+        Box(Modifier.weight(1f)) { PackageContent(pkg, state, actions, inner, listState, inlineInstall = false) }
+        CreateFooter(
+            label = stringResource(R.string.catalog_install),
+            icon = Icons.Outlined.Download,
+            onClick = { actions.onInstall(pkg) },
+            visible = pkg.installable(state.server) != null && pkg.name !in state.installed && pkg.name !in state.installing,
+        )
+    }
+}
+
+@Composable
+private fun PackageContent(
+    pkg: CatalogPackage,
+    state: CatalogUiState.Ready,
+    actions: CatalogActions,
+    inner: PaddingValues,
+    listState: LazyListState,
+    inlineInstall: Boolean,
 ) {
     val version = pkg.installable(state.server)
     val installing = pkg.name in state.installing
     val installId = state.installing[pkg.name]
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item { Text(pkg.overview.ifBlank { pkg.description }, style = MaterialTheme.typography.bodyMedium) }
         item {
             ItemGroup(
@@ -151,7 +185,7 @@ private fun PackagePage(
                         onClick = { actions.onCancel(pkg) },
                         enabled = installId != null,
                     )
-                version != null && pkg.name !in state.installed ->
+                version != null && pkg.name !in state.installed && inlineInstall ->
                     BingeFilledButton(
                         label = stringResource(R.string.catalog_install),
                         onClick = { actions.onInstall(pkg) },
