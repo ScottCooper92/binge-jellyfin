@@ -380,7 +380,7 @@ private fun LogsRoute(
         state,
         LogsActions(
             onOpen = {
-                logs.opened()
+                logs.itemOpened()
                 openItem(it)
             },
             onEditRetention = logs::editRetention,
