@@ -1,24 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Today
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
@@ -26,12 +13,8 @@ import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.BingeSheetKind
-import com.binge.designsystem.component.BingeTextButton
-import com.binge.designsystem.component.ItemGroup
-import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.server.AccessSchedule
 import com.cooper.binge.companion.jellyfin.server.POLICY_ALLOWED_TAGS
 import com.cooper.binge.companion.jellyfin.server.POLICY_BITRATE_LIMIT
 import com.cooper.binge.companion.jellyfin.server.POLICY_BLOCKED_TAGS
@@ -39,18 +22,14 @@ import com.cooper.binge.companion.jellyfin.server.POLICY_LOCKOUT
 import com.cooper.binge.companion.jellyfin.server.POLICY_MAX_RATING
 import com.cooper.binge.companion.jellyfin.server.POLICY_MAX_SESSIONS
 import com.cooper.binge.companion.jellyfin.server.POLICY_MAX_SUB_RATING
-import com.cooper.binge.companion.jellyfin.server.POLICY_SCHEDULES
 import com.cooper.binge.companion.jellyfin.server.POLICY_SYNC_PLAY
-import com.cooper.binge.companion.jellyfin.server.SCHEDULE_DAYS
 import com.cooper.binge.companion.jellyfin.server.SYNC_PLAY_ACCESS
 import com.cooper.binge.companion.jellyfin.server.int
-import com.cooper.binge.companion.jellyfin.server.json
 import com.cooper.binge.companion.jellyfin.server.string
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import com.binge.designsystem.R as DesR
 
 /** The choices a section opens in a sheet. */
 internal enum class PolicyPicker { Lockout, Sessions, Bitrate, SyncPlay, Rating, SubRating }

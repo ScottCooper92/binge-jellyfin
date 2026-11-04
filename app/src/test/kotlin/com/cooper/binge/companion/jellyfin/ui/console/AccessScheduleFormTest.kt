@@ -16,8 +16,8 @@ import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,7 +41,21 @@ class AccessScheduleFormTest {
     @Test fun `editing retains minute precision and replaces the old row without a duplicate`() {
         val original = AccessSchedule("Weekday", 9.5, 17.75)
         var changed: (List<JsonElement>) -> List<JsonElement> = { it }
-        compose.setContent { JellyfinTheme { ScheduleForm(UsersActions(onList = { _, change -> changed = change }), {}, original = original, is24Hour = true) } }
+        compose.setContent {
+            JellyfinTheme {
+                ScheduleForm(
+                    UsersActions(onList = {
+                        _,
+                        change,
+                        ->
+                        changed = change
+                    }),
+                    {},
+                    original = original,
+                    is24Hour = true,
+                )
+            }
+        }
         compose.onAllNodes(hasSetTextAction() and hasText("Minute"))[0].performTextReplacement("45")
         compose.onNodeWithText("Save").performClick()
         val expected = AccessSchedule("Weekday", 9.75, 17.75)
@@ -52,7 +66,22 @@ class AccessScheduleFormTest {
 
     @Test fun `until must be later and midnight means the end of the same day`() {
         var changed: (List<JsonElement>) -> List<JsonElement> = { it }
-        compose.setContent { JellyfinTheme { ScheduleForm(UsersActions(onList = { _, change -> changed = change }), {}, startStep = 1, startHour = 9, is24Hour = true) } }
+        compose.setContent {
+            JellyfinTheme {
+                ScheduleForm(
+                    UsersActions(onList = {
+                        _,
+                        change,
+                        ->
+                        changed = change
+                    }),
+                    {},
+                    startStep = 1,
+                    startHour = 9,
+                    is24Hour = true,
+                )
+            }
+        }
         compose.onAllNodes(hasSetTextAction() and hasText("Hour"))[1].performTextReplacement("08")
         compose.onNodeWithText("Add").assertIsNotEnabled()
         compose.onAllNodes(hasSetTextAction() and hasText("Hour"))[1].performTextReplacement("09")
