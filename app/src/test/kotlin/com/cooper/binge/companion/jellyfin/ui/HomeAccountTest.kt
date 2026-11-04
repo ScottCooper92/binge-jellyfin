@@ -1,15 +1,20 @@
 package com.cooper.binge.companion.jellyfin.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import com.binge.designsystem.LocalIsSinglePaneNav
+import com.binge.designsystem.PaneContent
+import com.binge.designsystem.PaneEdge
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
@@ -102,5 +107,31 @@ class HomeAccountTest {
     fun `the account page shows the sign-out confirm when it is asked`() {
         compose.setContent { JellyfinTheme { AccountScreen(state(admin = true).copy(confirmingSignOut = true), Actions(), onBack = {}) } }
         compose.onNodeWithText("Sign out of Jellyfin?").assertExists()
+    }
+
+    private fun homeBeside(
+        beside: Boolean,
+        selected: ConsolePage,
+    ) = compose.setContent {
+        JellyfinTheme {
+            CompositionLocalProvider(LocalIsSinglePaneNav provides !beside) {
+                PaneContent(innerEdge = PaneEdge.End) { JellyfinRoot(state(admin = true), Actions(selectedPage = selected)) }
+            }
+        }
+    }
+
+    @Test
+    fun `beside a page the home marks the page that is open`() {
+        homeBeside(beside = true, selected = ConsolePage.Logs)
+        scrollTo("Logs")
+        compose.onNode(hasText("Logs") and isSelected()).assertExists()
+        compose.onAllNodes(hasText("Tasks") and isSelected()).assertCountEquals(0)
+    }
+
+    @Test
+    fun `on its own the home marks nothing, whatever page is named`() {
+        homeBeside(beside = false, selected = ConsolePage.Logs)
+        scrollTo("Logs")
+        compose.onAllNodes(isSelected()).assertCountEquals(0)
     }
 }
