@@ -94,6 +94,12 @@ class TasksViewModel(
 
     fun stop(task: ServerTask) = call(task, run = false)
 
+    /**
+     * A task is being opened: what the last screen said went wrong, and a sheet it left open, are not this one's. The
+     * failures live here, shared by the list and the task, so a screen composed afresh would say them again.
+     */
+    fun opened() = update { copy(actionFailed = null, triggerFailed = null, adding = false) }
+
     fun askAdd(on: Boolean) = update { copy(adding = on, triggerFailed = null) }
 
     /** Adds [trigger] to task [taskId]'s triggers, after the ones it has. */
