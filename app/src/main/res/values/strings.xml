@@ -480,7 +480,6 @@
     <string name="users_add_action_short">Add</string>
     <string name="users_remove">Remove</string>
     <string name="users_cancel">Cancel</string>
-    <string name="users_back">Back</string>
     <string name="users_schedules">Access schedule</string>
     <string name="users_add_schedule">Add a time</string>
     <string name="users_schedule_row">%1$s, %2$s to %3$s</string>

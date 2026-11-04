@@ -43,6 +43,7 @@ import com.binge.designsystem.R as DesR
 
 private const val MINUTES_PER_SCHEDULE_HOUR = 60
 private const val MINUTES_PER_DAY = 1440
+private const val HOURS_ON_CLOCK_FACE = 12
 private val ScheduleDays =
     listOf("Everyday", "Weekday", "Weekend") + SCHEDULE_DAYS.filterNot { it in setOf("Everyday", "Weekday", "Weekend") }
 
@@ -70,7 +71,7 @@ internal fun ScheduleForm(
     var untilPm by rememberSaveable { mutableStateOf(untilMinutes >= MINUTES_PER_DAY / 2) }
     val from = timeOfDayMinutes(fromHour, fromMinute, is24Hour, fromPm)
     val until = timeOfDayMinutes(untilHour, untilMinute, is24Hour, untilPm)?.let { if (it == 0) MINUTES_PER_DAY else it }
-    val valid = from != null && until != null && until > from
+    val span = if (from != null && until != null && until > from) from to until else null
     BackHandler(enabled = !choosingDay && !WindowInsets.isImeVisible) { choosingDay = true }
     Column {
         Column(
@@ -88,17 +89,10 @@ internal fun ScheduleForm(
                 style = MaterialTheme.typography.titleLarge,
             )
             if (choosingDay) {
-                ItemGroup(
-                    title = null,
-                    rows =
-                        ScheduleDays.map { value ->
-                            ListItem(icon = Icons.Outlined.Today, label = stringResource(dayLabel(value)), onClick = {
-                                day = value
-                                choosingDay =
-                                    false
-                            })
-                        },
-                )
+                ScheduleDayList { value ->
+                    day = value
+                    choosingDay = false
+                }
             } else {
                 BingeTextButton(label = stringResource(dayLabel(day)), onClick = { choosingDay = true })
                 Text(stringResource(R.string.users_schedule_start), style = MaterialTheme.typography.labelLarge)
@@ -114,30 +108,53 @@ internal fun ScheduleForm(
                         it
                 })
                 Text(stringResource(R.string.users_schedule_midnight), style = MaterialTheme.typography.bodyMedium)
-                if (!valid) Text(stringResource(R.string.users_schedule_order), color = MaterialTheme.colorScheme.error)
+                if (span == null) ScheduleOrderError()
             }
         }
         if (!choosingDay) {
-            BingeFilledButton(
-                label = stringResource(if (original == null) R.string.users_add_action_short else R.string.library_save),
-                enabled = valid,
-                onClick = {
-                    if (from != null && until != null && until > from) {
-                        val changed =
-                            AccessSchedule(
-                                day,
-                                from.toDouble() / MINUTES_PER_SCHEDULE_HOUR,
-                                until.toDouble() / MINUTES_PER_SCHEDULE_HOUR,
-                            )
-                        actions.onList(POLICY_SCHEDULES) { it.withSchedule(original, changed) }
-                        onClose()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
-            )
+            ScheduleSave(
+                isNew = original == null,
+                span = span,
+            ) { start, end ->
+                actions.onList(POLICY_SCHEDULES) { it.withSchedule(original, AccessSchedule(day, start, end)) }
+                onClose()
+            }
         }
         BingeTextButton(label = stringResource(R.string.users_cancel), onClick = onClose, modifier = Modifier.fillMaxWidth())
     }
+}
+
+@Composable
+private fun ScheduleDayList(onPick: (String) -> Unit) {
+    ItemGroup(
+        title = null,
+        rows =
+            ScheduleDays.map { value ->
+                ListItem(icon = Icons.Outlined.Today, label = stringResource(dayLabel(value)), onClick = { onPick(value) })
+            },
+    )
+}
+
+@Composable
+private fun ScheduleOrderError() = Text(stringResource(R.string.users_schedule_order), color = MaterialTheme.colorScheme.error)
+
+@Composable
+private fun ScheduleSave(
+    isNew: Boolean,
+    span: Pair<Int, Int>?,
+    onSave: (start: Double, end: Double) -> Unit,
+) {
+    BingeFilledButton(
+        label = stringResource(if (isNew) R.string.users_add_action_short else R.string.library_save),
+        enabled = span != null,
+        onClick = {
+            if (span != null) {
+                val (start, end) = span
+                onSave(start.toDouble() / MINUTES_PER_SCHEDULE_HOUR, end.toDouble() / MINUTES_PER_SCHEDULE_HOUR)
+            }
+        },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
+    )
 }
 
 private fun clockHour(
@@ -145,7 +162,21 @@ private fun clockHour(
     is24Hour: Boolean,
 ): String {
     val hour = minutes / MINUTES_PER_SCHEDULE_HOUR
-    return (if (is24Hour) hour else (hour % 12).let { if (it == 0) 12 else it }).toString().padStart(2, '0')
+    return (
+        if (is24Hour) {
+            hour
+        } else {
+            (hour % HOURS_ON_CLOCK_FACE).let {
+                if (it ==
+                    0
+                ) {
+                    HOURS_ON_CLOCK_FACE
+                } else {
+                    it
+                }
+            }
+        }
+    ).toString().padStart(2, '0')
 }
 
 private fun clockMinute(minutes: Int): String = (minutes % MINUTES_PER_SCHEDULE_HOUR).toString().padStart(2, '0')

@@ -485,7 +485,6 @@
     <string name="users_add_action_short">Añadir</string>
     <string name="users_remove">Quitar</string>
     <string name="users_cancel">Cancelar</string>
-    <string name="users_back">Atrás</string>
     <string name="users_schedules">Horario de acceso</string>
     <string name="users_add_schedule">Añadir un horario</string>
     <string name="users_schedule_row">%1$s, de %2$s a %3$s</string>
