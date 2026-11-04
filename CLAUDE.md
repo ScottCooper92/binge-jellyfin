@@ -187,6 +187,9 @@ as binge-seerr's TV is.
     failed **and** what the user can do about it, however short. A title says what happened, the body gives the cause and the
     next step, and one OK acknowledges it. It does not go away by itself. It is an acknowledgement, not a confirmation, so it
     has exactly one action. Backups' "The backup wasn't made" is the worked example: it was cut off in a snackbar.
+  - **A value shown once** that a stray tap must not lose uses a message dialog with `dismissible = false`.
+    Its one closing button says what acknowledging it means (for example, "I have copied it"), and the value
+    and any Copy button go in `extraContent`.
   - **In place:** a failed load stays an error screen with Retry.
   - A snackbar never carries text the user must read to act. Do not turn every message into a dialog: a short result or a
     refusal with nothing to act on stays a snackbar.
