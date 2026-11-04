@@ -96,6 +96,8 @@
     <string name="home_layout_body">How Jellyfin’s apps lay out your home, on every device you sign in to.</string>
     <string name="home_layout_libraries">Libraries</string>
     <string name="home_layout_display">Display</string>
+    <string name="home_layout_select_title">No library selected</string>
+    <string name="home_layout_select">Select a library to choose where it shows on the home.</string>
     <string name="home_layout_no_libraries">You can’t see any libraries yet</string>
     <string name="home_layout_shown_both">In My Media and Latest</string>
     <string name="home_layout_shown_my_media">In My Media</string>

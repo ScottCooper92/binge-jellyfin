@@ -48,14 +48,10 @@ sealed interface HomeLayoutUiState {
         val groupable: List<UserView> = emptyList(),
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
-        /** The library whose own page is open, by id. */
-        val openId: String? = null,
     ) : HomeLayoutUiState {
         /** The libraries in the home's order: the saved order first, then the rest as the server listed them. */
         val libraries: List<UserView> =
             views.sortedBy { view -> layout.order.indexOf(view.id).takeIf { it >= 0 } ?: Int.MAX_VALUE }
-
-        val openLibrary: UserView? get() = libraries.firstOrNull { it.id == openId }
     }
 }
 
@@ -148,8 +144,11 @@ class HomeLayoutViewModel(
 
     fun setDisplayCollectionsView(on: Boolean) = save(DISPLAY_COLLECTIONS_VIEW, JsonPrimitive(on))
 
-    /** Opens library [id]'s own page, or closes it for null. */
-    fun open(id: String?) = _state.update { (it as? HomeLayoutUiState.Ready)?.copy(openId = id) ?: it }
+    /**
+     * A library is being opened: what the last screen reported is not this one's. It lives here, shared by the list and
+     * the library, so a screen composed afresh would say it again.
+     */
+    fun itemOpened() = _state.update { (it as? HomeLayoutUiState.Ready)?.copy(refused = null) ?: it }
 
     fun retrySave() = saves.retry()
 

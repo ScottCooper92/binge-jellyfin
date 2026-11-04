@@ -245,6 +245,8 @@ app:home_layout_no_libraries  fca5038510e7
 app:home_layout_order  6be090825c99
 app:home_layout_order_detail  d41944ffeeed
 app:home_layout_position  70c724f0dd6f
+app:home_layout_select  c5e4da9c90a5
+app:home_layout_select_title  33d48a9a3663
 app:home_layout_shown_both  d28774c778b3
 app:home_layout_shown_latest  21cd45b3fc25
 app:home_layout_shown_my_media  ed36607fbd6c

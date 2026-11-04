@@ -35,7 +35,7 @@ internal fun ConsolePageRoute(
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
         ConsolePage.Playback -> PlaybackRoute(graph, close)
-        ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, close)
+        ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
@@ -120,34 +120,31 @@ private fun PlaybackRoute(
     )
 }
 
-/** The home screen page with its own view model, asking the server its own release's way. */
+/**
+ * The home screen page with its own view model, asking the server its own release's way. A library opens as an entry above
+ * it on the stack ([openItem]), and its screen ([HomeLayoutLibraryRoute]) reads this same view model.
+ */
 @Composable
 private fun HomeLayoutRoute(
     graph: AppGraph,
     profile: JellyfinServerProfile,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val home: HomeLayoutViewModel =
         viewModel(factory = viewModelFactory { initializer { HomeLayoutViewModel(graph.connection, profile) } })
     val state by home.state.collectAsStateWithLifecycle()
-    PageItemDepth(open = (state as? HomeLayoutUiState.Ready)?.openLibrary != null) {
-        HomeLayoutScreen(
-            state,
-            HomeLayoutActions(
-                onOpen = home::open,
-                onInMyMedia = home::setInMyMedia,
-                onInLatest = home::setInLatest,
-                onGrouped = home::setGrouped,
-                onMove = home::move,
-                onHidePlayedInLatest = home::setHidePlayedInLatest,
-                onDisplayMissingEpisodes = home::setDisplayMissingEpisodes,
-                onDisplayCollectionsView = home::setDisplayCollectionsView,
-                onRetry = home::load,
-                onRetrySave = home::retrySave,
-                onBack = onBack,
-            ),
-        )
-    }
+    HomeLayoutScreen(
+        state,
+        homeLayoutActions(
+            home,
+            onOpen = {
+                home.itemOpened()
+                openItem(it)
+            },
+            onBack = onBack,
+        ),
+    )
 }
 
 /** The profile picture page: the system photo picker feeds the view model the picked file's bytes. */
