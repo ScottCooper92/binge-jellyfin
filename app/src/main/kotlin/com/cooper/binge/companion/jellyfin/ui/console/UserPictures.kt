@@ -9,7 +9,6 @@ import com.cooper.binge.companion.jellyfin.server.MAX_PICTURE_BYTES
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.server.USER_THUMBNAIL_SIZE
 import com.cooper.binge.companion.jellyfin.server.userThumbnail
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -17,6 +16,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -39,7 +39,7 @@ class UserPictures(
 
     /** No image tag means no request. An absent, unreadable or failed image stays the caller's initials. */
     suspend fun read(user: ServerUser): Bitmap? =
-        withContext(Dispatchers.IO) {
+        withContext(connection.io) {
             val tag = user.imageTag?.takeIf { it.isNotBlank() } ?: return@withContext null
             connection
                 .consoleCall(TAG) { session, client ->
@@ -91,7 +91,7 @@ class UserPictures(
     }
 
     private fun cacheKey(value: String): String =
-        MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
+        MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(Locale.ROOT, it) }
 
     private companion object {
         const val TAG = "JellyfinUserPictures"
