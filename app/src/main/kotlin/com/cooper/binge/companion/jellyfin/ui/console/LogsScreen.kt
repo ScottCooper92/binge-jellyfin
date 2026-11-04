@@ -2,8 +2,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -101,12 +103,14 @@ fun LogsScreen(
     BackHandler(enabled = open != null) { actions.onCloseLog() }
     val host = remember { SnackbarHostState() }
     var showFullName by rememberSaveable(open?.name) { mutableStateOf(false) }
+    // On a window with room for it the list and the open log sit side by side, under the page's own title.
+    val split = LocalPageSpansTwoPanes.current
     BingeScreenScaffold(
-        title = open?.name?.middleEllipsised() ?: stringResource(R.string.logs_title),
-        onTitleLongClick = open?.let { { showFullName = true } },
+        title = if (split) stringResource(R.string.logs_title) else open?.name?.middleEllipsised() ?: stringResource(R.string.logs_title),
+        onTitleLongClick = open?.let { { showFullName = true } }.takeIf { !split },
         onTitleLongClickLabel = stringResource(R.string.logs_show_full_name),
         bar = ScreenBar.Small,
-        onBack = if (open != null) actions.onCloseLog else actions.onBack,
+        onBack = if (open != null && !split) actions.onCloseLog else actions.onBack,
         snackbarHostState = host,
         actions = { if (open != null) ShareAction(open, actions.onShare) },
     ) { padding ->
@@ -116,15 +120,41 @@ fun LogsScreen(
                 LogsUiState.Loading -> ConsoleLoading(inner, FILE_ROWS)
                 is LogsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LogsUiState.Ready ->
-                    if (open == null) {
-                        BingePullToRefresh(
-                            isRefreshing = state.refreshing,
-                            onRefresh = actions.onRefresh,
-                            indicatorTopInset = padding.calculateTopPadding(),
-                        ) { Files(state, actions, inner, zone) }
-                    } else {
-                        Reader(open, actions, inner)
-                    }
+                    ListDetailBody(
+                        detailOpen = open != null,
+                        list = {
+                            BingePullToRefresh(
+                                isRefreshing = state.refreshing,
+                                onRefresh = actions.onRefresh,
+                                indicatorTopInset = padding.calculateTopPadding(),
+                            ) { Files(state, actions, inner, zone) }
+                        },
+                        detail = {
+                            if (open == null) {
+                                NothingSelected(
+                                    stringResource(R.string.logs_select_title),
+                                    stringResource(R.string.logs_select),
+                                    Icons.Outlined.Description,
+                                    inner,
+                                )
+                            } else if (split) {
+                                Column(Modifier.fillMaxSize()) {
+                                    DetailHeading(
+                                        open.name.middleEllipsised(),
+                                        inner,
+                                        Modifier.combinedClickable(
+                                            onClick = {},
+                                            onLongClick = { showFullName = true },
+                                            onLongClickLabel = stringResource(R.string.logs_show_full_name),
+                                        ),
+                                    )
+                                    Box(Modifier.weight(1f)) { Reader(open, actions, inner.belowHeading()) }
+                                }
+                            } else {
+                                Reader(open, actions, inner)
+                            }
+                        },
+                    )
             }
             RefusedMessage((state as? LogsUiState.Ready)?.refused, host)
             RefusedMessage((state as? LogsUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
@@ -195,6 +225,7 @@ private fun FilesList(
                                         file.modifiedMillis?.let { time.format(Instant.ofEpochMilli(it)) },
                                     ).joinToString(" · "),
                                 supportingMaxLines = 2,
+                                selected = LocalPageSpansTwoPanes.current && file.name == state.open?.name,
                                 onClick = { actions.onOpen(file.name) },
                             )
                         },

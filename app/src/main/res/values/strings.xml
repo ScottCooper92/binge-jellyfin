@@ -360,6 +360,8 @@
     <string name="logs_retention_invalid">Enter a whole number of days from %1$d to %2$d.</string>
     <string name="logs_retention_save">Save</string>
     <string name="console_logs_detail">The server\'s log files</string>
+    <string name="logs_select_title">No log selected</string>
+    <string name="logs_select">Select a log to read it.</string>
     <string name="logs_empty">The server has no log files.</string>
     <string name="logs_search">Search this log</string>
     <string name="logs_truncated">Showing the last %1$d KB of this log.</string>
