@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import com.cooper.binge.companion.jellyfin.server.moved
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.binge.companion.sdk.attempt
@@ -18,6 +17,7 @@ import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.server.groupingOptions
 import com.cooper.binge.companion.jellyfin.server.homeLayout
 import com.cooper.binge.companion.jellyfin.server.idList
+import com.cooper.binge.companion.jellyfin.server.moved
 import com.cooper.binge.companion.jellyfin.server.userConfiguration
 import com.cooper.binge.companion.jellyfin.server.userViews
 import kotlinx.coroutines.async
