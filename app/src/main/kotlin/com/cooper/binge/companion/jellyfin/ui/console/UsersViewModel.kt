@@ -174,10 +174,6 @@ class UsersViewModel(
 
     fun show(dialog: UserDialog?) = update { copy(dialog = dialog, done = null, formFailure = null, actionFailed = null) }
 
-    fun setAdministrator(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_ADMINISTRATOR to JsonPrimitive(on)) }
-
-    fun setCanSignIn(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_DISABLED to JsonPrimitive(!on)) }
-
     /** Changes one setting of the open user's policy, and saves it. */
     fun setPolicy(
         key: String,
@@ -257,7 +253,7 @@ class UsersViewModel(
      * Saves one change to the open user's policy as it's made. It shows at once; if the server refuses
      * it, the user's policy goes back to what the server last accepted, and the page says so.
      */
-    private fun changePolicy(
+    internal fun changePolicy(
         mineAllowed: Boolean = true,
         change: (JsonObject) -> JsonObject,
     ) {
@@ -292,6 +288,12 @@ class UsersViewModel(
         const val TAG = "JellyfinUsers"
     }
 }
+
+/** Makes the open user an administrator, or not. Not the signed-in user's own. */
+fun UsersViewModel.setAdministrator(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_ADMINISTRATOR to JsonPrimitive(on)) }
+
+/** Lets the open user sign in, or not. Not the signed-in user's own. */
+fun UsersViewModel.setCanSignIn(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_DISABLED to JsonPrimitive(!on)) }
 
 private fun List<ServerUser>.withPolicy(
     id: String,
