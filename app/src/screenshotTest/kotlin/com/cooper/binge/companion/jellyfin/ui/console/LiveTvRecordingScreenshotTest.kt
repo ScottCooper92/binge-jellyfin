@@ -63,6 +63,12 @@ class LiveTvRecordingScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun paddingOffStep() = Surface { RecordingNumberForm(RecordingNumber.PrePadding, "7", LiveTvRecordingActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun paddingOutOfRange() = Surface { RecordingNumberForm(RecordingNumber.PostPadding, "500", LiveTvRecordingActions()) }
 

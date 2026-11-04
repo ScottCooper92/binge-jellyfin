@@ -1,20 +1,29 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.string
+import com.binge.designsystem.R as DesR
 
 private const val PATH_LINES = 2
 
@@ -88,6 +97,10 @@ internal fun RecordingNumberForm(
     current: String,
     actions: LiveTvRecordingActions,
 ) {
+    if (field.seconds) {
+        RecordingPaddingSlider(field, current.toIntOrNull() ?: 0, actions)
+        return
+    }
     var text by rememberSaveable { mutableStateOf(current) }
     val valid = field.parse(text) != null
     TextEntrySurface(
@@ -97,7 +110,7 @@ internal fun RecordingNumberForm(
         onSubmit = { actions.onNumber(field, text) },
         onCancel = { actions.onSheet(null) },
         submitLabel = stringResource(R.string.library_save),
-        header = { Text(rangeHint(field), style = MaterialTheme.typography.bodyMedium) },
+        header = { Text(stringResource(R.string.live_tv_recording_guide_hint), style = MaterialTheme.typography.bodyMedium) },
         submitEnabled = valid,
         error = stringResource(R.string.transcoding_number_invalid, field.min, field.max).takeIf { text.isNotBlank() && !valid },
         minLines = 1,
@@ -106,13 +119,34 @@ internal fun RecordingNumberForm(
     )
 }
 
+/** Padding is shown exactly as stored. It saves once on release and keeps its sheet open. */
 @Composable
-private fun rangeHint(field: RecordingNumber): String {
-    if (field.blankClears) return stringResource(R.string.live_tv_recording_guide_hint)
-    val min = stringResource(R.string.transcoding_unit_minutes, field.min.toString())
-    val max = stringResource(R.string.transcoding_unit_minutes, field.max.toString())
-    return stringResource(R.string.transcoding_range_hint, min, max)
+internal fun RecordingPaddingSlider(
+    field: RecordingNumber,
+    current: Int,
+    actions: LiveTvRecordingActions,
+) {
+    var draft by rememberSaveable(field, current) { mutableIntStateOf(current) }
+    val title = stringResource(field.title())
+    val resources = LocalContext.current.resources
+    Column(
+        modifier = Modifier.padding(dimensionResource(DesR.dimen.padding_m)),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+    ) {
+        Text(title, style = MaterialTheme.typography.titleLarge)
+        BingeNumberSlider(
+            value = draft,
+            onValueChange = { it?.let { picked -> draft = picked } },
+            range = field.min..field.max,
+            step = PADDING_STEP_SECONDS,
+            format = { resources.getString(R.string.transcoding_unit_seconds, it.toString()) },
+            description = title,
+            onValueChangeFinished = { field.parse(draft.toString())?.let { actions.onSet(field.key, it) } },
+        )
+    }
 }
+
+private const val PADDING_STEP_SECONDS = 5
 
 internal fun RecordingNumber.title(): Int =
     when (this) {

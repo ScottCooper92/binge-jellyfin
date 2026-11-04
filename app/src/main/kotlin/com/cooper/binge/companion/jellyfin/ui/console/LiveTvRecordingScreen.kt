@@ -168,7 +168,7 @@ private fun numberDetail(
 ): String {
     val count = shown.toIntOrNull() ?: return stringResource(R.string.live_tv_recording_guide_auto)
     return if (field.seconds) {
-        stringResource(R.string.transcoding_unit_minutes, shown)
+        stringResource(R.string.transcoding_unit_seconds, shown)
     } else {
         pluralStringResource(R.plurals.live_tv_recording_days, count, count)
     }
