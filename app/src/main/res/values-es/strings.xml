@@ -97,6 +97,8 @@
     <string name="home_layout_body">Cómo organizan tu inicio las apps de Jellyfin, en cada dispositivo en el que inicies sesión.</string>
     <string name="home_layout_libraries">Bibliotecas</string>
     <string name="home_layout_display">Visualización</string>
+    <string name="home_layout_select_title">Ninguna biblioteca seleccionada</string>
+    <string name="home_layout_select">Selecciona una biblioteca para elegir dónde aparece en el inicio.</string>
     <string name="home_layout_no_libraries">Aún no puedes ver ninguna biblioteca</string>
     <string name="home_layout_shown_both">En Mis medios y Últimos</string>
     <string name="home_layout_shown_my_media">En Mis medios</string>

@@ -75,6 +75,7 @@ internal fun ConsoleItemRoute(
         ConsolePage.Tasks -> TaskItemRoute(graph, item, close)
         ConsolePage.Logs -> LogItemRoute(graph, item, close)
         ConsolePage.Users -> UserItemRoute(graph, profile, item, openSubItem, close)
+        ConsolePage.HomeLayout -> HomeLayoutLibraryRoute(graph, profile, item, close)
         ConsolePage.Plugins ->
             if (item.startsWith("package:")) {
                 PackageItemRoute(graph, server, item.removePrefix("package:"), close)
@@ -83,4 +84,37 @@ internal fun ConsoleItemRoute(
             }
         else -> Unit
     }
+}
+
+/** The actions of the home screen page's screens, over the page's view model. */
+internal fun homeLayoutActions(
+    home: HomeLayoutViewModel,
+    onOpen: (String) -> Unit = {},
+    onBack: () -> Unit,
+) = HomeLayoutActions(
+    onOpen = onOpen,
+    onInMyMedia = home::setInMyMedia,
+    onInLatest = home::setInLatest,
+    onGrouped = home::setGrouped,
+    onMove = home::move,
+    onHidePlayedInLatest = home::setHidePlayedInLatest,
+    onDisplayMissingEpisodes = home::setDisplayMissingEpisodes,
+    onDisplayCollectionsView = home::setDisplayCollectionsView,
+    onRetry = home::load,
+    onRetrySave = home::retrySave,
+    onBack = onBack,
+)
+
+/** One library's screen on the home screen page, with the page's view model. */
+@Composable
+internal fun HomeLayoutLibraryRoute(
+    graph: AppGraph,
+    profile: JellyfinServerProfile,
+    libraryId: String,
+    onBack: () -> Unit,
+) {
+    val home: HomeLayoutViewModel =
+        viewModel(factory = viewModelFactory { initializer { HomeLayoutViewModel(graph.connection, profile) } })
+    val state by home.state.collectAsStateWithLifecycle()
+    HomeLayoutLibraryScreen(state, libraryId, homeLayoutActions(home, onBack = onBack))
 }

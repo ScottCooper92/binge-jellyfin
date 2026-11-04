@@ -201,30 +201,44 @@ class ConsoleScreensTest {
         assertEquals(listOf("default:false", "audio:false", "subtitles:false", "next:true"), switched)
     }
 
+    private val homeViews = listOf(UserView("a", "Movies", "movies"), UserView("b", "Shows", "tvshows"))
+    private val homeList = HomeLayoutUiState.Ready(homeViews, HomeLayout(latestExcludes = setOf("b")))
+
     @Test
-    fun `the home screen page lists the libraries, and a library's page hands its changes on`() {
+    fun `the home screen page lists the libraries and opens one on a tap`() {
         val calls = mutableListOf<String>()
-        val views = listOf(UserView("a", "Movies", "movies"), UserView("b", "Shows", "tvshows"))
-        val list = HomeLayoutUiState.Ready(views, HomeLayout(latestExcludes = setOf("b")))
-        val actions =
-            HomeLayoutActions(
-                onOpen = { calls += "open:$it" },
-                onInMyMedia = { id, on -> calls += "media:$id:$on" },
-                onInLatest = { id, on -> calls += "latest:$id:$on" },
-                onMove = { id, by -> calls += "move:$id:$by" },
-            )
-        var state by mutableStateOf<HomeLayoutUiState>(list)
-        compose.setContent { JellyfinTheme { HomeLayoutScreen(state, actions) } }
+        compose.setContent { JellyfinTheme { HomeLayoutScreen(homeList, HomeLayoutActions(onOpen = { calls += "open:$it" })) } }
         compose.onNodeWithText("In My Media and Latest").assertExists()
         compose.onNodeWithText("In My Media").assertExists()
         compose.onNodeWithText("Shows").performClick()
-        state = list.copy(openId = "b")
+        assertEquals(listOf("open:b"), calls)
+    }
+
+    @Test
+    fun `a library's screen hands its changes on`() {
+        val calls = mutableListOf<String>()
+        val actions =
+            HomeLayoutActions(
+                onInMyMedia = { id, on -> calls += "media:$id:$on" },
+                onInLatest = { id, on -> calls += "latest:$id:$on" },
+                onMove = { id, by -> calls += "move:$id:$by" },
+                onBack = { calls += "back" },
+            )
+        compose.setContent { JellyfinTheme { HomeLayoutLibraryScreen(homeList, "b", actions) } }
         compose.onNodeWithText("Show in Latest").performClick()
         compose.onNodeWithText("Show in My Media").performClick()
         compose.onNodeWithText("Group with other libraries").assertDoesNotExist()
         compose.onNodeWithText("Move down").assertIsNotEnabled()
         compose.onNodeWithText("Move up").performClick()
-        assertEquals(listOf("open:b", "latest:b:true", "media:b:false", "move:b:-1"), calls)
+        assertEquals(listOf("latest:b:true", "media:b:false", "move:b:-1"), calls)
+    }
+
+    @Test
+    fun `a library the server no longer lists closes its screen`() {
+        var closed = 0
+        compose.setContent { JellyfinTheme { HomeLayoutLibraryScreen(homeList, "gone", HomeLayoutActions(onBack = { closed++ })) } }
+        compose.waitForIdle()
+        assertEquals(1, closed)
     }
 
     @Test
