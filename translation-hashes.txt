@@ -829,6 +829,8 @@ app:subtitle_mode_smart  9e6ad6db21db
 app:subtitle_mode_smart_detail  319b67f1f5af
 app:tasks_empty  cbb850a0f5d7
 app:tasks_not_sent  ca0afa8ce6b6
+app:tasks_select  59d9da08e5f4
+app:tasks_select_title  0e5d35859f31
 app:tasks_title  21c4a0a31b6a
 app:tasks_trigger_add  58fd308928dd
 app:tasks_trigger_am  7b455f2dd791

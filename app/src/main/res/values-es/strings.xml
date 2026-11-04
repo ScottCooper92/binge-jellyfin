@@ -912,6 +912,8 @@
     <string name="repositories_add_submit">Añadir</string>
     <string name="devices_empty">Ningún dispositivo ha iniciado sesión en este servidor.</string>
     <string name="tasks_empty">Este servidor no tiene tareas programadas que mostrar.</string>
+    <string name="tasks_select_title">Ninguna tarea seleccionada</string>
+    <string name="tasks_select">Selecciona una tarea para ver sus activadores.</string>
     <string name="advanced_title">Avanzado</string>
     <string name="console_advanced_detail">Análisis, cachés, registros y CORS</string>
     <string name="advanced_body">Opciones que la mayoría de los servidores nunca cambia. Cada cambio se guarda al hacerlo. Comprueba qué hace una opción antes de cambiarla.</string>

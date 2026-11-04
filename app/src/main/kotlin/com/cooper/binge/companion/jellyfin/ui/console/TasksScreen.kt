@@ -2,6 +2,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -69,10 +71,12 @@ fun TasksScreen(
     val open = ready?.open?.let { id -> ready.board.tasks.firstOrNull { it.id == id } }
     BackHandler(enabled = open != null) { actions.onCloseTask() }
     val host = remember { SnackbarHostState() }
+    // On a window with room for it the list and the open task sit side by side, under the page's own title.
+    val split = LocalPageSpansTwoPanes.current
     BingeScreenScaffold(
-        title = open?.name ?: stringResource(R.string.tasks_title),
+        title = if (split) stringResource(R.string.tasks_title) else open?.name ?: stringResource(R.string.tasks_title),
         bar = ScreenBar.Small,
-        onBack = if (open != null) actions.onCloseTask else actions.onBack,
+        onBack = if (open != null && !split) actions.onCloseTask else actions.onBack,
         snackbarHostState = host,
         bottomBar = {
             // A task's triggers page creates triggers; the task list creates nothing.
@@ -80,7 +84,7 @@ fun TasksScreen(
                 label = stringResource(R.string.tasks_trigger_add),
                 icon = Icons.Outlined.Add,
                 onClick = { actions.onAskAdd(true) },
-                visible = ready != null && open != null,
+                visible = ready != null && open != null && !split,
                 loading = ready?.saving == true,
             )
         },
@@ -91,18 +95,59 @@ fun TasksScreen(
                 state is TasksUiState.Loading ->
                     ConsoleLoading(inner, LOADING_ROWS)
                 state is TasksUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                ready != null && open != null -> TaskTriggers(open, ready, actions, inner)
                 ready != null ->
-                    BingePullToRefresh(
-                        isRefreshing = ready.refreshing,
-                        onRefresh = actions.onRefresh,
-                        indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Tasks(ready, actions, inner, now) }
+                    ListDetailBody(
+                        detailOpen = open != null,
+                        list = {
+                            BingePullToRefresh(
+                                isRefreshing = ready.refreshing,
+                                onRefresh = actions.onRefresh,
+                                indicatorTopInset = padding.calculateTopPadding(),
+                            ) { Tasks(ready, actions, inner, now) }
+                        },
+                        detail = {
+                            if (open != null) {
+                                TaskDetail(open, ready, actions, inner, split)
+                            } else {
+                                NothingSelected(
+                                    stringResource(R.string.tasks_select_title),
+                                    stringResource(R.string.tasks_select),
+                                    Icons.Outlined.Schedule,
+                                    inner,
+                                )
+                            }
+                        },
+                    )
             }
             // A change or run the server didn't take is said in a message, not in a space kept in the list for it.
             RefusedMessage(ready?.refreshFailed, host, R.string.console_not_refreshed)
             RefusedMessage(ready?.actionFailed, host, if (open != null) R.string.tasks_trigger_not_saved else R.string.tasks_not_sent)
         }
+    }
+}
+
+/** The open task's triggers: alone it is the page, with Add trigger in the footer; beside the list it carries its own. */
+@Composable
+private fun TaskDetail(
+    task: ServerTask,
+    state: TasksUiState.Ready,
+    actions: TasksActions,
+    inner: PaddingValues,
+    split: Boolean,
+) {
+    if (!split) {
+        TaskTriggers(task, state, actions, inner)
+        return
+    }
+    Column(Modifier.fillMaxSize()) {
+        DetailHeading(task.name, inner)
+        Box(Modifier.weight(1f)) { TaskTriggers(task, state, actions, inner.belowHeading()) }
+        CreateFooter(
+            label = stringResource(R.string.tasks_trigger_add),
+            icon = Icons.Outlined.Add,
+            onClick = { actions.onAskAdd(true) },
+            loading = state.saving,
+        )
     }
 }
 
@@ -124,7 +169,10 @@ private fun Tasks(
             item(key = category) {
                 ItemGroup(
                     title = category.ifBlank { null },
-                    rows = tasks.map { task -> task.row(board, actions, now).item() },
+                    rows =
+                        tasks.map { task ->
+                            task.row(task.id == state.open && LocalPageSpansTwoPanes.current, board, actions, now).item()
+                        },
                 )
             }
         }
@@ -133,6 +181,7 @@ private fun Tasks(
 
 @Composable
 private fun ServerTask.row(
+    selected: Boolean,
     board: TaskBoard,
     actions: TasksActions,
     now: Long,
@@ -156,6 +205,7 @@ private fun ServerTask.row(
         onRun = { actions.onRun(this) },
         onStop = { actions.onStop(this) },
         onOpen = { actions.onOpen(this) },
+        selected = selected,
     )
 }
 

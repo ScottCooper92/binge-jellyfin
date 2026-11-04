@@ -125,7 +125,12 @@ class MainActivity : ComponentActivity() {
                     onOpenPage = { stack = stack.open(it) },
                 )
             // Beside a page the home stays on screen, so what it opens replaces the page that is open.
-            val homeActions = actions.copy(onOpenPage = { stack = stack.openFromHome(it) })
+            // Now playing is what shows beside it while none is open.
+            val homeActions =
+                actions.copy(
+                    onOpenPage = { stack = stack.openFromHome(it) },
+                    selectedPage = stack.entries.firstOrNull()?.page ?: ConsolePage.NowPlaying,
+                )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalFlags provides flags) {
                 if (LocalConfiguration.current.isTelevision()) {
