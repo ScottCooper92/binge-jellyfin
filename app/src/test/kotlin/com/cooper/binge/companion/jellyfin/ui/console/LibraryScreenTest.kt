@@ -285,7 +285,7 @@ class LibraryScreenTest {
     }
 
     @Test
-    fun `a selected language stays on when the search clears and appears before the alphabet`() {
+    fun `a language toggled on stays in its letter group and stays on when the search clears`() {
         val json = Json.parseToJsonElement("""{"SubtitleDownloadLanguages":[]}""").jsonObject
         var state by mutableStateOf(
             LibraryUiState.Ready(
@@ -301,7 +301,8 @@ class LibraryScreenTest {
         compose.onNode(hasSetTextAction()).performTextReplacement("Spanish")
         compose.onNode(hasText("Spanish") and hasSetTextAction().not()).performClick()
         compose.onNode(hasSetTextAction()).performTextReplacement("")
-        compose.onNodeWithText("Selected", ignoreCase = true).assertExists()
+        compose.onNodeWithText("Selected", ignoreCase = true).assertDoesNotExist()
+        compose.onNodeWithText("S").assertExists()
         compose.onNodeWithText("Spanish").assertIsOn()
         compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("English"))
         compose.onNodeWithText("English").assertExists()

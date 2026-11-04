@@ -42,10 +42,14 @@ internal fun LanguagesPage(
     padding: PaddingValues,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    LanguagesBody(state, actions, padding, query, { query = it })
+    val openedWith = rememberSaveable { ArrayList(state.options.downloadLanguages()) }
+    LanguagesBody(state, actions, padding, query, { query = it }, openedWith)
 }
 
-/** A fixed search field above selected languages and the matching alphabetical groups. */
+/**
+ * A fixed search field above the languages that were on when the page opened and the matching alphabetical groups. The
+ * Selected group is fixed at [openedWith], so a row does not jump when it is toggled; each row's switch follows the live list.
+ */
 @Composable
 internal fun LanguagesBody(
     state: LibraryUiState.Ready,
@@ -53,10 +57,11 @@ internal fun LanguagesBody(
     padding: PaddingValues,
     query: String,
     onQuery: (String) -> Unit,
+    openedWith: List<String> = state.options.downloadLanguages(),
 ) {
     val on = state.options.downloadLanguages()
     val matching = state.cultures.filter { query.isBlank() || it.displayName.contains(query.trim(), ignoreCase = true) }
-    val (selected, remaining) = matching.partition { culture -> on.any { it.equals(culture.code, ignoreCase = true) } }
+    val (selected, remaining) = matching.partition { culture -> openedWith.any { it.equals(culture.code, ignoreCase = true) } }
     val sections = remaining.groupBy { it.displayName.sectionLetter() }
     Column(
         modifier = Modifier.fillMaxSize().padding(padding),
