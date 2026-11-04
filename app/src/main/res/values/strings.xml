@@ -820,6 +820,8 @@
     <string name="display_substitution_to_hint">/mnt/media</string>
     <string name="display_entry_title">Add an entry</string>
     <string name="display_list_empty">None</string>
+    <string name="display_select_title">No list selected</string>
+    <string name="display_select">Select a list to edit its entries.</string>
     <string name="display_add">Add</string>
     <string name="display_remove">Remove</string>
     <string name="trickplay_body">Trickplay makes the preview images shown when you seek. A change applies to images made from then on.</string>

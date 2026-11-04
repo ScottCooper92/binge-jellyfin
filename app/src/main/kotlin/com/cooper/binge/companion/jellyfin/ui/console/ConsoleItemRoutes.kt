@@ -76,6 +76,7 @@ internal fun ConsoleItemRoute(
         ConsolePage.Logs -> LogItemRoute(graph, item, close)
         ConsolePage.Users -> UserItemRoute(graph, profile, item, openSubItem, close)
         ConsolePage.HomeLayout -> HomeLayoutLibraryRoute(graph, profile, item, close)
+        ConsolePage.LibraryDisplay -> LibraryDisplayListRoute(graph, item, close)
         ConsolePage.Plugins ->
             if (item.startsWith("package:")) {
                 PackageItemRoute(graph, server, item.removePrefix("package:"), close)

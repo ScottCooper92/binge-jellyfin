@@ -206,6 +206,8 @@ app:display_remove_words_body  d7d0f3d33e29
 app:display_replace_characters  75798bf0c92c
 app:display_replace_characters_body  491f1b656d9d
 app:display_resolution_source  c0ab8543d62f
+app:display_select  08ec481bf321
+app:display_select_title  caf1004c5717
 app:display_sorting  cb24f7d40a81
 app:display_specials  d1397f00f7d7
 app:display_specials_detail  7e635741bf3e

@@ -815,6 +815,8 @@
     <string name="display_substitution_to_hint">/mnt/media</string>
     <string name="display_entry_title">Añadir una entrada</string>
     <string name="display_list_empty">Ninguna</string>
+    <string name="display_select_title">Ninguna lista seleccionada</string>
+    <string name="display_select">Selecciona una lista para editar sus entradas.</string>
     <string name="display_add">Añadir</string>
     <string name="display_remove">Quitar</string>
     <string name="trickplay_body">Trickplay crea las imágenes de vista previa que se ven al buscar. Un cambio se aplica a las imágenes que se creen desde ese momento.</string>

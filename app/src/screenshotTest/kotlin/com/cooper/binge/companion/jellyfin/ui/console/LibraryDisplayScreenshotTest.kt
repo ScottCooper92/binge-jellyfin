@@ -8,12 +8,14 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.DisplayList
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
-import com.cooper.binge.companion.jellyfin.server.ListEntry
 import com.cooper.binge.companion.jellyfin.server.ServerFolder
 import com.cooper.binge.companion.jellyfin.server.UiLanguage
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
 private val newest = JellyfinServerProfile.from("10.11.6")
@@ -55,27 +57,22 @@ class LibraryDisplayScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun listEditor() =
-        LibraryDisplayScreen(
-            ready.copy(editing = DisplayList.RemoveWords, draft = listOf(ListEntry("the"), ListEntry("a"), ListEntry("an"))),
-            LibraryDisplayActions(),
-            newest,
-        )
+    fun listEditor() = LibraryDisplayListScreen(ready, DisplayList.RemoveWords, LibraryDisplayActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun substitutionsEditor() =
-        LibraryDisplayScreen(
-            ready.copy(editing = DisplayList.Substitutions, draft = listOf(ListEntry("/media", "/mnt/media"))),
-            LibraryDisplayActions(),
-            newest,
-        )
+    fun substitutionsEditor() = LibraryDisplayListScreen(ready, DisplayList.Substitutions, LibraryDisplayActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun emptyEditor() = LibraryDisplayScreen(ready.copy(editing = DisplayList.ReplaceCharacters), LibraryDisplayActions(), newest)
+    fun emptyEditor() =
+        LibraryDisplayListScreen(
+            ready.copy(configuration = JsonObject(configuration - "SortReplaceCharacters")),
+            DisplayList.ReplaceCharacters,
+            LibraryDisplayActions(),
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -129,4 +126,13 @@ class LibraryDisplayScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = LibraryDisplayScreen(LibraryDisplayUiState.Failed(ConsoleFailure.Refused), LibraryDisplayActions(), newest)
+}
+
+/** The page on a landscape tablet, where a list's editor opens in a third pane: the invitation to pick one while none is. */
+class LibraryDisplayPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { LibraryDisplayPlaceholder() }
 }

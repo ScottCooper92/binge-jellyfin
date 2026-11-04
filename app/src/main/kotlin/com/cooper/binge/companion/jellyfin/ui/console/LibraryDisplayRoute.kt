@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
+import com.cooper.binge.companion.jellyfin.server.DisplayList
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.METADATA_DUMMY_CHAPTER
 import kotlinx.serialization.json.JsonPrimitive
@@ -17,6 +18,7 @@ import kotlinx.serialization.json.JsonPrimitive
 internal fun LibraryDisplayRoute(
     graph: AppGraph,
     profile: JellyfinServerProfile,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val display: LibraryDisplayViewModel =
@@ -27,24 +29,51 @@ internal fun LibraryDisplayRoute(
     val sheet = (state as? LibraryDisplayUiState.Ready)?.sheet
     // The metadata folder sheet browses from the server's roots each time it opens.
     LaunchedEffect(sheet) { if (sheet == DisplaySheet.MetadataPath) browser.start() }
-    PageItemDepth(open = (state as? LibraryDisplayUiState.Ready)?.editing != null) {
-        LibraryDisplayScreen(
-            state,
-            LibraryDisplayActions(
-                onFlag = { key, on -> display.set(key, JsonPrimitive(on)) },
-                onText = { key, text -> display.set(key, JsonPrimitive(text)) },
-                onSeconds = { display.set(METADATA_DUMMY_CHAPTER, JsonPrimitive(it)) },
-                onSheet = display::sheet,
-                onEdit = display::edit,
-                onAdd = display::add,
-                onRemove = display::remove,
-                onRetry = display::load,
-                onRetrySave = display::retrySave,
-                onBack = onBack,
-            ),
-            profile,
-            folders,
-            FolderActions(onEnter = browser::enter, onUp = browser::up, onRetry = browser::retry),
-        )
-    }
+    LibraryDisplayScreen(
+        state,
+        displayActions(
+            display,
+            onEdit = {
+                display.itemOpened()
+                openItem(it.name)
+            },
+            onBack = onBack,
+        ),
+        profile,
+        folders,
+        FolderActions(onEnter = browser::enter, onUp = browser::up, onRetry = browser::retry),
+    )
 }
+
+/** One list's editor over the page's view model, which its page shares. */
+@Composable
+internal fun LibraryDisplayListRoute(
+    graph: AppGraph,
+    list: String,
+    onBack: () -> Unit,
+) {
+    val display: LibraryDisplayViewModel =
+        viewModel(factory = viewModelFactory { initializer { LibraryDisplayViewModel(graph.connection) } })
+    val state by display.state.collectAsStateWithLifecycle()
+    val displayList = DisplayList.entries.firstOrNull { it.name == list }
+    // A list this release doesn't know has nothing to edit: close it.
+    LaunchedEffect(displayList) { if (displayList == null) onBack() }
+    displayList?.let { LibraryDisplayListScreen(state, it, displayActions(display, onBack = onBack)) }
+}
+
+private fun displayActions(
+    display: LibraryDisplayViewModel,
+    onEdit: (DisplayList) -> Unit = {},
+    onBack: () -> Unit,
+) = LibraryDisplayActions(
+    onFlag = { key, on -> display.set(key, JsonPrimitive(on)) },
+    onText = { key, text -> display.set(key, JsonPrimitive(text)) },
+    onSeconds = { display.set(METADATA_DUMMY_CHAPTER, JsonPrimitive(it)) },
+    onSheet = display::sheet,
+    onEdit = onEdit,
+    onAdd = display::add,
+    onRemove = display::remove,
+    onRetry = display::load,
+    onRetrySave = display::retrySave,
+    onBack = onBack,
+)

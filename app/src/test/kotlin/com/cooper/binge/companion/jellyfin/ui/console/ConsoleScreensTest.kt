@@ -31,7 +31,9 @@ import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.Branding
 import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.DisplayList
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.LogFile
@@ -61,6 +63,9 @@ import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.server.parseLogEntries
 import com.cooper.binge.companion.jellyfin.server.redactLog
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -239,6 +244,45 @@ class ConsoleScreensTest {
         compose.setContent { JellyfinTheme { HomeLayoutLibraryScreen(homeList, "gone", HomeLayoutActions(onBack = { closed++ })) } }
         compose.waitForIdle()
         assertEquals(1, closed)
+    }
+
+    private val displayReady =
+        LibraryDisplayUiState.Ready(
+            JsonObject(mapOf("SortRemoveWords" to JsonArray(listOf(JsonPrimitive("the"), JsonPrimitive("a"))))),
+        )
+
+    @Test
+    fun `the library display page opens a list's editor on a tap`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                LibraryDisplayScreen(
+                    displayReady,
+                    LibraryDisplayActions(onEdit = { calls += "edit:${it.name}" }),
+                    JellyfinServerProfile.from("10.11.6"),
+                    openList = null,
+                )
+            }
+        }
+        compose.onNodeWithText("Words ignored when sorting").performScrollTo().performClick()
+        assertEquals(listOf("edit:RemoveWords"), calls)
+    }
+
+    @Test
+    fun `a list's editor removes the entry it is asked to, from its own list`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                LibraryDisplayListScreen(
+                    displayReady,
+                    DisplayList.RemoveWords,
+                    LibraryDisplayActions(onRemove = { list, index -> calls += "remove:${list.name}:$index" }),
+                )
+            }
+        }
+        compose.onNodeWithText("the").assertExists()
+        compose.onAllNodesWithContentDescription("Remove")[1].performClick()
+        assertEquals(listOf("remove:RemoveWords:1"), calls)
     }
 
     @Test

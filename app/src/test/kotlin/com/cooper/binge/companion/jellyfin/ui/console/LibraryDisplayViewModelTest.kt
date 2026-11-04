@@ -132,21 +132,20 @@ class LibraryDisplayViewModelTest {
     fun `each add and remove in a list saves the whole list as it is made`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        vm.edit(DisplayList.RemoveWords)
-        assertEquals(listOf(ListEntry("the"), ListEntry("a")), vm.ready().draft)
+        assertEquals(listOf(ListEntry("the"), ListEntry("a")), vm.ready().configuration.entries(DisplayList.RemoveWords))
         vm.sheet(DisplaySheet.NewEntry)
-        vm.add(ListEntry("  an "))
+        vm.add(DisplayList.RemoveWords, ListEntry("  an "))
         saves(1)
-        vm.add(ListEntry("an"))
-        vm.add(ListEntry("   "))
-        vm.remove(0)
+        vm.add(DisplayList.RemoveWords, ListEntry("an"))
+        vm.add(DisplayList.RemoveWords, ListEntry("   "))
+        vm.remove(DisplayList.RemoveWords, 0)
         // The write that carries the removal, not a count of writes: a repeat of the earlier write reaches the count too.
         jellyfin.awaitBody(CONFIGURATION) { body ->
             body[SORT_REMOVE_WORDS]?.jsonArray?.map { it.jsonPrimitive.content } == listOf("a", "an")
         }
-        val ready = vm.ready { it.draft.size == 2 }
+        val ready = vm.ready { it.configuration.entries(DisplayList.RemoveWords).size == 2 }
         assertNull(ready.sheet)
-        assertEquals(listOf(ListEntry("a"), ListEntry("an")), ready.draft)
+        assertEquals(listOf(ListEntry("a"), ListEntry("an")), ready.configuration.entries(DisplayList.RemoveWords))
         assertEquals(
             listOf("a", "an"),
             jellyfin
@@ -158,38 +157,40 @@ class LibraryDisplayViewModelTest {
     }
 
     @Test
-    fun `leaving the editor loses nothing`() {
+    fun `opening a list's editor clears what the last screen reported`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        vm.edit(DisplayList.RemoveWords)
-        vm.remove(0)
-        saves(1)
-        vm.edit(null)
-        val ready = vm.ready { it.editing == null }
-        assertEquals(listOf(ListEntry("a")), ready.configuration.entries(DisplayList.RemoveWords))
-        assertEquals(emptyList<ListEntry>(), ready.draft)
+        jellyfin.status[CONFIGURATION] = 500
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        vm.ready { it.refused != null }
+        vm.sheet(DisplaySheet.NewEntry)
+        vm.itemOpened()
+        val ready = vm.ready()
+        assertNull(ready.refused)
+        assertNull(ready.sheet)
     }
 
     @Test
     fun `a refused list save puts the list back and says so`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        vm.edit(DisplayList.RemoveWords)
         jellyfin.status[CONFIGURATION] = 500
-        vm.remove(0)
+        vm.remove(DisplayList.RemoveWords, 0)
         val failed = vm.ready { it.refused != null }
-        assertEquals(listOf(ListEntry("the"), ListEntry("a")), failed.draft)
+        assertEquals(listOf(ListEntry("the"), ListEntry("a")), failed.configuration.entries(DisplayList.RemoveWords))
     }
 
     @Test
     fun `path substitutions are pairs, and a half-filled pair is not added`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        vm.edit(DisplayList.Substitutions)
-        vm.add(ListEntry("/data", " "))
-        vm.add(ListEntry(" /data ", " /mnt/data "))
+        vm.add(DisplayList.Substitutions, ListEntry("/data", " "))
+        vm.add(DisplayList.Substitutions, ListEntry(" /data ", " /mnt/data "))
         saves(1)
-        assertEquals(listOf(ListEntry("/media", "/mnt/media"), ListEntry("/data", "/mnt/data")), vm.ready { it.draft.size == 2 }.draft)
+        assertEquals(
+            listOf(ListEntry("/media", "/mnt/media"), ListEntry("/data", "/mnt/data")),
+            vm.ready { it.configuration.entries(DisplayList.Substitutions).size == 2 }.configuration.entries(DisplayList.Substitutions),
+        )
         val saved =
             jellyfin
                 .lastBody(CONFIGURATION)
