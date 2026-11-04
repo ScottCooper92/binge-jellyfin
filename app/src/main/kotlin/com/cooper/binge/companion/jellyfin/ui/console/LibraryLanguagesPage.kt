@@ -2,9 +2,9 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Translate
@@ -84,7 +84,10 @@ internal fun LanguagesBody(
             }
             if (selected.isNotEmpty()) {
                 item(key = SELECTED_KEY) {
-                    ItemGroup(title = stringResource(DesR.string.choice_section_selected), rows = selected.map { it.row(state, actions, on) })
+                    ItemGroup(
+                        title = stringResource(DesR.string.choice_section_selected),
+                        rows = selected.map { it.row(state, actions, on) },
+                    )
                 }
             }
             sections.forEach { (letter, cultures) ->

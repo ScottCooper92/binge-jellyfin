@@ -5,13 +5,17 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.AvailableProviders
@@ -232,7 +236,8 @@ class LibraryScreenTest {
             page = LibraryPage.Languages,
         )
         // The page is a lazy list, so a language below the first screen is scrolled to before it is tapped.
-        compose.onNodeWithText("Spanish").performScrollTo().performClick()
+        compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Spanish"))
+        compose.onNodeWithText("Spanish").performClick()
         assertEquals(listOf("""SubtitleDownloadLanguages ["spa"]"""), calls)
     }
 
@@ -257,6 +262,7 @@ class LibraryScreenTest {
         show("movies", """{"SubtitleDownloadLanguages":[]}""", cultures = languages, page = LibraryPage.Languages)
         compose.onNodeWithText("E").assertExists()
         compose.onNodeWithText("F").assertExists()
+        compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("S"))
         compose.onNodeWithText("S").assertExists()
     }
 
@@ -293,10 +299,11 @@ class LibraryScreenTest {
         val actions = LibraryActions(onJson = { key, value -> state = state.copy(options = JsonObject(state.options + (key to value))) })
         compose.setContent { JellyfinTheme { LanguagesPage(state, actions, PaddingValues()) } }
         compose.onNode(hasSetTextAction()).performTextReplacement("Spanish")
-        compose.onNodeWithText("Spanish").performClick()
+        compose.onNode(hasText("Spanish") and hasSetTextAction().not()).performClick()
         compose.onNode(hasSetTextAction()).performTextReplacement("")
-        compose.onNodeWithText("Selected").assertExists()
+        compose.onNodeWithText("Selected", ignoreCase = true).assertExists()
         compose.onNodeWithText("Spanish").assertIsOn()
+        compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("English"))
         compose.onNodeWithText("English").assertExists()
     }
 

@@ -1,7 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
