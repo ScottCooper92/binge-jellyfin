@@ -111,6 +111,9 @@ class LibraryDisplayViewModel(
     /** A list's editor opened: what the last screen reported was said there, and isn't replayed here. */
     fun itemOpened() = update { copy(sheet = null, refused = null) }
 
+    /** The list's editor has closed: what it reported is not the page's to say again. A sheet open on the page stays. */
+    fun itemClosed() = update { copy(refused = null) }
+
     /** Adds [entry] to [list] and saves it, unless it is blank or already there. */
     fun add(
         list: DisplayList,

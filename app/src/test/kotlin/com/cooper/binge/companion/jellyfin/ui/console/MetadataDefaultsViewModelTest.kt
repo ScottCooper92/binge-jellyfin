@@ -219,6 +219,32 @@ class MetadataDefaultsViewModelTest {
     }
 
     @Test
+    fun `a refusal on a type's screen is cleared when the type closes`() {
+        val vm = made(MetadataDefaultsViewModel(connection))
+        vm.ready()
+        vm.itemOpened()
+        jellyfin.status[CONFIGURATION] = 500
+        vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
+        vm.ready { it.refused != null }
+        vm.itemClosed()
+        assertNull(vm.ready().refused)
+    }
+
+    @Test
+    fun `a refusal on a provider's screen is cleared when the provider closes, before the type's screen shows`() {
+        val vm = made(MetadataDefaultsViewModel(connection))
+        vm.ready()
+        vm.itemOpened()
+        vm.itemOpened()
+        jellyfin.status[CONFIGURATION] = 500
+        vm.move("Movie", FetcherKind.Metadata, "TheMovieDb", 1)
+        vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
+        vm.ready { it.refused != null }
+        vm.itemClosed()
+        assertNull(vm.ready().refused)
+    }
+
+    @Test
     fun `an item key names a type, and a provider of it`() {
         assertEquals("type:Movie", metadataTypeItem("Movie"))
         assertEquals("Movie", metadataItemType("type:Movie"))
