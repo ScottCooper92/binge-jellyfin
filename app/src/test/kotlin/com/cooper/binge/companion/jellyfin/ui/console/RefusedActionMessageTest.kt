@@ -4,7 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
@@ -100,17 +99,14 @@ class RefusedActionMessageTest {
     }
 
     @Test
-    fun `a plugin change the server refused says so`() {
+    fun `a plugin change the server refused says so, on the plugin's screen`() {
         val plugin = ServerPlugin("a", "AniDB", "1.2.3.4", "", PluginStatus.Active, canUninstall = true, hasSettings = false)
         compose.setContent {
             JellyfinTheme {
-                PluginsScreen(
+                PluginScreen(
                     PluginsUiState.Ready(listOf(plugin), actionFailed = ConsoleFailure.Refused),
-                    CatalogUiState.Loading,
-                    RepositoriesUiState.Loading,
+                    "a",
                     PluginsActions(),
-                    CatalogActions(),
-                    RepositoriesActions(),
                     onBack = {},
                 )
             }
@@ -119,7 +115,7 @@ class RefusedActionMessageTest {
     }
 
     @Test
-    fun `a plugin refusal already said is not said again when the user returns to its tab`() {
+    fun `the plugins list does not say a plugin's refusal, since its own screen does`() {
         val plugin = ServerPlugin("a", "AniDB", "1.2.3.4", "", PluginStatus.Active, canUninstall = true, hasSettings = false)
         compose.setContent {
             JellyfinTheme {
@@ -134,14 +130,7 @@ class RefusedActionMessageTest {
                 )
             }
         }
-        val sentence = "Not changed. Something went wrong. Try again."
-        compose.onNodeWithText(sentence).assertExists()
-        compose.mainClock.advanceTimeBy(SNACKBAR_GONE_MILLIS)
-        compose.onAllNodesWithText(sentence).assertCountEquals(0)
-        compose.onNodeWithText("Catalog").performClick()
-        compose.onNodeWithText("Installed").performClick()
-        compose.mainClock.advanceTimeBy(SNACKBAR_SHOWN_MILLIS)
-        compose.onAllNodesWithText(sentence).assertCountEquals(0)
+        compose.onAllNodesWithText("Not changed. Something went wrong. Try again.").assertCountEquals(0)
     }
 
     @Test

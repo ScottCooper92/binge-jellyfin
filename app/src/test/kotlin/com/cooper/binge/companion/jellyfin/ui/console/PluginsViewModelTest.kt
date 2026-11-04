@@ -122,11 +122,9 @@ class PluginsViewModelTest {
     }
 
     @Test
-    fun `uninstalling asks first, then removes that version, and goes back to the list`() {
+    fun `uninstalling asks first, then removes that version, and says its screen is to close`() {
         val vm = made(PluginsViewModel(connection))
         val plugin = vm.ready().plugins.first()
-        vm.open(plugin)
-        assertEquals(plugin.id, vm.ready().open)
         vm.askUninstall(plugin)
         assertEquals(plugin, vm.ready().confirming)
         vm.askUninstall(null)
@@ -134,9 +132,11 @@ class PluginsViewModelTest {
         vm.askUninstall(plugin)
         vm.uninstall()
         val ready = vm.ready { it.plugins.size == 1 && it.busy.isEmpty() }
-        assertNull(ready.open)
+        assertEquals(plugin.id, ready.uninstalled)
         assertNull(ready.confirming)
         assertEquals(1, jellyfin.requests.count { it.method == "DELETE" && it.url.encodedPath == "/Plugins/$aniDb/1.2.3.4" })
+        vm.uninstallSeen()
+        assertNull(vm.ready().uninstalled)
     }
 
     @Test
@@ -170,6 +170,12 @@ class PluginsViewModelTest {
         assertEquals(ConsoleFailure.Refused, failed.actionFailed)
         assertEquals(PluginStatus.Active, failed.plugins.first().status)
         assertTrue(failed.busy.isEmpty())
+        // Opening a plugin clears it: the list shared with the plugin's screen would otherwise say it again.
+        vm.askUninstall(plugin)
+        vm.itemOpened()
+        val opened = vm.ready()
+        assertNull(opened.actionFailed)
+        assertNull(opened.confirming)
     }
 
     @Test

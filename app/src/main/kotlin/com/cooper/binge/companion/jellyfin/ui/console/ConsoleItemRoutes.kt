@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
+import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 
 /** One task's screen, with the page's view model: the one its list shows, whose triggers it changes. */
 @Composable
@@ -63,12 +64,19 @@ internal fun LogItemRoute(
 internal fun ConsoleItemRoute(
     entry: ConsoleEntry,
     graph: AppGraph,
+    server: JellyfinVersion?,
     close: () -> Unit,
 ) {
     val item = entry.item ?: return
     when (entry.page) {
         ConsolePage.Tasks -> TaskItemRoute(graph, item, close)
         ConsolePage.Logs -> LogItemRoute(graph, item, close)
+        ConsolePage.Plugins ->
+            if (item.startsWith("package:")) {
+                PackageItemRoute(graph, server, item.removePrefix("package:"), close)
+            } else {
+                PluginItemRoute(graph, item.removePrefix("plugin:"), close)
+            }
         else -> Unit
     }
 }

@@ -2,9 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
-import com.binge.designsystem.LocalIsSinglePaneNav
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -101,12 +99,12 @@ class PluginsScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun plugin() = Plugins(installed = PluginsUiState.Ready(installedPlugins, open = "a"))
+    fun plugin() = PluginScreen(PluginsUiState.Ready(installedPlugins), "a", PluginsActions(), onBack = {})
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun pluginCannotRun() = Plugins(installed = PluginsUiState.Ready(installedPlugins, open = "d"))
+    fun pluginCannotRun() = PluginScreen(PluginsUiState.Ready(installedPlugins), "d", PluginsActions(), onBack = {})
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -139,16 +137,16 @@ class PluginsScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun catalogPackage() = CatalogTabPreview(CatalogUiState.Ready(catalogPackages, open = "Playback Reporting", server = server))
+    fun catalogPackage() = Package("Playback Reporting", CatalogUiState.Ready(catalogPackages, server = server))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun catalogInstalling() =
-        CatalogTabPreview(
+        Package(
+            "Playback Reporting",
             CatalogUiState.Ready(
                 catalogPackages,
-                open = "Playback Reporting",
                 installing = mapOf("Playback Reporting" to "install-1"),
                 server = server,
             ),
@@ -158,10 +156,10 @@ class PluginsScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun catalogDone() =
-        CatalogTabPreview(
+        Package(
+            "Playback Reporting",
             CatalogUiState.Ready(
                 catalogPackages,
-                open = "Playback Reporting",
                 installed = setOf("Playback Reporting"),
                 outcomes = mapOf("Playback Reporting" to InstallOutcome.Done),
                 server = server,
@@ -171,7 +169,7 @@ class PluginsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun catalogNoVersion() = CatalogTabPreview(CatalogUiState.Ready(catalogPackages, open = "Future Plugin", server = server))
+    fun catalogNoVersion() = Package("Future Plugin", CatalogUiState.Ready(catalogPackages, server = server))
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -218,6 +216,13 @@ class PluginsScreenshotTest {
 @Composable
 private fun CatalogTabPreview(catalog: CatalogUiState) = TabOpened(1, catalog = catalog)
 
+/** One catalog package's own screen. */
+@Composable
+private fun Package(
+    name: String,
+    catalog: CatalogUiState,
+) = PackageScreen(catalog, name, CatalogActions(), onBack = {})
+
 /** The page opened on its repositories tab. */
 @Composable
 private fun RepositoriesTabPreview(repos: RepositoriesUiState) = TabOpened(2, repos = repos)
@@ -238,107 +243,11 @@ private fun TabOpened(
     initialTab = tab,
 )
 
-@Composable
-private fun SplitPlugins(
-    installed: PluginsUiState = PluginsUiState.Ready(installedPlugins),
-    catalog: CatalogUiState = CatalogUiState.Ready(catalogPackages, server = server),
-    tab: Int = 0,
-) = CompositionLocalProvider(LocalPageSpansTwoPanes provides true, LocalIsSinglePaneNav provides false) {
-    PluginsScreen(
-        installed,
-        catalog,
-        RepositoriesUiState.Ready(repositories),
-        PluginsActions(),
-        CatalogActions(),
-        RepositoriesActions(),
-        onBack = {},
-        initialTab = tab,
-    )
-}
-
-/** The plugins page on a window with room for two panes: the tabs beside the open plugin or package, or beside the invitation. */
-class PluginsSplitScreenshotTest {
-    /** A plugin open: its name and page, and its row marked in the installed list. */
+/** The plugins page on a landscape tablet, where a plugin or a package opens in a third pane: the invitation to pick one while none is. */
+class PluginsPaneScreenshotTest {
     @PreviewTest
     @JellyfinWidePreview
     @JellyfinWideSpanishPreview
     @Composable
-    fun pluginOpen() = SplitPlugins(PluginsUiState.Ready(installedPlugins, open = "a"))
-
-    /** Nothing open: the installed list beside the invitation to pick one. */
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun nothingOpen() = SplitPlugins()
-
-    /** A catalog package open: the catalog tab beside its page, with Install. */
-    @PreviewTest
-    @JellyfinWidePreview
-    @Composable
-    fun packageOpen() = SplitPlugins(catalog = CatalogUiState.Ready(catalogPackages, open = "Playback Reporting", server = server), tab = 1)
-}
-
-/** Full navigation-host previews for the pane state and contextual actions. */
-class PluginsPaneStateScreenshotTest {
-    @Composable
-    private fun SplitPlugins(
-        tab: Int = 0,
-        openPlugin: String? = null,
-        openPackage: String? = null,
-        installing: Boolean = false,
-    ) = ConsoleListDetailPreview(ConsolePage.Plugins) {
-        PluginsScreen(
-            PluginsUiState.Ready(installedPlugins, open = openPlugin),
-            CatalogUiState.Ready(
-                catalogPackages,
-                installed = setOf("AniDB"),
-                server = server,
-                open = openPackage,
-                installing = if (installing) mapOf("Playback Reporting" to "install-id") else emptyMap(),
-            ),
-            RepositoriesUiState.Ready(repositories),
-            PluginsActions(),
-            CatalogActions(),
-            RepositoriesActions(),
-            onBack = {},
-            initialTab = tab,
-        )
-    }
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun nothingOpen() = SplitPlugins()
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun pluginOpen() = SplitPlugins(openPlugin = "a")
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun catalogNothingOpen() = SplitPlugins(tab = 1)
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun packageOpen() = SplitPlugins(tab = 1, openPackage = "Playback Reporting")
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun installingPackage() = SplitPlugins(tab = 1, openPackage = "Playback Reporting", installing = true)
-
-    @PreviewTest
-    @JellyfinWidePreview
-    @JellyfinWideSpanishPreview
-    @Composable
-    fun repositoriesTab() = SplitPlugins(tab = REPOSITORIES_TAB)
+    fun placeholder() = Surface { PluginPlaceholder() }
 }

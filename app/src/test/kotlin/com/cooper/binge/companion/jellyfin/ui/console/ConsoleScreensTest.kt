@@ -538,20 +538,13 @@ class ConsoleScreensTest {
     }
 
     @Test
-    fun `installed plugins open to their page, switch, open settings, and uninstall after a confirm`() {
+    fun `installed plugins list, point at a restart, and open on a tap`() {
         val calls = mutableListOf<String>()
         val waiting = aniDb.copy(id = "c3", name = "Waiting", status = PluginStatus.Restart, hasSettings = false)
-        var state by mutableStateOf(PluginsUiState.Ready(listOf(aniDb, waiting)))
+        val state = PluginsUiState.Ready(listOf(aniDb, waiting))
         val actions =
             PluginsActions(
-                onOpen = {
-                    state = state.copy(open = it?.id)
-                    calls += "open ${it?.name}"
-                },
-                onToggle = { plugin, on -> calls += "toggle ${plugin.name} $on" },
-                onAskUninstall = { state = state.copy(confirming = it) },
-                onUninstall = { calls += "uninstall" },
-                onOpenSettings = { calls += "settings ${it.name}" },
+                onOpen = { calls += "open ${it.name}" },
                 onRestart = { calls += "restart" },
             )
         pluginsScreen(installed = state, actions = actions)
@@ -565,33 +558,17 @@ class ConsoleScreensTest {
     }
 
     @Test
-    fun `a plugin page has its switch, settings and Uninstall, last and red, behind a confirm`() {
+    fun `a plugin's screen has its switch, settings and Uninstall, last and red, behind a confirm`() {
         val calls = mutableListOf<String>()
-        var state by mutableStateOf(PluginsUiState.Ready(listOf(aniDb), open = "a1b2"))
+        var state by mutableStateOf(PluginsUiState.Ready(listOf(aniDb)))
         val actions =
             PluginsActions(
-                onOpen = { calls += "open ${it?.name}" },
                 onToggle = { plugin, on -> calls += "toggle ${plugin.name} $on" },
                 onAskUninstall = { state = state.copy(confirming = it) },
                 onUninstall = { calls += "uninstall" },
                 onOpenSettings = { calls += "settings ${it.name}" },
             )
-        compose.setContent {
-            JellyfinTheme {
-                PluginsScreen(
-                    state,
-                    CatalogUiState.Ready(
-                        emptyList(),
-                    ),
-                    RepositoriesUiState.Ready(emptyList()),
-                    actions,
-                    CatalogActions(),
-                    RepositoriesActions(),
-                    {
-                    },
-                )
-            }
-        }
+        compose.setContent { JellyfinTheme { PluginScreen(state, "a1b2", actions, onBack = { calls += "back" }) } }
         compose.onNodeWithText("Anime metadata.").assertExists()
         compose.onNodeWithText("Settings").performClick()
         compose.onNodeWithText("Enabled").performClick()
@@ -600,70 +577,93 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Uninstall AniDB?").assertExists()
         compose.onAllNodesWithText("Uninstall")[1].performClick()
         assertTrue("uninstall" in calls)
-        calls.clear()
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
+    }
+
+    @Test
+    fun `a plugin that was uninstalled closes its screen, once`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                PluginScreen(
+                    PluginsUiState.Ready(listOf(aniDb), uninstalled = "a1b2"),
+                    "a1b2",
+                    PluginsActions(onUninstallSeen = { calls += "seen" }),
+                    onBack = { calls += "back" },
+                )
+            }
+        }
         compose.waitForIdle()
-        assertEquals(listOf("open null"), calls)
+        assertEquals(listOf("back", "seen"), calls)
+    }
+
+    @Test
+    fun `a plugin the server no longer lists closes its screen`() {
+        var closed = 0
+        compose.setContent {
+            JellyfinTheme {
+                PluginScreen(
+                    PluginsUiState.Ready(listOf(aniDb)),
+                    "gone",
+                    PluginsActions(),
+                    onBack = { closed++ },
+                )
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(1, closed)
     }
 
     @Test
     fun `a plugin that can't run has no switch, and one that can't be uninstalled has no Uninstall`() {
         val stuck = aniDb.copy(status = PluginStatus.NotSupported, canUninstall = false, hasSettings = false)
-        pluginsScreen(installed = PluginsUiState.Ready(listOf(stuck), open = "a1b2"))
+        compose.setContent { JellyfinTheme { PluginScreen(PluginsUiState.Ready(listOf(stuck)), "a1b2", PluginsActions(), onBack = {}) } }
         compose.onNodeWithText("Not supported by this server", substring = true).assertExists()
         compose.onNodeWithText("Enabled").assertDoesNotExist()
         compose.onNodeWithText("Settings").assertDoesNotExist()
         compose.onNodeWithText("Uninstall").assertDoesNotExist()
     }
 
+    private val catalogVersion = PackageVersion("13.0.0.0", "Fixes a thing.", "10.10.0.0", "Jellyfin Stable", "https://r.example/m.json")
+    private val reporting =
+        CatalogPackage(
+            "g1",
+            "Playback Reporting",
+            "Reports playback.",
+            "Shows who watched what.",
+            "jellyfin",
+            "General",
+            listOf(catalogVersion),
+        )
+    private val future =
+        CatalogPackage(
+            "g2",
+            "Future Plugin",
+            "Needs a newer server.",
+            "",
+            "someone",
+            "Metadata",
+            listOf(catalogVersion.copy(targetAbi = "10.12.0.0")),
+        )
+
     @Test
-    fun `the catalog lists packages by category, and a package installs the version for this server, or says there is none`() {
+    fun `the catalog lists packages by category and opens one on a tap`() {
         val calls = mutableListOf<String>()
-        val version = PackageVersion("13.0.0.0", "Fixes a thing.", "10.10.0.0", "Jellyfin Stable", "https://r.example/m.json")
-        val reporting =
-            CatalogPackage(
-                "g1",
-                "Playback Reporting",
-                "Reports playback.",
-                "Shows who watched what.",
-                "jellyfin",
-                "General",
-                listOf(version),
-            )
-        val future =
-            CatalogPackage(
-                "g2",
-                "Future Plugin",
-                "Needs a newer server.",
-                "",
-                "someone",
-                "Metadata",
-                listOf(version.copy(targetAbi = "10.12.0.0")),
-            )
-        var state by mutableStateOf(CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7")))
-        val actions =
-            CatalogActions(
-                onOpen = { state = state.copy(open = it) },
-                onInstall = { calls += "install ${it.name}" },
-                onCancel = { calls += "cancel ${it.name}" },
-            )
-        compose.setContent {
-            JellyfinTheme {
-                PluginsScreen(
-                    PluginsUiState.Ready(emptyList()),
-                    state,
-                    RepositoriesUiState.Ready(emptyList()),
-                    PluginsActions(),
-                    actions,
-                    RepositoriesActions(),
-                    {},
-                )
-            }
-        }
+        val state = CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7"))
+        pluginsScreen(catalog = state, catalogActions = CatalogActions(onOpen = { calls += "open $it" }))
         compose.onNodeWithText("Catalog").performClick()
         compose.onNodeWithText("GENERAL").assertExists()
         compose.onNodeWithText("Reports playback.").assertExists()
         compose.onNodeWithText("Playback Reporting").performClick()
+        assertEquals(listOf("open Playback Reporting"), calls)
+    }
+
+    @Test
+    fun `a package's screen installs the version for this server, or says there is none`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7")))
+        var shown by mutableStateOf("Playback Reporting")
+        val actions = CatalogActions(onInstall = { calls += "install ${it.name}" }, onCancel = { calls += "cancel ${it.name}" })
+        compose.setContent { JellyfinTheme { PackageScreen(state, shown, actions, onBack = {}) } }
         compose.onNodeWithText("Shows who watched what.").assertExists()
         compose.onNodeWithText("13.0.0.0 · Jellyfin Stable").assertExists()
         compose.onNodeWithText("Fixes a thing.").assertExists()
@@ -678,14 +678,12 @@ class ConsoleScreensTest {
             state.copy(
                 installing = emptyMap(),
                 installed = setOf("Playback Reporting"),
-                outcomes =
-                    mapOf(
-                        "Playback Reporting" to InstallOutcome.Done,
-                    ),
+                outcomes = mapOf("Playback Reporting" to InstallOutcome.Done),
             )
         compose.onNodeWithText("Installed. Restart the server to start using it.").assertExists()
         compose.onNodeWithText("Install").assertDoesNotExist()
-        state = state.copy(open = "Future Plugin", outcomes = emptyMap())
+        state = state.copy(outcomes = emptyMap())
+        shown = "Future Plugin"
         compose.onNodeWithText("None built for this server's release").assertExists()
         compose.onNodeWithText("Install").assertDoesNotExist()
     }

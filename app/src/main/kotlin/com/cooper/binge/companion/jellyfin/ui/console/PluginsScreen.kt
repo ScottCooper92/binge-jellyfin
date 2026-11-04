@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +17,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Extension
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.RestartAlt
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,7 +35,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTabRow
 import com.binge.designsystem.component.ItemGroup
@@ -52,7 +46,6 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import kotlinx.coroutines.launch
@@ -60,7 +53,7 @@ import com.binge.designsystem.R as DesR
 
 /** What the installed tab can ask of its view model, and of the console. */
 data class PluginsActions(
-    val onOpen: (ServerPlugin?) -> Unit = {},
+    val onOpen: (ServerPlugin) -> Unit = {},
     val onToggle: (ServerPlugin, Boolean) -> Unit = { _, _ -> },
     val onAskUninstall: (ServerPlugin?) -> Unit = {},
     val onUninstall: () -> Unit = {},
@@ -69,6 +62,8 @@ data class PluginsActions(
     val onRestart: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onRefresh: () -> Unit = {},
+    /** The plugin just uninstalled has had its screen closed. */
+    val onUninstallSeen: () -> Unit = {},
 )
 
 internal const val REPOSITORIES_TAB = 2
@@ -82,27 +77,31 @@ class PluginsListStates(
     val installed: LazyListState,
     val catalog: LazyListState,
     val repositories: LazyListState,
-    val installedDetail: LazyListState,
-    val catalogDetail: LazyListState,
 )
 
 @Composable
-fun rememberPluginsListStates(
-    openPlugin: String? = null,
-    openPackage: String? = null,
-) = PluginsListStates(
-    installed = rememberLazyListState(),
-    catalog = rememberLazyListState(),
-    repositories = rememberLazyListState(),
-    installedDetail = key(openPlugin) { rememberLazyListState() },
-    catalogDetail = key(openPackage) { rememberLazyListState() },
-)
+fun rememberPluginsListStates() =
+    PluginsListStates(
+        installed = rememberLazyListState(),
+        catalog = rememberLazyListState(),
+        repositories = rememberLazyListState(),
+    )
+
+/** The item key of an installed plugin on the stack, and of a catalog package. */
+internal fun pluginItem(id: String) = "plugin:$id"
+
+internal fun packageItem(name: String) = "package:$name"
+
+private fun String?.plugin(): String? = this?.removePrefix("plugin:")?.takeIf { this.startsWith("plugin:") }
+
+private fun String?.catalogPackage(): String? = this?.removePrefix("package:")?.takeIf { this.startsWith("package:") }
 
 private val TABS = listOf(R.string.plugins_tab_installed, R.string.plugins_tab_catalog, R.string.plugins_tab_repositories)
 
 /**
  * The plugins page: the plugins installed, the catalog the server's repositories offer, and the repositories
- * themselves, as three tabs. Opening a plugin or a catalog package shows its own page, and Back returns to its list.
+ * themselves, as three tabs. A tap on a plugin or a package opens its own screen ([PluginScreen], [PackageScreen]) above
+ * this one on the stack. The one showing, where these tabs are beside it, is marked.
  */
 @Composable
 fun PluginsScreen(
@@ -115,36 +114,19 @@ fun PluginsScreen(
     onBack: () -> Unit,
     /** The tab it opens on: the installed plugins, unless a frame opens another. */
     initialTab: Int = 0,
-    listStates: PluginsListStates =
-        rememberPluginsListStates(
-            (installed as? PluginsUiState.Ready)?.open,
-            (catalog as? CatalogUiState.Ready)?.open,
-        ),
+    listStates: PluginsListStates = rememberPluginsListStates(),
+    openItem: String? = LocalOpenItem.current,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(initialTab) }
     // The pager and the tab row are one control: a swipe settles on a page and sets the tab, a tap on a tab animates the pager.
     val pager = rememberPagerState(initialPage = tab) { TABS.size }
     val scope = rememberCoroutineScope()
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.collect { tab = it } }
-    val plugin = (installed as? PluginsUiState.Ready)?.let { ready -> ready.plugins.firstOrNull { it.id == ready.open } }
-    val pkg = (catalog as? CatalogUiState.Ready)?.let { ready -> ready.packages.firstOrNull { it.name == ready.open } }
-    val detail =
-        if (tab == 0) {
-            plugin?.name
-        } else if (tab == 1) {
-            pkg?.name
-        } else {
-            null
-        }
-    val leaveDetail: () -> Unit = { if (tab == 0) actions.onOpen(null) else catalogActions.onOpen(null) }
-    BackHandler(enabled = detail != null, onBack = leaveDetail)
     val host = remember { SnackbarHostState() }
-    // On a window with room for it the tabs and the open plugin or package sit side by side, under the page's own title.
-    val split = LocalPageSpansTwoPanes.current
     BingeScreenScaffold(
-        title = if (split) stringResource(R.string.plugins_title) else detail ?: stringResource(R.string.plugins_title),
+        title = stringResource(R.string.plugins_title),
         bar = ScreenBar.Small,
-        onBack = if (detail != null && !split) leaveDetail else onBack,
+        onBack = onBack,
         snackbarHostState = host,
         bottomBar = {
             // Only the Repositories tab creates anything; the other tabs have no footer.
@@ -160,57 +142,35 @@ fun PluginsScreen(
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
-            // The lists sit under the tab row, which has taken the top inset, whether or not a plugin is open beside them.
+            // The lists sit under the tab row, which has taken the top inset.
             val content = inner.belowTabRow(LocalLayoutDirection.current)
-            // A change the server didn't take is said once, by the tab that made it. One message per
-            // state, so switching tabs doesn't change a key and say an old refusal again.
-            RefusedMessage((installed as? PluginsUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
-            RefusedMessage((catalog as? CatalogUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
+            // What a plugin or a package changed is said by its own screen; the list says what its own tabs did.
             RefusedMessage((repositories as? RepositoriesUiState.Ready)?.actionFailed, host, R.string.plugins_not_changed)
             RefusedMessage((installed as? PluginsUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
             RefusedMessage((repositories as? RepositoriesUiState.Ready)?.refreshFailed, host, R.string.console_not_refreshed)
-            ListDetailBody(
-                detailOpen = detail != null,
-                list = {
-                    Column(Modifier.fillMaxSize()) {
-                        BingeTabRow(
-                            tabs = TABS.map { stringResource(it) },
-                            selectedIndex = pager.currentPage,
-                            // The pager alone writes `tab`, when it settles: a tap a swipe interrupts lands where the swipe did.
-                            onSelect = { page -> scope.launch { pager.animateScrollToPage(page) } },
-                            modifier = Modifier.padding(top = inner.calculateTopPadding()),
-                        )
-                        HorizontalPager(
-                            state = pager,
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            verticalAlignment = Alignment.Top,
-                        ) { page ->
-                            // The list pages only: what is open shows in the detail, or in place of the tabs on one pane.
-                            PluginsPage(
-                                page,
-                                PluginsStates(installed, catalog, repositories),
-                                PluginsHandlers(actions, catalogActions, repositoryActions),
-                                content,
-                                listStates,
-                                null,
-                                null,
-                            )
-                        }
-                    }
-                },
-                detail = {
-                    PluginDetailPane(
-                        detail,
-                        tab,
+            Column(Modifier.fillMaxSize()) {
+                BingeTabRow(
+                    tabs = TABS.map { stringResource(it) },
+                    selectedIndex = pager.currentPage,
+                    // The pager alone writes `tab`, when it settles: a tap a swipe interrupts lands where the swipe did.
+                    onSelect = { page -> scope.launch { pager.animateScrollToPage(page) } },
+                    modifier = Modifier.padding(top = inner.calculateTopPadding()),
+                )
+                HorizontalPager(
+                    state = pager,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                ) { page ->
+                    PluginsPage(
+                        page,
                         PluginsStates(installed, catalog, repositories),
                         PluginsHandlers(actions, catalogActions, repositoryActions),
-                        inner,
+                        content,
                         listStates,
-                        plugin,
-                        pkg,
+                        openItem,
                     )
-                },
-            )
+                }
+            }
         }
     }
 }
@@ -228,38 +188,6 @@ private class PluginsHandlers(
     val catalog: CatalogActions,
     val repositories: RepositoriesActions,
 )
-
-/**
- * The open plugin or package: in place of the tabs on one pane, and beside them under its name on a wider one. While
- * none is open ([title] null) the wider pane says to pick one.
- */
-@Composable
-private fun PluginDetailPane(
-    title: String?,
-    tab: Int,
-    states: PluginsStates,
-    handlers: PluginsHandlers,
-    inner: PaddingValues,
-    listStates: PluginsListStates,
-    plugin: ServerPlugin?,
-    pkg: CatalogPackage?,
-) {
-    when {
-        title == null ->
-            NothingSelected(
-                stringResource(R.string.plugins_select_title),
-                stringResource(R.string.plugins_select),
-                Icons.Outlined.Extension,
-                inner,
-            )
-        LocalPageSpansTwoPanes.current ->
-            Column(Modifier.fillMaxSize()) {
-                DetailHeading(title, inner)
-                Box(Modifier.weight(1f)) { PluginsPage(tab, states, handlers, inner.belowHeading(), listStates, plugin, pkg) }
-            }
-        else -> PluginsPage(tab, states, handlers, inner, listStates, plugin, pkg)
-    }
-}
 
 /** Under the tab row the bar is already above, so the lists keep the sides and the bottom only. */
 @Composable
@@ -279,14 +207,13 @@ private fun PluginsPage(
     handlers: PluginsHandlers,
     content: PaddingValues,
     listStates: PluginsListStates,
-    plugin: ServerPlugin?,
-    pkg: CatalogPackage?,
+    openItem: String?,
 ) {
     // Full height, so a page lays out as it did before the pager: a list fills it and a message sits where it always did.
     Box(Modifier.fillMaxSize()) {
         when (page) {
-            0 -> InstalledTab(states.installed, plugin, handlers.installed, content, listStates.installed, listStates.installedDetail)
-            1 -> CatalogTab(states.catalog, pkg, handlers.catalog, content, listStates.catalog, listStates.catalogDetail)
+            0 -> InstalledTab(states.installed, handlers.installed, content, listStates.installed, openItem.plugin())
+            1 -> CatalogTab(states.catalog, handlers.catalog, content, listStates.catalog, openItem.catalogPackage())
             else -> RepositoriesTab(states.repositories, handlers.repositories, content, listStates.repositories)
         }
     }
@@ -303,18 +230,16 @@ private const val LOADING_ROWS = 6
 @Composable
 private fun InstalledTab(
     state: PluginsUiState,
-    open: ServerPlugin?,
     actions: PluginsActions,
     inner: PaddingValues,
     listState: LazyListState,
-    detailState: LazyListState,
+    openPlugin: String?,
 ) {
     when (state) {
         PluginsUiState.Loading -> PluginsLoading(inner)
         is PluginsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is PluginsUiState.Ready ->
             when {
-                open != null -> PluginPage(open, state, actions, inner, detailState)
                 state.plugins.isEmpty() ->
                     EmptyScreen(
                         message = stringResource(R.string.plugins_empty),
@@ -325,7 +250,7 @@ private fun InstalledTab(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = inner.calculateTopPadding(),
-                    ) { InstalledList(state, actions, inner, listState) }
+                    ) { InstalledList(state, actions, inner, listState, openPlugin) }
             }
     }
 }
@@ -336,6 +261,7 @@ private fun InstalledList(
     actions: PluginsActions,
     inner: PaddingValues,
     listState: LazyListState,
+    openPlugin: String?,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -360,7 +286,7 @@ private fun InstalledList(
                 )
             }
         }
-        item(key = "plugins") { ItemGroup(title = null, rows = state.plugins.map { it.row(state, actions) }) }
+        item(key = "plugins") { ItemGroup(title = null, rows = state.plugins.map { it.row(state, actions, it.id == openPlugin) }) }
     }
 }
 
@@ -368,18 +294,19 @@ private fun InstalledList(
 private fun ServerPlugin.row(
     state: PluginsUiState.Ready,
     actions: PluginsActions,
+    open: Boolean,
 ): ListItem =
     ListItem(
         icon = Icons.Outlined.Extension,
         label = name,
         detail = listOf(version, statusLabel(status)).filter { it.isNotBlank() }.joinToString(" · "),
         loading = id in state.busy,
-        selected = LocalPageSpansTwoPanes.current && id == state.open,
+        selected = open,
         onClick = { actions.onOpen(this) },
     )
 
 @Composable
-private fun statusLabel(status: PluginStatus): String =
+internal fun statusLabel(status: PluginStatus): String =
     stringResource(
         when (status) {
             PluginStatus.Active -> R.string.plugin_status_active
@@ -392,82 +319,3 @@ private fun statusLabel(status: PluginStatus): String =
             PluginStatus.Unknown -> R.string.plugin_status_unknown
         },
     )
-
-/** One plugin: what it is, on or off, its settings page, and Uninstall, last, red, behind a confirm. */
-@Composable
-private fun PluginPage(
-    plugin: ServerPlugin,
-    state: PluginsUiState.Ready,
-    actions: PluginsActions,
-    inner: PaddingValues,
-    listState: LazyListState,
-) {
-    val busy = plugin.id in state.busy
-    LazyColumn(
-        state = listState,
-        contentPadding = inner,
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-    ) {
-        if (plugin.description.isNotBlank()) item { Text(plugin.description, style = MaterialTheme.typography.bodyMedium) }
-        item {
-            ItemGroup(
-                title = null,
-                rows =
-                    listOfNotNull(
-                        ListItem(
-                            icon = Icons.Outlined.Extension,
-                            label = stringResource(R.string.plugins_enabled),
-                            detail = listOf(plugin.version, statusLabel(plugin.status)).joinToString(" · "),
-                            toggled = state.isEnabled(plugin),
-                            loading = busy,
-                            onClick = { actions.onToggle(plugin, !state.isEnabled(plugin)) },
-                        ).takeIf { plugin.status.canToggle },
-                        // One that can't be switched still says where it stands, and why it can't.
-                        ListItem(
-                            icon = Icons.Outlined.Info,
-                            label = statusLabel(plugin.status),
-                            detail = plugin.version,
-                            clickable = false,
-                        ).takeIf { !plugin.status.canToggle },
-                        ListItem(
-                            icon = Icons.Outlined.OpenInBrowser,
-                            label = stringResource(R.string.plugins_settings),
-                            detail = stringResource(R.string.plugins_settings_detail),
-                            supportingMaxLines = 3,
-                            onClick = { actions.onOpenSettings(plugin) },
-                        ).takeIf { plugin.hasSettings },
-                    ),
-            )
-        }
-        if (plugin.canUninstall) {
-            item {
-                BingeOutlinedButton(
-                    label = stringResource(R.string.plugins_uninstall),
-                    onClick = { actions.onAskUninstall(plugin) },
-                    destructive = true,
-                    enabled = !busy,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-    }
-    state.confirming?.let { UninstallDialog(it, actions) }
-}
-
-/** Uninstalling a plugin, after its name, as a confirm that opens on Cancel. [inWindow] false draws its body for a frame. */
-@Composable
-internal fun UninstallDialog(
-    plugin: ServerPlugin,
-    actions: PluginsActions,
-    inWindow: Boolean = true,
-) {
-    ConsoleConfirm(
-        title = stringResource(R.string.plugins_uninstall_title, plugin.name),
-        message = stringResource(R.string.plugins_uninstall_body),
-        confirmLabel = stringResource(R.string.plugins_uninstall),
-        onConfirm = actions.onUninstall,
-        onDismissRequest = { actions.onAskUninstall(null) },
-        destructive = true,
-        inWindow = inWindow,
-    )
-}
