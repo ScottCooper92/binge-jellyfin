@@ -47,10 +47,10 @@ class LiveTvRecordingScreenTest {
     }
 
     @Test
-    fun `padding reads in minutes, from the seconds the server stores`() {
+    fun `padding reads in exact seconds as the server stores it`() {
         show(LiveTvRecordingUiState.Ready(config))
-        compose.onNodeWithText("0 min").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("3 min").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("0 s").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("180 s").performScrollTo().assertIsDisplayed()
     }
 
     @Test

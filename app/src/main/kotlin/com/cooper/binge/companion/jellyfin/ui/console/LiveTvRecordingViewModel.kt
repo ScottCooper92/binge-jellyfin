@@ -21,7 +21,6 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-
 /** The three folders a recording can go to, by the key each is stored under. */
 enum class RecordingFolder(
     val key: String,
