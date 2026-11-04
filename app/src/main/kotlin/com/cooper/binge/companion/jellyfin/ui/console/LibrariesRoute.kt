@@ -1,11 +1,13 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -75,7 +77,7 @@ internal fun LibraryItemRoute(
     // A library the server no longer has has no page to stay on.
     val gone = ready != null && library == null
     LaunchedEffect(gone) { if (gone) onBack() }
-    // The list reads the libraries again when a library's page goes, where it shows what changed on it.
+    // The list reads the libraries again when this entry leaves the stack (and on a rotation, one quiet read), where it shows what changed.
     DisposableEffect(Unit) { onDispose { libraries.refresh() } }
     val folderActions = FolderActions(onEnter = browser::enter, onUp = browser::up, onRetry = browser::retry)
     when {
@@ -121,8 +123,20 @@ private fun LibraryLoadedRoute(
         viewModel(key = library.id, factory = viewModelFactory { initializer { LibraryViewModel(graph.connection, library) } })
     val state by model.state.collectAsStateWithLifecycle()
     val ready = state as? LibraryUiState.Ready
-    // A sheet or confirm, and what the last screen reported, were left on that screen.
-    LaunchedEffect(Unit) { if (page == LibraryPage.Main) model.itemOpened() }
+    // A sheet or confirm, and what the last screen reported, were left on that screen. Once per opening: the flag
+    // survives the Activity's recreation, which must keep a sheet that is open.
+    var opened by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!opened) {
+            opened = true
+            if (page == LibraryPage.Main) model.itemOpened()
+        }
+    }
+    // A refusal left on a page isn't replayed on the screen Back returns to, whether Back is the bar's or the system's.
+    BackHandler(enabled = page != LibraryPage.Main) {
+        model.itemOpened()
+        onBack()
+    }
     LaunchedEffect(ready?.dialog) { if (ready?.dialog == LibraryDialog.AddFolder) browse() }
     // A removed library has no page to stay on.
     LaunchedEffect(ready?.gone) { if (ready?.gone == true) onBack() }
