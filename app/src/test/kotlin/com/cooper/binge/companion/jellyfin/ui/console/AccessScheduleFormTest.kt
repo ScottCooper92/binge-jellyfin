@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
@@ -15,6 +16,7 @@ import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -26,6 +28,15 @@ import org.robolectric.annotation.Config
 @Config(qualifiers = "w411dp-h2000dp")
 class AccessScheduleFormTest {
     @get:Rule val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
+
+    @Test fun `common day groups appear ahead of individual days`() {
+        compose.setContent { JellyfinTheme { ScheduleForm(UsersActions(), {}) } }
+        val every = compose.onNodeWithText("Every day").getUnclippedBoundsInRoot().top
+        val weekdays = compose.onNodeWithText("Weekdays").getUnclippedBoundsInRoot().top
+        val weekends = compose.onNodeWithText("Weekends").getUnclippedBoundsInRoot().top
+        val sunday = compose.onNodeWithText("Sunday").getUnclippedBoundsInRoot().top
+        assertTrue(every < weekdays && weekdays < weekends && weekends < sunday)
+    }
 
     @Test fun `editing retains minute precision and replaces the old row without a duplicate`() {
         val original = AccessSchedule("Weekday", 9.5, 17.75)
