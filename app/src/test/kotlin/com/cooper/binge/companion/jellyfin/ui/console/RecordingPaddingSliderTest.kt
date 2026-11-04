@@ -49,7 +49,7 @@ class RecordingPaddingSliderTest {
     @Test
     fun `an out-of-range stored value is kept until the slider moves`() {
         show(9000)
-        compose.onNodeWithText("9000 s").assertExists()
+        compose.onNodeWithText("150 min").assertExists()
         assertTrue(sent.isEmpty())
         compose.onNodeWithContentDescription("Decrease Start early").performClick()
         assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(7140)), sent)
