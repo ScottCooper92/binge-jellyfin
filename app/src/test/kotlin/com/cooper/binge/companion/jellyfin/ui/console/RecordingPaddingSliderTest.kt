@@ -37,22 +37,30 @@ class RecordingPaddingSliderTest {
     }
 
     @Test
-    fun `opening preserves an off-step value and a stepper saves seconds once`() {
+    fun `opening preserves an off-step value and a stepper saves whole minutes as seconds once`() {
         show(7)
         compose.onNodeWithText("7 s").assertExists()
         assertTrue(sent.isEmpty())
         compose.onNodeWithContentDescription("Increase Start early").performClick()
-        assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(10)), sent)
-        compose.onNodeWithText("10 s").assertExists()
+        assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(60)), sent)
+        compose.onNodeWithText("1 min").assertExists()
     }
 
     @Test
     fun `an out-of-range stored value is kept until the slider moves`() {
-        show(300)
-        compose.onNodeWithText("300 s").assertExists()
+        show(9000)
+        compose.onNodeWithText("9000 s").assertExists()
         assertTrue(sent.isEmpty())
         compose.onNodeWithContentDescription("Decrease Start early").performClick()
-        assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(115)), sent)
+        assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(7140)), sent)
+    }
+
+    @Test
+    fun `a stored value inside the old range survives a nudge`() {
+        show(300)
+        compose.onNodeWithText("5 min").assertExists()
+        compose.onNodeWithContentDescription("Increase Start early").performClick()
+        assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(360)), sent)
     }
 
     @Test

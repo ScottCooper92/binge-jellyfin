@@ -119,7 +119,7 @@ internal fun RecordingNumberForm(
     )
 }
 
-/** Padding is shown exactly as stored. It saves once on release and keeps its sheet open. */
+/** Padding moves in whole minutes over 0 to 120 min, stored as seconds, and a stored value that is not a whole minute shows exactly. It saves once on release and keeps its sheet open. */
 @Composable
 internal fun RecordingPaddingSlider(
     field: RecordingNumber,
@@ -139,14 +139,21 @@ internal fun RecordingPaddingSlider(
             onValueChange = { it?.let { picked -> draft = picked } },
             range = field.min..field.max,
             step = PADDING_STEP_SECONDS,
-            format = { resources.getString(R.string.transcoding_unit_seconds, it.toString()) },
+            format = {
+                if (it % SECONDS_PER_MINUTE == 0) {
+                    resources.getString(R.string.transcoding_unit_minutes, (it / SECONDS_PER_MINUTE).toString())
+                } else {
+                    resources.getString(R.string.transcoding_unit_seconds, it.toString())
+                }
+            },
             description = title,
             onValueChangeFinished = { field.parse(draft.toString())?.let { actions.onSet(field.key, it) } },
         )
     }
 }
 
-private const val PADDING_STEP_SECONDS = 5
+private const val PADDING_STEP_SECONDS = 60
+private const val SECONDS_PER_MINUTE = 60
 
 internal fun RecordingNumber.title(): Int =
     when (this) {

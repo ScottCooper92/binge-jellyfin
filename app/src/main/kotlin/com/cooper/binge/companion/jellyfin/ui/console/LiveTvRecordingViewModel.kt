@@ -31,7 +31,7 @@ enum class RecordingFolder(
 }
 
 /**
- * A recording number. [seconds] distinguishes padding in seconds from guide length in days; [blankClears] says whether
+ * A recording number. [seconds] distinguishes padding (0 to 7200 seconds, two hours) from guide length in days; [blankClears] says whether
  * an empty entry clears the setting (the server then chooses) rather than being refused.
  */
 enum class RecordingNumber(
@@ -41,8 +41,8 @@ enum class RecordingNumber(
     val seconds: Boolean,
     val blankClears: Boolean,
 ) {
-    PrePadding(LIVE_TV_PRE_PADDING, 0, 120, seconds = true, blankClears = false),
-    PostPadding(LIVE_TV_POST_PADDING, 0, 120, seconds = true, blankClears = false),
+    PrePadding(LIVE_TV_PRE_PADDING, 0, 7200, seconds = true, blankClears = false),
+    PostPadding(LIVE_TV_POST_PADDING, 0, 7200, seconds = true, blankClears = false),
     GuideDays(LIVE_TV_GUIDE_DAYS, 1, 14, seconds = false, blankClears = true),
     ;
 

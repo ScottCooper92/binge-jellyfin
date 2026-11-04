@@ -135,7 +135,7 @@ class LiveTvRecordingViewModelTest {
         val vm = made(LiveTvRecordingViewModel(connection))
         vm.ready()
         vm.sheet(RecordingSheet.Number(RecordingNumber.PostPadding))
-        vm.saveNumber(RecordingNumber.PostPadding, "121")
+        vm.saveNumber(RecordingNumber.PostPadding, "7201")
         vm.saveNumber(RecordingNumber.PostPadding, "-1")
         vm.saveNumber(RecordingNumber.PostPadding, "1.5")
         vm.saveNumber(RecordingNumber.PostPadding, "")
