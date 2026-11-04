@@ -80,7 +80,17 @@ class UserPolicyViewModelTest {
         return jellyfin.lastBody("/Users/user-2/Policy")
     }
 
-    private fun sam(): UsersViewModel = made(UsersViewModel(connection)).also { vm -> vm.open(vm.ready().users.first { it.name == "Sam" }) }
+    private fun sam(): UsersViewModel =
+        made(UsersViewModel(connection)).also { vm ->
+            vm.select(
+                vm
+                    .ready()
+                    .users
+                    .first {
+                        it.name == "Sam"
+                    }.id,
+            )
+        }
 
     /** Makes [changes] in order, and checks the last save holds each, and every other key as it was. */
     private fun UsersViewModel.changing(vararg changes: Pair<String, JsonElement>) {
@@ -231,15 +241,11 @@ class UserPolicyViewModelTest {
     }
 
     @Test
-    fun `a section opens and closes, and opening another user's page closes it`() {
+    fun `select says which user the changes are to, and none for null`() {
         val vm = sam()
-        vm.section(UserSection.Parental)
-        assertEquals(UserSection.Parental, vm.ready().section)
-        vm.section(null)
-        assertEquals(null, vm.ready().section)
-        vm.section(UserSection.Playback)
-        vm.open(null)
-        assertEquals(null, vm.ready { it.open == null }.section)
+        assertEquals("Sam", vm.ready().openUser?.name)
+        vm.select(null)
+        assertEquals(null, vm.ready().openUser)
         assertTrue(vm.ready().users.isNotEmpty())
     }
 

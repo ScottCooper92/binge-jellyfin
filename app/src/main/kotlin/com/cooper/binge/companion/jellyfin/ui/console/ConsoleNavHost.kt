@@ -114,7 +114,6 @@ fun ConsoleNavHost(
                             LocalViewModelStoreOwner provides stores.owner(key.opening),
                             LocalIsSinglePaneNav provides !hubBeside,
                             LocalPaneDepth provides if (ownPane) 1 else depth,
-                            LocalPageSpansTwoPanes provides (threePaneNow && !key.page.opensItems),
                             LocalOpenItem provides openItem?.takeIf { it.opening == key.opening }?.item,
                         ) {
                             PaneContent(innerEdge = if (ownPane) PaneEdge.Both else PaneEdge.Start) {
@@ -124,12 +123,12 @@ fun ConsoleNavHost(
                     }
                 is ConsoleKey.Item ->
                     NavEntry(key, metadata = DetailPane + ItemRole) {
-                        // Beside its page on a tablet the item never leaves the screen, so it offers no Back of its own;
-                        // anywhere else it is stacked above its page and does.
+                        // Beside its page on a tablet the item never leaves the screen, so it offers no Back of its own, but
+                        // an item opened over it (a user's section) does; anywhere else it is stacked above its page and does.
                         CompositionLocalProvider(
                             LocalViewModelStoreOwner provides stores.owner(key.opening),
                             LocalIsSinglePaneNav provides !hubBeside,
-                            LocalPaneDepth provides if (threePaneNow) 1 else depth,
+                            LocalPaneDepth provides if (threePaneNow) (depth - 1).coerceAtLeast(1) else depth,
                         ) {
                             PaneContent(innerEdge = PaneEdge.Start) {
                                 itemNow(ConsoleEntry(key.page, key.opening, key.item))
@@ -163,6 +162,7 @@ private fun ItemPlaceholderPane(page: ConsolePage) {
                 ConsolePage.Tasks -> TaskPlaceholder()
                 ConsolePage.Logs -> LogPlaceholder()
                 ConsolePage.Plugins -> PluginPlaceholder()
+                ConsolePage.Users -> UserPlaceholder()
                 else -> Unit
             }
         }

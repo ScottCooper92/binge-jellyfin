@@ -51,7 +51,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
-        ConsolePage.Users -> UsersRoute(graph, signedIn.profile, close)
+        ConsolePage.Users -> UsersRoute(graph, openItem, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile, close)
         ConsolePage.Network -> NetworkRoute(graph, signedIn.profile, { open(ConsolePage.Server) }, close)
         ConsolePage.Advanced ->

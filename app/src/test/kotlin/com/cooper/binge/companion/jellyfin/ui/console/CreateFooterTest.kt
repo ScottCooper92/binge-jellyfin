@@ -64,7 +64,7 @@ class CreateFooterTest {
     }
 
     @Test
-    fun `Users has Add user in the footer on the list only`() {
+    fun `Users has Add user in the footer, until the list fails`() {
         val ana = ServerUser("ana", "Ana", false, null, JsonObject(emptyMap()))
         val libraries = listOf(ServerLibrary("m", "Movies", "movies", emptyList()))
         var shown = emptyList<UserDialog?>()
@@ -75,10 +75,6 @@ class CreateFooterTest {
         compose.waitForIdle()
         compose.onNodeWithText("Add a user").assertIsEnabled().performClick()
         assertEquals(listOf<UserDialog?>(UserDialog.Create), shown)
-        // A user's own page has nothing to create.
-        state = UsersUiState.Ready(listOf(ana), libraries, me = "me", open = "ana")
-        compose.waitForIdle()
-        compose.onAllNodesWithText("Add a user").assertCountEquals(0)
         state = UsersUiState.Failed(ConsoleFailure.Unreachable)
         compose.waitForIdle()
         compose.onAllNodesWithText("Add a user").assertCountEquals(0)

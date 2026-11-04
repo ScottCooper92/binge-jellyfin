@@ -987,39 +987,25 @@ class ConsoleScreensTest {
         assertEquals(4, icons.distinct().size)
     }
 
+    private val usersPolicy = { admin: Boolean, all: Boolean ->
+        kotlinx.serialization.json.Json.parseToJsonElement(
+            """{"IsAdministrator":$admin,"IsDisabled":false,"EnableAllFolders":$all,"EnabledFolders":["m"]}""",
+        ) as kotlinx.serialization.json.JsonObject
+    }
+    private val usersMe = ServerUser("me", "Claude", true, null, usersPolicy(true, true))
+    private val usersSam = ServerUser("sam", "Sam", false, null, usersPolicy(false, false))
+    private val usersLibraries =
+        listOf(ServerLibrary("m", "Movies", "movies", emptyList()), ServerLibrary("s", "Shows", "tvshows", emptyList()))
+
     @Test
-    fun `users open a page whose switches, password and delete reach their actions, and mine has none of the risky ones`() {
+    fun `users list the people, open one on a tap, and add one from a sheet`() {
         val calls = mutableListOf<String>()
-        val policy = { admin: Boolean, all: Boolean ->
-            kotlinx.serialization.json.Json.parseToJsonElement(
-                """{"IsAdministrator":$admin,"IsDisabled":false,"EnableAllFolders":$all,"EnabledFolders":["m"]}""",
-            ) as kotlinx.serialization.json.JsonObject
-        }
-        val me = ServerUser("me", "Claude", true, null, policy(true, true))
-        val sam = ServerUser("sam", "Sam", false, null, policy(false, false))
-        val libraries = listOf(ServerLibrary("m", "Movies", "movies", emptyList()), ServerLibrary("s", "Shows", "tvshows", emptyList()))
-        var state by mutableStateOf(UsersUiState.Ready(listOf(me, sam), libraries, me = "me"))
+        var state by mutableStateOf(UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me"))
         val actions =
             UsersActions(
-                onOpen = { state = state.copy(open = it?.id) },
+                onOpen = { calls += "open ${it.name}" },
                 onShow = { state = state.copy(dialog = it) },
-                onAdministrator = { calls += "admin $it" },
-                onCanSignIn = { calls += "signin $it" },
-                onPolicy = { key, value ->
-                    if (key ==
-                        "EnableAllFolders"
-                    ) {
-                        calls += "all ${(value as kotlinx.serialization.json.JsonPrimitive).content}"
-                    }
-                },
-                onList = { key, change ->
-                    // The change takes an id in or out of the list; the shows library is what it was asked about.
-                    val after = change(emptyList()).map { (it as kotlinx.serialization.json.JsonPrimitive).content }
-                    if (key == "EnabledFolders") calls += "lib ${after.single()} true"
-                },
                 onCreate = { name, _ -> calls += "create $name" },
-                onSetPassword = { calls += "password $it" },
-                onDelete = { calls += "delete" },
             )
         compose.setContent { JellyfinTheme { UsersScreen(state, actions) } }
         compose.onNodeWithText("Claude (you)").assertExists()
@@ -1028,6 +1014,30 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Add").performClick()
         state = state.copy(dialog = null)
         compose.onNodeWithText("Sam").performClick()
+        assertEquals(listOf("create Ana", "open Sam"), calls)
+    }
+
+    @Test
+    fun `a user's screen has switches, password and delete that reach their actions`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "sam"))
+        val actions =
+            UsersActions(
+                onShow = { state = state.copy(dialog = it) },
+                onAdministrator = { calls += "admin $it" },
+                onCanSignIn = { calls += "signin $it" },
+                onPolicy = { key, value ->
+                    if (key == "EnableAllFolders") calls += "all ${(value as kotlinx.serialization.json.JsonPrimitive).content}"
+                },
+                onList = { key, change ->
+                    // The change takes an id in or out of the list; the shows library is what it was asked about.
+                    val after = change(emptyList()).map { (it as kotlinx.serialization.json.JsonPrimitive).content }
+                    if (key == "EnabledFolders") calls += "lib ${after.single()} true"
+                },
+                onSetPassword = { calls += "password $it" },
+                onDelete = { calls += "delete" },
+            )
+        compose.setContent { JellyfinTheme { UserScreen(state, "sam", actions) } }
         compose.onNodeWithText("Can sign in").performClick()
         compose.onNodeWithText("Administrator").performClick()
         compose.onNodeWithText("All libraries").performClick()
@@ -1042,16 +1052,41 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Set a new password").performClick()
         compose.onNodeWithText("New password").performTextInput("pw")
         compose.onNodeWithText("Set").performClick()
-        assertEquals(
-            listOf("create Ana", "signin false", "admin true", "all true", "lib s true", "delete", "password pw"),
-            calls,
-        )
-        state = state.copy(open = "me", dialog = null, actionFailed = ConsoleFailure.Refused)
+        assertEquals(listOf("signin false", "admin true", "all true", "lib s true", "delete", "password pw"), calls)
+    }
+
+    @Test
+    fun `the signed-in user's own screen has none of the risky switches, and says why`() {
+        val state =
+            UsersUiState.Ready(
+                listOf(usersMe, usersSam),
+                usersLibraries,
+                me = "me",
+                open = "me",
+                actionFailed = ConsoleFailure.Refused,
+            )
+        compose.setContent { JellyfinTheme { UserScreen(state, "me", UsersActions()) } }
         compose.onNodeWithText("This is you. Another admin can change these.").assertExists()
         compose.onNodeWithText("Can sign in").assertDoesNotExist()
         compose.onNodeWithText("Delete user").assertDoesNotExist()
-        state = state.copy(open = null)
-        compose.onNodeWithText("Users").assertExists()
+    }
+
+    @Test
+    fun `a user the server no longer lists closes their screen`() {
+        var closed = 0
+        val state = UsersUiState.Ready(listOf(usersSam), usersLibraries, me = "me")
+        compose.setContent { JellyfinTheme { UserScreen(state, "gone", UsersActions(onBack = { closed++ })) } }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `a user's screen says which user the screens show, so the changes made on it are to them`() {
+        val selected = mutableListOf<String?>()
+        val state = UsersUiState.Ready(listOf(usersSam), usersLibraries, me = "me")
+        compose.setContent { JellyfinTheme { UserScreen(state, "sam", UsersActions(onSelect = { selected += it })) } }
+        compose.waitForIdle()
+        assertEquals(listOf<String?>("sam"), selected)
     }
 
     @Test

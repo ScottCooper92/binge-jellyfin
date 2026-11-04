@@ -135,6 +135,21 @@ class ConsoleItemEntriesThreePaneTest : ItemEntriesBase() {
     }
 
     @Test
+    fun `an item opened over another keeps the page beside it, and Back returns to the first`() {
+        host(ConsoleBackStack().openFromHome(ConsolePage.Tasks).openItem("scan").openSubItem("scan/triggers"))
+        compose.onNodeWithText("home").assertIsDisplayed()
+        compose.onNodeWithText("page Tasks").assertIsDisplayed()
+        compose.onNodeWithText("item scan/triggers").assertIsDisplayed()
+        // It is over the first item, so it has the Back arrow back to it; the first item never had one.
+        assertEquals(2, itemDepth)
+        assertEquals(true, itemBack)
+        back()
+        compose.waitForIdle()
+        compose.onNodeWithText("item scan").assertIsDisplayed()
+        compose.onNodeWithText("page Tasks").assertIsDisplayed()
+    }
+
+    @Test
     fun `while no item is open the third pane says to pick one`() {
         host()
         compose.onNodeWithText("page Tasks").assertIsDisplayed()

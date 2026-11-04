@@ -192,7 +192,11 @@ private fun ConsoleHost(
             }
         },
         item = { entry ->
-            (state as? UiState.SignedIn)?.let { ConsoleItemRoute(entry, graph, it.profile.version, { onStack(latest.back()) }) }
+            (state as? UiState.SignedIn)?.let {
+                ConsoleItemRoute(entry, graph, it.profile.version, it.profile, { item -> onStack(latest.openSubItem(item)) }) {
+                    onStack(latest.back())
+                }
+            }
         },
     )
 }
