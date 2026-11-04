@@ -30,6 +30,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.math.roundToInt
 
 /** The choices a section opens in a sheet. */
 internal enum class PolicyPicker { Lockout, Sessions, Bitrate, SyncPlay, Rating, SubRating }
@@ -119,7 +120,7 @@ internal fun dayLabel(day: String): Int =
 
 /** An hour of the day as a clock time: 8.5 is 08:30. */
 internal fun hours(hour: Double): String {
-    val minutes = (hour * MINUTES_IN_HOUR).toInt()
+    val minutes = (hour * MINUTES_IN_HOUR).roundToInt()
     return "%02d:%02d".format(java.util.Locale.ROOT, minutes / MINUTES_IN_HOUR, minutes % MINUTES_IN_HOUR)
 }
 

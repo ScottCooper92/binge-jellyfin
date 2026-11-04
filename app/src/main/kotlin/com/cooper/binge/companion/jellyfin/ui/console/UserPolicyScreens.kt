@@ -70,6 +70,7 @@ import com.cooper.binge.companion.jellyfin.server.has
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.json
 import com.cooper.binge.companion.jellyfin.server.string
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import com.binge.designsystem.R as DesR
 
@@ -168,7 +169,7 @@ internal fun PolicySection(
     adding?.let { PolicyAddSheet(it, actions) { adding = null } }
     editingSchedule?.let { encoded ->
         val original =
-            kotlinx.serialization.json.Json
+            Json
                 .parseToJsonElement(encoded)
                 .asAccessSchedule() ?: return@let
         ConsoleSheet(onDismissRequest = { editingSchedule = null }) {
