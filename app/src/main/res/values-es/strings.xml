@@ -1210,4 +1210,7 @@
         <item quantity="other">%1$d días</item>
     </plurals>
     <string name="live_tv_type_m3u">Lista M3U</string>
+    <string name="logs_show_full_name">Mostrar el nombre completo</string>
+    <string name="logs_full_name">Nombre completo del registro</string>
+    <string name="logs_full_name_body">Mantén pulsado el nombre para seleccionarlo y copiarlo.</string>
 </resources>

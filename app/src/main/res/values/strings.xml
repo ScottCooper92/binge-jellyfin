@@ -1214,4 +1214,7 @@
     <string name="live_tv_type_m3u">M3U playlist</string>
     <string name="live_tv_type_xmltv" translatable="false">XMLTV</string>
     <string name="live_tv_type_schedules_direct" translatable="false">Schedules Direct</string>
+    <string name="logs_show_full_name">Show full name</string>
+    <string name="logs_full_name">Full log name</string>
+    <string name="logs_full_name_body">Touch and hold the name to select and copy it.</string>
 </resources>
