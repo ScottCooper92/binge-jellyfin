@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.cooper.binge.companion.jellyfin.server.AccessSchedule
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
@@ -160,4 +161,11 @@ class UserPolicyScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun scheduleEnd() = Surface { ScheduleForm(UsersActions(), {}, startStep = 2, startDay = "Weekday", startHour = 8) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun scheduleEdit() = Surface { ScheduleForm(UsersActions(), {}, original = AccessSchedule("Weekday", 9.5, 17.75), is24Hour = true) }
+
 }

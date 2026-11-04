@@ -63,7 +63,6 @@ private const val NEVER = -1
 private val LOCKOUT_PRESETS = listOf(0, NEVER, 3, 5, 10, 20)
 private val SESSION_PRESETS = listOf(0, 1, 2, 3, 5, 10)
 private val BITRATE_PRESETS_MBPS = listOf(0, 1, 2, 4, 6, 8, 10, 15, 20, 40, 60, 80)
-private const val HOURS_IN_DAY = 24
 private const val MINUTES_IN_HOUR = 60
 
 /** A list with [id] in it or out of it, for a setting that is a list of ids. */
@@ -276,69 +275,4 @@ internal fun TagForm(
         minLines = 1,
         maxLines = 1,
     )
-}
-
-/** A schedule in three steps: the day, when it starts and when it ends, each on the hour. Draws without a window for a frame. */
-@Composable
-internal fun ScheduleForm(
-    actions: UsersActions,
-    onClose: () -> Unit,
-    startStep: Int = 0,
-    startDay: String = SCHEDULE_DAYS.first(),
-    startHour: Int = 0,
-) {
-    var step by rememberSaveable { mutableIntStateOf(startStep) }
-    var day by rememberSaveable { mutableStateOf(startDay) }
-    var from by rememberSaveable { mutableIntStateOf(startHour) }
-    Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(dimensionResource(DesR.dimen.padding_m)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
-    ) {
-        Text(
-            stringResource(
-                when (step) {
-                    0 -> R.string.users_schedule_day
-                    1 -> R.string.users_schedule_start
-                    else -> R.string.users_schedule_end
-                },
-            ),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        ItemGroup(
-            title = null,
-            rows =
-                when (step) {
-                    0 ->
-                        SCHEDULE_DAYS.map { d ->
-                            ListItem(icon = Icons.Outlined.Today, label = stringResource(dayLabel(d)), onClick = {
-                                day = d
-                                step = 1
-                            })
-                        }
-                    1 ->
-                        (0 until HOURS_IN_DAY).map { h ->
-                            ListItem(icon = Icons.Outlined.Schedule, label = hours(h.toDouble()), onClick = {
-                                from = h
-                                step = 2
-                            })
-                        }
-                    else ->
-                        (from + 1..HOURS_IN_DAY).map { h ->
-                            ListItem(
-                                icon = Icons.Outlined.Schedule,
-                                label = hours(h.toDouble()),
-                                onClick = {
-                                    actions.onList(POLICY_SCHEDULES) { it + AccessSchedule(day, from.toDouble(), h.toDouble()).json() }
-                                    onClose()
-                                },
-                            )
-                        }
-                },
-        )
-        BingeTextButton(
-            label = stringResource(if (step == 0) R.string.users_cancel else R.string.users_back),
-            onClick = { if (step == 0) onClose() else step -= 1 },
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
 }

@@ -36,6 +36,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.asAccessSchedule
+import com.cooper.binge.companion.jellyfin.server.json
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.POLICY_ALL_CHANNELS
 import com.cooper.binge.companion.jellyfin.server.POLICY_ALL_DEVICES
@@ -142,6 +144,7 @@ internal fun PolicySection(
 ) {
     var picker by rememberSaveable { mutableStateOf<PolicyPicker?>(null) }
     var adding by rememberSaveable { mutableStateOf<PolicyAdd?>(null) }
+    var editingSchedule by rememberSaveable { mutableStateOf<String?>(null) }
     val policy = user.policy
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
@@ -154,11 +157,17 @@ internal fun PolicySection(
             UserSection.Control -> ItemGroup(title = null, rows = controlRows(policy, actions) { picker = it })
             UserSection.LiveTv -> LiveTvSection(policy, choices, actions, section)
             UserSection.Devices -> DevicesSection(policy, choices, actions, section)
-            UserSection.Parental -> ParentalSection(policy, choices, profile, actions, { picker = it }) { adding = it }
+            UserSection.Parental -> ParentalSection(policy, choices, profile, actions, { picker = it }, { editingSchedule = it.json().toString() }) { adding = it }
         }
     }
     picker?.let { PolicyPickerSheet(it, policy, choices, actions) { picker = null } }
     adding?.let { PolicyAddSheet(it, actions) { adding = null } }
+    editingSchedule?.let { encoded ->
+        val original = kotlinx.serialization.json.Json.parseToJsonElement(encoded).asAccessSchedule() ?: return@let
+        ConsoleSheet(onDismissRequest = { editingSchedule = null }) {
+            ScheduleForm(actions, { editingSchedule = null }, original = original)
+        }
+    }
 }
 
 /** A switch for [key], or nothing when the server didn't send it. */
