@@ -91,4 +91,31 @@ class ConsoleBackStackTest {
             assertNull(restore(listOf(1, "Server", "zero")))
         }
     }
+
+    @Test
+    fun `a page opened from the home beside a page replaces it and what it opened`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Plugins).open(ConsolePage.Server)
+        val logs = stack.openFromHome(ConsolePage.Logs)
+        assertEquals(listOf(ConsolePage.Logs), logs.pages())
+        // Back from it is the home, not Plugins or Server again.
+        assertEquals(emptyList<ConsolePage>(), logs.back().pages())
+        // A number is not reused, so the new page gets view models of its own.
+        assertEquals(setOf(2), logs.openings)
+    }
+
+    @Test
+    fun `the page already open at the bottom keeps its opening when the home opens it again`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Plugins).open(ConsolePage.Server)
+        val again = stack.openFromHome(ConsolePage.Plugins)
+        assertEquals(listOf(ConsolePage.Plugins), again.pages())
+        assertEquals(setOf(0), again.openings)
+    }
+
+    @Test
+    fun `the home is the hub once signed in, and a page keeps its key either way`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Logs)
+        assertEquals(ConsoleKey.Home, stack.keys(signedIn = false).first())
+        assertEquals(ConsoleKey.Hub, stack.keys(signedIn = true).first())
+        assertEquals(stack.keys(false).drop(1), stack.keys(true).drop(1))
+    }
 }

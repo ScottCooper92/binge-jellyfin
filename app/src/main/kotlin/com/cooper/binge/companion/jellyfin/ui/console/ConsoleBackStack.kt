@@ -11,7 +11,11 @@ data class ConsoleEntry(
 
 /** What Navigation 3 shows: the home, or one open page under its opening number. A key's identity is its content. */
 sealed interface ConsoleKey {
+    /** The home before sign-in, and while the server is being worked out: always the whole window. */
     data object Home : ConsoleKey
+
+    /** The signed-in home: the list pane the pages open beside on a wide window, the whole window on a narrow one. */
+    data object Hub : ConsoleKey
 
     data class Page(
         val page: ConsolePage,
@@ -36,12 +40,28 @@ data class ConsoleBackStack(
     /** The openings still on the stack: the ones whose view models are kept. */
     val openings: Set<Int> get() = entries.map { it.opening }.toSet()
 
-    /** The stack as Navigation 3 shows it: the home at the bottom, then each open page. */
-    val keys: List<ConsoleKey> get() = listOf<ConsoleKey>(ConsoleKey.Home) + entries.map { ConsoleKey.Page(it.page, it.opening) }
+    /**
+     * The stack as Navigation 3 shows it: the home at the bottom, then each open page. The home is the [ConsoleKey.Hub]
+     * once [signedIn], since an entry's pane role is fixed when it is built, so a change of role is a change of key.
+     */
+    fun keys(signedIn: Boolean = false): List<ConsoleKey> =
+        listOf(if (signedIn) ConsoleKey.Hub else ConsoleKey.Home) + entries.map { ConsoleKey.Page(it.page, it.opening) }
 
     /** [page] opened from the page on top, or from the home. Opening the page already on top does nothing. */
     fun open(page: ConsolePage): ConsoleBackStack =
         if (top?.page == page) this else copy(entries = entries + ConsoleEntry(page, next), next = next + 1)
+
+    /**
+     * [page] opened from the home. Beside the home a page replaces the one open, and what that opened, so Back from
+     * it returns to the home rather than walking every page visited on the way. The page already at the bottom
+     * stays, with its view models, and only what it opened closes.
+     */
+    fun openFromHome(page: ConsolePage): ConsoleBackStack =
+        if (entries.firstOrNull()?.page == page) {
+            copy(entries = entries.take(1))
+        } else {
+            copy(entries = listOf(ConsoleEntry(page, next)), next = next + 1)
+        }
 
     /** Back: the page on top closes, and the one under it, or the home, shows. */
     fun back(): ConsoleBackStack = copy(entries = entries.dropLast(1))

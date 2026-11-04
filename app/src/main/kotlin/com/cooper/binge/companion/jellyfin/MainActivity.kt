@@ -102,7 +102,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val openPage = stack.top.takeIf { signedIn }
-            RefreshGatesWhenHomeReturns(openPage?.page) { viewModel.refresh(gatesOnly = true) }
+            RefreshGatesWhenHomeReturns(openPage?.opening, stack.openings) { viewModel.refresh(gatesOnly = true) }
             val actions =
                 Actions(
                     onAddress = viewModel::onAddress,
@@ -124,6 +124,8 @@ class MainActivity : ComponentActivity() {
                     },
                     onOpenPage = { stack = stack.open(it) },
                 )
+            // Beside a page the home stays on screen, so what it opens replaces the page that is open.
+            val homeActions = actions.copy(onOpenPage = { stack = stack.openFromHome(it) })
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalFlags provides flags) {
                 if (LocalConfiguration.current.isTelevision()) {
@@ -133,8 +135,14 @@ class MainActivity : ComponentActivity() {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                             ConsoleNavHost(
                                 stack = if (signedIn) stack else ConsoleBackStack(),
+                                signedIn = signedIn,
                                 onBack = { stack = stack.back() },
-                                home = { JellyfinRoot(state, actions) },
+                                home = { JellyfinRoot(state, homeActions) },
+                                defaultPage = {
+                                    (state as? UiState.SignedIn)?.let { gated ->
+                                        ConsolePageRoute(ConsolePage.NowPlaying, graph, gated, {}, actions.onOpenPage, actions)
+                                    }
+                                },
                                 page = { entry ->
                                     (state as? UiState.SignedIn)?.let { gated ->
                                         ConsolePageRoute(entry.page, graph, gated, { stack = stack.back() }, actions.onOpenPage, actions)
@@ -157,17 +165,19 @@ class MainActivity : ComponentActivity() {
 
 /**
  * A page may have changed a gate (Quick Connect turned off), and so may the server's admin while the
- * app was away: [refresh] reads them again whenever the home comes back, from a page or to the front.
+ * app was away: [refresh] reads them again whenever a page closes ([top] was open and is no longer one of
+ * the [openings]), so also when the home beside it opens another page, and whenever the app comes to the front.
  */
 @Composable
 private fun RefreshGatesWhenHomeReturns(
-    openPage: ConsolePage?,
+    top: Int?,
+    openings: Set<Int>,
     refresh: () -> Unit,
 ) {
-    var pageWasOpen by remember { mutableStateOf(false) }
-    LaunchedEffect(openPage) {
-        if (openPage == null && pageWasOpen) refresh()
-        pageWasOpen = openPage != null
+    var previousTop by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(top) {
+        if (previousTop != null && previousTop !in openings) refresh()
+        previousTop = top
     }
     LifecycleResumeEffect(Unit) {
         refresh()
