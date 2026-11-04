@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +16,7 @@ import androidx.compose.material.icons.outlined.Transform
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -26,6 +26,7 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -37,7 +38,6 @@ import com.binge.designsystem.R as DesR
 /** What the now-playing page can ask of its view model, and of the console. */
 data class NowPlayingActions(
     val onSelect: (NowPlaying) -> Unit = {},
-    val onDeselect: () -> Unit = {},
     val onPlayPause: (NowPlaying) -> Unit = {},
     val onSkip: (NowPlaying, Boolean) -> Unit = { _, _ -> },
     val onSeekBy: (NowPlaying, Long) -> Unit = { _, _ -> },
@@ -60,21 +60,52 @@ private const val DETAIL_LINES = 2
 /**
  * Who is watching what: each stream's title, who and on which device, how far through, and whether
  * the server plays the file as it is or transcodes it, and why. An [administrator] sees everyone's
- * streams; anyone else their own. Stop asks first.
+ * streams; anyone else their own. A stream the user can control opens its own screen ([NowPlayingSessionScreen]),
+ * and [open] is the id of the one open, marked in the list.
  */
 @Composable
 fun NowPlayingScreen(
     state: NowPlayingUiState,
     administrator: Boolean,
     actions: NowPlayingActions,
+    open: String? = LocalOpenItem.current?.let(::sessionItemId),
+) {
+    BingeScreenScaffold(
+        title = stringResource(R.string.now_playing_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+    ) { padding ->
+        ScreenBody(padding) { _ ->
+            val inner = padding.screenListPadding()
+            when (state) {
+                NowPlayingUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                is NowPlayingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                is NowPlayingUiState.Ready -> Streams(state, administrator, actions, inner, open)
+            }
+        }
+    }
+}
+
+/**
+ * One stream's screen: what is playing and how far, and the controls the signed-in user is allowed for it. Stop asks
+ * first. A stream that has left the feed closes it.
+ */
+@Composable
+fun NowPlayingSessionScreen(
+    state: NowPlayingUiState,
+    sessionId: String,
+    actions: NowPlayingActions,
 ) {
     val host = remember { SnackbarHostState() }
-    val open = (state as? NowPlayingUiState.Ready)?.selectedSession
-    BackHandler(enabled = open != null) { actions.onDeselect() }
+    val ready = state as? NowPlayingUiState.Ready
+    val session = ready?.sessions?.firstOrNull { it.sessionId == sessionId }
+    // A stream that has ended has nothing to control: close it.
+    val gone = ready != null && session == null
+    LaunchedEffect(gone) { if (gone) actions.onBack() }
     BingeScreenScaffold(
-        title = open?.title ?: stringResource(R.string.now_playing_title),
+        title = session?.title ?: stringResource(R.string.now_playing_title),
         bar = ScreenBar.Small,
-        onBack = if (open != null) actions.onDeselect else actions.onBack,
+        onBack = actions.onBack,
         snackbarHostState = host,
     ) { padding ->
         ScreenBody(padding) { _ ->
@@ -83,7 +114,7 @@ fun NowPlayingScreen(
                 NowPlayingUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is NowPlayingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is NowPlayingUiState.Ready -> {
-                    if (open == null) Streams(state, administrator, actions, inner) else SessionPage(open, state, actions, inner)
+                    session?.let { SessionPage(it, state, actions, inner) }
                     state.confirming?.let { StopDialog(it, actions) }
                     state.messaging?.let { id ->
                         state.sessions.firstOrNull { it.sessionId == id }?.let { MessageSheet(it, state, actions) }
@@ -96,12 +127,28 @@ fun NowPlayingScreen(
     }
 }
 
+/** The empty right-hand pane when no stream is open. */
+@Composable
+internal fun NowPlayingPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.now_playing_select),
+        title = stringResource(R.string.now_playing_select_title),
+        icon = Icons.Outlined.PlayCircle,
+    )
+}
+
+/** The item key of a stream on the stack, and the stream a key is of. */
+internal fun sessionItem(sessionId: String) = "session:$sessionId"
+
+internal fun sessionItemId(item: String) = item.removePrefix("session:")
+
 @Composable
 private fun Streams(
     state: NowPlayingUiState.Ready,
     administrator: Boolean,
     actions: NowPlayingActions,
     inner: PaddingValues,
+    open: String?,
 ) {
     LazyColumn(
         contentPadding = inner,
@@ -114,7 +161,11 @@ private fun Streams(
             item { ConsoleEmptyScreen(stringResource(R.string.now_playing_empty), Icons.Outlined.PlayCircle) }
         }
         items(state.sessions, key = { it.sessionId }) { session ->
-            Stream(session, controllable = state.controlsFor(session).any) { actions.onSelect(session) }
+            Stream(
+                session,
+                controllable = state.controlsFor(session).any,
+                selected = session.sessionId == open,
+            ) { actions.onSelect(session) }
         }
     }
 }
@@ -142,6 +193,7 @@ internal fun StopDialog(
 private fun Stream(
     session: NowPlaying,
     controllable: Boolean,
+    selected: Boolean,
     onOpen: () -> Unit,
 ) {
     val who = stringResource(R.string.now_playing_who, session.userName, session.deviceName, session.client)
@@ -156,6 +208,7 @@ private fun Stream(
                     supportingMaxLines = DETAIL_LINES,
                     note = ListItemNote(methodText(session), icon = session.method.icon),
                     clickable = controllable,
+                    selected = selected,
                     onClick = onOpen,
                 ),
             ),

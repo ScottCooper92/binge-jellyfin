@@ -97,12 +97,25 @@ class ConsoleScreensTest {
             NowPlayingActions(onSelect = { opened += it }, onStop = { asked += it }, onConfirmStop = { confirmed = true })
         val full = SessionControls(playPause = true, seek = true, skip = true, stop = true)
         var state by mutableStateOf<NowPlayingUiState>(NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to full)))
-        compose.setContent { JellyfinTheme { NowPlayingScreen(state, administrator = false, actions) } }
+        var session by mutableStateOf(false)
+        compose.setContent {
+            JellyfinTheme {
+                if (session) {
+                    NowPlayingSessionScreen(
+                        state,
+                        stream.sessionId,
+                        actions,
+                    )
+                } else {
+                    NowPlayingScreen(state, administrator = false, actions, open = null)
+                }
+            }
+        }
         compose.onNodeWithText("Sintel").assertExists()
         compose.onNodeWithText("Transcoding: the device can't play the audio").assertExists()
         compose.onNodeWithText("Sintel").performClick()
         assertEquals(listOf(stream), opened)
-        state = NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to full), selected = stream.sessionId)
+        session = true
         compose.onNodeWithContentDescription("Play").assertExists()
         compose.onNodeWithContentDescription("Back 10 seconds").assertExists()
         compose.onNodeWithContentDescription("Next").assertExists()
@@ -112,7 +125,6 @@ class ConsoleScreensTest {
             NowPlayingUiState.Ready(
                 listOf(stream),
                 controls = mapOf(stream.sessionId to full),
-                selected = stream.sessionId,
                 confirming = stream,
             )
         compose.onNodeWithText("Stop Sintel?").assertExists()
@@ -124,8 +136,8 @@ class ConsoleScreensTest {
     fun `a session page draws only the controls the user has`() {
         val some = SessionControls(playPause = true, seek = false, skip = false, stop = false)
         val state =
-            NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to some), selected = stream.sessionId)
-        compose.setContent { JellyfinTheme { NowPlayingScreen(state, administrator = false, NowPlayingActions()) } }
+            NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to some))
+        compose.setContent { JellyfinTheme { NowPlayingSessionScreen(state, stream.sessionId, NowPlayingActions()) } }
         compose.onNodeWithContentDescription("Play").assertExists()
         compose.onNodeWithContentDescription("Back 10 seconds").assertDoesNotExist()
         compose.onNodeWithContentDescription("Next").assertDoesNotExist()

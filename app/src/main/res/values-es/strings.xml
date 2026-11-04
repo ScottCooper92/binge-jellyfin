@@ -161,6 +161,8 @@
     <string name="now_playing_body_admin">Todo lo que se está reproduciendo desde este servidor, en directo.</string>
     <string name="now_playing_body">Lo que reproduces desde este servidor, en cualquier dispositivo. Un administrador ve lo de todos.</string>
     <string name="now_playing_empty">No se está reproduciendo nada.</string>
+    <string name="now_playing_select_title">Ninguna reproducción seleccionada</string>
+    <string name="now_playing_select">Selecciona una reproducción para verla y controlarla.</string>
     <string name="now_playing_who">%1$s en %2$s · %3$s</string>
     <string name="now_playing_stop">Detener</string>
     <string name="now_playing_not_sent">No enviado. %1$s</string>

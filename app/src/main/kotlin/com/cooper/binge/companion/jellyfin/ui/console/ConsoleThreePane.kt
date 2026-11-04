@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.booleanResource
@@ -16,7 +15,6 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
-import com.binge.designsystem.LocalPaneDepth
 import com.binge.designsystem.R as DesR
 
 private const val HUB_ROLE = "console.threePane.hub"
@@ -125,18 +123,4 @@ private fun PaneRow(
         Spacer(Modifier.width(gap))
         Box(Modifier.weight(secondWeight).fillMaxHeight()) { second() }
     }
-}
-
-/**
- * Marks [content] as one level deeper than its page while an item is open inside it ([open]): a task, a log, a user, a
- * section. Beside the home a page has no Back of its own, since the home never leaves the screen. But an open item is
- * not that: Back from it returns to the page's list, which is the only way there on screen. A level deeper is what the
- * design system's rule keeps the Back arrow for.
- */
-@Composable
-internal fun PageItemDepth(
-    open: Boolean,
-    content: @Composable () -> Unit,
-) {
-    CompositionLocalProvider(LocalPaneDepth provides LocalPaneDepth.current + if (open) 1 else 0, content = content)
 }

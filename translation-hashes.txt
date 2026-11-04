@@ -658,6 +658,8 @@ app:now_playing_pause  858e4ba7a29f
 app:now_playing_play  436e61016e26
 app:now_playing_position  8f4594535134
 app:now_playing_previous  a57b08a480b8
+app:now_playing_select  1db13ea78fc5
+app:now_playing_select_title  c345d09e6ac2
 app:now_playing_stop  cae7d57bc067
 app:now_playing_stop_body  8afcb72f95e7
 app:now_playing_stop_title  2b266e376814

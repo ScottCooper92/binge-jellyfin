@@ -32,7 +32,7 @@ class ConsoleThreePaneTest {
                 stack = stack,
                 signedIn = true,
                 onBack = { stack = stack.back() },
-                home = { Column { Text("home", Modifier.clickable { stack = stack.openFromHome(ConsolePage.NowPlaying) }) } },
+                home = { Column { Text("home", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Activity) }) } },
                 defaultPage = { Text("default page") },
                 page = { Text("the page") },
             )

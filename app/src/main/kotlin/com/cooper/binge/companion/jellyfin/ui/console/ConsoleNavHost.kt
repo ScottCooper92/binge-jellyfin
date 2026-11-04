@@ -167,6 +167,7 @@ private fun ItemPlaceholderPane(page: ConsolePage) {
                 ConsolePage.LibraryDisplay -> LibraryDisplayPlaceholder()
                 ConsolePage.MetadataDefaults -> MetadataDefaultsPlaceholder()
                 ConsolePage.Libraries -> LibrariesPlaceholder()
+                ConsolePage.NowPlaying -> NowPlayingPlaceholder()
                 else -> Unit
             }
         }
