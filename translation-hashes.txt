@@ -842,6 +842,7 @@ app:subtitle_mode_none_detail  1547386ff931
 app:subtitle_mode_smart  9e6ad6db21db
 app:subtitle_mode_smart_detail  319b67f1f5af
 app:tasks_empty  cbb850a0f5d7
+app:tasks_intro  7f3ac68bb5de
 app:tasks_not_sent  ca0afa8ce6b6
 app:tasks_select  59d9da08e5f4
 app:tasks_select_title  0e5d35859f31
