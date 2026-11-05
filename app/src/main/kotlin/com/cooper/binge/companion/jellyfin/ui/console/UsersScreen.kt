@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +18,7 @@ import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +37,7 @@ import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -49,15 +50,19 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import com.binge.designsystem.R as DesR
 
-/** What the users page can ask of its view model, and of the console. */
+/** What the users screens can ask of their view model, and of the console. */
 data class UsersActions(
-    val onOpen: (ServerUser?) -> Unit = {},
+    /** Opens a user's own screen. */
+    val onOpen: (ServerUser) -> Unit = {},
+    /** Says which user the policy screens are showing, so the changes they make are to them; null for none. */
+    val onSelect: (String?) -> Unit = {},
     val onShow: (UserDialog?) -> Unit = {},
     val onAdministrator: (Boolean) -> Unit = {},
     val onCanSignIn: (Boolean) -> Unit = {},
     val onPolicy: (key: String, value: JsonElement) -> Unit = { _, _ -> },
     val onList: (key: String, change: (List<JsonElement>) -> List<JsonElement>) -> Unit = { _, _ -> },
-    val onSection: (UserSection?) -> Unit = {},
+    /** Opens a section of the user's settings over their screen. */
+    val onSection: (UserSection) -> Unit = {},
     val onChoicesRetry: (UserSection) -> Unit = {},
     val onCreate: (String, String) -> Unit = { _, _ -> },
     val onSetPassword: (String) -> Unit = {},
@@ -68,43 +73,30 @@ data class UsersActions(
 )
 
 /**
- * The server's users, and one user's page: whether they can sign in and are an administrator, which
- * libraries they see, their password, and, last and red, deleting them. Each switch saves as it's
- * made. The signed-in user's own page has no sign-in, administrator or delete, and says why.
+ * The server's users, by name. A tap opens the user's own screen ([UserScreen]) above this one on the stack, and Add a
+ * user, in the footer, a sheet for a new one. The user showing, where this list is beside it, is marked.
  */
 @Composable
 fun UsersScreen(
     state: UsersUiState,
     actions: UsersActions,
     now: Long = System.currentTimeMillis(),
-    choices: UserChoices = UserChoices(),
-    profile: JellyfinServerProfile = JellyfinServerProfile.from(null),
+    avatar: @Composable (ServerUser) -> Unit = { UserAvatar(it.name) },
+    openUser: String? = LocalOpenItem.current?.substringAfter("user:")?.substringBefore('/'),
 ) {
-    val user = (state as? UsersUiState.Ready)?.openUser
-    val section = (state as? UsersUiState.Ready)?.section.takeIf { user != null }
-    val back =
-        if (section != null) {
-            ({ actions.onSection(null) })
-        } else if (user != null) {
-            ({ actions.onOpen(null) })
-        } else {
-            actions.onBack
-        }
-    BackHandler(enabled = user != null, onBack = back)
     val ready = state as? UsersUiState.Ready
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
-        title = section?.let { stringResource(it.title()) } ?: user?.name ?: stringResource(R.string.users_title),
+        title = stringResource(R.string.users_title),
         bar = ScreenBar.Small,
-        onBack = back,
+        onBack = actions.onBack,
         snackbarHostState = host,
         bottomBar = {
             CreateFooter(
                 label = stringResource(R.string.users_add),
                 icon = Icons.Outlined.PersonAdd,
                 onClick = { actions.onShow(UserDialog.Create) },
-                // On the list only: a user's own page and its sections have nothing to create.
-                visible = state !is UsersUiState.Failed && user == null,
+                visible = state !is UsersUiState.Failed,
                 enabled = ready != null,
                 loading = ready?.busy == true,
             )
@@ -116,26 +108,121 @@ fun UsersScreen(
                 UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is UsersUiState.Ready ->
-                    when {
-                        user == null ->
-                            BingePullToRefresh(
-                                isRefreshing = state.refreshing,
-                                onRefresh = actions.onRefresh,
-                                indicatorTopInset = padding.calculateTopPadding(),
-                            ) { UserList(state, actions, inner, now) }
-                        section == null -> UserPage(state, user, actions, inner)
-                        else -> PolicySection(section, state, user, choices, profile, actions, inner)
-                    }
+                    BingePullToRefresh(
+                        isRefreshing = state.refreshing,
+                        onRefresh = actions.onRefresh,
+                        indicatorTopInset = padding.calculateTopPadding(),
+                    ) { UserList(state, actions, inner, now, avatar, openUser) }
             }
         }
     }
     ready?.let {
-        UserDialogs(it, actions)
-        // What the last change did, or why it didn't go through, is said in a message, not in a space the page keeps for it.
-        RefusedMessage(it.actionFailed, host, R.string.users_not_changed)
+        if (it.dialog == UserDialog.Create) CreateSheet(actions, submitting = it.busy, error = it.formError())
         RefusedMessage(it.refreshFailed, host, R.string.console_not_refreshed)
-        SnackbarMessage(it.done?.let { done -> stringResource(done.message) }, host)
+        // A user created or deleted is said on the list; the screen of a user says what was done to them.
+        SnackbarMessage(it.done?.takeIf { done -> done != UserDone.PasswordSet }?.let { done -> stringResource(done.message) }, host)
     }
+}
+
+/**
+ * One user: whether they can sign in and are an administrator, which libraries they see, the sections of their
+ * settings, their password, and, last and red, deleting them. A screen of its own above the list on the stack, so Back
+ * returns to it. Each switch saves as it's made. The signed-in user's own page has no sign-in, administrator or
+ * delete, and says why. A user the server no longer lists (deleted, say) closes it.
+ */
+@Composable
+fun UserScreen(
+    state: UsersUiState,
+    userId: String,
+    actions: UsersActions,
+) {
+    val ready = state as? UsersUiState.Ready
+    val user = ready?.users?.firstOrNull { it.id == userId }
+    UserScreenEffects(ready, userId, user, actions)
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = user?.name ?: stringResource(R.string.users_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+    ) { padding ->
+        ScreenBody(padding) { _ ->
+            val inner = padding.screenListPadding()
+            when {
+                state is UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                state is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                ready != null && user != null -> UserPage(ready, user, actions, inner)
+            }
+        }
+    }
+    if (ready != null && user != null) {
+        when (ready.dialog) {
+            UserDialog.Password -> PasswordSheet(user, actions, submitting = ready.busy, error = ready.formError())
+            UserDialog.Delete -> DeleteDialog(user, actions)
+            else -> Unit
+        }
+        RefusedMessage(ready.actionFailed, host, R.string.users_not_changed)
+        SnackbarMessage(ready.done?.takeIf { it == UserDone.PasswordSet }?.let { stringResource(it.message) }, host)
+    }
+}
+
+/** One section of a user's settings: a screen of its own above the user's. [choices] is what its pickers pick from. */
+@Composable
+fun UserSectionScreen(
+    state: UsersUiState,
+    userId: String,
+    section: UserSection,
+    choices: UserChoices,
+    profile: JellyfinServerProfile,
+    actions: UsersActions,
+) {
+    val ready = state as? UsersUiState.Ready
+    val user = ready?.users?.firstOrNull { it.id == userId }
+    UserScreenEffects(ready, userId, user, actions)
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = stringResource(section.title()),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+    ) { padding ->
+        ScreenBody(padding) { _ ->
+            val inner = padding.screenListPadding()
+            when {
+                state is UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                state is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                ready != null && user != null -> PolicySection(section, ready, user, choices, profile, actions, inner)
+            }
+        }
+    }
+    ready?.let { RefusedMessage(it.actionFailed, host, R.string.users_not_changed) }
+}
+
+/** The view model acts on the user the screens show, so a user's screen says which; one the server no longer lists closes. */
+@Composable
+private fun UserScreenEffects(
+    ready: UsersUiState.Ready?,
+    userId: String,
+    user: ServerUser?,
+    actions: UsersActions,
+) {
+    LaunchedEffect(userId, ready != null, ready?.open) { if (ready != null && ready.open != userId) actions.onSelect(userId) }
+    val gone = ready != null && user == null
+    LaunchedEffect(gone) { if (gone) actions.onBack() }
+}
+
+/** Why the open form (a new user, a password) was refused, as the form says it. */
+@Composable
+private fun UsersUiState.Ready.formError(): String? = formFailure?.let { stringResource(R.string.users_not_changed, it.text()) }
+
+/** What fills a landscape tablet's third pane while no user is open. */
+@Composable
+internal fun UserPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.users_select),
+        title = stringResource(R.string.users_select_title),
+        icon = Icons.Outlined.Person,
+    )
 }
 
 @Composable
@@ -144,6 +231,8 @@ private fun UserList(
     actions: UsersActions,
     inner: PaddingValues,
     now: Long,
+    avatar: @Composable (ServerUser) -> Unit,
+    openUser: String?,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -151,15 +240,17 @@ private fun UserList(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { PageIntro(stringResource(R.string.users_body)) }
-        item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, now, actions) }) }
+        item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, it.id == openUser, now, actions, avatar) }) }
     }
 }
 
 @Composable
 private fun ServerUser.row(
     me: String,
+    open: Boolean,
     now: Long,
     actions: UsersActions,
+    avatar: @Composable (ServerUser) -> Unit,
 ): ListItem {
     val seen = formatRelativeOrAbsolute(lastSeenMillis, now)?.let { stringResource(R.string.devices_seen, it) }
     val role =
@@ -175,8 +266,10 @@ private fun ServerUser.row(
                 administrator -> Icons.Outlined.AdminPanelSettings
                 else -> Icons.Outlined.Person
             },
+        leadingContent = { avatar(this) },
         label = if (id == me) stringResource(R.string.users_you, name) else name,
         detail = listOfNotNull(role, seen).joinToString(" · ").ifBlank { stringResource(R.string.users_never_seen) },
+        selected = open,
         onClick = { actions.onOpen(this) },
     )
 }
@@ -293,21 +386,6 @@ private val UserDone.message: Int
             UserDone.PasswordSet -> R.string.users_password_set
             UserDone.Deleted -> R.string.users_deleted
         }
-
-@Composable
-private fun UserDialogs(
-    state: UsersUiState.Ready,
-    actions: UsersActions,
-) {
-    val user = state.openUser
-    val error = state.formFailure?.let { stringResource(R.string.users_not_changed, it.text()) }
-    when (state.dialog) {
-        UserDialog.Create -> CreateSheet(actions, submitting = state.busy, error = error)
-        UserDialog.Password -> if (user != null) PasswordSheet(user, actions, submitting = state.busy, error = error)
-        UserDialog.Delete -> if (user != null) DeleteDialog(user, actions)
-        null -> Unit
-    }
-}
 
 /** Deleting a user, after their name, as a confirm. [inWindow] false draws its body for a frame. */
 @Composable

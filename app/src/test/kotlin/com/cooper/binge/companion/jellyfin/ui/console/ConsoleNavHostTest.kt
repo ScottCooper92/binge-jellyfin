@@ -59,7 +59,9 @@ class ConsoleNavHostTest {
             change = { stack = it }
             ConsoleNavHost(
                 stack = stack,
+                signedIn = false,
                 onBack = { stack = stack.back() },
+                defaultPage = {},
                 home = {
                     var scrolled by rememberSaveable { mutableIntStateOf(0) }
                     Column {

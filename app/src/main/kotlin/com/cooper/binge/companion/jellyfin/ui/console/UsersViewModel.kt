@@ -45,8 +45,9 @@ sealed interface UsersUiState {
     ) : UsersUiState
 
     /**
-     * The users, and the libraries a user may be given; [me], the signed-in user's id; [open], the user
-     * whose page is showing, and [section], the page of their settings that is; [dialog] over it; [busy] while a create, password or delete is on its way;
+     * The users, and the libraries a user may be given; [me], the signed-in user's id; [open], the user the screens
+     * are showing (which user, and which section of their settings, is an entry on the stack; the screen of one
+     * says so here with [UsersViewModel.select], so the changes made on it act on them); [dialog] over it; [busy] while a create, password or delete is on its way;
      * [done] what the last one did; [actionFailed] the last change that didn't go through.
      */
     data class Ready(
@@ -54,10 +55,11 @@ sealed interface UsersUiState {
         val libraries: List<ServerLibrary>,
         val me: String,
         val open: String? = null,
-        val section: UserSection? = null,
         val dialog: UserDialog? = null,
         val busy: Boolean = false,
         val done: UserDone? = null,
+        /** The user just created, until the page has opened their screen; opening it once keeps Back from opening it again. */
+        val created: String? = null,
         val actionFailed: ConsoleFailure? = null,
         /** Why the open form (a new user, a password) was refused, shown in the form, which stays open with what was typed. */
         val formFailure: ConsoleFailure? = null,
@@ -158,13 +160,19 @@ class UsersViewModel(
         }
     }
 
-    fun open(user: ServerUser?) = update { copy(open = user?.id, section = null, dialog = null, done = null, actionFailed = null) }
+    /** The screen of user [id], or none (null), is showing: the changes the policy screens make are to them. */
+    fun select(id: String?) = update { copy(open = id) }
+
+    /**
+     * A user is being opened: what the last screen reported, and a dialog it left open, are not this one's. They live
+     * here, shared by the list and the user, so a screen composed afresh would say them again.
+     */
+    fun itemOpened() = update { copy(dialog = null, done = null, actionFailed = null, formFailure = null) }
+
+    /** The page has opened the screen of the user just created; the list they return to is as it was. */
+    fun createdOpened() = update { copy(created = null, done = null) }
 
     fun show(dialog: UserDialog?) = update { copy(dialog = dialog, done = null, formFailure = null, actionFailed = null) }
-
-    fun setAdministrator(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_ADMINISTRATOR to JsonPrimitive(on)) }
-
-    fun setCanSignIn(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_DISABLED to JsonPrimitive(!on)) }
 
     /** Changes one setting of the open user's policy, and saves it. */
     fun setPolicy(
@@ -178,9 +186,6 @@ class UsersViewModel(
         change: (List<JsonElement>) -> List<JsonElement>,
     ) = changePolicy { policy -> policy + (key to JsonArray(change((policy[key] as? JsonArray).orEmpty()))) }
 
-    /** Opens [section] of the open user's settings, or their page for null. */
-    fun section(section: UserSection?) = update { copy(section = section, done = null, actionFailed = null) }
-
     fun create(
         name: String,
         password: String,
@@ -189,7 +194,7 @@ class UsersViewModel(
         act(UserDone.Created, form = { dialog == UserDialog.Create }) { client ->
             val user = client.createUser(name.trim(), password)
             saved[user.id] = user.policy
-            update { copy(users = (users + user).sortedBy { it.name.lowercase() }, open = user.id) }
+            update { copy(users = (users + user).sortedBy { it.name.lowercase() }, open = user.id, created = user.id) }
         }
     }
 
@@ -248,7 +253,7 @@ class UsersViewModel(
      * Saves one change to the open user's policy as it's made. It shows at once; if the server refuses
      * it, the user's policy goes back to what the server last accepted, and the page says so.
      */
-    private fun changePolicy(
+    internal fun changePolicy(
         mineAllowed: Boolean = true,
         change: (JsonObject) -> JsonObject,
     ) {
@@ -283,6 +288,12 @@ class UsersViewModel(
         const val TAG = "JellyfinUsers"
     }
 }
+
+/** Makes the open user an administrator, or not. Not the signed-in user's own. */
+fun UsersViewModel.setAdministrator(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_ADMINISTRATOR to JsonPrimitive(on)) }
+
+/** Lets the open user sign in, or not. Not the signed-in user's own. */
+fun UsersViewModel.setCanSignIn(on: Boolean) = changePolicy(mineAllowed = false) { it + (IS_DISABLED to JsonPrimitive(!on)) }
 
 private fun List<ServerUser>.withPolicy(
     id: String,

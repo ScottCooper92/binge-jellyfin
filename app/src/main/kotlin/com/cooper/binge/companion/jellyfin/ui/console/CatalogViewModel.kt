@@ -32,13 +32,12 @@ sealed interface CatalogUiState {
     /**
      * The catalog and what this page has asked of it. [installing] maps a package's name to the id the server
      * gave its install, once it has (null until the server says), which Cancel needs. [outcomes] is how each
-     * install ended. [installed] is the names of the plugins the server already has. [open] is the name of
-     * the package whose page is showing.
+     * install ended. [installed] is the names of the plugins the server already has. Which package is
+     * open is an entry on the stack.
      */
     data class Ready(
         val packages: List<CatalogPackage>,
         val installed: Set<String> = emptySet(),
-        val open: String? = null,
         val installing: Map<String, String?> = emptyMap(),
         val outcomes: Map<String, InstallOutcome> = emptyMap(),
         val actionFailed: ConsoleFailure? = null,
@@ -88,8 +87,8 @@ class CatalogViewModel(
             }
     }
 
-    /** Opens the package called [name], or goes back to the list for null. */
-    fun open(name: String?) = update { copy(open = name, actionFailed = null) }
+    /** A package is being opened: what the last screen reported is not this one's, and a screen composed afresh would say it again. */
+    fun itemOpened() = update { copy(actionFailed = null) }
 
     fun install(pkg: CatalogPackage) {
         val version = pkg.installable(server) ?: return

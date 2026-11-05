@@ -7,6 +7,8 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.ServerFolder
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
@@ -186,4 +188,13 @@ class LibrariesScreenshotTest {
                 folderMissing = true,
             )
         }
+}
+
+/** The page on a landscape tablet, where a library opens in a third pane: the invitation to pick one while none is. */
+class LibrariesPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { LibrariesPlaceholder() }
 }

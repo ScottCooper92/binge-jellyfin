@@ -1,11 +1,14 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.TypeFetchers
 import kotlinx.serialization.json.Json
@@ -40,27 +43,24 @@ class MetadataDefaultsScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun typePage() = MetadataDefaultsScreen(ready.copy(type = "MusicVideo"), MetadataDefaultsActions())
+    fun typePage() = MetadataTypeScreen(ready, "MusicVideo", MetadataDefaultsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun fetcherPage() =
-        MetadataDefaultsScreen(
-            ready.copy(type = "MusicVideo", provider = OpenFetcher(FetcherKind.Metadata, "The Open Movie Database")),
-            MetadataDefaultsActions(),
-        )
+        MetadataFetcherScreen(ready, "MusicVideo", OpenFetcher(FetcherKind.Metadata, "The Open Movie Database"), MetadataDefaultsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun unnamedType() = MetadataDefaultsScreen(ready.copy(type = "Book"), MetadataDefaultsActions())
+    fun unnamedType() = MetadataTypeScreen(ready, "Book", MetadataDefaultsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun saving() = MetadataDefaultsScreen(ready.copy(type = "Movie", save = SaveProgress(SaveStatus.Saving)), MetadataDefaultsActions())
+    fun saving() = MetadataTypeScreen(ready.copy(save = SaveProgress(SaveStatus.Saving)), "Movie", MetadataDefaultsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -71,4 +71,13 @@ class MetadataDefaultsScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = MetadataDefaultsScreen(MetadataDefaultsUiState.Failed(ConsoleFailure.Unreachable), MetadataDefaultsActions())
+}
+
+/** The page on a landscape tablet, where a type opens in a third pane: the invitation to pick one while none is. */
+class MetadataDefaultsPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { MetadataDefaultsPlaceholder() }
 }

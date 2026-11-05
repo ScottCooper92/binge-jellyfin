@@ -44,7 +44,7 @@ private fun open(
     adding: Boolean = false,
     saving: Boolean = false,
     failed: ConsoleFailure? = null,
-) = TasksUiState.Ready(TaskBoard(listOf(scan(triggers))), actionFailed = failed, open = "scan", adding = adding, saving = saving)
+) = TasksUiState.Ready(TaskBoard(listOf(scan(triggers))), triggerFailed = failed, adding = adding, saving = saving)
 
 /** One task's triggers across the matrix, with none, saving and failed, then the new trigger form for each kind. */
 class TaskTriggersScreenshotTest {
@@ -53,18 +53,18 @@ class TaskTriggersScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun triggers() = TasksScreen(open(), TasksActions())
+    fun triggers() = TaskScreen(open(), "scan", TasksActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun none() = TasksScreen(open(emptyList()), TasksActions())
+    fun none() = TaskScreen(open(emptyList()), "scan", TasksActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun saving() = TasksScreen(open(saving = true), TasksActions())
+    fun saving() = TaskScreen(open(saving = true), "scan", TasksActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

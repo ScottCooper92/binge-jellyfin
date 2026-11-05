@@ -41,7 +41,7 @@ sealed interface LibrariesUiState {
     /**
      * The libraries and their scans; the scheduled tasks, for the scan of everything; how each
      * library's last scan just ended; the last scan or stop that couldn't be sent, with `stopFailed` set when it was a stop;
-     * the library whose page is open ([opened]); and the new library sheet, when [adding], with the add in flight
+     * and the new library sheet, when [adding], with the add in flight
      * ([saving]) or refused ([addFailed]), or its typed folder is one the server hasn't got ([folderMissing]).
      */
     data class Ready(
@@ -51,7 +51,6 @@ sealed interface LibrariesUiState {
         val outcomes: Map<String, JobOutcome> = emptyMap(),
         val actionFailed: ConsoleFailure? = null,
         val stopFailed: Boolean = false,
-        val opened: String? = null,
         val adding: Boolean = false,
         val saving: Boolean = false,
         val addFailed: ConsoleFailure? = null,
@@ -126,17 +125,10 @@ class LibrariesViewModel(
         }
     }
 
-    /** Opens the page of the library with [id], or the list for null. A blank id opens nothing. */
-    fun open(id: String?) {
-        // A library the server hasn't given an id yet has no page: nothing on it could be saved.
-        if (id?.isEmpty() == true) return
-        update { copy(opened = id) }
-    }
-
     /** Opens the new library sheet, or closes it. */
     fun ask(adding: Boolean) = update { copy(adding = adding, addFailed = null, folderMissing = false) }
 
-    /** A pull: reads the libraries again in place, keeping the page, and says in a message when it couldn't. */
+    /** A pull: reads the libraries again in place, and says in a message when it couldn't. */
     fun pull() {
         val ready = _state.value as? LibrariesUiState.Ready ?: return
         if (ready.refreshing) return
@@ -146,7 +138,7 @@ class LibrariesViewModel(
             connection
                 .consoleCall(TAG) { _, client -> client.libraries() }
                 .onSuccess { fresh ->
-                    update { copy(libraries = fresh, opened = opened?.takeIf { id -> fresh.any { it.id == id } }, refreshing = false) }
+                    update { copy(libraries = fresh, refreshing = false) }
                 }.onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
@@ -157,7 +149,7 @@ class LibrariesViewModel(
             connection.awaitSaves()
             connection
                 .consoleCall(TAG) { _, client -> client.libraries() }
-                .onSuccess { fresh -> update { copy(libraries = fresh, opened = opened?.takeIf { id -> fresh.any { it.id == id } }) } }
+                .onSuccess { fresh -> update { copy(libraries = fresh) } }
         }
     }
 
