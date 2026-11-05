@@ -1,24 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Today
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
@@ -26,12 +13,8 @@ import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.BingeSheetKind
-import com.binge.designsystem.component.BingeTextButton
-import com.binge.designsystem.component.ItemGroup
-import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.server.AccessSchedule
 import com.cooper.binge.companion.jellyfin.server.POLICY_ALLOWED_TAGS
 import com.cooper.binge.companion.jellyfin.server.POLICY_BITRATE_LIMIT
 import com.cooper.binge.companion.jellyfin.server.POLICY_BLOCKED_TAGS
@@ -39,18 +22,15 @@ import com.cooper.binge.companion.jellyfin.server.POLICY_LOCKOUT
 import com.cooper.binge.companion.jellyfin.server.POLICY_MAX_RATING
 import com.cooper.binge.companion.jellyfin.server.POLICY_MAX_SESSIONS
 import com.cooper.binge.companion.jellyfin.server.POLICY_MAX_SUB_RATING
-import com.cooper.binge.companion.jellyfin.server.POLICY_SCHEDULES
 import com.cooper.binge.companion.jellyfin.server.POLICY_SYNC_PLAY
-import com.cooper.binge.companion.jellyfin.server.SCHEDULE_DAYS
 import com.cooper.binge.companion.jellyfin.server.SYNC_PLAY_ACCESS
 import com.cooper.binge.companion.jellyfin.server.int
-import com.cooper.binge.companion.jellyfin.server.json
 import com.cooper.binge.companion.jellyfin.server.string
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import com.binge.designsystem.R as DesR
+import kotlin.math.roundToInt
 
 /** The choices a section opens in a sheet. */
 internal enum class PolicyPicker { Lockout, Sessions, Bitrate, SyncPlay, Rating, SubRating }
@@ -63,7 +43,6 @@ private const val NEVER = -1
 private val LOCKOUT_PRESETS = listOf(0, NEVER, 3, 5, 10, 20)
 private val SESSION_PRESETS = listOf(0, 1, 2, 3, 5, 10)
 private val BITRATE_PRESETS_MBPS = listOf(0, 1, 2, 4, 6, 8, 10, 15, 20, 40, 60, 80)
-private const val HOURS_IN_DAY = 24
 private const val MINUTES_IN_HOUR = 60
 
 /** A list with [id] in it or out of it, for a setting that is a list of ids. */
@@ -141,7 +120,7 @@ internal fun dayLabel(day: String): Int =
 
 /** An hour of the day as a clock time: 8.5 is 08:30. */
 internal fun hours(hour: Double): String {
-    val minutes = (hour * MINUTES_IN_HOUR).toInt()
+    val minutes = (hour * MINUTES_IN_HOUR).roundToInt()
     return "%02d:%02d".format(java.util.Locale.ROOT, minutes / MINUTES_IN_HOUR, minutes % MINUTES_IN_HOUR)
 }
 
@@ -276,69 +255,4 @@ internal fun TagForm(
         minLines = 1,
         maxLines = 1,
     )
-}
-
-/** A schedule in three steps: the day, when it starts and when it ends, each on the hour. Draws without a window for a frame. */
-@Composable
-internal fun ScheduleForm(
-    actions: UsersActions,
-    onClose: () -> Unit,
-    startStep: Int = 0,
-    startDay: String = SCHEDULE_DAYS.first(),
-    startHour: Int = 0,
-) {
-    var step by rememberSaveable { mutableIntStateOf(startStep) }
-    var day by rememberSaveable { mutableStateOf(startDay) }
-    var from by rememberSaveable { mutableIntStateOf(startHour) }
-    Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(dimensionResource(DesR.dimen.padding_m)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
-    ) {
-        Text(
-            stringResource(
-                when (step) {
-                    0 -> R.string.users_schedule_day
-                    1 -> R.string.users_schedule_start
-                    else -> R.string.users_schedule_end
-                },
-            ),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        ItemGroup(
-            title = null,
-            rows =
-                when (step) {
-                    0 ->
-                        SCHEDULE_DAYS.map { d ->
-                            ListItem(icon = Icons.Outlined.Today, label = stringResource(dayLabel(d)), onClick = {
-                                day = d
-                                step = 1
-                            })
-                        }
-                    1 ->
-                        (0 until HOURS_IN_DAY).map { h ->
-                            ListItem(icon = Icons.Outlined.Schedule, label = hours(h.toDouble()), onClick = {
-                                from = h
-                                step = 2
-                            })
-                        }
-                    else ->
-                        (from + 1..HOURS_IN_DAY).map { h ->
-                            ListItem(
-                                icon = Icons.Outlined.Schedule,
-                                label = hours(h.toDouble()),
-                                onClick = {
-                                    actions.onList(POLICY_SCHEDULES) { it + AccessSchedule(day, from.toDouble(), h.toDouble()).json() }
-                                    onClose()
-                                },
-                            )
-                        }
-                },
-        )
-        BingeTextButton(
-            label = stringResource(if (step == 0) R.string.users_cancel else R.string.users_back),
-            onClick = { if (step == 0) onClose() else step -= 1 },
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
 }

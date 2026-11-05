@@ -6,6 +6,7 @@ import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.server.AccessSchedule
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LiveChannel
 import com.cooper.binge.companion.jellyfin.server.ParentalRating
@@ -164,4 +165,10 @@ class UserPolicyScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun scheduleEnd() = Surface { ScheduleForm(UsersActions(), {}, startStep = 2, startDay = "Weekday", startHour = 8) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun scheduleEdit() = Surface { ScheduleForm(UsersActions(), {}, original = AccessSchedule("Weekday", 9.5, 17.75), is24Hour = true) }
 }
