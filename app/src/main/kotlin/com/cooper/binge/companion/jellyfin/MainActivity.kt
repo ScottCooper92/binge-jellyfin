@@ -175,7 +175,16 @@ private fun ConsoleHost(
         home = { JellyfinRoot(state, homeActions) },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
-                ConsolePageRoute(ConsolePage.NowPlaying, graph, gated, {}, actions.onOpenPage, actions)
+                // A stream tapped here has no page to open over, so the page opens, and the stream over it.
+                ConsolePageRoute(
+                    ConsolePage.NowPlaying,
+                    graph,
+                    gated,
+                    {},
+                    actions.onOpenPage,
+                    actions,
+                    { onStack(latest.openFromHome(ConsolePage.NowPlaying).openItem(it)) },
+                )
             }
         },
         page = { entry ->
@@ -193,7 +202,7 @@ private fun ConsoleHost(
         },
         item = { entry ->
             (state as? UiState.SignedIn)?.let {
-                ConsoleItemRoute(entry, graph, it.profile.version, it.profile, { item -> onStack(latest.openSubItem(item)) }) {
+                ConsoleItemRoute(entry, graph, it.profile.version, it.profile, it.account, { item -> onStack(latest.openSubItem(item)) }) {
                     onStack(latest.back())
                 }
             }

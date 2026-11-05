@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 
@@ -67,6 +68,7 @@ internal fun ConsoleItemRoute(
     graph: AppGraph,
     server: JellyfinVersion?,
     profile: JellyfinServerProfile,
+    account: JellyfinAccount,
     openSubItem: (String) -> Unit,
     close: () -> Unit,
 ) {
@@ -79,6 +81,7 @@ internal fun ConsoleItemRoute(
         ConsolePage.LibraryDisplay -> LibraryDisplayListRoute(graph, item, close)
         ConsolePage.MetadataDefaults -> MetadataItemRoute(graph, item, openSubItem, close)
         ConsolePage.Libraries -> LibraryItemRoute(graph, profile, item, openSubItem, close)
+        ConsolePage.NowPlaying -> NowPlayingItemRoute(graph, account, item, close)
         ConsolePage.Plugins ->
             if (item.startsWith("package:")) {
                 PackageItemRoute(graph, server, item.removePrefix("package:"), close)

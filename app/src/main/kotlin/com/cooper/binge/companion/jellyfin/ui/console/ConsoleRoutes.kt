@@ -14,7 +14,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.AppGraph
-import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -39,12 +38,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
-        ConsolePage.NowPlaying ->
-            NowPlayingRoute(
-                graph,
-                signedIn.account,
-                close,
-            )
+        ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
         ConsolePage.Libraries -> LibrariesRoute(graph, openItem, close)
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
@@ -323,42 +317,6 @@ private fun ServerRoute(
             onBack = onBack,
         ),
     )
-}
-
-/** The now-playing page with its own view model, whose event socket closes with the page. */
-@Composable
-private fun NowPlayingRoute(
-    graph: AppGraph,
-    account: JellyfinAccount,
-    onBack: () -> Unit,
-) {
-    val nowPlaying: NowPlayingViewModel =
-        viewModel(factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection, account) } })
-    val state by nowPlaying.state.collectAsStateWithLifecycle()
-    PageItemDepth(open = (state as? NowPlayingUiState.Ready)?.selectedSession != null) {
-        NowPlayingScreen(
-            state,
-            account.isAdministrator,
-            NowPlayingActions(
-                onSelect = nowPlaying::select,
-                onDeselect = nowPlaying::deselect,
-                onPlayPause = nowPlaying.remote::playPause,
-                onSkip = nowPlaying.remote::skip,
-                onSeekBy = nowPlaying.remote::seekBy,
-                onSeekTo = nowPlaying.remote::seekTo,
-                onVolume = nowPlaying.remote::setVolume,
-                onToggleMute = nowPlaying.remote::toggleMute,
-                onAskMessage = nowPlaying.remote::askMessage,
-                onCancelMessage = nowPlaying.remote::cancelMessage,
-                onSendMessage = nowPlaying.remote::sendMessage,
-                onStop = nowPlaying::askStop,
-                onConfirmStop = nowPlaying::stop,
-                onCancelStop = nowPlaying::cancelStop,
-                onRetry = nowPlaying::load,
-                onBack = onBack,
-            ),
-        )
-    }
 }
 
 /**

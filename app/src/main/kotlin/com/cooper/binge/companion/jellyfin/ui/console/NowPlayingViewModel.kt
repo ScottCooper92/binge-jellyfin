@@ -27,7 +27,7 @@ sealed interface NowPlayingUiState {
 
     /**
      * What's playing, the stream the user is being asked about stopping, the one being stopped, and
-     * the last stop that failed.
+     * the last stop that failed. A session's page is a screen of its own over the page.
      */
     data class Ready(
         val sessions: List<NowPlaying>,
@@ -36,8 +36,6 @@ sealed interface NowPlayingUiState {
         val stopFailed: ConsoleFailure? = null,
         /** What the signed-in user may do to each session, by session id: a session with no entry takes no control. */
         val controls: Map<String, SessionControls> = emptyMap(),
-        /** The session whose page is open, if any. */
-        val selected: String? = null,
         /** A playback command is on its way, so the page's buttons wait. */
         val sending: Boolean = false,
         val sendFailed: ConsoleFailure? = null,
@@ -46,9 +44,6 @@ sealed interface NowPlayingUiState {
         val messageSending: Boolean = false,
         val messageFailed: ConsoleFailure? = null,
     ) : NowPlayingUiState {
-        /** The open session, while it is still in the feed. */
-        val selectedSession: NowPlaying? get() = selected?.let { id -> sessions.firstOrNull { it.sessionId == id } }
-
         fun controlsFor(session: NowPlaying): SessionControls = controls[session.sessionId] ?: SessionControls()
     }
 }
@@ -105,20 +100,8 @@ class NowPlayingViewModel(
             }
     }
 
-    /** Opens the page of [session], which must be one the feed lists. */
-    fun select(session: NowPlaying) =
-        updateReady {
-            if (sessions.any { it.sessionId == session.sessionId }) {
-                copy(
-                    selected = session.sessionId,
-                    sendFailed = null,
-                )
-            } else {
-                this
-            }
-        }
-
-    fun deselect() = updateReady { copy(selected = null, sendFailed = null) }
+    /** A session's screen opened: what the last screen reported, and a sheet or confirm left open there, aren't replayed here. */
+    fun itemOpened() = updateReady { copy(sendFailed = null, stopFailed = null, confirming = null, messaging = null, messageFailed = null) }
 
     /** Reads the controllable list again when the feed shows a session it has not been asked about. */
     private suspend fun refreshControllable(
@@ -167,6 +150,5 @@ private fun NowPlayingUiState.Ready.following(pushed: List<NowPlaying>): NowPlay
     copy(
         sessions = pushed,
         confirming = confirming?.takeIf { asked -> pushed.any { it.sessionId == asked.sessionId } },
-        selected = selected?.takeIf { id -> pushed.any { it.sessionId == id } },
         messaging = messaging?.takeIf { id -> pushed.any { it.sessionId == id } },
     )

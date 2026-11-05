@@ -48,9 +48,9 @@ class RefusedActionMessageTest {
         val stream = NowPlaying("s", "ana", "TV", "Jellyfin", "Sintel", null, 0L, null, false, PlayMethod.DirectPlay, emptyList())
         compose.setContent {
             JellyfinTheme {
-                NowPlayingScreen(
+                NowPlayingSessionScreen(
                     NowPlayingUiState.Ready(listOf(stream), stopFailed = ConsoleFailure.Unreachable),
-                    true,
+                    stream.sessionId,
                     NowPlayingActions(),
                 )
             }

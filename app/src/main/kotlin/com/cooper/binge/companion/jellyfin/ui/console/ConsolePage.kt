@@ -124,7 +124,8 @@ enum class ConsolePage {
             this == HomeLayout ||
             this == LibraryDisplay ||
             this == MetadataDefaults ||
-            this == Libraries
+            this == Libraries ||
+            this == NowPlaying
 
     /** One of the administrator's pages, listed together on the home. */
     val isAdmin: Boolean get() =

@@ -160,6 +160,8 @@
     <string name="now_playing_body_admin">Everyone streaming from this server, as it happens.</string>
     <string name="now_playing_body">What you\'re playing from this server, on any device. An administrator sees everyone\'s.</string>
     <string name="now_playing_empty">Nothing\'s playing right now.</string>
+    <string name="now_playing_select_title">No stream selected</string>
+    <string name="now_playing_select">Select a stream to see and control it.</string>
     <string name="now_playing_who">%1$s on %2$s · %3$s</string>
     <string name="now_playing_stop">Stop</string>
     <string name="now_playing_not_sent">Not sent. %1$s</string>
