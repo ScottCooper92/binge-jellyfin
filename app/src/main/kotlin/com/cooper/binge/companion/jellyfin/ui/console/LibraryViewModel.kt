@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-/** Where in a library's pages the user is: the library itself, a list of its providers, or one provider. */
+/** Which of a library's pages a screen is: the library itself, a list of its providers, or one provider. Each is an entry on the stack. */
 sealed interface LibraryPage {
     data object Main : LibraryPage
 
@@ -93,7 +93,7 @@ sealed interface LibraryUiState {
 
     /**
      * The library and its options as shown (a change shows at once, and is put back if the server refuses it),
-     * what the server offers to choose from, and the page and dialog open. [busy] is a folder, rename or remove
+     * what the server offers to choose from, and the dialog open. [busy] is a folder, rename or remove
      * in flight; [failed] the last of those that the server refused; [save] where the options' saves stand and [refused] the
      * last option the server refused, which was put back; [folderMissing] a typed folder it hasn't got; [nameTaken] a new name another library has;
      * and [gone] a removed library, which closes the page.
@@ -104,7 +104,6 @@ sealed interface LibraryUiState {
         val available: AvailableProviders = AvailableProviders(),
         val cultures: List<Culture> = emptyList(),
         val countries: List<Country> = emptyList(),
-        val page: LibraryPage = LibraryPage.Main,
         val dialog: LibraryDialog? = null,
         val busy: Boolean = false,
         val save: SaveProgress = SaveProgress(),
@@ -185,7 +184,8 @@ class LibraryViewModel(
         }
     }
 
-    fun show(page: LibraryPage) = update { copy(page = page) }
+    /** A library's page opened: a sheet or confirm, and what the last screen reported, were left on that screen and aren't replayed here. */
+    fun itemOpened() = update { copy(dialog = null, refused = null, failed = null, folderMissing = false, nameTaken = false) }
 
     /** Opens [dialog], or closes whichever is open for null. */
     fun ask(dialog: LibraryDialog?) = update { copy(dialog = dialog, folderMissing = false, nameTaken = false) }

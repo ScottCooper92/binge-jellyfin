@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
@@ -102,7 +104,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val openPage = stack.top.takeIf { signedIn }
-            RefreshGatesWhenHomeReturns(openPage?.page) { viewModel.refresh(gatesOnly = true) }
+            RefreshGatesWhenHomeReturns(openPage?.opening, stack.openings) { viewModel.refresh(gatesOnly = true) }
             val actions =
                 Actions(
                     onAddress = viewModel::onAddress,
@@ -124,6 +126,13 @@ class MainActivity : ComponentActivity() {
                     },
                     onOpenPage = { stack = stack.open(it) },
                 )
+            // Beside a page the home stays on screen, so what it opens replaces the page that is open.
+            // Now playing is what shows beside it while none is open.
+            val homeActions =
+                actions.copy(
+                    onOpenPage = { stack = stack.openFromHome(it) },
+                    selectedPage = stack.entries.firstOrNull()?.page ?: ConsolePage.NowPlaying,
+                )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalFlags provides flags) {
                 if (LocalConfiguration.current.isTelevision()) {
@@ -131,16 +140,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                            ConsoleNavHost(
-                                stack = if (signedIn) stack else ConsoleBackStack(),
-                                onBack = { stack = stack.back() },
-                                home = { JellyfinRoot(state, actions) },
-                                page = { entry ->
-                                    (state as? UiState.SignedIn)?.let { gated ->
-                                        ConsolePageRoute(entry.page, graph, gated, { stack = stack.back() }, actions.onOpenPage, actions)
-                                    }
-                                },
-                            )
+                            ConsoleHost(state, stack, { stack = it }, graph, actions, homeActions)
                         }
                     }
                 }
@@ -155,19 +155,76 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** The console: the home, and the pages and items open over it, on [stack], whose changes [onStack] takes. */
+@Composable
+private fun ConsoleHost(
+    state: UiState,
+    stack: ConsoleBackStack,
+    onStack: (ConsoleBackStack) -> Unit,
+    graph: AppGraph,
+    actions: Actions,
+    homeActions: Actions,
+) {
+    val signedIn = state is UiState.SignedIn
+    // A tap acts on the stack as it is then, not as it was when the screen under it was composed.
+    val latest by rememberUpdatedState(stack)
+    ConsoleNavHost(
+        stack = if (signedIn) stack else ConsoleBackStack(),
+        signedIn = signedIn,
+        onBack = { onStack(latest.back()) },
+        home = { JellyfinRoot(state, homeActions) },
+        defaultPage = {
+            (state as? UiState.SignedIn)?.let { gated ->
+                // A stream tapped here has no page to open over, so the page opens, and the stream over it.
+                ConsolePageRoute(
+                    ConsolePage.NowPlaying,
+                    graph,
+                    gated,
+                    {},
+                    actions.onOpenPage,
+                    actions,
+                    { onStack(latest.openFromHome(ConsolePage.NowPlaying).openItem(it)) },
+                )
+            }
+        },
+        page = { entry ->
+            (state as? UiState.SignedIn)?.let { gated ->
+                ConsolePageRoute(
+                    entry.page,
+                    graph,
+                    gated,
+                    { onStack(latest.back()) },
+                    actions.onOpenPage,
+                    actions,
+                    { onStack(latest.openItem(it)) },
+                )
+            }
+        },
+        item = { entry ->
+            (state as? UiState.SignedIn)?.let {
+                ConsoleItemRoute(entry, graph, it.profile.version, it.profile, it.account, { item -> onStack(latest.openSubItem(item)) }) {
+                    onStack(latest.back())
+                }
+            }
+        },
+    )
+}
+
 /**
  * A page may have changed a gate (Quick Connect turned off), and so may the server's admin while the
- * app was away: [refresh] reads them again whenever the home comes back, from a page or to the front.
+ * app was away: [refresh] reads them again whenever a page closes ([top] was open and is no longer one of
+ * the [openings]), so also when the home beside it opens another page, and whenever the app comes to the front.
  */
 @Composable
 private fun RefreshGatesWhenHomeReturns(
-    openPage: ConsolePage?,
+    top: Int?,
+    openings: Set<Int>,
     refresh: () -> Unit,
 ) {
-    var pageWasOpen by remember { mutableStateOf(false) }
-    LaunchedEffect(openPage) {
-        if (openPage == null && pageWasOpen) refresh()
-        pageWasOpen = openPage != null
+    var previousTop by remember { mutableStateOf<Int?>(null) }
+    LaunchedEffect(top) {
+        if (previousTop != null && previousTop !in openings) refresh()
+        previousTop = top
     }
     LifecycleResumeEffect(Unit) {
         refresh()

@@ -15,8 +15,8 @@ import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 
 /**
- * The plugins page, with a view model for each tab. A plugin's settings page is Jellyfin web's own, opened in
- * the browser at the server's address, where the web client signs the user in: the address carries no token.
+ * The plugins page, with a view model for each tab. A plugin or a package opens as an entry above it on the stack
+ * ([openItem]), and its screen ([PluginItemRoute], [PackageItemRoute]) reads these same view models.
  * Kept out of `ConsoleRoutes.kt`, which is at its function limit.
  */
 @Composable
@@ -24,6 +24,7 @@ internal fun PluginsRoute(
     graph: AppGraph,
     server: JellyfinVersion?,
     onOpenServer: () -> Unit,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val installed: PluginsViewModel = viewModel(factory = viewModelFactory { initializer { PluginsViewModel(graph.connection) } })
@@ -33,21 +34,10 @@ internal fun PluginsRoute(
     val installedState by installed.state.collectAsStateWithLifecycle()
     val catalogState by catalog.state.collectAsStateWithLifecycle()
     val repositoriesState by repositories.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    // An install that finished while a package's screen was over this page is read back when the page is shown again.
     val installsDone = (catalogState as? CatalogUiState.Ready)?.outcomes?.count { it.value == InstallOutcome.Done } ?: 0
     LaunchedEffect(installsDone) {
         if (installsDone > 0) installed.refresh()
-    }
-    val settingsUrl = (installedState as? PluginsUiState.Ready)?.settingsUrl
-    LaunchedEffect(settingsUrl) {
-        if (settingsUrl != null) {
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, settingsUrl.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            } catch (_: ActivityNotFoundException) {
-                // No browser to open it with: nothing to show, and nothing was sent anywhere.
-            }
-            installed.settingsOpened()
-        }
     }
     PluginsScreen(
         installed = installedState,
@@ -55,20 +45,20 @@ internal fun PluginsRoute(
         repositories = repositoriesState,
         actions =
             PluginsActions(
-                onOpen = installed::open,
-                onToggle = installed::setEnabled,
-                onAskUninstall = installed::askUninstall,
-                onUninstall = installed::uninstall,
-                onOpenSettings = installed::openSettings,
+                onOpen = {
+                    installed.itemOpened()
+                    openItem(pluginItem(it.id))
+                },
                 onRestart = onOpenServer,
                 onRetry = installed::load,
                 onRefresh = installed::pull,
             ),
         catalogActions =
             CatalogActions(
-                onOpen = catalog::open,
-                onInstall = catalog::install,
-                onCancel = catalog::cancel,
+                onOpen = {
+                    catalog.itemOpened()
+                    openItem(packageItem(it))
+                },
                 onRetry = catalog::load,
             ),
         repositoryActions =
@@ -81,5 +71,63 @@ internal fun PluginsRoute(
                 onRefresh = repositories::refresh,
             ),
         onBack = onBack,
+    )
+}
+
+/**
+ * One plugin's screen, with the page's view model. A plugin's settings page is Jellyfin web's own, opened in the
+ * browser at the server's address, where the web client signs the user in: the address carries no token.
+ */
+@Composable
+internal fun PluginItemRoute(
+    graph: AppGraph,
+    pluginId: String,
+    onBack: () -> Unit,
+) {
+    val installed: PluginsViewModel = viewModel(factory = viewModelFactory { initializer { PluginsViewModel(graph.connection) } })
+    val state by installed.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    // Opened from this screen, so asked for here: the page behind it may not be composed to hear it.
+    val settingsUrl = (state as? PluginsUiState.Ready)?.settingsUrl
+    LaunchedEffect(settingsUrl) {
+        if (settingsUrl != null) {
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, settingsUrl.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (_: ActivityNotFoundException) {
+                // No browser to open it with: nothing to show, and nothing was sent anywhere.
+            }
+            installed.settingsOpened()
+        }
+    }
+    PluginScreen(
+        state,
+        pluginId,
+        PluginsActions(
+            onToggle = installed::setEnabled,
+            onAskUninstall = installed::askUninstall,
+            onUninstall = installed::uninstall,
+            onOpenSettings = installed::openSettings,
+            onRetry = installed::load,
+            onUninstallSeen = installed::uninstallSeen,
+        ),
+        onBack,
+    )
+}
+
+/** One catalog package's screen, with the page's view model. */
+@Composable
+internal fun PackageItemRoute(
+    graph: AppGraph,
+    server: JellyfinVersion?,
+    name: String,
+    onBack: () -> Unit,
+) {
+    val catalog: CatalogViewModel = viewModel(factory = viewModelFactory { initializer { CatalogViewModel(graph.connection, server) } })
+    val state by catalog.state.collectAsStateWithLifecycle()
+    PackageScreen(
+        state,
+        name,
+        CatalogActions(onInstall = catalog::install, onCancel = catalog::cancel, onRetry = catalog::load),
+        onBack,
     )
 }

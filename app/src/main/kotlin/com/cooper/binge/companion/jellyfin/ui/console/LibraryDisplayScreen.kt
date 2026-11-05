@@ -1,8 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CollectionsBookmark
@@ -34,6 +34,7 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -67,9 +68,9 @@ data class LibraryDisplayActions(
     val onText: (key: String, text: String) -> Unit = { _, _ -> },
     val onSeconds: (Int) -> Unit = {},
     val onSheet: (DisplaySheet?) -> Unit = {},
-    val onEdit: (DisplayList?) -> Unit = {},
-    val onAdd: (ListEntry) -> Unit = {},
-    val onRemove: (Int) -> Unit = {},
+    val onEdit: (DisplayList) -> Unit = {},
+    val onAdd: (DisplayList, ListEntry) -> Unit = { _, _ -> },
+    val onRemove: (DisplayList, Int) -> Unit = { _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
@@ -83,8 +84,9 @@ private enum class DisplayPicker { Language, Convention, Resolution }
 
 /**
  * The server's library display and metadata defaults: how libraries show, what metadata is saved and where,
- * how titles sort, and path substitutions. Each switch and choice saves as it's made; a list has an editor
- * page that saves each add and remove. [profile] says which settings this release has.
+ * how titles sort, and path substitutions. Each switch and choice saves as it's made; a list opens its editor
+ * ([LibraryDisplayListScreen]) as its own screen, and [openList] is the one open, marked in the page. [profile]
+ * says which settings this release has.
  */
 @Composable
 fun LibraryDisplayScreen(
@@ -93,32 +95,71 @@ fun LibraryDisplayScreen(
     profile: JellyfinServerProfile,
     folders: FolderBrowseState = FolderBrowseState.Loading,
     folderActions: FolderActions = FolderActions(),
+    openList: String? = LocalOpenItem.current,
 ) {
     val ready = state as? LibraryDisplayUiState.Ready
-    val list = ready?.editing
-    BackHandler(enabled = list != null) { actions.onEdit(null) }
     val host = remember { SnackbarHostState() }
     FormScreen(
-        title = list?.let { stringResource(it.title()) } ?: stringResource(R.string.display_title),
+        title = stringResource(R.string.display_title),
         bar = ScreenBar.Small,
-        onBack = if (list != null) ({ actions.onEdit(null) }) else actions.onBack,
+        onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
-        notReady =
-            when (state) {
-                LibraryDisplayUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
-                is LibraryDisplayUiState.Failed -> { padding ->
-                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
-                }
-                is LibraryDisplayUiState.Ready -> null
-            },
+        notReady = displayNotReady(state, actions),
     ) { _ ->
         if (ready != null) {
-            if (list == null) DisplayBody(ready, actions, profile) else ListEditor(list, ready, actions)
+            DisplayBody(ready, actions, profile, openList)
             DisplaySheets(ready, actions, folders, folderActions)
+            // A list's editor says what the server refused while it is open.
+            RefusedMessage(ready.refused.takeIf { openList == null }, host)
+        }
+    }
+}
+
+/** One list's editor: its entries with a remove on each, and Add. Each saves as it's made. */
+@Composable
+fun LibraryDisplayListScreen(
+    state: LibraryDisplayUiState,
+    list: DisplayList,
+    actions: LibraryDisplayActions,
+) {
+    val ready = state as? LibraryDisplayUiState.Ready
+    val host = remember { SnackbarHostState() }
+    FormScreen(
+        title = stringResource(list.title()),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady = displayNotReady(state, actions),
+    ) { _ ->
+        if (ready != null) {
+            ListEditor(list, ready, actions)
+            DisplaySheets(ready, actions, FolderBrowseState.Loading, FolderActions(), editing = list)
             RefusedMessage(ready.refused, host)
         }
     }
+}
+
+/** What a screen of this page shows until the configuration is there. */
+private fun displayNotReady(
+    state: LibraryDisplayUiState,
+    actions: LibraryDisplayActions,
+): (@Composable (PaddingValues) -> Unit)? =
+    when (state) {
+        LibraryDisplayUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+        is LibraryDisplayUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
+        is LibraryDisplayUiState.Ready -> null
+    }
+
+/** The empty right-hand pane when no list is open. */
+@Composable
+internal fun LibraryDisplayPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.display_select),
+        title = stringResource(R.string.display_select_title),
+        icon = Icons.Outlined.SortByAlpha,
+    )
 }
 
 @Composable
@@ -126,6 +167,7 @@ private fun DisplayBody(
     state: LibraryDisplayUiState.Ready,
     actions: LibraryDisplayActions,
     profile: JellyfinServerProfile,
+    openList: String?,
 ) {
     var picker by rememberSaveable { mutableStateOf<DisplayPicker?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
@@ -134,9 +176,18 @@ private fun DisplayBody(
         ItemGroup(title = stringResource(R.string.display_metadata), rows = metadataRows(state, actions, profile) { picker = it })
         ItemGroup(
             title = stringResource(R.string.display_sorting),
-            rows = listRows(state, actions, listOf(DisplayList.RemoveWords, DisplayList.RemoveCharacters, DisplayList.ReplaceCharacters)),
+            rows =
+                listRows(
+                    state,
+                    actions,
+                    listOf(DisplayList.RemoveWords, DisplayList.RemoveCharacters, DisplayList.ReplaceCharacters),
+                    openList,
+                ),
         )
-        ItemGroup(title = stringResource(R.string.display_paths), rows = listRows(state, actions, listOf(DisplayList.Substitutions)))
+        ItemGroup(
+            title = stringResource(R.string.display_paths),
+            rows = listRows(state, actions, listOf(DisplayList.Substitutions), openList),
+        )
     }
     picker?.let { DisplayPickerSheet(it, state, actions) { picker = null } }
 }
@@ -283,6 +334,7 @@ private fun listRows(
     state: LibraryDisplayUiState.Ready,
     actions: LibraryDisplayActions,
     lists: List<DisplayList>,
+    openList: String?,
 ): List<ListItem> =
     lists.map { list ->
         val entries = state.configuration.entries(list)
@@ -295,6 +347,7 @@ private fun listRows(
                 } else {
                     entries.take(SUMMARY_ITEMS).joinToString(", ") { it.shown() } + if (entries.size > SUMMARY_ITEMS) "…" else ""
                 },
+            selected = list.name == openList,
             onClick = { actions.onEdit(list) },
         )
     }

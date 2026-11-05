@@ -25,7 +25,7 @@ class HomeLayoutAnnounceTest {
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private val views = listOf(UserView("a", "Movies", "movies"), UserView("b", "Shows", "tvshows"), UserView("c", "Music", "music"))
-    private var state by mutableStateOf(HomeLayoutUiState.Ready(views, HomeLayout(), openId = "b"))
+    private var state by mutableStateOf(HomeLayoutUiState.Ready(views, HomeLayout()))
 
     private fun announcements(): List<String> {
         val manager = compose.activity.getSystemService(AccessibilityManager::class.java)
@@ -39,7 +39,7 @@ class HomeLayoutAnnounceTest {
     fun `a move says the new position, and opening the page says nothing`() {
         val manager = compose.activity.getSystemService(AccessibilityManager::class.java)
         shadowOf(manager).setEnabled(true)
-        compose.setContent { JellyfinTheme { HomeLayoutScreen(state, HomeLayoutActions()) } }
+        compose.setContent { JellyfinTheme { HomeLayoutLibraryScreen(state, "b", HomeLayoutActions()) } }
         compose.waitForIdle()
         assertTrue(announcements().isEmpty())
         state = state.copy(layout = HomeLayout(order = listOf("b", "a", "c")))

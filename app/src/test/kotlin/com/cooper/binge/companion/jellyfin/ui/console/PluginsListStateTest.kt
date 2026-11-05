@@ -53,7 +53,7 @@ class PluginsListStateTest {
                     catalog = catalog,
                     repositories = RepositoriesUiState.Ready(emptyList()),
                     actions = PluginsActions(),
-                    catalogActions = CatalogActions(onOpen = { catalog = catalog.copy(open = it) }),
+                    catalogActions = CatalogActions(),
                     repositoryActions = RepositoriesActions(),
                     onBack = {},
                     initialTab = CATALOG_TAB,
@@ -79,17 +79,6 @@ class PluginsListStateTest {
         compose.onNodeWithText("Installed").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Catalog").performClick()
-        compose.waitForIdle()
-        compose.onNodeWithText(far).assertIsDisplayed()
-    }
-
-    @Test
-    fun `opening a package and coming back keeps the catalog where it was scrolled`() {
-        show()
-        scrollFar()
-        compose.onNodeWithText(far).performClick()
-        compose.waitForIdle()
-        catalog = catalog.copy(open = null)
         compose.waitForIdle()
         compose.onNodeWithText(far).assertIsDisplayed()
     }

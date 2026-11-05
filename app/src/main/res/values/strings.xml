@@ -96,6 +96,8 @@
     <string name="home_layout_body">How Jellyfin’s apps lay out your home, on every device you sign in to.</string>
     <string name="home_layout_libraries">Libraries</string>
     <string name="home_layout_display">Display</string>
+    <string name="home_layout_select_title">No library selected</string>
+    <string name="home_layout_select">Select a library to choose where it shows on the home.</string>
     <string name="home_layout_no_libraries">You can’t see any libraries yet</string>
     <string name="home_layout_shown_both">In My Media and Latest</string>
     <string name="home_layout_shown_my_media">In My Media</string>
@@ -158,6 +160,8 @@
     <string name="now_playing_body_admin">Everyone streaming from this server, as it happens.</string>
     <string name="now_playing_body">What you\'re playing from this server, on any device. An administrator sees everyone\'s.</string>
     <string name="now_playing_empty">Nothing\'s playing right now.</string>
+    <string name="now_playing_select_title">No stream selected</string>
+    <string name="now_playing_select">Select a stream to see and control it.</string>
     <string name="now_playing_who">%1$s on %2$s · %3$s</string>
     <string name="now_playing_stop">Stop</string>
     <string name="now_playing_not_sent">Not sent. %1$s</string>
@@ -199,6 +203,8 @@
     <string name="libraries_not_stopped">The scan didn\'t stop. %1$s</string>
     <string name="libraries_add">Add library</string>
     <string name="libraries_empty_title">No libraries</string>
+    <string name="libraries_select_title">No library selected</string>
+    <string name="libraries_select">Select a library to see and change its settings.</string>
     <string name="libraries_empty">This server has no libraries yet. Add one to start with its folders.</string>
     <string name="library_name">Name</string>
     <string name="library_enabled">Enabled</string>
@@ -360,6 +366,8 @@
     <string name="logs_retention_invalid">Enter a whole number of days from %1$d to %2$d.</string>
     <string name="logs_retention_save">Save</string>
     <string name="console_logs_detail">The server\'s log files</string>
+    <string name="logs_select_title">No log selected</string>
+    <string name="logs_select">Select a log to read it.</string>
     <string name="logs_empty">The server has no log files.</string>
     <string name="logs_search">Search this log</string>
     <string name="logs_truncated">Showing the last %1$d KB of this log.</string>
@@ -384,6 +392,8 @@
     <string name="devices_not_changed">Not changed. %1$s</string>
     <string name="users_title">Users</string>
     <string name="console_users_detail">Who can sign in, and what they see</string>
+    <string name="users_select_title">No user selected</string>
+    <string name="users_select">Select a user to see their access and settings.</string>
     <string name="users_body">Everyone who can sign in to this server. Tap one to change what they can do.</string>
     <string name="users_add">Add a user</string>
     <string name="users_add_body">They can see every library to begin with. Change that on their page.</string>
@@ -748,6 +758,8 @@
     <string name="metadata_body">What the server uses for each kind of title in a library that has not chosen its own providers. A library\'s own settings take the place of these, so changing them does not change a library that has set its own.</string>
     <string name="metadata_type_body">Turn a provider off to stop the server asking it for this kind of title.</string>
     <string name="metadata_type_empty">The server did not list any providers for this kind of title.</string>
+    <string name="metadata_select_title">No kind of title selected</string>
+    <string name="metadata_select">Select a kind of title to choose its providers.</string>
     <string name="metadata_fetchers">Metadata providers</string>
     <string name="metadata_images">Image providers</string>
     <string name="metadata_all_on">All on</string>
@@ -813,6 +825,8 @@
     <string name="display_substitution_to_hint">/mnt/media</string>
     <string name="display_entry_title">Add an entry</string>
     <string name="display_list_empty">None</string>
+    <string name="display_select_title">No list selected</string>
+    <string name="display_select">Select a list to edit its entries.</string>
     <string name="display_add">Add</string>
     <string name="display_remove">Remove</string>
     <string name="trickplay_body">Trickplay makes the preview images shown when you seek. A change applies to images made from then on.</string>
@@ -866,6 +880,8 @@
     <string name="plugins_tab_repositories">Repositories</string>
     <string name="plugins_loading">Loading plugins</string>
     <string name="console_loading">Loading</string>
+    <string name="plugins_select_title">No plugin selected</string>
+    <string name="plugins_select">Select a plugin or a package to see its details.</string>
     <string name="plugins_empty_title">No plugins</string>
     <string name="plugins_empty">This server has no plugins installed. Find some in the catalog.</string>
     <string name="plugins_restart_needed">Restart needed</string>
@@ -915,6 +931,8 @@
     <string name="repositories_add_submit">Add</string>
     <string name="devices_empty">No devices are signed in to this server.</string>
     <string name="tasks_empty">This server has no scheduled tasks to show.</string>
+    <string name="tasks_select_title">No task selected</string>
+    <string name="tasks_select">Select a task to see its triggers.</string>
     <string name="advanced_title">Advanced</string>
     <string name="console_advanced_detail">Scanning, caches, log retention and CORS</string>
     <string name="advanced_body">Options most servers never change. A change saves as you make it. Check what an option does before you change it.</string>

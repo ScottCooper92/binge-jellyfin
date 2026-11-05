@@ -60,6 +60,7 @@ import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.hasPaneBeside
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -88,7 +89,13 @@ data class Actions(
     val onDiscover: () -> Unit = {},
     val onChooseServer: (DiscoveredServer) -> Unit = {},
     val onOpenPage: (ConsolePage) -> Unit = {},
+    /** The page showing beside the home, marked in its list; null where none is (the pages' own actions carry none). */
+    val selectedPage: ConsolePage? = null,
 )
+
+/** Whether [page] is the one open beside this list: marked only where a pane is beside it, so never on a narrow window. */
+@Composable
+internal fun Actions.isOpenBeside(page: ConsolePage): Boolean = hasPaneBeside() && selectedPage == page
 
 /** Lines a server row's marker and address may take: enough for the whole address at 2× font beside Change. */
 private const val ADDRESS_LINES = 5
@@ -374,12 +381,14 @@ private fun ServerGroup(
                 ListItem(
                     icon = Icons.Outlined.PlayCircle,
                     label = stringResource(R.string.now_playing_title),
+                    selected = actions.isOpenBeside(ConsolePage.NowPlaying),
                     onClick = { actions.onOpenPage(ConsolePage.NowPlaying) },
                 ).takeIf { ConsolePage.NowPlaying.available(state.profile, state.account) },
                 ListItem(
                     icon = Icons.Outlined.LiveTv,
                     label = stringResource(R.string.live_tv_title),
                     detail = stringResource(R.string.console_live_tv_detail),
+                    selected = actions.isOpenBeside(ConsolePage.LiveTv),
                     onClick = { actions.onOpenPage(ConsolePage.LiveTv) },
                 ).takeIf { ConsolePage.LiveTv.available(state.profile, state.account) },
             ),
@@ -429,6 +438,7 @@ private fun AdminGroup(
                     icon = entry.icon,
                     label = stringResource(entry.label),
                     detail = stringResource(entry.detail),
+                    selected = actions.isOpenBeside(entry.page),
                     onClick = { actions.onOpenPage(entry.page) },
                 )
             },

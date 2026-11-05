@@ -26,14 +26,14 @@ sealed interface TasksUiState {
     ) : TasksUiState
 
     /**
-     * The tasks and what this page has asked of them, and the last run, stop or trigger change that
-     * couldn't be sent. [open] is the id of the task whose triggers are showing; [adding] the new trigger
-     * sheet; [saving] a trigger change in flight.
+     * The tasks and what this page has asked of them. [actionFailed] is the last run or stop that couldn't be sent, and
+     * [triggerFailed] the last trigger change that couldn't, each said by the screen that asked. [adding] is the new
+     * trigger sheet; [saving] a trigger change in flight. Which task is open is not here: it is an entry on the stack.
      */
     data class Ready(
         val board: TaskBoard,
         val actionFailed: ConsoleFailure? = null,
-        val open: String? = null,
+        val triggerFailed: ConsoleFailure? = null,
         val adding: Boolean = false,
         val saving: Boolean = false,
         /** True while a pull reads the tasks again; the list stays as it is. [refreshFailed] says why a pull didn't. */
@@ -94,27 +94,36 @@ class TasksViewModel(
 
     fun stop(task: ServerTask) = call(task, run = false)
 
-    /** Opens [task]'s triggers, or goes back to the list for null. */
-    fun open(task: ServerTask?) = update { copy(open = task?.id, adding = false, actionFailed = null) }
+    /** A task is opening: what the list or another task reported is not this one's to show. */
+    fun opened() = update { copy(actionFailed = null, triggerFailed = null, refreshFailed = null, adding = false) }
 
-    fun askAdd(on: Boolean) = update { copy(adding = on, actionFailed = null) }
+    fun askAdd(on: Boolean) = update { copy(adding = on, triggerFailed = null) }
 
-    /** Adds [trigger] to the open task's triggers, after the ones it has. */
-    fun addTrigger(trigger: TaskTrigger) = changeTriggers { it + trigger }
+    /** Adds [trigger] to task [taskId]'s triggers, after the ones it has. */
+    fun addTrigger(
+        taskId: String,
+        trigger: TaskTrigger,
+    ) = changeTriggers(taskId) { it + trigger }
 
-    /** Removes the open task's trigger at [index]. No confirm: adding it back undoes it. */
-    fun removeTrigger(index: Int) = changeTriggers { triggers -> triggers.filterIndexed { at, _ -> at != index } }
+    /** Removes task [taskId]'s trigger at [index]. No confirm: adding it back undoes it. */
+    fun removeTrigger(
+        taskId: String,
+        index: Int,
+    ) = changeTriggers(taskId) { triggers -> triggers.filterIndexed { at, _ -> at != index } }
 
     /**
-     * Sends the open task's triggers as [change] makes them, the whole list as the server wants it, then
+     * Sends task [taskId]'s triggers as [change] makes them, the whole list as the server wants it, then
      * reads the tasks again so the page shows what the server now holds. One change at a time: one in
      * flight turns the next away, since its list would be built on triggers about to change.
      */
-    private fun changeTriggers(change: (List<TaskTrigger>) -> List<TaskTrigger>) {
+    private fun changeTriggers(
+        taskId: String,
+        change: (List<TaskTrigger>) -> List<TaskTrigger>,
+    ) {
         val ready = _state.value as? TasksUiState.Ready ?: return
-        val task = ready.open?.let { id -> ready.board.tasks.firstOrNull { it.id == id } } ?: return
+        val task = ready.board.tasks.firstOrNull { it.id == taskId } ?: return
         if (ready.saving) return
-        update { copy(adding = false, saving = true, actionFailed = null) }
+        update { copy(adding = false, saving = true, triggerFailed = null) }
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
@@ -125,7 +134,7 @@ class TasksViewModel(
                     // is what clears that run's outcome from its row after a moment.
                     following(tasks)
                     update { copy(saving = false) }
-                }.onFailure { error -> update { copy(saving = false, actionFailed = error.consoleFailure()) } }
+                }.onFailure { error -> update { copy(saving = false, triggerFailed = error.consoleFailure()) } }
         }
     }
 

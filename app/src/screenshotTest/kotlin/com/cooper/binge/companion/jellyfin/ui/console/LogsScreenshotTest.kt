@@ -7,6 +7,8 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.LogEntry
 import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.LogLevel
@@ -83,49 +85,49 @@ class LogsScreenshotTest {
     @JellyfinSpanishPreviews
     @JellyfinFontScalePreviews
     @Composable
-    fun openLog() = LogsScreen(open(), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLog() = LogScreen(open(), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @Composable
-    fun openLogLongName() = LogsScreen(open(name = LONG_NAME), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLogLongName() = LogScreen(open(name = LONG_NAME), LONG_NAME, LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun openLogLoading() = LogsScreen(open(content = LogContent.Loading), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLogLoading() = LogScreen(open(content = LogContent.Loading), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun openLogFailed() = LogsScreen(open(content = LogContent.Failed(ConsoleFailure.Unreachable)), LogsActions(), zone = ZoneOffset.UTC)
+    fun openLogFailed() = LogScreen(open(content = LogContent.Failed(ConsoleFailure.Unreachable)), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun truncated() = LogsScreen(open(truncated = true), LogsActions(), zone = ZoneOffset.UTC)
+    fun truncated() = LogScreen(open(truncated = true), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun warningsUp() = LogsScreen(open(level = LogLevel.Warn), LogsActions(), zone = ZoneOffset.UTC)
+    fun warningsUp() = LogScreen(open(level = LogLevel.Warn), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun unlabelledEntry() =
-        LogsScreen(
+        LogScreen(
             open(entries = fixedTimes(parseLogEntries(redactLog("   at the tail of a cut trace\n" + previewText.lines().first())))),
+            "log_20261031.log",
             LogsActions(),
-            zone = ZoneOffset.UTC,
         )
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun noMatch() = LogsScreen(open(query = "nothing like this"), LogsActions(), zone = ZoneOffset.UTC)
+    fun noMatch() = LogScreen(open(query = "nothing like this"), "log_20261031.log", LogsActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -171,4 +173,13 @@ class LogsScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = LogsScreen(LogsUiState.Failed(ConsoleFailure.Refused), LogsActions())
+}
+
+/** The logs page on a landscape tablet, where a log opens in a third pane: the invitation to pick one while none is. */
+class LogsPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { LogPlaceholder() }
 }

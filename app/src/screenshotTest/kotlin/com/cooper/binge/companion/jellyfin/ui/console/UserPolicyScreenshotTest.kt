@@ -37,7 +37,7 @@ private val policy =
 private val libraries = listOf(ServerLibrary("m", "Movies", "movies", emptyList()), ServerLibrary("s", "Shows", "tvshows", emptyList()))
 private val user = ServerUser("sam", "Sam", true, 1_793_534_400_000L, policy)
 
-private fun ready(section: UserSection?) = UsersUiState.Ready(listOf(user), libraries, me = "me", open = "sam", section = section)
+private fun ready() = UsersUiState.Ready(listOf(user), libraries, me = "me", open = "sam")
 
 private val choices =
     UserChoices(
@@ -58,87 +58,91 @@ class UserPolicyScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun sections() = UsersScreen(ready(null), UsersActions(), choices = choices, profile = newest)
+    fun sections() = UserScreen(ready(), "sam", UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun access() = UsersScreen(ready(UserSection.Access), UsersActions(), choices = choices, profile = newest)
+    fun access() = UserSectionScreen(ready(), "sam", UserSection.Access, choices, newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @Composable
-    fun playback() = UsersScreen(ready(UserSection.Playback), UsersActions(), choices = choices, profile = newest)
+    fun playback() = UserSectionScreen(ready(), "sam", UserSection.Playback, choices, newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun content() = UsersScreen(ready(UserSection.Content), UsersActions(), choices = choices, profile = newest)
+    fun content() = UserSectionScreen(ready(), "sam", UserSection.Content, choices, newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun contentBefore109() =
-        UsersScreen(ready(UserSection.Content), UsersActions(), choices = choices, profile = JellyfinServerProfile.from("10.8.13"))
+        UserSectionScreen(ready(), "sam", UserSection.Content, choices, JellyfinServerProfile.from("10.8.13"), UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun control() = UsersScreen(ready(UserSection.Control), UsersActions(), choices = choices, profile = newest)
+    fun control() = UserSectionScreen(ready(), "sam", UserSection.Control, choices, newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun liveTv() = UsersScreen(ready(UserSection.LiveTv), UsersActions(), choices = choices, profile = newest)
+    fun liveTv() = UserSectionScreen(ready(), "sam", UserSection.LiveTv, choices, newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun liveTvLoading() =
-        UsersScreen(ready(UserSection.LiveTv), UsersActions(), choices = UserChoices(channels = Loaded.Loading), profile = newest)
+        UserSectionScreen(ready(), "sam", UserSection.LiveTv, UserChoices(channels = Loaded.Loading), newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun liveTvFailed() =
-        UsersScreen(
-            ready(UserSection.LiveTv),
+        UserSectionScreen(
+            ready(),
+            "sam",
+            UserSection.LiveTv,
+            UserChoices(channels = Loaded.Failed(ConsoleFailure.Unreachable)),
+            newest,
             UsersActions(),
-            choices = UserChoices(channels = Loaded.Failed(ConsoleFailure.Unreachable)),
-            profile = newest,
         )
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun devices() = UsersScreen(ready(UserSection.Devices), UsersActions(), choices = choices, profile = newest)
+    fun devices() = UserSectionScreen(ready(), "sam", UserSection.Devices, choices, newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun parental() = UsersScreen(ready(UserSection.Parental), UsersActions(), choices = choices, profile = newest)
+    fun parental() = UserSectionScreen(ready(), "sam", UserSection.Parental, choices, newest, UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun parentalBefore1011() =
-        UsersScreen(ready(UserSection.Parental), UsersActions(), choices = choices, profile = JellyfinServerProfile.from("10.10.7"))
+        UserSectionScreen(ready(), "sam", UserSection.Parental, choices, JellyfinServerProfile.from("10.10.7"), UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun parentalFailed() =
-        UsersScreen(
-            ready(UserSection.Parental),
+        UserSectionScreen(
+            ready(),
+            "sam",
+            UserSection.Parental,
+            UserChoices(ratings = Loaded.Failed(ConsoleFailure.Unreachable)),
+            newest,
             UsersActions(),
-            choices = UserChoices(ratings = Loaded.Failed(ConsoleFailure.Unreachable)),
-            profile = newest,
         )
 
     @PreviewTest

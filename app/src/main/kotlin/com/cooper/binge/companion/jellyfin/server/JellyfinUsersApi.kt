@@ -14,6 +14,7 @@ data class ServerUser(
     val hasPassword: Boolean,
     val lastSeenMillis: Long?,
     val policy: JsonObject,
+    val imageTag: String? = null,
 ) {
     val administrator: Boolean get() = policy.bool(IS_ADMINISTRATOR) == true
     val disabled: Boolean get() = policy.bool(IS_DISABLED) == true
@@ -73,6 +74,7 @@ private fun JsonObject.serverUser(): ServerUser? {
         hasPassword = bool("HasPassword") == true,
         lastSeenMillis = string("LastActivityDate")?.epochMillisOrNull(),
         policy = obj("Policy") ?: JsonObject(emptyMap()),
+        imageTag = string("PrimaryImageTag")?.takeIf { it.isNotBlank() },
     )
 }
 
