@@ -39,16 +39,14 @@ sealed interface LibraryDisplayUiState {
     ) : LibraryDisplayUiState
 
     /**
-     * The configuration as shown, the languages the server can be shown in, the sheet open, and the list being
-     * edited, whose entries are [draft] (each add and remove saves as it's made, so Back loses nothing). [save] is where the
-     * saves stand, and [refused] the last the server refused, which was put back.
+     * The configuration as shown, the languages the server can be shown in, and the sheet open. A list's editor is
+     * its own screen over the page (each add and remove saves as it's made, so Back loses nothing). [save] is where
+     * the saves stand, and [refused] the last the server refused, which was put back.
      */
     data class Ready(
         val configuration: JsonObject,
         val languages: List<UiLanguage> = emptyList(),
         val sheet: DisplaySheet? = null,
-        val editing: DisplayList? = null,
-        val draft: List<ListEntry> = emptyList(),
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
     ) : LibraryDisplayUiState
@@ -73,13 +71,7 @@ class LibraryDisplayViewModel(
             { _, client, json -> client.saveServerConfiguration(json) },
             onProgress = { progress -> update { copy(save = progress) } },
         ) { shown, failure ->
-            update {
-                copy(
-                    configuration = shown,
-                    refused = refusedAfter(refused, failure),
-                    draft = editing?.let { shown.entries(it) } ?: draft,
-                )
-            }
+            update { copy(configuration = shown, refused = refusedAfter(refused, failure)) }
         }
 
     init {
@@ -116,24 +108,36 @@ class LibraryDisplayViewModel(
     /** Opens [sheet], or closes whichever is open for null. */
     fun sheet(sheet: DisplaySheet?) = update { copy(sheet = sheet) }
 
-    /** Opens the editor for [list] with its entries, or closes the editor for null. */
-    fun edit(list: DisplayList?) = update { copy(editing = list, draft = list?.let { configuration.entries(it) }.orEmpty(), sheet = null) }
+    /** A list's editor opened: what the last screen reported was said there, and isn't replayed here. */
+    fun itemOpened() = update { copy(sheet = null, refused = null) }
 
-    /** Adds [entry] to the list and saves it, unless it is blank or already there. */
-    fun add(entry: ListEntry) {
+    /** The list's editor has closed: what it reported is not the page's to say again. A sheet open on the page stays. */
+    fun itemClosed() = update { copy(refused = null) }
+
+    /** Adds [entry] to [list] and saves it, unless it is blank or already there. */
+    fun add(
+        list: DisplayList,
+        entry: ListEntry,
+    ) {
         val clean = entry.copy(first = entry.first.trim(), second = entry.second?.trim())
         if (clean.first.isEmpty() || clean.second?.isEmpty() == true) return
         update { copy(sheet = null) }
-        changeList { if (clean in it) it else it + clean }
+        changeList(list) { if (clean in it) it else it + clean }
     }
 
-    fun remove(index: Int) = changeList { entries -> entries.filterIndexed { i, _ -> i != index } }
+    fun remove(
+        list: DisplayList,
+        index: Int,
+    ) = changeList(list) { entries -> entries.filterIndexed { i, _ -> i != index } }
 
-    private fun changeList(change: (List<ListEntry>) -> List<ListEntry>) {
+    private fun changeList(
+        list: DisplayList,
+        change: (List<ListEntry>) -> List<ListEntry>,
+    ) {
         val ready = _state.value as? LibraryDisplayUiState.Ready ?: return
-        val list = ready.editing ?: return
-        val entries = change(ready.draft)
-        if (entries != ready.draft) saves.set(list.key, jsonEntries(list, entries))
+        val current = ready.configuration.entries(list)
+        val entries = change(current)
+        if (entries != current) saves.set(list.key, jsonEntries(list, entries))
     }
 
     fun retrySave() = saves.retry()

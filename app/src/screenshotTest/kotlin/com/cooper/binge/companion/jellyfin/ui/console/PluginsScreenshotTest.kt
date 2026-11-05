@@ -7,6 +7,8 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.PackageVersion
@@ -97,12 +99,12 @@ class PluginsScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun plugin() = Plugins(installed = PluginsUiState.Ready(installedPlugins, open = "a"))
+    fun plugin() = PluginScreen(PluginsUiState.Ready(installedPlugins), "a", PluginsActions(), onBack = {})
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun pluginCannotRun() = Plugins(installed = PluginsUiState.Ready(installedPlugins, open = "d"))
+    fun pluginCannotRun() = PluginScreen(PluginsUiState.Ready(installedPlugins), "d", PluginsActions(), onBack = {})
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -135,16 +137,16 @@ class PluginsScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun catalogPackage() = CatalogTabPreview(CatalogUiState.Ready(catalogPackages, open = "Playback Reporting", server = server))
+    fun catalogPackage() = Package("Playback Reporting", CatalogUiState.Ready(catalogPackages, server = server))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun catalogInstalling() =
-        CatalogTabPreview(
+        Package(
+            "Playback Reporting",
             CatalogUiState.Ready(
                 catalogPackages,
-                open = "Playback Reporting",
                 installing = mapOf("Playback Reporting" to "install-1"),
                 server = server,
             ),
@@ -154,10 +156,10 @@ class PluginsScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun catalogDone() =
-        CatalogTabPreview(
+        Package(
+            "Playback Reporting",
             CatalogUiState.Ready(
                 catalogPackages,
-                open = "Playback Reporting",
                 installed = setOf("Playback Reporting"),
                 outcomes = mapOf("Playback Reporting" to InstallOutcome.Done),
                 server = server,
@@ -167,7 +169,7 @@ class PluginsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun catalogNoVersion() = CatalogTabPreview(CatalogUiState.Ready(catalogPackages, open = "Future Plugin", server = server))
+    fun catalogNoVersion() = Package("Future Plugin", CatalogUiState.Ready(catalogPackages, server = server))
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -214,6 +216,13 @@ class PluginsScreenshotTest {
 @Composable
 private fun CatalogTabPreview(catalog: CatalogUiState) = TabOpened(1, catalog = catalog)
 
+/** One catalog package's own screen. */
+@Composable
+private fun Package(
+    name: String,
+    catalog: CatalogUiState,
+) = PackageScreen(catalog, name, CatalogActions(), onBack = {})
+
 /** The page opened on its repositories tab. */
 @Composable
 private fun RepositoriesTabPreview(repos: RepositoriesUiState) = TabOpened(2, repos = repos)
@@ -233,3 +242,12 @@ private fun TabOpened(
     onBack = {},
     initialTab = tab,
 )
+
+/** The plugins page on a landscape tablet, where a plugin or a package opens in a third pane: the invitation to pick one while none is. */
+class PluginsPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { PluginPlaceholder() }
+}

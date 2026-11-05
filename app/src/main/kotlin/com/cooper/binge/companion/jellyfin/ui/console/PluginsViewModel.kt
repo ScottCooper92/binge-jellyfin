@@ -26,15 +26,15 @@ sealed interface PluginsUiState {
     ) : PluginsUiState
 
     /**
-     * The installed plugins. [open] is the id of the one whose page is showing; [confirming] the one asked
-     * about uninstalling; [busy] those with a change in flight; [settingsUrl] a plugin settings page ready to
+     * The installed plugins. [confirming] is the one asked about uninstalling; [uninstalled] the one just uninstalled,
+     * whose screen closes (until [PluginsViewModel.uninstallSeen]); which plugin is open is an entry on the stack; [busy] those with a change in flight; [settingsUrl] a plugin settings page ready to
      * open in the browser, until [PluginsViewModel.settingsOpened]; [actionFailed] the last change that
      * didn't go through; [sentEnabled] the last on/off sent for each plugin, which the switch shows while that
      * change waits for a restart.
      */
     data class Ready(
         val plugins: List<ServerPlugin>,
-        val open: String? = null,
+        val uninstalled: String? = null,
         val confirming: ServerPlugin? = null,
         val busy: Set<String> = emptySet(),
         val settingsUrl: String? = null,
@@ -109,8 +109,14 @@ class PluginsViewModel(
         }
     }
 
-    /** Opens [plugin]'s page, or goes back to the list for null. */
-    fun open(plugin: ServerPlugin?) = update { copy(open = plugin?.id, confirming = null, actionFailed = null) }
+    /**
+     * A plugin is being opened: what the last screen reported, and a confirm it left open, are not this one's. They live
+     * here, shared by the list and the plugin, so a screen composed afresh would say them again.
+     */
+    fun itemOpened() = update { copy(confirming = null, actionFailed = null, uninstalled = null) }
+
+    /** The screen of the plugin just uninstalled has closed. */
+    fun uninstallSeen() = update { copy(uninstalled = null) }
 
     fun setEnabled(
         plugin: ServerPlugin,
@@ -158,7 +164,7 @@ class PluginsViewModel(
                         copy(
                             plugins = plugins,
                             busy = busy - plugin.id,
-                            open = if (thenClose) null else open,
+                            uninstalled = if (thenClose) plugin.id else uninstalled,
                             sentEnabled = remembered.filterKeys { it in waiting },
                         )
                     }

@@ -3,8 +3,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_TASK
 import com.cooper.binge.companion.jellyfin.server.MIXED_LIBRARY
+import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -202,11 +204,9 @@ class LibrariesViewModelTest {
     }
 
     @Test
-    fun `a library opens and closes, and the list is read again quietly`() {
+    fun `the list is read again quietly, and shows what the server has now`() {
         val vm = made(LibrariesViewModel(connection))
         vm.ready()
-        vm.open("lib-shows")
-        assertEquals("lib-shows", vm.ready().opened)
         jellyfin.libraries =
             Json
                 .parseToJsonElement(FakeJellyfin.LIBRARIES)
@@ -214,19 +214,22 @@ class LibrariesViewModelTest {
                 .take(1)
                 .let(::JsonArray)
         vm.refresh()
-        // The open library went with the refresh, and the list shows what the server has now.
-        val refreshed = vm.ready { it.libraries.size == 1 }
-        assertNull(refreshed.opened)
-        vm.open(null)
-        assertNull(vm.ready().opened)
+        assertEquals(1, vm.ready { it.libraries.size == 1 }.libraries.size)
     }
 
     @Test
-    fun `a library with no id yet cannot be opened`() {
-        val vm = made(LibrariesViewModel(connection))
-        vm.ready()
-        vm.open("")
-        assertNull(vm.ready().opened)
+    fun `a library's item key names the library and its page, and reads back`() {
+        assertEquals("library:abc", libraryItem("abc"))
+        assertEquals("abc", libraryItemId("library:abc/providers:Subtitles"))
+        assertEquals(LibraryPage.Main, libraryItemPage("library:abc"))
+        listOf(
+            LibraryPage.Languages,
+            LibraryPage.Providers(ProviderGroup.Subtitles),
+            LibraryPage.One(ProviderGroup.Subtitles, "Open: Subtitles"),
+            LibraryPage.Fetchers(FetcherKind.Images),
+            LibraryPage.Fetcher(FetcherKind.Metadata, "Series", "The: TVDB"),
+        ).forEach { page -> assertEquals(page, libraryItemPage(libraryPageItem("abc", page))) }
+        assertEquals(LibraryPage.Main, libraryItemPage("library:abc/unknown:x"))
     }
 
     @Test

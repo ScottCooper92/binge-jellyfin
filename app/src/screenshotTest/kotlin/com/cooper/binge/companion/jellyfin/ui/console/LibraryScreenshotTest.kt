@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
@@ -132,12 +133,23 @@ class LibraryScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun languages() = LibraryScreen(ready().copy(page = LibraryPage.Languages), LibraryActions(), newest)
+    fun languages() = LibraryScreen(ready(), LibraryActions(), newest, page = LibraryPage.Languages)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun languagesSearch() = Surface { LanguagesBody(ready(), LibraryActions(), PaddingValues(), "French", {}) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun languagesNone() = LibraryScreen(ready().copy(page = LibraryPage.Languages, cultures = emptyList()), LibraryActions(), newest)
+    fun languagesNoMatch() = Surface { LanguagesBody(ready(), LibraryActions(), PaddingValues(), "Klingon", {}) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun languagesNone() = LibraryScreen(ready().copy(cultures = emptyList()), LibraryActions(), newest, page = LibraryPage.Languages)
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -205,46 +217,46 @@ class LibraryScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun metadataFetchers() =
-        LibraryScreen(fetchersReady().copy(page = LibraryPage.Fetchers(FetcherKind.Metadata)), LibraryActions(), newest)
+    fun metadataFetchers() = LibraryScreen(fetchersReady(), LibraryActions(), newest, page = LibraryPage.Fetchers(FetcherKind.Metadata))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun imageFetchers() = LibraryScreen(fetchersReady().copy(page = LibraryPage.Fetchers(FetcherKind.Images)), LibraryActions(), newest)
+    fun imageFetchers() = LibraryScreen(fetchersReady(), LibraryActions(), newest, page = LibraryPage.Fetchers(FetcherKind.Images))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun fetcher() =
-        LibraryScreen(fetchersReady().copy(page = LibraryPage.Fetcher(FetcherKind.Metadata, "Series", "TheTVDB")), LibraryActions(), newest)
+        LibraryScreen(fetchersReady(), LibraryActions(), newest, page = LibraryPage.Fetcher(FetcherKind.Metadata, "Series", "TheTVDB"))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun fetcherOffAndLast() =
         LibraryScreen(
-            fetchersReady().copy(page = LibraryPage.Fetcher(FetcherKind.Metadata, "Series", "TheMovieDb")),
+            fetchersReady(),
             LibraryActions(),
             newest,
+            page = LibraryPage.Fetcher(FetcherKind.Metadata, "Series", "TheMovieDb"),
         )
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun providersList() = LibraryScreen(ready().copy(page = LibraryPage.Providers(ProviderGroup.Subtitles)), LibraryActions(), newest)
+    fun providersList() = LibraryScreen(ready(), LibraryActions(), newest, page = LibraryPage.Providers(ProviderGroup.Subtitles))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun provider() = LibraryScreen(ready().copy(page = LibraryPage.One(ProviderGroup.Subtitles, "Podnapisi")), LibraryActions(), newest)
+    fun provider() = LibraryScreen(ready(), LibraryActions(), newest, page = LibraryPage.One(ProviderGroup.Subtitles, "Podnapisi"))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun providerLast() = LibraryScreen(ready().copy(page = LibraryPage.One(ProviderGroup.Subtitles, "Legendas")), LibraryActions(), newest)
+    fun providerLast() = LibraryScreen(ready(), LibraryActions(), newest, page = LibraryPage.One(ProviderGroup.Subtitles, "Legendas"))
 
     @PreviewTest
     @JellyfinScreenStatePreview

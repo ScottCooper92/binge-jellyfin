@@ -30,6 +30,7 @@ import com.cooper.binge.companion.jellyfin.server.DisplayList
 import com.cooper.binge.companion.jellyfin.server.ListEntry
 import com.cooper.binge.companion.jellyfin.server.METADATA_DUMMY_CHAPTER
 import com.cooper.binge.companion.jellyfin.server.METADATA_PATH
+import com.cooper.binge.companion.jellyfin.server.entries
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.string
 import com.binge.designsystem.R as DesR
@@ -41,8 +42,11 @@ internal fun DisplaySheets(
     actions: LibraryDisplayActions,
     folders: FolderBrowseState,
     folderActions: FolderActions,
+    editing: DisplayList? = null,
 ) {
     val sheet = state.sheet ?: return
+    // The new-entry sheet belongs to a list's editor, the others to the page: only one of the two says it.
+    if ((sheet == DisplaySheet.NewEntry) != (editing != null)) return
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }) {
         when (sheet) {
             DisplaySheet.ChapterDuration -> ChapterDurationForm(state.configuration.int(METADATA_DUMMY_CHAPTER) ?: 0, actions)
@@ -53,7 +57,7 @@ internal fun DisplaySheets(
                     folderActions,
                     actions,
                 )
-            DisplaySheet.NewEntry -> state.editing?.let { NewEntryForm(it, actions) }
+            DisplaySheet.NewEntry -> editing?.let { NewEntryForm(it, actions) }
         }
     }
 }
@@ -151,7 +155,7 @@ internal fun NewEntryForm(
             title = stringResource(R.string.display_substitution_to),
             value = second,
             onValueChange = { second = it },
-            onSubmit = { actions.onAdd(ListEntry(first, second)) },
+            onSubmit = { actions.onAdd(list, ListEntry(first, second)) },
             onCancel = { step = 0 },
             cancelLabel = stringResource(R.string.library_back),
             submitLabel = stringResource(R.string.display_add),
@@ -164,7 +168,7 @@ internal fun NewEntryForm(
             title = stringResource(if (list.pairs) R.string.display_substitution_from else R.string.display_entry_title),
             value = first,
             onValueChange = { first = it },
-            onSubmit = { if (list.pairs) step = 1 else actions.onAdd(ListEntry(first)) },
+            onSubmit = { if (list.pairs) step = 1 else actions.onAdd(list, ListEntry(first)) },
             onCancel = { actions.onSheet(null) },
             submitLabel = stringResource(if (list.pairs) R.string.library_next else R.string.display_add),
             hint = if (list.pairs) stringResource(R.string.display_substitution_from_hint) else null,
@@ -186,7 +190,8 @@ internal fun ListEditor(
         ItemGroup(
             title = null,
             rows =
-                state.draft
+                state.configuration
+                    .entries(list)
                     .mapIndexed { index, entry ->
                         ListItem(
                             icon = Icons.Outlined.ListAlt,
@@ -194,7 +199,7 @@ internal fun ListEditor(
                             clickable = false,
                             trailingContent = {
                                 ExpressiveIconButton(
-                                    onClick = { actions.onRemove(index) },
+                                    onClick = { actions.onRemove(list, index) },
                                     icon = Icons.Outlined.Delete,
                                     contentDescription = stringResource(R.string.display_remove),
                                     tint = MaterialTheme.colorScheme.error,

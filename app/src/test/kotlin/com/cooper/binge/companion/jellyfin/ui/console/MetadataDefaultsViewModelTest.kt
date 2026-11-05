@@ -208,29 +208,51 @@ class MetadataDefaultsViewModelTest {
     }
 
     @Test
-    fun `a fetcher's page opens, and opening a type or the list closes it`() {
+    fun `opening a type's screen clears what the last screen reported`() {
         val vm = made(MetadataDefaultsViewModel(connection))
         vm.ready()
-
-        vm.open("Movie")
-        vm.openFetcher(OpenFetcher(FetcherKind.Images, "TheMovieDb"))
-        assertEquals("TheMovieDb", vm.ready { it.provider != null }.provider?.name)
-        vm.openFetcher(null)
-        assertNull(vm.ready { it.provider == null }.provider)
-        vm.openFetcher(OpenFetcher(FetcherKind.Images, "TheMovieDb"))
-        vm.open(null)
-        assertNull(vm.ready { it.type == null }.provider)
+        jellyfin.status[CONFIGURATION] = 500
+        vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
+        vm.ready { it.refused != null }
+        vm.itemOpened()
+        assertNull(vm.ready().refused)
     }
 
     @Test
-    fun `a type's page opens and goes back to the list`() {
+    fun `a refusal on a type's screen is cleared when the type closes`() {
         val vm = made(MetadataDefaultsViewModel(connection))
         vm.ready()
+        vm.itemOpened()
+        jellyfin.status[CONFIGURATION] = 500
+        vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
+        vm.ready { it.refused != null }
+        vm.itemClosed()
+        assertNull(vm.ready().refused)
+    }
 
-        vm.open("Movie")
-        assertEquals("Movie", vm.ready { it.type != null }.type)
-        vm.open(null)
-        assertNull(vm.ready { it.type == null }.type)
+    @Test
+    fun `a refusal on a provider's screen is cleared when the provider closes, before the type's screen shows`() {
+        val vm = made(MetadataDefaultsViewModel(connection))
+        vm.ready()
+        vm.itemOpened()
+        vm.itemOpened()
+        jellyfin.status[CONFIGURATION] = 500
+        vm.move("Movie", FetcherKind.Metadata, "TheMovieDb", 1)
+        vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
+        vm.ready { it.refused != null }
+        vm.itemClosed()
+        assertNull(vm.ready().refused)
+    }
+
+    @Test
+    fun `an item key names a type, and a provider of it`() {
+        assertEquals("type:Movie", metadataTypeItem("Movie"))
+        assertEquals("Movie", metadataItemType("type:Movie"))
+        assertNull(metadataItemFetcher("type:Movie"))
+        val key = metadataFetcherItem("Movie", OpenFetcher(FetcherKind.Images, "The Movie: Db"))
+        assertEquals("Movie", metadataItemType(key))
+        assertEquals(OpenFetcher(FetcherKind.Images, "The Movie: Db"), metadataItemFetcher(key))
+        assertNull(metadataItemFetcher("type:Movie/Unknown:TheMovieDb"))
     }
 
     @Test

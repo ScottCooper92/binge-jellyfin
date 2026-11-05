@@ -227,6 +227,7 @@ internal fun ParentalSection(
     profile: JellyfinServerProfile,
     actions: UsersActions,
     onPick: (PolicyPicker) -> Unit,
+    onEditSchedule: (AccessSchedule) -> Unit = {},
     onAdd: (PolicyAdd) -> Unit,
 ) {
     val ratings = (choices.ratings as? Loaded.Ready)?.value.orEmpty()
@@ -280,7 +281,7 @@ internal fun ParentalSection(
     if (profile.hasAllowedTags && policy.has(POLICY_ALLOWED_TAGS)) {
         TagGroup(R.string.users_allowed_tags, POLICY_ALLOWED_TAGS, policy, actions) { onAdd(PolicyAdd.AllowedTag) }
     }
-    if (policy.has(POLICY_SCHEDULES)) ScheduleGroup(policy, actions) { onAdd(PolicyAdd.Schedule) }
+    if (policy.has(POLICY_SCHEDULES)) ScheduleGroup(policy, actions, onEditSchedule) { onAdd(PolicyAdd.Schedule) }
 }
 
 /** A list of tags, each with a red remove, and Add. Each change saves as it's made. */
@@ -324,6 +325,7 @@ private fun TagGroup(
 private fun ScheduleGroup(
     policy: JsonObject,
     actions: UsersActions,
+    onEdit: (AccessSchedule) -> Unit,
     onAdd: () -> Unit,
 ) {
     ItemGroup(
@@ -339,7 +341,8 @@ private fun ScheduleGroup(
                             hours(schedule.startHour),
                             hours(schedule.endHour),
                         ),
-                    clickable = false,
+                    destination = ListItemDestination.Action,
+                    onClick = { onEdit(schedule) },
                     trailingContent = {
                         ExpressiveIconButton(
                             onClick = { actions.onList(POLICY_SCHEDULES) { list -> list.withoutSchedule(schedule) } },

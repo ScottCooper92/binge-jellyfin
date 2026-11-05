@@ -97,6 +97,8 @@
     <string name="home_layout_body">Cómo organizan tu inicio las apps de Jellyfin, en cada dispositivo en el que inicies sesión.</string>
     <string name="home_layout_libraries">Bibliotecas</string>
     <string name="home_layout_display">Visualización</string>
+    <string name="home_layout_select_title">Ninguna biblioteca seleccionada</string>
+    <string name="home_layout_select">Selecciona una biblioteca para elegir dónde aparece en el inicio.</string>
     <string name="home_layout_no_libraries">Aún no puedes ver ninguna biblioteca</string>
     <string name="home_layout_shown_both">En Mis medios y Últimos</string>
     <string name="home_layout_shown_my_media">En Mis medios</string>
@@ -159,6 +161,8 @@
     <string name="now_playing_body_admin">Todo lo que se está reproduciendo desde este servidor, en directo.</string>
     <string name="now_playing_body">Lo que reproduces desde este servidor, en cualquier dispositivo. Un administrador ve lo de todos.</string>
     <string name="now_playing_empty">No se está reproduciendo nada.</string>
+    <string name="now_playing_select_title">Ninguna reproducción seleccionada</string>
+    <string name="now_playing_select">Selecciona una reproducción para verla y controlarla.</string>
     <string name="now_playing_who">%1$s en %2$s · %3$s</string>
     <string name="now_playing_stop">Detener</string>
     <string name="now_playing_not_sent">No enviado. %1$s</string>
@@ -200,6 +204,8 @@
     <string name="libraries_not_stopped">El escaneo no se ha detenido. %1$s</string>
     <string name="libraries_add">Añadir biblioteca</string>
     <string name="libraries_empty_title">Sin bibliotecas</string>
+    <string name="libraries_select_title">Ninguna biblioteca seleccionada</string>
+    <string name="libraries_select">Selecciona una biblioteca para ver y cambiar sus ajustes.</string>
     <string name="libraries_empty">Este servidor aún no tiene bibliotecas. Añade una para empezar con sus carpetas.</string>
     <string name="library_name">Nombre</string>
     <string name="library_enabled">Activada</string>
@@ -365,6 +371,8 @@
     <string name="logs_retention_invalid">Introduce un número entero de días de %1$d a %2$d.</string>
     <string name="logs_retention_save">Guardar</string>
     <string name="console_logs_detail">Los archivos de registro del servidor</string>
+    <string name="logs_select_title">Ningún registro seleccionado</string>
+    <string name="logs_select">Selecciona un registro para leerlo.</string>
     <string name="logs_empty">El servidor no tiene archivos de registro.</string>
     <string name="logs_search">Buscar en este registro</string>
     <string name="logs_truncated">Se muestran los últimos %1$d KB de este registro.</string>
@@ -389,6 +397,8 @@
     <string name="devices_not_changed">No se ha cambiado. %1$s</string>
     <string name="users_title">Usuarios</string>
     <string name="console_users_detail">Quién puede iniciar sesión y qué ve</string>
+    <string name="users_select_title">Ningún usuario seleccionado</string>
+    <string name="users_select">Selecciona un usuario para ver su acceso y sus ajustes.</string>
     <string name="users_body">Todas las personas que pueden iniciar sesión en este servidor. Toca una para cambiar lo que puede hacer.</string>
     <string name="users_add">Añadir un usuario</string>
     <string name="users_add_body">Al principio ve todas las bibliotecas. Cámbialo en su página.</string>
@@ -485,7 +495,6 @@
     <string name="users_add_action_short">Añadir</string>
     <string name="users_remove">Quitar</string>
     <string name="users_cancel">Cancelar</string>
-    <string name="users_back">Atrás</string>
     <string name="users_schedules">Horario de acceso</string>
     <string name="users_add_schedule">Añadir un horario</string>
     <string name="users_schedule_row">%1$s, de %2$s a %3$s</string>
@@ -743,6 +752,8 @@
     <string name="metadata_body">Lo que usa el servidor para cada tipo de título en una biblioteca que no ha elegido sus propios proveedores. Los ajustes propios de una biblioteca sustituyen a estos, así que cambiarlos no modifica una biblioteca que ya tiene los suyos.</string>
     <string name="metadata_type_body">Desactiva un proveedor para que el servidor deje de consultarlo para este tipo de título.</string>
     <string name="metadata_type_empty">El servidor no indicó ningún proveedor para este tipo de título.</string>
+    <string name="metadata_select_title">Ningún tipo de título seleccionado</string>
+    <string name="metadata_select">Selecciona un tipo de título para elegir sus proveedores.</string>
     <string name="metadata_fetchers">Proveedores de metadatos</string>
     <string name="metadata_images">Proveedores de imágenes</string>
     <string name="metadata_all_on">Todos activados</string>
@@ -809,6 +820,8 @@
     <string name="display_substitution_to_hint">/mnt/media</string>
     <string name="display_entry_title">Añadir una entrada</string>
     <string name="display_list_empty">Ninguna</string>
+    <string name="display_select_title">Ninguna lista seleccionada</string>
+    <string name="display_select">Selecciona una lista para editar sus entradas.</string>
     <string name="display_add">Añadir</string>
     <string name="display_remove">Quitar</string>
     <string name="trickplay_body">Trickplay crea las imágenes de vista previa que se ven al buscar. Un cambio se aplica a las imágenes que se creen desde ese momento.</string>
@@ -863,6 +876,8 @@
     <string name="plugins_tab_repositories">Repositorios</string>
     <string name="plugins_loading">Cargando plugins</string>
     <string name="console_loading">Cargando</string>
+    <string name="plugins_select_title">Ningún plugin seleccionado</string>
+    <string name="plugins_select">Selecciona un plugin o un paquete para ver sus detalles.</string>
     <string name="plugins_empty_title">Sin plugins</string>
     <string name="plugins_empty">Este servidor no tiene plugins instalados. Busca alguno en el catálogo.</string>
     <string name="plugins_restart_needed">Hace falta reiniciar</string>
@@ -912,6 +927,8 @@
     <string name="repositories_add_submit">Añadir</string>
     <string name="devices_empty">Ningún dispositivo ha iniciado sesión en este servidor.</string>
     <string name="tasks_empty">Este servidor no tiene tareas programadas que mostrar.</string>
+    <string name="tasks_select_title">Ninguna tarea seleccionada</string>
+    <string name="tasks_select">Selecciona una tarea para ver sus activadores.</string>
     <string name="advanced_title">Avanzado</string>
     <string name="console_advanced_detail">Análisis, cachés, registros y CORS</string>
     <string name="advanced_body">Opciones que la mayoría de los servidores nunca cambia. Cada cambio se guarda al hacerlo. Comprueba qué hace una opción antes de cambiarla.</string>
@@ -1209,4 +1226,11 @@
         <item quantity="other">%1$d días</item>
     </plurals>
     <string name="live_tv_type_m3u">Lista M3U</string>
+    <string name="logs_show_full_name">Mostrar el nombre completo</string>
+    <string name="logs_full_name">Nombre completo del registro</string>
+    <string name="logs_full_name_body">Mantén pulsado el nombre para seleccionarlo y copiarlo.</string>
+    <string name="library_languages_search">Buscar idiomas</string>
+    <string name="library_languages_no_match">Ningún idioma coincide con la búsqueda</string>
+    <string name="users_schedule_midnight">La medianoche como hora final significa el final de este día.</string>
+    <string name="users_schedule_order">La hora final debe ser posterior a la inicial.</string>
 </resources>

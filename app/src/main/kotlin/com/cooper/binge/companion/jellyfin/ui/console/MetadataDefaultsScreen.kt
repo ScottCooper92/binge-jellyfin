@@ -1,8 +1,8 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Extension
@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -20,6 +21,7 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -31,9 +33,9 @@ import com.binge.designsystem.R as DesR
 
 /** What the metadata defaults page can ask of its view model, and of the console. */
 data class MetadataDefaultsActions(
-    val onOpen: (String?) -> Unit = {},
+    val onOpen: (String) -> Unit = {},
     val onSet: (type: String, kind: FetcherKind, name: String, enabled: Boolean) -> Unit = { _, _, _, _ -> },
-    val onOpenFetcher: (OpenFetcher?) -> Unit = {},
+    val onOpenFetcher: (type: String, OpenFetcher) -> Unit = { _, _ -> },
     val onMove: (type: String, kind: FetcherKind, name: String, by: Int) -> Unit = { _, _, _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
@@ -63,50 +65,113 @@ internal fun itemTypeName(type: String): String =
     }
 
 /**
- * The server's metadata and image provider defaults for each kind of title: a list of the kinds, and a page for one with a
- * switch for each provider. Each switch saves as it's made.
+ * The server's metadata and image provider defaults for each kind of title: a list of the kinds, each opening its own
+ * screen ([MetadataTypeScreen], then [MetadataFetcherScreen]) with a switch for each provider. Each switch saves as it's
+ * made. [open] is the key of the item open over the page, whose type is marked in the list.
  */
 @Composable
 fun MetadataDefaultsScreen(
     state: MetadataDefaultsUiState,
     actions: MetadataDefaultsActions,
+    open: String? = LocalOpenItem.current,
 ) {
     val ready = state as? MetadataDefaultsUiState.Ready
-    val type = ready?.type
-    val provider = ready?.provider
-    val back: () -> Unit = if (provider != null) ({ actions.onOpenFetcher(null) }) else ({ actions.onOpen(null) })
-    BackHandler(enabled = type != null, onBack = back)
     val host = remember { SnackbarHostState() }
     FormScreen(
-        title = provider?.name ?: type?.let { itemTypeName(it) } ?: stringResource(R.string.metadata_title),
+        title = stringResource(R.string.metadata_title),
         bar = ScreenBar.Small,
-        onBack = if (type != null) back else actions.onBack,
+        onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
-        notReady =
-            when (state) {
-                MetadataDefaultsUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
-                is MetadataDefaultsUiState.Failed -> { padding ->
-                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
-                }
-                is MetadataDefaultsUiState.Ready -> null
-            },
+        notReady = metadataNotReady(state, actions),
     ) { _ ->
         if (ready != null) {
-            when {
-                type == null -> TypeList(ready, actions)
-                provider == null -> TypePage(type, ready, actions)
-                else -> FetcherPage(type, provider, ready, actions)
-            }
+            TypeList(ready, actions, open?.let(::metadataItemType))
+            // The screen of an item says what the server refused while it is open.
+            RefusedMessage(ready.refused.takeIf { open == null }, host)
+        }
+    }
+}
+
+/** One item type's screen: a row for each provider it can use, opening that provider's own. */
+@Composable
+fun MetadataTypeScreen(
+    state: MetadataDefaultsUiState,
+    type: String,
+    actions: MetadataDefaultsActions,
+) {
+    val ready = state as? MetadataDefaultsUiState.Ready
+    val host = remember { SnackbarHostState() }
+    // A type the server no longer lists has nothing to show: close it.
+    LaunchedEffect(ready != null && type !in ready.types()) { if (ready != null && type !in ready.types()) actions.onBack() }
+    FormScreen(
+        title = itemTypeName(type),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady = metadataNotReady(state, actions),
+    ) { _ ->
+        if (ready != null) {
+            TypePage(type, ready, actions)
             RefusedMessage(ready.refused, host)
         }
     }
+}
+
+/** One provider of a type: whether the defaults use it, and its place in the order. */
+@Composable
+fun MetadataFetcherScreen(
+    state: MetadataDefaultsUiState,
+    type: String,
+    fetcher: OpenFetcher,
+    actions: MetadataDefaultsActions,
+) {
+    val ready = state as? MetadataDefaultsUiState.Ready
+    val host = remember { SnackbarHostState() }
+    val gone = ready != null && ready.fetchers(type, fetcher.kind).none { it.name.equals(fetcher.name, ignoreCase = true) }
+    LaunchedEffect(gone) { if (gone) actions.onBack() }
+    FormScreen(
+        title = fetcher.name,
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady = metadataNotReady(state, actions),
+    ) { _ ->
+        if (ready != null) {
+            FetcherPage(type, fetcher, ready, actions)
+            RefusedMessage(ready.refused, host)
+        }
+    }
+}
+
+/** What a screen of this page shows until the defaults are there. */
+private fun metadataNotReady(
+    state: MetadataDefaultsUiState,
+    actions: MetadataDefaultsActions,
+): (@Composable (PaddingValues) -> Unit)? =
+    when (state) {
+        MetadataDefaultsUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+        is MetadataDefaultsUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
+        is MetadataDefaultsUiState.Ready -> null
+    }
+
+/** The empty right-hand pane when no type is open. */
+@Composable
+internal fun MetadataDefaultsPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.metadata_select),
+        title = stringResource(R.string.metadata_select_title),
+        icon = Icons.Outlined.Tune,
+    )
 }
 
 @Composable
 private fun TypeList(
     state: MetadataDefaultsUiState.Ready,
     actions: MetadataDefaultsActions,
+    openType: String?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         PageIntro(stringResource(R.string.metadata_body))
@@ -124,6 +189,7 @@ private fun TypeList(
                             } else {
                                 pluralStringResource(R.plurals.metadata_turned_off, off, off)
                             },
+                        selected = type == openType,
                         onClick = { actions.onOpen(type) },
                     )
                 },
@@ -156,7 +222,7 @@ private fun TypePage(
                                     stringResource(
                                         if (provider.enabled) R.string.library_provider_on else R.string.library_provider_off,
                                     ),
-                                onClick = { actions.onOpenFetcher(OpenFetcher(kind, provider.name)) },
+                                onClick = { actions.onOpenFetcher(type, OpenFetcher(kind, provider.name)) },
                             )
                         },
                 )

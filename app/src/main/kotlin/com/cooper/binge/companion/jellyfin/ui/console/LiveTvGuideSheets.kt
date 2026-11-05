@@ -56,7 +56,7 @@ internal fun ChooseGuideContent(actions: LiveTvGuideActions) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        ItemGroup(
+        ConsoleSheetGroup(
             title = null,
             rows =
                 listOf(

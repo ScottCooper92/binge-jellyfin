@@ -8,6 +8,8 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import kotlinx.serialization.json.Json
@@ -49,7 +51,13 @@ class UsersScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun users() = UsersScreen(previewReady, UsersActions(), now = NOW)
+    fun users() =
+        UsersScreen(
+            previewReady,
+            UsersActions(),
+            now = NOW,
+            avatar = { UserAvatar(it.name, profilePictureFixture.takeIf { _ -> it.id == "ana" }) },
+        )
 
     /** A pull in progress: the list stays, with the pull spinner over it. */
     @PreviewTest
@@ -63,13 +71,13 @@ class UsersScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun userPage() = UsersScreen(previewReady.copy(open = "kids", done = UserDone.PasswordSet), UsersActions(), now = NOW)
+    fun userPage() = UserScreen(previewReady.copy(open = "kids", done = UserDone.PasswordSet), "kids", UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun myPage() = UsersScreen(previewReady.copy(open = "me"), UsersActions(), now = NOW)
+    fun myPage() = UserScreen(previewReady.copy(open = "me"), "me", UsersActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -130,4 +138,13 @@ class UsersScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = UsersScreen(UsersUiState.Failed(ConsoleFailure.Refused), UsersActions())
+}
+
+/** The users page on a landscape tablet, where a user opens in a third pane: the invitation to pick one while none is. */
+class UsersPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { UserPlaceholder() }
 }

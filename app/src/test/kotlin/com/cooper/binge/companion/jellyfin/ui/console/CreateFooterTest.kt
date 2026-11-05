@@ -64,7 +64,7 @@ class CreateFooterTest {
     }
 
     @Test
-    fun `Users has Add user in the footer on the list only`() {
+    fun `Users has Add user in the footer, until the list fails`() {
         val ana = ServerUser("ana", "Ana", false, null, JsonObject(emptyMap()))
         val libraries = listOf(ServerLibrary("m", "Movies", "movies", emptyList()))
         var shown = emptyList<UserDialog?>()
@@ -75,10 +75,6 @@ class CreateFooterTest {
         compose.waitForIdle()
         compose.onNodeWithText("Add a user").assertIsEnabled().performClick()
         assertEquals(listOf<UserDialog?>(UserDialog.Create), shown)
-        // A user's own page has nothing to create.
-        state = UsersUiState.Ready(listOf(ana), libraries, me = "me", open = "ana")
-        compose.waitForIdle()
-        compose.onAllNodesWithText("Add a user").assertCountEquals(0)
         state = UsersUiState.Failed(ConsoleFailure.Unreachable)
         compose.waitForIdle()
         compose.onAllNodesWithText("Add a user").assertCountEquals(0)
@@ -118,15 +114,18 @@ class CreateFooterTest {
     }
 
     @Test
-    fun `a task's triggers page has Add trigger in the footer, and the task list has none`() {
+    fun `a task's screen has Add trigger in the footer, and the task list has none`() {
         var adding = false
         val task = ServerTask("t", "k", "Scan", "", "Library", false, false, null, null)
-        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(task))))
-        compose.setContent { JellyfinTheme { TasksScreen(state, TasksActions(onAskAdd = { adding = it })) } }
-        compose.onAllNodesWithText("Add trigger").assertCountEquals(0)
-        state = TasksUiState.Ready(TaskBoard(listOf(task)), open = "t")
+        val state = TasksUiState.Ready(TaskBoard(listOf(task)))
+        compose.setContent {
+            JellyfinTheme {
+                TasksScreen(state, TasksActions())
+                TaskScreen(state, "t", TasksActions(onAskAdd = { adding = it }))
+            }
+        }
         compose.waitForIdle()
-        // The task has no triggers: its empty state doesn't carry a second Add.
+        // The task has no triggers: its empty state doesn't carry a second Add, and the list has none at all.
         compose.onAllNodesWithText("Add trigger").assertCountEquals(1)
         compose.onNodeWithText("Add trigger").assertIsEnabled().performClick()
         assertEquals(true, adding)

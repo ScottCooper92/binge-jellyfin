@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -13,7 +14,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.AppGraph
-import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -29,27 +29,23 @@ internal fun ConsolePageRoute(
     close: () -> Unit,
     open: (ConsolePage) -> Unit = {},
     actions: Actions = Actions(),
+    openItem: (String) -> Unit = {},
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
         ConsolePage.Playback -> PlaybackRoute(graph, close)
-        ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, close)
+        ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
-        ConsolePage.NowPlaying ->
-            NowPlayingRoute(
-                graph,
-                signedIn.account,
-                close,
-            )
-        ConsolePage.Libraries -> LibrariesRoute(graph, signedIn.profile, close)
-        ConsolePage.Tasks -> TasksRoute(graph, close)
+        ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
+        ConsolePage.Libraries -> LibrariesRoute(graph, openItem, close)
+        ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
         ConsolePage.Activity -> ActivityRoute(graph, close)
-        ConsolePage.Logs -> LogsRoute(graph, close)
+        ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
-        ConsolePage.Users -> UsersRoute(graph, signedIn.profile, close)
+        ConsolePage.Users -> UsersRoute(graph, openItem, close)
         ConsolePage.ServerSettings -> ServerSettingsRoute(graph, signedIn.profile, close)
         ConsolePage.Network -> NetworkRoute(graph, signedIn.profile, { open(ConsolePage.Server) }, close)
         ConsolePage.Advanced ->
@@ -59,10 +55,10 @@ internal fun ConsolePageRoute(
                 { open(ConsolePage.Server) },
                 close,
             )
-        ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, close)
+        ConsolePage.Plugins -> PluginsRoute(graph, signedIn.profile.version, { open(ConsolePage.Server) }, openItem, close)
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
-        ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, close)
-        ConsolePage.MetadataDefaults -> MetadataDefaultsRoute(graph, close)
+        ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, openItem, close)
+        ConsolePage.MetadataDefaults -> MetadataDefaultsRoute(graph, openItem, close)
         ConsolePage.Backups -> BackupsRoute(graph, signedIn.profile.version, close)
         ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
         ConsolePage.LiveTv ->
@@ -118,29 +114,30 @@ private fun PlaybackRoute(
     )
 }
 
-/** The home screen page with its own view model, asking the server its own release's way. */
+/**
+ * The home screen page with its own view model, asking the server its own release's way. A library opens as an entry above
+ * it on the stack ([openItem]), and its screen ([HomeLayoutLibraryRoute]) reads this same view model.
+ */
 @Composable
 private fun HomeLayoutRoute(
     graph: AppGraph,
     profile: JellyfinServerProfile,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val home: HomeLayoutViewModel =
         viewModel(factory = viewModelFactory { initializer { HomeLayoutViewModel(graph.connection, profile) } })
     val state by home.state.collectAsStateWithLifecycle()
+    val open = LocalOpenItem.current
+    LaunchedEffect(open == null) { if (open == null) home.itemClosed() }
     HomeLayoutScreen(
         state,
-        HomeLayoutActions(
-            onOpen = home::open,
-            onInMyMedia = home::setInMyMedia,
-            onInLatest = home::setInLatest,
-            onGrouped = home::setGrouped,
-            onMove = home::move,
-            onHidePlayedInLatest = home::setHidePlayedInLatest,
-            onDisplayMissingEpisodes = home::setDisplayMissingEpisodes,
-            onDisplayCollectionsView = home::setDisplayCollectionsView,
-            onRetry = home::load,
-            onRetrySave = home::retrySave,
+        homeLayoutActions(
+            home,
+            onOpen = {
+                home.itemOpened()
+                openItem(it)
+            },
             onBack = onBack,
         ),
     )
@@ -195,10 +192,14 @@ private fun PasswordRoute(
     )
 }
 
-/** The scheduled tasks page, whose event socket closes with the page. */
+/**
+ * The scheduled tasks page, whose event socket closes with the page. A task opens as an entry above it on the stack
+ * ([openItem]), and its screen ([TaskItemRoute]) reads this same view model.
+ */
 @Composable
 private fun TasksRoute(
     graph: AppGraph,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
@@ -208,11 +209,10 @@ private fun TasksRoute(
         TasksActions(
             onRun = tasks::run,
             onStop = tasks::stop,
-            onOpen = tasks::open,
-            onCloseTask = { tasks.open(null) },
-            onAskAdd = tasks::askAdd,
-            onAddTrigger = tasks::addTrigger,
-            onRemoveTrigger = tasks::removeTrigger,
+            onOpen = {
+                tasks.opened()
+                openItem(it.id)
+            },
             onRetry = tasks::load,
             onRefresh = tasks::refresh,
             onBack = onBack,
@@ -319,64 +319,32 @@ private fun ServerRoute(
     )
 }
 
-/** The now-playing page with its own view model, whose event socket closes with the page. */
-@Composable
-private fun NowPlayingRoute(
-    graph: AppGraph,
-    account: JellyfinAccount,
-    onBack: () -> Unit,
-) {
-    val nowPlaying: NowPlayingViewModel =
-        viewModel(factory = viewModelFactory { initializer { NowPlayingViewModel(graph.connection, account) } })
-    val state by nowPlaying.state.collectAsStateWithLifecycle()
-    NowPlayingScreen(
-        state,
-        account.isAdministrator,
-        NowPlayingActions(
-            onSelect = nowPlaying::select,
-            onDeselect = nowPlaying::deselect,
-            onPlayPause = nowPlaying.remote::playPause,
-            onSkip = nowPlaying.remote::skip,
-            onSeekBy = nowPlaying.remote::seekBy,
-            onSeekTo = nowPlaying.remote::seekTo,
-            onVolume = nowPlaying.remote::setVolume,
-            onToggleMute = nowPlaying.remote::toggleMute,
-            onAskMessage = nowPlaying.remote::askMessage,
-            onCancelMessage = nowPlaying.remote::cancelMessage,
-            onSendMessage = nowPlaying.remote::sendMessage,
-            onStop = nowPlaying::askStop,
-            onConfirmStop = nowPlaying::stop,
-            onCancelStop = nowPlaying::cancelStop,
-            onRetry = nowPlaying::load,
-            onBack = onBack,
-        ),
-    )
-}
-
-/** The logs page, with the share sheet it opens for a log. */
+/**
+ * The logs page, with the share sheet it opens for a log. A log opens as an entry above it on the stack ([openItem]), and
+ * its screen ([LogItemRoute]) reads this same view model. With none open the view model reads none.
+ */
 @Composable
 private fun LogsRoute(
     graph: AppGraph,
+    openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val logs: LogsViewModel = viewModel(factory = viewModelFactory { initializer { LogsViewModel(graph.connection) } })
     val state by logs.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val open = LocalOpenItem.current
+    LaunchedEffect(open == null) { if (open == null) logs.closeLog() }
     LogsScreen(
         state,
         LogsActions(
-            onOpen = logs::open,
-            onCloseLog = logs::closeLog,
-            onQuery = logs::setQuery,
-            onLevel = logs::setLevel,
-            onCopy = { text -> copyLogEntry(context, text) },
-            onShare = { name, text -> context.startActivity(shareLogIntent(context, name, text)) },
+            onOpen = {
+                logs.itemOpened()
+                openItem(it)
+            },
             onEditRetention = logs::editRetention,
             onSaveRetention = logs::saveRetention,
             onRetrySave = logs::retrySave,
             onRetry = logs::load,
             onRefresh = logs::refresh,
-            onRetryOpen = logs::retryOpen,
             onBack = onBack,
         ),
     )

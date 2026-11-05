@@ -150,7 +150,7 @@ class TrickplayViewModelTest {
         assertEquals(0, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == CONFIGURATION })
         vm.save(TrickplayField.JpegQuality, " 75 ")
         saves(1)
-        assertNull(vm.ready().editing)
+        assertNull(vm.ready { it.editing == null }.editing)
         assertEquals(75, options().getValue("JpegQuality").jsonPrimitive.int)
     }
 

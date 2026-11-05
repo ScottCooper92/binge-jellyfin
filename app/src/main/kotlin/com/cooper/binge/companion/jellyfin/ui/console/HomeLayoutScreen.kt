@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -36,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -45,7 +45,8 @@ import com.binge.designsystem.R as DesR
 
 /** What the home screen page can ask of its view model, and of the console. */
 data class HomeLayoutActions(
-    val onOpen: (String?) -> Unit = {},
+    /** Opens a library's own screen. */
+    val onOpen: (String) -> Unit = {},
     val onInMyMedia: (String, Boolean) -> Unit = { _, _ -> },
     val onInLatest: (String, Boolean) -> Unit = { _, _ -> },
     val onGrouped: (String, Boolean) -> Unit = { _, _ -> },
@@ -65,22 +66,22 @@ private const val HOME_DETAIL_LINES = 3
 private const val ORDER_DETAIL_LINES = 8
 
 /**
- * How Jellyfin's apps lay out the user's home: their libraries in order, each with its own page for
- * where it shows and its place in the order, and the display switches. Each change saves as it's made.
+ * How Jellyfin's apps lay out the user's home: their libraries in order, each with its own screen
+ * ([HomeLayoutLibraryScreen]) for where it shows and its place in the order, and the display switches. Each change
+ * saves as it's made. The library showing, where this list is beside it, is marked.
  */
 @Composable
 fun HomeLayoutScreen(
     state: HomeLayoutUiState,
     actions: HomeLayoutActions,
+    openLibrary: String? = LocalOpenItem.current,
 ) {
-    val library = (state as? HomeLayoutUiState.Ready)?.openLibrary
-    BackHandler(enabled = library != null) { actions.onOpen(null) }
     val host = remember { SnackbarHostState() }
     val ready = state as? HomeLayoutUiState.Ready
     FormScreen(
-        title = library?.name ?: stringResource(R.string.home_layout_title),
+        title = stringResource(R.string.home_layout_title),
         bar = ScreenBar.Small,
-        onBack = if (library != null) ({ actions.onOpen(null) }) else actions.onBack,
+        onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
@@ -93,16 +94,65 @@ fun HomeLayoutScreen(
             },
     ) { _ ->
         if (ready != null) {
-            if (library == null) HomeLayoutBody(ready, actions) else LibraryPage(ready, library, actions)
+            HomeLayoutBody(ready, actions, openLibrary)
+            // A refusal is said by the screen of the library open, if one is, and by this list otherwise.
+            if (openLibrary == null) RefusedMessage(ready.refused, host)
+        }
+    }
+}
+
+/**
+ * One library's own screen: where it shows on the home, and its place in the order. Above the list on the stack, so Back
+ * returns to it. A library the server no longer lists closes it.
+ */
+@Composable
+fun HomeLayoutLibraryScreen(
+    state: HomeLayoutUiState,
+    libraryId: String,
+    actions: HomeLayoutActions,
+) {
+    val ready = state as? HomeLayoutUiState.Ready
+    val library = ready?.libraries?.firstOrNull { it.id == libraryId }
+    val gone = ready != null && library == null
+    LaunchedEffect(gone) { if (gone) actions.onBack() }
+    val host = remember { SnackbarHostState() }
+    FormScreen(
+        title = library?.name ?: stringResource(R.string.home_layout_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
+        notReady =
+            when (state) {
+                HomeLayoutUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                is HomeLayoutUiState.Failed -> { padding ->
+                    ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
+                }
+                is HomeLayoutUiState.Ready -> null
+            },
+    ) { _ ->
+        if (ready != null && library != null) {
+            LibraryPage(ready, library, actions)
             RefusedMessage(ready.refused, host)
         }
     }
+}
+
+/** What fills a landscape tablet's third pane while no library is open. */
+@Composable
+internal fun HomeLayoutPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.home_layout_select),
+        title = stringResource(R.string.home_layout_select_title),
+        icon = Icons.Outlined.VideoLibrary,
+    )
 }
 
 @Composable
 private fun HomeLayoutBody(
     state: HomeLayoutUiState.Ready,
     actions: HomeLayoutActions,
+    openLibrary: String?,
 ) {
     val layout = state.layout
     Column(
@@ -118,6 +168,7 @@ private fun HomeLayoutBody(
                             icon = library.icon(),
                             label = library.name,
                             detail = stringResource(library.whereShown(state)),
+                            selected = library.id == openLibrary,
                             onClick = { actions.onOpen(library.id) },
                         )
                     }.ifEmpty {
