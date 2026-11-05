@@ -11,7 +11,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 
 /** A square picture with a bright disc, so a frame shows the crop to a circle. */
-private val previewPicture: Bitmap =
+internal val profilePictureFixture: Bitmap =
     Bitmap.createBitmap(PICTURE_SIDE, PICTURE_SIDE, Bitmap.Config.ARGB_8888).apply {
         eraseColor(Color.rgb(64, 96, 160))
         for (x in 0 until PICTURE_SIDE) {
@@ -39,12 +39,13 @@ class ProfilePictureScreenshotTest {
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews
     @Composable
-    fun picture() = ProfilePictureScreen(ProfilePictureUiState.Ready(picture = previewPicture), ProfilePictureActions())
+    fun picture() = ProfilePictureScreen(ProfilePictureUiState.Ready(picture = profilePictureFixture), ProfilePictureActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun uploading() = ProfilePictureScreen(ProfilePictureUiState.Ready(picture = previewPicture, busy = true), ProfilePictureActions())
+    fun uploading() =
+        ProfilePictureScreen(ProfilePictureUiState.Ready(picture = profilePictureFixture, busy = true), ProfilePictureActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

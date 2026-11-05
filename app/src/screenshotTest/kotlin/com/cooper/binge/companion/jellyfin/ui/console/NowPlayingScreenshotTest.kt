@@ -8,6 +8,8 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStateLightPreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.SessionControls
@@ -62,7 +64,6 @@ private fun page(
 ) = NowPlayingUiState.Ready(
     listOf(session),
     controls = mapOf(session.sessionId to controls),
-    selected = session.sessionId,
     sending = sending,
 )
 
@@ -86,7 +87,7 @@ class NowPlayingScreenshotTest {
     @JellyfinSpanishPreviews
     @JellyfinFontScalePreviews
     @Composable
-    fun sessionPage() = NowPlayingScreen(page(previewEpisode, fullControls), administrator = true, NowPlayingActions())
+    fun sessionPage() = NowPlayingSessionScreen(page(previewEpisode, fullControls), previewEpisode.sessionId, NowPlayingActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -95,15 +96,19 @@ class NowPlayingScreenshotTest {
     @JellyfinFontScalePreviews
     @Composable
     fun sessionPageRemote() =
-        NowPlayingScreen(page(previewEpisode.copy(volumeLevel = 40), remoteControls), administrator = true, NowPlayingActions())
+        NowPlayingSessionScreen(
+            page(previewEpisode.copy(volumeLevel = 40), remoteControls),
+            previewEpisode.copy(volumeLevel = 40).sessionId,
+            NowPlayingActions(),
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun sessionPageMuted() =
-        NowPlayingScreen(
+        NowPlayingSessionScreen(
             page(previewEpisode.copy(volumeLevel = 0, muted = true), remoteControls),
-            administrator = true,
+            previewEpisode.copy(volumeLevel = 0, muted = true).sessionId,
             NowPlayingActions(),
         )
 
@@ -144,21 +149,21 @@ class NowPlayingScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun sessionPagePaused() = NowPlayingScreen(page(previewMovie, fullControls), administrator = true, NowPlayingActions())
+    fun sessionPagePaused() = NowPlayingSessionScreen(page(previewMovie, fullControls), previewMovie.sessionId, NowPlayingActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun sessionPageSending() =
-        NowPlayingScreen(page(previewEpisode, fullControls, sending = true), administrator = true, NowPlayingActions())
+        NowPlayingSessionScreen(page(previewEpisode, fullControls, sending = true), previewEpisode.sessionId, NowPlayingActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun sessionPageNoSeek() =
-        NowPlayingScreen(
+        NowPlayingSessionScreen(
             page(previewEpisode, SessionControls(playPause = true, seek = false, skip = true, stop = true)),
-            administrator = true,
+            previewEpisode.sessionId,
             NowPlayingActions(),
         )
 
@@ -166,9 +171,9 @@ class NowPlayingScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun sessionPageNoStop() =
-        NowPlayingScreen(
+        NowPlayingSessionScreen(
             page(previewEpisode, SessionControls(playPause = true, seek = true, skip = true, stop = false)),
-            administrator = true,
+            previewEpisode.sessionId,
             NowPlayingActions(),
         )
 
@@ -199,4 +204,13 @@ class NowPlayingScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = NowPlayingScreen(NowPlayingUiState.Failed(ConsoleFailure.Refused), administrator = false, NowPlayingActions())
+}
+
+/** The page on a landscape tablet, where a stream opens in a third pane: the invitation to pick one while none is. */
+class NowPlayingPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { NowPlayingPlaceholder() }
 }

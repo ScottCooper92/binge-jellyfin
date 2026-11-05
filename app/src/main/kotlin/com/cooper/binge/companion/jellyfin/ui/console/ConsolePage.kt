@@ -111,6 +111,22 @@ enum class ConsolePage {
             -> account.isAdministrator
         }
 
+    /**
+     * Whether what this page opens (a task, a log, a user) is an entry of its own on the stack, with its own screen, rather
+     * than state the page keeps. Such a page is a pane of its own beside its item on a landscape tablet, and an item's Back
+     * and depth come from the stack.
+     */
+    val opensItems: Boolean get() =
+        this == Tasks ||
+            this == Logs ||
+            this == Plugins ||
+            this == Users ||
+            this == HomeLayout ||
+            this == LibraryDisplay ||
+            this == MetadataDefaults ||
+            this == Libraries ||
+            this == NowPlaying
+
     /** One of the administrator's pages, listed together on the home. */
     val isAdmin: Boolean get() =
         this in

@@ -159,7 +159,6 @@ class NowPlayingViewModelTest {
         val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = true))))
         val ready = vm.ready()
         val other = ready.sessions.first { it.sessionId == "s-other" }
-        vm.select(other)
         vm.remote.seekBy(other, 10_000)
         vm.ready { !it.sending }
         val post = commandPosts().single()
@@ -212,25 +211,13 @@ class NowPlayingViewModelTest {
     }
 
     @Test
-    fun `a session that leaves the feed closes its page`() {
-        jellyfin.sessions = controlSessions("s-mine")
-        val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
-        vm.select(vm.ready().sessions.single())
-        subscribed()
-        jellyfin.push("""{"MessageType":"Sessions","Data":[]}""")
-        assertNull(vm.ready { it.sessions.isEmpty() }.selected)
-    }
-
-    @Test
-    fun `a command the server cannot be reached for says so and keeps the page`() {
+    fun `a command the server cannot be reached for says so`() {
         jellyfin.sessions = controlSessions("s-mine")
         val vm = made(NowPlayingViewModel(connection, JellyfinAccount("me", policyOf(remote = false))))
         val mine = vm.ready().sessions.single()
-        vm.select(mine)
         jellyfin.dropped += "/Sessions/s-mine/Playing/Pause"
         vm.remote.playPause(mine)
         val failed = vm.ready { it.sendFailed != null }
-        assertEquals("s-mine", failed.selected)
         assertFalse(failed.sending)
     }
 

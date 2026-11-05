@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
@@ -7,6 +8,8 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWidePreview
+import com.cooper.binge.companion.jellyfin.preview.JellyfinWideSpanishPreview
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.UserView
 
@@ -39,28 +42,24 @@ class HomeLayoutScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun library() = HomeLayoutScreen(previewHome.copy(openId = "home"), HomeLayoutActions())
+    fun library() = HomeLayoutLibraryScreen(previewHome, "home", HomeLayoutActions())
 
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews
     @Composable
-    fun middleLibrary() = HomeLayoutScreen(previewHome.copy(openId = "movies"), HomeLayoutActions())
+    fun middleLibrary() = HomeLayoutLibraryScreen(previewHome, "movies", HomeLayoutActions())
 
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews
     @Composable
-    fun onlyLibrary() =
-        HomeLayoutScreen(
-            HomeLayoutUiState.Ready(previewViews.take(1), HomeLayout(), openId = "movies"),
-            HomeLayoutActions(),
-        )
+    fun onlyLibrary() = HomeLayoutLibraryScreen(HomeLayoutUiState.Ready(previewViews.take(1), HomeLayout()), "movies", HomeLayoutActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun firstLibrary() = HomeLayoutScreen(previewHome.copy(openId = "shows"), HomeLayoutActions())
+    fun firstLibrary() = HomeLayoutLibraryScreen(previewHome, "shows", HomeLayoutActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -87,4 +86,13 @@ class HomeLayoutScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = HomeLayoutScreen(HomeLayoutUiState.Failed(ConsoleFailure.Unreachable), HomeLayoutActions())
+}
+
+/** The home screen page on a landscape tablet, where a library opens in a third pane: the invitation to pick one while none is. */
+class HomeLayoutPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { HomeLayoutPlaceholder() }
 }

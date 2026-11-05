@@ -17,6 +17,8 @@ import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeSheetKind
+import com.binge.designsystem.component.ItemGroup
+import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.R as DesR
 
@@ -127,4 +129,13 @@ internal fun ConsoleFieldsForm(
             )
         }
     }
+}
+
+/** A row group outside a padded form, aligned with the sheet header's content inset. */
+@Composable
+internal fun ConsoleSheetGroup(
+    title: String?,
+    rows: List<ListItem>,
+) {
+    ItemGroup(title = title, rows = rows, modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)))
 }

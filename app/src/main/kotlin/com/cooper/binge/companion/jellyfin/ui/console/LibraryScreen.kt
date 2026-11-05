@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -69,8 +68,9 @@ internal const val LIBRARY_DETAIL_LINES = 4
 
 /**
  * One library's page, after jellyfin-web's library editor: its name and folders, then the options its kind
- * and this server have, then Remove library, last. Each option saves as it's made. Back goes from a provider
- * to its list, and from the list to the library; [profile] says which options this release has.
+ * and this server have, then Remove library, last. Each option saves as it's made. [page] says which of its pages
+ * this screen is; each is its own entry on the stack, so Back goes from a provider to its list, and from the list
+ * to the library. [profile] says which options this release has.
  */
 @Composable
 fun LibraryScreen(
@@ -79,11 +79,10 @@ fun LibraryScreen(
     profile: JellyfinServerProfile,
     folders: FolderBrowseState = FolderBrowseState.Loading,
     folderActions: FolderActions = FolderActions(),
+    page: LibraryPage = LibraryPage.Main,
 ) {
     val ready = state as? LibraryUiState.Ready
-    val page = ready?.page ?: LibraryPage.Main
-    val back = if (page == LibraryPage.Main) actions.onBack else ({ actions.onPage(page.parent()) })
-    BackHandler(onBack = back)
+    val back = actions.onBack
     val host = remember { SnackbarHostState() }
     FormScreen(
         title = page.title(ready),
@@ -115,16 +114,6 @@ fun LibraryScreen(
         }
     }
 }
-
-private fun LibraryPage.parent(): LibraryPage =
-    when (this) {
-        LibraryPage.Main -> LibraryPage.Main
-        LibraryPage.Languages -> LibraryPage.Main
-        is LibraryPage.Providers -> LibraryPage.Main
-        is LibraryPage.One -> LibraryPage.Providers(group)
-        is LibraryPage.Fetchers -> LibraryPage.Main
-        is LibraryPage.Fetcher -> LibraryPage.Fetchers(kind)
-    }
 
 @Composable
 private fun LibraryPage.title(ready: LibraryUiState.Ready?): String =

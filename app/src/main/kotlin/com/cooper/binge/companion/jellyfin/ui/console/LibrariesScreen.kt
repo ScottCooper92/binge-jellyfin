@@ -64,6 +64,7 @@ fun LibrariesScreen(
     now: Long = System.currentTimeMillis(),
     folders: FolderBrowseState = FolderBrowseState.Loading,
     folderActions: FolderActions = FolderActions(),
+    openLibrary: String? = LocalOpenItem.current?.let(::libraryItemId),
 ) {
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -103,7 +104,7 @@ fun LibrariesScreen(
                             isRefreshing = state.refreshing,
                             onRefresh = actions.onRefresh,
                             indicatorTopInset = padding.calculateTopPadding(),
-                        ) { Libraries(state, actions, inner, now) }
+                        ) { Libraries(state, actions, inner, now, openLibrary) }
                     }
                     if (state.adding) {
                         AddLibrarySheet(
@@ -129,6 +130,7 @@ private fun Libraries(
     actions: LibrariesActions,
     inner: PaddingValues,
     now: Long,
+    openLibrary: String?,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -159,7 +161,7 @@ private fun Libraries(
         item {
             ItemGroup(
                 title = stringResource(R.string.libraries_group),
-                rows = state.libraries.map { library -> library.row(state, actions).item() },
+                rows = state.libraries.map { library -> library.row(state, actions, library.id == openLibrary).item() },
             )
         }
     }
@@ -169,9 +171,11 @@ private fun Libraries(
 private fun ServerLibrary.row(
     state: LibrariesUiState.Ready,
     actions: LibrariesActions,
+    selected: Boolean,
 ): JobRow {
     val scan = state.scanning[id]
     return JobRow(
+        selected = selected,
         icon = typeIcon(type),
         label = name.ifBlank { stringResource(R.string.libraries_unnamed) },
         idleDetail = folders.joinToString(", "),
@@ -203,3 +207,13 @@ internal fun typeIcon(type: String): ImageVector =
         "homevideos", "photos" -> Icons.Outlined.Photo
         else -> Icons.Outlined.Folder
     }
+
+/** The empty right-hand pane when no library is open. */
+@Composable
+internal fun LibrariesPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.libraries_select),
+        title = stringResource(R.string.libraries_select_title),
+        icon = Icons.Outlined.VideoLibrary,
+    )
+}

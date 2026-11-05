@@ -147,16 +147,9 @@ class CatalogViewModelTest {
         vm.install(pkg)
         val failed = vm.ready { it.actionFailed != null }
         assertTrue(failed.installing.isEmpty())
-    }
-
-    @Test
-    fun `a package opens by name, and back returns to the list`() {
-        val vm = made(CatalogViewModel(connection, server))
-        vm.ready()
-        vm.open("Playback Reporting")
-        assertEquals("Playback Reporting", vm.ready { it.open != null }.open)
-        vm.open(null)
-        assertNull(vm.ready { it.open == null }.open)
+        // Opening a package clears it: the catalog shared with the package's screen would otherwise say it again.
+        vm.itemOpened()
+        assertNull(vm.ready().actionFailed)
     }
 
     @Test

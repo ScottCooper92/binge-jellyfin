@@ -49,9 +49,9 @@ class TaskTriggersViewModelTest {
     private fun TasksViewModel.ready(check: (TasksUiState.Ready) -> Boolean = { true }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is TasksUiState.Ready && check(it) } } } as TasksUiState.Ready
 
-    private fun TasksViewModel.openScan(): TasksViewModel {
-        val scan = ready().board.tasks.first { it.id == "t-scan" }
-        open(scan)
+    /** Waits for the tasks to load: which task is open is an entry on the stack now, so each change names its task. */
+    private fun TasksViewModel.loaded(): TasksViewModel {
+        ready()
         return this
     }
 
@@ -62,35 +62,34 @@ class TaskTriggersViewModelTest {
 
     @Test
     fun `a run that ended meanwhile and is read back with a trigger save shows its outcome, and the outcome clears`() {
-        val vm = made(TasksViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }.openScan()
+        val vm = made(TasksViewModel(connection)).apply { outcomeMillis = OUTCOME_MILLIS }.loaded()
         vm.ready()
         // The event socket missed it: the task finished on the server, and only the trigger save's read-back sees that.
         jellyfin.scheduledTasks = jellyfin.scheduledTasks.replace("2026-10-31T18:00:00Z", "2026-11-01T18:00:00Z")
-        vm.addTrigger(TaskTrigger.startup())
+        vm.addTrigger("t-scan", TaskTrigger.startup())
         val shown = vm.ready { !it.saving && "t-scan" in it.board.outcomes }
         assertEquals(JobOutcome.Succeeded, shown.board.outcomes["t-scan"])
         vm.ready { it.board.outcomes.isEmpty() }
     }
 
     @Test
-    fun `a task comes with its triggers, and opening one shows them`() {
-        val vm = made(TasksViewModel(connection)).openScan()
-        val ready = vm.ready { it.open == "t-scan" }
+    fun `a task comes with its triggers`() {
+        val vm = made(TasksViewModel(connection)).loaded()
         val triggers =
-            ready.board.tasks
+            vm
+                .ready()
+                .board.tasks
                 .first { it.id == "t-scan" }
                 .triggers
         assertEquals(listOf("DailyTrigger", "IntervalTrigger"), triggers.map { it.type })
-        vm.open(null)
-        assertNull(vm.ready { it.open == null }.open)
     }
 
     @Test
     fun `adding a trigger sends the whole list, the old ones as they were, and the page reads the new one back`() {
-        val vm = made(TasksViewModel(connection)).openScan()
+        val vm = made(TasksViewModel(connection)).loaded()
         vm.askAdd(true)
         assertTrue(vm.ready().adding)
-        vm.addTrigger(TaskTrigger.weekly("Friday", 4 * TICKS_PER_HOUR))
+        vm.addTrigger("t-scan", TaskTrigger.weekly("Friday", 4 * TICKS_PER_HOUR))
         val ready =
             vm.ready {
                 !it.saving &&
@@ -114,8 +113,8 @@ class TaskTriggersViewModelTest {
 
     @Test
     fun `removing a trigger sends the list without it`() {
-        val vm = made(TasksViewModel(connection)).openScan()
-        vm.removeTrigger(0)
+        val vm = made(TasksViewModel(connection)).loaded()
+        vm.removeTrigger("t-scan", 0)
         val ready =
             vm.ready {
                 !it.saving &&
@@ -138,13 +137,7 @@ class TaskTriggersViewModelTest {
     fun `a trigger the app doesn't know, and its fields, survive a change to its task`() {
         val vm = made(TasksViewModel(connection))
         vm.ready()
-        vm.open(
-            vm
-                .ready()
-                .board.tasks
-                .first { it.id == "t-clean" },
-        )
-        vm.addTrigger(TaskTrigger.startup())
+        vm.addTrigger("t-clean", TaskTrigger.startup())
         vm.ready {
             !it.saving &&
                 it.board.tasks
@@ -158,11 +151,11 @@ class TaskTriggersViewModelTest {
 
     @Test
     fun `a change the server refuses leaves the triggers, and says so`() {
-        val vm = made(TasksViewModel(connection)).openScan()
+        val vm = made(TasksViewModel(connection)).loaded()
         jellyfin.status["/ScheduledTasks/t-scan/Triggers"] = 500
-        vm.removeTrigger(0)
-        val failed = vm.ready { it.actionFailed != null }
-        assertEquals(ConsoleFailure.Refused, failed.actionFailed)
+        vm.removeTrigger("t-scan", 0)
+        val failed = vm.ready { it.triggerFailed != null }
+        assertEquals(ConsoleFailure.Refused, failed.triggerFailed)
         assertFalse(failed.saving)
         assertEquals(
             2,
@@ -173,11 +166,25 @@ class TaskTriggersViewModelTest {
     }
 
     @Test
-    fun `with no task open, a trigger change sends nothing`() {
+    fun `opening a task clears a refused trigger change reported on another`() {
+        val vm = made(TasksViewModel(connection)).loaded()
+        jellyfin.status["/ScheduledTasks/t-scan/Triggers"] = 500
+        vm.removeTrigger("t-scan", 0)
+        vm.ready { it.triggerFailed != null }
+        jellyfin.status["/ScheduledTasks"] = 500
+        vm.refresh()
+        vm.ready { it.refreshFailed != null && !it.refreshing }
+        vm.opened()
+        assertNull(vm.ready().triggerFailed)
+        assertNull(vm.ready().refreshFailed)
+    }
+
+    @Test
+    fun `a trigger change for a task the server does not list sends nothing`() {
         val vm = made(TasksViewModel(connection))
         vm.ready()
-        vm.addTrigger(TaskTrigger.startup())
-        vm.removeTrigger(0)
+        vm.addTrigger("t-gone", TaskTrigger.startup())
+        vm.removeTrigger("t-gone", 0)
         assertEquals(0, jellyfin.requests.count { it.url.encodedPath.endsWith("/Triggers") })
     }
 

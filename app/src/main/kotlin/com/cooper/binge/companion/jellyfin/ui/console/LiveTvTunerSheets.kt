@@ -79,7 +79,7 @@ private fun SheetHeader(
 private fun ChooseTuner(actions: LiveTvActions) {
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
         SheetHeader(stringResource(R.string.live_tv_add_title), stringResource(R.string.live_tv_add_body))
-        ItemGroup(
+        ConsoleSheetGroup(
             title = null,
             rows =
                 listOf(
@@ -138,9 +138,8 @@ private fun TunerDiscovery(
         ) {
             if (searching) CircularProgressIndicator()
             if (devices.isNotEmpty()) {
-                ItemGroup(
+                ConsoleSheetGroup(
                     title = null,
-                    modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
                     rows =
                         devices.map { device ->
                             ListItem(

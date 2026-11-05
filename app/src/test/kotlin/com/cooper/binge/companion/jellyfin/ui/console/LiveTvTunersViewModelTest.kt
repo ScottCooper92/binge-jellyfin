@@ -86,13 +86,13 @@ class LiveTvTunersViewModelTest {
         val vm = vm()
         vm.ready()
         vm.save(TunerDraft(TUNER_TYPE_M3U, name = "Sports", url = "https://iptv.example/list.m3u", userAgent = "VLC", streamLimit = "3"))
-        vm.ready { it.summary.tuners.size == 3 }
+        vm.ready { it.summary.tuners.size == 3 && !it.saving }
         val sent = jellyfin.lastBody(HOSTS)
         assertEquals("Sports", sent.getValue("FriendlyName").jsonPrimitive.content)
         assertEquals("VLC", sent.getValue("UserAgent").jsonPrimitive.content)
         assertEquals(3, sent.getValue("TunerCount").jsonPrimitive.int)
         vm.save(TunerDraft(TUNER_TYPE_M3U, url = "https://iptv.example/two.m3u"))
-        vm.ready { it.summary.tuners.size == 4 }
+        vm.ready { it.summary.tuners.size == 4 && !it.saving }
         assertEquals(
             0,
             jellyfin

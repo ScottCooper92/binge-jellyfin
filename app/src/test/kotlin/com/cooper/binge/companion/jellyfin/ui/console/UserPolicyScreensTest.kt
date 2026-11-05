@@ -41,8 +41,16 @@ class UserPolicyScreensTest {
     ) {
         val sam = ServerUser("sam", "Sam", false, null, policy)
         val libraries = listOf(ServerLibrary("m", "Movies", "movies", emptyList()), ServerLibrary("s", "Shows", "tvshows", emptyList()))
-        val state = UsersUiState.Ready(listOf(sam), libraries, me = "me", open = "sam", section = section)
-        compose.setContent { JellyfinTheme { UsersScreen(state, actions, choices = choices, profile = profile) } }
+        val state = UsersUiState.Ready(listOf(sam), libraries, me = "me", open = "sam")
+        compose.setContent {
+            JellyfinTheme {
+                if (section == null) {
+                    UserScreen(state, "sam", actions)
+                } else {
+                    UserSectionScreen(state, "sam", section, choices, profile, actions)
+                }
+            }
+        }
     }
 
     @Test
@@ -164,5 +172,14 @@ class UserPolicyScreensTest {
         assertEquals("08:30", hours(8.5))
         assertEquals("24:00", hours(24.0))
         assertEquals("00:00", hours(0.0))
+    }
+
+    @Test
+    fun `a minute saved as a fraction of an hour reads back as the same minute`() {
+        assertEquals("02:03", hours(123 / 60.0))
+        assertEquals("16:05", hours(965 / 60.0))
+        for (m in 0..1440) {
+            assertEquals("%02d:%02d".format(m / 60, m % 60), hours(m / 60.0))
+        }
     }
 }
