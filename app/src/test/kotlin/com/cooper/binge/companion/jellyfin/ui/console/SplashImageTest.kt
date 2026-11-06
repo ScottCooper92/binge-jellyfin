@@ -148,23 +148,22 @@ class SplashImageTest {
     }
 
     @Test
-    fun `a switch touched during an upload that finishes at once is still sent, and stays shown`() {
+    fun `a switch touched while the re-read after an upload is in flight stays on, and is sent`() {
         val vm = viewModel()
-        val release = java.util.concurrent.CountDownLatch(1)
-        vm.splashImage.choose {
-            release.await()
-            jpeg()
-        }
+        val reread = jellyfin.hold("/System/Configuration/branding", method = "GET")
+        vm.splashImage.choose { jpeg() }
+        reread.awaitArrival()
         vm.setSplashscreen(true)
-        release.countDown()
+        reread.release()
         vm.splash { !it.busy }
-        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
         assertTrue(vm.ready().branding.splashscreen)
+        assertTrue(vm.ready().branding.customSplashscreen)
+        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
         assertEquals("/data/splashscreen-upload.jpg", stored().getValue("SplashscreenLocation").jsonPrimitive.content)
     }
 
     @Test
-    fun `a change left unsent by an unreachable write is sent by the next upload, not dropped by the re-read`() {
+    fun `a change left unsent by an unreachable write is still owed after an upload, and a retry sends it`() {
         val vm = viewModel()
         jellyfin.dropped += "/System/Configuration/branding"
         vm.setSplashscreen(true)
@@ -172,8 +171,11 @@ class SplashImageTest {
         jellyfin.dropped -= "/System/Configuration/branding"
         vm.splashImage.choose { jpeg() }
         vm.splash { !it.busy }
+        val after = vm.ready { it.branding.customSplashscreen }
+        assertTrue(after.branding.splashscreen)
+        assertEquals(ConsoleFailure.Unreachable, after.saveFailed)
+        vm.retrySave()
         jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
-        assertTrue(vm.ready().branding.splashscreen)
     }
 
     @Test
@@ -239,7 +241,7 @@ class SplashImageTest {
         val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
         // Robolectric decodes any bytes to a stand-in bitmap, so the unreadable file is the prepare step answering null.
-        val controller = SplashImageController(connection, kotlinx.coroutines.GlobalScope, {}, {}, prepare = { null })
+        val controller = SplashImageController(connection, kotlinx.coroutines.GlobalScope, {}, prepare = { null })
         controller.choose { "not an image".toByteArray() }
         runBlocking { withTimeout(TIMEOUT_MILLIS) { controller.state.first { !it.busy && it.unreadable } } }
         assertEquals(0, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == "/Branding/Splashscreen" })

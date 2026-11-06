@@ -15,6 +15,7 @@ import com.cooper.binge.companion.jellyfin.server.METADATA_LANGUAGE
 import com.cooper.binge.companion.jellyfin.server.QUICK_CONNECT_AVAILABLE
 import com.cooper.binge.companion.jellyfin.server.SERVER_NAME
 import com.cooper.binge.companion.jellyfin.server.SPLASHSCREEN_ENABLED
+import com.cooper.binge.companion.jellyfin.server.SPLASHSCREEN_LOCATION
 import com.cooper.binge.companion.jellyfin.server.ServerSettings
 import com.cooper.binge.companion.jellyfin.server.branding
 import com.cooper.binge.companion.jellyfin.server.brandingConfiguration
@@ -113,10 +114,10 @@ class ServerSettingsViewModel(
         SplashImageController(
             connection,
             viewModelScope,
-            settleBranding = { brand.settle().await() },
             adoptBranding = { json ->
-                brand.loaded(json)
-                update { copy(branding = json.branding()) }
+                // Only the image's location: the rest of the page's copy, and what it has waiting, stays.
+                brand.adoptKey(SPLASHSCREEN_LOCATION, json[SPLASHSCREEN_LOCATION])
+                update { copy(branding = brand.shown.branding()) }
             },
         )
 

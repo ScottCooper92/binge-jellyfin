@@ -40,12 +40,11 @@ data class SplashUiState(
  * configuration on the server (`SplashscreenLocation`), so each one afterwards reads the configuration again and hands it to
  * [adoptBranding]: on Jellyfin 10.11 that is how the page learns whether the image is the user's own. A branding save does
  * not need to wait for the upload, since the server keeps the location it has whatever the save carries (checked on 10.11.6).
- * The re-read replaces the page's copy, though, so what the page has waiting is sent ([settleBranding]) just before it.
+ * The page takes only the location from the re-read, so a change it has waiting is neither sent early nor lost.
  */
 internal class SplashImageController(
     private val connection: Connection,
     private val scope: CoroutineScope,
-    private val settleBranding: suspend () -> Unit,
     private val adoptBranding: suspend (JsonObject) -> Unit,
     private val prepare: (ByteArray) -> ByteArray? = ::fittedImage,
     private val work: CoroutineDispatcher = Dispatchers.Default,
@@ -128,7 +127,6 @@ internal class SplashImageController(
     private fun change(block: suspend () -> Unit) = connection.launchSave(block)
 
     private suspend fun adoptCurrentBranding() {
-        settleBranding()
         connection.consoleCall(TAG) { _, client -> client.brandingConfiguration() }.getOrNull()?.let { json ->
             // On the scope's own thread, as the page's saves are, and not at all once the page has gone.
             scope.launch { adoptBranding(json) }.join()
