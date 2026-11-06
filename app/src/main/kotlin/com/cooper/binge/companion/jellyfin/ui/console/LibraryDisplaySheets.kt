@@ -150,6 +150,8 @@ internal fun NewEntryForm(
     var step by rememberSaveable { mutableIntStateOf(startStep) }
     var first by rememberSaveable { mutableStateOf("") }
     var second by rememberSaveable { mutableStateOf("") }
+    // Back from the second half of a substitution returns to the first, which keeps what was typed.
+    StepBack(if (list.pairs && step == 1) ({ step = 0 }) else null)
     if (list.pairs && step == 1) {
         TextEntrySurface(
             title = stringResource(R.string.display_substitution_to),

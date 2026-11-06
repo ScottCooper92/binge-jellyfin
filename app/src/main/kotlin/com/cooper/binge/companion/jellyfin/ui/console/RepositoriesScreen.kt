@@ -163,6 +163,8 @@ internal fun AddRepositoryForm(
     var name by rememberSaveable { mutableStateOf("") }
     var url by rememberSaveable { mutableStateOf("") }
     val valid = repositoryUrl(url) != null
+    // Back from the address returns to the name, which keeps what was typed.
+    StepBack(if (step == 1 && !saving) ({ step = 0 }) else null)
     if (step == 0) {
         TextEntrySurface(
             title = stringResource(R.string.repositories_name_title),

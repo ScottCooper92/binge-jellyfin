@@ -77,6 +77,17 @@ internal fun AddLibraryForm(
     var path by rememberSaveable { mutableStateOf("") }
     // The folder the server last said it hasn't got; editing the path drops the line.
     var tried by rememberSaveable { mutableStateOf("") }
+    // Back steps back through the library's steps, each keeping what was typed or picked; from the name it closes the sheet, as it
+    // does while the library is being added.
+    StepBack(
+        when {
+            saving -> null
+            step == Step.KIND -> ({ step = Step.NAME })
+            step == Step.FOLDER -> ({ step = Step.KIND })
+            step == Step.TYPE -> ({ step = Step.FOLDER })
+            else -> null
+        },
+    )
     when (step) {
         Step.NAME -> {
             val taken = names.any { it.equals(name.trim(), ignoreCase = true) }
