@@ -70,6 +70,7 @@ import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleTextField
+import com.cooper.binge.companion.jellyfin.ui.console.OwnUserAvatar
 import com.binge.designsystem.R as DesR
 
 /** What the screens can ask of the [JellyfinViewModel]. */
@@ -381,6 +382,7 @@ private fun ServerGroup(
             listOfNotNull(
                 ListItem(
                     icon = Icons.Outlined.Person,
+                    leadingContent = { OwnUserAvatar(state) },
                     label = state.session.userName,
                     detail =
                         stringResource(

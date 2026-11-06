@@ -10,6 +10,8 @@ import kotlinx.serialization.json.JsonObject
 data class JellyfinAccount(
     val name: String = "",
     private val policy: JsonObject = JsonObject(emptyMap()),
+    /** The tag of the user's own picture, as `/Users/Me` gives it; null when they have none. It changes when the picture does. */
+    val imageTag: String? = null,
 ) {
     /** Whether the policy has been read: until then, a page this account can't open may still be one it can. */
     val isRead: Boolean get() = policy.isNotEmpty()

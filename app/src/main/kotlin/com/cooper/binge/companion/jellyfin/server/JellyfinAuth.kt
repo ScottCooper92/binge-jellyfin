@@ -72,7 +72,11 @@ suspend fun JellyfinClient.logout() {
 /** The signed-in user, with their policy: what the console offers them. */
 suspend fun JellyfinClient.me(): JellyfinAccount {
     val json = getObject("Users/Me")
-    return JellyfinAccount(name = json.string("Name").orEmpty(), policy = json.obj("Policy") ?: JsonObject(emptyMap()))
+    return JellyfinAccount(
+        name = json.string("Name").orEmpty(),
+        policy = json.obj("Policy") ?: JsonObject(emptyMap()),
+        imageTag = json.string("PrimaryImageTag")?.takeIf { it.isNotBlank() },
+    )
 }
 
 /**

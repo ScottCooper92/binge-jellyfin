@@ -44,6 +44,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
+import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
@@ -157,7 +158,7 @@ class MainActivity : ComponentActivity() {
                     selectedPage = stack.entries.firstOrNull()?.page ?: ConsolePage.NowPlaying,
                 )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
-            CompositionLocalProvider(LocalFlags provides flags) {
+            CompositionLocalProvider(LocalFlags provides flags, LocalUserPictures provides graph.userPictures) {
                 if (LocalConfiguration.current.isTelevision()) {
                     JellyfinTvTheme { TvJellyfinRoot(state, actions, playback = rememberTvPlayback(graph.connection, state)) }
                 } else {
