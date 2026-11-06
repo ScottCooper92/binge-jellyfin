@@ -55,6 +55,19 @@ class TaskTriggersScreenshotTest {
     @Composable
     fun triggers() = TaskScreen(open(), "scan", TasksActions())
 
+    /** A task open after a process restore, while the view model loads the board again under its screen. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun taskLoading() = TaskScreen(TasksUiState.Loading, "scan", TasksActions())
+
+    /** The same reload, failed: the error screen with Retry under the task's own bar. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun taskFailed() = TaskScreen(TasksUiState.Failed(ConsoleFailure.Unreachable), "scan", TasksActions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews

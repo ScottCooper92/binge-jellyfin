@@ -103,6 +103,25 @@ class LogsScreenshotTest {
     @Composable
     fun openLogFailed() = LogScreen(open(content = LogContent.Failed(ConsoleFailure.Unreachable)), "log_20261031.log", LogsActions())
 
+    /** A log open after a process restore, while the files load again under its screen. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun logFilesLoading() = LogScreen(LogsUiState.Loading, "log_20261031.log", LogsActions())
+
+    /** The same reload, failed: the error screen with Retry under the log's own bar. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun logFilesFailed() = LogScreen(LogsUiState.Failed(ConsoleFailure.Unreachable), "log_20261031.log", LogsActions())
+
+    /** The files are back but the view model holds no log, or another one, so this one is read again: the skeleton. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun logNotOpenYet() = LogScreen(LogsUiState.Ready(previewFiles), "log_20261031.log", LogsActions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
