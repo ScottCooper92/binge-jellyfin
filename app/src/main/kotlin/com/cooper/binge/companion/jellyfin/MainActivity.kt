@@ -1,8 +1,11 @@
 package com.cooper.binge.companion.jellyfin
 
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,7 +30,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
+import com.cooper.binge.companion.jellyfin.server.AndroidLocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -71,6 +76,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** This app's own Settings page, where the permission can be switched on. A device with no such page does nothing. */
+    private fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+        attempt { startActivity(intent) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -83,6 +94,7 @@ class MainActivity : ComponentActivity() {
                         graph.connection,
                         graph.index,
                         discover = graph.discovery::find,
+                        localNetwork = AndroidLocalNetworkPermission(applicationContext),
                     )
                 }
             }
@@ -95,6 +107,8 @@ class MainActivity : ComponentActivity() {
             // Back returns to the opener, and to the home from the first. Leaving SignedIn closes them all.
             var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
             val signedIn = state is UiState.SignedIn
+            // The permission is asked for once; after that the way to it is the app's settings, as the prompt may not come back.
+            var askedLocalNetwork by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(signedIn) { if (!signedIn) stack = stack.clear() }
             // A page the server or the user lost (Quick Connect turned off, admin rights taken away) closes,
             // once the refresh has read what they now allow; Back skips it.
@@ -125,6 +139,15 @@ class MainActivity : ComponentActivity() {
                         viewModel.connect()
                     },
                     onOpenPage = { stack = stack.open(it) },
+                    onAllowLocalNetwork = {
+                        if (askedLocalNetwork) {
+                            openAppSettings()
+                        } else {
+                            askedLocalNetwork = true
+                            withLocalNetwork { viewModel.refresh() }
+                        }
+                    },
+                    localNetworkAsked = askedLocalNetwork,
                 )
             // Beside a page the home stays on screen, so what it opens replaces the page that is open.
             // Now playing is what shows beside it while none is open.

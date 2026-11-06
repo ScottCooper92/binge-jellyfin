@@ -129,9 +129,14 @@ app:catalog_no_version  8680dc729209
 app:catalog_owner  25a239179c0c
 app:catalog_version  dd167905de0d
 app:companion_label  8e03b3c29d2b
+app:connection_allow_local_network  b97c4592cdf4
+app:connection_allow_local_network_short  827bdde10636
 app:connection_couldnt_load_body  99d029d36d24
 app:connection_couldnt_load_headline  1360a3cc2434
 app:connection_edit_server  2e73abd54f5a
+app:connection_local_network_body  5ff0424fd4c8
+app:connection_local_network_headline  63035dd30475
+app:connection_open_settings  df2cdb48632f
 app:connection_retry  d8b8392e2c54
 app:connection_unreachable_body  729e4c4edc93
 app:connection_unreachable_headline  4da010bad62f

@@ -89,6 +89,10 @@ data class Actions(
     val onDiscover: () -> Unit = {},
     val onChooseServer: (DiscoveredServer) -> Unit = {},
     val onOpenPage: (ConsolePage) -> Unit = {},
+    /** Asks for the local-network permission, or, once it has been asked for, opens the app's settings where it can be switched on. */
+    val onAllowLocalNetwork: () -> Unit = {},
+    /** The permission has been asked for, so the way to it is now the app's settings. */
+    val localNetworkAsked: Boolean = false,
     /** The page showing beside the home, marked in its list; null where none is (the pages' own actions carry none). */
     val selectedPage: ConsolePage? = null,
 )

@@ -1,6 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -97,5 +100,76 @@ class ConnectionProblemTest {
         compose.onAllNodes(hasClickAction()).onFirst().performClick()
         compose.onNodeWithText("Edit server details").performClick()
         assertEquals(listOf("edit"), calls)
+    }
+
+    @Test
+    fun `a missing local-network permission swaps Try again for the way to grant it, then for the app's settings`() {
+        val calls = mutableListOf<String>()
+        var asked by mutableStateOf(false)
+        compose.setContent {
+            JellyfinTheme {
+                JellyfinRoot(
+                    state(ConnectionHealth.LocalNetworkDenied),
+                    Actions(onAllowLocalNetwork = { calls += "allow" }, localNetworkAsked = asked),
+                )
+            }
+        }
+        compose.onNodeWithText("Local network access is off").assertExists()
+        compose.onAllNodesWithText("Try again").assertCountEquals(0)
+        compose.onNodeWithText("Edit server details").assertExists()
+        compose.onNodeWithText("Allow local network access").performClick()
+        assertEquals(listOf("allow"), calls)
+        asked = true
+        compose.waitForIdle()
+        compose.onNodeWithText("Open app settings").assertExists()
+        compose.onAllNodesWithText("Allow local network access").assertCountEquals(0)
+    }
+
+    @Test
+    fun `an unreachable server is asked about again on a backoff, and each wait is the next one`() {
+        val calls = mutableListOf<Long>()
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            JellyfinTheme {
+                ConnectionAutoRetry(ConnectionHealth.Unreachable, refreshing = false, onRefresh = {
+                    calls += compose.mainClock.currentTime
+                }, delaysMillis = listOf(1_000L, 2_000L, 3_000L))
+            }
+        }
+        compose.mainClock.advanceTimeBy(500)
+        assertEquals(0, calls.size)
+        compose.mainClock.advanceTimeBy(600)
+        assertEquals(1, calls.size)
+        // The second wait is its own, after the first try, not counted from the start.
+        compose.mainClock.advanceTimeBy(1_500)
+        assertEquals(1, calls.size)
+        compose.mainClock.advanceTimeBy(600)
+        assertEquals(2, calls.size)
+        compose.mainClock.advanceTimeBy(20_000)
+        assertEquals(3, calls.size)
+    }
+
+    @Test
+    fun `a try the user started is not doubled, and a missing permission is not retried on a timer`() {
+        var calls = 0
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            JellyfinTheme {
+                ConnectionAutoRetry(
+                    ConnectionHealth.Unreachable,
+                    refreshing = true,
+                    onRefresh = { calls++ },
+                    delaysMillis = listOf(100L, 200L),
+                )
+                ConnectionAutoRetry(
+                    ConnectionHealth.LocalNetworkDenied,
+                    refreshing = false,
+                    onRefresh = { calls++ },
+                    delaysMillis = listOf(100L, 200L),
+                )
+            }
+        }
+        compose.mainClock.advanceTimeBy(5_000)
+        assertEquals(0, calls)
     }
 }

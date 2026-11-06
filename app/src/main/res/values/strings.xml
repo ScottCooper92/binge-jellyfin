@@ -48,6 +48,11 @@
     <string name="connection_unreachable_body">It did not answer. It may be offline or its address may have changed. Check the server, then try again.</string>
     <string name="connection_couldnt_load_headline">Couldn\'t load your server</string>
     <string name="connection_couldnt_load_body">It answered with something this app couldn\'t use. Try again, or check the server.</string>
+    <string name="connection_local_network_headline">Local network access is off</string>
+    <string name="connection_local_network_body">Android needs your permission before this app can reach a server on your home network. Allow it, then try again.</string>
+    <string name="connection_allow_local_network">Allow local network access</string>
+    <string name="connection_allow_local_network_short">Allow local network</string>
+    <string name="connection_open_settings">Open app settings</string>
     <string name="connection_retry">Try again</string>
     <string name="connection_edit_server">Edit server details</string>
     <string name="settings_titles_failed">Couldn\'t reach the server</string>
