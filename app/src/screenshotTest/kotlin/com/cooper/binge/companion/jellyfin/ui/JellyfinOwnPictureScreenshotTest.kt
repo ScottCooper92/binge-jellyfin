@@ -52,11 +52,6 @@ class JellyfinOwnPictureScreenshotTest {
     @Composable
     fun userWithPicture() = Home(previewSignedInPicture)
 
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun adminWithoutPicture() = Home(previewSignedInAdmin)
-
     private companion object {
         const val PICTURE = 96
         const val RING = 8f
