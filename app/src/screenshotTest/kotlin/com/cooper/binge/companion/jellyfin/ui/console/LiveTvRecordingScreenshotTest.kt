@@ -59,7 +59,7 @@ class LiveTvRecordingScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun padding() = Surface { RecordingNumberForm(RecordingNumber.PostPadding, "5", LiveTvRecordingActions()) }
+    fun padding() = Surface { RecordingNumberForm(RecordingNumber.PostPadding, "300", LiveTvRecordingActions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
