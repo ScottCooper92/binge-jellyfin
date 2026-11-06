@@ -605,7 +605,7 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Configuration/encoding" -> json(encodingConfiguration)
             path == "/System/Configuration/branding" && request.method == "POST" -> {
-                brandingConfiguration = request.body?.utf8().orEmpty()
+                brandingConfiguration = savedBranding(request.body?.utf8().orEmpty())
                 MockResponse(code = 204)
             }
             path == "/System/Configuration/branding" -> json(servedBranding())
@@ -1146,6 +1146,16 @@ class FakeJellyfin : Dispatcher() {
      * `[JsonIgnore]`d ("Not served via the API"), so the page cannot tell an image of the user's own from the default.
      */
     var servesSplashLocation = true
+
+    /**
+     * A branding save as the server keeps it: whatever the body says of `SplashscreenLocation`, the location the server has
+     * stays (checked on a 10.11.6 server: a body without it, with null and with another path all left it as it was).
+     */
+    private fun savedBranding(body: String): String {
+        val posted = runCatching { Json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return body
+        val kept = runCatching { Json.parseToJsonElement(brandingConfiguration).jsonObject["SplashscreenLocation"] }.getOrNull()
+        return JsonObject(posted - "SplashscreenLocation" + listOfNotNull(kept?.let { "SplashscreenLocation" to it })).toString()
+    }
 
     private fun servedBranding(): String =
         if (servesSplashLocation) {

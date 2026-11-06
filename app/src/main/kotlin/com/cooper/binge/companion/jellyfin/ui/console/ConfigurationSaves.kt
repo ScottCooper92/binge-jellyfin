@@ -89,6 +89,23 @@ internal class ConfigurationSaves(
         engine.discard()
     }
 
+    /**
+     * Takes one key's value from a read of the server, on both copies and without [SaveAsMade.discard]: what the page has
+     * waiting stays waiting. A null [value] drops the key.
+     */
+    fun adoptKey(
+        key: String,
+        value: JsonElement?,
+    ) {
+        saved = saved.with(key, value)
+        shown = shown.with(key, value)
+    }
+
+    private fun JsonObject.with(
+        key: String,
+        value: JsonElement?,
+    ) = JsonObject(if (value == null) this - key else this + (key to value))
+
     fun set(
         key: String,
         value: JsonElement,

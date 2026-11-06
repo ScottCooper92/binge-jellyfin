@@ -37,14 +37,14 @@ data class SplashUiState(
 
 /**
  * Setting and removing the login splash image, for the server settings page. An upload or a removal changes the branding
- * configuration on the server (`SplashscreenLocation`) while the page holds a copy it saves whole, so each one first sends
- * what the page has waiting ([settleBranding]), and afterwards reads the configuration again and hands it to [adoptBranding]:
- * without that, the next switch the user touched would send the old location back and drop the image.
+ * configuration on the server (`SplashscreenLocation`), so each one afterwards reads the configuration again and hands it to
+ * [adoptBranding]: on Jellyfin 10.11 that is how the page learns whether the image is the user's own. A branding save does
+ * not need to wait for the upload, since the server keeps the location it has whatever the save carries (checked on 10.11.6).
+ * The page takes only the location from the re-read, so a change it has waiting is neither sent early nor lost.
  */
 internal class SplashImageController(
     private val connection: Connection,
     private val scope: CoroutineScope,
-    private val settleBranding: suspend () -> Unit,
     private val adoptBranding: suspend (JsonObject) -> Unit,
     private val prepare: (ByteArray) -> ByteArray? = ::fittedImage,
     private val work: CoroutineDispatcher = Dispatchers.Default,
@@ -92,7 +92,6 @@ internal class SplashImageController(
                 _state.update { it.copy(busy = false, unreadable = true) }
                 return@change
             }
-            settleBranding()
             val sent = connection.consoleCall(TAG) { _, client -> client.uploadSplashscreen(jpeg) }
             adoptCurrentBranding()
             val shown = if (sent.isSuccess) readPicture().getOrNull() ?: decode(jpeg) else null
@@ -111,7 +110,6 @@ internal class SplashImageController(
         if (_state.value.busy) return
         _state.update { it.copy(busy = true, confirmingRemove = false, unreadable = false, refused = null) }
         change {
-            settleBranding()
             val removed = connection.consoleCall(TAG) { _, client -> client.removeSplashscreen() }
             adoptCurrentBranding()
             // What is served after a removal is Jellyfin's own, if it serves one, so read it rather than assume none.

@@ -15,6 +15,7 @@ import com.cooper.binge.companion.jellyfin.server.METADATA_LANGUAGE
 import com.cooper.binge.companion.jellyfin.server.QUICK_CONNECT_AVAILABLE
 import com.cooper.binge.companion.jellyfin.server.SERVER_NAME
 import com.cooper.binge.companion.jellyfin.server.SPLASHSCREEN_ENABLED
+import com.cooper.binge.companion.jellyfin.server.SPLASHSCREEN_LOCATION
 import com.cooper.binge.companion.jellyfin.server.ServerSettings
 import com.cooper.binge.companion.jellyfin.server.branding
 import com.cooper.binge.companion.jellyfin.server.brandingConfiguration
@@ -113,10 +114,10 @@ class ServerSettingsViewModel(
         SplashImageController(
             connection,
             viewModelScope,
-            settleBranding = { brand.settle().await() },
             adoptBranding = { json ->
-                brand.loaded(json)
-                update { copy(branding = json.branding()) }
+                // Only the image's location: the rest of the page's copy, and what it has waiting, stays.
+                brand.adoptKey(SPLASHSCREEN_LOCATION, json[SPLASHSCREEN_LOCATION])
+                update { copy(branding = brand.shown.branding()) }
             },
         )
 
@@ -156,8 +157,6 @@ class ServerSettingsViewModel(
      * Saves the text the sheet for [text] holds. The sheet stays open while the save runs: it closes when the server
      * takes it, stays open with what was typed and says why if the server refuses it, and closes if the server can't be
      * reached, the change then waiting unsent on the page. A text that is unchanged, or a blank server name, closes it.
-     * So does a branding text while the splash image changes, with nothing sent: a write now would send back the
-     * location the server is about to replace.
      */
     fun saveText(
         text: ServerText,
@@ -169,7 +168,7 @@ class ServerSettingsViewModel(
                 ServerText.LoginDisclaimer -> Triple(brand, LOGIN_DISCLAIMER, JsonPrimitive(value.trim()))
                 ServerText.CustomCss -> Triple(brand, CUSTOM_CSS, JsonPrimitive(value))
             }
-        val unsendable = (saves === brand && splashImage.state.value.busy) || (text == ServerText.Name && json.content.isEmpty())
+        val unsendable = text == ServerText.Name && json.content.isEmpty()
         if (unsendable || saves.shown[key] == json) {
             update { copy(editing = null) }
             return
@@ -210,10 +209,7 @@ class ServerSettingsViewModel(
 
     fun setQuickConnect(on: Boolean) = server.set(QUICK_CONNECT_AVAILABLE, JsonPrimitive(on))
 
-    /** Not while the image changes: a write now would send back the location the server is about to replace. */
-    fun setSplashscreen(on: Boolean) {
-        if (!splashImage.state.value.busy) brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
-    }
+    fun setSplashscreen(on: Boolean) = brand.set(SPLASHSCREEN_ENABLED, JsonPrimitive(on))
 
     /** Sends the changes a failed write left unsent. */
     fun retrySave() {
