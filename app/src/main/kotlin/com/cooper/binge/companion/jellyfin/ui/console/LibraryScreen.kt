@@ -91,6 +91,8 @@ fun LibraryScreen(
         snackbarHostState = host,
         // The languages are a long list, so that page lays itself out as a lazy list under the bar instead of in a scrolling form.
         scrolling = page != LibraryPage.Languages,
+        // Each of a library's pages keeps its own scroll and bar position, so a page opened over another starts at the top with its bar shown.
+        positionKey = page.positionKey,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {

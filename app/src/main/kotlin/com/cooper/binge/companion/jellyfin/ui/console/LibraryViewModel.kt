@@ -63,6 +63,18 @@ sealed interface LibraryPage {
     ) : LibraryPage
 }
 
+/** A key that tells one of a library's pages from another, so each keeps its own scroll and app-bar position. */
+internal val LibraryPage.positionKey: String
+    get() =
+        when (this) {
+            LibraryPage.Main -> "main"
+            LibraryPage.Languages -> "languages"
+            is LibraryPage.Providers -> "providers:${group.name}"
+            is LibraryPage.One -> "provider:${group.name}:$name"
+            is LibraryPage.Fetchers -> "fetchers:${kind.name}"
+            is LibraryPage.Fetcher -> "fetcher:${kind.name}:$type:$name"
+        }
+
 /** What a library's page has open over it: a sheet to type in or pick from, or a confirm. */
 sealed interface LibraryDialog {
     data object Rename : LibraryDialog
