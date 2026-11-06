@@ -47,7 +47,7 @@ internal fun DisplaySheets(
     val sheet = state.sheet ?: return
     // The new-entry sheet belongs to a list's editor, the others to the page: only one of the two says it.
     if ((sheet == DisplaySheet.NewEntry) != (editing != null)) return
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }) {
+    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }, stackPagesWhenCompact = true) { nav ->
         when (sheet) {
             DisplaySheet.ChapterDuration -> ChapterDurationForm(state.configuration.int(METADATA_DUMMY_CHAPTER) ?: 0, actions)
             DisplaySheet.MetadataPath ->
@@ -56,6 +56,7 @@ internal fun DisplaySheets(
                     folders,
                     folderActions,
                     actions,
+                    nav.typePath(),
                 )
             DisplaySheet.NewEntry -> editing?.let { NewEntryForm(it, actions) }
         }
@@ -103,21 +104,20 @@ internal fun MetadataPathForm(
     folders: FolderBrowseState,
     folderActions: FolderActions,
     actions: LibraryDisplayActions,
-    startTyping: Boolean = false,
+    typePath: TypePath = TypePath.Off,
 ) {
-    var typing by rememberSaveable { mutableStateOf(startTyping) }
     var path by rememberSaveable { mutableStateOf(current) }
     val choose = { value: String ->
         actions.onText(METADATA_PATH, value.trim())
         actions.onSheet(null)
     }
-    if (typing) {
+    if (typePath.typing) {
         TextEntrySurface(
             title = stringResource(R.string.display_path),
             value = path,
             onValueChange = { path = it },
             onSubmit = { choose(path) },
-            onCancel = { typing = false },
+            onCancel = typePath.close,
             cancelLabel = stringResource(R.string.library_back),
             submitLabel = stringResource(R.string.library_save),
             hint = stringResource(R.string.display_path_hint),
@@ -131,7 +131,7 @@ internal fun MetadataPathForm(
             actions = folderActions,
             busy = false,
             onChoose = choose,
-            onType = { typing = true },
+            onType = typePath.open,
             onCancel = { actions.onSheet(null) },
         )
     }

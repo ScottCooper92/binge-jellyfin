@@ -114,7 +114,13 @@ class LibraryDisplayScreenshotTest {
     @Composable
     fun metadataFolderTyped() =
         Surface {
-            MetadataPathForm("/config/metadata", FolderBrowseState.Loading, FolderActions(), LibraryDisplayActions(), startTyping = true)
+            MetadataPathForm(
+                "/config/metadata",
+                FolderBrowseState.Loading,
+                FolderActions(),
+                LibraryDisplayActions(),
+                typePath = TypePath.On,
+            )
         }
 
     @PreviewTest

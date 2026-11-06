@@ -37,10 +37,17 @@ internal fun RecordingSheets(
     folderActions: FolderActions,
 ) {
     val sheet = state.sheet ?: return
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }) {
+    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }, stackPagesWhenCompact = true) { nav ->
         when (sheet) {
             is RecordingSheet.Folder ->
-                RecordingFolderForm(sheet.folder, state.config.string(sheet.folder.key).orEmpty(), folders, folderActions, actions)
+                RecordingFolderForm(
+                    sheet.folder,
+                    state.config.string(sheet.folder.key).orEmpty(),
+                    folders,
+                    folderActions,
+                    actions,
+                    nav.typePath(),
+                )
             is RecordingSheet.Number -> RecordingNumberForm(sheet.field, sheet.field.shown(state.config), actions)
         }
     }
@@ -54,17 +61,16 @@ internal fun RecordingFolderForm(
     folders: FolderBrowseState,
     folderActions: FolderActions,
     actions: LiveTvRecordingActions,
-    startTyping: Boolean = false,
+    typePath: TypePath = TypePath.Off,
 ) {
-    var typing by rememberSaveable { mutableStateOf(startTyping) }
     var path by rememberSaveable { mutableStateOf(current) }
-    if (typing) {
+    if (typePath.typing) {
         TextEntrySurface(
             title = stringResource(folder.title()),
             value = path,
             onValueChange = { path = it },
             onSubmit = { actions.onFolder(folder, path) },
-            onCancel = { typing = false },
+            onCancel = typePath.close,
             cancelLabel = stringResource(R.string.library_back),
             submitLabel = stringResource(R.string.library_save),
             hint = stringResource(R.string.live_tv_recording_folder_hint),
@@ -78,7 +84,7 @@ internal fun RecordingFolderForm(
             actions = folderActions,
             busy = false,
             onChoose = { actions.onFolder(folder, it) },
-            onType = { typing = true },
+            onType = typePath.open,
             onCancel = { actions.onSheet(null) },
         )
     }

@@ -105,7 +105,7 @@ class LiveTvRecordingScreenshotTest {
                 FolderBrowseState.Loading,
                 FolderActions(),
                 LiveTvRecordingActions(),
-                startTyping = true,
+                typePath = TypePath.On,
             )
         }
 }

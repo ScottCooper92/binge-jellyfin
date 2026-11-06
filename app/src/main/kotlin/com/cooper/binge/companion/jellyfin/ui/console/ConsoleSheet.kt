@@ -17,6 +17,7 @@ import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeSheetKind
+import com.binge.designsystem.component.BingeSheetNav
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.TextEntrySurface
@@ -38,6 +39,28 @@ internal fun ConsoleSheet(
         content()
     }
 }
+
+/** The page of its sheet that a folder form's "Type a path" step is. */
+private const val TYPE_PATH_PAGE = "type-a-path"
+
+/**
+ * Whether a folder form's "Type a path" step is showing, and how to enter and leave it. The step is a page of the form's
+ * sheet, so Back returns to the folder list before it closes the sheet (after closing the keyboard, if it is up); a frame
+ * passes [On] or [Off] to draw one or the other.
+ */
+internal class TypePath(
+    val typing: Boolean,
+    val open: () -> Unit,
+    val close: () -> Unit,
+) {
+    companion object {
+        val Off = TypePath(false, {}, {})
+        val On = TypePath(true, {}, {})
+    }
+}
+
+/** The "Type a path" step of this sheet, for a folder form to read and to enter and leave. */
+internal fun BingeSheetNav.typePath() = TypePath(page == TYPE_PATH_PAGE, { push(TYPE_PATH_PAGE) }, { pop() })
 
 /**
  * The design system's [TextEntrySurface] for one typed value, in the console's form: the page's [body] under the title,

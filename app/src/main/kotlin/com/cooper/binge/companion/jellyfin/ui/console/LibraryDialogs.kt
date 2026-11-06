@@ -47,8 +47,8 @@ internal fun LibraryDialogs(
                 DelimiterWhitelistForm(state.options.delimiterWhitelist().joinToString("\n"), actions)
             }
         LibraryDialog.AddFolder ->
-            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
-                AddFolderForm(state, folders, folderActions, actions)
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close, stackPagesWhenCompact = true) { nav ->
+                AddFolderForm(state, folders, folderActions, actions, nav.typePath())
             }
         is LibraryDialog.RemoveFolder -> RemoveFolderDialog(dialog.path, actions)
         LibraryDialog.Remove -> RemoveLibraryDialog(state.library.name, actions)
@@ -160,17 +160,16 @@ internal fun AddFolderForm(
     folders: FolderBrowseState,
     folderActions: FolderActions,
     actions: LibraryActions,
-    startTyping: Boolean = false,
+    typePath: TypePath = TypePath.Off,
 ) {
-    var typing by rememberSaveable { mutableStateOf(startTyping) }
     var path by rememberSaveable { mutableStateOf("") }
-    if (typing) {
+    if (typePath.typing) {
         TextEntrySurface(
             title = stringResource(R.string.library_path_title),
             value = path,
             onValueChange = { path = it },
             onSubmit = { actions.onAddFolder(path) },
-            onCancel = { typing = false },
+            onCancel = typePath.close,
             cancelLabel = stringResource(R.string.library_back),
             submitLabel = stringResource(R.string.library_folder_add),
             hint = stringResource(R.string.library_path_hint),
@@ -190,7 +189,7 @@ internal fun AddFolderForm(
             actions = folderActions,
             busy = state.busy,
             onChoose = actions.onAddFolder,
-            onType = { typing = true },
+            onType = typePath.open,
             onCancel = { actions.onAsk(null) },
             failed = state.failed,
         )
