@@ -88,7 +88,13 @@ class LiveTvViewModel(
     fun sheet(sheet: TunerSheet?) = update { copy(sheet = sheet, problem = null) }
 
     /** Opens the form for [draft]: a new tuner of a kind, or one the server found. */
-    fun form(draft: TunerDraft) = update { copy(sheet = TunerSheet.Form(draft), problem = null) }
+    fun form(draft: TunerDraft) =
+        update {
+            copy(
+                sheet = TunerSheet.Form(draft, from = sheet?.takeIf { it !is TunerSheet.Discovering && it !is TunerSheet.Form }),
+                problem = null,
+            )
+        }
 
     /** Opens the form for the tuner [id]. */
     fun edit(id: String) {

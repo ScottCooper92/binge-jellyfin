@@ -101,11 +101,23 @@ sealed interface TunerSheet {
         val failure: ConsoleFailure,
     ) : TunerSheet
 
-    /** A tuner's form: a new one, or the one with [TunerDraft.id]. */
+    /**
+     * A tuner's form: a new one, or the one with [TunerDraft.id]. [from] is the sheet it was opened from (the choice, or what the
+     * search found), which Back returns to; null for a tuner opened from the page's own row.
+     */
     data class Form(
         val draft: TunerDraft,
+        val from: TunerSheet? = null,
     ) : TunerSheet
 }
+
+/** The sheet Back returns to from this one, or null where it has none and Back closes the sheet. */
+internal fun TunerSheet.previous(): TunerSheet? =
+    when (this) {
+        TunerSheet.Choose -> null
+        TunerSheet.Discovering, is TunerSheet.Found, is TunerSheet.Failed -> TunerSheet.Choose
+        is TunerSheet.Form -> from
+    }
 
 /** What went wrong with a tuner change, which decides how the page says it. */
 enum class TunerProblem {
