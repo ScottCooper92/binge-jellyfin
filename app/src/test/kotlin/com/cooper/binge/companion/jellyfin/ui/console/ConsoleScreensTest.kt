@@ -9,6 +9,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -901,9 +902,10 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Add trigger").performClick()
         compose.onNodeWithText("New trigger").assertExists()
         compose.onNodeWithText("Every so often").performClick()
-        compose.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress)).performScrollTo().performSemanticsAction(
-            SemanticsActions.SetProgress,
-        ) { it(2f) }
+        compose
+            .onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress) and hasContentDescription("Time limit"))
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(2f) }
         compose.onNodeWithText("Add").performClick()
         assertEquals(listOf(TaskTrigger.interval(6 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR)), added)
         compose

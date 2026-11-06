@@ -8,19 +8,23 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
+import com.cooper.binge.companion.jellyfin.server.TICKS_PER_MINUTE
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.server.TriggerKind
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -100,29 +104,17 @@ class AddTriggerFormTest {
     }
 
     @Test
-    fun `a twelve hour time is the minutes since midnight, with 12 a m as midnight and 12 p m as noon`() {
-        assertEquals(0, twelveHourMinutes("12", "00", afternoon = false))
-        assertEquals(12 * 60, twelveHourMinutes("12", "0", afternoon = true))
-        assertEquals(15 * 60, twelveHourMinutes("3", "00", afternoon = true))
-        assertEquals(23 * 60 + 59, twelveHourMinutes("11", "59", afternoon = true))
-        assertEquals(60 + 5, twelveHourMinutes("1", "5", afternoon = false))
-        listOf("" to "00", "0" to "00", "13" to "00", "3" to "60", "3" to "").forEach { (h, m) ->
-            assertEquals("$h:$m", null, twelveHourMinutes(h, m, afternoon = false))
-        }
-    }
-
-    @Test
     fun `the p m chip makes the daily trigger an afternoon one, and an hour out of range stops Add`() {
         val added = mutableListOf<TaskTrigger>()
         compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(onAddTrigger = { added += it }), is24Hour = false) } }
         compose.onNodeWithText("p.m.").performClick()
         compose.onNodeWithText("Add").performClick()
         assertEquals(listOf(TaskTrigger.daily(15 * TICKS_PER_HOUR)), added)
-        compose.onNodeWithText("3").performTextReplacement("13")
-        compose.onNodeWithText("Use an hour from 1 to 12 and minutes from 0 to 59.").assertIsDisplayed()
+        compose.onNodeWithText("03").performTextReplacement("13")
+        compose.onNodeWithText("Enter a valid time.").assertIsDisplayed()
         compose.onNodeWithText("Add").assertIsNotEnabled()
         compose.onNodeWithText("13").performTextReplacement("")
-        compose.onNodeWithText("Use an hour from 1 to 12 and minutes from 0 to 59.").assertIsDisplayed()
+        compose.onNodeWithText("Enter a valid time.").assertIsDisplayed()
         compose.onNodeWithText("Add").assertIsNotEnabled()
     }
 
@@ -140,10 +132,52 @@ class AddTriggerFormTest {
     }
 
     @Test
-    fun `a twenty four hour device keeps the Material time input, which has no period to clip`() {
+    fun `a twenty four hour device uses numeric fields without a period`() {
         compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = true) } }
         compose.onNodeWithText("p.m.").assertDoesNotExist()
         compose.onNodeWithTag(TRIGGER_TIME_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun `opening either clock format leaves both fields unfocused`() {
+        listOf(false, true).forEach { is24 ->
+            compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = is24) } }
+            compose.onNode(hasSetTextAction() and hasText("Hour")).assertIsNotFocused()
+            compose.onNode(hasSetTextAction() and hasText("Minute")).assertIsNotFocused()
+            compose.scenario.recreate()
+        }
+    }
+
+    @Test
+    fun `an interval slider draft becomes the same minutes in the added trigger`() {
+        val added = mutableListOf<TaskTrigger>()
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(onAddTrigger = { added += it }), TriggerKind.Interval) } }
+        compose
+            .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))[0]
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
+        compose.onNodeWithText("45 min").assertIsDisplayed()
+        compose.onNodeWithText("Add").performClick()
+        assertEquals(listOf(TaskTrigger.interval(45 * TICKS_PER_MINUTE)), added)
+    }
+
+    @Test
+    @Config(fontScale = 2f)
+    fun `the last weekday can scroll into view and is the day added`() {
+        val added = mutableListOf<TaskTrigger>()
+        compose.setContent {
+            JellyfinTheme {
+                AddTriggerForm(
+                    TasksActions(onAddTrigger = { added += it }),
+                    TriggerKind.Weekly,
+                    is24Hour = true,
+                )
+            }
+        }
+        // The horizontal row is the second scroll container after the whole form.
+        compose.onAllNodes(hasScrollAction())[1].performScrollToNode(hasText("Sun"))
+        compose.onNodeWithText("Sun").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Add").performClick()
+        assertEquals("Sunday", added.single().dayOfWeek)
     }
 
     private companion object {
