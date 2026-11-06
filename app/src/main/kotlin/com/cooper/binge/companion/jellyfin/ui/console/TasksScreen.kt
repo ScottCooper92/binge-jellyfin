@@ -28,6 +28,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ItemGroup
+import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
@@ -161,7 +162,11 @@ private fun Tasks(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        if (board.tasks.isEmpty()) item { ConsoleEmptyScreen(stringResource(R.string.tasks_empty), Icons.Outlined.Schedule) }
+        if (board.tasks.isEmpty()) {
+            item { ConsoleEmptyScreen(stringResource(R.string.tasks_empty), Icons.Outlined.Schedule) }
+        } else {
+            item { PageIntro(stringResource(R.string.tasks_intro)) }
+        }
         board.tasks.groupBy { it.category }.forEach { (category, tasks) ->
             item(key = category) {
                 ItemGroup(
