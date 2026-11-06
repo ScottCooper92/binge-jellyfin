@@ -154,7 +154,7 @@ class TranscodingScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun tempFolderTyped() =
-        Surface { TempFolderForm("", FolderBrowseState.Loading, FolderActions(), TranscodingActions(), startTyping = true) }
+        Surface { TempFolderForm("", FolderBrowseState.Loading, FolderActions(), TranscodingActions(), typePath = TypePath.On) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

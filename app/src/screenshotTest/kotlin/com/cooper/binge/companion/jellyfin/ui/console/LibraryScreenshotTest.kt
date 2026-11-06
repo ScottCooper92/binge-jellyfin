@@ -357,7 +357,7 @@ class LibraryScreenshotTest {
                 FolderBrowseState.Loading,
                 FolderActions(),
                 LibraryActions(),
-                startTyping = true,
+                typePath = TypePath.On,
             )
         }
 

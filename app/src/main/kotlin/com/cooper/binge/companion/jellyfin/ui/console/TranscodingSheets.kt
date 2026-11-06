@@ -56,7 +56,7 @@ internal fun TranscodingSheets(
     folderActions: FolderActions,
 ) {
     val sheet = state.sheet ?: return
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }) {
+    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }, stackPagesWhenCompact = true) { nav ->
         when (sheet) {
             is TranscodingSheet.Number ->
                 NumberForm(
@@ -80,6 +80,7 @@ internal fun TranscodingSheets(
                     folders,
                     folderActions,
                     actions,
+                    nav.typePath(),
                 )
         }
     }
@@ -179,21 +180,20 @@ internal fun TempFolderForm(
     folders: FolderBrowseState,
     folderActions: FolderActions,
     actions: TranscodingActions,
-    startTyping: Boolean = false,
+    typePath: TypePath = TypePath.Off,
 ) {
-    var typing by rememberSaveable { mutableStateOf(startTyping) }
     var path by rememberSaveable { mutableStateOf(current) }
     val choose = { value: String ->
         actions.onEncoding(ENCODING_TEMP_PATH, JsonPrimitive(value.trim()))
         actions.onSheet(null)
     }
-    if (typing) {
+    if (typePath.typing) {
         TextEntrySurface(
             title = stringResource(R.string.transcoding_temp_path),
             value = path,
             onValueChange = { path = it },
             onSubmit = { choose(path) },
-            onCancel = { typing = false },
+            onCancel = typePath.close,
             cancelLabel = stringResource(R.string.library_back),
             submitLabel = stringResource(R.string.library_save),
             hint = stringResource(R.string.transcoding_temp_hint),
@@ -207,7 +207,7 @@ internal fun TempFolderForm(
             actions = folderActions,
             busy = false,
             onChoose = choose,
-            onType = { typing = true },
+            onType = typePath.open,
             onCancel = { actions.onSheet(null) },
         )
     }
