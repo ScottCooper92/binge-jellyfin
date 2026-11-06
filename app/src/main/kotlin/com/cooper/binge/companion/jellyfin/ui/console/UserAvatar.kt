@@ -64,11 +64,3 @@ internal fun rememberOwnPicture(state: UiState.SignedIn): Bitmap? {
     }
     return picture
 }
-
-/** The signed-in user's own picture, with their initials until it arrives and where they have none: the avatar in the top bar. */
-@Composable
-internal fun OwnUserAvatar(
-    state: UiState.SignedIn,
-    modifier: Modifier = Modifier,
-    size: Dp = dimensionResource(DesR.dimen.item_group_icon_size),
-) = UserAvatar(state.session.userName, rememberOwnPicture(state), modifier, size)
