@@ -69,6 +69,7 @@ internal fun LiveTvRoute(
                     sd.start()
                 },
                 onDismissChoice = { guide.choose(false) },
+                onBackToChoice = guide::backToChoice,
                 onFinishSetup = {
                     guide.dismissForm()
                     sd.locate(it)
