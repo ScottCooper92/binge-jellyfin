@@ -47,7 +47,11 @@ internal fun TunerSheets(
     actions: LiveTvActions,
 ) {
     val sheet = state.sheet ?: return
-    ConsoleSheet(onDismissRequest = { actions.onSheet(null) }) { TunerSheetContent(sheet, state.saving, actions) }
+    ConsoleSheet(onDismissRequest = { actions.onSheet(null) }) {
+        // Back steps back to the sheet this one was opened from (the choice, or the search's results); from the first it closes the sheet.
+        StepBack(sheet.previous()?.takeUnless { state.saving }?.let { previous -> { actions.onSheet(previous) } })
+        TunerSheetContent(sheet, state.saving, actions)
+    }
 }
 
 /** [sheet]'s body, which draws without a window for a frame. */

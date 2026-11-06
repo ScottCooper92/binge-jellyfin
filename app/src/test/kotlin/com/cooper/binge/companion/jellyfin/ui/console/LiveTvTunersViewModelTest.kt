@@ -214,6 +214,22 @@ class LiveTvTunersViewModelTest {
     }
 
     @Test
+    fun `a form remembers the sheet it was opened from, and a tuner opened from the page's row has none`() {
+        val vm = vm()
+        vm.ready()
+        vm.sheet(TunerSheet.Choose)
+        vm.form(TunerDraft(TUNER_TYPE_HDHOMERUN))
+        assertEquals(TunerSheet.Choose, (vm.ready().sheet as TunerSheet.Form).from)
+        val found = TunerSheet.Found(listOf(TunerDraft(TUNER_TYPE_HDHOMERUN, url = "http://192.168.1.61")))
+        vm.sheet(found)
+        vm.form(found.devices.first())
+        assertEquals(found, (vm.ready().sheet as TunerSheet.Form).from)
+        vm.sheet(null)
+        vm.form(TunerDraft(TUNER_TYPE_M3U))
+        assertEquals(null, (vm.ready().sheet as TunerSheet.Form).from)
+    }
+
+    @Test
     fun `finding tuners lists what the server found, and one opens as a form with its address`() {
         val vm = vm()
         vm.ready()
