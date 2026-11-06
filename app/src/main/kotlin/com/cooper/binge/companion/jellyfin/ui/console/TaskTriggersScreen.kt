@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -90,6 +91,7 @@ internal fun TaskTriggers(
     state: TasksUiState.Ready,
     actions: TasksActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
     val timeLabel = rememberTimeLabel()
     if (task.triggers.isEmpty()) {
@@ -104,7 +106,11 @@ internal fun TaskTriggers(
         if (state.adding) AddTriggerSheet(actions)
         return
     }
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         if (task.description.isNotBlank()) item { Text(task.description, style = MaterialTheme.typography.bodyMedium) }
         item {
             ItemGroup(

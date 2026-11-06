@@ -143,6 +143,8 @@ fun UserScreen(
     val ready = state as? UsersUiState.Ready
     val user = ready?.users?.firstOrNull { it.id == userId }
     UserScreenEffects(ready, userId, user, actions)
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = user?.name ?: stringResource(R.string.users_title),
@@ -155,7 +157,7 @@ fun UserScreen(
             when {
                 state is UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 state is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                ready != null && user != null -> UserPage(ready, user, actions, inner)
+                ready != null && user != null -> UserPage(ready, user, actions, inner, listState)
             }
         }
     }
@@ -286,9 +288,14 @@ private fun UserPage(
     user: ServerUser,
     actions: UsersActions,
     inner: PaddingValues,
+    listState: LazyListState,
 ) {
     val mine = user.id == state.me
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item {
             ItemGroup(
                 title = stringResource(R.string.users_access),

@@ -12,6 +12,8 @@ import androidx.compose.ui.test.performSemanticsAction
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.ApiKey
 import com.cooper.binge.companion.jellyfin.server.ServerDevice
+import com.cooper.binge.companion.jellyfin.server.ServerTask
+import com.cooper.binge.companion.jellyfin.server.TaskTrigger
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -34,6 +36,11 @@ class ConsoleListPositionTest {
     private val devices = (0 until ROWS).map { ServerDevice("id$it", "Device $it", null, "App", "sam", 0L) }
     private val keys = (0 until ROWS).map { ApiKey("secret-key-0000$it", "App $it", 0L) }
 
+    private val triggers = (0 until ROWS).map { TaskTrigger(type = "IntervalTrigger", intervalTicks = (it + 1) * TICKS_PER_MINUTE) }
+    private val task =
+        ServerTask("t1", "ScanLibrary", "Scan Media Library", "Scans the library.", "Library", false, false, null, null, triggers)
+
+    private var tasksState by mutableStateOf<TasksUiState>(TasksUiState.Ready(TaskBoard(listOf(task))))
     private var devicesState by mutableStateOf<DevicesUiState>(DevicesUiState.Ready(devices, thisDevice = ""))
     private var keysState by mutableStateOf<ApiKeysUiState>(ApiKeysUiState.Ready(keys))
 
@@ -81,8 +88,20 @@ class ConsoleListPositionTest {
         assertEquals(scrolled, offset(), 0.5f)
     }
 
+    @Test
+    fun `a task's triggers keep their place through a reload that shows the skeleton`() {
+        compose.setContent { JellyfinTheme { TaskScreen(tasksState, "t1", TasksActions()) } }
+        val scrolled = scrollDown()
+        tasksState = TasksUiState.Loading
+        compose.waitForIdle()
+        tasksState = TasksUiState.Ready(TaskBoard(listOf(task.copy())))
+        compose.waitForIdle()
+        assertEquals(scrolled, offset(), 0.5f)
+    }
+
     private companion object {
         const val ROWS = 60
         const val SCROLL_PX = 900f
+        const val TICKS_PER_MINUTE = 600_000_000L
     }
 }
