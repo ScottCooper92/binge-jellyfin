@@ -47,10 +47,16 @@ class LiveTvRecordingScreenTest {
     }
 
     @Test
-    fun `padding reads in minutes, from the seconds the server stores`() {
+    fun `padding reads in minutes, as the slider does, and an off-step value in exact seconds`() {
         show(LiveTvRecordingUiState.Ready(config))
         compose.onNodeWithText("0 min").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("3 min").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `an off-step padding reads in exact seconds on the row`() {
+        show(LiveTvRecordingUiState.Ready(JsonObject(config + ("PrePaddingSeconds" to JsonPrimitive(7)))))
+        compose.onNodeWithText("7 s").performScrollTo().assertIsDisplayed()
     }
 
     @Test

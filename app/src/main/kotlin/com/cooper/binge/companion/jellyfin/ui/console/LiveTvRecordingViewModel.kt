@@ -21,8 +21,6 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-private const val SECONDS_PER_MINUTE = 60
-
 /** The three folders a recording can go to, by the key each is stored under. */
 enum class RecordingFolder(
     val key: String,
@@ -33,7 +31,7 @@ enum class RecordingFolder(
 }
 
 /**
- * A number typed into a sheet. [seconds] is whether the server stores seconds where the page shows minutes, and [blankClears] whether
+ * A recording number. [seconds] distinguishes padding (0 to 7200 seconds, two hours) from guide length in days; [blankClears] says whether
  * an empty entry clears the setting (the server then chooses) rather than being refused.
  */
 enum class RecordingNumber(
@@ -43,8 +41,8 @@ enum class RecordingNumber(
     val seconds: Boolean,
     val blankClears: Boolean,
 ) {
-    PrePadding(LIVE_TV_PRE_PADDING, 0, 120, seconds = true, blankClears = false),
-    PostPadding(LIVE_TV_POST_PADDING, 0, 120, seconds = true, blankClears = false),
+    PrePadding(LIVE_TV_PRE_PADDING, 0, 7200, seconds = true, blankClears = false),
+    PostPadding(LIVE_TV_POST_PADDING, 0, 7200, seconds = true, blankClears = false),
     GuideDays(LIVE_TV_GUIDE_DAYS, 1, 14, seconds = false, blankClears = true),
     ;
 
@@ -52,13 +50,13 @@ enum class RecordingNumber(
     fun parse(text: String): JsonElement? {
         if (text.isBlank()) return JsonNull.takeIf { blankClears }
         val shown = text.trim().toIntOrNull()?.takeIf { it in min..max } ?: return null
-        return JsonPrimitive(if (seconds) shown * SECONDS_PER_MINUTE else shown)
+        return JsonPrimitive(shown)
     }
 
     /** The stored value of [config] as people read it, or empty when the server has none. */
     fun shown(config: JsonObject): String {
         val stored = (config[key] as? JsonPrimitive)?.takeUnless { it is JsonNull }?.content?.toIntOrNull() ?: return ""
-        return (if (seconds) stored / SECONDS_PER_MINUTE else stored).toString()
+        return stored.toString()
     }
 }
 

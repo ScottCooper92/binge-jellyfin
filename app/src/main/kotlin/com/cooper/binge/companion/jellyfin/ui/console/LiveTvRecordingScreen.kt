@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -168,7 +169,7 @@ private fun numberDetail(
 ): String {
     val count = shown.toIntOrNull() ?: return stringResource(R.string.live_tv_recording_guide_auto)
     return if (field.seconds) {
-        stringResource(R.string.transcoding_unit_minutes, shown)
+        paddingLabel(LocalContext.current.resources, count)
     } else {
         pluralStringResource(R.plurals.live_tv_recording_days, count, count)
     }

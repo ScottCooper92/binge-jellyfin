@@ -118,15 +118,15 @@ class LiveTvRecordingViewModelTest {
     }
 
     @Test
-    fun `padding is typed in minutes and stored in seconds`() {
+    fun `padding keeps whole seconds without converting to minutes`() {
         val vm = made(LiveTvRecordingViewModel(connection))
         vm.ready()
         vm.saveNumber(RecordingNumber.PrePadding, "2")
         vm.saveNumber(RecordingNumber.PostPadding, "10")
         saved(1)
         val sent = jellyfin.lastBody(PATH)
-        assertEquals(120, sent.getValue(LIVE_TV_PRE_PADDING).jsonPrimitive.int)
-        assertEquals(600, sent.getValue(LIVE_TV_POST_PADDING).jsonPrimitive.int)
+        assertEquals(2, sent.getValue(LIVE_TV_PRE_PADDING).jsonPrimitive.int)
+        assertEquals(10, sent.getValue(LIVE_TV_POST_PADDING).jsonPrimitive.int)
         assertEquals("2", RecordingNumber.PrePadding.shown(vm.ready().config))
     }
 
@@ -135,7 +135,7 @@ class LiveTvRecordingViewModelTest {
         val vm = made(LiveTvRecordingViewModel(connection))
         vm.ready()
         vm.sheet(RecordingSheet.Number(RecordingNumber.PostPadding))
-        vm.saveNumber(RecordingNumber.PostPadding, "121")
+        vm.saveNumber(RecordingNumber.PostPadding, "7201")
         vm.saveNumber(RecordingNumber.PostPadding, "-1")
         vm.saveNumber(RecordingNumber.PostPadding, "1.5")
         vm.saveNumber(RecordingNumber.PostPadding, "")
