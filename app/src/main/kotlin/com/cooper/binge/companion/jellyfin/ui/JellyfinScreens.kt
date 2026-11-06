@@ -70,6 +70,8 @@ import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleTextField
+import com.cooper.binge.companion.jellyfin.ui.console.UserAvatar
+import com.cooper.binge.companion.jellyfin.ui.console.rememberOwnPicture
 import com.binge.designsystem.R as DesR
 
 /** What the screens can ask of the [JellyfinViewModel]. */
@@ -375,12 +377,15 @@ private fun ServerGroup(
     state: UiState.SignedIn,
     actions: Actions,
 ) {
+    val picture = rememberOwnPicture(state)
     ItemGroup(
         title = stringResource(R.string.settings_server),
         rows =
             listOfNotNull(
                 ListItem(
                     icon = Icons.Outlined.Person,
+                    // Their picture where they have one; the person icon where they have none.
+                    leadingContent = picture?.let { bitmap -> { UserAvatar(state.session.userName, bitmap) } },
                     label = state.session.userName,
                     detail =
                         stringResource(

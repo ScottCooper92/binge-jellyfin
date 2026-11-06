@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.MAX_PICTURE_BYTES
@@ -19,6 +20,17 @@ import java.security.MessageDigest
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
+/** Where a user's picture comes from, so a screen can show one without a token or a network dependency. */
+interface UserPictureSource {
+    suspend fun read(user: ServerUser): Bitmap?
+
+    /** The picture if it is already in memory, so an avatar can draw it on its first frame; null where it is not, or the source cannot say. */
+    fun cached(user: ServerUser): Bitmap? = null
+}
+
+/** The pictures the app can show, or null where it has none (a preview, a test): every avatar is then its initials. */
+internal val LocalUserPictures = staticCompositionLocalOf<UserPictureSource?> { null }
+
 /**
  * Tagged user thumbnails, scoped to the server and the signed-in account. Only image bytes go to disk: no tokens or
  * request headers. The bounded cache survives reopening the page, and at most four thumbnails are fetched at a time.
@@ -26,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap
 class UserPictures(
     private val connection: Connection,
     private val directory: File,
-) {
+) : UserPictureSource {
     private val permits = Semaphore(CONCURRENT_PICTURES)
     private val locks = ConcurrentHashMap<String, Mutex>()
     private val memory =
@@ -38,7 +50,7 @@ class UserPictures(
         }
 
     /** No image tag means no request. An absent, unreadable or failed image stays the caller's initials. */
-    suspend fun read(user: ServerUser): Bitmap? =
+    override suspend fun read(user: ServerUser): Bitmap? =
         withContext(connection.io) {
             val tag = user.imageTag?.takeIf { it.isNotBlank() } ?: return@withContext null
             connection

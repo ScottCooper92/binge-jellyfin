@@ -129,3 +129,9 @@ val previewSignedInAdminLiveTv =
  */
 val previewSignedInAdminAlerts =
     previewSignedInAdmin.copy(card = previewSignedInAdmin.card.copy(updateAvailable = true, restartPending = true))
+
+/** The administrator's home with their own picture set. */
+val previewSignedInAdminPicture = previewSignedInAdmin.copy(account = previewSignedInAdmin.account.copy(imageTag = "picture"))
+
+/** Someone who is not an administrator, with their own picture set: it is on their account row alone. */
+val previewSignedInPicture = previewSignedIn.copy(account = previewSignedIn.account.copy(imageTag = "picture"))

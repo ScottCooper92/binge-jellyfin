@@ -28,6 +28,8 @@ import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.binge.companion.jellyfin.ui.console.UserAvatar
+import com.cooper.binge.companion.jellyfin.ui.console.rememberOwnPicture
 import com.binge.designsystem.R as DesR
 
 /**
@@ -75,7 +77,13 @@ internal fun AccountAction(
 ) {
     val label = stringResource(R.string.console_account_title)
     IconButton(onClick = { actions.onOpenPage(ConsolePage.Account) }, modifier = Modifier.semantics { contentDescription = label }) {
-        BingeInitialsAvatar(name = state.session.userName)
+        // Their picture where they have one, and as it always was, their initials where they have none.
+        val picture = rememberOwnPicture(state)
+        if (picture == null) {
+            BingeInitialsAvatar(name = state.session.userName)
+        } else {
+            UserAvatar(state.session.userName, picture, size = dimensionResource(DesR.dimen.avatar_size_sm))
+        }
     }
 }
 

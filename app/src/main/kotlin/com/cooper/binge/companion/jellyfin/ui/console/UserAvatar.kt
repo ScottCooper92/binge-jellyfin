@@ -14,9 +14,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Dp
 import com.binge.designsystem.component.BingeInitialsAvatar
 import com.binge.designsystem.theme.BingeShapes
 import com.cooper.binge.companion.jellyfin.server.ServerUser
+import com.cooper.binge.companion.jellyfin.ui.UiState
+import kotlinx.serialization.json.JsonObject
 import com.binge.designsystem.R as DesR
 
 /** A user's picture, with initials occupying the same fixed slot while loading or when no picture can be read. */
@@ -25,8 +28,8 @@ internal fun UserAvatar(
     name: String,
     picture: Bitmap? = null,
     modifier: Modifier = Modifier,
+    size: Dp = dimensionResource(DesR.dimen.item_group_icon_size),
 ) {
-    val size = dimensionResource(DesR.dimen.item_group_icon_size)
     Box(modifier.size(size).clip(BingeShapes.Pill).clearAndSetSemantics {}) {
         if (picture == null) {
             BingeInitialsAvatar(name = name, size = size)
@@ -46,4 +49,18 @@ internal fun ServerUserAvatar(
         produceState<Bitmap?>(null) { value = pictures.read(user) }
     }
     UserAvatar(user.name, picture)
+}
+
+/**
+ * The signed-in user's own picture, read from [LocalUserPictures] by the tag `/Users/Me` gave: null until it arrives, and for
+ * good where they have none or it cannot be read. A new tag (they set or removed it on their picture page) reads again.
+ */
+@Composable
+internal fun rememberOwnPicture(state: UiState.SignedIn): Bitmap? {
+    val pictures = LocalUserPictures.current
+    val user = ServerUser(state.session.userId, state.session.userName, false, null, JsonObject(emptyMap()), state.account.imageTag)
+    val picture by key(user.id, user.imageTag, pictures) {
+        produceState(pictures?.cached(user)) { value = pictures?.read(user) }
+    }
+    return picture
 }
