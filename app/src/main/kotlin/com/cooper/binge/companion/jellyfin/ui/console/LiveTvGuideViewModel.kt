@@ -75,6 +75,9 @@ class LiveTvGuideViewModel(
     /** Opens the form for a new XMLTV guide. */
     fun add() = _state.update { it.copy(form = GuideForm(), choosing = false, problem = null, failed = null, queued = false) }
 
+    /** Back from a new guide's form to the choice it was opened from. */
+    fun backToChoice() = _state.update { it.copy(form = null, choosing = true, problem = null, failed = null, queued = false) }
+
     /** Opens the choice of what to add, where Schedules Direct is offered. */
     fun choose(open: Boolean = true) = _state.update { it.copy(choosing = open, problem = null, failed = null, queued = false) }
 
@@ -193,6 +196,7 @@ data class LiveTvGuideActions(
     val onAddXmlTv: () -> Unit = {},
     val onAddSchedulesDirect: () -> Unit = {},
     val onDismissChoice: () -> Unit = {},
+    val onBackToChoice: () -> Unit = {},
     val onFinishSetup: (String) -> Unit = {},
     val onEdit: (GuideProviderSummary) -> Unit = {},
     val onSave: (GuideForm) -> Unit = {},

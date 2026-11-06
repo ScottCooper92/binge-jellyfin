@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import com.binge.designsystem.component.BingeAdaptiveSheet
+import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
@@ -32,13 +34,37 @@ internal fun GuideSheet(
     actions: LiveTvGuideActions,
     canFinishSetup: Boolean = true,
 ) {
-    if (state.choosing) {
-        ConsoleSheet(onDismissRequest = actions.onDismissChoice) { ChooseGuideContent(actions) }
-        return
+    if (!state.choosing && state.form == null) return
+    // A new guide's form is a page over the choice it came from, so Back returns to the choice; a form opened from the page's own
+    // row has none under it. A scrim tap or a drag closes the whole sheet.
+    val fromChoice = rememberSaveable { state.choosing }
+    BingeAdaptiveSheet(
+        kind = BingeSheetKind.Task,
+        onDismissRequest = {
+            actions.onDismissChoice()
+            actions.onDismissForm()
+        },
+        root = if (fromChoice) CHOICE_PAGE else FORM_PAGE,
+        onPageBack = { actions.onBackToChoice() },
+        stackPagesWhenCompact = true,
+    ) { nav ->
+        if (nav.page == CHOICE_PAGE) {
+            ChooseGuideContent(
+                actions.copy(
+                    onAddXmlTv = {
+                        actions.onAddXmlTv()
+                        nav.push(FORM_PAGE)
+                    },
+                ),
+            )
+        } else {
+            state.form?.let { GuideFormContent(it, state.saving, actions, canFinishSetup) }
+        }
     }
-    val form = state.form ?: return
-    ConsoleSheet(onDismissRequest = actions.onDismissForm) { GuideFormContent(form, state.saving, actions, canFinishSetup) }
 }
+
+private const val CHOICE_PAGE = "choice"
+private const val FORM_PAGE = "form"
 
 /** What to add: an XMLTV guide, or a Schedules Direct account. Only offered where the user may read lineups. */
 @Composable
