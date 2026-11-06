@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Book
@@ -66,6 +68,8 @@ fun LibrariesScreen(
     folderActions: FolderActions = FolderActions(),
     openLibrary: String? = LocalOpenItem.current?.let(::libraryItemId),
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = stringResource(R.string.libraries_title),
@@ -104,7 +108,7 @@ fun LibrariesScreen(
                             isRefreshing = state.refreshing,
                             onRefresh = actions.onRefresh,
                             indicatorTopInset = padding.calculateTopPadding(),
-                        ) { Libraries(state, actions, inner, now, openLibrary) }
+                        ) { Libraries(state, actions, inner, now, openLibrary, listState) }
                     }
                     if (state.adding) {
                         AddLibrarySheet(
@@ -131,8 +135,10 @@ private fun Libraries(
     inner: PaddingValues,
     now: Long,
     openLibrary: String?,
+    listState: LazyListState,
 ) {
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

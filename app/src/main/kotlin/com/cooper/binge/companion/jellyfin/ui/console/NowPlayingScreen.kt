@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Pause
@@ -70,6 +72,8 @@ fun NowPlayingScreen(
     actions: NowPlayingActions,
     open: String? = LocalOpenItem.current?.let(::sessionItemId),
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     BingeScreenScaffold(
         title = stringResource(R.string.now_playing_title),
         bar = ScreenBar.Small,
@@ -80,7 +84,7 @@ fun NowPlayingScreen(
             when (state) {
                 NowPlayingUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is NowPlayingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is NowPlayingUiState.Ready -> Streams(state, administrator, actions, inner, open)
+                is NowPlayingUiState.Ready -> Streams(state, administrator, actions, inner, open, listState)
             }
         }
     }
@@ -149,8 +153,10 @@ private fun Streams(
     actions: NowPlayingActions,
     inner: PaddingValues,
     open: String?,
+    listState: LazyListState,
 ) {
     LazyColumn(
+        state = listState,
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
