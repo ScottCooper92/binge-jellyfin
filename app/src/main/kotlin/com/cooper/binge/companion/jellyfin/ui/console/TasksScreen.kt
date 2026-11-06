@@ -113,6 +113,8 @@ fun TaskScreen(
     val task = ready?.board?.tasks?.firstOrNull { it.id == taskId }
     val gone = ready != null && task == null
     LaunchedEffect(gone) { if (gone) actions.onBack() }
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = task?.name ?: stringResource(R.string.tasks_title),
@@ -135,7 +137,7 @@ fun TaskScreen(
             when {
                 state is TasksUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 state is TasksUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                ready != null && task != null -> TaskTriggers(task, ready, actions, inner)
+                ready != null && task != null -> TaskTriggers(task, ready, actions, inner, listState)
             }
             RefusedMessage(ready?.triggerFailed, host, R.string.tasks_trigger_not_saved)
         }

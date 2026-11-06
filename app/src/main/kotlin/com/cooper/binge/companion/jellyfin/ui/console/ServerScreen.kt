@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -58,6 +59,8 @@ fun ServerScreen(
     state: ServerUiState,
     actions: ServerActions,
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val scroll = rememberScrollState()
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = stringResource(R.string.server_title),
@@ -75,7 +78,7 @@ fun ServerScreen(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Server(state, actions, inner) }
+                    ) { Server(state, actions, inner, scroll) }
                     RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                     // A restart or shutdown the server didn't take is a short message; a restart that never came back is a dialog.
                     SnackbarMessage(state.refusal()?.let { stringResource(it) }, host)
@@ -152,9 +155,10 @@ private fun Server(
     state: ServerUiState.Ready,
     actions: ServerActions,
     inner: PaddingValues,
+    scroll: ScrollState,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inner),
+        modifier = Modifier.fillMaxSize().verticalScroll(scroll).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         ItemGroup(title = null, rows = state.info.rows())
