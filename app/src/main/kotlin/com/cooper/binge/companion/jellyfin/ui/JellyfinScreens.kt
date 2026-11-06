@@ -169,6 +169,7 @@ private fun EnterServer(
             imeAction = ImeAction.Go,
             onDone = actions.onConnect,
         )
+        if (state.error == SetupError.LocalNetworkDenied) AllowLocalNetworkButton(actions)
         BingeFilledButton(
             label = stringResource(R.string.setup_connect),
             onClick = actions.onConnect,
@@ -275,6 +276,9 @@ private fun SignIn(
             modifier = Modifier.fillMaxWidth(),
         )
         state.passwordError?.takeUnless { it == SetupError.WrongCredentials }?.let { ErrorLine(it) }
+        if (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied) {
+            AllowLocalNetworkButton(actions)
+        }
         BingeOutlinedButton(
             label = stringResource(R.string.setup_quick_connect),
             onClick = actions.onQuickConnect,
@@ -284,6 +288,19 @@ private fun SignIn(
         )
         state.quickConnectError?.let { ErrorLine(it) }
     }
+}
+
+/** The way to grant the local-network permission: asks for it, and once asked, opens the app's settings where it can be switched on. */
+@Composable
+private fun AllowLocalNetworkButton(actions: Actions) {
+    BingeOutlinedButton(
+        label =
+            stringResource(
+                if (actions.localNetworkAsked) R.string.connection_open_settings else R.string.connection_allow_local_network,
+            ),
+        onClick = actions.onAllowLocalNetwork,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /** A failure said under the action it belongs to, rather than on a field that isn't at fault. */
@@ -498,6 +515,7 @@ internal fun errorText(error: SetupError): String =
         when (error) {
             SetupError.InvalidAddress -> R.string.error_invalid_address
             SetupError.Unreachable -> R.string.error_unreachable
+            SetupError.LocalNetworkDenied -> R.string.error_local_network
             SetupError.NotJellyfin -> R.string.error_not_jellyfin
             SetupError.WrongCredentials -> R.string.error_wrong_credentials
             SetupError.QuickConnectOff -> R.string.error_quick_connect_off

@@ -155,6 +155,15 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `answering the local-network prompt on the server step tries the connection again`() {
+        val vm = viewModel()
+        vm.await<UiState.EnterServer>()
+        vm.onAddress(jellyfin.baseUrl)
+        vm.localNetworkAnswered()
+        assertEquals(jellyfin.baseUrl, vm.await<UiState.SignIn>().baseUrl)
+    }
+
+    @Test
     fun `signing out ends the session on the server and here, and keeps the address`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()

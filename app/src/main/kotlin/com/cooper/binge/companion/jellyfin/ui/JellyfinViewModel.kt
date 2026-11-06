@@ -38,7 +38,16 @@ import okhttp3.HttpUrl
 import java.io.IOException
 
 /** Why a step failed, as the screen words it. */
-enum class SetupError { InvalidAddress, Unreachable, NotJellyfin, WrongCredentials, QuickConnectOff, QuickConnectExpired, Generic }
+enum class SetupError {
+    InvalidAddress,
+    Unreachable,
+    LocalNetworkDenied,
+    NotJellyfin,
+    WrongCredentials,
+    QuickConnectOff,
+    QuickConnectExpired,
+    Generic,
+}
 
 /**
  * What the last read of the saved server said about it. The home shows the server's problem in place of itself while it
@@ -78,6 +87,32 @@ internal fun unreachableHealth(
     } else {
         ConnectionHealth.Unreachable
     }
+
+/** Why a connection to [baseUrl] failed while setting up: the permission for the local network, or the server itself. */
+internal fun unreachableSetup(
+    baseUrl: String,
+    localNetwork: LocalNetworkPermission,
+): SetupError =
+    if (unreachableHealth(baseUrl, localNetwork) ==
+        ConnectionHealth.LocalNetworkDenied
+    ) {
+        SetupError.LocalNetworkDenied
+    } else {
+        SetupError.Unreachable
+    }
+
+/**
+ * The user has answered the local-network prompt, or come back from the app's settings: try again whatever it was that
+ * failed for want of it. The server step connects again; a signed-in server is read again; sign-in leaves the next press
+ * of its own button to the user, who may have a password half typed.
+ */
+fun JellyfinViewModel.localNetworkAnswered() {
+    when (state.value) {
+        is UiState.EnterServer -> connect()
+        is UiState.SignedIn -> refresh()
+        else -> Unit
+    }
+}
 
 sealed interface UiState {
     data object Loading : UiState
@@ -198,7 +233,10 @@ class JellyfinViewModel(
                     null
                 } catch (e: IOException) {
                     Log.i(TAG, "Server check failed", e)
-                    _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.Unreachable) ?: it }
+                    _state.update {
+                        (it as? UiState.EnterServer)?.copy(checking = false, error = unreachableSetup(url.toString(), localNetwork))
+                            ?: it
+                    }
                     return@launch
                 }
             if (info == null) {
@@ -228,7 +266,10 @@ class JellyfinViewModel(
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = SetupError.Generic) ?: it }
             } catch (e: IOException) {
                 Log.i(TAG, "Password sign-in failed", e)
-                _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = SetupError.Unreachable) ?: it }
+                _state.update {
+                    (it as? UiState.SignIn)?.copy(busy = false, passwordError = unreachableSetup(current.baseUrl, localNetwork))
+                        ?: it
+                }
             }
         }
     }
@@ -254,7 +295,7 @@ class JellyfinViewModel(
                     _state.failQuickConnect(SetupError.Generic)
                 } catch (e: IOException) {
                     Log.i(TAG, "Quick Connect failed", e)
-                    _state.failQuickConnect(SetupError.Unreachable)
+                    _state.failQuickConnect(unreachableSetup(current.baseUrl, localNetwork))
                 }
             }
     }
