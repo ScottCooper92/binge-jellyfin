@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Dns
@@ -65,6 +67,8 @@ fun LiveTvScreen(
     sdActions: SdActions = SdActions(),
     canFinishSetup: Boolean = true,
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = stringResource(R.string.live_tv_title),
@@ -87,7 +91,7 @@ fun LiveTvScreen(
                 LiveTvUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
                 is LiveTvUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LiveTvUiState.Ready -> {
-                    LiveTvContent(state.summary, actions, guideActions, inner, now)
+                    LiveTvContent(state.summary, actions, guideActions, inner, now, listState)
                     TunerSheets(state, actions)
                     TunerMessages(state, actions, host)
                     GuideSheet(guide, guideActions, canFinishSetup)
@@ -107,8 +111,13 @@ private fun LiveTvContent(
     guideActions: LiveTvGuideActions,
     inner: PaddingValues,
     now: Long,
+    listState: LazyListState,
 ) {
-    LazyColumn(contentPadding = inner, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+    LazyColumn(
+        state = listState,
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
         item(key = "intro") { PageIntro(stringResource(R.string.live_tv_body)) }
         item(key = "tuners") {
             ItemGroup(

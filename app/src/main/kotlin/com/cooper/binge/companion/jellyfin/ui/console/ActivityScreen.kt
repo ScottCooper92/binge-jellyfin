@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
@@ -74,6 +76,8 @@ fun ActivityScreen(
     now: Long = System.currentTimeMillis(),
     zone: ZoneId = ZoneId.systemDefault(),
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     BingeScreenScaffold(title = stringResource(R.string.activity_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
@@ -85,7 +89,7 @@ fun ActivityScreen(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Entries(state, actions, inner, now, zone) }
+                    ) { Entries(state, actions, inner, now, zone, listState) }
             }
         }
     }
@@ -98,10 +102,12 @@ private fun Entries(
     inner: PaddingValues,
     now: Long,
     zone: ZoneId,
+    listState: LazyListState,
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
     val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).withZone(zone)
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

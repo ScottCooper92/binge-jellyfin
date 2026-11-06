@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CleaningServices
@@ -68,6 +70,8 @@ fun TasksScreen(
     now: Long = System.currentTimeMillis(),
     openTask: String? = LocalOpenItem.current,
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val ready = state as? TasksUiState.Ready
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -86,7 +90,7 @@ fun TasksScreen(
                         isRefreshing = ready.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Tasks(ready, actions, inner, now, openTask) }
+                    ) { Tasks(ready, actions, inner, now, openTask, listState) }
             }
             // A change or run the server didn't take is said in a message, not in a space kept in the list for it.
             RefusedMessage(ready?.refreshFailed, host, R.string.console_not_refreshed)
@@ -155,9 +159,11 @@ private fun Tasks(
     inner: PaddingValues,
     now: Long,
     openTask: String?,
+    listState: LazyListState,
 ) {
     val board = state.board
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

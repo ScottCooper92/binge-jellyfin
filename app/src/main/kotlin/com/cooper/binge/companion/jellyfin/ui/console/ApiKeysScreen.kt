@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
@@ -63,6 +65,8 @@ fun ApiKeysScreen(
     actions: ApiKeysActions,
     now: Long = System.currentTimeMillis(),
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val ready = state as? ApiKeysUiState.Ready
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -91,7 +95,7 @@ fun ApiKeysScreen(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Keys(state, actions, inner, now) }
+                    ) { Keys(state, actions, inner, now, listState) }
                     RefusedMessage(state.actionFailed, host, R.string.api_keys_not_changed)
                     RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                 }
@@ -106,8 +110,10 @@ private fun Keys(
     actions: ApiKeysActions,
     inner: PaddingValues,
     now: Long,
+    listState: LazyListState,
 ) {
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

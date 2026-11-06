@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.AdminPanelSettings
@@ -84,6 +86,8 @@ fun UsersScreen(
     avatar: @Composable (ServerUser) -> Unit = { UserAvatar(it.name) },
     openUser: String? = LocalOpenItem.current?.substringAfter("user:")?.substringBefore('/'),
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val ready = state as? UsersUiState.Ready
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -112,7 +116,7 @@ fun UsersScreen(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
-                    ) { UserList(state, actions, inner, now, avatar, openUser) }
+                    ) { UserList(state, actions, inner, now, avatar, openUser, listState) }
             }
         }
     }
@@ -233,8 +237,10 @@ private fun UserList(
     now: Long,
     avatar: @Composable (ServerUser) -> Unit,
     openUser: String?,
+    listState: LazyListState,
 ) {
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

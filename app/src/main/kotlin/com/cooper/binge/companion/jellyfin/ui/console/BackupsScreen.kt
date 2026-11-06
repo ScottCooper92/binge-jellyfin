@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -62,6 +64,8 @@ fun BackupsScreen(
     serverVersion: JellyfinVersion? = null,
     now: Long = System.currentTimeMillis(),
 ) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
     val ready = state as? BackupsUiState.Ready
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
@@ -90,7 +94,7 @@ fun BackupsScreen(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Backups(state, actions, inner, now) }
+                    ) { Backups(state, actions, inner, now, listState) }
                     RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
                     SnackbarMessage(state.restore.refusal()?.let { stringResource(it) }, host)
                     CreationMessage(state.creation, host, actions.onDismissCreation)
@@ -107,9 +111,11 @@ private fun Backups(
     actions: BackupsActions,
     inner: PaddingValues,
     now: Long,
+    listState: LazyListState,
 ) {
     val status = statusRows(state, actions)
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
