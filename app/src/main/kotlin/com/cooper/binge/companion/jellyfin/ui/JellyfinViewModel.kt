@@ -14,10 +14,12 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
+import com.cooper.binge.companion.jellyfin.server.LocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
 import com.cooper.binge.companion.jellyfin.server.authenticateWithQuickConnect
+import com.cooper.binge.companion.jellyfin.server.localNetworkHostOrNull
 import com.cooper.binge.companion.jellyfin.server.logout
 import com.cooper.binge.companion.jellyfin.server.me
 import com.cooper.binge.companion.jellyfin.server.publicInfo
@@ -55,10 +57,27 @@ enum class ConnectionHealth {
 
     /** The server answered, but with an error or with something that is not Jellyfin. */
     CouldNotLoad,
+
+    /** The server is on the local network and Android has not let the app reach it: a retry cannot fix it, only the permission can. */
+    LocalNetworkDenied,
     ;
 
-    val isProblem: Boolean get() = this == Unreachable || this == CouldNotLoad
+    val isProblem: Boolean get() = this != Checking && this != Healthy
 }
+
+/**
+ * Why a server did not answer. The platform's refusal of the local network is a bare connection failure, so it is told
+ * apart by who is being asked: a server on the local network, while the app does not hold the permission for it.
+ */
+internal fun unreachableHealth(
+    baseUrl: String,
+    localNetwork: LocalNetworkPermission,
+): ConnectionHealth =
+    if (baseUrl.localNetworkHostOrNull() != null && !localNetwork.isGranted()) {
+        ConnectionHealth.LocalNetworkDenied
+    } else {
+        ConnectionHealth.Unreachable
+    }
 
 sealed interface UiState {
     data object Loading : UiState
@@ -120,6 +139,8 @@ class JellyfinViewModel(
     private val discover: suspend () -> List<DiscoveredServer>,
     private val quickConnectPollMillis: Long = QUICK_CONNECT_POLL_MILLIS,
     private val card: ServerCardLoader = ServerCardLoader(),
+    /** Whether the platform lets the app reach the local network, read when a connection fails to say why. */
+    private val localNetwork: LocalNetworkPermission = LocalNetworkPermission.AlwaysGranted,
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -328,7 +349,7 @@ class JellyfinViewModel(
                     ConnectionHealth.CouldNotLoad
                 } catch (e: IOException) {
                     Log.i(TAG, "Library refresh failed", e)
-                    ConnectionHealth.Unreachable
+                    unreachableHealth(current.session.baseUrl, localNetwork)
                 }
             _state.update {
                 (it as? UiState.SignedIn)?.copy(

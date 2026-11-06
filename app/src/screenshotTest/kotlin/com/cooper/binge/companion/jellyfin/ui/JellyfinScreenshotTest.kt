@@ -133,6 +133,17 @@ class JellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signedInLocalNetworkDenied() = JellyfinRoot(previewSignedInLocalNetworkDenied, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signedInLocalNetworkAsked() = JellyfinRoot(previewSignedInLocalNetworkDenied, Actions(localNetworkAsked = true))
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun signedInRetrying() = JellyfinRoot(previewSignedInRetrying, Actions())
 

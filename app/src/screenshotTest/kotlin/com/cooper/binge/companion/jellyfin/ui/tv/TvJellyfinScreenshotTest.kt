@@ -31,6 +31,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewSignedIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInCouldNotLoad
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInFailed
+import com.cooper.binge.companion.jellyfin.ui.previewSignedInLocalNetworkDenied
 import com.cooper.binge.companion.jellyfin.ui.tv.ACCOUNT_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUDIO_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUTOPLAY_KEY
@@ -126,6 +127,11 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun signedInCouldNotLoad() = TvJellyfinRoot(previewSignedInCouldNotLoad, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun signedInLocalNetworkDenied() = TvJellyfinRoot(previewSignedInLocalNetworkDenied, Actions())
 
     /** With the Binge flag on: the library check, with what Binge can see, leads the page. */
     @PreviewTest

@@ -79,6 +79,9 @@ val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = 
 /** The server answered with something the app could not use. */
 val previewSignedInCouldNotLoad = previewSignedInFailed.copy(health = ConnectionHealth.CouldNotLoad)
 
+/** The server is on the local network and Android has not let the app reach it. */
+val previewSignedInLocalNetworkDenied = previewSignedInFailed.copy(health = ConnectionHealth.LocalNetworkDenied)
+
 /** A retry in flight on the connection problem: Try again says so and cannot be pressed again. */
 val previewSignedInRetrying = previewSignedInFailed.copy(refreshing = true, refreshFailed = false)
 

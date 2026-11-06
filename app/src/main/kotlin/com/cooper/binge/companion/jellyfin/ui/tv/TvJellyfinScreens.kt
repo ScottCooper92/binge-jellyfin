@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Router
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -48,8 +50,11 @@ import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.ui.Actions
+import com.cooper.binge.companion.jellyfin.ui.ConnectionAutoRetry
 import com.cooper.binge.companion.jellyfin.ui.ConnectionHealth
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.connectionBody
+import com.cooper.binge.companion.jellyfin.ui.connectionHeadline
 import com.cooper.binge.companion.jellyfin.ui.errorText
 import com.binge.designsystem.tv.R as TvR
 
@@ -335,6 +340,7 @@ private fun TvSignedInPage(
     val titles = state.titles
     // A server that cannot be reached or read: the board offers its ways out instead of the user's settings.
     val problem = state.health.isProblem
+    if (problem) ConnectionAutoRetry(state.health, state.refreshing, actions.onRefresh)
     val accountRows =
         serverRows(state, actions) +
             listOfNotNull(
@@ -406,22 +412,19 @@ private fun serverRows(
     actions: Actions,
 ): List<TvPaneRow> {
     val session = state.session
-    val couldNotLoad = state.health == ConnectionHealth.CouldNotLoad
     val server =
         TvPaneRow(
             key = ACCOUNT_KEY,
             label = session.serverName.ifBlank { session.baseUrl },
             body =
                 if (state.health.isProblem) {
-                    stringResource(
-                        if (couldNotLoad) R.string.connection_couldnt_load_headline else R.string.connection_unreachable_headline,
-                    )
+                    stringResource(connectionHeadline(state.health))
                 } else {
                     stringResource(R.string.tv_signed_in_as, session.userName)
                 },
             note =
                 if (state.health.isProblem) {
-                    stringResource(if (couldNotLoad) R.string.connection_couldnt_load_body else R.string.connection_unreachable_body)
+                    stringResource(connectionBody(state.health))
                 } else if (state.cleartext) {
                     stringResource(R.string.server_detail_cleartext, session.baseUrl)
                 } else {
@@ -432,6 +435,21 @@ private fun serverRows(
     return listOf(server) + connectionRows(state, actions)
 }
 
+/** A row of the board that is one button: its label is the button's, and pressing it does [onSelect]. */
+private fun tvActionRow(
+    key: String,
+    label: String,
+    icon: ImageVector,
+    onSelect: () -> Unit,
+    loading: Boolean = false,
+) = TvPaneRow(
+    key = key,
+    label = label,
+    icon = icon,
+    loading = loading,
+    options = listOf(TvPaneOption(label = label, action = true, onSelect = onSelect, icon = icon)),
+)
+
 /** What a saved server that cannot be reached or read offers beside its row: trying again and editing its details. Nothing while it is fine. */
 @Composable
 private fun connectionRows(
@@ -440,35 +458,16 @@ private fun connectionRows(
 ): List<TvPaneRow> {
     if (!state.health.isProblem) return emptyList()
     return listOf(
-        TvPaneRow(
-            key = RETRY_KEY,
-            label = stringResource(R.string.connection_retry),
-            icon = Icons.Outlined.Refresh,
-            loading = state.refreshing,
-            options =
-                listOf(
-                    TvPaneOption(
-                        label = stringResource(R.string.connection_retry),
-                        action = true,
-                        onSelect = actions.onRefresh,
-                        icon = Icons.Outlined.Refresh,
-                    ),
-                ),
-        ),
-        TvPaneRow(
-            key = EDIT_SERVER_KEY,
-            label = stringResource(R.string.connection_edit_server),
-            icon = Icons.Outlined.Dns,
-            options =
-                listOf(
-                    TvPaneOption(
-                        label = stringResource(R.string.connection_edit_server),
-                        action = true,
-                        onSelect = actions.onChangeServer,
-                        icon = Icons.Outlined.Dns,
-                    ),
-                ),
-        ),
+        if (state.health == ConnectionHealth.LocalNetworkDenied) {
+            val label =
+                stringResource(
+                    if (actions.localNetworkAsked) R.string.connection_open_settings else R.string.connection_allow_local_network_short,
+                )
+            tvActionRow(RETRY_KEY, label, Icons.Outlined.Router, actions.onAllowLocalNetwork)
+        } else {
+            tvActionRow(RETRY_KEY, stringResource(R.string.connection_retry), Icons.Outlined.Refresh, actions.onRefresh, state.refreshing)
+        },
+        tvActionRow(EDIT_SERVER_KEY, stringResource(R.string.connection_edit_server), Icons.Outlined.Dns, actions.onChangeServer),
     )
 }
 
