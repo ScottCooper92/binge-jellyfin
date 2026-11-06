@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
@@ -20,14 +21,17 @@ import androidx.compose.ui.test.performTextReplacement
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.AvailableProviders
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.MetadataSaver
+import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -310,5 +314,41 @@ class LibraryScreenTest {
     fun `no saver is shown when the server offers none`() {
         show("movies", """{"MetadataSavers":[]}""", available = AvailableProviders())
         compose.onAllNodesWithText("Nfo").assertCountEquals(0)
+    }
+
+    @Test
+    fun `a page opened after scrolling the library starts with its bar shown, and the library keeps its place`() {
+        val json = Json.parseToJsonElement("""{"AllowEmbeddedSubtitles":"AllowText","SubtitleDownloadLanguages":[]}""").jsonObject
+        val state =
+            LibraryUiState.Ready(
+                library = ServerLibrary("id-movies", "Library", "movies", listOf("/media"), json),
+                options = json,
+                available = savers,
+                cultures = languages,
+            )
+        var page by mutableStateOf<LibraryPage>(LibraryPage.Main)
+        compose.setContent { JellyfinTheme { LibraryScreen(state, LibraryActions(), JellyfinServerProfile.from("10.11.6"), page = page) } }
+        // Scrolling the form to its last row slides the single-line bar away.
+        compose.onNodeWithText("Embedded subtitles").performScrollTo()
+        page = LibraryPage.Languages
+        compose.waitForIdle()
+        compose.onNodeWithText("Download languages").assertIsDisplayed()
+    }
+
+    @Test
+    fun `each of a library's pages has a key of its own`() {
+        val pages =
+            listOf(
+                LibraryPage.Main,
+                LibraryPage.Languages,
+                LibraryPage.Providers(ProviderGroup.entries.first()),
+                LibraryPage.One(ProviderGroup.entries.first(), "A"),
+                LibraryPage.One(ProviderGroup.entries.first(), "B"),
+                LibraryPage.Fetchers(FetcherKind.entries.first()),
+                LibraryPage.Fetcher(FetcherKind.entries.first(), "Movie", "A"),
+                LibraryPage.Fetcher(FetcherKind.entries.first(), "Movie", "B"),
+            )
+        assertEquals(pages.size, pages.map { it.positionKey }.toSet().size)
+        assertNotEquals(LibraryPage.Main.positionKey, LibraryPage.Languages.positionKey)
     }
 }
