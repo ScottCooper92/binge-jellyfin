@@ -145,7 +145,7 @@ class MainActivity : ComponentActivity() {
                             openAppSettings()
                         } else {
                             askedLocalNetwork = true
-                            withLocalNetwork { viewModel.refresh() }
+                            withLocalNetwork(viewModel::localNetworkAnswered)
                         }
                     },
                     localNetworkAsked = askedLocalNetwork,

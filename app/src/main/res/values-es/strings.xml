@@ -63,6 +63,7 @@
 
     <string name="error_invalid_address">Esa no es una dirección de servidor</string>
     <string name="error_unreachable">No se ha podido conectar con tu servidor de Jellyfin</string>
+    <string name="error_local_network">El acceso a la red local está desactivado. Permítelo y vuelve a intentarlo.</string>
     <string name="error_not_jellyfin">Esa dirección no ha respondido como un servidor de Jellyfin</string>
     <string name="error_wrong_credentials">Nombre de usuario o contraseña incorrectos</string>
     <string name="error_quick_connect_off">Quick Connect está desactivado en este servidor</string>

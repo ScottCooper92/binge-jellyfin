@@ -40,6 +40,12 @@ class JellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun serverLocalNetworkDenied() = JellyfinRoot(previewEnterServerLocalNetwork, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun serverInvalidAddress() = JellyfinRoot(previewEnterServerInvalid, Actions())
 
@@ -105,6 +111,11 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun signInUnreachable() = JellyfinRoot(previewSignInUnreachable, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signInLocalNetworkDenied() = JellyfinRoot(previewSignInLocalNetwork, Actions(localNetworkAsked = true))
 
     // Signed in.
 

@@ -63,6 +63,7 @@
 
     <string name="error_invalid_address">That isn\'t a server address</string>
     <string name="error_unreachable">Couldn\'t reach your Jellyfin server</string>
+    <string name="error_local_network">Local network access is off. Allow it, then try again.</string>
     <string name="error_not_jellyfin">That address didn\'t answer as a Jellyfin server</string>
     <string name="error_wrong_credentials">Wrong username or password</string>
     <string name="error_quick_connect_off">Quick Connect is turned off on this server</string>

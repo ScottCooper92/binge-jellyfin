@@ -89,6 +89,10 @@ val previewSignedInHttps = previewSignedIn.copy(session = session.copy(baseUrl =
 
 val previewQuickConnectGetting = previewSignIn.copy(gettingCode = true)
 
+val previewEnterServerLocalNetwork = UiState.EnterServer(address = "192.168.1.99:8096", error = SetupError.LocalNetworkDenied)
+
+val previewSignInLocalNetwork = previewSignIn.copy(password = "hunter2", passwordError = SetupError.LocalNetworkDenied)
+
 val previewSignInUnreachable = previewSignIn.copy(password = "hunter2", passwordError = SetupError.Unreachable)
 
 val previewSignedInAdmin =
