@@ -124,7 +124,7 @@ class LiveTvViewModel(
                         if (sheet ==
                             TunerSheet.Discovering
                         ) {
-                            copy(sheet = TunerSheet.Choose, problem = TunerProblem.DiscoverFailed)
+                            copy(sheet = TunerSheet.Failed(it.consoleFailure()), problem = null)
                         } else {
                             this
                         }
