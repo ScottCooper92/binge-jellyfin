@@ -55,6 +55,10 @@ internal fun LiveTvRoute(
                 onPostalCode = sd::typePostalCode,
                 onFind = sd::findLineups,
                 onBackToLocation = sd::backToLocation,
+                onBackToChoice = {
+                    sd.close()
+                    guide.choose()
+                },
                 onAddLineup = sd::addLineup,
                 onClose = sd::close,
                 onDismissProblem = sd::dismissProblem,

@@ -1,10 +1,13 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -42,6 +46,7 @@ data class SdActions(
     val onPostalCode: (String) -> Unit = {},
     val onFind: (postalCode: String) -> Unit = {},
     val onBackToLocation: () -> Unit = {},
+    val onBackToChoice: () -> Unit = {},
     val onAddLineup: (SdLineup) -> Unit = {},
     val onClose: () -> Unit = {},
     val onDismissProblem: () -> Unit = {},
@@ -58,7 +63,34 @@ internal fun SdSheet(
     actions: SdActions,
 ) {
     val step = state.step ?: return
-    ConsoleSheet(onDismissRequest = actions.onClose) { SdStepContent(step, state.saving, actions) }
+    ConsoleSheet(onDismissRequest = actions.onClose) {
+        SdStepBack(step, state.saving, actions)
+        SdStepContent(step, state.saving, actions)
+    }
+}
+
+/**
+ * System Back steps back through the setup rather than closing the sheet: the account returns to the choice it was opened from,
+ * the country list to the location, and the lineups to the location. The location itself has nothing before it (the account is
+ * already saved, and finishing it later is on the guide's row), so Back closes the sheet there; so it does while a call is in flight.
+ * While the keyboard is up the sheet's own handler closes it first.
+ */
+@Composable
+private fun SdStepBack(
+    step: SdStep,
+    saving: Boolean,
+    actions: SdActions,
+) {
+    val keyboardUp = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val back: (() -> Unit)? =
+        when {
+            saving -> null
+            step is SdStep.Account -> actions.onBackToChoice
+            step is SdStep.Location && step.choosing -> ({ actions.onChooseCountry(false) })
+            step is SdStep.Lineups -> actions.onBackToLocation
+            else -> null
+        }
+    BackHandler(enabled = back != null && !keyboardUp) { back?.invoke() }
 }
 
 /** [step]'s body, which draws without a window for a frame. */
