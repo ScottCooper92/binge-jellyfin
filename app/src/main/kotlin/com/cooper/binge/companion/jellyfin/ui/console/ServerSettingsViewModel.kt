@@ -113,6 +113,7 @@ class ServerSettingsViewModel(
         SplashImageController(
             connection,
             viewModelScope,
+            settleBranding = { brand.settle().await() },
             adoptBranding = { json ->
                 brand.loaded(json)
                 update { copy(branding = json.branding()) }
