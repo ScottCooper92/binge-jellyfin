@@ -129,6 +129,12 @@ app:catalog_no_version  8680dc729209
 app:catalog_owner  25a239179c0c
 app:catalog_version  dd167905de0d
 app:companion_label  8e03b3c29d2b
+app:connection_couldnt_load_body  99d029d36d24
+app:connection_couldnt_load_headline  1360a3cc2434
+app:connection_edit_server  2e73abd54f5a
+app:connection_retry  d8b8392e2c54
+app:connection_unreachable_body  729e4c4edc93
+app:connection_unreachable_headline  4da010bad62f
 app:console_account_title  dbb5f6371b6a
 app:console_activity_detail  3487307bf3ea
 app:console_admin_title  4b42c6690ebe

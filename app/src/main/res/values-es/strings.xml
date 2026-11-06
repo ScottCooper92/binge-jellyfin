@@ -44,6 +44,12 @@
     <string name="settings_library">Biblioteca</string>
     <string name="settings_titles">Películas y series que Binge puede ver</string>
     <string name="settings_titles_checking">Comprobando tu biblioteca…</string>
+    <string name="connection_unreachable_headline">No se puede conectar con tu servidor</string>
+    <string name="connection_unreachable_body">No ha respondido. Puede estar apagado o su dirección puede haber cambiado. Revisa el servidor e inténtalo de nuevo.</string>
+    <string name="connection_couldnt_load_headline">No se ha podido cargar tu servidor</string>
+    <string name="connection_couldnt_load_body">Ha respondido con algo que esta aplicación no ha podido usar. Inténtalo de nuevo o revisa el servidor.</string>
+    <string name="connection_retry">Reintentar</string>
+    <string name="connection_edit_server">Editar datos del servidor</string>
     <string name="settings_titles_failed">No se ha podido conectar con el servidor</string>
     <string name="settings_refresh">Volver a comprobar la biblioteca</string>
     <string name="settings_sign_out">Cerrar sesión</string>

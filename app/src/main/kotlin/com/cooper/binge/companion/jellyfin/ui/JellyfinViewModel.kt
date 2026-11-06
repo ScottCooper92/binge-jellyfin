@@ -38,6 +38,28 @@ import java.io.IOException
 /** Why a step failed, as the screen words it. */
 enum class SetupError { InvalidAddress, Unreachable, NotJellyfin, WrongCredentials, QuickConnectOff, QuickConnectExpired, Generic }
 
+/**
+ * What the last read of the saved server said about it. The home shows the server's problem in place of itself while it
+ * is [isProblem]: a server that did not answer, or one that answered with something the app could not use. A token the
+ * server refuses is not here: that goes to sign-in.
+ */
+enum class ConnectionHealth {
+    /** Nothing has answered yet, which is where every start begins. */
+    Checking,
+
+    /** The server answered and the app could read it. */
+    Healthy,
+
+    /** The server did not answer: offline, off the network, or the address has changed. Trying again may recover. */
+    Unreachable,
+
+    /** The server answered, but with an error or with something that is not Jellyfin. */
+    CouldNotLoad,
+    ;
+
+    val isProblem: Boolean get() = this == Unreachable || this == CouldNotLoad
+}
+
 sealed interface UiState {
     data object Loading : UiState
 
@@ -74,6 +96,8 @@ sealed interface UiState {
         val titles: Int? = null,
         val refreshing: Boolean = false,
         val refreshFailed: Boolean = false,
+        /** What the last full read said of the server; a problem takes the place of the home. */
+        val health: ConnectionHealth = ConnectionHealth.Checking,
         val confirmingSignOut: Boolean = false,
         /** What the server is and has turned on: the version gate. Read again with each refresh. */
         val profile: JellyfinServerProfile = JellyfinServerProfile.from(session.serverVersion),
@@ -242,9 +266,18 @@ class JellyfinViewModel(
         _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, quickConnectError = null, gettingCode = false) ?: it }
     }
 
+    /**
+     * The server step again, with the address filled in: from the sign-in step, or from a saved server that cannot be
+     * reached. A saved session stays saved until a new sign-in replaces it, so closing the app comes back to the gate.
+     */
     fun changeServer() {
         quickConnect?.cancel()
-        val address = (_state.value as? UiState.SignIn)?.baseUrl.orEmpty()
+        val address =
+            when (val current = _state.value) {
+                is UiState.SignIn -> current.baseUrl
+                is UiState.SignedIn -> current.session.baseUrl
+                else -> ""
+            }
         _state.value = UiState.EnterServer(address = address)
     }
 
@@ -268,7 +301,7 @@ class JellyfinViewModel(
         }
         _state.value = current.copy(refreshing = true, refreshFailed = false)
         viewModelScope.launch {
-            val failed =
+            val health =
                 try {
                     val signedIn = connection.signedIn()
                     if (signedIn == null) {
@@ -280,7 +313,7 @@ class JellyfinViewModel(
                     _state.update { (it as? UiState.SignedIn)?.copy(profile = gates.first, account = gates.second) ?: it }
                     card.refresh(viewModelScope, _state, signedIn.first, signedIn.second, gates.second, force = true)
                     index.refresh(signedIn.second, signedIn.first.userId)
-                    false
+                    ConnectionHealth.Healthy
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: JellyfinHttpException) {
@@ -289,15 +322,22 @@ class JellyfinViewModel(
                         sessionRefused(current.session)
                         return@launch
                     }
-                    true
+                    ConnectionHealth.CouldNotLoad
                 } catch (e: JellyfinUnreadableAnswer) {
                     Log.i(TAG, "Library refresh answered something that is not Jellyfin", e)
-                    true
+                    ConnectionHealth.CouldNotLoad
                 } catch (e: IOException) {
                     Log.i(TAG, "Library refresh failed", e)
-                    true
+                    ConnectionHealth.Unreachable
                 }
-            _state.update { (it as? UiState.SignedIn)?.copy(refreshing = false, refreshFailed = failed, titles = index.size) ?: it }
+            _state.update {
+                (it as? UiState.SignedIn)?.copy(
+                    refreshing = false,
+                    refreshFailed = health.isProblem,
+                    health = health,
+                    titles = index.size,
+                ) ?: it
+            }
         }
     }
 

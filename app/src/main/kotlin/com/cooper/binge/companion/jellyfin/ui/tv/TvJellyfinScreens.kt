@@ -48,6 +48,7 @@ import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.ui.Actions
+import com.cooper.binge.companion.jellyfin.ui.ConnectionHealth
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.errorText
 import com.binge.designsystem.tv.R as TvR
@@ -327,67 +328,57 @@ private fun TvSignedInPage(
     describing: String,
     modifier: Modifier,
 ) {
-    val session = state.session
     val promoted = LocalFlags.current.bingePromotion
     var focused by rememberSaveable { mutableStateOf(describing) }
     val entry = remember { FocusRequester() }
     LaunchedEffect(Unit) { entry.requestFocus() }
     val titles = state.titles
+    // A server that cannot be reached or read: the board offers its ways out instead of the user's settings.
+    val problem = state.health.isProblem
     val accountRows =
-        listOfNotNull(
-            TvPaneRow(
-                key = ACCOUNT_KEY,
-                label = session.serverName.ifBlank { session.baseUrl },
-                body = stringResource(R.string.tv_signed_in_as, session.userName),
-                note =
-                    if (state.cleartext) {
-                        stringResource(R.string.server_detail_cleartext, session.baseUrl)
-                    } else {
-                        stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
-                    },
-                icon = Icons.Outlined.Dns,
-            ),
-            // What Binge can find in the library is Binge's to show; without the flag the page is the account alone.
-            TvPaneRow(
-                key = REFRESH_KEY,
-                label = stringResource(R.string.settings_refresh),
-                detail =
-                    when {
-                        state.refreshFailed -> stringResource(R.string.settings_titles_failed)
-                        titles == null -> stringResource(R.string.settings_titles_checking)
-                        else -> pluralStringResource(R.plurals.tv_titles_count, titles, titles)
-                    },
-                icon = Icons.Outlined.Refresh,
-                loading = state.refreshing,
-                options =
-                    listOf(
-                        TvPaneOption(
-                            label = stringResource(R.string.settings_refresh),
-                            action = true,
-                            onSelect = actions.onRefresh,
-                            icon = Icons.Outlined.Refresh,
+        serverRows(state, actions) +
+            listOfNotNull(
+                // What Binge can find in the library is Binge's to show; without the flag the page is the account alone.
+                TvPaneRow(
+                    key = REFRESH_KEY,
+                    label = stringResource(R.string.settings_refresh),
+                    detail =
+                        when {
+                            state.refreshFailed -> stringResource(R.string.settings_titles_failed)
+                            titles == null -> stringResource(R.string.settings_titles_checking)
+                            else -> pluralStringResource(R.plurals.tv_titles_count, titles, titles)
+                        },
+                    icon = Icons.Outlined.Refresh,
+                    loading = state.refreshing,
+                    options =
+                        listOf(
+                            TvPaneOption(
+                                label = stringResource(R.string.settings_refresh),
+                                action = true,
+                                onSelect = actions.onRefresh,
+                                icon = Icons.Outlined.Refresh,
+                            ),
                         ),
-                    ),
-            ).takeIf { promoted },
-            TvPaneRow(
-                key = SIGN_OUT_KEY,
-                label = stringResource(R.string.settings_sign_out),
-                icon = Icons.AutoMirrored.Outlined.Logout,
-                options =
-                    listOf(
-                        TvPaneOption(
-                            label = stringResource(R.string.settings_sign_out),
-                            action = true,
-                            onSelect = actions.onAskSignOut,
-                            icon = Icons.AutoMirrored.Outlined.Logout,
+                ).takeIf { promoted && !problem },
+                TvPaneRow(
+                    key = SIGN_OUT_KEY,
+                    label = stringResource(R.string.settings_sign_out),
+                    icon = Icons.AutoMirrored.Outlined.Logout,
+                    options =
+                        listOf(
+                            TvPaneOption(
+                                label = stringResource(R.string.settings_sign_out),
+                                action = true,
+                                onSelect = actions.onAskSignOut,
+                                icon = Icons.AutoMirrored.Outlined.Logout,
+                            ),
                         ),
-                    ),
-            ),
-        )
+                ),
+            )
     val groups =
         listOfNotNull(
             TvPaneGroup(title = stringResource(R.string.settings_signed_in_as), rows = accountRows),
-            playback?.let { playbackGroup(it) },
+            playback?.takeIf { !problem }?.let { playbackGroup(it) },
         )
     TvListPaneBoard(
         title = stringResource(R.string.app_label),
@@ -408,8 +399,83 @@ private fun TvSignedInPage(
     }
 }
 
+/** The server's row, and, while it cannot be reached or read, the rows to try again and to edit its details. */
+@Composable
+private fun serverRows(
+    state: UiState.SignedIn,
+    actions: Actions,
+): List<TvPaneRow> {
+    val session = state.session
+    val couldNotLoad = state.health == ConnectionHealth.CouldNotLoad
+    val server =
+        TvPaneRow(
+            key = ACCOUNT_KEY,
+            label = session.serverName.ifBlank { session.baseUrl },
+            body =
+                if (state.health.isProblem) {
+                    stringResource(
+                        if (couldNotLoad) R.string.connection_couldnt_load_headline else R.string.connection_unreachable_headline,
+                    )
+                } else {
+                    stringResource(R.string.tv_signed_in_as, session.userName)
+                },
+            note =
+                if (state.health.isProblem) {
+                    stringResource(if (couldNotLoad) R.string.connection_couldnt_load_body else R.string.connection_unreachable_body)
+                } else if (state.cleartext) {
+                    stringResource(R.string.server_detail_cleartext, session.baseUrl)
+                } else {
+                    stringResource(R.string.server_detail, session.baseUrl, session.serverVersion)
+                },
+            icon = Icons.Outlined.Dns,
+        )
+    return listOf(server) + connectionRows(state, actions)
+}
+
+/** What a saved server that cannot be reached or read offers beside its row: trying again and editing its details. Nothing while it is fine. */
+@Composable
+private fun connectionRows(
+    state: UiState.SignedIn,
+    actions: Actions,
+): List<TvPaneRow> {
+    if (!state.health.isProblem) return emptyList()
+    return listOf(
+        TvPaneRow(
+            key = RETRY_KEY,
+            label = stringResource(R.string.connection_retry),
+            icon = Icons.Outlined.Refresh,
+            loading = state.refreshing,
+            options =
+                listOf(
+                    TvPaneOption(
+                        label = stringResource(R.string.connection_retry),
+                        action = true,
+                        onSelect = actions.onRefresh,
+                        icon = Icons.Outlined.Refresh,
+                    ),
+                ),
+        ),
+        TvPaneRow(
+            key = EDIT_SERVER_KEY,
+            label = stringResource(R.string.connection_edit_server),
+            icon = Icons.Outlined.Dns,
+            options =
+                listOf(
+                    TvPaneOption(
+                        label = stringResource(R.string.connection_edit_server),
+                        action = true,
+                        onSelect = actions.onChangeServer,
+                        icon = Icons.Outlined.Dns,
+                    ),
+                ),
+        ),
+    )
+}
+
 internal const val ACCOUNT_KEY = "account"
 private const val REFRESH_KEY = "refresh"
+private const val RETRY_KEY = "retry"
+private const val EDIT_SERVER_KEY = "editServer"
 private const val SIGN_OUT_KEY = "signOut"
 
 /** A status under a form, [lines] tall at least, and at most unless not [capped], so it rarely moves the controls below it. */

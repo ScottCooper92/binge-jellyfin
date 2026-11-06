@@ -29,6 +29,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewSignIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignInWrongPassword
 import com.cooper.binge.companion.jellyfin.ui.previewSignedIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
+import com.cooper.binge.companion.jellyfin.ui.previewSignedInCouldNotLoad
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInFailed
 import com.cooper.binge.companion.jellyfin.ui.tv.ACCOUNT_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUDIO_KEY
@@ -120,6 +121,11 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun signedInFailed() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInFailed, Actions()) }
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun signedInCouldNotLoad() = TvJellyfinRoot(previewSignedInCouldNotLoad, Actions())
 
     /** With the Binge flag on: the library check, with what Binge can see, leads the page. */
     @PreviewTest
