@@ -45,6 +45,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
+import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback

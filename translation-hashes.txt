@@ -231,6 +231,7 @@ app:display_substitutions_body  4e81af892ee6
 app:display_title  febf24d4736f
 app:error_generic  4def98c89240
 app:error_invalid_address  3f5c0f63269d
+app:error_local_network  d3f8e544701e
 app:error_not_jellyfin  37cafc7954e3
 app:error_quick_connect_expired  2563e06333f3
 app:error_quick_connect_off  045782322966
