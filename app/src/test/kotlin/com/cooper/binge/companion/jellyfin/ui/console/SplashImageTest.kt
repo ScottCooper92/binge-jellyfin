@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import org.junit.After
@@ -68,6 +70,9 @@ class SplashImageTest {
 
     private fun branding() = jellyfin.lastBody("/System/Configuration/branding")
 
+    /** What the server holds, which is not always what the page last sent: it keeps the location whatever a save carries. */
+    private fun stored() = Json.parseToJsonElement(jellyfin.brandingConfiguration).jsonObject
+
     @Test
     fun `an upload is base64 text typed as an image, and the page reads the branding again to know it is custom`() {
         val vm = viewModel()
@@ -99,7 +104,6 @@ class SplashImageTest {
         val vm = viewModel()
         vm.splashImage.choose { jpeg() }
         vm.ready { it.branding.customSplashscreen }
-        // The page adopts the branding before the upload finishes; a switch touched while it is busy is ignored.
         vm.splash { !it.busy }
         vm.setSplashscreen(true)
         jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
@@ -124,7 +128,7 @@ class SplashImageTest {
     }
 
     @Test
-    fun `a disclaimer saved during an upload is not sent and keeps the image`() {
+    fun `a disclaimer saved during an upload is sent, and the image stays`() {
         val vm = viewModel()
         val release = java.util.concurrent.CountDownLatch(1)
         vm.splashImage.open(true)
@@ -135,21 +139,30 @@ class SplashImageTest {
         }
         vm.splashImage.open(false)
         vm.saveText(ServerText.LoginDisclaimer, "Hello")
+        jellyfin.awaitBody("/System/Configuration/branding") { it["LoginDisclaimer"]?.jsonPrimitive?.content == "Hello" }
         release.countDown()
         vm.splash { !it.busy }
-        assertTrue(jellyfin.requests.none { it.method == "POST" && it.url.encodedPath == "/System/Configuration/branding" })
         assertTrue(vm.ready().branding.customSplashscreen)
+        assertEquals("Hello", branding().getValue("LoginDisclaimer").jsonPrimitive.content)
+        assertEquals("/data/splashscreen-upload.jpg", stored().getValue("SplashscreenLocation").jsonPrimitive.content)
     }
 
     @Test
-    fun `a change waiting to be saved is sent before the upload, not lost under it`() {
+    fun `a switch touched during an upload is sent, and the image stays`() {
         val vm = viewModel()
+        val release = java.util.concurrent.CountDownLatch(1)
+        vm.splashImage.open(true)
+        vm.splash { !it.loading }
+        vm.splashImage.choose {
+            release.await()
+            jpeg()
+        }
         vm.setSplashscreen(true)
-        vm.splashImage.choose { jpeg() }
+        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
+        release.countDown()
         vm.splash { !it.busy }
-        val order = jellyfin.requests.map { it.method + " " + it.url.encodedPath }.filter { "Splashscreen" in it || "branding" in it }
-        assertTrue(order.indexOf("POST /System/Configuration/branding") < order.indexOf("POST /Branding/Splashscreen"))
-        assertTrue(vm.ready().branding.splashscreen)
+        assertTrue(vm.ready().branding.customSplashscreen)
+        assertEquals("/data/splashscreen-upload.jpg", stored().getValue("SplashscreenLocation").jsonPrimitive.content)
     }
 
     @Test
@@ -197,7 +210,7 @@ class SplashImageTest {
         val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
         // Robolectric decodes any bytes to a stand-in bitmap, so the unreadable file is the prepare step answering null.
-        val controller = SplashImageController(connection, kotlinx.coroutines.GlobalScope, {}, {}, prepare = { null })
+        val controller = SplashImageController(connection, kotlinx.coroutines.GlobalScope, {}, prepare = { null })
         controller.choose { "not an image".toByteArray() }
         runBlocking { withTimeout(TIMEOUT_MILLIS) { controller.state.first { !it.busy && it.unreadable } } }
         assertEquals(0, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == "/Branding/Splashscreen" })
