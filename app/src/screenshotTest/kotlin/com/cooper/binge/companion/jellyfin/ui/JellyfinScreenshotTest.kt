@@ -127,6 +127,22 @@ class JellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signedInCouldNotLoad() = JellyfinRoot(previewSignedInCouldNotLoad, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signedInRetrying() = JellyfinRoot(previewSignedInRetrying, Actions())
+
+    @PreviewTest
+    @JellyfinFontScalePreviews
+    @Composable
+    fun signedInFailedLarge() = JellyfinRoot(previewSignedInFailed, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun signedInHttps() = JellyfinRoot(previewSignedInHttps, Actions())
 

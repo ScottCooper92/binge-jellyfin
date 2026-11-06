@@ -109,7 +109,7 @@ fun JellyfinRoot(
         title = stringResource(R.string.app_label),
         bar = ScreenBar.Small,
         // An administrator's own settings are one tap away, in the account: avatar, as binge-seerr has it.
-        actions = { if (state is UiState.SignedIn && state.isAdministrator) AccountAction(state, actions) },
+        actions = { if (state is UiState.SignedIn && state.isAdministrator && !state.health.isProblem) AccountAction(state, actions) },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
@@ -320,6 +320,12 @@ private fun SignedIn(
     inner: PaddingValues,
 ) {
     val promoted = LocalFlags.current.bingePromotion
+    // A server that cannot be reached or read takes the place of the home, with its ways out.
+    if (state.health.isProblem) {
+        ConnectionProblem(state, actions, Modifier.padding(inner))
+        if (state.confirmingSignOut) SignOutConfirm(actions)
+        return
+    }
     LazyColumn(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

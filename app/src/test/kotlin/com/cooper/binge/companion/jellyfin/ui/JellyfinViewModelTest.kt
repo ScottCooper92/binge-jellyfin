@@ -180,6 +180,49 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a server that does not answer takes the home's place until a retry reaches it`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { it.titles != null }.health)
+        jellyfin.dropped += "/Items"
+        vm.refresh()
+        assertEquals(ConnectionHealth.Unreachable, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
+        jellyfin.dropped -= "/Items"
+        vm.refresh()
+        assertEquals(
+            ConnectionHealth.Healthy,
+            vm.await<UiState.SignedIn> { it.health == ConnectionHealth.Healthy && !it.refreshing }.health,
+        )
+    }
+
+    @Test
+    fun `a server that answers an error, or something that is not Jellyfin, could not be loaded`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        jellyfin.status["/Items"] = 500
+        vm.refresh()
+        assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
+        jellyfin.status.remove("/Items")
+        jellyfin.notJson += "/Items"
+        vm.refresh()
+        assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { it.health.isProblem && !it.refreshing }.health)
+    }
+
+    @Test
+    fun `editing a server that cannot be reached goes back to the server step with its address, and keeps the session`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        jellyfin.dropped += "/Items"
+        vm.refresh()
+        vm.await<UiState.SignedIn> { it.health.isProblem }
+        vm.changeServer()
+        assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
+        assertEquals(jellyfin.baseUrl, runBlocking { sessions.current() }?.baseUrl)
+    }
+
+    @Test
     fun `a token the server refuses sends the user back to sign in`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()

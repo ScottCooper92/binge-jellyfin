@@ -73,7 +73,14 @@ val previewSignedInCardLoading = previewSignedIn.copy(card = ServerCardState())
 
 val previewSignedInChecking = UiState.SignedIn(session = session, titles = null, refreshing = true)
 
-val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = true)
+/** The saved server did not answer: the home gives way to the connection problem. */
+val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = true, health = ConnectionHealth.Unreachable)
+
+/** The server answered with something the app could not use. */
+val previewSignedInCouldNotLoad = previewSignedInFailed.copy(health = ConnectionHealth.CouldNotLoad)
+
+/** A retry in flight on the connection problem: Try again says so and cannot be pressed again. */
+val previewSignedInRetrying = previewSignedInFailed.copy(refreshing = true, refreshFailed = false)
 
 val previewSignedInHttps = previewSignedIn.copy(session = session.copy(baseUrl = REMOTE, serverName = "Cabin"))
 

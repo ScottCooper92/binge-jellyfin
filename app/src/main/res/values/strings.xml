@@ -44,6 +44,12 @@
     <string name="settings_library">Library</string>
     <string name="settings_titles">Movies and shows Binge can see</string>
     <string name="settings_titles_checking">Checking your library…</string>
+    <string name="connection_unreachable_headline">Can\'t reach your server</string>
+    <string name="connection_unreachable_body">It did not answer. It may be offline or its address may have changed. Check the server, then try again.</string>
+    <string name="connection_couldnt_load_headline">Couldn\'t load your server</string>
+    <string name="connection_couldnt_load_body">It answered with something this app couldn\'t use. Try again, or check the server.</string>
+    <string name="connection_retry">Try again</string>
+    <string name="connection_edit_server">Edit server details</string>
     <string name="settings_titles_failed">Couldn\'t reach the server</string>
     <string name="settings_refresh">Check the library again</string>
     <string name="settings_sign_out">Sign out</string>
