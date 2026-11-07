@@ -1,10 +1,19 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
@@ -47,9 +56,16 @@ class LibraryRouteRecreationTest {
     @After
     fun stop() = jellyfin.close()
 
+    private var item by mutableStateOf(libraryItem("lib-movies"))
+
     private fun show() =
         compose.setContent {
-            JellyfinTheme { LibraryItemRoute(connection, profile, libraryItem("lib-movies"), openSubItem = {}, onBack = {}) }
+            JellyfinTheme { LibraryItemRoute(connection, profile, item, openSubItem = { item = it }, onBack = {}) }
+        }
+
+    private fun waitFor(text: String) =
+        compose.waitUntil(TIMEOUT_MILLIS) {
+            compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isNotEmpty()
         }
 
     @Test
@@ -63,6 +79,22 @@ class LibraryRouteRecreationTest {
         show()
         compose.waitUntil(TIMEOUT_MILLIS) { compose.onAllNodes(hasText("Rename library")).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Rename library").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a refusal left on the library is not replayed on the page it opens`() {
+        show()
+        waitFor("Name")
+        compose.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(hasText("Enabled"))
+        jellyfin.status["/Library/VirtualFolders/LibraryOptions"] = 500
+        compose.onNodeWithText("Enabled").performClick()
+        compose.waitUntil(TIMEOUT_MILLIS) { compose.onAllNodes(hasText("Not saved", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        compose.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(hasText("Download languages"))
+        // By action, not by touch: the snackbar the refusal raised sits over the foot of the page.
+        compose.onNodeWithText("Download languages").performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitUntil(TIMEOUT_MILLIS) { item.endsWith("/languages") }
+        compose.waitForIdle()
+        compose.onAllNodes(hasText("Not saved", substring = true)).assertCountEquals(0)
     }
 
     private companion object {
