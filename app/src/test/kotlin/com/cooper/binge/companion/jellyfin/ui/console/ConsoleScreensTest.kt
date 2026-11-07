@@ -570,6 +570,35 @@ class ConsoleScreensTest {
     }
 
     @Test
+    fun `an entry about a user offers Open user only where the page can be opened, and it closes the sheet first`() {
+        val entry = ActivityEntry(4, "sam signed in", null, "SessionStarted", 1_700_000_000_000L, Severity.Information, userId = "u7")
+        val order = mutableListOf<String>()
+        var withAction by mutableStateOf(true)
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), total = 1, open = 4))
+        compose.setContent {
+            JellyfinTheme {
+                ActivityScreen(
+                    state,
+                    ActivityActions(
+                        onOpen = { order += "close" },
+                        onOpenUser = { id: String -> order += "open $id" }.takeIf { withAction },
+                    ),
+                    zone = java.time.ZoneOffset.UTC,
+                )
+            }
+        }
+        compose.onNodeWithText("Open user").performClick()
+        assertEquals(listOf("close", "open u7"), order)
+        withAction = false
+        compose.waitForIdle()
+        compose.onNodeWithText("Open user").assertDoesNotExist()
+        withAction = true
+        state = ActivityUiState.Ready(listOf(entry.copy(userId = null)), total = 1, open = 4)
+        compose.waitForIdle()
+        compose.onNodeWithText("Open user").assertDoesNotExist()
+    }
+
+    @Test
     fun `activity groups by day, marks errors, and asks for more at the end`() {
         var more = 0
         val now = 1_793_570_400_000L

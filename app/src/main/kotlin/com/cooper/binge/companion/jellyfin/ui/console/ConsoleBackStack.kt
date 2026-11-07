@@ -92,6 +92,15 @@ data class ConsoleBackStack(
         if (top?.page == page) this else copy(entries = entries + ConsoleEntry(page, next), next = next + 1)
 
     /**
+     * [item] of [page] opened from the page on top, as a user is from the activity log: the page, then its item over it, so
+     * Back returns to the item's list and then to the page that opened it.
+     */
+    fun openPageItem(
+        page: ConsolePage,
+        item: String,
+    ): ConsoleBackStack = open(page).openItem(item)
+
+    /**
      * [page] opened from the home. Beside the home a page replaces the one open, and what that opened, so Back from
      * it returns to the home rather than walking every page visited on the way. The page already at the bottom
      * stays, with its view models, and only what it opened closes.
