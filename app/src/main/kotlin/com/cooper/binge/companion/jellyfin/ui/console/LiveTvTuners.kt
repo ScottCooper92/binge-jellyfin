@@ -18,6 +18,8 @@ import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.with
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 private const val MAX_STREAM_LIMIT = 99
 
@@ -56,13 +58,18 @@ data class TunerDraft(
     /** Whether the form can be submitted: an address, and a stream limit that reads. */
     val valid: Boolean get() = url.isNotBlank() && (!isM3u || streamLimitValue != null) && !fallbackInvalid
 
-    /** The fallback bitrate as the server stores it (bits a second), or null when it is not offered or what was typed is not a positive number. */
+    /**
+     * The fallback bitrate as the server stores it (bits a second, an Int there), or null when it is not offered or what was typed
+     * is not a positive number that fits. Decimal arithmetic, so a figure like 8.2 is 8,200,000 and not 8,199,999.
+     */
     val fallbackBits: Long? get() =
         fallbackMbps
             ?.trim()
-            ?.toDoubleOrNull()
-            ?.takeIf { it > 0 }
-            ?.let { (it * MEGA).toLong() }
+            ?.toBigDecimalOrNull()
+            ?.movePointRight(MEGA_DIGITS)
+            ?.setScale(0, RoundingMode.HALF_UP)
+            ?.takeIf { it.signum() > 0 && it <= BigDecimal(Int.MAX_VALUE) }
+            ?.toLong()
 
     /** Whether the fallback bitrate is offered and what was typed is not a positive number. */
     val fallbackInvalid: Boolean get() = fallbackMbps != null && fallbackBits == null
@@ -153,7 +160,7 @@ enum class TunerProblem {
     NotChanged,
 }
 
-private const val MEGA = 1_000_000.0
+private const val MEGA_DIGITS = 6
 
 /** [bits] a second as the megabits the field shows: whole when it is, else with its decimals. */
-private fun mbps(bits: Long): String = (bits / MEGA).let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() }
+private fun mbps(bits: Long): String = BigDecimal(bits).movePointLeft(MEGA_DIGITS).stripTrailingZeros().toPlainString()

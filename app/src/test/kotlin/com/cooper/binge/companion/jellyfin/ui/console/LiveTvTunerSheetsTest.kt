@@ -209,6 +209,17 @@ class LiveTvTunerSheetsTest {
     }
 
     @Test
+    fun `a fallback bitrate converts exactly, an untouched one goes back as it came, and one out of range is invalid`() {
+        val draft = TunerDraft.of(JsonObject(hdHomeRunHost + ("FallbackMaxStreamingBitrate" to JsonPrimitive(2_097_145))))
+        assertEquals("2.097145", draft.fallbackMbps)
+        assertEquals(JsonPrimitive(2_097_145L), draft.applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        assertEquals(JsonPrimitive(8_200_000L), draft.copy(fallbackMbps = "8.2").applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        listOf("0.0000001", "3000").forEach { typed ->
+            assertEquals(true, draft.copy(fallbackMbps = typed).fallbackInvalid)
+        }
+    }
+
+    @Test
     fun `a typed fallback bitrate is saved in bits a second, and one that is not a positive number cannot be saved`() {
         val draft = TunerDraft.of(hdHomeRunHost)
         assertEquals("30", draft.fallbackMbps)
