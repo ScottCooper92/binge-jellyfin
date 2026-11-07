@@ -198,6 +198,7 @@ data class LiveTvGuideActions(
     val onDismissChoice: () -> Unit = {},
     val onBackToChoice: () -> Unit = {},
     val onFinishSetup: (String) -> Unit = {},
+    val onChangeLineup: (String) -> Unit = {},
     val onEdit: (GuideProviderSummary) -> Unit = {},
     val onSave: (GuideForm) -> Unit = {},
     val onDismissForm: () -> Unit = {},

@@ -1155,6 +1155,7 @@
     <string name="live_tv_sd_password">Password</string>
     <string name="live_tv_sd_location_title">Where to look for lineups</string>
     <string name="live_tv_sd_location_body">The account is saved. If you leave now, it stays in Guide data as not finished, and you can finish or remove it from there.</string>
+    <string name="live_tv_sd_location_change_body">The account keeps its current lineup until you add another here.</string>
     <string name="live_tv_sd_find">Find lineups</string>
     <string name="live_tv_sd_country">Country</string>
     <string name="live_tv_sd_countries_loading">Loading countries</string>

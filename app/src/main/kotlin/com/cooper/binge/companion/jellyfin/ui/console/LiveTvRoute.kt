@@ -78,6 +78,10 @@ internal fun LiveTvRoute(
                     guide.dismissForm()
                     sd.locate(it)
                 },
+                onChangeLineup = {
+                    guide.dismissForm()
+                    sd.locate(it, changing = true)
+                },
                 onEdit = guide::edit,
                 onSave = guide::save,
                 onDismissForm = guide::dismissForm,

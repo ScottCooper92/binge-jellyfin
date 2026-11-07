@@ -294,6 +294,20 @@ class LiveTvScreenshotTest {
             )
         }
 
+    /** An account that has a lineup, choosing another: the step says the current one stays. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun sdLocationChanging() =
+        Surface {
+            SdStepContent(
+                SdStep.Location("g3", sdCountries, country = sdCountries.first(), postalCode = "10001", changing = true),
+                false,
+                SdActions(),
+            )
+        }
+
     /** No postal code yet: Find lineups is disabled. */
     @PreviewTest
     @JellyfinScreenStatePreview

@@ -35,6 +35,8 @@ sealed interface SdStep {
         val choosing: Boolean = false,
         /** What the user has typed, kept here so choosing a country, or coming back from the lineups, does not empty the field. */
         val postalCode: String = "",
+        /** The account already has a lineup, which stays until another is added: the step says so rather than that the setup is unfinished. */
+        val changing: Boolean = false,
     ) : SdStep
 
     /** The lineups for [postalCode] in [country]: [lineups] is null while they are read. An empty list may be a login that failed. */
@@ -44,6 +46,7 @@ sealed interface SdStep {
         val country: SdCountry,
         val postalCode: String,
         val lineups: List<SdLineup>?,
+        val changing: Boolean = false,
     ) : SdStep
 }
 
@@ -118,9 +121,12 @@ class LiveTvSchedulesDirectViewModel(
         }
     }
 
-    /** Opens the location step for the saved account [providerId], reading the countries: for a new account, or one left unfinished. */
-    fun locate(providerId: String) {
-        _state.update { it.copy(step = SdStep.Location(providerId, countries = null), problem = null, failed = null) }
+    /** Opens the location step for the saved account [providerId], reading the countries: for a new account, one left unfinished, or [changing] the lineup of one that has it. */
+    fun locate(
+        providerId: String,
+        changing: Boolean = false,
+    ) {
+        _state.update { it.copy(step = SdStep.Location(providerId, countries = null, changing = changing), problem = null, failed = null) }
         viewModelScope.launch {
             connection.consoleCall(TAG) { _, client -> client.schedulesDirectCountries() }.fold(
                 onSuccess = { countries -> updateStep<SdStep.Location> { copy(countries = countries) } },
@@ -143,7 +149,11 @@ class LiveTvSchedulesDirectViewModel(
         if (code.isEmpty()) return
         val countries = location.countries.orEmpty()
         _state.update {
-            it.copy(step = SdStep.Lineups(location.providerId, countries, country, code, lineups = null), problem = null, failed = null)
+            it.copy(
+                step = SdStep.Lineups(location.providerId, countries, country, code, lineups = null, changing = location.changing),
+                problem = null,
+                failed = null,
+            )
         }
         lineupsLookup?.cancel()
         lineupsLookup =
@@ -169,7 +179,14 @@ class LiveTvSchedulesDirectViewModel(
         lineupsLookup?.cancel()
         _state.update {
             it.copy(
-                step = SdStep.Location(lineups.providerId, lineups.countries, lineups.country, postalCode = lineups.postalCode),
+                step =
+                    SdStep.Location(
+                        lineups.providerId,
+                        lineups.countries,
+                        lineups.country,
+                        postalCode = lineups.postalCode,
+                        changing = lineups.changing,
+                    ),
             )
         }
     }

@@ -126,7 +126,7 @@ class LiveTvGuideSheetsTest {
     @Test
     fun `an account with its lineup has no Finish setup, and can change its lineup`() {
         val changed = mutableListOf<String>()
-        form(GuideForm("g2", type = "SchedulesDirect", name = "alice"), LiveTvGuideActions(onFinishSetup = { changed += it }))
+        form(GuideForm("g2", type = "SchedulesDirect", name = "alice"), LiveTvGuideActions(onChangeLineup = { changed += it }))
         compose.onNodeWithText("Finish setup").assertDoesNotExist()
         compose.onNodeWithText("Change lineup").performClick()
         assertEquals(listOf("g2"), changed)

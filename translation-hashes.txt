@@ -531,6 +531,7 @@ app:live_tv_sd_lineup_not_added_title  5de19bf1f412
 app:live_tv_sd_lineups_body  70851b2ed9cf
 app:live_tv_sd_lineups_title  e012bc3abe70
 app:live_tv_sd_location_body  6e8aa8ae8a02
+app:live_tv_sd_location_change_body  7be88cf31c74
 app:live_tv_sd_location_title  b37f35b5faa8
 app:live_tv_sd_next  1ff57a29d7c9
 app:live_tv_sd_no_countries  4d234b84a6d3

@@ -235,9 +235,13 @@ class LiveTvSchedulesDirectViewModelTest {
         vm.until { it.step == null && !it.saving }
 
         // Again, as the guide form's Change lineup does: the same steps, on the account as it now is.
-        vm.locate(id)
-        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.locate(id, changing = true)
+        assertTrue((vm.until { (it.step as? SdStep.Location)?.countries != null }.step as SdStep.Location).changing)
         vm.pickCountry(usa)
+        vm.findLineups("90210")
+        assertTrue((vm.until { (it.step as? SdStep.Lineups)?.lineups != null }.step as SdStep.Lineups).changing)
+        vm.backToLocation()
+        assertTrue((vm.until { it.step is SdStep.Location }.step as SdStep.Location).changing)
         vm.findLineups("90210")
         vm.until { (it.step as? SdStep.Lineups)?.lineups != null }
         vm.addLineup(SdLineup("USA-CA67890-X", "Dish Network"))

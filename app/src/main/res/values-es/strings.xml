@@ -1152,6 +1152,7 @@
     <string name="live_tv_sd_password">Contraseña</string>
     <string name="live_tv_sd_location_title">Dónde buscar alineaciones</string>
     <string name="live_tv_sd_location_body">La cuenta está guardada. Si sales ahora, seguirá en Datos de guía como sin terminar, y podrás terminarla o quitarla desde ahí.</string>
+    <string name="live_tv_sd_location_change_body">La cuenta conserva su alineación actual hasta que añadas otra aquí.</string>
     <string name="live_tv_sd_find">Buscar alineaciones</string>
     <string name="live_tv_sd_country">País</string>
     <string name="live_tv_sd_countries_loading">Cargando países</string>

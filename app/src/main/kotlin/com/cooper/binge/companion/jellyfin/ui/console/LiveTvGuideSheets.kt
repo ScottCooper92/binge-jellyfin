@@ -166,7 +166,7 @@ internal fun GuideFormContent(
                         ListItem(
                             icon = Icons.Outlined.Dns,
                             label = stringResource(R.string.live_tv_guide_change_lineup),
-                            onClick = { actions.onFinishSetup(form.id) },
+                            onClick = { actions.onChangeLineup(form.id) },
                         ).takeIf { changeable },
                         ListItem(
                             icon = Icons.Outlined.Delete,
