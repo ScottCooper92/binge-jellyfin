@@ -276,16 +276,6 @@ class LiveTvSchedulesDirectViewModel(
         }
     }
 
-    /** The server's own refusal of what it was sent is [problem], which a dialog explains; any other failure says why it never got there. */
-    private fun SdUiState.failedWith(
-        error: Throwable,
-        problem: SdProblem,
-    ): SdUiState =
-        when {
-            error.isProviderRefused() -> copy(problem = problem)
-            else -> copy(failed = error.consoleFailure())
-        }
-
     private var lineupsLookup: Job? = null
 
     private inline fun <reified S : SdStep> updateStep(change: S.() -> S) =
@@ -295,3 +285,13 @@ class LiveTvSchedulesDirectViewModel(
         const val TAG = "JellyfinLiveTvSchedulesDirect"
     }
 }
+
+/** The server's own refusal of what it was sent is [problem], which a dialog explains; any other failure says why it never got there. */
+private fun SdUiState.failedWith(
+    error: Throwable,
+    problem: SdProblem,
+): SdUiState =
+    when {
+        error.isProviderRefused() -> copy(problem = problem)
+        else -> copy(failed = error.consoleFailure())
+    }
