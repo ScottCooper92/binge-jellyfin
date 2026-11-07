@@ -318,6 +318,13 @@ class LiveTvScreenshotTest {
             )
         }
 
+    /** Changing a saved account's login: the username filled in, a password to type. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun sdLogin() = Surface { SdStepContent(SdStep.Credentials("g3", "carol"), false, SdActions()) }
+
     /** An account that has a lineup, choosing another: the step says the current one stays. */
     @PreviewTest
     @JellyfinScreenStatePreview

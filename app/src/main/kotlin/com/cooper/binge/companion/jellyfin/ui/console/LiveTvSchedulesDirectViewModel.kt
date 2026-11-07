@@ -12,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.schedulesDirectCountries
 import com.cooper.binge.companion.jellyfin.server.schedulesDirectLineups
 import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.withLineup
+import com.cooper.binge.companion.jellyfin.server.withLogin
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +24,12 @@ import kotlinx.coroutines.launch
 sealed interface SdStep {
     /** The account: a username and a password, typed into the form's own fields. */
     data object Account : SdStep
+
+    /** The login of a saved account [providerId], changed in place: [username] as it is, and a password typed anew. */
+    data class Credentials(
+        val providerId: String,
+        val username: String,
+    ) : SdStep
 
     /**
      * The country and postal code the lineups are read for. [countries] is null while they are read, and empty when the server gave
@@ -84,6 +91,12 @@ class LiveTvSchedulesDirectViewModel(
 
     fun start() = _state.update { SdUiState(step = SdStep.Account) }
 
+    /** Opens the login of the saved account [providerId] to change, with its [username] filled in. */
+    fun editLogin(
+        providerId: String,
+        username: String,
+    ) = _state.update { SdUiState(step = SdStep.Credentials(providerId, username)) }
+
     fun close() {
         lineupsLookup?.cancel()
         _state.update { SdUiState() }
@@ -97,6 +110,11 @@ class LiveTvSchedulesDirectViewModel(
         password: String,
     ) {
         if (username.isBlank() || password.isEmpty() || _state.value.saving) return
+        val editing = _state.value.step as? SdStep.Credentials
+        if (editing != null) {
+            changeLogin(editing.providerId, username.trim(), password)
+            return
+        }
         val account = newSchedulesDirectProvider(username.trim(), password)
         _state.update { it.copy(saving = true, problem = null, failed = null) }
         viewModelScope.launch {
@@ -115,6 +133,28 @@ class LiveTvSchedulesDirectViewModel(
                             // The account stays saved if the sheet was left meanwhile; the list shows it as not finished.
                             if (_state.value.step is SdStep.Account) locate(id)
                         }
+                    },
+                    onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.AccountNotSaved) } },
+                )
+        }
+    }
+
+    /** Saves the new login over the account as the server holds it, which keeps its lineup, and closes the sheet once the page is told. */
+    private fun changeLogin(
+        providerId: String,
+        username: String,
+        password: String,
+    ) {
+        _state.update { it.copy(saving = true, problem = null, failed = null) }
+        viewModelScope.launch {
+            connection
+                .consoleCall(TAG) { _, client ->
+                    val held = client.listingProviders()[providerId] ?: error("The account is gone")
+                    connection.tracked { client.saveListingProvider(held.withLogin(username, password), validateLogin = true) }
+                }.fold(
+                    onSuccess = {
+                        onChanged()
+                        _state.update { SdUiState() }
                     },
                     onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.AccountNotSaved) } },
                 )

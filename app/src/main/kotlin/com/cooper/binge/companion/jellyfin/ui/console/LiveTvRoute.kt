@@ -82,6 +82,10 @@ internal fun LiveTvRoute(
                     guide.dismissForm()
                     sd.locate(it, changing = true)
                 },
+                onChangeLogin = { id, username ->
+                    guide.dismissForm()
+                    sd.editLogin(id, username)
+                },
                 onEdit = guide::edit,
                 onSave = guide::save,
                 onDismissForm = guide::dismissForm,

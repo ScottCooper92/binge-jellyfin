@@ -44,6 +44,17 @@ class LiveTvSchedulesDirectSheetsTest {
     }
 
     @Test
+    fun `changing a login shows the username as it is, and sends what is typed with Save`() {
+        val sent = mutableListOf<Pair<String, String>>()
+        step(SdStep.Credentials("g2", "carol"), SdActions(onSignIn = { user, password -> sent += user to password }))
+        compose.onNodeWithText("keeps its lineup", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("carol").assertIsDisplayed()
+        compose.onNodeWithText("Password").performTextInput("hunter3")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("carol" to "hunter3"), sent)
+    }
+
+    @Test
     fun `the location step says the account is saved, and opens the country list`() {
         var opened = false
         step(SdStep.Location("g2", listOf(usa, gbr)), SdActions(onChooseCountry = { opened = it }))

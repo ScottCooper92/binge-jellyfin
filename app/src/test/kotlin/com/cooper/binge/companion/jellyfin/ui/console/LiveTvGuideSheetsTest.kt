@@ -150,6 +150,36 @@ class LiveTvGuideSheetsTest {
     }
 
     @Test
+    fun `a Schedules Direct account Change login sends its id and username`() {
+        val asked = mutableListOf<Pair<String, String>>()
+        val actions = LiveTvGuideActions(onChangeLogin = { id, name -> asked += id to name })
+        form(GuideForm("g2", type = "SchedulesDirect", name = "alice"), actions)
+        compose.onNodeWithText("Change login").performClick()
+        assertEquals(listOf("g2" to "alice"), asked)
+    }
+
+    @Test
+    fun `an unfinished account and a user without Live TV access can still change a login`() {
+        compose.setContent {
+            JellyfinTheme {
+                GuideFormContent(
+                    GuideForm("g2", type = "SchedulesDirect", name = "alice", lineupPending = true),
+                    false,
+                    LiveTvGuideActions(),
+                    canFinishSetup = false,
+                )
+            }
+        }
+        compose.onNodeWithText("Change login").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an XMLTV provider has no login to change`() {
+        form(GuideForm("g1", "/config/guide.xml", name = "xmltv"))
+        compose.onNodeWithText("Change login").assertDoesNotExist()
+    }
+
+    @Test
     fun `an XMLTV provider is not offered a lineup`() {
         form(GuideForm("g1", "/config/guide.xml", name = "xmltv"))
         compose.onNodeWithText("Change lineup").assertDoesNotExist()
