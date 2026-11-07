@@ -269,6 +269,38 @@ class LibraryScreenTest {
         compose.onNodeWithText("S").assertExists()
     }
 
+    /** Forty-five languages under three letters, so the page is long enough for a rail and short enough to draw every letter. */
+    private val manyLanguages =
+        listOf("A", "M", "Z").flatMap { letter ->
+            (1..15).map { Culture("${letter}lang%02d".format(it), "x", listOf("$letter%02d".format(it))) }
+        }
+
+    @Test
+    fun `a long languages page has a letter rail that jumps to a letter`() {
+        show("movies", """{"SubtitleDownloadLanguages":[]}""", cultures = manyLanguages, page = LibraryPage.Languages)
+        // Before the jump only the rail's own Z is composed; the group's header and its languages are further down.
+        compose.onAllNodesWithText("Z").assertCountEquals(1)
+        compose.onNodeWithText("Zlang01").assertDoesNotExist()
+        compose.onNodeWithText("Z").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Zlang01").assertExists()
+    }
+
+    @Test
+    fun `a short languages page has no rail`() {
+        show("movies", """{"SubtitleDownloadLanguages":[]}""", cultures = languages, page = LibraryPage.Languages)
+        // Each letter is just its group's header.
+        compose.onAllNodesWithText("E").assertCountEquals(1)
+    }
+
+    @Test
+    fun `the rail drops the letters a search has emptied`() {
+        show("movies", """{"SubtitleDownloadLanguages":[]}""", cultures = manyLanguages, page = LibraryPage.Languages)
+        compose.onNode(hasSetTextAction()).performTextReplacement("Zlang")
+        compose.onNodeWithText("A").assertDoesNotExist()
+        compose.onNodeWithText("M").assertDoesNotExist()
+    }
+
     @Test
     fun `the languages page says so when the server listed no languages`() {
         show("movies", """{"SubtitleDownloadLanguages":[]}""", page = LibraryPage.Languages)

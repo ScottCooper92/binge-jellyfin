@@ -3,19 +3,25 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingeLetterRail
 import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -25,6 +31,7 @@ import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_DOWNLOAD_LANGUAGES
 import com.cooper.binge.companion.jellyfin.server.downloadLanguages
 import com.cooper.binge.companion.jellyfin.server.languagesWith
+import kotlinx.coroutines.launch
 import com.binge.designsystem.R as DesR
 
 /**
@@ -63,6 +70,14 @@ internal fun LanguagesBody(
     val matching = state.cultures.filter { query.isBlank() || it.displayName.contains(query.trim(), ignoreCase = true) }
     val (selected, remaining) = matching.partition { culture -> openedWith.any { it.equals(culture.code, ignoreCase = true) } }
     val sections = remaining.groupBy { it.displayName.sectionLetter() }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val letters = sections.keys.toList()
+    // The items before the first letter's group: the intro, a message, the selected group.
+    val lead = 1 + (if (state.cultures.isEmpty() || matching.isEmpty()) 1 else 0) + (if (selected.isNotEmpty()) 1 else 0)
+    val top by remember(letters, lead) {
+        derivedStateOf { letters.getOrNull(listState.firstVisibleItemIndex - lead) }
+    }
     Column(
         modifier = Modifier.fillMaxSize().padding(padding),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
@@ -73,30 +88,44 @@ internal fun LanguagesBody(
             onClear = { onQuery("") },
             placeholder = stringResource(R.string.library_languages_search),
         )
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-        ) {
-            item(key = INTRO_KEY) { PageIntro(stringResource(R.string.library_download_languages_body)) }
-            if (state.cultures.isEmpty()) {
-                item(key = EMPTY_KEY) {
-                    ConsoleEmptyScreen(stringResource(R.string.library_download_languages_unknown), Icons.Outlined.Translate)
+        Row(Modifier.weight(1f)) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+            ) {
+                item(key = INTRO_KEY) { PageIntro(stringResource(R.string.library_download_languages_body)) }
+                if (state.cultures.isEmpty()) {
+                    item(key = EMPTY_KEY) {
+                        ConsoleEmptyScreen(stringResource(R.string.library_download_languages_unknown), Icons.Outlined.Translate)
+                    }
+                } else if (matching.isEmpty()) {
+                    item(key = EMPTY_KEY) {
+                        ConsoleEmptyScreen(stringResource(R.string.library_languages_no_match), Icons.Outlined.Translate)
+                    }
                 }
-            } else if (matching.isEmpty()) {
-                item(key = EMPTY_KEY) {
-                    ConsoleEmptyScreen(stringResource(R.string.library_languages_no_match), Icons.Outlined.Translate)
+                if (selected.isNotEmpty()) {
+                    item(key = SELECTED_KEY) {
+                        ItemGroup(
+                            title = stringResource(DesR.string.choice_section_selected),
+                            rows = selected.map { it.row(state, actions, on) },
+                        )
+                    }
+                }
+                sections.forEach { (letter, cultures) ->
+                    item(key = letter) { ItemGroup(title = letter, rows = cultures.map { it.row(state, actions, on) }) }
                 }
             }
-            if (selected.isNotEmpty()) {
-                item(key = SELECTED_KEY) {
-                    ItemGroup(
-                        title = stringResource(DesR.string.choice_section_selected),
-                        rows = selected.map { it.row(state, actions, on) },
-                    )
-                }
-            }
-            sections.forEach { (letter, cultures) ->
-                item(key = letter) { ItemGroup(title = letter, rows = cultures.map { it.row(state, actions, on) }) }
+            // A long list gets a rail; the letters are those the search leaves, so a tap never lands on an empty group.
+            if (state.cultures.size >= RAIL_FROM && letters.isNotEmpty()) {
+                BingeLetterRail(
+                    letters = letters.map { it.first() },
+                    onLetter = { letter ->
+                        val index = letters.indexOfFirst { it.first() == letter }
+                        if (index >= 0) scope.launch { listState.scrollToItem(lead + index) }
+                    },
+                    current = top?.first(),
+                )
             }
         }
     }
@@ -119,6 +148,9 @@ private fun Culture.row(
 
 /** The letter a language is listed under: the first letter or digit of its name, in upper case, or `#` when it has none. */
 private fun String.sectionLetter(): String = firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "#"
+
+/** From this many languages the page has a letter rail, as a long choice list does. */
+private const val RAIL_FROM = 40
 
 private const val INTRO_KEY = "intro"
 private const val EMPTY_KEY = "empty"

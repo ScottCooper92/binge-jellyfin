@@ -53,6 +53,53 @@ private const val MUSIC_OPTIONS =
     """{"EnableLUFSScan":true,"SaveLyricsWithMedia":true,"DisabledLyricFetchers":[],"PreferNonstandardArtistsTag":true,
     "UseCustomTagDelimiters":true,"CustomTagDelimiters":["/","|",";"],"DelimiterWhitelist":["AC/DC","Back in Black"]}"""
 
+private val railLanguages =
+    listOf(
+        "Afrikaans",
+        "Arabic",
+        "Basque",
+        "Bengali",
+        "Bulgarian",
+        "Catalan",
+        "Chinese",
+        "Croatian",
+        "Czech",
+        "Danish",
+        "Dutch",
+        "English",
+        "Estonian",
+        "Finnish",
+        "French",
+        "German",
+        "Greek",
+        "Hebrew",
+        "Hindi",
+        "Hungarian",
+        "Icelandic",
+        "Indonesian",
+        "Italian",
+        "Japanese",
+        "Korean",
+        "Latvian",
+        "Lithuanian",
+        "Malay",
+        "Norwegian",
+        "Persian",
+        "Polish",
+        "Portuguese",
+        "Romanian",
+        "Russian",
+        "Serbian",
+        "Slovak",
+        "Slovenian",
+        "Spanish",
+        "Swedish",
+        "Thai",
+        "Turkish",
+        "Ukrainian",
+        "Vietnamese",
+    ).map { Culture(it, it.take(2).lowercase(), listOf(it.take(3).lowercase())) }
+
 private fun ready(
     type: String = "movies",
     name: String = "Movies",
@@ -140,6 +187,18 @@ class LibraryScreenshotTest {
     @JellyfinFontScalePreviews
     @Composable
     fun languagesSearch() = Surface { LanguagesBody(ready(), LibraryActions(), PaddingValues(), "French", {}) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun languagesRail() =
+        LibraryScreen(
+            ready().copy(cultures = railLanguages),
+            LibraryActions(),
+            newest,
+            page = LibraryPage.Languages,
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview
