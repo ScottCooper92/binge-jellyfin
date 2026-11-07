@@ -37,7 +37,14 @@ internal fun RecordingSheets(
     folderActions: FolderActions,
 ) {
     val sheet = state.sheet ?: return
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onSheet(null) }, stackPagesWhenCompact = true) { nav ->
+    val folderSheet = sheet is RecordingSheet.Folder
+    BingeAdaptiveSheet(
+        kind = BingeSheetKind.Task,
+        onDismissRequest = { actions.onSheet(null) },
+        skipPartiallyExpanded = !folderSheet,
+        dockable = folderSheet,
+        stackPagesWhenCompact = true,
+    ) { nav ->
         when (sheet) {
             is RecordingSheet.Folder ->
                 RecordingFolderForm(
@@ -65,6 +72,7 @@ internal fun RecordingFolderForm(
 ) {
     var path by rememberSaveable { mutableStateOf(current) }
     if (typePath.typing) {
+        StepDockHandle(stringResource(folder.title()))
         TextEntrySurface(
             title = stringResource(folder.title()),
             value = path,

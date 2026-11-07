@@ -40,7 +40,12 @@ internal fun AddLibrarySheet(
     onDismiss: () -> Unit,
     folderMissing: Boolean = false,
 ) {
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
+    BingeAdaptiveSheet(
+        kind = BingeSheetKind.Task,
+        onDismissRequest = onDismiss,
+        skipPartiallyExpanded = false,
+        dockable = true,
+    ) {
         AddLibraryForm(names, saving, failed, folders, folderActions, onAdd, onDismiss, folderMissing = folderMissing)
     }
 }
@@ -88,6 +93,17 @@ internal fun AddLibraryForm(
             else -> null
         },
     )
+    if (step != Step.FOLDER) {
+        StepDockHandle(
+            stringResource(
+                when (step) {
+                    Step.NAME -> R.string.library_name_title
+                    Step.KIND -> R.string.library_kind_title
+                    else -> R.string.library_path_title
+                },
+            ),
+        )
+    }
     when (step) {
         Step.NAME -> {
             val taken = names.any { it.equals(name.trim(), ignoreCase = true) }
