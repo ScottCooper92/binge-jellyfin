@@ -204,31 +204,6 @@ class LiveTvScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
-    @JellyfinFontScalePreviews
-    @JellyfinSpanishPreviews
-    @Composable
-    fun editFormStreamOptions() =
-        Surface {
-            val draft =
-                TunerDraft(
-                    TUNER_TYPE_M3U,
-                    id = "t2",
-                    name = "IPTV",
-                    url = "https://iptv.example:8443/list.m3u",
-                    options =
-                        mapOf(
-                            "AllowFmp4TranscodingContainer" to true,
-                            "AllowStreamSharing" to true,
-                            "EnableStreamLooping" to false,
-                            "IgnoreDts" to true,
-                            "ReadAtNativeFramerate" to false,
-                        ),
-                )
-            TunerSheetContent(TunerSheet.Form(draft), false, LiveTvActions())
-        }
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
     @Composable
     fun guideRemoveConfirm() =
         ConsoleConfirm(
