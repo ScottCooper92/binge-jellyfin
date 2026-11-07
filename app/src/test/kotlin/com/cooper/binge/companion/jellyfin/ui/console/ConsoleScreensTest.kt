@@ -967,7 +967,7 @@ class ConsoleScreensTest {
         assertEquals(listOf(1), removed)
         compose.onNodeWithText("Add trigger").performClick()
         compose.onNodeWithText("New trigger").assertExists()
-        compose.onNodeWithText("Every so often").performClick()
+        compose.onNodeWithText("Every so often").performScrollTo().performClick()
         compose
             .onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress) and hasContentDescription("Time limit"))
             .performScrollTo()

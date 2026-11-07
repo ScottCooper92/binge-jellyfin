@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -26,10 +27,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeTextButton
-import com.binge.designsystem.component.BingeTimeInput
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.component.timeOfDayMinutes
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.AccessSchedule
 import com.cooper.binge.companion.jellyfin.server.POLICY_SCHEDULES
@@ -43,7 +42,6 @@ import com.binge.designsystem.R as DesR
 
 private const val MINUTES_PER_SCHEDULE_HOUR = 60
 private const val MINUTES_PER_DAY = 1440
-private const val HOURS_ON_CLOCK_FACE = 12
 private val ScheduleDays =
     listOf("Everyday", "Weekday", "Weekend") + SCHEDULE_DAYS.filterNot { it in setOf("Everyday", "Weekday", "Weekend") }
 
@@ -63,15 +61,11 @@ internal fun ScheduleForm(
     var day by rememberSaveable { mutableStateOf(original?.day ?: startDay) }
     val fromMinutes = ((original?.startHour ?: startHour.toDouble()) * MINUTES_PER_SCHEDULE_HOUR).roundToInt()
     val untilMinutes = ((original?.endHour ?: 24.0) * MINUTES_PER_SCHEDULE_HOUR).roundToInt() % MINUTES_PER_DAY
-    var fromHour by rememberSaveable { mutableStateOf(clockHour(fromMinutes, is24Hour)) }
-    var fromMinute by rememberSaveable { mutableStateOf(clockMinute(fromMinutes)) }
-    var fromPm by rememberSaveable { mutableStateOf(fromMinutes >= MINUTES_PER_DAY / 2) }
-    var untilHour by rememberSaveable { mutableStateOf(clockHour(untilMinutes, is24Hour)) }
-    var untilMinute by rememberSaveable { mutableStateOf(clockMinute(untilMinutes)) }
-    var untilPm by rememberSaveable { mutableStateOf(untilMinutes >= MINUTES_PER_DAY / 2) }
-    val from = timeOfDayMinutes(fromHour, fromMinute, is24Hour, fromPm)
-    val until = timeOfDayMinutes(untilHour, untilMinute, is24Hour, untilPm)?.let { if (it == 0) MINUTES_PER_DAY else it }
-    val span = if (from != null && until != null && until > from) from to until else null
+    var from by rememberSaveable { mutableIntStateOf(fromMinutes) }
+    var untilClock by rememberSaveable { mutableIntStateOf(untilMinutes) }
+    // Midnight as the end means the end of the day.
+    val until = if (untilClock == 0) MINUTES_PER_DAY else untilClock
+    val span = if (until > from) from to until else null
     BackHandler(enabled = !choosingDay && !WindowInsets.isImeVisible) { choosingDay = true }
     Column {
         Column(
@@ -95,18 +89,8 @@ internal fun ScheduleForm(
                 }
             } else {
                 BingeTextButton(label = stringResource(dayLabel(day)), onClick = { choosingDay = true })
-                Text(stringResource(R.string.users_schedule_start), style = MaterialTheme.typography.labelLarge)
-                BingeTimeInput(fromHour, fromMinute, { fromHour = it }, { fromMinute = it }, is24Hour, afternoon = fromPm, onAfternoon = {
-                    fromPm =
-                        it
-                })
-                Text(stringResource(R.string.users_schedule_end), style = MaterialTheme.typography.labelLarge)
-                BingeTimeInput(untilHour, untilMinute, {
-                    untilHour = it
-                }, { untilMinute = it }, is24Hour, afternoon = untilPm, onAfternoon = {
-                    untilPm =
-                        it
-                })
+                ClockTimeRow(stringResource(R.string.users_schedule_start), from, { from = it }, is24Hour)
+                ClockTimeRow(stringResource(R.string.users_schedule_end), untilClock, { untilClock = it }, is24Hour)
                 Text(stringResource(R.string.users_schedule_midnight), style = MaterialTheme.typography.bodyMedium)
                 if (span == null) ScheduleOrderError()
             }
@@ -156,30 +140,6 @@ private fun ScheduleSave(
         modifier = Modifier.fillMaxWidth().padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
     )
 }
-
-private fun clockHour(
-    minutes: Int,
-    is24Hour: Boolean,
-): String {
-    val hour = minutes / MINUTES_PER_SCHEDULE_HOUR
-    return (
-        if (is24Hour) {
-            hour
-        } else {
-            (hour % HOURS_ON_CLOCK_FACE).let {
-                if (it ==
-                    0
-                ) {
-                    HOURS_ON_CLOCK_FACE
-                } else {
-                    it
-                }
-            }
-        }
-    ).toString().padStart(2, '0')
-}
-
-private fun clockMinute(minutes: Int): String = (minutes % MINUTES_PER_SCHEDULE_HOUR).toString().padStart(2, '0')
 
 /** Replace by value against the latest policy; retain unknown fields and collapse an edit equal to another row. */
 internal fun List<JsonElement>.withSchedule(

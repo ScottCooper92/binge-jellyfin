@@ -513,6 +513,7 @@
     <string name="users_add_schedule">Add a time</string>
     <string name="users_schedule_row">%1$s, %2$s to %3$s</string>
     <string name="users_schedule_day">Which day?</string>
+    <string name="trigger_time_label">Time</string>
     <string name="users_schedule_start">From when?</string>
     <string name="users_schedule_end">Until when?</string>
     <string name="users_day_sunday">Sunday</string>

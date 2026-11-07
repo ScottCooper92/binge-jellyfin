@@ -27,11 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
@@ -46,12 +44,10 @@ import com.binge.designsystem.component.BingeFilterChip
 import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.BingeSheetKind
-import com.binge.designsystem.component.BingeTimeInput
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.WrappingRow
-import com.binge.designsystem.component.timeOfDayMinutes
 import com.binge.designsystem.template.EmptyScreen
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerTask
@@ -240,10 +236,7 @@ internal fun AddTriggerForm(
     is24Hour: Boolean = DateFormat.is24HourFormat(LocalContext.current),
 ) {
     var kindIndex by rememberSaveable { mutableIntStateOf(startKind.ordinal) }
-    var hourText by rememberSaveable { mutableStateOf(DEFAULT_HOUR.toString().padStart(2, '0')) }
-    var minuteText by rememberSaveable { mutableStateOf("00") }
-    var afternoon by rememberSaveable { mutableStateOf(false) }
-    val minutes = timeOfDayMinutes(hourText, minuteText, is24Hour, afternoon)
+    var minutes by rememberSaveable { mutableIntStateOf(DEFAULT_HOUR * MINUTES_PER_HOUR) }
     var dayIndex by rememberSaveable { mutableIntStateOf(0) }
     var intervalTicks by rememberSaveable { mutableLongStateOf(DEFAULT_INTERVAL_HOURS * TICKS_PER_HOUR) }
     var limitHours by rememberSaveable { mutableIntStateOf(0) }
@@ -269,17 +262,8 @@ internal fun AddTriggerForm(
             ) {
                 KindChips(kind) { kindIndex = it.ordinal }
                 if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        BingeTimeInput(
-                            hour = hourText,
-                            minute = minuteText,
-                            onHour = { hourText = it },
-                            onMinute = { minuteText = it },
-                            is24Hour = is24Hour,
-                            afternoon = afternoon,
-                            onAfternoon = { afternoon = it },
-                            modifier = Modifier.testTag(TRIGGER_TIME_TAG),
-                        )
+                    Box(modifier = Modifier.fillMaxWidth().testTag(TRIGGER_TIME_TAG)) {
+                        ClockTimeRow(stringResource(R.string.trigger_time_label), minutes, { minutes = it }, is24Hour)
                     }
                 }
             }
@@ -294,10 +278,8 @@ internal fun AddTriggerForm(
         }
         BingeFilledButton(
             label = stringResource(R.string.tasks_trigger_create),
-            // A time of day has to be a real one; the other kinds have none.
-            enabled = minutes != null || (kind != TriggerKind.Daily && kind != TriggerKind.Weekly),
             onClick = {
-                val timeTicks = { (minutes ?: 0) * TICKS_PER_MINUTE }
+                val timeTicks = { minutes * TICKS_PER_MINUTE }
                 actions.onAddTrigger(
                     when (kind) {
                         TriggerKind.Daily -> TaskTrigger.daily(timeTicks(), limit)
