@@ -3,6 +3,9 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
@@ -58,7 +61,8 @@ class AccessScheduleFormTest {
         compose.onNodeWithText("OK").assertDoesNotExist()
         compose.onNodeWithText("From when?").performClick()
         compose.onNodeWithText("OK").assertExists()
-        compose.onNodeWithText("Cancel").performClick()
+        // The form has a Cancel of its own; the dialog's is the one inside the dialog window.
+        compose.onNode(hasText("Cancel") and hasAnyAncestor(isDialog())).performClick()
         compose.onNodeWithText("OK").assertDoesNotExist()
         compose.onNodeWithText("09:00").assertExists()
     }
