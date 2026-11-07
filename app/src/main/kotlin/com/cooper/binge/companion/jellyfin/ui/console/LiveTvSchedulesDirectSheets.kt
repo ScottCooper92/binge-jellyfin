@@ -1,13 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -81,16 +77,15 @@ private fun SdStepBack(
     saving: Boolean,
     actions: SdActions,
 ) {
-    val keyboardUp = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val back: (() -> Unit)? =
+    StepBack(
         when {
             saving -> null
             step is SdStep.Account -> actions.onBackToChoice
             step is SdStep.Location && step.choosing -> ({ actions.onChooseCountry(false) })
             step is SdStep.Lineups -> actions.onBackToLocation
             else -> null
-        }
-    BackHandler(enabled = back != null && !keyboardUp) { back?.invoke() }
+        },
+    )
 }
 
 /** [step]'s body, which draws without a window for a frame. */
