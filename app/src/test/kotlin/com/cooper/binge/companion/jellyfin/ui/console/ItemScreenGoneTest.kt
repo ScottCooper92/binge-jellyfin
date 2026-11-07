@@ -6,12 +6,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.binge.companion.jellyfin.server.CatalogPackage
+import com.cooper.binge.companion.jellyfin.server.FetcherKind
+import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.PlayMethod
 import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.ServerUser
+import com.cooper.binge.companion.jellyfin.server.TypeFetchers
+import com.cooper.binge.companion.jellyfin.server.UserView
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertEquals
@@ -39,6 +44,9 @@ class ItemScreenGoneTest {
     private val task = ServerTask("t1", "ScanLibrary", "Scan Media Library", "Scans the library.", "Library", false, false, null, null)
     private val user = ServerUser("u1", "Alice", false, null, JsonObject(emptyMap()))
     private val plugin = ServerPlugin("p1", "AudioDB", "10.11.6.0", "Looks things up.", PluginStatus.Active, false, false)
+    private val pkg = CatalogPackage("k1", "AudioDB", "Looks things up.", "", "Jellyfin", "Metadata", emptyList())
+    private val view = UserView("v1", "Movies")
+    private val fetchers = listOf(TypeFetchers("Movie", metadata = listOf("TheMovieDb")))
     private val session =
         NowPlaying("s1", "alice", "Pixel", "Jellyfin Android", "Big Buck Bunny", null, 0L, null, false, PlayMethod.DirectPlay, emptyList())
 
@@ -103,4 +111,33 @@ class ItemScreenGoneTest {
             loading = NowPlayingUiState.Loading,
             failed = NowPlayingUiState.Failed(failure),
         ) { state, back -> NowPlayingSessionScreen(state, "s1", NowPlayingActions(onBack = back)) }
+
+    @Test
+    fun `a package's screen closes when the package leaves the catalog`() =
+        check(
+            holds = CatalogUiState.Ready(listOf(pkg)),
+            without = CatalogUiState.Ready(emptyList()),
+            loading = CatalogUiState.Loading,
+            failed = CatalogUiState.Failed(failure),
+        ) { state, back -> PackageScreen(state, "AudioDB", CatalogActions(), back) }
+
+    @Test
+    fun `a library's home screen closes when the library leaves the list`() =
+        check(
+            holds = HomeLayoutUiState.Ready(listOf(view), HomeLayout()),
+            without = HomeLayoutUiState.Ready(emptyList(), HomeLayout()),
+            loading = HomeLayoutUiState.Loading,
+            failed = HomeLayoutUiState.Failed(failure),
+        ) { state, back -> HomeLayoutLibraryScreen(state, "v1", HomeLayoutActions(onBack = back)) }
+
+    @Test
+    fun `a fetcher's screen closes when the server stops offering it`() =
+        check(
+            holds = MetadataDefaultsUiState.Ready(JsonObject(emptyMap()), fetchers),
+            without = MetadataDefaultsUiState.Ready(JsonObject(emptyMap()), listOf(TypeFetchers("Movie"))),
+            loading = MetadataDefaultsUiState.Loading,
+            failed = MetadataDefaultsUiState.Failed(failure),
+        ) { state, back ->
+            MetadataFetcherScreen(state, "Movie", OpenFetcher(FetcherKind.Metadata, "TheMovieDb"), MetadataDefaultsActions(onBack = back))
+        }
 }
