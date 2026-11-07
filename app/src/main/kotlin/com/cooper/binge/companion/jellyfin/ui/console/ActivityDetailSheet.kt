@@ -43,15 +43,15 @@ internal fun ActivityDetailSheet(
     onOpenUser: (() -> Unit)? = null,
     onClose: () -> Unit,
 ) {
-    ConsoleSheet(onDismissRequest = onClose, inWindow = inWindow) { ActivityDetailContent(entry, zone, onClose, onOpenUser) }
+    ConsoleSheet(onDismissRequest = onClose, inWindow = inWindow) { ActivityDetailContent(entry, zone, onOpenUser, onClose) }
 }
 
 @Composable
 internal fun ActivityDetailContent(
     entry: ActivityEntry,
     zone: ZoneId,
-    onClose: () -> Unit,
     onOpenUser: (() -> Unit)? = null,
+    onClose: () -> Unit,
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
     // The date and the time each in the device's own style, joined here: a locale's combined pattern varies between JDKs.
