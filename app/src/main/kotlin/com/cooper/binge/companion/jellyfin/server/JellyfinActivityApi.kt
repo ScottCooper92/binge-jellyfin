@@ -17,6 +17,8 @@ data class ActivityEntry(
     val type: String,
     val dateMillis: Long?,
     val severity: Severity,
+    /** The log's long `Overview`, when it says more than [overview] (which is the short one, else this): the detail sheet shows it whole. */
+    val longOverview: String? = null,
 )
 
 /** A page of the activity log, newest first, and how many entries there are in all. */
@@ -37,10 +39,12 @@ suspend fun JellyfinClient.activity(
 
 private fun JsonObject.activityEntry(): ActivityEntry? {
     val id = long("Id") ?: return null
+    val shown = (string("ShortOverview") ?: string("Overview"))?.takeIf { it.isNotBlank() }
     return ActivityEntry(
         id = id,
         name = string("Name").orEmpty(),
-        overview = (string("ShortOverview") ?: string("Overview"))?.takeIf { it.isNotBlank() },
+        overview = shown,
+        longOverview = string("Overview")?.takeIf { it.isNotBlank() && it != shown },
         type = string("Type").orEmpty(),
         dateMillis = string("Date")?.epochMillisOrNull(),
         severity = severityOf(string("Severity")),

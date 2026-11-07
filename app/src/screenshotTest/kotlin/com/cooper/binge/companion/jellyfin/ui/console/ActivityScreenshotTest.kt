@@ -46,6 +46,19 @@ private val previewEntries =
         ),
     )
 
+private val previewDetailEntry =
+    ActivityEntry(
+        8,
+        "Plugin AudioDB updated",
+        "AudioDB 10.0",
+        "PluginUpdated",
+        NOW - 12 * MINUTE,
+        Severity.Information,
+        longOverview =
+            "AudioDB was updated from 9.0 to 10.0. The server restarts the plugin on its next start, " +
+                "so the new version works from then.",
+    )
+
 private val previewReady = ActivityUiState.Ready(previewEntries, total = previewEntries.size)
 
 /** Activity: grouped by day across the matrix, then more to come, a failed next page, empty, and the read states. */
@@ -84,4 +97,18 @@ class ActivityScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = ActivityScreen(ActivityUiState.Failed(ConsoleFailure.Refused), ActivityActions())
+
+    /** One entry in full: when it happened to the second, its type, and both lines the server wrote. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun detail() = ActivityDetailContent(previewDetailEntry, ZoneOffset.UTC) {}
+
+    /** An entry with nothing but a name and a type, as most of the log is. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun detailBare() = ActivityDetailContent(previewEntries[3], ZoneOffset.UTC) {}
 }

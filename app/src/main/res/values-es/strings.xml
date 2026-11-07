@@ -371,6 +371,11 @@
     <string name="activity_title">Actividad</string>
     <string name="console_activity_detail">Inicios de sesión, reproducciones y cambios en el servidor</string>
     <string name="activity_empty">Aún no ha pasado nada en este servidor.</string>
+    <string name="activity_detail_time">Hora</string>
+    <string name="activity_detail_type">Tipo</string>
+    <string name="activity_detail_summary">Qué pasó</string>
+    <string name="activity_detail_more">Detalles</string>
+    <string name="activity_detail_close">Cerrar</string>
     <string name="activity_undated">Sin fecha</string>
     <string name="logs_title">Registros</string>
     <string name="logs_retention_title">Conservar otros archivos de registro</string>

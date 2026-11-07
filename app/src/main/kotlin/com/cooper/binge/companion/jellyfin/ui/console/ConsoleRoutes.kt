@@ -230,7 +230,13 @@ private fun ActivityRoute(
     val state by activity.state.collectAsStateWithLifecycle()
     ActivityScreen(
         state,
-        ActivityActions(onRefresh = activity::refresh, onLoadMore = activity::loadMore, onRetry = activity::load, onBack = onBack),
+        ActivityActions(
+            onRefresh = activity::refresh,
+            onLoadMore = activity::loadMore,
+            onOpen = activity::open,
+            onRetry = activity::load,
+            onBack = onBack,
+        ),
     )
 }
 

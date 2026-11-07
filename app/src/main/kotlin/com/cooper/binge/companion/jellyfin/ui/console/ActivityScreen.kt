@@ -62,6 +62,7 @@ import com.binge.designsystem.R as DesR
 data class ActivityActions(
     val onRefresh: () -> Unit = {},
     val onLoadMore: () -> Unit = {},
+    val onOpen: (Long?) -> Unit = {},
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -93,6 +94,9 @@ fun ActivityScreen(
                         indicatorTopInset = padding.calculateTopPadding(),
                     ) { Entries(state, actions, inner, now, zone, listState) }
             }
+            (state as? ActivityUiState.Ready)?.openEntry?.let { entry ->
+                ActivityDetailSheet(entry, zone) { actions.onOpen(null) }
+            }
         }
     }
 }
@@ -119,7 +123,7 @@ private fun Entries(
             item(key = "day-$day") {
                 ItemGroup(
                     title = dayTitle(day, now),
-                    rows = entries.map { it.row(time) },
+                    rows = entries.map { it.row(time) { id -> actions.onOpen(id) } },
                     // The skeleton's first plate is anchored the same way, so a test can tell the page does not jump on resolve.
                     modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                 )
@@ -149,14 +153,17 @@ private fun More(
 }
 
 @Composable
-private fun ActivityEntry.row(time: DateTimeFormatter): ListItem =
+private fun ActivityEntry.row(
+    time: DateTimeFormatter,
+    onOpen: (Long) -> Unit,
+): ListItem =
     ListItem(
         icon = activityIcon(type),
         iconTint = severity.tint(),
         label = name,
         detail = listOfNotNull(dateMillis?.let { time.format(Instant.ofEpochMilli(it)) }, overview).joinToString(" · "),
         supportingMaxLines = 2,
-        clickable = false,
+        onClick = { onOpen(id) },
     )
 
 @Composable
