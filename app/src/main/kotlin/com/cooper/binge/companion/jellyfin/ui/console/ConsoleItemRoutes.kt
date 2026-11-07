@@ -79,7 +79,7 @@ internal fun ConsoleItemRoute(
         ConsolePage.Users -> UserItemRoute(graph, profile, item, openSubItem, close)
         ConsolePage.HomeLayout -> HomeLayoutLibraryRoute(graph, profile, item, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayListRoute(graph, item, close)
-        ConsolePage.MetadataDefaults -> MetadataItemRoute(graph, item, openSubItem, close)
+        ConsolePage.MetadataDefaults -> MetadataItemRoute(graph.connection, item, openSubItem, close)
         ConsolePage.Libraries -> LibraryItemRoute(graph, profile, item, openSubItem, close)
         ConsolePage.NowPlaying -> NowPlayingItemRoute(graph, account, item, close)
         ConsolePage.Plugins ->
