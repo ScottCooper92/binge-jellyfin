@@ -121,7 +121,6 @@ internal fun AddLibraryForm(
             )
         Step.FOLDER ->
             FolderPicker(
-                docking = true,
                 state = folders,
                 actions = folderActions,
                 busy = saving,

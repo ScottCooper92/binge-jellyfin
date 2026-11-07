@@ -54,7 +54,7 @@ private const val FOLDER_SKELETON_ROWS = 5
  * own file system is browsed because a library's folder is a path on the server, not on this device. [onChoose]
  * takes the folder the user is in; [onType] is for a path that isn't offered. It is the content of a sheet.
  *
- * In a [docking] sheet (one opened part-way and `dockable`) the list takes the height the sheet gives it, so a swipe up
+ * In a docking sheet (one opened part-way and `dockable`) the list takes the height the sheet gives it, so a swipe up
  * on it grows the sheet before it scrolls the rows, and the header becomes a bar once the sheet is full. The buttons
  * stay on the bottom edge throughout. In any other sheet the list is capped, as it was, so the sheet stays its own height.
  */
@@ -67,8 +67,9 @@ internal fun FolderPicker(
     onType: () -> Unit,
     onCancel: () -> Unit,
     failed: ConsoleFailure? = null,
-    docking: Boolean = false,
 ) {
+    // Only a docking sheet gives the list the height it has; anywhere else (a side sheet, a frame) the list keeps its cap.
+    val docking = LocalBingeSheetDock.current != null
     val current = (state as? FolderBrowseState.Ready)?.current
     val title = stringResource(R.string.library_folder_title)
     val where = current?.path ?: stringResource(R.string.library_folder_roots)

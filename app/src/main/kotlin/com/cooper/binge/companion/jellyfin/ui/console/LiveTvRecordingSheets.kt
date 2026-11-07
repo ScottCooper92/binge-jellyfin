@@ -87,7 +87,6 @@ internal fun RecordingFolderForm(
         )
     } else {
         FolderPicker(
-            docking = true,
             state = folders,
             actions = folderActions,
             busy = false,
