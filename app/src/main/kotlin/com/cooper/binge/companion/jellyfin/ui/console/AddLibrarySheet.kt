@@ -40,7 +40,12 @@ internal fun AddLibrarySheet(
     onDismiss: () -> Unit,
     folderMissing: Boolean = false,
 ) {
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
+    BingeAdaptiveSheet(
+        kind = BingeSheetKind.Task,
+        onDismissRequest = onDismiss,
+        skipPartiallyExpanded = false,
+        dockable = true,
+    ) {
         AddLibraryForm(names, saving, failed, folders, folderActions, onAdd, onDismiss, folderMissing = folderMissing)
     }
 }
@@ -116,6 +121,7 @@ internal fun AddLibraryForm(
             )
         Step.FOLDER ->
             FolderPicker(
+                docking = true,
                 state = folders,
                 actions = folderActions,
                 busy = saving,
