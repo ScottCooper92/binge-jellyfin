@@ -376,6 +376,7 @@
     <string name="activity_detail_summary">Qué pasó</string>
     <string name="activity_detail_more">Detalles</string>
     <string name="activity_detail_close">Cerrar</string>
+    <string name="activity_detail_user">Abrir usuario</string>
     <string name="activity_undated">Sin fecha</string>
     <string name="logs_title">Registros</string>
     <string name="logs_retention_title">Conservar otros archivos de registro</string>

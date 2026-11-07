@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notes
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import java.time.Instant
@@ -38,15 +40,17 @@ internal fun ActivityDetailSheet(
     entry: ActivityEntry,
     zone: ZoneId,
     inWindow: Boolean = true,
+    onOpenUser: ((String) -> Unit)? = null,
     onClose: () -> Unit,
 ) {
-    ConsoleSheet(onDismissRequest = onClose, inWindow = inWindow) { ActivityDetailContent(entry, zone, onClose) }
+    ConsoleSheet(onDismissRequest = onClose, inWindow = inWindow) { ActivityDetailContent(entry, zone, onOpenUser, onClose) }
 }
 
 @Composable
 internal fun ActivityDetailContent(
     entry: ActivityEntry,
     zone: ZoneId,
+    onOpenUser: ((String) -> Unit)? = null,
     onClose: () -> Unit,
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
@@ -68,6 +72,8 @@ internal fun ActivityDetailContent(
             },
             entry.overview?.let { detailRow(R.string.activity_detail_summary, it) },
             entry.longOverview?.let { detailRow(R.string.activity_detail_more, it) },
+            // Only for an entry about a user, and only where the user can open the users page. The sheet closes first.
+            openUserRow(entry.userId, onOpenUser, onClose),
         )
     Column(
         modifier = Modifier.fillMaxWidth().padding(dimensionResource(DesR.dimen.padding_m)),
@@ -83,6 +89,26 @@ internal fun ActivityDetailContent(
         BingeFilledButton(label = stringResource(R.string.activity_detail_close), onClick = onClose, modifier = Modifier.fillMaxWidth())
     }
 }
+
+@Composable
+private fun openUserRow(
+    userId: String?,
+    onOpenUser: ((String) -> Unit)?,
+    onClose: () -> Unit,
+): ListItem? =
+    if (userId == null || onOpenUser == null) {
+        null
+    } else {
+        ListItem(
+            icon = Icons.Outlined.Person,
+            label = stringResource(R.string.activity_detail_user),
+            destination = ListItemDestination.Action,
+            onClick = {
+                onClose()
+                onOpenUser(userId)
+            },
+        )
+    }
 
 @Composable
 private fun detailRow(

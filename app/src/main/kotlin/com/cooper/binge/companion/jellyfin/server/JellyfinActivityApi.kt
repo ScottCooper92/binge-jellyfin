@@ -19,6 +19,8 @@ data class ActivityEntry(
     val severity: Severity,
     /** The log's long `Overview`, when it says more than [overview] (which is the short one, else this): the detail sheet shows it whole. */
     val longOverview: String? = null,
+    /** The user the entry is about (the log's `UserId`), or null when it names none (a blank id, or the all-zero one the server writes for the system). */
+    val userId: String? = null,
 )
 
 /** A page of the activity log, newest first, and how many entries there are in all. */
@@ -48,6 +50,7 @@ private fun JsonObject.activityEntry(): ActivityEntry? {
         type = string("Type").orEmpty(),
         dateMillis = string("Date")?.epochMillisOrNull(),
         severity = severityOf(string("Severity")),
+        userId = string("UserId")?.takeIf { it.isNotBlank() && it.any { c -> c != '0' && c != '-' } },
     )
 }
 

@@ -372,6 +372,7 @@
     <string name="activity_detail_summary">What happened</string>
     <string name="activity_detail_more">Details</string>
     <string name="activity_detail_close">Close</string>
+    <string name="activity_detail_user">Open user</string>
     <string name="activity_undated">Undated</string>
     <string name="logs_title">Logs</string>
     <string name="logs_retention_title">Keep other log files</string>

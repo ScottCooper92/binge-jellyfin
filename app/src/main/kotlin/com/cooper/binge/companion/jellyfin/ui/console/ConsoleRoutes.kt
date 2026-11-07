@@ -30,6 +30,7 @@ internal fun ConsolePageRoute(
     open: (ConsolePage) -> Unit = {},
     actions: Actions = Actions(),
     openItem: (String) -> Unit = {},
+    openPageItem: (ConsolePage, String) -> Unit = { _, _ -> },
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
@@ -41,7 +42,10 @@ internal fun ConsolePageRoute(
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
         ConsolePage.Libraries -> LibrariesRoute(graph, openItem, close)
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
-        ConsolePage.Activity -> ActivityRoute(graph, close)
+        ConsolePage.Activity -> {
+            val openUser = { id: String -> openPageItem(ConsolePage.Users, userItem(id)) }
+            ActivityRoute(graph, openUser.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) }, close)
+        }
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
@@ -224,6 +228,7 @@ private fun TasksRoute(
 @Composable
 private fun ActivityRoute(
     graph: AppGraph,
+    onOpenUser: ((String) -> Unit)?,
     onBack: () -> Unit,
 ) {
     val activity: ActivityViewModel = viewModel(factory = viewModelFactory { initializer { ActivityViewModel(graph.connection) } })
@@ -234,6 +239,7 @@ private fun ActivityRoute(
             onRefresh = activity::refresh,
             onLoadMore = activity::loadMore,
             onOpen = activity::open,
+            onOpenUser = onOpenUser,
             onRetry = activity::load,
             onBack = onBack,
         ),
