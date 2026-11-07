@@ -50,14 +50,16 @@ internal fun ActivityDetailContent(
     onClose: () -> Unit,
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
-    val moment = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale).withZone(zone)
+    // The date and the time each in the device's own style, joined here: a locale's combined pattern varies between JDKs.
+    val day = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).withZone(zone)
+    val clock = DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM).withLocale(locale).withZone(zone)
     val rows =
         listOfNotNull(
             entry.dateMillis?.let {
                 ListItem(
                     icon = Icons.Outlined.Schedule,
                     label = stringResource(R.string.activity_detail_time),
-                    detail = moment.format(Instant.ofEpochMilli(it)),
+                    detail = Instant.ofEpochMilli(it).let { at -> "${day.format(at)} · ${clock.format(at)}" },
                     clickable = false,
                 )
             },
