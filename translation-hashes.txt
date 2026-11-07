@@ -134,7 +134,6 @@ app:catalog_installing  8749b1693f74
 app:catalog_no_version  8680dc729209
 app:catalog_owner  25a239179c0c
 app:catalog_version  dd167905de0d
-app:clock_time_ok  565339bc4d33
 app:companion_label  8e03b3c29d2b
 app:connection_allow_local_network  b97c4592cdf4
 app:connection_allow_local_network_short  827bdde10636

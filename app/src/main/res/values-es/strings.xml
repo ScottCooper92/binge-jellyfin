@@ -518,7 +518,6 @@
     <string name="users_add_schedule">Añadir un horario</string>
     <string name="users_schedule_row">%1$s, de %2$s a %3$s</string>
     <string name="users_schedule_day">¿Qué día?</string>
-    <string name="clock_time_ok">Aceptar</string>
     <string name="trigger_time_label">Hora</string>
     <string name="users_schedule_start">¿Desde cuándo?</string>
     <string name="users_schedule_end">¿Hasta cuándo?</string>

@@ -21,7 +21,6 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
-import com.cooper.binge.companion.jellyfin.R
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -105,7 +104,7 @@ private fun ClockTimeDialog(
         text = { if (keyboard) TimeInput(state) else TimePicker(state) },
         confirmButton = {
             BingeTextButton(
-                label = stringResource(R.string.clock_time_ok),
+                label = stringResource(DesR.string.action_ok),
                 onClick = {
                     onPick(state.hour * MINUTES_PER_HOUR + state.minute)
                     onDismiss()
