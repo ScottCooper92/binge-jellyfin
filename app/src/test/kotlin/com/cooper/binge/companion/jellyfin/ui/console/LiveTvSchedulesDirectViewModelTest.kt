@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -291,6 +294,50 @@ class LiveTvSchedulesDirectViewModelTest {
         )
         assertTrue(account.getValue("Password").jsonPrimitive.content != oldHash)
         assertEquals("USA-NY12345-X", account.getValue("ListingsId").jsonPrimitive.content)
+        assertEquals(before + 1, changed)
+    }
+
+    /** The account is removed from the server, as another client or the dashboard would. */
+    private fun removeAccount(id: String) {
+        val config = Json.parseToJsonElement(jellyfin.liveTvConfiguration).jsonObject
+        val kept =
+            config.getValue("ListingProviders").jsonArray.filter {
+                it.jsonObject
+                    .getValue("Id")
+                    .jsonPrimitive.content != id
+            }
+        jellyfin.liveTvConfiguration = JsonObject(config + ("ListingProviders" to JsonArray(kept))).toString()
+    }
+
+    @Test
+    fun `a login saved for an account removed meanwhile closes the sheet, says so, and has the page read again`() {
+        val vm = vm()
+        val id = signedIn(vm)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.editLogin(id, "carol")
+        removeAccount(id)
+        val before = changed
+        vm.signIn("dave", "newsecret")
+        val gone = vm.until { it.problem == SdProblem.AccountGone }
+        assertNull(gone.step)
+        assertNull(gone.failed)
+        assertEquals(before + 1, changed)
+    }
+
+    @Test
+    fun `a lineup added to an account removed meanwhile closes the sheet, says so, and has the page read again`() {
+        val vm = vm()
+        val id = signedIn(vm)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.pickCountry(usa)
+        vm.findLineups("10001")
+        vm.until { (it.step as? SdStep.Lineups)?.lineups != null }
+        removeAccount(id)
+        val before = changed
+        vm.addLineup(SdLineup("USA-NY12345-X", "Comcast Digital"))
+        val gone = vm.until { it.problem == SdProblem.AccountGone }
+        assertNull(gone.step)
+        assertNull(gone.failed)
         assertEquals(before + 1, changed)
     }
 

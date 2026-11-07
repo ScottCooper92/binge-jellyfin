@@ -1170,6 +1170,8 @@
     <string name="live_tv_sd_account_not_saved_body">El servidor no quiso guardarla. Comprueba que el usuario y la contraseña están rellenos y que el servidor es accesible, e inténtalo de nuevo.</string>
     <string name="live_tv_sd_lineup_not_added_title">No se añadió la alineación</string>
     <string name="live_tv_sd_lineup_not_added_body">El servidor no pudo añadirla a tu cuenta de Schedules Direct, casi siempre por el inicio de sesión. Comprueba tu usuario y contraseña, o quita esta cuenta y vuelve a configurarla.</string>
+    <string name="live_tv_sd_account_gone_title">Se quitó la cuenta</string>
+    <string name="live_tv_sd_account_gone_body">Se quitó mientras esto estaba abierto, así que no se guardó nada. La lista muestra ahora lo que tiene el servidor.</string>
     <string name="live_tv_guide_not_changed">Sin cambios. %1$s</string>
     <string name="live_tv_sd_not_done">No se hizo. %1$s</string>
     <string name="live_tv_add_tuner">Añadir sintonizador</string>

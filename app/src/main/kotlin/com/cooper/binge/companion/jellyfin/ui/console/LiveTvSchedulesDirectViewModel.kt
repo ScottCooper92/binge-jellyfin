@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** The account the sheet was for is no longer on the server: read just before a save, which it would have sent over nothing. */
+private class AccountGone : Exception("The account is gone")
+
 /** Where the Schedules Direct setup stands. The password is never in it: it is hashed as the account is sent and held nowhere. */
 sealed interface SdStep {
     /** The account: a username and a password, typed into the form's own fields. */
@@ -64,6 +67,9 @@ enum class SdProblem {
 
     /** The server would not add the lineup to the account, which is almost always the login. A dialog says why. */
     LineupNotAdded,
+
+    /** The account was removed (from another client, or the dashboard) while the sheet was open, so nothing was saved. A dialog says so. */
+    AccountGone,
 }
 
 /**
@@ -134,7 +140,7 @@ class LiveTvSchedulesDirectViewModel(
                             if (_state.value.step is SdStep.Account) locate(id)
                         }
                     },
-                    onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.AccountNotSaved) } },
+                    onFailure = { error -> fail(error, SdProblem.AccountNotSaved) },
                 )
         }
     }
@@ -149,14 +155,14 @@ class LiveTvSchedulesDirectViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
-                    val held = client.listingProviders()[providerId] ?: error("The account is gone")
+                    val held = client.listingProviders()[providerId] ?: throw AccountGone()
                     connection.tracked { client.saveListingProvider(held.withLogin(username, password), validateLogin = true) }
                 }.fold(
                     onSuccess = {
                         onChanged()
                         _state.update { SdUiState() }
                     },
-                    onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.AccountNotSaved) } },
+                    onFailure = { error -> fail(error, SdProblem.AccountNotSaved) },
                 )
         }
     }
@@ -239,7 +245,7 @@ class LiveTvSchedulesDirectViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
-                    val held = client.listingProviders()[step.providerId] ?: error("The account is gone")
+                    val held = client.listingProviders()[step.providerId] ?: throw AccountGone()
                     connection.tracked {
                         client.saveListingProvider(held.withLineup(lineup.id, step.country.code, step.postalCode), validateListings = true)
                     }
@@ -249,16 +255,26 @@ class LiveTvSchedulesDirectViewModel(
                         onChanged()
                         _state.update { SdUiState() }
                     },
-                    onFailure = { error -> _state.update { it.copy(saving = false).failedWith(error, SdProblem.LineupNotAdded) } },
+                    onFailure = { error -> fail(error, SdProblem.LineupNotAdded) },
                 )
         }
     }
 
-    /** The server's own refusal of what it was sent is [problem], which a dialog explains; any other failure says why it never got there. */
-    private fun SdUiState.failedWith(
+    /**
+     * A save that did not go through. An account removed meanwhile closes the sheet, tells the page to read its list again, and says so
+     * in a dialog; anything else stays on the step, as [failedWith] says.
+     */
+    private fun fail(
         error: Throwable,
         problem: SdProblem,
-    ) = if (error.isProviderRefused()) copy(problem = problem) else copy(failed = error.consoleFailure())
+    ) {
+        if (error is AccountGone) {
+            onChanged()
+            _state.update { SdUiState(problem = SdProblem.AccountGone) }
+        } else {
+            _state.update { it.copy(saving = false).failedWith(error, problem) }
+        }
+    }
 
     private var lineupsLookup: Job? = null
 
@@ -269,3 +285,13 @@ class LiveTvSchedulesDirectViewModel(
         const val TAG = "JellyfinLiveTvSchedulesDirect"
     }
 }
+
+/** The server's own refusal of what it was sent is [problem], which a dialog explains; any other failure says why it never got there. */
+private fun SdUiState.failedWith(
+    error: Throwable,
+    problem: SdProblem,
+): SdUiState =
+    when {
+        error.isProviderRefused() -> copy(problem = problem)
+        else -> copy(failed = error.consoleFailure())
+    }

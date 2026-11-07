@@ -531,6 +531,8 @@ app:live_tv_remove_message  8f741c42e864
 app:live_tv_remove_title  44272e7b5473
 app:live_tv_remove_tuner  b1dda3005493
 app:live_tv_sd_account_body  2f92c95c645e
+app:live_tv_sd_account_gone_body  4add22326124
+app:live_tv_sd_account_gone_title  7735654d7258
 app:live_tv_sd_account_not_saved_body  788facde8543
 app:live_tv_sd_account_not_saved_title  b30133a9412d
 app:live_tv_sd_choose_country  19323e2d92e7
