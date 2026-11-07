@@ -274,6 +274,7 @@ internal fun SdMessages(
         when (state.problem) {
             SdProblem.AccountNotSaved -> R.string.live_tv_sd_account_not_saved_title to R.string.live_tv_sd_account_not_saved_body
             SdProblem.LineupNotAdded -> R.string.live_tv_sd_lineup_not_added_title to R.string.live_tv_sd_lineup_not_added_body
+            SdProblem.AccountGone -> R.string.live_tv_sd_account_gone_title to R.string.live_tv_sd_account_gone_body
             null -> return
         }
     ConsoleMessage(title = stringResource(title), message = stringResource(body), onDismiss = actions.onDismissProblem)

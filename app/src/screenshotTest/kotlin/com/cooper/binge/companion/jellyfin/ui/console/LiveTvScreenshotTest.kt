@@ -424,6 +424,19 @@ class LiveTvScreenshotTest {
             inWindow = false,
         )
 
+    /** The account was removed while its sheet was open. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun sdAccountGone() =
+        ConsoleMessage(
+            title = stringResource(R.string.live_tv_sd_account_gone_title),
+            message = stringResource(R.string.live_tv_sd_account_gone_body),
+            onDismiss = {},
+            inWindow = false,
+        )
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable

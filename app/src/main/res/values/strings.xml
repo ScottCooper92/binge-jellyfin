@@ -1173,6 +1173,8 @@
     <string name="live_tv_sd_account_not_saved_body">The server would not keep it. Check the username and password are filled in and that the server is reachable, then try again.</string>
     <string name="live_tv_sd_lineup_not_added_title">The lineup was not added</string>
     <string name="live_tv_sd_lineup_not_added_body">The server could not add it to your Schedules Direct account, which is usually the login. Check your username and password, or remove this account and set it up again.</string>
+    <string name="live_tv_sd_account_gone_title">The account was removed</string>
+    <string name="live_tv_sd_account_gone_body">It was removed while this was open, so nothing was saved. The list now shows what the server has.</string>
     <string name="live_tv_guide_not_changed">Not changed. %1$s</string>
     <string name="live_tv_sd_not_done">Not done. %1$s</string>
     <string name="live_tv_add_tuner">Add tuner</string>
