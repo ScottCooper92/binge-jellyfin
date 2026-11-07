@@ -136,7 +136,8 @@ class UserPolicyScreensTest {
             ),
             actions = actions,
         )
-        compose.onNodeWithText("Monday, 08:00 to 17:30").assertExists()
+        // In the phone's own clock format, which a 12-hour test device writes with a period.
+        compose.onNodeWithText("Monday, ${clockHoursText(8.0, false, java.util.Locale.getDefault())} to ${clockHoursText(17.5, false, java.util.Locale.getDefault())}").assertExists()
         compose.onNodeWithText("Movies").performScrollTo().performClick()
         compose.onNodeWithText("gore").performScrollTo().assertExists()
         assertEquals(listOf("BlockUnratedItems 3"), calls)
@@ -168,18 +169,22 @@ class UserPolicyScreensTest {
     }
 
     @Test
-    fun `an hour reads as a clock time, a bitrate as megabits`() {
-        assertEquals("08:30", hours(8.5))
-        assertEquals("24:00", hours(24.0))
-        assertEquals("00:00", hours(0.0))
+    fun `a time reads in the phone's clock format, with midnight as the end of the day`() {
+        val us = java.util.Locale.US
+        assertEquals("08:30", clockTimeText(510, true, us))
+        assertEquals("00:00", clockTimeText(1440, true, us))
+        assertEquals("8:30 AM", clockTimeText(510, false, us).replace('\u202f', ' '))
+        assertEquals("9:30 PM", clockTimeText(1290, false, us).replace('\u202f', ' '))
+        assertEquals("12:00 AM", clockTimeText(0, false, us).replace('\u202f', ' '))
     }
 
     @Test
     fun `a minute saved as a fraction of an hour reads back as the same minute`() {
-        assertEquals("02:03", hours(123 / 60.0))
-        assertEquals("16:05", hours(965 / 60.0))
-        for (m in 0..1440) {
-            assertEquals("%02d:%02d".format(m / 60, m % 60), hours(m / 60.0))
+        val us = java.util.Locale.US
+        assertEquals("02:03", clockHoursText(123 / 60.0, true, us))
+        assertEquals("16:05", clockHoursText(965 / 60.0, true, us))
+        for (m in 0 until 1440) {
+            assertEquals("%02d:%02d".format(m / 60, m % 60), clockHoursText(m / 60.0, true, us))
         }
     }
 }

@@ -133,6 +133,7 @@ app:catalog_installing  8749b1693f74
 app:catalog_no_version  8680dc729209
 app:catalog_owner  25a239179c0c
 app:catalog_version  dd167905de0d
+app:clock_time_ok  565339bc4d33
 app:companion_label  8e03b3c29d2b
 app:connection_allow_local_network  b97c4592cdf4
 app:connection_allow_local_network_short  827bdde10636
@@ -1049,6 +1050,7 @@ app:trigger_limit_value  12e0c0483f41
 app:trigger_minutes_short  3122a2f3e04b
 app:trigger_other  d020a2c7e096
 app:trigger_startup  1e0ff8230be7
+app:trigger_time_label  33b93476cf59
 app:trigger_weekly_at  37c922d7c2db
 app:tv_change_server  b7ee1dabf9b9
 app:tv_loading  ba3bbbe10d8b

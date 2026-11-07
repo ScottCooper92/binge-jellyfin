@@ -30,7 +30,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.math.roundToInt
 
 /** The choices a section opens in a sheet. */
 internal enum class PolicyPicker { Lockout, Sessions, Bitrate, SyncPlay, Rating, SubRating }
@@ -43,7 +42,6 @@ private const val NEVER = -1
 private val LOCKOUT_PRESETS = listOf(0, NEVER, 3, 5, 10, 20)
 private val SESSION_PRESETS = listOf(0, 1, 2, 3, 5, 10)
 private val BITRATE_PRESETS_MBPS = listOf(0, 1, 2, 4, 6, 8, 10, 15, 20, 40, 60, 80)
-private const val MINUTES_IN_HOUR = 60
 
 /** A list with [id] in it or out of it, for a setting that is a list of ids. */
 internal fun memberChange(
@@ -117,12 +115,6 @@ internal fun dayLabel(day: String): Int =
         "Weekday" -> R.string.users_day_weekdays
         else -> R.string.users_day_weekends
     }
-
-/** An hour of the day as a clock time: 8.5 is 08:30. */
-internal fun hours(hour: Double): String {
-    val minutes = (hour * MINUTES_IN_HOUR).roundToInt()
-    return "%02d:%02d".format(java.util.Locale.ROOT, minutes / MINUTES_IN_HOUR, minutes % MINUTES_IN_HOUR)
-}
 
 @Composable
 internal fun PolicyPickerSheet(
