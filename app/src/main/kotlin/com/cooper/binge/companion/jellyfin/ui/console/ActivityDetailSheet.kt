@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notes
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import java.time.Instant
@@ -38,9 +40,10 @@ internal fun ActivityDetailSheet(
     entry: ActivityEntry,
     zone: ZoneId,
     inWindow: Boolean = true,
+    onOpenUser: (() -> Unit)? = null,
     onClose: () -> Unit,
 ) {
-    ConsoleSheet(onDismissRequest = onClose, inWindow = inWindow) { ActivityDetailContent(entry, zone, onClose) }
+    ConsoleSheet(onDismissRequest = onClose, inWindow = inWindow) { ActivityDetailContent(entry, zone, onClose, onOpenUser) }
 }
 
 @Composable
@@ -48,6 +51,7 @@ internal fun ActivityDetailContent(
     entry: ActivityEntry,
     zone: ZoneId,
     onClose: () -> Unit,
+    onOpenUser: (() -> Unit)? = null,
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
     // The date and the time each in the device's own style, joined here: a locale's combined pattern varies between JDKs.
@@ -68,6 +72,13 @@ internal fun ActivityDetailContent(
             },
             entry.overview?.let { detailRow(R.string.activity_detail_summary, it) },
             entry.longOverview?.let { detailRow(R.string.activity_detail_more, it) },
+            // Only for an entry about a user, and only where the user can open the users page.
+            ListItem(
+                icon = Icons.Outlined.Person,
+                label = stringResource(R.string.activity_detail_user),
+                destination = ListItemDestination.Action,
+                onClick = onOpenUser ?: {},
+            ).takeIf { onOpenUser != null && entry.userId != null },
         )
     Column(
         modifier = Modifier.fillMaxWidth().padding(dimensionResource(DesR.dimen.padding_m)),

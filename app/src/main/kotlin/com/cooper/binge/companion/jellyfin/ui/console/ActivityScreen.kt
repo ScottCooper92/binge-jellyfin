@@ -63,6 +63,8 @@ data class ActivityActions(
     val onRefresh: () -> Unit = {},
     val onLoadMore: () -> Unit = {},
     val onOpen: (Long?) -> Unit = {},
+    /** Opens a user's page, or null where the user cannot manage users (the sheet then offers no such action). */
+    val onOpenUser: ((String) -> Unit)? = null,
     val onRetry: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
@@ -95,7 +97,16 @@ fun ActivityScreen(
                     ) { Entries(state, actions, inner, now, zone, listState) }
             }
             (state as? ActivityUiState.Ready)?.openEntry?.let { entry ->
-                ActivityDetailSheet(entry, zone) { actions.onOpen(null) }
+                ActivityDetailSheet(
+                    entry,
+                    zone,
+                    onOpenUser = actions.onOpenUser?.let { open ->
+                        {
+                            actions.onOpen(null)
+                            entry.userId?.let(open)
+                        }
+                    },
+                ) { actions.onOpen(null) }
             }
         }
     }
