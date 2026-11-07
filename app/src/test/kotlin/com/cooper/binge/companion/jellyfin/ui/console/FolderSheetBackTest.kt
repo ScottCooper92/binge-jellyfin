@@ -53,7 +53,7 @@ class FolderSheetBackTest {
         compose.onNodeWithText("Type a path").performClick()
         compose.waitForIdle()
         compose.onAllNodesWithText("Choose a folder").assertCountEquals(0)
-        compose.onNodeWithText("Movie recordings").assertExists()
+        compose.onAllNodesWithText("Movie recordings").onFirst().assertExists()
 
         systemBack()
         compose.onAllNodesWithText("Choose a folder").onFirst().assertExists()
