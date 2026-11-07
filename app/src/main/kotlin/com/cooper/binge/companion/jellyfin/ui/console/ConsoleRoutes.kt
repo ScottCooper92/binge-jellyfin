@@ -45,7 +45,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Activity ->
             ActivityRoute(
                 graph,
-                { openPageItem(ConsolePage.Users, userItem(it)) }.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) },
+                { id: String -> openPageItem(ConsolePage.Users, userItem(id)) }.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) },
                 close,
             )
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)

@@ -581,7 +581,7 @@ class ConsoleScreensTest {
                     state,
                     ActivityActions(
                         onOpen = { order += "close" },
-                        onOpenUser = { id -> order += "open $id" }.takeIf { withAction },
+                        onOpenUser = { id: String -> order += "open $id" }.takeIf { withAction },
                     ),
                     zone = java.time.ZoneOffset.UTC,
                 )
