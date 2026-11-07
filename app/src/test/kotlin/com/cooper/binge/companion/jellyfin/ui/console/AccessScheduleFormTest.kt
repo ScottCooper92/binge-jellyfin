@@ -43,7 +43,7 @@ class AccessScheduleFormTest {
             }
         }
         compose.onNodeWithText("Save").performClick()
-        return changed(listOf(original.json(), AccessSchedule("Sunday", 0.0, 24.0).json())).map { it.asAccessSchedule() }
+        return changed(listOf(original.json(), AccessSchedule("Sunday", 0.0, 24.0).json())).mapNotNull { it.asAccessSchedule() }
     }
 
     @Test fun `editing shows both times in the clock format and keeps minute precision in the replaced row`() {
