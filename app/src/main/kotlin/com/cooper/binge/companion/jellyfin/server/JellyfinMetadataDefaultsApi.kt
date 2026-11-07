@@ -78,11 +78,8 @@ fun JsonObject.fetchers(
     kind: FetcherKind,
     offered: List<String>,
 ): List<Provider> {
-    val disabled = disabledFetchers(type, kind)
     val listed = entries().entryFor(type)?.names(kind.orderKey).orEmpty()
-    val ordered = listed.mapNotNull { name -> offered.firstOrNull { it.equals(name, ignoreCase = true) } }
-    val names = ordered + offered.filterNot { ordered.has(it) } + disabled.filterNot { offered.has(it) }
-    return names.distinct().map { Provider(it, !disabled.has(it)) }
+    return orderedProviders(listed, disabledFetchers(type, kind), offered, listStale = true)
 }
 
 /**
