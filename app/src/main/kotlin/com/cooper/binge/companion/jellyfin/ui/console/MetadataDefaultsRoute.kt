@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
+import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
 
 /** The metadata providers by item type page. Kept out of `ConsoleRoutes.kt`, which is at its function limit. */
@@ -39,13 +40,13 @@ internal fun MetadataDefaultsRoute(
 /** One type's screen, or a provider's of that type, over the page's view model, which its page shares. */
 @Composable
 internal fun MetadataItemRoute(
-    graph: AppGraph,
+    connection: Connection,
     item: String,
     openSubItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     val metadata: MetadataDefaultsViewModel =
-        viewModel(factory = viewModelFactory { initializer { MetadataDefaultsViewModel(graph.connection) } })
+        viewModel(factory = viewModelFactory { initializer { MetadataDefaultsViewModel(connection) } })
     val state by metadata.state.collectAsStateWithLifecycle()
     // What this screen reported is said here and isn't replayed by the screen beneath it once this one closes. Back clears it
     // before the screen beneath is shown; leaving by any other way clears it on disposal.
