@@ -1145,7 +1145,7 @@
     <string name="live_tv_guide_finish">Terminar la configuración</string>
     <string name="live_tv_guide_change_login">Cambiar el acceso</string>
     <string name="live_tv_sd_login_title">Acceso a Schedules Direct</string>
-    <string name="live_tv_sd_login_body">El usuario y la contraseña con los que el servidor inicia sesión. La cuenta conserva su alineación. La contraseña llega a tu servidor cifrada, y esta app no la guarda.</string>
+    <string name="live_tv_sd_login_body">El usuario y la contraseña con los que el servidor inicia sesión. La cuenta conserva su alineación. La contraseña llega a tu servidor con hash, y esta aplicación no la guarda.</string>
     <string name="live_tv_guide_change_lineup">Cambiar la alineación</string>
     <string name="live_tv_guide_sd_set_detail">Esta cuenta de Schedules Direct tiene una alineación. Cámbiala para mudarte o elegir otro proveedor, o quita la cuenta.</string>
     <string name="live_tv_guide_pending_row">%1$s · configuración sin terminar</string>

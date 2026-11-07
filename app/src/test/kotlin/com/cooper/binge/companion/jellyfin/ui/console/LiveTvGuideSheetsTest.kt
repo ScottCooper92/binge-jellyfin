@@ -150,7 +150,7 @@ class LiveTvGuideSheetsTest {
     }
 
     @Test
-    fun `a Schedules Direct account can change its login, with or without a lineup or Live TV access, and an XMLTV provider cannot`() {
+    fun `a Schedules Direct account Change login sends its id and username`() {
         val asked = mutableListOf<Pair<String, String>>()
         val actions = LiveTvGuideActions(onChangeLogin = { id, name -> asked += id to name })
         form(GuideForm("g2", type = "SchedulesDirect", name = "alice"), actions)
