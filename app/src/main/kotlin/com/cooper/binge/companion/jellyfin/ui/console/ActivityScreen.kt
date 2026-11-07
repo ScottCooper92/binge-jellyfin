@@ -97,16 +97,7 @@ fun ActivityScreen(
                     ) { Entries(state, actions, inner, now, zone, listState) }
             }
             (state as? ActivityUiState.Ready)?.openEntry?.let { entry ->
-                ActivityDetailSheet(
-                    entry,
-                    zone,
-                    onOpenUser = actions.onOpenUser?.let { open ->
-                        {
-                            actions.onOpen(null)
-                            entry.userId?.let(open)
-                        }
-                    },
-                ) { actions.onOpen(null) }
+                ActivityDetailSheet(entry, zone, onOpenUser = actions.onOpenUser) { actions.onOpen(null) }
             }
         }
     }

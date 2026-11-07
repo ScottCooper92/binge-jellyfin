@@ -40,7 +40,7 @@ internal fun ActivityDetailSheet(
     entry: ActivityEntry,
     zone: ZoneId,
     inWindow: Boolean = true,
-    onOpenUser: (() -> Unit)? = null,
+    onOpenUser: ((String) -> Unit)? = null,
     onClose: () -> Unit,
 ) {
     ConsoleSheet(onDismissRequest = onClose, inWindow = inWindow) { ActivityDetailContent(entry, zone, onOpenUser, onClose) }
@@ -50,7 +50,7 @@ internal fun ActivityDetailSheet(
 internal fun ActivityDetailContent(
     entry: ActivityEntry,
     zone: ZoneId,
-    onOpenUser: (() -> Unit)? = null,
+    onOpenUser: ((String) -> Unit)? = null,
     onClose: () -> Unit,
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
@@ -72,13 +72,8 @@ internal fun ActivityDetailContent(
             },
             entry.overview?.let { detailRow(R.string.activity_detail_summary, it) },
             entry.longOverview?.let { detailRow(R.string.activity_detail_more, it) },
-            // Only for an entry about a user, and only where the user can open the users page.
-            ListItem(
-                icon = Icons.Outlined.Person,
-                label = stringResource(R.string.activity_detail_user),
-                destination = ListItemDestination.Action,
-                onClick = onOpenUser ?: {},
-            ).takeIf { onOpenUser != null && entry.userId != null },
+            // Only for an entry about a user, and only where the user can open the users page. The sheet closes first.
+            openUserRow(entry.userId, onOpenUser, onClose),
         )
     Column(
         modifier = Modifier.fillMaxWidth().padding(dimensionResource(DesR.dimen.padding_m)),
@@ -94,6 +89,26 @@ internal fun ActivityDetailContent(
         BingeFilledButton(label = stringResource(R.string.activity_detail_close), onClick = onClose, modifier = Modifier.fillMaxWidth())
     }
 }
+
+@Composable
+private fun openUserRow(
+    userId: String?,
+    onOpenUser: ((String) -> Unit)?,
+    onClose: () -> Unit,
+): ListItem? =
+    if (userId == null || onOpenUser == null) {
+        null
+    } else {
+        ListItem(
+            icon = Icons.Outlined.Person,
+            label = stringResource(R.string.activity_detail_user),
+            destination = ListItemDestination.Action,
+            onClick = {
+                onClose()
+                onOpenUser(userId)
+            },
+        )
+    }
 
 @Composable
 private fun detailRow(

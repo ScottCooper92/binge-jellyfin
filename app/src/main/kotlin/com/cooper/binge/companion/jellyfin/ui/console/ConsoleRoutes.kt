@@ -42,12 +42,10 @@ internal fun ConsolePageRoute(
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
         ConsolePage.Libraries -> LibrariesRoute(graph, openItem, close)
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
-        ConsolePage.Activity ->
-            ActivityRoute(
-                graph,
-                { id: String -> openPageItem(ConsolePage.Users, userItem(id)) }.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) },
-                close,
-            )
+        ConsolePage.Activity -> {
+            val openUser = { id: String -> openPageItem(ConsolePage.Users, userItem(id)) }
+            ActivityRoute(graph, openUser.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) }, close)
+        }
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
