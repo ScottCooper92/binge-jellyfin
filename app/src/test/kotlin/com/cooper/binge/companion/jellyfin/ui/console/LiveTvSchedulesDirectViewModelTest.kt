@@ -224,6 +224,33 @@ class LiveTvSchedulesDirectViewModelTest {
     }
 
     @Test
+    fun `an account that has a lineup can choose another, which replaces the first and keeps the rest of the account`() {
+        val vm = vm()
+        val id = signedIn(vm)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.pickCountry(usa)
+        vm.findLineups("10001")
+        vm.until { (it.step as? SdStep.Lineups)?.lineups != null }
+        vm.addLineup(SdLineup("USA-NY12345-X", "Comcast Digital"))
+        vm.until { it.step == null && !it.saving }
+
+        // Again, as the guide form's Change lineup does: the same steps, on the account as it now is.
+        vm.locate(id)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.pickCountry(usa)
+        vm.findLineups("90210")
+        vm.until { (it.step as? SdStep.Lineups)?.lineups != null }
+        vm.addLineup(SdLineup("USA-CA67890-X", "Dish Network"))
+        vm.until { it.step == null && !it.saving }
+
+        assertEquals("true", posts().last().url.queryParameter("validateListings"))
+        val account = providers().map { it.jsonObject }.single { it.getValue("Id").jsonPrimitive.content == id }
+        assertEquals("USA-CA67890-X", account.getValue("ListingsId").jsonPrimitive.content)
+        assertEquals("90210", account.getValue("ZipCode").jsonPrimitive.content)
+        assertEquals("carol", account.getValue("Username").jsonPrimitive.content)
+    }
+
+    @Test
     fun `a lineup list that comes back empty is shown as empty, and back returns to the location with the country`() {
         jellyfin.sdLineups = "[]"
         val vm = vm()

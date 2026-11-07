@@ -70,10 +70,10 @@ class LiveTvGuideSheetsTest {
     }
 
     @Test
-    fun `a Schedules Direct account has no address field, and says where it is set up`() {
+    fun `a Schedules Direct account has no address field, and says what can be done with it`() {
         form(GuideForm("g2", type = "SchedulesDirect", name = "alice"))
         compose.onNodeWithText("Address or path").assertDoesNotExist()
-        compose.onNodeWithText("set up in Jellyfin", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("has a lineup", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Remove guide data").assertIsDisplayed()
     }
 
@@ -124,9 +124,35 @@ class LiveTvGuideSheetsTest {
     }
 
     @Test
-    fun `an account with its lineup has no Finish setup`() {
-        form(GuideForm("g2", type = "SchedulesDirect", name = "alice"))
+    fun `an account with its lineup has no Finish setup, and can change its lineup`() {
+        val changed = mutableListOf<String>()
+        form(GuideForm("g2", type = "SchedulesDirect", name = "alice"), LiveTvGuideActions(onFinishSetup = { changed += it }))
         compose.onNodeWithText("Finish setup").assertDoesNotExist()
+        compose.onNodeWithText("Change lineup").performClick()
+        assertEquals(listOf("g2"), changed)
+    }
+
+    @Test
+    fun `a user without Live TV access cannot change a lineup, and an XMLTV provider has none`() {
+        compose.setContent {
+            JellyfinTheme {
+                GuideFormContent(
+                    GuideForm("g2", type = "SchedulesDirect", name = "alice"),
+                    false,
+                    LiveTvGuideActions(),
+                    canFinishSetup = false,
+                )
+            }
+        }
+        compose.onNodeWithText("Change lineup").assertDoesNotExist()
+        compose.onNodeWithText("set up in Jellyfin", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Remove guide data").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an XMLTV provider is not offered a lineup`() {
+        form(GuideForm("g1", "/config/guide.xml", name = "xmltv"))
+        compose.onNodeWithText("Change lineup").assertDoesNotExist()
     }
 
     @Test
