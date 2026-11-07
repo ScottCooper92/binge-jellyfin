@@ -435,6 +435,7 @@ class JellyfinViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
         vm.await<UiState.SignedIn> { it.titles != null && !it.refreshing }
+
         fun gateReads() = jellyfin.requests.count { it.url.encodedPath == "/QuickConnect/Enabled" }
         val before = gateReads()
         // Held at the gates, the first refresh is certainly still running when the others are asked for.

@@ -27,6 +27,7 @@ import com.cooper.binge.companion.jellyfin.server.quickConnectAuthenticated
 import com.cooper.binge.companion.jellyfin.server.quickConnectEnabled
 import com.cooper.binge.companion.jellyfin.server.quickConnectInitiate
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -352,13 +353,7 @@ class JellyfinViewModel(
     fun refresh(gatesOnly: Boolean = false) {
         val current = _state.value as? UiState.SignedIn ?: return
         if (gatesOnly) {
-            viewModelScope.launch {
-                val (session, client) = connection.signedIn() ?: return@launch
-                attempt { client.readGates(session.serverVersion) }.onSuccess { (profile, account) ->
-                    _state.update { (it as? UiState.SignedIn)?.copy(profile = profile, account = account) ?: it }
-                    card.refresh(viewModelScope, _state, session, client, account, force = false)
-                }
-            }
+            viewModelScope.refreshGates(connection, _state, card)
             return
         }
         // One read at a time: a second would end the first's spinner early, and the older of the two could write last.
@@ -480,4 +475,19 @@ private suspend fun JellyfinClient.readGates(signedInVersion: String): Pair<Jell
     val version = attempt { publicInfo().version }.getOrNull() ?: signedInVersion
     val quickConnect = attempt { quickConnectEnabled() }.getOrDefault(true)
     return JellyfinServerProfile.from(version, quickConnect) to account
+}
+
+/** Reads what the server and the user allow again, and the server card with it, leaving the library alone. */
+private fun CoroutineScope.refreshGates(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    card: ServerCardLoader,
+) {
+    launch {
+        val (session, client) = connection.signedIn() ?: return@launch
+        attempt { client.readGates(session.serverVersion) }.onSuccess { (profile, account) ->
+            state.update { (it as? UiState.SignedIn)?.copy(profile = profile, account = account) ?: it }
+            card.refresh(this@refreshGates, state, session, client, account, force = false)
+        }
+    }
 }
