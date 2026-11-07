@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -36,7 +37,8 @@ class StepFormsBackTest {
         compose.waitForIdle()
     }
 
-    private fun at(title: String) = compose.onNodeWithText(title).assertExists()
+    // The folder step's docking sheet draws its title twice, as the floating header and as the bar it docks into.
+    private fun at(title: String) = compose.onAllNodesWithText(title).onFirst().assertExists()
 
     @Test
     fun `adding a library steps back through its steps and closes from the name`() {

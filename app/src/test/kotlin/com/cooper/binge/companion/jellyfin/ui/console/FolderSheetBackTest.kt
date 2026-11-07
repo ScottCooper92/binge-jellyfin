@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
@@ -48,14 +49,14 @@ class FolderSheetBackTest {
     @Test
     fun `Back from the typed path returns to the folder list, and Back from there closes the sheet`() {
         show()
-        compose.onNodeWithText("Choose a folder").assertExists()
+        compose.onAllNodesWithText("Choose a folder").onFirst().assertExists()
         compose.onNodeWithText("Type a path").performClick()
         compose.waitForIdle()
         compose.onAllNodesWithText("Choose a folder").assertCountEquals(0)
         compose.onNodeWithText("Movie recordings").assertExists()
 
         systemBack()
-        compose.onNodeWithText("Choose a folder").assertExists()
+        compose.onAllNodesWithText("Choose a folder").onFirst().assertExists()
         assertEquals("the sheet stays open for the step back", emptyList<RecordingSheet?>(), closed)
 
         systemBack()
@@ -69,7 +70,7 @@ class FolderSheetBackTest {
         compose.waitForIdle()
         compose.onNodeWithText("Back").performClick()
         compose.waitForIdle()
-        compose.onNodeWithText("Choose a folder").assertExists()
+        compose.onAllNodesWithText("Choose a folder").onFirst().assertExists()
         assertEquals(emptyList<RecordingSheet?>(), closed)
     }
 }
