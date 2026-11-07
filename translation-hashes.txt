@@ -454,6 +454,7 @@ app:live_tv_guide  99c0191df522
 app:live_tv_guide_add  2b346acb7f06
 app:live_tv_guide_add_detail  e491664e7242
 app:live_tv_guide_add_submit  9fd728c66c9a
+app:live_tv_guide_change_lineup  2726cc8accaa
 app:live_tv_guide_choose_body  4ea620610b8f
 app:live_tv_guide_close  7d9eb7acb13e
 app:live_tv_guide_ends  6d2e0da284bd
@@ -475,6 +476,7 @@ app:live_tv_guide_remove_confirm  c3812fc4acb8
 app:live_tv_guide_remove_message  3839d46ab6bb
 app:live_tv_guide_remove_title  73d6ef6fb1fc
 app:live_tv_guide_sd_detail  b670f7c3f54a
+app:live_tv_guide_sd_set_detail  db49bf99d020
 app:live_tv_hw_transcoding  38937e23b683
 app:live_tv_no_guide  7045cbfd9813
 app:live_tv_no_tuners  1b4436687cf2
@@ -529,6 +531,7 @@ app:live_tv_sd_lineup_not_added_title  5de19bf1f412
 app:live_tv_sd_lineups_body  70851b2ed9cf
 app:live_tv_sd_lineups_title  e012bc3abe70
 app:live_tv_sd_location_body  6e8aa8ae8a02
+app:live_tv_sd_location_change_body  7be88cf31c74
 app:live_tv_sd_location_title  b37f35b5faa8
 app:live_tv_sd_next  1ff57a29d7c9
 app:live_tv_sd_no_countries  4d234b84a6d3

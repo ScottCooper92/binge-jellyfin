@@ -1146,6 +1146,8 @@
     <string name="live_tv_guide_pending_locked_detail">The account is saved, but no lineup is chosen yet, so the server has no guide to read. Your account can\'t finish the setup here, but you can remove the account.</string>
     <string name="live_tv_guide_pending_detail">The account is saved, but no lineup is chosen yet, so the server has no guide to read. Finish the setup, or remove the account.</string>
     <string name="live_tv_guide_finish">Finish setup</string>
+    <string name="live_tv_guide_change_lineup">Change lineup</string>
+    <string name="live_tv_guide_sd_set_detail">This Schedules Direct account has a lineup. Change it to move or pick a different provider, or remove the account.</string>
     <string name="live_tv_guide_pending_row">%1$s · setup not finished</string>
     <string name="live_tv_sd_account_body">Your Schedules Direct account. The password goes to your server hashed, and this app does not keep it.</string>
     <string name="live_tv_sd_next">Next</string>
@@ -1153,6 +1155,7 @@
     <string name="live_tv_sd_password">Password</string>
     <string name="live_tv_sd_location_title">Where to look for lineups</string>
     <string name="live_tv_sd_location_body">The account is saved. If you leave now, it stays in Guide data as not finished, and you can finish or remove it from there.</string>
+    <string name="live_tv_sd_location_change_body">The account keeps its current lineup until you add another here.</string>
     <string name="live_tv_sd_find">Find lineups</string>
     <string name="live_tv_sd_country">Country</string>
     <string name="live_tv_sd_countries_loading">Loading countries</string>

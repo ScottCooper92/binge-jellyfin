@@ -142,7 +142,7 @@ private fun LocationStep(
 ) {
     ConsoleFieldsForm(
         title = stringResource(R.string.live_tv_sd_location_title),
-        body = stringResource(R.string.live_tv_sd_location_body),
+        body = stringResource(if (step.changing) R.string.live_tv_sd_location_change_body else R.string.live_tv_sd_location_body),
         submitLabel = stringResource(R.string.live_tv_sd_find),
         onSubmit = { if (step.country != null) actions.onFind(step.postalCode) },
         onCancel = actions.onClose,

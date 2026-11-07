@@ -25,6 +25,7 @@ import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.GUIDE_TYPE_SCHEDULES_DIRECT
 import com.binge.designsystem.R as DesR
 
 /** The guide form, or the choice of what to add, over the Live TV page, in a window. */
@@ -116,6 +117,8 @@ internal fun GuideFormContent(
     canFinishSetup: Boolean = true,
 ) {
     val finishable = form.lineupPending && canFinishSetup
+    // A finished Schedules Direct account can have its lineup chosen again: the same location and lineup steps.
+    val changeable = form.type.equals(GUIDE_TYPE_SCHEDULES_DIRECT, ignoreCase = true) && !form.lineupPending && canFinishSetup
     var path by rememberSaveable(form) { mutableStateOf(form.path) }
     ConsoleFieldsForm(
         title = stringResource(if (form.id == null) R.string.live_tv_guide_form_add else R.string.live_tv_guide_form_edit),
@@ -124,6 +127,7 @@ internal fun GuideFormContent(
                 when {
                     form.isXmlTv -> R.string.live_tv_guide_path_detail
                     finishable -> R.string.live_tv_guide_pending_detail
+                    changeable -> R.string.live_tv_guide_sd_set_detail
                     form.lineupPending -> R.string.live_tv_guide_pending_locked_detail
                     else -> R.string.live_tv_guide_other_detail
                 },
@@ -159,6 +163,11 @@ internal fun GuideFormContent(
                             label = stringResource(R.string.live_tv_guide_finish),
                             onClick = { actions.onFinishSetup(form.id) },
                         ).takeIf { finishable },
+                        ListItem(
+                            icon = Icons.Outlined.Dns,
+                            label = stringResource(R.string.live_tv_guide_change_lineup),
+                            onClick = { actions.onChangeLineup(form.id) },
+                        ).takeIf { changeable },
                         ListItem(
                             icon = Icons.Outlined.Delete,
                             iconTint = MaterialTheme.colorScheme.error,

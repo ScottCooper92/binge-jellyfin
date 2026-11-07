@@ -90,9 +90,10 @@ class LiveTvScreenshotTest {
             GuideFormContent(GuideForm("g1", "https://guide.example/xmltv.xml", name = "guide"), false, LiveTvGuideActions())
         }
 
-    /** A Schedules Direct account, which cannot be edited here yet: no field, and the way to remove it. */
+    /** A Schedules Direct account with its lineup: no field, a way to choose the lineup again, and the way to remove it. */
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
     @Composable
     fun schedulesDirectForm() =
         Surface { GuideFormContent(GuideForm("g2", type = "SchedulesDirect", name = "alice"), false, LiveTvGuideActions()) }
@@ -288,6 +289,20 @@ class LiveTvScreenshotTest {
         Surface {
             SdStepContent(
                 SdStep.Location("g3", sdCountries, country = sdCountries.first(), postalCode = "10001"),
+                false,
+                SdActions(),
+            )
+        }
+
+    /** An account that has a lineup, choosing another: the step says the current one stays. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun sdLocationChanging() =
+        Surface {
+            SdStepContent(
+                SdStep.Location("g3", sdCountries, country = sdCountries.first(), postalCode = "10001", changing = true),
                 false,
                 SdActions(),
             )
