@@ -183,4 +183,54 @@ class LiveTvTunerSheetsTest {
         assertEquals(JsonPrimitive("kept"), body.getValue("FutureKey"))
         assertEquals(null, body["AllowFmp4TranscodingContainer"])
     }
+
+    private val hdHomeRunHost =
+        JsonObject(
+            mapOf(
+                "Id" to JsonPrimitive("t2"),
+                "Type" to JsonPrimitive("hdhomerun"),
+                "Url" to JsonPrimitive("http://192.168.1.77"),
+                "FallbackMaxStreamingBitrate" to JsonPrimitive(30_000_000),
+            ),
+        )
+
+    @Test
+    fun `the fallback bitrate is shown in Mbps where the server sent it`() {
+        sheet(TunerSheet.Form(TunerDraft.of(JsonObject(m3uHost + ("FallbackMaxStreamingBitrate" to JsonPrimitive(12_500_000))))))
+        compose.onNodeWithText("12.5").assertExists()
+        compose.onNodeWithText("Fallback max stream bitrate (Mbps)", substring = true).assertExists()
+    }
+
+    @Test
+    fun `a host from before 10_10 has no fallback bitrate field`() {
+        sheet(TunerSheet.Form(TunerDraft.of(m3uHost)))
+        compose.onNodeWithText("Fallback max stream bitrate", substring = true).assertDoesNotExist()
+        assertEquals(null, TunerDraft.of(m3uHost).applyTo(m3uHost)["FallbackMaxStreamingBitrate"])
+    }
+
+    @Test
+    fun `a fallback bitrate converts exactly, an untouched one goes back as it came, and one out of range is invalid`() {
+        val draft = TunerDraft.of(JsonObject(hdHomeRunHost + ("FallbackMaxStreamingBitrate" to JsonPrimitive(2_097_145))))
+        assertEquals("2.097145", draft.fallbackMbps)
+        assertEquals(JsonPrimitive(2_097_145L), draft.applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        assertEquals(JsonPrimitive(8_200_000L), draft.copy(fallbackMbps = "8.2").applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        assertEquals(JsonPrimitive(1_500_000L), draft.copy(fallbackMbps = "1,5").applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        listOf("0.0000001", "3000").forEach { typed ->
+            assertEquals(true, draft.copy(fallbackMbps = typed).fallbackInvalid)
+        }
+    }
+
+    @Test
+    fun `a typed fallback bitrate is saved in bits a second, and one that is not a positive number cannot be saved`() {
+        val draft = TunerDraft.of(hdHomeRunHost)
+        assertEquals("30", draft.fallbackMbps)
+        assertEquals(JsonPrimitive(20_000_000L), draft.copy(fallbackMbps = "20").applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        assertEquals(JsonPrimitive(1_500_000L), draft.copy(fallbackMbps = " 1.5 ").applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        for (typed in listOf("", "0", "-3", "abc")) {
+            assertEquals(true, draft.copy(fallbackMbps = typed).fallbackInvalid)
+            assertEquals(false, draft.copy(fallbackMbps = typed).valid)
+        }
+        // Untouched, the host goes back with the figure it came with.
+        assertEquals(JsonPrimitive(30_000_000L), draft.applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+    }
 }

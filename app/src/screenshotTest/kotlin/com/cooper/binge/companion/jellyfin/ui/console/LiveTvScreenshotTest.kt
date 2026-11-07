@@ -178,6 +178,33 @@ class LiveTvScreenshotTest {
             TunerSheetContent(TunerSheet.Form(draft), false, LiveTvActions())
         }
 
+    /** An HDHomeRun on a 10.10 server, which sent the fallback bitrate. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun fallbackBitrate() =
+        Surface {
+            TunerSheetContent(
+                TunerSheet.Form(TunerDraft(TUNER_TYPE_HDHOMERUN, id = "t3", url = "http://192.168.1.77", fallbackMbps = "30")),
+                false,
+                LiveTvActions(),
+            )
+        }
+
+    /** The fallback bitrate emptied: the field says so and Save does nothing. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun fallbackBitrateInvalid() =
+        Surface {
+            TunerSheetContent(
+                TunerSheet.Form(TunerDraft(TUNER_TYPE_HDHOMERUN, id = "t3", url = "http://192.168.1.77", fallbackMbps = "")),
+                false,
+                LiveTvActions(),
+            )
+        }
+
     /** An M3U tuner on a 10.11 server, which sent every stream option: some on, some off. Just the group, so the whole of each explanation shows. */
     @PreviewTest
     @JellyfinScreenStatePreview

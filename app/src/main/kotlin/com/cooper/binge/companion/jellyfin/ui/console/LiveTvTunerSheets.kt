@@ -203,6 +203,7 @@ internal fun TunerForm(
     var limit by rememberSaveable(draft) { mutableStateOf(draft.streamLimit) }
     var favorites by rememberSaveable(draft) { mutableStateOf(draft.favoritesOnly) }
     var hardware by rememberSaveable(draft) { mutableStateOf(draft.hardwareTranscoding) }
+    var fallback by rememberSaveable(draft) { mutableStateOf(draft.fallbackMbps) }
     // Only the keys the server sent, and the ones on, as a list a saved state can hold.
     var optionsOn by rememberSaveable(draft) {
         mutableStateOf(
@@ -221,6 +222,7 @@ internal fun TunerForm(
             favoritesOnly = favorites,
             hardwareTranscoding = hardware,
             options = draft.options.mapValues { (key, _) -> key in optionsOn },
+            fallbackMbps = fallback,
         )
     ConsoleFieldsForm(
         title = stringResource(formTitle(draft)),
@@ -250,6 +252,7 @@ internal fun TunerForm(
                 edited.streamLimitValue == null,
             )
         }
+        FallbackBitrateField(fallback, edited.fallbackInvalid, !saving) { fallback = it }
         TunerSwitches(draft, favorites, { favorites = it }, hardware, { hardware = it })
         if (draft.isM3u) StreamOptions(draft, optionsOn) { key, on -> optionsOn = if (on) optionsOn + key else optionsOn - key }
         if (draft.id != null) RemoveRow(draft.id, actions)
@@ -298,6 +301,26 @@ private fun M3uFields(
         isError = limitInvalid,
         enabled = enabled,
         keyboardType = KeyboardType.Number,
+    )
+}
+
+/** The bitrate the server assumes for a source it cannot probe, in Mbps, where the server sent the key (10.10 on). */
+@Composable
+private fun FallbackBitrateField(
+    value: String?,
+    invalid: Boolean,
+    enabled: Boolean,
+    onChange: (String) -> Unit,
+) {
+    if (value == null) return
+    ConsoleTextField(
+        value = value,
+        onValueChange = onChange,
+        label = stringResource(R.string.live_tv_field_fallback),
+        supporting = stringResource(R.string.live_tv_field_fallback_detail),
+        isError = invalid,
+        enabled = enabled,
+        keyboardType = KeyboardType.Decimal,
     )
 }
 

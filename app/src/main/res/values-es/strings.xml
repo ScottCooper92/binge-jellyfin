@@ -1199,6 +1199,8 @@
     <string name="live_tv_field_user_agent_detail">Déjalo en blanco para usar el del servidor</string>
     <string name="live_tv_field_limit">Límite de emisiones</string>
     <string name="live_tv_field_limit_detail">Cuántas emisiones a la vez, de 0 a 99. 0 es sin límite.</string>
+    <string name="live_tv_field_fallback">Tasa máxima de respaldo (Mbps)</string>
+    <string name="live_tv_field_fallback_detail">Se usa cuando el servidor no puede leer la tasa de una emisión, para que un cliente no pida una transcodificación que lo sobrecargue.</string>
     <string name="live_tv_favorites_only">Importar solo favoritos</string>
     <string name="live_tv_hw_transcoding">Permitir la transcodificación por hardware</string>
     <string name="live_tv_stream_options">Opciones de la emisión</string>

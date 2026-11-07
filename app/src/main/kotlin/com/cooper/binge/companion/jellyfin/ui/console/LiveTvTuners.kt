@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import com.cooper.binge.companion.jellyfin.server.TUNER_COUNT
+import com.cooper.binge.companion.jellyfin.server.TUNER_FALLBACK_BITRATE
 import com.cooper.binge.companion.jellyfin.server.TUNER_FAVORITES_ONLY
 import com.cooper.binge.companion.jellyfin.server.TUNER_HW_TRANSCODING
 import com.cooper.binge.companion.jellyfin.server.TUNER_NAME
@@ -12,10 +13,13 @@ import com.cooper.binge.companion.jellyfin.server.TUNER_URL
 import com.cooper.binge.companion.jellyfin.server.TUNER_USER_AGENT
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.int
+import com.cooper.binge.companion.jellyfin.server.long
 import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.with
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 private const val MAX_STREAM_LIMIT = 99
 
@@ -34,6 +38,8 @@ data class TunerDraft(
     val hardwareTranscoding: Boolean = true,
     /** The stream options an M3U host has, by key, as the server sent them: a key it did not send is not here, and is not shown. */
     val options: Map<String, Boolean> = emptyMap(),
+    /** The fallback streaming bitrate in Mbps as typed, or null when the server did not send the key (before 10.10). */
+    val fallbackMbps: String? = null,
 ) {
     val isHdHomeRun: Boolean get() = type.equals(TUNER_TYPE_HDHOMERUN, ignoreCase = true)
     val isM3u: Boolean get() = type.equals(TUNER_TYPE_M3U, ignoreCase = true)
@@ -50,7 +56,24 @@ data class TunerDraft(
         }
 
     /** Whether the form can be submitted: an address, and a stream limit that reads. */
-    val valid: Boolean get() = url.isNotBlank() && (!isM3u || streamLimitValue != null)
+    val valid: Boolean get() = url.isNotBlank() && (!isM3u || streamLimitValue != null) && !fallbackInvalid
+
+    /**
+     * The fallback bitrate as the server stores it (bits a second, an Int there), or null when it is not offered or what was typed
+     * is not a positive number that fits. Decimal arithmetic, so a figure like 8.2 is 8,200,000 and not 8,199,999.
+     */
+    val fallbackBits: Long? get() =
+        fallbackMbps
+            ?.trim()
+            ?.replace(',', '.')
+            ?.toBigDecimalOrNull()
+            ?.movePointRight(MEGA_DIGITS)
+            ?.setScale(0, RoundingMode.HALF_UP)
+            ?.takeIf { it.signum() > 0 && it <= BigDecimal(Int.MAX_VALUE) }
+            ?.toLong()
+
+    /** Whether the fallback bitrate is offered and what was typed is not a positive number. */
+    val fallbackInvalid: Boolean get() = fallbackMbps != null && fallbackBits == null
 
     override fun toString(): String = "TunerDraft(type=$type, id=$id)"
 
@@ -63,6 +86,7 @@ data class TunerDraft(
         }
         if (isHdHomeRun) out = out.with(TUNER_FAVORITES_ONLY, JsonPrimitive(favoritesOnly))
         if (isM3u) options.forEach { (key, on) -> out = out.with(key, JsonPrimitive(on)) }
+        fallbackBits?.let { out = out.with(TUNER_FALLBACK_BITRATE, JsonPrimitive(it)) }
         return out.with(TUNER_HW_TRANSCODING, JsonPrimitive(hardwareTranscoding))
     }
 
@@ -84,6 +108,7 @@ data class TunerDraft(
                 favoritesOnly = host.bool(TUNER_FAVORITES_ONLY) ?: false,
                 hardwareTranscoding = host.bool(TUNER_HW_TRANSCODING) ?: true,
                 options = TUNER_STREAM_OPTIONS.mapNotNull { key -> host.bool(key)?.let { key to it } }.toMap(),
+                fallbackMbps = host.long(TUNER_FALLBACK_BITRATE)?.let { mbps(it) },
             )
     }
 }
@@ -135,3 +160,8 @@ enum class TunerProblem {
     /** The change did not go through, and there is nothing more to say than that. */
     NotChanged,
 }
+
+private const val MEGA_DIGITS = 6
+
+/** [bits] a second as the megabits the field shows: whole when it is, else with its decimals. */
+private fun mbps(bits: Long): String = BigDecimal(bits).movePointLeft(MEGA_DIGITS).stripTrailingZeros().toPlainString()
