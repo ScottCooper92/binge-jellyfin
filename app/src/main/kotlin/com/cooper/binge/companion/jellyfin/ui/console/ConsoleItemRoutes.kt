@@ -80,7 +80,7 @@ internal fun ConsoleItemRoute(
         ConsolePage.HomeLayout -> HomeLayoutLibraryRoute(graph, profile, item, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayListRoute(graph, item, close)
         ConsolePage.MetadataDefaults -> MetadataItemRoute(graph.connection, item, openSubItem, close)
-        ConsolePage.Libraries -> LibraryItemRoute(graph, profile, item, openSubItem, close)
+        ConsolePage.Libraries -> LibraryItemRoute(graph.connection, profile, item, openSubItem, close)
         ConsolePage.NowPlaying -> NowPlayingItemRoute(graph, account, item, close)
         ConsolePage.Plugins ->
             if (item.startsWith("package:")) {
