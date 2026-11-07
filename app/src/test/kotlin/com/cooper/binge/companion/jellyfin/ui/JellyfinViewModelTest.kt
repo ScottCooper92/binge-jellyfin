@@ -431,6 +431,25 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a refresh asked for while one is running starts no second read`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null && !it.refreshing }
+        fun gateReads() = jellyfin.requests.count { it.url.encodedPath == "/QuickConnect/Enabled" }
+        val before = gateReads()
+        // Held at the gates, the first refresh is certainly still running when the others are asked for.
+        val held = jellyfin.hold("/QuickConnect/Enabled")
+        vm.refresh()
+        held.awaitArrival()
+        assertTrue(vm.await<UiState.SignedIn>().refreshing)
+        vm.refresh()
+        vm.refresh()
+        held.release()
+        vm.await<UiState.SignedIn> { !it.refreshing }
+        assertEquals(before + 1, gateReads())
+    }
+
+    @Test
     fun `a gates-only refresh picks up a change without reading the library again`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()

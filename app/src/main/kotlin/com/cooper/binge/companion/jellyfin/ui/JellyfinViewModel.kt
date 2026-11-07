@@ -361,6 +361,8 @@ class JellyfinViewModel(
             }
             return
         }
+        // One read at a time: a second would end the first's spinner early, and the older of the two could write last.
+        if (current.refreshing) return
         _state.value = current.copy(refreshing = true, refreshFailed = false)
         viewModelScope.launch {
             val health =
