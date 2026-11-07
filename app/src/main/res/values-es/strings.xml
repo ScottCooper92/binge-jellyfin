@@ -1196,6 +1196,17 @@
     <string name="live_tv_field_limit_detail">Cuántas emisiones a la vez, de 0 a 99. 0 es sin límite.</string>
     <string name="live_tv_favorites_only">Importar solo favoritos</string>
     <string name="live_tv_hw_transcoding">Permitir la transcodificación por hardware</string>
+    <string name="live_tv_stream_options">Opciones de la emisión</string>
+    <string name="live_tv_opt_fmp4">Permitir el contenedor fMP4 al transcodificar</string>
+    <string name="live_tv_opt_fmp4_detail">Permite reproducir HEVC y HDR. Desactívalo si un sintonizador da problemas.</string>
+    <string name="live_tv_opt_sharing">Permitir compartir la emisión</string>
+    <string name="live_tv_opt_sharing_detail">Comparte la emisión del sintonizador entre clientes, lo que ayuda si limita cuántas da. Puede causar problemas.</string>
+    <string name="live_tv_opt_looping">Repetir las emisiones en directo</string>
+    <string name="live_tv_opt_looping_detail">Para emisiones que solo traen unos segundos de datos. Déjalo desactivado en los demás casos.</string>
+    <string name="live_tv_opt_dts">Ignorar el DTS (marca de tiempo de decodificación)</string>
+    <string name="live_tv_opt_dts_detail">Desactivarlo puede arreglar el audio que falta en canales con audio y vídeo por separado.</string>
+    <string name="live_tv_opt_framerate">Leer la entrada a su velocidad de fotogramas nativa</string>
+    <string name="live_tv_opt_framerate_detail">Puede arreglar emisiones en directo que se cortan antes de tiempo.</string>
     <string name="live_tv_remove_tuner">Quitar sintonizador</string>
     <string name="live_tv_remove_title">¿Quitar este sintonizador?</string>
     <string name="live_tv_remove_message">%1$s y sus canales dejarán de estar en la TV en directo. Las grabaciones ya hechas se conservan.</string>

@@ -1199,6 +1199,17 @@
     <string name="live_tv_field_limit_detail">How many streams at once, from 0 to 99. 0 is no limit.</string>
     <string name="live_tv_favorites_only">Import favourites only</string>
     <string name="live_tv_hw_transcoding">Allow hardware transcoding</string>
+    <string name="live_tv_stream_options">Stream options</string>
+    <string name="live_tv_opt_fmp4">Allow fMP4 transcoding container</string>
+    <string name="live_tv_opt_fmp4_detail">Lets HEVC and HDR play. Turn it off if a tuner has playback problems.</string>
+    <string name="live_tv_opt_sharing">Allow stream sharing</string>
+    <string name="live_tv_opt_sharing_detail">Shares the tuner\'s stream between clients, which helps when it limits how many it gives. Can cause playback problems.</string>
+    <string name="live_tv_opt_looping">Auto-loop live streams</string>
+    <string name="live_tv_opt_looping_detail">For streams that hold only a few seconds of data. Leave it off otherwise.</string>
+    <string name="live_tv_opt_dts">Ignore DTS (decoding timestamp)</string>
+    <string name="live_tv_opt_dts_detail">Turning it off may fix missing audio on channels with separate audio and video.</string>
+    <string name="live_tv_opt_framerate">Read input at native frame rate</string>
+    <string name="live_tv_opt_framerate_detail">May fix live streams that stop early.</string>
     <string name="live_tv_remove_tuner">Remove tuner</string>
     <string name="live_tv_remove_title">Remove this tuner?</string>
     <string name="live_tv_remove_message">%1$s and its channels will leave Live TV. Recordings already made stay.</string>

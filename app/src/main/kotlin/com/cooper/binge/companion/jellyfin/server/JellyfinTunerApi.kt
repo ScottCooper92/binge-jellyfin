@@ -21,6 +21,14 @@ const val TUNER_USER_AGENT = "UserAgent"
 const val TUNER_COUNT = "TunerCount"
 const val TUNER_FAVORITES_ONLY = "ImportFavoritesOnly"
 const val TUNER_HW_TRANSCODING = "AllowHWTranscoding"
+const val TUNER_FMP4 = "AllowFmp4TranscodingContainer"
+const val TUNER_STREAM_SHARING = "AllowStreamSharing"
+const val TUNER_STREAM_LOOPING = "EnableStreamLooping"
+const val TUNER_IGNORE_DTS = "IgnoreDts"
+const val TUNER_NATIVE_FRAMERATE = "ReadAtNativeFramerate"
+
+/** An M3U host's stream options, in the order jellyfin-web lists them. The server sends each key from the release that has it. */
+val TUNER_STREAM_OPTIONS = listOf(TUNER_FMP4, TUNER_STREAM_SHARING, TUNER_STREAM_LOOPING, TUNER_IGNORE_DTS, TUNER_NATIVE_FRAMERATE)
 
 /** The two kinds of tuner this app adds, by the name the server gives them. A plugin's kind is shown and kept, never added. */
 const val TUNER_TYPE_HDHOMERUN = "hdhomerun"

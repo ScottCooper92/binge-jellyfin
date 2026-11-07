@@ -12,8 +12,13 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.VideoFile
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -25,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -35,6 +41,11 @@ import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.TUNER_FMP4
+import com.cooper.binge.companion.jellyfin.server.TUNER_IGNORE_DTS
+import com.cooper.binge.companion.jellyfin.server.TUNER_STREAM_LOOPING
+import com.cooper.binge.companion.jellyfin.server.TUNER_STREAM_OPTIONS
+import com.cooper.binge.companion.jellyfin.server.TUNER_STREAM_SHARING
 import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_HDHOMERUN
 import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_M3U
 import com.cooper.binge.companion.jellyfin.server.withoutSecrets
@@ -192,6 +203,15 @@ internal fun TunerForm(
     var limit by rememberSaveable(draft) { mutableStateOf(draft.streamLimit) }
     var favorites by rememberSaveable(draft) { mutableStateOf(draft.favoritesOnly) }
     var hardware by rememberSaveable(draft) { mutableStateOf(draft.hardwareTranscoding) }
+    // Only the keys the server sent, and the ones on, as a list a saved state can hold.
+    var optionsOn by rememberSaveable(draft) {
+        mutableStateOf(
+            draft.options
+                .filterValues { it }
+                .keys
+                .toList(),
+        )
+    }
     val edited =
         draft.copy(
             url = url,
@@ -200,6 +220,7 @@ internal fun TunerForm(
             streamLimit = limit,
             favoritesOnly = favorites,
             hardwareTranscoding = hardware,
+            options = draft.options.mapValues { (key, _) -> key in optionsOn },
         )
     ConsoleFieldsForm(
         title = stringResource(formTitle(draft)),
@@ -230,6 +251,7 @@ internal fun TunerForm(
             )
         }
         TunerSwitches(draft, favorites, { favorites = it }, hardware, { hardware = it })
+        if (draft.isM3u) StreamOptions(draft, optionsOn) { key, on -> optionsOn = if (on) optionsOn + key else optionsOn - key }
         if (draft.id != null) RemoveRow(draft.id, actions)
     }
 }
@@ -307,6 +329,37 @@ private fun TunerSwitches(
     )
 }
 
+/** An M3U host's stream options, each shown where the server sent its key and saved with the rest of the form. */
+@Composable
+internal fun StreamOptions(
+    draft: TunerDraft,
+    on: List<String>,
+    onChange: (key: String, on: Boolean) -> Unit,
+) {
+    val rows =
+        TUNER_STREAM_OPTIONS.filter { it in draft.options }.map { key ->
+            val (label, detail, icon) = streamOption(key)
+            ListItem(
+                icon = icon,
+                label = stringResource(label),
+                detail = stringResource(detail),
+                supportingMaxLines = OPTION_LINES,
+                toggled = key in on,
+                onClick = { onChange(key, key !in on) },
+            )
+        }
+    if (rows.isNotEmpty()) ItemGroup(title = stringResource(R.string.live_tv_stream_options), rows = rows)
+}
+
+private fun streamOption(key: String): Triple<Int, Int, ImageVector> =
+    when (key) {
+        TUNER_FMP4 -> Triple(R.string.live_tv_opt_fmp4, R.string.live_tv_opt_fmp4_detail, Icons.Outlined.VideoFile)
+        TUNER_STREAM_SHARING -> Triple(R.string.live_tv_opt_sharing, R.string.live_tv_opt_sharing_detail, Icons.Outlined.Share)
+        TUNER_STREAM_LOOPING -> Triple(R.string.live_tv_opt_looping, R.string.live_tv_opt_looping_detail, Icons.Outlined.Repeat)
+        TUNER_IGNORE_DTS -> Triple(R.string.live_tv_opt_dts, R.string.live_tv_opt_dts_detail, Icons.Outlined.Timer)
+        else -> Triple(R.string.live_tv_opt_framerate, R.string.live_tv_opt_framerate_detail, Icons.Outlined.Speed)
+    }
+
 @Composable
 private fun RemoveRow(
     id: String,
@@ -327,6 +380,9 @@ private fun RemoveRow(
 }
 
 private const val DETAIL_LINES = 3
+
+/** A stream option's explanation, which the user may need whole to decide: it wraps rather than being cut at the usual three lines. */
+private const val OPTION_LINES = 6
 
 /** What a tuner change that failed says: a dialog where it has a cause and a next step, else a snackbar, and the remove confirm. */
 @Composable

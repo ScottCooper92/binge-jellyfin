@@ -12,6 +12,8 @@ import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_HDHOMERUN
 import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_M3U
 import com.cooper.binge.companion.jellyfin.server.TunerHostSummary
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -135,5 +137,50 @@ class LiveTvTunerSheetsTest {
 
     private companion object {
         const val NOW = 1_800_000_000_000L
+    }
+
+    private val m3uHost =
+        JsonObject(
+            mapOf(
+                "Id" to JsonPrimitive("t1"),
+                "Type" to JsonPrimitive("m3u"),
+                "Url" to JsonPrimitive("https://iptv.example/list.m3u"),
+                "AllowStreamSharing" to JsonPrimitive(true),
+                "EnableStreamLooping" to JsonPrimitive(false),
+                "IgnoreDts" to JsonPrimitive(true),
+                "FutureKey" to JsonPrimitive("kept"),
+            ),
+        )
+
+    @Test
+    fun `an M3U form shows the stream options the server sent, and only those`() {
+        sheet(TunerSheet.Form(TunerDraft.of(m3uHost)))
+        compose.onNodeWithText("Stream options", ignoreCase = true).assertExists()
+        compose.onNodeWithText("Allow stream sharing").assertExists()
+        compose.onNodeWithText("Auto-loop live streams").assertExists()
+        compose.onNodeWithText("Ignore DTS", substring = true).assertExists()
+        // The keys this server did not send (an older release) are not offered.
+        compose.onNodeWithText("Allow fMP4 transcoding container").assertDoesNotExist()
+        compose.onNodeWithText("Read input at native frame rate").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a new M3U tuner and an HDHomeRun have no stream options`() {
+        sheet(TunerSheet.Form(TunerDraft(TUNER_TYPE_M3U)))
+        compose.onNodeWithText("Stream options", ignoreCase = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a stream option switched in the form is saved, and every other key goes back as it came`() {
+        val saved = mutableListOf<TunerDraft>()
+        sheet(TunerSheet.Form(TunerDraft.of(m3uHost)), LiveTvActions(onSave = { saved += it }))
+        compose.onNodeWithText("Auto-loop live streams").performClick()
+        compose.onNodeWithText("Save").performClick()
+        val body = saved.single().applyTo(m3uHost)
+        assertEquals(JsonPrimitive(true), body.getValue("EnableStreamLooping"))
+        assertEquals(JsonPrimitive(true), body.getValue("AllowStreamSharing"))
+        assertEquals(JsonPrimitive(true), body.getValue("IgnoreDts"))
+        assertEquals(JsonPrimitive("kept"), body.getValue("FutureKey"))
+        assertEquals(null, body["AllowFmp4TranscodingContainer"])
     }
 }
