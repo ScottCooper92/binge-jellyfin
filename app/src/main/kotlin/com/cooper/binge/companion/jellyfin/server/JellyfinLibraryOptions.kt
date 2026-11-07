@@ -76,11 +76,23 @@ internal fun Collection<String>.has(name: String) = any { it.equals(name, ignore
 fun JsonObject.providers(
     group: ProviderGroup,
     available: List<String>,
+): List<Provider> = orderedProviders(names(group.orderKey), names(group.disabledKey), available, listStale = false)
+
+/**
+ * The providers in the order [order] asks for them, as a library or a type's defaults keep it: the names it lists that
+ * [offered] still has first, then the rest of [offered] in the server's order, each on unless [disabled] holds it. With [listStale]
+ * a disabled name that [offered] no longer has comes last, so a page can still show it and switch it back on; without it
+ * such a name is left out.
+ */
+internal fun orderedProviders(
+    order: List<String>,
+    disabled: List<String>,
+    offered: List<String>,
+    listStale: Boolean,
 ): List<Provider> {
-    val order = names(group.orderKey)
-    val disabled = names(group.disabledKey)
-    val ordered = order.mapNotNull { name -> available.firstOrNull { it.equals(name, ignoreCase = true) } }
-    return (ordered + available.filterNot { ordered.has(it) }).distinct().map { Provider(it, !disabled.has(it)) }
+    val ordered = order.mapNotNull { name -> offered.firstOrNull { it.equals(name, ignoreCase = true) } }
+    val stale = if (listStale) disabled.filterNot { offered.has(it) } else emptyList()
+    return (ordered + offered.filterNot { ordered.has(it) } + stale).distinct().map { Provider(it, !disabled.has(it)) }
 }
 
 /** [group]'s order with [name] moved [by] places (-1 up, 1 down), all of [available] listed so it is kept whole. */

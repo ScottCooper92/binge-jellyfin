@@ -187,4 +187,19 @@ class JellyfinLibraryOptionsTest {
     }
 
     private fun names(vararg names: String) = JsonArray(names.map(::JsonPrimitive))
+
+    @Test
+    fun `providers are ordered the same for a library and for a type's defaults, which differ only in a stale disabled name`() {
+        val offered = listOf("A", "B", "C")
+        val order = listOf("c", "Gone", "a")
+        val disabled = listOf("b", "Old")
+        // Both: what the order lists that is still offered, in that order, then the rest as the server listed them.
+        val library = orderedProviders(order, disabled, offered, listStale = false)
+        assertEquals(listOf("C", "A", "B"), library.map { it.name })
+        assertEquals(listOf(true, true, false), library.map { it.enabled })
+        // The defaults page also lists a switched-off name the server no longer offers, last, so it can be switched back on.
+        val defaults = orderedProviders(order, disabled, offered, listStale = true)
+        assertEquals(listOf("C", "A", "B", "Old"), defaults.map { it.name })
+        assertEquals(listOf(true, true, false, false), defaults.map { it.enabled })
+    }
 }
