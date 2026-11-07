@@ -195,7 +195,7 @@ class LiveTvTunerSheetsTest {
         )
 
     @Test
-    fun `the fallback bitrate is shown in Mbps where the server sent it, for M3U and HDHomeRun, and not otherwise`() {
+    fun `the fallback bitrate is shown in Mbps where the server sent it`() {
         sheet(TunerSheet.Form(TunerDraft.of(JsonObject(m3uHost + ("FallbackMaxStreamingBitrate" to JsonPrimitive(12_500_000))))))
         compose.onNodeWithText("12.5").assertExists()
         compose.onNodeWithText("Fallback max stream bitrate (Mbps)", substring = true).assertExists()
@@ -214,6 +214,7 @@ class LiveTvTunerSheetsTest {
         assertEquals("2.097145", draft.fallbackMbps)
         assertEquals(JsonPrimitive(2_097_145L), draft.applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
         assertEquals(JsonPrimitive(8_200_000L), draft.copy(fallbackMbps = "8.2").applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
+        assertEquals(JsonPrimitive(1_500_000L), draft.copy(fallbackMbps = "1,5").applyTo(hdHomeRunHost)["FallbackMaxStreamingBitrate"])
         listOf("0.0000001", "3000").forEach { typed ->
             assertEquals(true, draft.copy(fallbackMbps = typed).fallbackInvalid)
         }

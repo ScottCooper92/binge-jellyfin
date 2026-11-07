@@ -203,8 +203,8 @@ internal fun TunerForm(
     var limit by rememberSaveable(draft) { mutableStateOf(draft.streamLimit) }
     var favorites by rememberSaveable(draft) { mutableStateOf(draft.favoritesOnly) }
     var hardware by rememberSaveable(draft) { mutableStateOf(draft.hardwareTranscoding) }
-    // Only the keys the server sent, and the ones on, as a list a saved state can hold.
     var fallback by rememberSaveable(draft) { mutableStateOf(draft.fallbackMbps) }
+    // Only the keys the server sent, and the ones on, as a list a saved state can hold.
     var optionsOn by rememberSaveable(draft) {
         mutableStateOf(
             draft.options

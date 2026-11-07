@@ -65,6 +65,7 @@ data class TunerDraft(
     val fallbackBits: Long? get() =
         fallbackMbps
             ?.trim()
+            ?.replace(',', '.')
             ?.toBigDecimalOrNull()
             ?.movePointRight(MEGA_DIGITS)
             ?.setScale(0, RoundingMode.HALF_UP)
