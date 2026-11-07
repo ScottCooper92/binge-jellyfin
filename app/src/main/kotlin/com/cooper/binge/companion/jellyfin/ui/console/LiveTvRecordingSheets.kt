@@ -72,6 +72,7 @@ internal fun RecordingFolderForm(
 ) {
     var path by rememberSaveable { mutableStateOf(current) }
     if (typePath.typing) {
+        StepDockHandle(stringResource(folder.title()))
         TextEntrySurface(
             title = stringResource(folder.title()),
             value = path,
