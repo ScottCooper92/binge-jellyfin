@@ -40,6 +40,8 @@ import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -113,9 +115,14 @@ private fun Entries(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         if (state.entries.isEmpty()) item { ConsoleEmptyScreen(stringResource(R.string.activity_empty), Icons.Outlined.History) }
-        state.entries.groupBy { day(it.dateMillis, zone) }.forEach { (day, entries) ->
+        state.entries.groupBy { day(it.dateMillis, zone) }.entries.forEachIndexed { index, (day, entries) ->
             item(key = "day-$day") {
-                ItemGroup(title = dayTitle(day, now), rows = entries.map { it.row(time) })
+                ItemGroup(
+                    title = dayTitle(day, now),
+                    rows = entries.map { it.row(time) },
+                    // The skeleton's first plate is anchored the same way, so a test can tell the page does not jump on resolve.
+                    modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
             }
         }
         if (state.hasMore || state.moreFailed != null) item(key = "more") { More(state, actions) }
