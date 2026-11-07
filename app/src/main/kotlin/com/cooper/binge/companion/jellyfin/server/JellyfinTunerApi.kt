@@ -27,6 +27,8 @@ const val TUNER_STREAM_LOOPING = "EnableStreamLooping"
 const val TUNER_IGNORE_DTS = "IgnoreDts"
 const val TUNER_NATIVE_FRAMERATE = "ReadAtNativeFramerate"
 
+const val TUNER_FALLBACK_BITRATE = "FallbackMaxStreamingBitrate"
+
 /** An M3U host's stream options, in the order jellyfin-web lists them. The server sends each key from the release that has it. */
 val TUNER_STREAM_OPTIONS = listOf(TUNER_FMP4, TUNER_STREAM_SHARING, TUNER_STREAM_LOOPING, TUNER_IGNORE_DTS, TUNER_NATIVE_FRAMERATE)
 

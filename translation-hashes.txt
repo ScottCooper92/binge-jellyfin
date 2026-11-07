@@ -431,6 +431,8 @@ app:live_tv_discover_retry  942087cc2d41
 app:live_tv_favorites_only  1fa9742f41c4
 app:live_tv_field_address  56ef8f20955f
 app:live_tv_field_address_detail  59c851a2a41e
+app:live_tv_field_fallback  750f88df11a1
+app:live_tv_field_fallback_detail  137f777fc4ac
 app:live_tv_field_limit  5ef43b472404
 app:live_tv_field_limit_detail  cb05a1513d1b
 app:live_tv_field_name  dcd1d5223f73

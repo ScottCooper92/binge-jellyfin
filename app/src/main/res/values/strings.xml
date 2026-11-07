@@ -1200,6 +1200,8 @@
     <string name="live_tv_field_user_agent_detail">Leave it blank to use the server\'s own</string>
     <string name="live_tv_field_limit">Stream limit</string>
     <string name="live_tv_field_limit_detail">How many streams at once, from 0 to 99. 0 is no limit.</string>
+    <string name="live_tv_field_fallback">Fallback max stream bitrate (Mbps)</string>
+    <string name="live_tv_field_fallback_detail">Used when the server cannot read a stream\'s own bitrate, so a client does not ask for a transcode that overloads it.</string>
     <string name="live_tv_favorites_only">Import favourites only</string>
     <string name="live_tv_hw_transcoding">Allow hardware transcoding</string>
     <string name="live_tv_stream_options">Stream options</string>
