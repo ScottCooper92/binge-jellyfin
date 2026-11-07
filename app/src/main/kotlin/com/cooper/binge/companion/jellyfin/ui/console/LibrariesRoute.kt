@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
+import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_REFRESH_DAYS
@@ -60,14 +61,14 @@ internal fun LibrariesRoute(
 /** One library's screen, or one of its pages, over the libraries page's view model, which its page shares. */
 @Composable
 internal fun LibraryItemRoute(
-    graph: AppGraph,
+    connection: Connection,
     profile: JellyfinServerProfile,
     item: String,
     openSubItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    val libraries: LibrariesViewModel = viewModel(factory = viewModelFactory { initializer { LibrariesViewModel(graph.connection) } })
-    val browser: FolderBrowserViewModel = viewModel(factory = viewModelFactory { initializer { FolderBrowserViewModel(graph.connection) } })
+    val libraries: LibrariesViewModel = viewModel(factory = viewModelFactory { initializer { LibrariesViewModel(connection) } })
+    val browser: FolderBrowserViewModel = viewModel(factory = viewModelFactory { initializer { FolderBrowserViewModel(connection) } })
     val state by libraries.state.collectAsStateWithLifecycle()
     val folders by browser.state.collectAsStateWithLifecycle()
     val id = libraryItemId(item)
@@ -83,7 +84,7 @@ internal fun LibraryItemRoute(
     when {
         library != null ->
             LibraryLoadedRoute(
-                graph,
+                connection,
                 profile,
                 library,
                 page,
@@ -108,7 +109,7 @@ internal fun LibraryItemRoute(
 /** One library's page, with its own view model, shared by the library's screens. */
 @Composable
 private fun LibraryLoadedRoute(
-    graph: AppGraph,
+    connection: Connection,
     profile: JellyfinServerProfile,
     library: ServerLibrary,
     page: LibraryPage,
@@ -120,7 +121,7 @@ private fun LibraryLoadedRoute(
     onBack: () -> Unit,
 ) {
     val model: LibraryViewModel =
-        viewModel(key = library.id, factory = viewModelFactory { initializer { LibraryViewModel(graph.connection, library) } })
+        viewModel(key = library.id, factory = viewModelFactory { initializer { LibraryViewModel(connection, library) } })
     val state by model.state.collectAsStateWithLifecycle()
     val ready = state as? LibraryUiState.Ready
     // A sheet or confirm, and what the last screen reported, were left on that screen. Once per opening: the flag
