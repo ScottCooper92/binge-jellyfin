@@ -98,3 +98,9 @@ fun JsonObject.withLineup(
         this + (GUIDE_LISTINGS_ID to JsonPrimitive(listingsId)) + (GUIDE_COUNTRY to JsonPrimitive(country)) +
             (GUIDE_ZIP_CODE to JsonPrimitive(postalCode)),
     )
+
+/** [provider] with a new login: the username as typed and the password hashed, everything else, the lineup included, as it was. */
+fun JsonObject.withLogin(
+    username: String,
+    password: String,
+): JsonObject = JsonObject(this + (GUIDE_USERNAME to JsonPrimitive(username)) + (GUIDE_PASSWORD to JsonPrimitive(sha1Hex(password))))

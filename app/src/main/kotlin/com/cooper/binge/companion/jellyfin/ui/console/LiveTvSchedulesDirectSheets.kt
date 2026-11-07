@@ -97,6 +97,7 @@ internal fun SdStepContent(
 ) {
     when (step) {
         SdStep.Account -> AccountStep(saving, actions)
+        is SdStep.Credentials -> AccountStep(saving, actions, step)
         is SdStep.Location -> if (step.choosing) CountryList(step, actions) else LocationStep(step, actions)
         is SdStep.Lineups -> LineupsStep(step, saving, actions)
     }
@@ -106,14 +107,15 @@ internal fun SdStepContent(
 private fun AccountStep(
     saving: Boolean,
     actions: SdActions,
+    changing: SdStep.Credentials? = null,
 ) {
-    var username by rememberSaveable { mutableStateOf("") }
+    var username by rememberSaveable(changing?.providerId) { mutableStateOf(changing?.username.orEmpty()) }
     // Not saveable: the password is held in this field while the sheet is open, and in no state that outlives it.
     var password by remember { mutableStateOf("") }
     ConsoleFieldsForm(
-        title = stringResource(R.string.live_tv_type_schedules_direct),
-        body = stringResource(R.string.live_tv_sd_account_body),
-        submitLabel = stringResource(R.string.live_tv_sd_next),
+        title = stringResource(if (changing == null) R.string.live_tv_type_schedules_direct else R.string.live_tv_sd_login_title),
+        body = stringResource(if (changing == null) R.string.live_tv_sd_account_body else R.string.live_tv_sd_login_body),
+        submitLabel = stringResource(if (changing == null) R.string.live_tv_sd_next else R.string.library_save),
         onSubmit = { actions.onSignIn(username, password) },
         onCancel = actions.onClose,
         submitting = saving,

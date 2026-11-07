@@ -255,6 +255,57 @@ class LiveTvSchedulesDirectViewModelTest {
     }
 
     @Test
+    fun `a login changed in place keeps the account's id and lineup, and sends the new password hashed in the body`() {
+        val vm = vm()
+        val id = signedIn(vm)
+        vm.until { (it.step as? SdStep.Location)?.countries != null }
+        vm.pickCountry(usa)
+        vm.findLineups("10001")
+        vm.until { (it.step as? SdStep.Lineups)?.lineups != null }
+        vm.addLineup(SdLineup("USA-NY12345-X", "Comcast Digital"))
+        vm.until { it.step == null && !it.saving }
+        val before = changed
+        val oldHash =
+            providers()
+                .map {
+                    it.jsonObject
+                }.single { it.getValue("Id").jsonPrimitive.content == id }
+                .getValue("Password")
+                .jsonPrimitive.content
+
+        vm.editLogin(id, "carol")
+        vm.signIn("dave", "newsecret")
+        vm.until { it.step == null && !it.saving }
+
+        val post = posts().last()
+        assertEquals("true", post.url.queryParameter("validateLogin"))
+        assertNull(post.url.queryParameter("pw"))
+        assertFalse(jellyfin.lastBodyText(PROVIDERS).contains("newsecret"))
+        val account = providers().map { it.jsonObject }.single { it.getValue("Id").jsonPrimitive.content == id }
+        assertEquals("dave", account.getValue("Username").jsonPrimitive.content)
+        assertEquals(
+            40,
+            account
+                .getValue("Password")
+                .jsonPrimitive.content.length,
+        )
+        assertTrue(account.getValue("Password").jsonPrimitive.content != oldHash)
+        assertEquals("USA-NY12345-X", account.getValue("ListingsId").jsonPrimitive.content)
+        assertEquals(before + 1, changed)
+    }
+
+    @Test
+    fun `a login the server will not keep says so and stays on the login`() {
+        val vm = vm()
+        vm.editLogin("g2", "carol")
+        jellyfin.status[PROVIDERS] = 400
+        vm.signIn("carol", "wrong")
+        val refused = vm.until { it.problem != null }
+        assertEquals(SdProblem.AccountNotSaved, refused.problem)
+        assertEquals(SdStep.Credentials("g2", "carol"), refused.step)
+    }
+
+    @Test
     fun `a lineup list that comes back empty is shown as empty, and back returns to the location with the country`() {
         jellyfin.sdLineups = "[]"
         val vm = vm()

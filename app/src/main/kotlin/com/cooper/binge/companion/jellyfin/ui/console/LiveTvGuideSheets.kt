@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -118,7 +119,8 @@ internal fun GuideFormContent(
 ) {
     val finishable = form.lineupPending && canFinishSetup
     // A finished Schedules Direct account can have its lineup chosen again: the same location and lineup steps.
-    val changeable = form.type.equals(GUIDE_TYPE_SCHEDULES_DIRECT, ignoreCase = true) && !form.lineupPending && canFinishSetup
+    val isSchedulesDirect = form.type.equals(GUIDE_TYPE_SCHEDULES_DIRECT, ignoreCase = true)
+    val changeable = isSchedulesDirect && !form.lineupPending && canFinishSetup
     var path by rememberSaveable(form) { mutableStateOf(form.path) }
     ConsoleFieldsForm(
         title = stringResource(if (form.id == null) R.string.live_tv_guide_form_add else R.string.live_tv_guide_form_edit),
@@ -163,6 +165,11 @@ internal fun GuideFormContent(
                             label = stringResource(R.string.live_tv_guide_finish),
                             onClick = { actions.onFinishSetup(form.id) },
                         ).takeIf { finishable },
+                        ListItem(
+                            icon = Icons.Outlined.Key,
+                            label = stringResource(R.string.live_tv_guide_change_login),
+                            onClick = { actions.onChangeLogin(form.id, form.name) },
+                        ).takeIf { isSchedulesDirect },
                         ListItem(
                             icon = Icons.Outlined.Dns,
                             label = stringResource(R.string.live_tv_guide_change_lineup),
