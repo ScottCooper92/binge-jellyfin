@@ -115,6 +115,35 @@ class ActivityViewModelTest {
     }
 
     @Test
+    fun `an entry's detail opens and closes, and a pull keeps it open`() {
+        val vm = made(ActivityViewModel(connection, pageSize = 2))
+        vm.ready()
+        vm.open(5L)
+        assertEquals(5L, vm.ready { it.open == 5L }.openEntry?.id)
+        jellyfin.activityEntries = listOf("""{"Id":6,"Name":"New","Type":"UserCreated"}""") + jellyfin.activityEntries
+        vm.refresh()
+        assertEquals(5L, vm.ready { it.entries.first().id == 6L }.openEntry?.id)
+        vm.open(null)
+        assertEquals(null, vm.ready { it.open == null }.openEntry)
+    }
+
+    @Test
+    fun `the long overview is kept when it says more than the short one`() {
+        jellyfin.activityEntries =
+            listOf(
+                """{"Id":9,"Name":"Plugin updated","Type":"PluginUpdated","ShortOverview":"AudioDB 10.0","Overview":"AudioDB 10.0 was updated from 9.0 (changelog attached)"}""",
+                """{"Id":8,"Name":"Same","Type":"SessionStarted","ShortOverview":"IP address: 10.0.0.1","Overview":"IP address: 10.0.0.1"}""",
+                """{"Id":7,"Name":"Long only","Type":"SessionStarted","Overview":"Only the long one"}""",
+            )
+        val entries = made(ActivityViewModel(connection, pageSize = 10)).ready().entries
+        assertEquals("AudioDB 10.0", entries[0].overview)
+        assertEquals("AudioDB 10.0 was updated from 9.0 (changelog attached)", entries[0].longOverview)
+        assertEquals(null, entries[1].longOverview)
+        assertEquals("Only the long one", entries[2].overview)
+        assertEquals(null, entries[2].longOverview)
+    }
+
+    @Test
     fun `a critical entry reads as an error`() {
         jellyfin.activityEntries = listOf("""{"Id":9,"Name":"Bad","Type":"X","Severity":"Critical"}""")
         val vm = made(ActivityViewModel(connection))

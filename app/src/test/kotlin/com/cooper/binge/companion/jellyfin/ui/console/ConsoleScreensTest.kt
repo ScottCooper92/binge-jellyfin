@@ -533,6 +533,43 @@ class ConsoleScreensTest {
     }
 
     @Test
+    fun `an activity entry opens its detail with the whole of what the server wrote, and Close closes it`() {
+        val entry =
+            ActivityEntry(
+                4,
+                "Plugin updated",
+                "AudioDB 10.0",
+                "PluginUpdated",
+                1_700_000_000_000L,
+                Severity.Information,
+                longOverview = "AudioDB 10.0 was updated from 9.0, a version that the server's own changelog describes at length.",
+            )
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), total = 1))
+        var closed = 0
+        compose.setContent {
+            JellyfinTheme {
+                ActivityScreen(
+                    state,
+                    ActivityActions(
+                        onOpen = { id ->
+                            if (id == null) closed++
+                            state = (state as ActivityUiState.Ready).copy(open = id)
+                        },
+                    ),
+                    zone = java.time.ZoneOffset.UTC,
+                )
+            }
+        }
+        compose.onNodeWithText("Details").assertDoesNotExist()
+        compose.onNodeWithText("Plugin updated").performClick()
+        compose.onNodeWithText("a version that the server's own changelog", substring = true).assertExists()
+        compose.onNodeWithText("PluginUpdated").assertExists()
+        compose.onNodeWithText("Close").performClick()
+        assertEquals(1, closed)
+        compose.onNodeWithText("Details").assertDoesNotExist()
+    }
+
+    @Test
     fun `activity groups by day, marks errors, and asks for more at the end`() {
         var more = 0
         val now = 1_793_570_400_000L

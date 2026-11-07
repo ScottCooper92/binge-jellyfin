@@ -28,8 +28,13 @@ sealed interface ActivityUiState {
         val refreshing: Boolean = false,
         val loadingMore: Boolean = false,
         val moreFailed: ConsoleFailure? = null,
+        /** The id of the entry whose detail sheet is open. */
+        val open: Long? = null,
     ) : ActivityUiState {
         val hasMore: Boolean get() = entries.size < total
+
+        /** The open entry, or null when none is open or a read has since replaced it. */
+        val openEntry: ActivityEntry? get() = entries.firstOrNull { it.id == open }
     }
 }
 
@@ -62,6 +67,9 @@ class ActivityViewModel(
         }
     }
 
+    /** Opens [id]'s detail sheet, or closes it for null. */
+    fun open(id: Long?) = update { copy(open = id) }
+
     /** Re-reads the newest page, unless a page is on its way, keeping what's showing until it lands, and what it fails to replace. */
     fun refresh() {
         val ready = _state.value as? ActivityUiState.Ready ?: return
@@ -70,7 +78,7 @@ class ActivityViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> client.activity(0, pageSize) }
-                .onSuccess { page -> update { ActivityUiState.Ready(page.entries, page.total) } }
+                .onSuccess { page -> update { ActivityUiState.Ready(page.entries, page.total, open = open) } }
                 .onFailure { error -> update { copy(refreshing = false, moreFailed = error.consoleFailure()) } }
         }
     }
