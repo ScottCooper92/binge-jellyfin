@@ -4,6 +4,7 @@ import com.cooper.binge.companion.jellyfin.server.TUNER_COUNT
 import com.cooper.binge.companion.jellyfin.server.TUNER_FAVORITES_ONLY
 import com.cooper.binge.companion.jellyfin.server.TUNER_HW_TRANSCODING
 import com.cooper.binge.companion.jellyfin.server.TUNER_NAME
+import com.cooper.binge.companion.jellyfin.server.TUNER_STREAM_OPTIONS
 import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE
 import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_HDHOMERUN
 import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_M3U
@@ -31,6 +32,8 @@ data class TunerDraft(
     val streamLimit: String = "",
     val favoritesOnly: Boolean = false,
     val hardwareTranscoding: Boolean = true,
+    /** The stream options an M3U host has, by key, as the server sent them: a key it did not send is not here, and is not shown. */
+    val options: Map<String, Boolean> = emptyMap(),
 ) {
     val isHdHomeRun: Boolean get() = type.equals(TUNER_TYPE_HDHOMERUN, ignoreCase = true)
     val isM3u: Boolean get() = type.equals(TUNER_TYPE_M3U, ignoreCase = true)
@@ -59,6 +62,7 @@ data class TunerDraft(
             out = out.with(TUNER_COUNT, JsonPrimitive(streamLimitValue ?: 0))
         }
         if (isHdHomeRun) out = out.with(TUNER_FAVORITES_ONLY, JsonPrimitive(favoritesOnly))
+        if (isM3u) options.forEach { (key, on) -> out = out.with(key, JsonPrimitive(on)) }
         return out.with(TUNER_HW_TRANSCODING, JsonPrimitive(hardwareTranscoding))
     }
 
@@ -79,6 +83,7 @@ data class TunerDraft(
                         .orEmpty(),
                 favoritesOnly = host.bool(TUNER_FAVORITES_ONLY) ?: false,
                 hardwareTranscoding = host.bool(TUNER_HW_TRANSCODING) ?: true,
+                options = TUNER_STREAM_OPTIONS.mapNotNull { key -> host.bool(key)?.let { key to it } }.toMap(),
             )
     }
 }

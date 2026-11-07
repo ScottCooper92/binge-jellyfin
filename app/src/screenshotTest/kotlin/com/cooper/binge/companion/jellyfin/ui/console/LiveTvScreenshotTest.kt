@@ -178,6 +178,30 @@ class LiveTvScreenshotTest {
             TunerSheetContent(TunerSheet.Form(draft), false, LiveTvActions())
         }
 
+    /** An M3U tuner on a 10.11 server, which sent every stream option: some on, some off. Just the group, so the whole of each explanation shows. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun streamOptions() =
+        Surface {
+            val draft =
+                TunerDraft(
+                    TUNER_TYPE_M3U,
+                    id = "t2",
+                    options =
+                        mapOf(
+                            "AllowFmp4TranscodingContainer" to true,
+                            "AllowStreamSharing" to true,
+                            "EnableStreamLooping" to false,
+                            "IgnoreDts" to true,
+                            "ReadAtNativeFramerate" to false,
+                        ),
+                )
+            StreamOptions(draft, listOf("AllowFmp4TranscodingContainer", "AllowStreamSharing", "IgnoreDts")) { _, _ -> }
+        }
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable

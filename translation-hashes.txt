@@ -484,6 +484,16 @@ app:live_tv_not_changed  dd2557d6417a
 app:live_tv_not_changed_unreachable  dd6297a5e418
 app:live_tv_not_saved_body  18b8cd3997ff
 app:live_tv_not_saved_title  19a35c5bb345
+app:live_tv_opt_dts  4490437f40b7
+app:live_tv_opt_dts_detail  88be0dac409e
+app:live_tv_opt_fmp4  6e9f896be80c
+app:live_tv_opt_fmp4_detail  3562ad0c453f
+app:live_tv_opt_framerate  e7ead6045b44
+app:live_tv_opt_framerate_detail  15d90696bf47
+app:live_tv_opt_looping  4523f9afbc0f
+app:live_tv_opt_looping_detail  0a755d413851
+app:live_tv_opt_sharing  84e42a030a22
+app:live_tv_opt_sharing_detail  82243c74d41d
 app:live_tv_pick_hdhomerun_detail  ab3ba7386056
 app:live_tv_pick_m3u_detail  e2506da2fb9f
 app:live_tv_recording_body  c826f16a304c
@@ -541,6 +551,7 @@ app:live_tv_sd_password  e7cf3ef4f17c
 app:live_tv_sd_postal_code  ae53cea8228b
 app:live_tv_sd_postal_code_detail  54b5322ef731
 app:live_tv_sd_username  e3b89e9d33f8
+app:live_tv_stream_options  630522ce7a8e
 app:live_tv_title  d451ef69d283
 app:live_tv_tuners  1de22981ee1c
 app:live_tv_type_m3u  4142b352205e
