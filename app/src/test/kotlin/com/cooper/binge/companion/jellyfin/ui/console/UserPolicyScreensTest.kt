@@ -137,7 +137,10 @@ class UserPolicyScreensTest {
             actions = actions,
         )
         // In the phone's own clock format, which a 12-hour test device writes with a period.
-        compose.onNodeWithText("Monday, ${clockHoursText(8.0, false, java.util.Locale.getDefault())} to ${clockHoursText(17.5, false, java.util.Locale.getDefault())}").assertExists()
+        val locale = java.util.Locale.getDefault()
+        val from = clockHoursText(8.0, false, locale)
+        val until = clockHoursText(17.5, false, locale)
+        compose.onNodeWithText("Monday, $from to $until").assertExists()
         compose.onNodeWithText("Movies").performScrollTo().performClick()
         compose.onNodeWithText("gore").performScrollTo().assertExists()
         assertEquals(listOf("BlockUnratedItems 3"), calls)

@@ -92,7 +92,12 @@ private fun ClockTimeDialog(
     onPick: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val state = rememberTimePickerState(initialHour = minutes / MINUTES_PER_HOUR, initialMinute = minutes % MINUTES_PER_HOUR, is24Hour = is24Hour)
+    val state =
+        rememberTimePickerState(
+            initialHour = minutes / MINUTES_PER_HOUR,
+            initialMinute = minutes % MINUTES_PER_HOUR,
+            is24Hour = is24Hour,
+        )
     val keyboard = LocalDensity.current.fontScale >= KEYBOARD_FONT_SCALE
     AlertDialog(
         onDismissRequest = onDismiss,
