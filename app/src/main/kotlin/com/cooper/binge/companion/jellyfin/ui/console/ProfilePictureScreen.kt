@@ -55,6 +55,8 @@ private val PICTURE_SIZE = 160.dp
 fun ProfilePictureScreen(
     state: ProfilePictureUiState,
     actions: ProfilePictureActions,
+    /** The name of the user whose picture this is, for an administrator on another user's page; null is the signed-in user's own. */
+    other: String? = null,
 ) {
     val host = remember { SnackbarHostState() }
     val ready = state as? ProfilePictureUiState.Ready
@@ -74,8 +76,14 @@ fun ProfilePictureScreen(
     ) { _ ->
         if (ready != null) {
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-                PageIntro(stringResource(R.string.profile_picture_body))
-                Picture(ready)
+                PageIntro(
+                    if (other == null) {
+                        stringResource(R.string.profile_picture_body)
+                    } else {
+                        stringResource(R.string.profile_picture_body_other, other)
+                    },
+                )
+                Picture(ready, other)
                 ItemGroup(
                     title = null,
                     rows =
@@ -101,20 +109,28 @@ fun ProfilePictureScreen(
             }
             RefusedMessage(ready.refused, host, R.string.profile_picture_not_changed)
             SnackbarMessage(if (ready.unreadable) stringResource(R.string.profile_picture_unreadable) else null, host)
-            if (ready.confirmingRemove) RemovePictureDialog(actions)
+            if (ready.confirmingRemove) RemovePictureDialog(actions, other = other)
         }
     }
 }
 
 /** The picture in a circle, or the person icon where there is none. */
 @Composable
-internal fun Picture(state: ProfilePictureUiState.Ready) {
+internal fun Picture(
+    state: ProfilePictureUiState.Ready,
+    other: String? = null,
+) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val shape = CircleShape
         if (state.picture != null) {
             Image(
                 bitmap = state.picture.asImageBitmap(),
-                contentDescription = stringResource(R.string.profile_picture_description),
+                contentDescription =
+                    if (other == null) {
+                        stringResource(R.string.profile_picture_description)
+                    } else {
+                        stringResource(R.string.profile_picture_description_other, other)
+                    },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(PICTURE_SIZE).clip(shape),
             )
@@ -139,10 +155,21 @@ internal fun Picture(state: ProfilePictureUiState.Ready) {
 internal fun RemovePictureDialog(
     actions: ProfilePictureActions,
     inWindow: Boolean = true,
+    other: String? = null,
 ) {
     ConsoleConfirm(
-        title = stringResource(R.string.profile_picture_remove_title),
-        message = stringResource(R.string.profile_picture_remove_body),
+        title =
+            if (other == null) {
+                stringResource(R.string.profile_picture_remove_title)
+            } else {
+                stringResource(R.string.profile_picture_remove_title_other, other)
+            },
+        message =
+            if (other == null) {
+                stringResource(R.string.profile_picture_remove_body)
+            } else {
+                stringResource(R.string.profile_picture_remove_body_other, other)
+            },
         confirmLabel = stringResource(R.string.profile_picture_remove),
         onConfirm = actions.onRemove,
         onDismissRequest = { actions.onAskRemove(false) },

@@ -1257,6 +1257,23 @@ class ConsoleScreensTest {
     }
 
     @Test
+    fun `another user's page offers their picture`() {
+        val state = UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "sam")
+        var opened = 0
+        compose.setContent { JellyfinTheme { UserScreen(state, "sam", UsersActions(onPicture = { opened++ })) } }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Profile picture"))
+        compose.onNodeWithText("Profile picture").performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `your own user page has no picture row, as it is in your account`() {
+        val state = UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "me")
+        compose.setContent { JellyfinTheme { UserScreen(state, "me", UsersActions()) } }
+        compose.onNodeWithText("Profile picture").assertDoesNotExist()
+    }
+
+    @Test
     fun `a user the server no longer lists closes their screen`() {
         var closed = 0
         val state = UsersUiState.Ready(listOf(usersSam), usersLibraries, me = "me")

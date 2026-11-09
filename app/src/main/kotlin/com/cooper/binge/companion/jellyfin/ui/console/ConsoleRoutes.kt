@@ -149,13 +149,19 @@ private fun HomeLayoutRoute(
 
 /** The profile picture page: the system photo picker feeds the view model the picked file's bytes. */
 @Composable
-private fun ProfilePictureRoute(
+internal fun ProfilePictureRoute(
     graph: AppGraph,
     newRoute: Boolean,
     onBack: () -> Unit,
+    /** Another user's id and name, for an administrator on that user's page; null is the signed-in user's own. */
+    userId: String? = null,
+    name: String? = null,
 ) {
     val picture: ProfilePictureViewModel =
-        viewModel(factory = viewModelFactory { initializer { ProfilePictureViewModel(graph.connection, newRoute) } })
+        viewModel(
+            key = "profile-picture:${userId.orEmpty()}",
+            factory = viewModelFactory { initializer { ProfilePictureViewModel(graph.connection, newRoute, userId) } },
+        )
     val state by picture.state.collectAsStateWithLifecycle()
     val resolver = LocalContext.current.applicationContext.contentResolver
     val picker =
@@ -172,6 +178,7 @@ private fun ProfilePictureRoute(
             onRetry = picture::load,
             onBack = onBack,
         ),
+        other = name,
     )
 }
 

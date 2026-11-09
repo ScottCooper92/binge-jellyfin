@@ -586,7 +586,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 503)
             }
             path == "/System/Info" -> json(systemInfo)
-            path == "/UserImage" || path == "/Users/user-1/Images/Primary" -> userImage(request)
+            path == "/UserImage" || OLD_USER_IMAGE.matches(path) -> userImage(request)
             path == "/Branding/Splashscreen" -> splashscreen(request)
             path == "/Items/Counts" -> json(itemCounts)
             path == "/System/Configuration/network" && request.method == "POST" -> {
@@ -1361,6 +1361,9 @@ fun FakeJellyfin.session(): JellyfinSession =
         userName = "Claude",
         token = "token-1",
     )
+
+/** The user image's route before 10.9, for any user. */
+private val OLD_USER_IMAGE = Regex("/Users/[^/]+/Images/Primary")
 
 /** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
 private const val HOLD_LIMIT_SECONDS = 20L
