@@ -19,6 +19,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeSheetKind
+import com.binge.designsystem.component.BingeSheetStepHandle
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -94,7 +95,7 @@ internal fun AddLibraryForm(
         },
     )
     if (step != Step.FOLDER) {
-        StepDockHandle(
+        BingeSheetStepHandle(
             stringResource(
                 when (step) {
                     Step.NAME -> R.string.library_name_title

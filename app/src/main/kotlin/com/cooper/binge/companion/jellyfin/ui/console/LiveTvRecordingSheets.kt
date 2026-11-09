@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetKind
+import com.binge.designsystem.component.BingeSheetStepHandle
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.string
@@ -72,7 +73,7 @@ internal fun RecordingFolderForm(
 ) {
     var path by rememberSaveable { mutableStateOf(current) }
     if (typePath.typing) {
-        StepDockHandle(stringResource(folder.title()))
+        BingeSheetStepHandle(stringResource(folder.title()))
         TextEntrySurface(
             title = stringResource(folder.title()),
             value = path,
