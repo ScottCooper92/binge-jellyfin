@@ -200,20 +200,11 @@ class ActivityViewModel(
     fun preset(preset: ActivityTimePreset?) =
         edit { copy(preset = preset, fromMillis = preset?.from(now(), zone)?.toEpochMilli(), toMillis = null) }
 
-    /** A range the user picked, from the start of [from]'s day to the end of [to]'s, or just the start for a null [to]. */
-    fun range(
-        from: Long,
-        to: Long?,
-    ) = edit { copy(preset = null, fromMillis = from, toMillis = to) }
-
     /** Shows the list narrowed by the draft, from its first page. */
     fun apply() {
         _filters.update { it.copy(applied = it.draft, open = false) }
         load()
     }
-
-    /** Clears what the sheet is editing, but for the search, which is not in the sheet; the list is not read again until **Show results**. */
-    fun clearDraft() = _filters.update { it.copy(draft = ActivityFilter(query = it.draft.query)) }
 
     /** Clears every filter and shows the whole log. */
     fun clearAll() {
@@ -265,3 +256,12 @@ class ActivityViewModel(
         const val DEBOUNCE_MILLIS = 400L
     }
 }
+
+/** A range the user picked, from [from] to [to], or just from [from] for a null [to]. The list is not read until Show results. */
+fun ActivityViewModel.range(
+    from: Long,
+    to: Long?,
+) = edit { copy(preset = null, fromMillis = from, toMillis = to) }
+
+/** Clears what the sheet is editing, but for the search, which is not in the sheet; the list is not read again until Show results. */
+fun ActivityViewModel.clearDraft() = edit { ActivityFilter(query = query) }
