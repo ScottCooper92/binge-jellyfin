@@ -8,6 +8,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.PlaylistAdd
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -175,6 +176,13 @@ internal fun GuideFormContent(
                             label = stringResource(R.string.live_tv_guide_change_lineup),
                             onClick = { actions.onChangeLineup(form.id) },
                         ).takeIf { changeable },
+                        actions.onChannelMappings?.let { open ->
+                            ListItem(
+                                icon = Icons.Outlined.LiveTv,
+                                label = stringResource(R.string.live_tv_guide_channel_mappings),
+                                onClick = { open(form.id) },
+                            ).takeIf { !form.lineupPending }
+                        },
                         ListItem(
                             icon = Icons.Outlined.Delete,
                             iconTint = MaterialTheme.colorScheme.error,

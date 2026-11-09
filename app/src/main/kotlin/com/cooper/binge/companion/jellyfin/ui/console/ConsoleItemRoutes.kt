@@ -82,6 +82,7 @@ internal fun ConsoleItemRoute(
         ConsolePage.MetadataDefaults -> MetadataItemRoute(graph.connection, item, openSubItem, close)
         ConsolePage.Libraries -> LibraryItemRoute(graph.connection, profile, item, openSubItem, close)
         ConsolePage.NowPlaying -> NowPlayingItemRoute(graph, account, item, close)
+        ConsolePage.LiveTv -> ChannelMappingsRoute(graph, item, close)
         ConsolePage.Plugins ->
             if (item.startsWith("package:")) {
                 PackageItemRoute(graph, server, item.removePrefix("package:"), close)

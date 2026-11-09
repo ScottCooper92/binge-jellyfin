@@ -19,6 +19,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeSheetKind
+import com.binge.designsystem.component.BingeSheetStepHandle
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -40,7 +41,12 @@ internal fun AddLibrarySheet(
     onDismiss: () -> Unit,
     folderMissing: Boolean = false,
 ) {
-    BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
+    BingeAdaptiveSheet(
+        kind = BingeSheetKind.Task,
+        onDismissRequest = onDismiss,
+        skipPartiallyExpanded = false,
+        dockable = true,
+    ) {
         AddLibraryForm(names, saving, failed, folders, folderActions, onAdd, onDismiss, folderMissing = folderMissing)
     }
 }
@@ -88,6 +94,17 @@ internal fun AddLibraryForm(
             else -> null
         },
     )
+    if (step != Step.FOLDER) {
+        BingeSheetStepHandle(
+            stringResource(
+                when (step) {
+                    Step.NAME -> R.string.library_name_title
+                    Step.KIND -> R.string.library_kind_title
+                    else -> R.string.library_path_title
+                },
+            ),
+        )
+    }
     when (step) {
         Step.NAME -> {
             val taken = names.any { it.equals(name.trim(), ignoreCase = true) }
