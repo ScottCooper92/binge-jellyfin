@@ -1,14 +1,13 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -136,6 +135,9 @@ class ActivityFiltersScreenTest {
         val search = ActivityFilter(query = "sign")
         show(state = ActivityUiState.Loading, filters = ActivityFilters(applied = search, draft = search, query = "sign"))
         compose.onNodeWithText("sign").assertIsDisplayed()
+    }
+
+    @Test
     fun `an applied filter puts its chips below the top bar, also when the list was showing the log a moment before`() {
         var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), 1))
         var filters by mutableStateOf(ActivityFilters())
