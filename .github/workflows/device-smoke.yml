@@ -58,7 +58,7 @@ jobs:
     permissions:
       contents: read
       actions: write
-    uses: ScottCooper92/binge-ci/.github/workflows/device-smoke.yml@64aee68b9347c953d2b9281023efbcfa72dd18a1 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/device-smoke.yml@4ea9f85339ca1f32747cfcbe89aaf1252e5bfdd5 # v1
     with:
       ref: ${{ github.event.inputs.ref }}
       submodules: recursive
@@ -84,7 +84,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@64aee68b9347c953d2b9281023efbcfa72dd18a1 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@4ea9f85339ca1f32747cfcbe89aaf1252e5bfdd5 # v1
         with:
           result: ${{ needs.companion-smoke.result }}
           title: Weekly device smoke is failing on main
