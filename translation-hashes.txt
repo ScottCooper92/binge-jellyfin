@@ -758,6 +758,7 @@ app:profile_picture_body  ebc9a0553c53
 app:profile_picture_body_other  1053b2c84dfc
 app:profile_picture_choose  118fb65601f7
 app:profile_picture_description  fb3aab5ebefd
+app:profile_picture_description_other  f591856c3d28
 app:profile_picture_none  838a20e38429
 app:profile_picture_not_changed  e58ec94d33cb
 app:profile_picture_remove  c3812fc4acb8

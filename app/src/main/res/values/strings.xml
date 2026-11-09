@@ -161,6 +161,7 @@
     <string name="profile_picture_unreadable">That file isn’t a picture this device can read.</string>
     <string name="profile_picture_not_changed">Picture not changed. %1$s</string>
     <string name="profile_picture_description">Your profile picture</string>
+    <string name="profile_picture_description_other">%1$s’s profile picture</string>
     <string name="profile_picture_none">No profile picture</string>
     <string name="password_title">Change password</string>
     <string name="password_body">Changing it signs you out of Jellyfin on your other devices, which will ask for the new one. This app stays signed in.</string>

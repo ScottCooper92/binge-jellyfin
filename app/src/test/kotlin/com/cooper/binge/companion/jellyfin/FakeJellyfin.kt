@@ -1362,9 +1362,10 @@ fun FakeJellyfin.session(): JellyfinSession =
         token = "token-1",
     )
 
-/** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
+/** The user image's route before 10.9, for any user. */
 private val OLD_USER_IMAGE = Regex("/Users/[^/]+/Images/Primary")
 
+/** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
 private const val HOLD_LIMIT_SECONDS = 20L
 
 private const val AWAIT_BODY_MILLIS = 10_000L

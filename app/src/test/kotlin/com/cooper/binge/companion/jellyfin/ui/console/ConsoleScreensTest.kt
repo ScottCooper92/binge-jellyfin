@@ -1257,7 +1257,7 @@ class ConsoleScreensTest {
     }
 
     @Test
-    fun `another user's page offers their picture, and your own page does not`() {
+    fun `another user's page offers their picture`() {
         val state = UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "sam")
         var opened = 0
         compose.setContent { JellyfinTheme { UserScreen(state, "sam", UsersActions(onPicture = { opened++ })) } }

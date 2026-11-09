@@ -83,7 +83,7 @@ fun ProfilePictureScreen(
                         stringResource(R.string.profile_picture_body_other, other)
                     },
                 )
-                Picture(ready)
+                Picture(ready, other)
                 ItemGroup(
                     title = null,
                     rows =
@@ -116,13 +116,21 @@ fun ProfilePictureScreen(
 
 /** The picture in a circle, or the person icon where there is none. */
 @Composable
-internal fun Picture(state: ProfilePictureUiState.Ready) {
+internal fun Picture(
+    state: ProfilePictureUiState.Ready,
+    other: String? = null,
+) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val shape = CircleShape
         if (state.picture != null) {
             Image(
                 bitmap = state.picture.asImageBitmap(),
-                contentDescription = stringResource(R.string.profile_picture_description),
+                contentDescription =
+                    if (other == null) {
+                        stringResource(R.string.profile_picture_description)
+                    } else {
+                        stringResource(R.string.profile_picture_description_other, other)
+                    },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(PICTURE_SIZE).clip(shape),
             )

@@ -162,6 +162,7 @@
     <string name="profile_picture_unreadable">Ese archivo no es una imagen que este dispositivo pueda leer.</string>
     <string name="profile_picture_not_changed">No se cambió la foto. %1$s</string>
     <string name="profile_picture_description">Tu foto de perfil</string>
+    <string name="profile_picture_description_other">Foto de perfil de %1$s</string>
     <string name="profile_picture_none">Sin foto de perfil</string>
     <string name="password_title">Cambiar contraseña</string>
     <string name="password_body">Al cambiarla se cierra tu sesión de Jellyfin en tus otros dispositivos, que te pedirán la nueva. Esta app sigue con la sesión iniciada.</string>
