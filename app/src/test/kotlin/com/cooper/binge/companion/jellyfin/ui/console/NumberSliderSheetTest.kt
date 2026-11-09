@@ -2,12 +2,17 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Surface
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import com.binge.designsystem.testing.assertNoTextClipped
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -80,6 +85,30 @@ class NumberSliderSheetTest {
         compose.onNodeWithContentDescription("Increase Refresh metadata").performClick()
         assertEquals(listOf(90, null), saved)
     }
+
+    /** Drags from near the start to [fraction] of the track's width and lets go, then checks the label against the one save. */
+    private fun releaseAt(fraction: Float) {
+        show(30)
+        compose.onNodeWithContentDescription("Refresh metadata").performTouchInput {
+            down(Offset(width * 0.1f, centerY))
+            moveTo(Offset(width * fraction, centerY))
+            up()
+        }
+        assertEquals("one save per release", 1, saved.size)
+        compose
+            .onNodeWithContentDescription("Refresh metadata")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Every ${saved.single()} days"))
+    }
+
+    // A drag lands between two stops more often than on one, so rounding is the one rule for the label and the save.
+    @Test
+    fun `a release between two stops saves the number the label shows, low`() = releaseAt(0.337f)
+
+    @Test
+    fun `a release between two stops saves the number the label shows, middle`() = releaseAt(0.512f)
+
+    @Test
+    fun `a release between two stops saves the number the label shows, high`() = releaseAt(0.678f)
 
     private val autoChanges = mutableListOf<Boolean>()
 
