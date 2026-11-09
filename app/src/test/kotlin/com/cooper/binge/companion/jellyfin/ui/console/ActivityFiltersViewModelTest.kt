@@ -132,6 +132,22 @@ class ActivityFiltersViewModelTest {
     }
 
     @Test
+    fun `clearing the sheet's draft leaves the list as it is until Show results`() {
+        val vm = vm().opened()
+        vm.edit { copy(severity = Severity.Warning) }
+        vm.apply()
+        vm.ready()
+        vm.openFilters()
+        vm.clearDraft()
+        assertTrue(vm.filters.value.draft.isEmpty)
+        assertEquals(Severity.Warning, vm.filters.value.applied.severity)
+        assertEquals(2, entries().size)
+        vm.apply()
+        vm.ready()
+        assertTrue(vm.filters.value.applied.isEmpty)
+    }
+
+    @Test
     fun `clearing all shows the whole log`() {
         val vm = vm().opened()
         vm.range(Instant.parse("2026-11-01T00:00:00Z").toEpochMilli(), Instant.parse("2026-11-03T23:59:59Z").toEpochMilli())

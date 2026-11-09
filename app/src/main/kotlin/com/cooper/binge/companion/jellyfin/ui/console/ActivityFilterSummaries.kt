@@ -47,7 +47,28 @@ internal fun severitySummary(severity: Severity?): String =
     }
 
 @Composable
-internal fun typeSummary(type: String?): String = type?.typeWords() ?: stringResource(R.string.activity_type_any)
+internal fun typeSummary(type: String?): String = type?.let { activityTypeLabel(it) } ?: stringResource(R.string.activity_type_any)
+
+/** A type as people read it, from the string the type has, or the server's own name for a type this list does not know. */
+@Composable
+internal fun activityTypeLabel(type: String): String =
+    when (type) {
+        "SessionStarted" -> stringResource(R.string.activity_type_session_started)
+        "SessionEnded" -> stringResource(R.string.activity_type_session_ended)
+        "AuthenticationFailed" -> stringResource(R.string.activity_type_authentication_failed)
+        "UserLockedOut" -> stringResource(R.string.activity_type_user_locked_out)
+        "UserCreated" -> stringResource(R.string.activity_type_user_created)
+        "UserDeleted" -> stringResource(R.string.activity_type_user_deleted)
+        "UserPasswordChanged" -> stringResource(R.string.activity_type_user_password_changed)
+        "Playback" -> stringResource(R.string.activity_type_playback)
+        "PlaybackStopped" -> stringResource(R.string.activity_type_playback_stopped)
+        "ScheduledTaskFailed" -> stringResource(R.string.activity_type_scheduled_task_failed)
+        "PluginInstalled" -> stringResource(R.string.activity_type_plugin_installed)
+        "PluginUninstalled" -> stringResource(R.string.activity_type_plugin_uninstalled)
+        "PluginUpdated" -> stringResource(R.string.activity_type_plugin_updated)
+        "SubtitleDownloadFailure" -> stringResource(R.string.activity_type_subtitle_download_failure)
+        else -> type
+    }
 
 @Composable
 private fun shortDate(millis: Long): String {
