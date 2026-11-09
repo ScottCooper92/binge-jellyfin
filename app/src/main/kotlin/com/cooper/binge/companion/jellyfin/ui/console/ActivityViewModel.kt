@@ -212,8 +212,8 @@ class ActivityViewModel(
         load()
     }
 
-    /** Clears what the sheet is editing; the list is not read again until **Show results**. */
-    fun clearDraft() = _filters.update { it.copy(draft = ActivityFilter()) }
+    /** Clears what the sheet is editing, but for the search, which is not in the sheet; the list is not read again until **Show results**. */
+    fun clearDraft() = _filters.update { it.copy(draft = ActivityFilter(query = it.draft.query)) }
 
     /** Clears every filter and shows the whole log. */
     fun clearAll() {
@@ -224,6 +224,8 @@ class ActivityViewModel(
 
     /** Clears one filter, from the chip that says so, and reads the list again. */
     fun clear(kind: ActivityFilterKind) {
+        // A search still waiting out its pause would come back after the chip cleared it.
+        if (kind == ActivityFilterKind.Search) searching?.cancel()
         _filters.update { filters ->
             val cleared =
                 when (kind) {

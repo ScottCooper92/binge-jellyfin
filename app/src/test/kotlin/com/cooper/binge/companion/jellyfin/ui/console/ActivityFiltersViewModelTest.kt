@@ -254,6 +254,34 @@ class ActivityFiltersViewModelTest {
     }
 
     @Test
+    fun `clearing the search chip drops a new search still waiting out its pause`() {
+        val vm = vm()
+        vm.ready()
+        vm.search("sign")
+        settled(2)
+        vm.ready()
+        vm.search("signx")
+        vm.clear(ActivityFilterKind.Search)
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertNull(vm.filters.value.applied.query)
+        assertEquals("", vm.filters.value.query)
+        assertNull(entries().last().url.queryParameter("name"))
+    }
+
+    @Test
+    fun `clearing the sheet's draft keeps the search, which is not in the sheet`() {
+        val vm = vm().opened()
+        vm.search("sign")
+        settled(2)
+        vm.ready()
+        vm.openFilters()
+        vm.edit { copy(severity = Severity.Warning) }
+        vm.clearDraft()
+        assertEquals("sign", vm.filters.value.draft.query)
+        assertNull(vm.filters.value.draft.severity)
+    }
+
+    @Test
     fun `Clear all drops a search that was still waiting out its pause`() {
         val vm = vm()
         vm.ready()
