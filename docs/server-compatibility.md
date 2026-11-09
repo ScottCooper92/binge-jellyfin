@@ -70,6 +70,7 @@ older server shows less rather than failing on a call it can't answer.
 | Backups | 10.11 | `hasBackups` |
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |
 | Grouping movies and shows into collections separately | 10.11 | `hasSeparateCollectionGrouping` |
+| Activity filters by end time, user, severity and type (every server filters by start time and by whether an entry has a user; the others are ignored before 12.0, so the page does not offer them) | 12.0 | `hasActivityFilters` |
 
 ## What each user has
 

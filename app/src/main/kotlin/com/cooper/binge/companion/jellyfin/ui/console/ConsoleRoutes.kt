@@ -44,7 +44,12 @@ internal fun ConsolePageRoute(
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
         ConsolePage.Activity -> {
             val openUser = { id: String -> openPageItem(ConsolePage.Users, userItem(id)) }
-            ActivityRoute(graph, openUser.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) }, close)
+            ActivityRoute(
+                graph,
+                signedIn.profile,
+                openUser.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) },
+                close,
+            )
         }
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
@@ -232,15 +237,17 @@ private fun TasksRoute(
     )
 }
 
-/** The activity page, read a page at a time. */
+/** The activity page, read a page at a time and narrowed by the filters its sheet sets. */
 @Composable
 private fun ActivityRoute(
     graph: AppGraph,
+    profile: JellyfinServerProfile,
     onOpenUser: ((String) -> Unit)?,
     onBack: () -> Unit,
 ) {
     val activity: ActivityViewModel = viewModel(factory = viewModelFactory { initializer { ActivityViewModel(graph.connection) } })
     val state by activity.state.collectAsStateWithLifecycle()
+    val filters by activity.filters.collectAsStateWithLifecycle()
     ActivityScreen(
         state,
         ActivityActions(
@@ -251,6 +258,21 @@ private fun ActivityRoute(
             onRetry = activity::load,
             onBack = onBack,
         ),
+        filters = filters,
+        filterActions =
+            ActivityFilterActions(
+                onOpen = activity::openFilters,
+                onClose = activity::closeFilters,
+                onApply = activity::apply,
+                onClearAll = activity::clearAll,
+                onClearDraft = activity::clearDraft,
+                onClear = activity::clear,
+                onPreset = activity::preset,
+                onRange = activity::range,
+                onEdit = activity::edit,
+                onLoadUsers = activity::loadUsers,
+            ),
+        extendedFilters = profile.hasActivityFilters,
     )
 }
 
