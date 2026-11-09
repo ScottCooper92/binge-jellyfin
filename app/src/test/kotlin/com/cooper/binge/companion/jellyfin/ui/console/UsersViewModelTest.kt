@@ -134,7 +134,7 @@ class UsersViewModelTest {
         val after = vm.ready { !it.refreshing }
         assertTrue(after.openUser!!.disabled)
         vm.setAdministrator(true)
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 2) delay(POLL_MILLIS) } }
+        awaitPolicy { it.getValue("IsAdministrator").jsonPrimitive.content == "true" }
         assertEquals("true", policy("user-2").getValue("IsDisabled").jsonPrimitive.content)
         assertEquals("true", policy("user-2").getValue("IsAdministrator").jsonPrimitive.content)
     }
@@ -177,8 +177,7 @@ class UsersViewModelTest {
         vm.setLibrary("lib-movies", false)
         vm.setAllLibraries(true)
         awaitPolicy {
-            it.getValue("EnableAllFolders").jsonPrimitive.content == "true" &&
-                it.getValue("EnabledFolders").toString() == "[\"lib-shows\"]"
+            it.getValue("EnableAllFolders").jsonPrimitive.content == "true"
         }
         assertEquals("true", policy("user-2").getValue("EnableAllFolders").jsonPrimitive.content)
         assertEquals("[\"lib-shows\"]", policy("user-2").getValue("EnabledFolders").toString())
