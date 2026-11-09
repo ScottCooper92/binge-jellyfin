@@ -134,6 +134,18 @@ app:catalog_installing  8749b1693f74
 app:catalog_no_version  8680dc729209
 app:catalog_owner  25a239179c0c
 app:catalog_version  dd167905de0d
+app:channel_mappings_body  8d0a6e72d884
+app:channel_mappings_more  6d5bfe86865e
+app:channel_mappings_no_channels  7e3431330bbb
+app:channel_mappings_no_match  846796f73c22
+app:channel_mappings_no_tuner_channels  24da559a37b1
+app:channel_mappings_not_changed  f770f37ad5b3
+app:channel_mappings_paired_with  30aafb069b71
+app:channel_mappings_pick_placeholder  18f5bd3cdfd5
+app:channel_mappings_pick_title  421cf7800f87
+app:channel_mappings_search  db9f2284f1cf
+app:channel_mappings_title  7b66db40cf32
+app:channel_mappings_unmatched  2395fae627c0
 app:companion_label  8e03b3c29d2b
 app:connection_allow_local_network  b97c4592cdf4
 app:connection_allow_local_network_short  827bdde10636
@@ -464,6 +476,7 @@ app:live_tv_guide_add_detail  e491664e7242
 app:live_tv_guide_add_submit  9fd728c66c9a
 app:live_tv_guide_change_lineup  2726cc8accaa
 app:live_tv_guide_change_login  26ae45f180f5
+app:live_tv_guide_channel_mappings  7b66db40cf32
 app:live_tv_guide_choose_body  4ea620610b8f
 app:live_tv_guide_close  7d9eb7acb13e
 app:live_tv_guide_ends  6d2e0da284bd
