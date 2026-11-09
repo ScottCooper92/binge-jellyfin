@@ -113,6 +113,9 @@ data class JellyfinServerProfile(
     /** A second parental rating limit, for a rating's sub-score. 10.11. */
     val hasParentalSubRating: Boolean get() = atLeast(TEN, ELEVEN)
 
+    /** The activity log filters by end time, user, severity and type, as well as start time and whether an entry has a user. 12.0. */
+    val hasActivityFilters: Boolean get() = atLeast(TWELVE, 0)
+
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
 
@@ -146,5 +149,6 @@ data class JellyfinServerProfile(
         private const val EIGHT = 8
         private const val NINE = 9
         private const val ELEVEN = 11
+        private const val TWELVE = 12
     }
 }
