@@ -4,6 +4,11 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -131,6 +136,24 @@ class ActivityFiltersScreenTest {
         val search = ActivityFilter(query = "sign")
         show(state = ActivityUiState.Loading, filters = ActivityFilters(applied = search, draft = search, query = "sign"))
         compose.onNodeWithText("sign").assertIsDisplayed()
+    fun `an applied filter puts its chips below the top bar, also when the list was showing the log a moment before`() {
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), 1))
+        var filters by mutableStateOf(ActivityFilters())
+        compose.setContent {
+            JellyfinTheme { ActivityScreen(state, ActivityActions(), filters = filters, extendedFilters = true) }
+        }
+        compose.waitForIdle()
+        // The filter is applied the way the view model's two flows deliver it: the filters first, with the old list still showing for a
+        // frame, then the list loading again, then the narrowed list.
+        compose.runOnIdle { filters = ActivityFilters(applied = applied, draft = applied) }
+        compose.waitForIdle()
+        compose.runOnIdle { state = ActivityUiState.Loading }
+        compose.waitForIdle()
+        compose.runOnIdle { state = ActivityUiState.Ready(listOf(entry), 1) }
+        compose.waitForIdle()
+        val title = compose.onNodeWithText("Activity").getBoundsInRoot()
+        val chip = compose.onNodeWithText("Warnings").getBoundsInRoot()
+        assertTrue("the chips start at ${chip.top}, above the bar's title ending at ${title.bottom}", chip.top >= title.bottom)
     }
 
     @Test
