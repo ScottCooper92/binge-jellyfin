@@ -755,13 +755,16 @@ app:plugins_uninstall  fe199528850a
 app:plugins_uninstall_body  71260b87eba4
 app:plugins_uninstall_title  f488d0ce4985
 app:profile_picture_body  ebc9a0553c53
+app:profile_picture_body_other  1053b2c84dfc
 app:profile_picture_choose  118fb65601f7
 app:profile_picture_description  fb3aab5ebefd
 app:profile_picture_none  838a20e38429
 app:profile_picture_not_changed  e58ec94d33cb
 app:profile_picture_remove  c3812fc4acb8
 app:profile_picture_remove_body  09d0ef635ad2
+app:profile_picture_remove_body_other  a9275f0373e9
 app:profile_picture_remove_title  e1ce3274b6c8
+app:profile_picture_remove_title_other  dcdea09763ca
 app:profile_picture_title  a7acc4ebae2c
 app:profile_picture_unreadable  40d10762b304
 app:quick_connect_body  8c49a6f5ca88

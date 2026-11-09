@@ -97,6 +97,20 @@ class ProfilePictureViewModelTest {
     }
 
     @Test
+    fun `an administrator's change to another user's picture is sent for that user, not for themselves`() {
+        val vm = made(ProfilePictureViewModel(connection, true, userId = "user-2", prepare = { it }))
+        vm.ready()
+        vm.choose { jpeg() }
+        vm.ready { it.picture != null && !it.busy }
+        vm.remove()
+        vm.ready { it.picture == null && !it.busy }
+        val sent = jellyfin.requests.filter { it.url.encodedPath == "/UserImage" }
+        assertTrue(sent.isNotEmpty())
+        assertTrue(sent.all { it.url.queryParameter("userId") == "user-2" })
+        assertEquals(listOf("POST", "DELETE"), sent.map { it.method }.filter { it != "GET" })
+    }
+
+    @Test
     fun `removing the picture asks first, then deletes it`() {
         jellyfin.userImage = jpeg()
         val vm = viewModel()

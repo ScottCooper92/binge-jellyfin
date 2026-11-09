@@ -156,6 +156,9 @@
     <string name="profile_picture_remove">Quitar</string>
     <string name="profile_picture_remove_title">¿Quitar tu foto?</string>
     <string name="profile_picture_remove_body">Tu nombre se mostrará sin foto hasta que elijas otra.</string>
+    <string name="profile_picture_body_other">La foto que aparece junto al nombre de %1$s en las aplicaciones de Jellyfin.</string>
+    <string name="profile_picture_remove_title_other">¿Quitar la foto de %1$s?</string>
+    <string name="profile_picture_remove_body_other">El nombre de %1$s se mostrará sin foto hasta que elijas otra.</string>
     <string name="profile_picture_unreadable">Ese archivo no es una imagen que este dispositivo pueda leer.</string>
     <string name="profile_picture_not_changed">No se cambió la foto. %1$s</string>
     <string name="profile_picture_description">Tu foto de perfil</string>
