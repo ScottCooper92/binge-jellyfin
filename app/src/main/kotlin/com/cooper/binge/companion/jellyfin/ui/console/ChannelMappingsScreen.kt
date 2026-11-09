@@ -247,7 +247,8 @@ private fun tunerRow(
         icon = Icons.Outlined.Tv,
         label = tuner.name,
         detail = elsewhere?.let { stringResource(R.string.channel_mappings_paired_with, it) },
-        trailingContent = if (here) ({ Icon(Icons.Outlined.Check, contentDescription = null) }) else null,
+        // A pick opens nothing, so a row that is not the pairing carries no chevron.
+        trailingContent = { if (here) Icon(Icons.Outlined.Check, contentDescription = null) },
         selected = here,
         onClick = onPick,
     )
