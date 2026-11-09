@@ -1,7 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -93,6 +97,27 @@ class ActivityFiltersScreenTest {
     fun `an empty log with no filter keeps its own empty state`() {
         show(state = ActivityUiState.Ready(emptyList(), 0))
         compose.onNodeWithText("Nothing has happened on this server yet.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `an applied filter puts its chips below the top bar, also when the list was showing the log a moment before`() {
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), 1))
+        var filters by mutableStateOf(ActivityFilters())
+        compose.setContent {
+            JellyfinTheme { ActivityScreen(state, ActivityActions(), filters = filters, extendedFilters = true) }
+        }
+        compose.waitForIdle()
+        // The filter is applied the way the view model's two flows deliver it: the filters first, with the old list still showing for a
+        // frame, then the list loading again, then the narrowed list.
+        compose.runOnIdle { filters = ActivityFilters(applied = applied, draft = applied) }
+        compose.waitForIdle()
+        compose.runOnIdle { state = ActivityUiState.Loading }
+        compose.waitForIdle()
+        compose.runOnIdle { state = ActivityUiState.Ready(listOf(entry), 1) }
+        compose.waitForIdle()
+        val title = compose.onNodeWithText("Activity").getBoundsInRoot()
+        val chip = compose.onNodeWithText("Warnings").getBoundsInRoot()
+        assertTrue("the chips start at ${chip.top}, above the bar's title ending at ${title.bottom}", chip.top >= title.bottom)
     }
 
     @Test

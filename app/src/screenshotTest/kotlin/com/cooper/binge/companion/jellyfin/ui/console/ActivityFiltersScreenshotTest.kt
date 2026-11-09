@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.preview.PreviewSystemBarInsets
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -45,6 +46,21 @@ class ActivityFiltersScreenshotTest {
             filters = ActivityFilters(applied = applied, draft = applied),
             extendedFilters = true,
         )
+
+    /** With a status bar, as on a device: the chips sit below the bar, not under it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun chipsUnderSystemBars() =
+        PreviewSystemBarInsets {
+            ActivityScreen(
+                ActivityUiState.Ready(listOf(warning), 1),
+                ActivityActions(),
+                now = NOW,
+                filters = ActivityFilters(applied = applied, draft = applied),
+                extendedFilters = true,
+            )
+        }
 
     @PreviewTest
     @JellyfinScreenStatePreview

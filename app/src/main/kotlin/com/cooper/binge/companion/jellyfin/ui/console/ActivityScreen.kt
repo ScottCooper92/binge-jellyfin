@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -95,8 +96,10 @@ fun ActivityScreen(
     /** Whether the server takes the filters beyond start time and the system or user split (Jellyfin 12). */
     extendedFilters: Boolean = false,
 ) {
-    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
-    val listState = rememberLazyListState()
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was. A new filter is another list: its
+    // state starts at the top, because a list keeps the item it showed first by its key, and with the chips now above it, that would
+    // hold the chips in the space under the top bar.
+    val listState = key(filters.applied) { rememberLazyListState() }
     BingeScreenScaffold(
         title = stringResource(R.string.activity_title),
         bar = ScreenBar.Small,
