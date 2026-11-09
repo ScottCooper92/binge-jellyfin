@@ -271,6 +271,7 @@ private fun ActivityRoute(
                 onRange = activity::range,
                 onEdit = activity::edit,
                 onLoadUsers = activity::loadUsers,
+                onSearch = activity::search,
             ),
         extendedFilters = profile.hasActivityFilters,
     )

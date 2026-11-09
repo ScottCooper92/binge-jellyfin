@@ -10,6 +10,8 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.activity
 import com.cooper.binge.companion.jellyfin.server.users
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +48,7 @@ sealed interface ActivityUiState {
 }
 
 /** One filter a chip can clear. */
-enum class ActivityFilterKind { Time, Who, Severity, Type }
+enum class ActivityFilterKind { Time, Who, Severity, Type, Search }
 
 /** The users the "who" filter offers, read when its sheet opens. */
 sealed interface ActivityUsers {
@@ -68,6 +70,8 @@ data class ActivityFilters(
     val draft: ActivityFilter = ActivityFilter(),
     val open: Boolean = false,
     val users: ActivityUsers = ActivityUsers.Loading,
+    /** What is typed in the search field, which [applied] follows a moment after the typing stops. */
+    val query: String = "",
 )
 
 /**
@@ -80,9 +84,12 @@ class ActivityViewModel(
     private val pageSize: Int = PAGE_SIZE,
     private val now: () -> Instant = Instant::now,
     private val zone: ZoneId = ZoneId.systemDefault(),
+    private val debounceMillis: Long = DEBOUNCE_MILLIS,
 ) : ViewModel() {
     private val _state = MutableStateFlow<ActivityUiState>(ActivityUiState.Loading)
     val state: StateFlow<ActivityUiState> = _state.asStateFlow()
+
+    private var searching: Job? = null
 
     private val _filters = MutableStateFlow(ActivityFilters())
     val filters: StateFlow<ActivityFilters> = _filters.asStateFlow()
@@ -159,6 +166,23 @@ class ActivityViewModel(
         }
     }
 
+    /**
+     * Searches the titles for [text]. The field shows it at once; the list follows once typing has paused, from its first page, so a
+     * keystroke is not a request. The other filters stay as they are.
+     */
+    fun search(text: String) {
+        _filters.update { it.copy(query = text) }
+        searching?.cancel()
+        searching =
+            viewModelScope.launch {
+                delay(debounceMillis)
+                val query = text.trim().ifBlank { null }
+                if (query == _filters.value.applied.query) return@launch
+                _filters.update { it.copy(applied = it.applied.copy(query = query), draft = it.draft.copy(query = query)) }
+                load()
+            }
+    }
+
     /** Opens the filter sheet on what the list shows now. */
     fun openFilters() {
         _filters.update { it.copy(open = true, draft = it.applied) }
@@ -176,29 +200,23 @@ class ActivityViewModel(
     fun preset(preset: ActivityTimePreset?) =
         edit { copy(preset = preset, fromMillis = preset?.from(now(), zone)?.toEpochMilli(), toMillis = null) }
 
-    /** A range the user picked, from the start of [from]'s day to the end of [to]'s, or just the start for a null [to]. */
-    fun range(
-        from: Long,
-        to: Long?,
-    ) = edit { copy(preset = null, fromMillis = from, toMillis = to) }
-
     /** Shows the list narrowed by the draft, from its first page. */
     fun apply() {
         _filters.update { it.copy(applied = it.draft, open = false) }
         load()
     }
 
-    /** Clears what the sheet is editing; the list is not read again until **Show results**. */
-    fun clearDraft() = _filters.update { it.copy(draft = ActivityFilter()) }
-
     /** Clears every filter and shows the whole log. */
     fun clearAll() {
+        searching?.cancel()
         _filters.update { ActivityFilters(users = it.users) }
         load()
     }
 
     /** Clears one filter, from the chip that says so, and reads the list again. */
     fun clear(kind: ActivityFilterKind) {
+        // A search still waiting out its pause would come back after the chip cleared it.
+        if (kind == ActivityFilterKind.Search) searching?.cancel()
         _filters.update { filters ->
             val cleared =
                 when (kind) {
@@ -206,8 +224,9 @@ class ActivityViewModel(
                     ActivityFilterKind.Who -> filters.applied.copy(who = ActivityWho.Anyone, username = null)
                     ActivityFilterKind.Severity -> filters.applied.copy(severity = null)
                     ActivityFilterKind.Type -> filters.applied.copy(type = null)
+                    ActivityFilterKind.Search -> filters.applied.copy(query = null)
                 }
-            filters.copy(applied = cleared, draft = cleared)
+            filters.copy(applied = cleared, draft = cleared, query = if (kind == ActivityFilterKind.Search) "" else filters.query)
         }
         load()
     }
@@ -234,5 +253,15 @@ class ActivityViewModel(
     private companion object {
         const val TAG = "JellyfinActivity"
         const val PAGE_SIZE = 50
+        const val DEBOUNCE_MILLIS = 400L
     }
 }
+
+/** A range the user picked, from [from] to [to], or just from [from] for a null [to]. The list is not read until Show results. */
+fun ActivityViewModel.range(
+    from: Long,
+    to: Long?,
+) = edit { copy(preset = null, fromMillis = from, toMillis = to) }
+
+/** Clears what the sheet is editing, but for the search, which is not in the sheet; the list is not read again until Show results. */
+fun ActivityViewModel.clearDraft() = edit { ActivityFilter(query = query) }

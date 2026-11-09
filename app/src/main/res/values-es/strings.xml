@@ -403,6 +403,11 @@
     <string name="activity_filtered_empty_title">Nada coincide con estos filtros</string>
     <string name="activity_filtered_empty_message">Afloja un filtro, o bórralos todos para ver el registro completo.</string>
     <string name="activity_filtered_empty_clear">Borrar filtros</string>
+    <string name="activity_search_hint">Buscar en la actividad</string>
+    <string name="activity_search_chip">\u201c%1$s\u201d</string>
+    <string name="activity_search_empty_title">Nada coincide con esa búsqueda</string>
+    <string name="activity_search_empty_message">Prueba otras palabras, o borra la búsqueda para ver el registro completo.</string>
+    <string name="activity_search_empty_clear">Borrar búsqueda</string>
     <string name="activity_type_session_started">Sesión iniciada</string>
     <string name="activity_type_session_ended">Sesión terminada</string>
     <string name="activity_type_authentication_failed">Inicio de sesión fallido</string>

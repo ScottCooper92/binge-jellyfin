@@ -80,6 +80,63 @@ class ActivityFiltersScreenshotTest {
     fun filteredLoading() =
         ActivityScreen(ActivityUiState.Loading, ActivityActions(), now = NOW, filters = ActivityFilters(applied = applied, draft = applied))
 
+    /** The search field above the list, with its text as a chip and the list narrowed. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun search() =
+        ActivityScreen(
+            ActivityUiState.Ready(listOf(entry), 1),
+            ActivityActions(),
+            now = NOW,
+            filters =
+                ActivityFilters(
+                    applied = ActivityFilter(query = "signed"),
+                    draft = ActivityFilter(query = "signed"),
+                    query = "signed",
+                ),
+            extendedFilters = true,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchNothingMatches() =
+        ActivityScreen(
+            ActivityUiState.Ready(emptyList(), 0),
+            ActivityActions(),
+            now = NOW,
+            filters = ActivityFilters(applied = ActivityFilter(query = "zzz"), draft = ActivityFilter(query = "zzz"), query = "zzz"),
+            extendedFilters = true,
+        )
+
+    /** The field stays while the narrowed list loads. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchLoading() =
+        ActivityScreen(
+            ActivityUiState.Loading,
+            ActivityActions(),
+            now = NOW,
+            filters =
+                ActivityFilters(
+                    applied = ActivityFilter(query = "signed"),
+                    draft = ActivityFilter(query = "signed"),
+                    query = "signed",
+                ),
+            extendedFilters = true,
+        )
+
+    /** No filter and no text, on a server that searches: the field above the whole log. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchEmptyField() =
+        ActivityScreen(ActivityUiState.Ready(listOf(entry, warning), 2), ActivityActions(), now = NOW, extendedFilters = true)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable

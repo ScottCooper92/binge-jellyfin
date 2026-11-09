@@ -46,6 +46,15 @@ class JellyfinActivityFilterTest {
     }
 
     @Test
+    fun `a search is the name parameter, and counts as a filter`() {
+        val filter = ActivityFilter(query = "signed in")
+        assertEquals(mapOf("name" to "signed in"), filter.query())
+        assertEquals(1, filter.count)
+        assertFalse(filter.isEmpty)
+        assertEquals(emptyMap<String, String>(), ActivityFilter(query = "  ").query())
+    }
+
+    @Test
     fun `a blank user or type is not sent`() {
         assertEquals(emptyMap<String, String>(), ActivityFilter(username = " ", type = "").query())
     }

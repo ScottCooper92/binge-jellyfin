@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,10 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingePullToRefresh
+import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.DiscoverQuickClearChip
 import com.binge.designsystem.component.ExpressiveIconButton
@@ -120,20 +126,69 @@ fun ActivityScreen(
         },
     ) { padding ->
         ScreenBody(padding) { _ ->
-            val inner = padding.screenListPadding()
+            ActivityBody(state, actions, padding, now, zone, listState, filters, filterActions, extendedFilters)
+            ActivityFilterSheet(filters, extendedFilters, filterActions)
+            (state as? ActivityUiState.Ready)?.openEntry?.let { entry ->
+                ActivityDetailSheet(entry, zone, onOpenUser = actions.onOpenUser) { actions.onOpen(null) }
+            }
+        }
+    }
+}
+
+/**
+ * The page under its bar: the search field where the server has one, and the list, its loading or its failure below it. The field
+ * stays put while the list loads, so typing is not interrupted by the list being replaced.
+ */
+@Composable
+private fun ActivityBody(
+    state: ActivityUiState,
+    actions: ActivityActions,
+    padding: PaddingValues,
+    now: Long,
+    zone: ZoneId,
+    listState: LazyListState,
+    filters: ActivityFilters,
+    filterActions: ActivityFilterActions,
+    searchable: Boolean,
+) {
+    val inner = padding.screenListPadding()
+    val direction = LocalLayoutDirection.current
+    val listInner =
+        if (searchable) {
+            PaddingValues(
+                start = inner.calculateStartPadding(direction),
+                end = inner.calculateEndPadding(direction),
+                bottom = inner.calculateBottomPadding(),
+            )
+        } else {
+            inner
+        }
+    Column(Modifier.fillMaxSize()) {
+        if (searchable) {
+            BingeSearchField(
+                query = filters.query,
+                onQueryChange = filterActions.onSearch,
+                onClear = { filterActions.onSearch("") },
+                placeholder = stringResource(R.string.activity_search_hint),
+                modifier =
+                    Modifier.padding(
+                        start = inner.calculateStartPadding(direction),
+                        end = inner.calculateEndPadding(direction),
+                        top = inner.calculateTopPadding(),
+                        bottom = dimensionResource(DesR.dimen.padding_s),
+                    ),
+            )
+        }
+        Box(Modifier.weight(1f)) {
             when (state) {
-                ActivityUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
-                is ActivityUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                ActivityUiState.Loading -> ConsoleLoading(listInner, LOADING_ROWS)
+                is ActivityUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(listInner))
                 is ActivityUiState.Ready ->
                     BingePullToRefresh(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
-                        indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Entries(state, actions, inner, now, zone, listState, filters.applied, filterActions) }
-            }
-            ActivityFilterSheet(filters, extendedFilters, filterActions)
-            (state as? ActivityUiState.Ready)?.openEntry?.let { entry ->
-                ActivityDetailSheet(entry, zone, onOpenUser = actions.onOpenUser) { actions.onOpen(null) }
+                        indicatorTopInset = if (searchable) 0.dp else padding.calculateTopPadding(),
+                    ) { Entries(state, actions, listInner, now, zone, listState, filters.applied, filterActions) }
             }
         }
     }
@@ -159,20 +214,7 @@ private fun Entries(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         if (!filter.isEmpty) item(key = "chips") { ActivityFilterChips(filter, filterActions.onClear) }
-        if (state.entries.isEmpty() && filter.isEmpty) {
-            item { ConsoleEmptyScreen(stringResource(R.string.activity_empty), Icons.Outlined.History) }
-        } else if (state.entries.isEmpty()) {
-            item(key = "filtered-empty") {
-                // A filter that matches nothing is its own state, with the way out, and not the empty log.
-                EmptyScreen(
-                    message = stringResource(R.string.activity_filtered_empty_message),
-                    title = stringResource(R.string.activity_filtered_empty_title),
-                    icon = Icons.Outlined.FilterListOff,
-                    action = ScreenAction(stringResource(R.string.activity_filtered_empty_clear), filterActions.onClearAll),
-                    modifier = Modifier.fillParentMaxHeight(FILTERED_EMPTY_FRACTION),
-                )
-            }
-        }
+        if (state.entries.isEmpty()) item(key = "empty") { NothingToShow(filter, filterActions) }
         state.entries.groupBy { day(it.dateMillis, zone) }.entries.forEachIndexed { index, (day, entries) ->
             item(key = "day-$day") {
                 ItemGroup(
@@ -185,6 +227,34 @@ private fun Entries(
         }
         if (state.hasMore || state.moreFailed != null) item(key = "more") { More(state, actions) }
     }
+}
+
+/** An empty list: the log with nothing in it, or what a filter or a search matched none of, with the way out of it. */
+@Composable
+private fun LazyItemScope.NothingToShow(
+    filter: ActivityFilter,
+    filterActions: ActivityFilterActions,
+) {
+    if (filter.isEmpty) {
+        ConsoleEmptyScreen(stringResource(R.string.activity_empty), Icons.Outlined.History)
+        return
+    }
+    val searchOnly = filter.query != null && filter.copy(query = null).isEmpty
+    EmptyScreen(
+        message = stringResource(if (searchOnly) R.string.activity_search_empty_message else R.string.activity_filtered_empty_message),
+        title = stringResource(if (searchOnly) R.string.activity_search_empty_title else R.string.activity_filtered_empty_title),
+        icon = Icons.Outlined.FilterListOff,
+        action =
+            if (searchOnly) {
+                ScreenAction(
+                    stringResource(R.string.activity_search_empty_clear),
+                    onClick = { filterActions.onClear(ActivityFilterKind.Search) },
+                )
+            } else {
+                ScreenAction(stringResource(R.string.activity_filtered_empty_clear), filterActions.onClearAll)
+            },
+        modifier = Modifier.fillParentMaxHeight(FILTERED_EMPTY_FRACTION),
+    )
 }
 
 /** The end of the list: the next page on its way, or why it didn't come and a way to try again. */
@@ -293,6 +363,15 @@ internal fun ActivityFilterChips(
         filter.severity?.let { severity ->
             item(key = "severity") {
                 DiscoverQuickClearChip(severitySummary(severity), QuickClearTone.Include, { onClear(ActivityFilterKind.Severity) })
+            }
+        }
+        filter.query?.let { query ->
+            item(key = "search") {
+                DiscoverQuickClearChip(
+                    stringResource(R.string.activity_search_chip, query),
+                    QuickClearTone.Include,
+                    { onClear(ActivityFilterKind.Search) },
+                )
             }
         }
         filter.type?.let { type ->
