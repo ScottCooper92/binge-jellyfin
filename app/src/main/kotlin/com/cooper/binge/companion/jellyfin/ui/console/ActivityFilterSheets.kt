@@ -18,7 +18,6 @@ import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
@@ -35,12 +34,7 @@ import com.cooper.binge.companion.jellyfin.server.ActivityFilter
 import com.cooper.binge.companion.jellyfin.server.ActivityTimePreset
 import com.cooper.binge.companion.jellyfin.server.ActivityWho
 import com.cooper.binge.companion.jellyfin.server.Severity
-import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.util.Locale
 import com.binge.designsystem.R as DesR
 
@@ -369,83 +363,3 @@ private fun TypePage(
         },
     )
 }
-
-@Composable
-internal fun timeSummary(filter: ActivityFilter): String =
-    when {
-        filter.preset == ActivityTimePreset.Today -> stringResource(R.string.activity_time_today)
-        filter.preset == ActivityTimePreset.Last7Days -> stringResource(R.string.activity_time_7)
-        filter.preset == ActivityTimePreset.Last30Days -> stringResource(R.string.activity_time_30)
-        filter.fromMillis != null && filter.toMillis != null ->
-            stringResource(R.string.activity_time_range, shortDate(filter.fromMillis), shortDate(filter.toMillis))
-        filter.fromMillis != null -> stringResource(R.string.activity_time_from, shortDate(filter.fromMillis))
-        filter.toMillis != null -> stringResource(R.string.activity_time_range, "…", shortDate(filter.toMillis))
-        else -> stringResource(R.string.activity_time_any)
-    }
-
-@Composable
-internal fun whoSummary(filter: ActivityFilter): String =
-    when {
-        filter.username != null -> filter.username
-        filter.who == ActivityWho.System -> stringResource(R.string.activity_who_system)
-        filter.who == ActivityWho.Users -> stringResource(R.string.activity_who_users)
-        else -> stringResource(R.string.activity_who_any)
-    }
-
-@Composable
-internal fun severitySummary(severity: Severity?): String =
-    when (severity) {
-        Severity.Error -> stringResource(R.string.activity_severity_error)
-        Severity.Warning -> stringResource(R.string.activity_severity_warning)
-        Severity.Information -> stringResource(R.string.activity_severity_information)
-        null -> stringResource(R.string.activity_severity_any)
-    }
-
-@Composable
-internal fun typeSummary(type: String?): String = type?.typeWords() ?: stringResource(R.string.activity_type_any)
-
-@Composable
-private fun shortDate(millis: Long): String {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
-    return DateTimeFormatter
-        .ofLocalizedDate(FormatStyle.MEDIUM)
-        .withLocale(locale)
-        .withZone(ZoneId.systemDefault())
-        .format(Instant.ofEpochMilli(millis))
-}
-
-/** The picker's value for the local day [millis] falls in: that day's midnight in UTC, which is what a date picker holds. */
-private fun utcDayStart(
-    millis: Long,
-    zone: ZoneId,
-): Long =
-    Instant
-        .ofEpochMilli(millis)
-        .atZone(zone)
-        .toLocalDate()
-        .atStartOfDay(ZoneOffset.UTC)
-        .toInstant()
-        .toEpochMilli()
-
-/** The start of the local day the picker's UTC [pickerMillis] names. */
-private fun localDayStart(
-    pickerMillis: Long,
-    zone: ZoneId,
-): Long =
-    LocalDate
-        .ofInstant(Instant.ofEpochMilli(pickerMillis), ZoneOffset.UTC)
-        .atStartOfDay(zone)
-        .toInstant()
-        .toEpochMilli()
-
-/** The last millisecond of the local day the picker's UTC [pickerMillis] names, so the day itself is shown. */
-private fun localDayEnd(
-    pickerMillis: Long,
-    zone: ZoneId,
-): Long =
-    LocalDate
-        .ofInstant(Instant.ofEpochMilli(pickerMillis), ZoneOffset.UTC)
-        .plusDays(1)
-        .atStartOfDay(zone)
-        .toInstant()
-        .toEpochMilli() - 1
