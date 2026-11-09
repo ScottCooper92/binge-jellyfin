@@ -60,7 +60,8 @@ class ChannelMappingsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun noChannels() = ChannelMappingsScreen(ChannelMappingsUiState.Ready(options.copy(providerChannels = emptyList())), ChannelMappingsActions())
+    fun noChannels() =
+        ChannelMappingsScreen(ChannelMappingsUiState.Ready(options.copy(providerChannels = emptyList())), ChannelMappingsActions())
 
     /** The phone's sheet, as its content: the search, the channel it is paired with ticked, and one paired with another channel. */
     @PreviewTest

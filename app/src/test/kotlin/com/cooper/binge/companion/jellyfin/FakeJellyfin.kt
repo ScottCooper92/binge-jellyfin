@@ -290,13 +290,15 @@ class FakeJellyfin : Dispatcher() {
     var discoveredTuners = """[{"Type":"hdhomerun","Url":"http://192.168.1.77","FriendlyName":"HDHomeRun PRIME","DeviceId":"1070A1B2"}]"""
 
     /**
-     * What `/LiveTv/ChannelMappingOptions` answers: three guide channels and three tuner channels, the first two paired by the server (the
-     * second by a mapping an administrator made, the first by name). `POST /LiveTv/ChannelMappings` changes it, as the server's keeps its own.
+     * What `/LiveTv/ChannelMappingOptions` answers: three guide channels and three tuner channels, the first two paired by the
+     * server (the second by a mapping an administrator made, the first by name). `POST /LiveTv/ChannelMappings` changes it.
      */
     var channelMappingOptions =
-        """{"ProviderName":"XMLTV","ProviderChannels":[{"Name":"BBC One","Id":"p1"},{"Name":"BBC Two","Id":"p2"},{"Name":"ITV","Id":"p3"}],""" +
+        """{"ProviderName":"XMLTV","ProviderChannels":[{"Name":"BBC One","Id":"p1"},{"Name":"BBC Two","Id":"p2"},""" +
+            """{"Name":"ITV","Id":"p3"}],""" +
             """"TunerChannels":[{"Name":"101 BBC One HD","ProviderChannelName":"BBC One","ProviderChannelId":"p1","Id":"c1"},""" +
-            """{"Name":"102 BBC Two HD","ProviderChannelName":"BBC Two","ProviderChannelId":"p2","Id":"c2"},{"Name":"103 ITV HD","Id":"c3"}],""" +
+            """{"Name":"102 BBC Two HD","ProviderChannelName":"BBC Two","ProviderChannelId":"p2","Id":"c2"},""" +
+            """{"Name":"103 ITV HD","Id":"c3"}],""" +
             """"Mappings":[{"Name":"c2","Value":"p2"}]}"""
 
     /** The status the two channel mapping calls answer with, 200 when they work. */

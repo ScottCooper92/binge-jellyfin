@@ -1,7 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Surface
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -87,7 +90,7 @@ class ChannelMappingsScreenTest {
         val queries = mutableListOf<String>()
         show(ChannelMappingsUiState.Ready(options, selected = "p3", query = "zzz"), ChannelMappingsActions(onSearch = { queries += it }))
         compose.onNodeWithText("No tuner channels match").assertIsDisplayed()
-        compose.onNodeWithText("Search tuner channels").performTextInput("a")
+        compose.onNode(hasSetTextAction()).performTextInput("a")
         assertTrue(queries.isNotEmpty())
     }
 
@@ -115,7 +118,19 @@ class ChannelMappingsScreenTest {
     @Test
     @Config(fontScale = 1.3f)
     fun `at 1_3 times the font nothing in the open channel is cropped`() {
-        show(ChannelMappingsUiState.Ready(options, selected = "p1"))
+        // The sheet is a window of its own, so its content is checked as the body it draws.
+        compose.setContent {
+            JellyfinTheme {
+                Surface {
+                    TunerChannelChoices(
+                        ChannelMappingsUiState.Ready(options, selected = "p1"),
+                        options.providerChannels.first(),
+                        ChannelMappingsActions(),
+                        PaddingValues(),
+                    )
+                }
+            }
+        }
         assertTrue(compose.assertNoTextClipped() > 0)
     }
 
