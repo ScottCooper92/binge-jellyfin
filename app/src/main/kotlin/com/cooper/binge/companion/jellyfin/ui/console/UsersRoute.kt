@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -78,13 +79,24 @@ internal fun UserItemRoute(
             onPolicy = users::setPolicy,
             onList = users::editList,
             onSection = { openSubItem(sectionItem(userId, it)) },
+            onPicture = { openSubItem("user:$userId/$PICTURE_ITEM") },
             onChoicesRetry = choices::retry,
             onSetPassword = users::setPassword,
             onDelete = users::delete,
             onRetry = users::load,
             onBack = onBack,
         )
-    if (section == null) {
+    if (item.substringAfter('/', "") == PICTURE_ITEM) {
+        // What the page shows beside a name is read again on leaving, so a changed picture shows there.
+        DisposableEffect(Unit) { onDispose { users.refresh() } }
+        val name =
+            (state as? UsersUiState.Ready)
+                ?.users
+                ?.firstOrNull { it.id == userId }
+                ?.name
+                .orEmpty()
+        ProfilePictureRoute(graph, profile.hasUserImageRoute, onBack, userId, name)
+    } else if (section == null) {
         UserScreen(state, userId, actions)
     } else {
         UserSectionScreen(state, userId, section, picks, profile, actions)
@@ -98,3 +110,6 @@ internal fun sectionItem(
     userId: String,
     section: UserSection,
 ) = "user:$userId/${section.name}"
+
+/** The item suffix of a user's picture page, beside the names of the sections of their settings. */
+private const val PICTURE_ITEM = "picture"

@@ -50,6 +50,20 @@ class ActivityViewModelTest {
         settled { it is ActivityUiState.Ready && check(it) } as ActivityUiState.Ready
 
     @Test
+    fun `an entry carries the user it is about, and none for a blank or all-zero id`() {
+        jellyfin.activityEntries =
+            listOf(
+                """{"Id":9,"Name":"A","Type":"SessionStarted","UserId":"0f8fad5bd9cb469fa16570867728950e"}""",
+                """{"Id":8,"Name":"B","Type":"SessionStarted","UserId":"00000000000000000000000000000000"}""",
+                """{"Id":7,"Name":"C","Type":"SessionStarted","UserId":"00000000-0000-0000-0000-000000000000"}""",
+                """{"Id":6,"Name":"D","Type":"SessionStarted","UserId":""}""",
+                """{"Id":5,"Name":"E","Type":"SessionStarted"}""",
+            )
+        val entries = made(ActivityViewModel(connection, pageSize = 10)).ready().entries
+        assertEquals(listOf<String?>("0f8fad5bd9cb469fa16570867728950e", null, null, null, null), entries.map { it.userId })
+    }
+
+    @Test
     fun `reads the newest page, then the next, until the end`() {
         val vm = made(ActivityViewModel(connection, pageSize = 2))
         val first = vm.ready()

@@ -200,6 +200,8 @@ data class LiveTvGuideActions(
     val onFinishSetup: (String) -> Unit = {},
     val onChangeLineup: (String) -> Unit = {},
     val onChangeLogin: (id: String, username: String) -> Unit = { _, _ -> },
+    /** Opens the channel mappings of a provider; null where the user may not (the server takes administrators only). */
+    val onChannelMappings: ((String) -> Unit)? = null,
     val onEdit: (GuideProviderSummary) -> Unit = {},
     val onSave: (GuideForm) -> Unit = {},
     val onDismissForm: () -> Unit = {},

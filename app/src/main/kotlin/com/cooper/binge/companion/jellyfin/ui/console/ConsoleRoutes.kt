@@ -30,6 +30,7 @@ internal fun ConsolePageRoute(
     open: (ConsolePage) -> Unit = {},
     actions: Actions = Actions(),
     openItem: (String) -> Unit = {},
+    openPageItem: (ConsolePage, String) -> Unit = { _, _ -> },
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
@@ -41,7 +42,15 @@ internal fun ConsolePageRoute(
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
         ConsolePage.Libraries -> LibrariesRoute(graph, openItem, close)
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
-        ConsolePage.Activity -> ActivityRoute(graph, signedIn.profile, close)
+        ConsolePage.Activity -> {
+            val openUser = { id: String -> openPageItem(ConsolePage.Users, userItem(id)) }
+            ActivityRoute(
+                graph,
+                signedIn.profile,
+                openUser.takeIf { ConsolePage.Users.available(signedIn.profile, signedIn.account) },
+                close,
+            )
+        }
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
@@ -69,6 +78,7 @@ internal fun ConsolePageRoute(
                     open(ConsolePage.Tasks)
                 }.takeIf { ConsolePage.Tasks.available(signedIn.profile, signedIn.account) },
                 { open(ConsolePage.LiveTvRecording) }.takeIf { ConsolePage.LiveTvRecording.available(signedIn.profile, signedIn.account) },
+                openItem.takeIf { signedIn.account.isAdministrator },
                 close,
             )
         ConsolePage.LiveTvRecording -> LiveTvRecordingRoute(graph, close)
@@ -145,13 +155,19 @@ private fun HomeLayoutRoute(
 
 /** The profile picture page: the system photo picker feeds the view model the picked file's bytes. */
 @Composable
-private fun ProfilePictureRoute(
+internal fun ProfilePictureRoute(
     graph: AppGraph,
     newRoute: Boolean,
     onBack: () -> Unit,
+    /** Another user's id and name, for an administrator on that user's page; null is the signed-in user's own. */
+    userId: String? = null,
+    name: String? = null,
 ) {
     val picture: ProfilePictureViewModel =
-        viewModel(factory = viewModelFactory { initializer { ProfilePictureViewModel(graph.connection, newRoute) } })
+        viewModel(
+            key = "profile-picture:${userId.orEmpty()}",
+            factory = viewModelFactory { initializer { ProfilePictureViewModel(graph.connection, newRoute, userId) } },
+        )
     val state by picture.state.collectAsStateWithLifecycle()
     val resolver = LocalContext.current.applicationContext.contentResolver
     val picker =
@@ -168,6 +184,7 @@ private fun ProfilePictureRoute(
             onRetry = picture::load,
             onBack = onBack,
         ),
+        other = name,
     )
 }
 
@@ -225,6 +242,7 @@ private fun TasksRoute(
 private fun ActivityRoute(
     graph: AppGraph,
     profile: JellyfinServerProfile,
+    onOpenUser: ((String) -> Unit)?,
     onBack: () -> Unit,
 ) {
     val activity: ActivityViewModel = viewModel(factory = viewModelFactory { initializer { ActivityViewModel(graph.connection) } })
@@ -236,6 +254,7 @@ private fun ActivityRoute(
             onRefresh = activity::refresh,
             onLoadMore = activity::loadMore,
             onOpen = activity::open,
+            onOpenUser = onOpenUser,
             onRetry = activity::load,
             onBack = onBack,
         ),

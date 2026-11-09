@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
@@ -26,8 +27,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.clockHoursText
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
@@ -67,6 +71,7 @@ import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.strings
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import java.util.Locale
 import com.binge.designsystem.R as DesR
 
 @Composable
@@ -328,6 +333,8 @@ private fun ScheduleGroup(
     onEdit: (AccessSchedule) -> Unit,
     onAdd: () -> Unit,
 ) {
+    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
     ItemGroup(
         title = stringResource(R.string.users_schedules),
         rows =
@@ -338,8 +345,8 @@ private fun ScheduleGroup(
                         stringResource(
                             R.string.users_schedule_row,
                             stringResource(dayLabel(schedule.day)),
-                            hours(schedule.startHour),
-                            hours(schedule.endHour),
+                            clockHoursText(schedule.startHour, is24Hour, locale),
+                            clockHoursText(schedule.endHour, is24Hour, locale),
                         ),
                     destination = ListItemDestination.Action,
                     onClick = { onEdit(schedule) },

@@ -7,20 +7,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertIsNotFocused
-import androidx.compose.ui.test.assertIsNotSelected
-import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.TICKS_PER_HOUR
@@ -72,80 +65,37 @@ class AddTriggerFormTest {
         assertEquals(108_000_000_000L, trigger(limitHours = 3).maxRuntimeTicks)
     }
 
-    /** The x-centre of the time-of-day fields and of the time limit's readout below them, in pixels, as drawn. */
-    private fun centres(kind: TriggerKind): Pair<Float, Float> {
-        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), kind) } }
-        val time = compose.onNodeWithTag(TRIGGER_TIME_TAG).getUnclippedBoundsInRoot()
-        val limit = compose.onNodeWithText("No limit").getUnclippedBoundsInRoot()
-        return (time.left + time.right).value / 2 to (limit.left + limit.right).value / 2
+    @Test
+    fun `the daily trigger shows its time in the phone's clock format, and Add sends it`() {
+        val added = mutableListOf<TaskTrigger>()
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(onAddTrigger = { added += it }), is24Hour = true) } }
+        compose.onNodeWithTag(TRIGGER_TIME_TAG).assertIsDisplayed()
+        compose.onNodeWithText("03:00").assertIsDisplayed()
+        compose.onNodeWithText("Add").performClick()
+        assertEquals(listOf(TaskTrigger.daily(3 * TICKS_PER_HOUR)), added)
     }
 
     @Test
-    fun `the time fields share an axis with the time limit on the daily and weekly forms`() {
-        listOf(TriggerKind.Daily, TriggerKind.Weekly).forEach { kind ->
-            val (time, limit) = centres(kind)
-            assertEquals("$kind", limit, time, 1f)
-            compose.scenario.recreate()
-        }
+    fun `a twelve hour phone reads the time with a period, and the row opens the picker`() {
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = false) } }
+        compose.onNodeWithText("OK").assertDoesNotExist()
+        compose.onNodeWithText("Time").performClick()
+        compose.onNodeWithText("OK").assertIsDisplayed()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithText("OK").assertDoesNotExist()
     }
 
     @Test
     @Config(fontScale = 2f)
-    fun `and at twice the font size`() {
-        val (time, limit) = centres(TriggerKind.Daily)
-        assertEquals(limit, time, 1f)
-    }
-
-    @Test
-    @Config(fontScale = 1.5f)
-    fun `and at one and a half times`() {
-        val (time, limit) = centres(TriggerKind.Weekly)
-        assertEquals(limit, time, 1f)
-    }
-
-    @Test
-    fun `the p m chip makes the daily trigger an afternoon one, and an hour out of range stops Add`() {
-        val added = mutableListOf<TaskTrigger>()
-        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(onAddTrigger = { added += it }), is24Hour = false) } }
-        compose.onNodeWithText("p.m.").performClick()
-        compose.onNodeWithText("Add").performClick()
-        assertEquals(listOf(TaskTrigger.daily(15 * TICKS_PER_HOUR)), added)
-        compose.onNodeWithText("03").performTextReplacement("13")
-        compose.onNodeWithText("Enter a valid time.").assertIsDisplayed()
-        compose.onNodeWithText("Add").assertIsNotEnabled()
-        compose.onNodeWithText("13").performTextReplacement("")
-        compose.onNodeWithText("Enter a valid time.").assertIsDisplayed()
-        compose.onNodeWithText("Add").assertIsNotEnabled()
-    }
-
-    @Test
-    fun `the hour and minute fields are labelled for TalkBack, and the chosen period is announced as selected`() {
-        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = false) } }
-        // A field's label is part of the node a screen reader reads, so each field is named, not just "edit box".
-        compose.onNode(hasSetTextAction() and hasText("Hour")).assertIsDisplayed()
-        compose.onNode(hasSetTextAction() and hasText("Minute")).assertIsDisplayed()
-        compose.onNodeWithText("a.m.").assertIsSelected()
-        compose.onNodeWithText("p.m.").assertIsNotSelected()
-        compose.onNodeWithText("p.m.").performClick()
-        compose.onNodeWithText("p.m.").assertIsSelected()
-        compose.onNodeWithText("a.m.").assertIsNotSelected()
-    }
-
-    @Test
-    fun `a twenty four hour device uses numeric fields without a period`() {
-        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = true) } }
-        compose.onNodeWithText("p.m.").assertDoesNotExist()
+    fun `the time row is in view at twice the font size`() {
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), TriggerKind.Weekly, is24Hour = true) } }
         compose.onNodeWithTag(TRIGGER_TIME_TAG).assertIsDisplayed()
     }
 
     @Test
-    fun `opening either clock format leaves both fields unfocused`() {
-        listOf(false, true).forEach { is24 ->
-            compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), is24Hour = is24) } }
-            compose.onNode(hasSetTextAction() and hasText("Hour")).assertIsNotFocused()
-            compose.onNode(hasSetTextAction() and hasText("Minute")).assertIsNotFocused()
-            compose.scenario.recreate()
-        }
+    fun `the interval and startup kinds have no time row`() {
+        compose.setContent { JellyfinTheme { AddTriggerForm(TasksActions(), TriggerKind.Interval) } }
+        compose.onNodeWithTag(TRIGGER_TIME_TAG).assertDoesNotExist()
     }
 
     @Test
