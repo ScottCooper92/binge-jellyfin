@@ -3,6 +3,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Surface
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -77,6 +79,55 @@ class NumberSliderSheetTest {
         assertEquals(listOf<Int?>(90), saved)
         compose.onNodeWithContentDescription("Increase Refresh metadata").performClick()
         assertEquals(listOf(90, null), saved)
+    }
+
+    private val autoChanges = mutableListOf<Boolean>()
+
+    private fun showWithAuto(
+        value: Int?,
+        auto: Boolean,
+    ) = compose.setContent {
+        JellyfinTheme {
+            Surface {
+                NumberSliderContent(
+                    title = "Encoding threads",
+                    value = value,
+                    range = 1..16,
+                    format = { "$it" },
+                    openEndLabel = "All available",
+                    onSave = { saved += it },
+                    auto = AutoOption("Auto", auto) { autoChanges += it },
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `with auto on the slider is dimmed and nothing is saved`() {
+        showWithAuto(null, auto = true)
+        compose.onNodeWithContentDescription("Increase Encoding threads").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Decrease Encoding threads").assertIsNotEnabled()
+        assertTrue(saved.isEmpty() && autoChanges.isEmpty())
+    }
+
+    @Test
+    fun `turning auto off is saved at once by the caller and leaves the slider at its open end`() {
+        showWithAuto(null, auto = true)
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(false), autoChanges)
+        compose.onNodeWithText("All available").assertIsDisplayed()
+        assertTrue(saved.isEmpty())
+        compose.onNodeWithContentDescription("Decrease Encoding threads").assertIsEnabled()
+    }
+
+    @Test
+    fun `turning auto on is saved at once, and a number set with it off is saved by the slider`() {
+        showWithAuto(4, auto = false)
+        compose.onNodeWithContentDescription("Increase Encoding threads").performClick()
+        assertEquals(listOf<Int?>(5), saved)
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(true), autoChanges)
+        assertEquals(listOf<Int?>(5), saved)
     }
 
     @Test

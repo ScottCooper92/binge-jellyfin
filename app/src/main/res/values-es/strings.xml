@@ -768,7 +768,7 @@
     <string name="transcoding_h265_crf">Calidad H.265 (CRF)</string>
     <string name="transcoding_muxing_queue">Tamaño máximo de la cola de multiplexación</string>
     <string name="transcoding_auto">Automático</string>
-    <string name="transcoding_threads_max">Máximo</string>
+    <string name="transcoding_threads_max">Todos los disponibles</string>
     <string name="transcoding_none">Ninguno</string>
     <string name="transcoding_deinterlace">Método de desentrelazado</string>
     <string name="transcoding_double_rate">Duplicar la tasa de fotogramas</string>

@@ -1034,7 +1034,7 @@ app:transcoding_streaming  a951c5945635
 app:transcoding_subtitles  0ee695bdeb26
 app:transcoding_temp_path  2d9eae99c2f6
 app:transcoding_threads  3f55eb7915dd
-app:transcoding_threads_max  a1a5936d3b0f
+app:transcoding_threads_max  d103da50b4c4
 app:transcoding_throttle  835ef8c92fa4
 app:transcoding_throttle_delay  f13b14c0a7af
 app:transcoding_throttle_detail  9b248f31a28b

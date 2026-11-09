@@ -41,9 +41,9 @@ import com.cooper.binge.companion.jellyfin.server.string
 import kotlinx.serialization.json.JsonPrimitive
 
 private const val AUTO_THREADS = -1
-private const val MAX_THREADS = 16
+private val THREAD_RANGE = 1..16
 
-/** The server stores 0 for "Max". */
+/** The server stores 0 for every thread available. */
 private const val MAX_THREAD_COUNT = 0
 private const val PATH_LINES = 2
 
@@ -287,13 +287,19 @@ internal fun TranscodingPickerSheet(
             }
         TranscodingPicker.Threads -> {
             val current = config.int(ENCODING_THREADS) ?: AUTO_THREADS
-            val all = (listOf(AUTO_THREADS) + (1..MAX_THREADS) + MAX_THREAD_COUNT + current).distinct()
-            BingeChoiceSheet(
+            NumberSliderSheet(
                 title = stringResource(R.string.transcoding_threads),
-                choices = BingeChoiceList.Ready(all.map { BingeChoice(it.toString(), threadsLabel(it)) }),
-                selected = current.toString(),
-                onSelect = { value -> value.toIntOrNull()?.let { actions.onEncoding(ENCODING_THREADS, JsonPrimitive(it)) } },
-                onDismissRequest = onDismiss,
+                // Auto (-1) and every available (0) are not numbers: the first is the switch, the second the slider's open end.
+                value = current.takeIf { it > 0 },
+                range = THREAD_RANGE,
+                format = { it.toString() },
+                openEndLabel = threadsLabel(MAX_THREAD_COUNT),
+                onSave = { threads -> actions.onEncoding(ENCODING_THREADS, JsonPrimitive(threads ?: MAX_THREAD_COUNT)) },
+                onDismiss = onDismiss,
+                auto =
+                    AutoOption(stringResource(R.string.transcoding_auto), current < 0) { on ->
+                        actions.onEncoding(ENCODING_THREADS, JsonPrimitive(if (on) AUTO_THREADS else MAX_THREAD_COUNT))
+                    },
             )
         }
     }
