@@ -176,7 +176,9 @@ class UsersViewModelTest {
         assertEquals("3", saved.getValue("MaxActiveSessions").jsonPrimitive.content)
         vm.setLibrary("lib-movies", false)
         vm.setAllLibraries(true)
-        awaitPolicy { it.getValue("EnableAllFolders").jsonPrimitive.content == "true" }
+        awaitPolicy {
+            it.getValue("EnableAllFolders").jsonPrimitive.content == "true"
+        }
         assertEquals("true", policy("user-2").getValue("EnableAllFolders").jsonPrimitive.content)
         assertEquals("[\"lib-shows\"]", policy("user-2").getValue("EnabledFolders").toString())
     }
