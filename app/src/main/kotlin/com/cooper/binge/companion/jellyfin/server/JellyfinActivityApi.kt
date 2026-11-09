@@ -66,6 +66,7 @@ enum class ActivityWho { Anyone, System, Users }
  * [ActivityWho.System] and [ActivityWho.Users]; the end time ([toMillis]), one [username], a [severity] and a [type] need Jellyfin 12
  * (`JellyfinServerProfile.hasActivityFilters`), and an older server ignores them, so the page does not offer them there.
  * [preset] is the span [fromMillis] was worked out from, for the chip that says so; it is null for a range the user picked.
+ * The server matches [username] and [type] as text they *contain* (`LIKE %text%`), not exactly, so "sam" also finds "samantha"; the severity is exact.
  */
 data class ActivityFilter(
     val fromMillis: Long? = null,

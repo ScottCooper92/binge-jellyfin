@@ -24,7 +24,7 @@ private val applied =
         who = ActivityWho.Users,
         username = "alice",
         severity = Severity.Warning,
-        type = "VideoPlaybackStopped",
+        type = "PlaybackStopped",
     )
 
 private val draft = ActivityFilter(fromMillis = NOW - 604_800_000L, preset = ActivityTimePreset.Last7Days, severity = Severity.Error)

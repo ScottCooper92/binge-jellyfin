@@ -35,7 +35,7 @@ class ActivityFiltersScreenTest {
             who = ActivityWho.Users,
             username = "alice",
             severity = Severity.Warning,
-            type = "VideoPlayback",
+            type = "PlaybackStopped",
         )
 
     private fun show(
@@ -61,7 +61,7 @@ class ActivityFiltersScreenTest {
         compose.onNodeWithText("Last 7 days").assertIsDisplayed()
         compose.onNodeWithText("alice").assertIsDisplayed()
         compose.onNodeWithText("Warnings").assertIsDisplayed()
-        compose.onNodeWithText("Video playback").assertIsDisplayed()
+        compose.onNodeWithText("Playback stopped").assertIsDisplayed()
         compose.onNodeWithContentDescription("Filters, 4 active").assertIsDisplayed()
     }
 

@@ -319,7 +319,11 @@ internal fun SeverityPage(
     )
 }
 
-/** The types the page has icons for: sign-ins, playback, tasks, plugins, subtitles and the changes to users. */
+/**
+ * The types the page has icons for: sign-ins, playback, tasks, plugins, subtitles and the changes to users. The server matches a type
+ * (and a username) as text it *contains*, so a type that is part of another one also finds it: `Playback` finds every kind of playback
+ * and `PlaybackStopped` only the stops, where `VideoPlayback` would also find `VideoPlaybackStopped`. Each type here is not part of another.
+ */
 internal val ACTIVITY_TYPES =
     listOf(
         "SessionStarted",
@@ -329,10 +333,8 @@ internal val ACTIVITY_TYPES =
         "UserCreated",
         "UserDeleted",
         "UserPasswordChanged",
-        "VideoPlayback",
-        "VideoPlaybackStopped",
-        "AudioPlayback",
-        "AudioPlaybackStopped",
+        "Playback",
+        "PlaybackStopped",
         "ScheduledTaskFailed",
         "PluginInstalled",
         "PluginUninstalled",
