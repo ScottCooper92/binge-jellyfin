@@ -170,14 +170,3 @@ private fun FolderList(
         ItemGroup(title = null, rows = rows)
     }
 }
-
-/**
- * The drag handle for a step of a docking sheet that has no docking header of its own (a name, a typed path): the
- * handle, which docks into a bar titled [title] if the sheet is pulled to full height. A docking sheet draws no handle
- * itself, so without this such a step has none, and loses the handle's tap and screen-reader actions. It draws nothing
- * outside a docking sheet.
- */
-@Composable
-internal fun StepDockHandle(title: String) {
-    BingeSheetDockingHeader(header = {}, dockedTopBar = { onClose -> BingeSheetTopBar(title = title, onClose = onClose) })
-}
