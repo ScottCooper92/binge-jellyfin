@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeChoice
@@ -92,8 +93,8 @@ import com.cooper.binge.companion.jellyfin.server.tagDelimiters
 /** The choices a library's page opens in a sheet. */
 internal enum class LibraryPicker { Language, Country, Refresh, EmbeddedSubtitles }
 
-/** The refresh intervals offered, in days; 0 is never. The library's own is offered too, if it is another. */
-private val REFRESH_PRESETS = listOf(0, 7, 14, 30, 60, 90)
+/** The refresh intervals the slider spans, in days; the stop past it is never, which the server stores as 0. A library's own, if beyond, reads as stored. */
+private val REFRESH_DAYS = 1..90
 
 /** A switch row for a library option, off when the library doesn't have the key. */
 @Composable
@@ -518,15 +519,15 @@ internal fun LibraryPickerSheet(
                 onDismissRequest = onDismiss,
             )
         LibraryPicker.Refresh -> {
-            val current = state.options.int(LIBRARY_REFRESH_DAYS) ?: 0
-            val choices =
-                (REFRESH_PRESETS + current).distinct().sorted().map { BingeChoice(it.toString(), refreshLabel(it)) }
-            BingeChoiceSheet(
+            val resources = LocalContext.current.resources
+            NumberSliderSheet(
                 title = stringResource(R.string.library_refresh),
-                choices = BingeChoiceList.Ready(choices),
-                selected = current.toString(),
-                onSelect = { value -> value.toIntOrNull()?.let(actions.onDays) },
-                onDismissRequest = onDismiss,
+                value = (state.options.int(LIBRARY_REFRESH_DAYS) ?: 0).takeIf { it > 0 },
+                range = REFRESH_DAYS,
+                format = { resources.getQuantityString(R.plurals.library_every_days, it, it) },
+                openEndLabel = stringResource(R.string.library_never),
+                onSave = { days -> actions.onDays(days ?: 0) },
+                onDismiss = onDismiss,
             )
         }
     }
