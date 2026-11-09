@@ -570,6 +570,35 @@ class ConsoleScreensTest {
     }
 
     @Test
+    fun `an entry about a user offers Open user only where the page can be opened, and it closes the sheet first`() {
+        val entry = ActivityEntry(4, "sam signed in", null, "SessionStarted", 1_700_000_000_000L, Severity.Information, userId = "u7")
+        val order = mutableListOf<String>()
+        var withAction by mutableStateOf(true)
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), total = 1, open = 4))
+        compose.setContent {
+            JellyfinTheme {
+                ActivityScreen(
+                    state,
+                    ActivityActions(
+                        onOpen = { order += "close" },
+                        onOpenUser = { id: String -> order += "open $id" }.takeIf { withAction },
+                    ),
+                    zone = java.time.ZoneOffset.UTC,
+                )
+            }
+        }
+        compose.onNodeWithText("Open user").performClick()
+        assertEquals(listOf("close", "open u7"), order)
+        withAction = false
+        compose.waitForIdle()
+        compose.onNodeWithText("Open user").assertDoesNotExist()
+        withAction = true
+        state = ActivityUiState.Ready(listOf(entry.copy(userId = null)), total = 1, open = 4)
+        compose.waitForIdle()
+        compose.onNodeWithText("Open user").assertDoesNotExist()
+    }
+
+    @Test
     fun `activity groups by day, marks errors, and asks for more at the end`() {
         var more = 0
         val now = 1_793_570_400_000L
@@ -938,7 +967,7 @@ class ConsoleScreensTest {
         assertEquals(listOf(1), removed)
         compose.onNodeWithText("Add trigger").performClick()
         compose.onNodeWithText("New trigger").assertExists()
-        compose.onNodeWithText("Every so often").performClick()
+        compose.onNodeWithText("Every so often").performScrollTo().performClick()
         compose
             .onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress) and hasContentDescription("Time limit"))
             .performScrollTo()
@@ -1225,6 +1254,23 @@ class ConsoleScreensTest {
         compose.onNodeWithText("This is you. Another admin can change these.").assertExists()
         compose.onNodeWithText("Can sign in").assertDoesNotExist()
         compose.onNodeWithText("Delete user").assertDoesNotExist()
+    }
+
+    @Test
+    fun `another user's page offers their picture`() {
+        val state = UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "sam")
+        var opened = 0
+        compose.setContent { JellyfinTheme { UserScreen(state, "sam", UsersActions(onPicture = { opened++ })) } }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Profile picture"))
+        compose.onNodeWithText("Profile picture").performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `your own user page has no picture row, as it is in your account`() {
+        val state = UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "me")
+        compose.setContent { JellyfinTheme { UserScreen(state, "me", UsersActions()) } }
+        compose.onNodeWithText("Profile picture").assertDoesNotExist()
     }
 
     @Test

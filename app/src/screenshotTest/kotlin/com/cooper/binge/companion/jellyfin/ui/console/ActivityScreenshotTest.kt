@@ -111,4 +111,10 @@ class ActivityScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun detailBare() = ActivityDetailContent(previewEntries[3], ZoneOffset.UTC) {}
+
+    /** An entry about a user, for an administrator: the sheet offers Open user. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun detailWithUser() = ActivityDetailContent(previewDetailEntry.copy(userId = "u7"), ZoneOffset.UTC, onOpenUser = {}) {}
 }

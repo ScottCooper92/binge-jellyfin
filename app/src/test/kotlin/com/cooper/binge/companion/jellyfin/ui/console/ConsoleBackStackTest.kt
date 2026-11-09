@@ -145,6 +145,17 @@ class ConsoleBackStackTest {
     }
 
     @Test
+    fun `a page's item opens from another page, over a page of its own, and Back returns one step at a time`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Activity).openPageItem(ConsolePage.Users, "user:7")
+        assertEquals(listOf(ConsolePage.Activity, ConsolePage.Users, ConsolePage.Users), stack.pages())
+        assertEquals(listOf(null, null, "user:7"), stack.entries.map { it.item })
+        assertEquals(stack.entries[1].opening, stack.entries[2].opening)
+        assertEquals("user:7", stack.topItem?.item)
+        assertEquals(listOf(ConsolePage.Activity, ConsolePage.Users), stack.back().pages())
+        assertEquals(listOf(ConsolePage.Activity), stack.back().back().pages())
+    }
+
+    @Test
     fun `with no page open there is nowhere to open an item`() {
         val empty = ConsoleBackStack()
         assertSame(empty, empty.openItem("scan"))

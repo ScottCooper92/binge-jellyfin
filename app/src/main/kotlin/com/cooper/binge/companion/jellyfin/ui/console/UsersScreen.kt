@@ -65,6 +65,8 @@ data class UsersActions(
     val onList: (key: String, change: (List<JsonElement>) -> List<JsonElement>) -> Unit = { _, _ -> },
     /** Opens a section of the user's settings over their screen. */
     val onSection: (UserSection) -> Unit = {},
+    /** Opens the picture page of the user whose screen it is. */
+    val onPicture: () -> Unit = {},
     val onChoicesRetry: (UserSection) -> Unit = {},
     val onCreate: (String, String) -> Unit = { _, _ -> },
     val onSetPassword: (String) -> Unit = {},
@@ -329,7 +331,7 @@ private fun UserPage(
             )
         }
         item { LibraryAccess(state, user, actions) }
-        item { ItemGroup(title = stringResource(R.string.users_settings), rows = sectionRows(user, actions)) }
+        item { ItemGroup(title = stringResource(R.string.users_settings), rows = sectionRows(user, actions, mine)) }
         if (!mine) {
             item {
                 ItemGroup(

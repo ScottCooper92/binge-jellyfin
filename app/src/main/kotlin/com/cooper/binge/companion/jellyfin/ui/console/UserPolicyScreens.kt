@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.LiveTv
@@ -125,11 +126,24 @@ private fun UserSection.keys(): List<String> =
 internal fun sectionRows(
     user: ServerUser,
     actions: UsersActions,
+    mine: Boolean = false,
 ): List<ListItem> =
     UserSection.entries
         .filter { section -> section.keys().any { user.policy.has(it) } }
         .map { section ->
             ListItem(icon = section.icon(), label = stringResource(section.title()), onClick = { actions.onSection(section) })
+        }.let { rows ->
+            // The signed-in user's own picture is in their account; this is for an administrator setting someone else's.
+            if (mine) {
+                rows
+            } else {
+                rows +
+                    ListItem(
+                        icon = Icons.Outlined.AddPhotoAlternate,
+                        label = stringResource(R.string.profile_picture_title),
+                        onClick = actions.onPicture,
+                    )
+            }
         }
 
 /** One section of a user's settings, as a page of its own. [mine] is the signed-in user's own page. */

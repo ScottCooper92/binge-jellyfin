@@ -56,6 +56,18 @@ class ProfilePictureScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
+    fun otherUser() =
+        ProfilePictureScreen(ProfilePictureUiState.Ready(picture = profilePictureFixture), ProfilePictureActions(), other = "Sam")
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun removingOther() = Surface { RemovePictureDialog(ProfilePictureActions(), inWindow = false, other = "Sam") }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
     fun removing() = Surface { RemovePictureDialog(ProfilePictureActions(), inWindow = false) }
 
     @PreviewTest

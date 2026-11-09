@@ -222,6 +222,7 @@ private fun ConsoleHost(
                     actions.onOpenPage,
                     actions,
                     { onStack(latest.openItem(it)) },
+                    { page, item -> onStack(latest.openPageItem(page, item)) },
                 )
             }
         },

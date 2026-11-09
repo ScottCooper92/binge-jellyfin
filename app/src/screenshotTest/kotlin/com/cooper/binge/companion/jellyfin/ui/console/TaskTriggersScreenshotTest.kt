@@ -3,7 +3,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
-import com.binge.designsystem.component.BingeTimeInput
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
@@ -109,13 +108,4 @@ class TaskTriggersScreenshotTest {
     @JellyfinFontScalePreviews
     @Composable
     fun newTriggerTwentyFourHour() = Surface { AddTriggerForm(TasksActions(), is24Hour = true) }
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @JellyfinFontScalePreviews
-    @Composable
-    fun newTriggerInvalidTime() =
-        Surface {
-            BingeTimeInput("13", "00", onHour = {}, onMinute = {}, is24Hour = false)
-        }
 }

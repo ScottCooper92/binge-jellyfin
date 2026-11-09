@@ -16,6 +16,7 @@ internal fun LiveTvRoute(
     account: JellyfinAccount,
     onOpenTasks: (() -> Unit)?,
     onOpenRecording: (() -> Unit)?,
+    onOpenMappings: ((String) -> Unit)?,
     onBack: () -> Unit,
 ) {
     val liveTv: LiveTvViewModel =
@@ -86,6 +87,13 @@ internal fun LiveTvRoute(
                     guide.dismissForm()
                     sd.editLogin(id, username)
                 },
+                onChannelMappings =
+                    onOpenMappings?.let { open ->
+                        { id ->
+                            guide.dismissForm()
+                            open(id)
+                        }
+                    },
                 onEdit = guide::edit,
                 onSave = guide::save,
                 onDismissForm = guide::dismissForm,

@@ -289,6 +289,21 @@ class FakeJellyfin : Dispatcher() {
     /** The tuners `GET /LiveTv/Tuners/Discover` finds. */
     var discoveredTuners = """[{"Type":"hdhomerun","Url":"http://192.168.1.77","FriendlyName":"HDHomeRun PRIME","DeviceId":"1070A1B2"}]"""
 
+    /**
+     * What `/LiveTv/ChannelMappingOptions` answers: three guide channels and three tuner channels, the first two paired by the
+     * server (the second by a mapping an administrator made, the first by name). `POST /LiveTv/ChannelMappings` changes it.
+     */
+    var channelMappingOptions =
+        """{"ProviderName":"XMLTV","ProviderChannels":[{"Name":"BBC One","Id":"p1"},{"Name":"BBC Two","Id":"p2"},""" +
+            """{"Name":"ITV","Id":"p3"}],""" +
+            """"TunerChannels":[{"Name":"101 BBC One HD","ProviderChannelName":"BBC One","ProviderChannelId":"p1","Id":"c1"},""" +
+            """{"Name":"102 BBC Two HD","ProviderChannelName":"BBC Two","ProviderChannelId":"p2","Id":"c2"},""" +
+            """{"Name":"103 ITV HD","Id":"c3"}],""" +
+            """"Mappings":[{"Name":"c2","Value":"p2"}]}"""
+
+    /** The status the two channel mapping calls answer with, 200 when they work. */
+    var channelMappingStatus = 200
+
     /** What `/LiveTv/GuideInfo` answers, or the status code that replaces it. */
     var guideInfo = """{"StartDate":"2026-11-01T00:00:00.0000000Z","EndDate":"2026-11-08T00:00:00.0000000Z"}"""
     var guideInfoStatus = 200
@@ -586,7 +601,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 503)
             }
             path == "/System/Info" -> json(systemInfo)
-            path == "/UserImage" || path == "/Users/user-1/Images/Primary" -> userImage(request)
+            path == "/UserImage" || OLD_USER_IMAGE.matches(path) -> userImage(request)
             path == "/Branding/Splashscreen" -> splashscreen(request)
             path == "/Items/Counts" -> json(itemCounts)
             path == "/System/Configuration/network" && request.method == "POST" -> {
@@ -699,6 +714,9 @@ class FakeJellyfin : Dispatcher() {
                 json(
                     """[{"Name":"G","Value":1,"RatingScore":{"score":1,"subScore":0}},{"Name":"PG","Value":5,"RatingScore":{"score":5,"subScore":2}},{"Name":"R","Value":9}]""",
                 )
+            path == "/LiveTv/ChannelMappingOptions" ->
+                if (channelMappingStatus == 200) json(channelMappingOptions) else MockResponse(code = channelMappingStatus)
+            path == "/LiveTv/ChannelMappings" && request.method == "POST" -> saveChannelMapping(request.body?.utf8().orEmpty())
             path == "/LiveTv/Channels" ->
                 json(
                     """{"Items":[{"Id":"ch-1","Name":"News"},{"Id":"ch-2","Name":"Sport"}],"TotalRecordCount":2}""",
@@ -1252,6 +1270,29 @@ class FakeJellyfin : Dispatcher() {
                     ?: MockResponse(code = 404)
         }
 
+    /** Pairs a tuner channel with a provider channel in [channelMappingOptions] and answers with the tuner channel, as the server does. */
+    private fun saveChannelMapping(body: String): MockResponse {
+        if (channelMappingStatus != 200) return MockResponse(code = channelMappingStatus)
+        val dto = Json.parseToJsonElement(body).jsonObject
+        val tunerId = dto.getValue("TunerChannelId").jsonPrimitive.content
+        val providerChannelId = dto.getValue("ProviderChannelId").jsonPrimitive.content
+        val options = Json.parseToJsonElement(channelMappingOptions).jsonObject
+        var saved = JsonObject(emptyMap())
+        val tuners =
+            options.getValue("TunerChannels").jsonArray.map { channel ->
+                if (channel.jsonObject
+                        .getValue("Id")
+                        .jsonPrimitive.content != tunerId
+                ) {
+                    channel
+                } else {
+                    JsonObject(channel.jsonObject + ("ProviderChannelId" to JsonPrimitive(providerChannelId))).also { saved = it }
+                }
+            }
+        channelMappingOptions = JsonObject(options + ("TunerChannels" to JsonArray(tuners))).toString()
+        return json(saved.toString())
+    }
+
     private fun json(body: String): MockResponse =
         MockResponse
             .Builder()
@@ -1361,6 +1402,9 @@ fun FakeJellyfin.session(): JellyfinSession =
         userName = "Claude",
         token = "token-1",
     )
+
+/** The user image's route before 10.9, for any user. */
+private val OLD_USER_IMAGE = Regex("/Users/[^/]+/Images/Primary")
 
 /** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
 private const val HOLD_LIMIT_SECONDS = 20L
