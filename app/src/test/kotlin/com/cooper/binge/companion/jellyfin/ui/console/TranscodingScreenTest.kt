@@ -193,9 +193,9 @@ class TranscodingScreenTest {
     }
 
     @Test
-    fun `zero threads reads as Max, not as 0`() {
+    fun `zero threads reads as all available, not as 0`() {
         show("nvenc", "10.11.6", threads = 0)
-        compose.onNodeWithText("Max").performScrollTo().assertExists()
+        compose.onNodeWithText("All available").performScrollTo().assertExists()
     }
 
     @Test
