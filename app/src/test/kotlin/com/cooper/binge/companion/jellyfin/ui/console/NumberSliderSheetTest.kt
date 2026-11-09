@@ -2,6 +2,10 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -110,7 +114,7 @@ class NumberSliderSheetTest {
     @Test
     fun `a release between two stops saves the number the label shows, high`() = releaseAt(0.678f)
 
-    private val autoChanges = mutableListOf<Boolean>()
+    private val autoChanges = mutableListOf<Pair<Boolean, Int?>>()
 
     private fun showWithAuto(
         value: Int?,
@@ -125,7 +129,7 @@ class NumberSliderSheetTest {
                     format = { "$it" },
                     openEndLabel = "All available",
                     onSave = { saved += it },
-                    auto = AutoOption("Auto", auto) { autoChanges += it },
+                    auto = AutoOption("Auto", auto) { on, number -> autoChanges += on to number },
                 )
             }
         }
@@ -143,7 +147,7 @@ class NumberSliderSheetTest {
     fun `turning auto off is saved at once by the caller and leaves the slider at its open end`() {
         showWithAuto(null, auto = true)
         compose.onNodeWithText("Auto").performClick()
-        assertEquals(listOf(false), autoChanges)
+        assertEquals(listOf(false to null), autoChanges)
         compose.onNodeWithText("All available").assertIsDisplayed()
         assertTrue(saved.isEmpty())
         compose.onNodeWithContentDescription("Decrease Encoding threads").assertIsEnabled()
@@ -155,8 +159,57 @@ class NumberSliderSheetTest {
         compose.onNodeWithContentDescription("Increase Encoding threads").performClick()
         assertEquals(listOf<Int?>(5), saved)
         compose.onNodeWithText("Auto").performClick()
-        assertEquals(listOf(true), autoChanges)
+        assertEquals(listOf(true to null), autoChanges)
         assertEquals(listOf<Int?>(5), saved)
+    }
+
+    /** A host that does what the Threads page does: auto on has no number, and off saves the one it is handed. */
+    private fun showAsThreads(start: Int?) =
+        compose.setContent {
+            var stored by remember { mutableStateOf(start) }
+            var auto by remember { mutableStateOf(false) }
+            JellyfinTheme {
+                Surface {
+                    NumberSliderContent(
+                        title = "Encoding threads",
+                        value = if (auto) null else stored,
+                        range = 1..16,
+                        format = { "$it" },
+                        openEndLabel = "All available",
+                        onSave = {
+                            saved += it
+                            stored = it
+                        },
+                        auto =
+                            AutoOption("Auto", auto) { on, number ->
+                                autoChanges += on to number
+                                auto = on
+                                if (!on) stored = number
+                            },
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun `auto on keeps the number, and auto off saves it again`() {
+        showAsThreads(4)
+        repeat(2) { compose.onNodeWithContentDescription("Increase Encoding threads").performClick() }
+        assertEquals(listOf<Int?>(5, 6), saved)
+        compose.onNodeWithText("Auto").performClick()
+        compose.onNodeWithText("6").assertIsDisplayed()
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(true to null, false to 6), autoChanges)
+        compose.onNodeWithText("6").assertIsDisplayed()
+    }
+
+    @Test
+    fun `auto off with no number before it lands on all available`() {
+        showAsThreads(null)
+        compose.onNodeWithText("Auto").performClick()
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(true to null, false to null), autoChanges)
+        compose.onNodeWithText("All available").assertIsDisplayed()
     }
 
     @Test

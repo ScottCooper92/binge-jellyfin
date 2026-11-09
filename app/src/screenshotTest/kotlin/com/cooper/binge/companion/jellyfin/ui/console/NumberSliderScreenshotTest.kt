@@ -38,7 +38,7 @@ private fun ThreadsSheet(
             format = { it.toString() },
             openEndLabel = stringResource(R.string.transcoding_threads_max),
             onSave = {},
-            auto = AutoOption(stringResource(R.string.transcoding_auto), auto) {},
+            auto = AutoOption(stringResource(R.string.transcoding_auto), auto) { _, _ -> },
         )
     }
 }

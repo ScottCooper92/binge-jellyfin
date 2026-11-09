@@ -42,13 +42,14 @@ internal fun NumberSliderSheet(
 
 /**
  * A switch above the slider for a value that is not a number, such as the server choosing for itself: [label] names it, [on] says it is
- * set, and [onChange] is called as the switch is flipped, which saves at once. While it is on the slider is dimmed. Turning it off
- * leaves the slider at its open end, which the caller saves.
+ * set, and [onChange] is called as the switch is flipped, which saves at once. While it is on the slider is dimmed and keeps the last
+ * number it showed. Turning the switch off hands [onChange] that number (`null` for the open end, when there was none), which the
+ * caller saves.
  */
 internal data class AutoOption(
     val label: String,
     val on: Boolean,
-    val onChange: (Boolean) -> Unit,
+    val onChange: (on: Boolean, number: Int?) -> Unit,
 )
 
 /** The sheet's body, which draws without a window for a frame. */
@@ -64,6 +65,8 @@ internal fun NumberSliderContent(
 ) {
     // The slider's own value while it moves; it is read when the control lands, so a stepper's tap is saved as it was left.
     var draft by rememberSaveable(value) { mutableStateOf(value) }
+    // The last number the slider showed, kept while auto is on (the caller's value is none then) so that turning auto off restores it.
+    var kept by rememberSaveable { mutableStateOf(value) }
     var isAuto by rememberSaveable(auto?.on) { mutableStateOf(auto?.on == true) }
     Column(
         modifier =
@@ -80,14 +83,17 @@ internal fun NumberSliderContent(
                 checked = isAuto,
                 onCheckedChange = { on ->
                     isAuto = on
-                    if (!on) draft = null
-                    option.onChange(on)
+                    if (!on) draft = kept
+                    option.onChange(on, if (on) null else kept)
                 },
             )
         }
         BingeNumberSlider(
-            value = draft,
-            onValueChange = { draft = it },
+            value = if (isAuto) kept else draft,
+            onValueChange = {
+                draft = it
+                kept = it
+            },
             range = range,
             format = format,
             description = title,

@@ -297,8 +297,9 @@ internal fun TranscodingPickerSheet(
                 onSave = { threads -> actions.onEncoding(ENCODING_THREADS, JsonPrimitive(threads ?: MAX_THREAD_COUNT)) },
                 onDismiss = onDismiss,
                 auto =
-                    AutoOption(stringResource(R.string.transcoding_auto), current < 0) { on ->
-                        actions.onEncoding(ENCODING_THREADS, JsonPrimitive(if (on) AUTO_THREADS else MAX_THREAD_COUNT))
+                    AutoOption(stringResource(R.string.transcoding_auto), current < 0) { on, number ->
+                        // Off restores the number the slider last showed; none, and Jellyfin documents no default, is all available.
+                        actions.onEncoding(ENCODING_THREADS, JsonPrimitive(if (on) AUTO_THREADS else number ?: MAX_THREAD_COUNT))
                     },
             )
         }
