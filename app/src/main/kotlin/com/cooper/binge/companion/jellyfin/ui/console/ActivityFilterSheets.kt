@@ -34,7 +34,6 @@ import com.cooper.binge.companion.jellyfin.server.ActivityTimePreset
 import com.cooper.binge.companion.jellyfin.server.ActivityWho
 import com.cooper.binge.companion.jellyfin.server.Severity
 import java.time.ZoneId
-import java.util.Locale
 import com.binge.designsystem.R as DesR
 
 /** What the activity filter sheet can ask of its view model. */
@@ -43,6 +42,7 @@ data class ActivityFilterActions(
     val onClose: () -> Unit = {},
     val onApply: () -> Unit = {},
     val onClearAll: () -> Unit = {},
+    val onClearDraft: () -> Unit = {},
     val onClear: (ActivityFilterKind) -> Unit = {},
     val onPreset: (ActivityTimePreset?) -> Unit = {},
     val onRange: (from: Long, to: Long?) -> Unit = { _, _ -> },
@@ -115,10 +115,7 @@ internal fun MainPage(
                         icon = Icons.Outlined.Person,
                         label = stringResource(R.string.activity_filter_who),
                         detail = whoSummary(draft),
-                        onClick = {
-                            actions.onLoadUsers()
-                            push(WHO_PAGE)
-                        },
+                        onClick = { push(WHO_PAGE) },
                     ),
                     ListItem(
                         icon = Icons.Outlined.PriorityHigh,
@@ -140,7 +137,7 @@ internal fun MainPage(
         ) {
             BingeTextButton(
                 label = stringResource(R.string.activity_filters_clear),
-                onClick = actions.onClearAll,
+                onClick = actions.onClearDraft,
                 enabled = !draft.isEmpty,
                 modifier = Modifier.weight(1f),
             )
@@ -343,10 +340,6 @@ internal val ACTIVITY_TYPES =
         "SubtitleDownloadFailure",
     )
 
-/** A type's identifier as words: `VideoPlaybackStopped` as "Video playback stopped". The server's names are not translated. */
-internal fun String.typeWords(): String =
-    replace(Regex("(?<=[a-z])(?=[A-Z])"), " ").lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
-
 @Composable
 internal fun TypePage(
     draft: ActivityFilter,
@@ -355,7 +348,7 @@ internal fun TypePage(
 ) {
     val choices =
         listOf(BingeChoice(ANY_CHOICE, stringResource(R.string.activity_type_any), icon = Icons.Outlined.Category)) +
-            ACTIVITY_TYPES.map { BingeChoice(it, it.typeWords(), icon = activityIcon(it)) }
+            ACTIVITY_TYPES.map { BingeChoice(it, activityTypeLabel(it), icon = activityIcon(it)) }
     BingeChoiceSheetContent(
         title = stringResource(R.string.activity_filter_type),
         choices = BingeChoiceList.Ready(choices),

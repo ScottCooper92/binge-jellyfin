@@ -265,6 +265,7 @@ private fun ActivityRoute(
                 onClose = activity::closeFilters,
                 onApply = activity::apply,
                 onClearAll = activity::clearAll,
+                onClearDraft = activity::clearDraft,
                 onClear = activity::clear,
                 onPreset = activity::preset,
                 onRange = activity::range,

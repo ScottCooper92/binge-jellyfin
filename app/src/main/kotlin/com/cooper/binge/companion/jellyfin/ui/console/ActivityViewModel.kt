@@ -132,7 +132,9 @@ class ActivityViewModel(
                     ) {
                         update { ActivityUiState.Ready(page.entries, page.total, open = open) }
                     }
-                }.onFailure { error -> update { copy(refreshing = false, moreFailed = error.consoleFailure()) } }
+                }.onFailure { error ->
+                    if (applied == filters.value.applied) update { copy(refreshing = false, moreFailed = error.consoleFailure()) }
+                }
         }
     }
 
@@ -158,7 +160,9 @@ class ActivityViewModel(
                         // A page that adds nothing new can't be paged past, so the list ends there.
                         copy(entries = entries + added, total = if (added.isEmpty()) entries.size else page.total, loadingMore = false)
                     }
-                }.onFailure { error -> update { copy(loadingMore = false, moreFailed = error.consoleFailure()) } }
+                }.onFailure { error ->
+                    if (applied == filters.value.applied) update { copy(loadingMore = false, moreFailed = error.consoleFailure()) }
+                }
         }
     }
 
@@ -207,6 +211,9 @@ class ActivityViewModel(
         _filters.update { it.copy(applied = it.draft, open = false) }
         load()
     }
+
+    /** Clears what the sheet is editing; the list is not read again until **Show results**. */
+    fun clearDraft() = _filters.update { it.copy(draft = ActivityFilter()) }
 
     /** Clears every filter and shows the whole log. */
     fun clearAll() {

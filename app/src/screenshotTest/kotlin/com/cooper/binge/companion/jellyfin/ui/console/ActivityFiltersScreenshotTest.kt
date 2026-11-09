@@ -172,6 +172,7 @@ class ActivityFiltersScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
     @Composable
     fun type() = Surface { TypePage(applied, pop = {}, actions = ActivityFilterActions()) }
 }
