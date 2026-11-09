@@ -68,6 +68,9 @@ class UsersViewModelTest {
 
     private fun UsersViewModel.setAllLibraries(on: Boolean) = setPolicy("EnableAllFolders", kotlinx.serialization.json.JsonPrimitive(on))
 
+    private fun awaitPolicy(holds: (kotlinx.serialization.json.JsonObject) -> Boolean) =
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (!holds(policy("user-2"))) kotlinx.coroutines.delay(POLL_MILLIS) } }
+
     private fun saves() = jellyfin.requests.count { it.url.encodedPath.endsWith("/Policy") }
 
     private fun UsersViewModel.openSam() = ready().users.first { it.name == "Sam" }.also { select(it.id) }
@@ -131,7 +134,7 @@ class UsersViewModelTest {
         val after = vm.ready { !it.refreshing }
         assertTrue(after.openUser!!.disabled)
         vm.setAdministrator(true)
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 2) delay(POLL_MILLIS) } }
+        awaitPolicy { it.getValue("IsAdministrator").jsonPrimitive.content == "true" }
         assertEquals("true", policy("user-2").getValue("IsDisabled").jsonPrimitive.content)
         assertEquals("true", policy("user-2").getValue("IsAdministrator").jsonPrimitive.content)
     }
@@ -153,7 +156,10 @@ class UsersViewModelTest {
         runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 1) kotlinx.coroutines.delay(POLL_MILLIS) } }
         vm.setLibrary("lib-shows", true)
         vm.setCanSignIn(false)
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 3) kotlinx.coroutines.delay(POLL_MILLIS) } }
+        awaitPolicy {
+            it.getValue("IsDisabled").jsonPrimitive.content == "true" &&
+                it.getValue("EnabledFolders").toString().contains("lib-shows")
+        }
         val saved = policy("user-2")
         assertEquals("true", saved.getValue("IsAdministrator").jsonPrimitive.content)
         assertEquals("true", saved.getValue("IsDisabled").jsonPrimitive.content)
@@ -170,7 +176,9 @@ class UsersViewModelTest {
         assertEquals("3", saved.getValue("MaxActiveSessions").jsonPrimitive.content)
         vm.setLibrary("lib-movies", false)
         vm.setAllLibraries(true)
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (saves() < 5) kotlinx.coroutines.delay(POLL_MILLIS) } }
+        awaitPolicy {
+            it.getValue("EnableAllFolders").jsonPrimitive.content == "true"
+        }
         assertEquals("true", policy("user-2").getValue("EnableAllFolders").jsonPrimitive.content)
         assertEquals("[\"lib-shows\"]", policy("user-2").getValue("EnabledFolders").toString())
     }
