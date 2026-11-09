@@ -26,7 +26,6 @@ import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheetContent
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeSheetKind
-import com.binge.designsystem.component.BingeSheetNav
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
@@ -77,21 +76,21 @@ internal fun ActivityFilterSheet(
         stackPagesWhenCompact = true,
     ) { nav ->
         when (nav.page) {
-            TIME_PAGE -> TimePage(filters.draft, extended, nav, actions)
-            RANGE_PAGE -> RangePage(filters.draft, nav, actions)
-            WHO_PAGE -> WhoPage(filters, extended, nav, actions)
-            SEVERITY_PAGE -> SeverityPage(filters.draft, nav, actions)
-            TYPE_PAGE -> TypePage(filters.draft, nav, actions)
-            else -> MainPage(filters.draft, extended, nav, actions)
+            TIME_PAGE -> TimePage(filters.draft, extended, nav::push, nav::pop, actions)
+            RANGE_PAGE -> RangePage(filters.draft, nav::pop, actions)
+            WHO_PAGE -> WhoPage(filters, extended, nav::pop, actions)
+            SEVERITY_PAGE -> SeverityPage(filters.draft, nav::pop, actions)
+            TYPE_PAGE -> TypePage(filters.draft, nav::pop, actions)
+            else -> MainPage(filters.draft, extended, nav::push, actions)
         }
     }
 }
 
 @Composable
-private fun MainPage(
+internal fun MainPage(
     draft: ActivityFilter,
     extended: Boolean,
-    nav: BingeSheetNav,
+    push: (String) -> Unit,
     actions: ActivityFilterActions,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
@@ -109,7 +108,7 @@ private fun MainPage(
                         icon = Icons.Outlined.Event,
                         label = stringResource(R.string.activity_filter_time),
                         detail = timeSummary(draft),
-                        onClick = { nav.push(TIME_PAGE) },
+                        onClick = { push(TIME_PAGE) },
                     ),
                     ListItem(
                         icon = Icons.Outlined.Person,
@@ -117,20 +116,20 @@ private fun MainPage(
                         detail = whoSummary(draft),
                         onClick = {
                             actions.onLoadUsers()
-                            nav.push(WHO_PAGE)
+                            push(WHO_PAGE)
                         },
                     ),
                     ListItem(
                         icon = Icons.Outlined.PriorityHigh,
                         label = stringResource(R.string.activity_filter_severity),
                         detail = severitySummary(draft.severity),
-                        onClick = { nav.push(SEVERITY_PAGE) },
+                        onClick = { push(SEVERITY_PAGE) },
                     ).takeIf { extended },
                     ListItem(
                         icon = Icons.Outlined.Category,
                         label = stringResource(R.string.activity_filter_type),
                         detail = typeSummary(draft.type),
-                        onClick = { nav.push(TYPE_PAGE) },
+                        onClick = { push(TYPE_PAGE) },
                     ).takeIf { extended },
                 ),
         )
@@ -157,10 +156,11 @@ private const val ANY_CHOICE = "any"
 private const val CUSTOM_CHOICE = "custom"
 
 @Composable
-private fun TimePage(
+internal fun TimePage(
     draft: ActivityFilter,
     extended: Boolean,
-    nav: BingeSheetNav,
+    push: (String) -> Unit,
+    pop: () -> Unit,
     actions: ActivityFilterActions,
 ) {
     val choices =
@@ -185,12 +185,12 @@ private fun TimePage(
             when (key) {
                 ANY_CHOICE -> {
                     actions.onPreset(null)
-                    nav.pop()
+                    pop()
                 }
-                CUSTOM_CHOICE -> nav.push(RANGE_PAGE)
+                CUSTOM_CHOICE -> push(RANGE_PAGE)
                 else -> {
                     actions.onPreset(ActivityTimePreset.valueOf(key))
-                    nav.pop()
+                    pop()
                 }
             }
         },
@@ -200,9 +200,9 @@ private fun TimePage(
 /** A start and an end day, from the platform's range picker. The end is optional, and the day it names is included. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RangePage(
+internal fun RangePage(
     draft: ActivityFilter,
-    nav: BingeSheetNav,
+    pop: () -> Unit,
     actions: ActivityFilterActions,
 ) {
     val zone = ZoneId.systemDefault()
@@ -225,8 +225,8 @@ private fun RangePage(
             onClick = {
                 val start = state.selectedStartDateMillis ?: return@BingeFilledButton
                 actions.onRange(localDayStart(start, zone), state.selectedEndDateMillis?.let { localDayEnd(it, zone) })
-                nav.pop()
-                nav.pop()
+                pop()
+                pop()
             },
             modifier = Modifier.fillMaxWidth().padding(dimensionResource(DesR.dimen.padding_m)),
         )
@@ -238,10 +238,10 @@ private const val USERS_CHOICE = "users"
 private const val USER_PREFIX = "user:"
 
 @Composable
-private fun WhoPage(
+internal fun WhoPage(
     filters: ActivityFilters,
     extended: Boolean,
-    nav: BingeSheetNav,
+    pop: () -> Unit,
     actions: ActivityFilterActions,
 ) {
     val draft = filters.draft
@@ -286,15 +286,15 @@ private fun WhoPage(
                     else -> copy(who = ActivityWho.Anyone, username = null)
                 }
             }
-            nav.pop()
+            pop()
         },
     )
 }
 
 @Composable
-private fun SeverityPage(
+internal fun SeverityPage(
     draft: ActivityFilter,
-    nav: BingeSheetNav,
+    pop: () -> Unit,
     actions: ActivityFilterActions,
 ) {
     val choices =
@@ -314,7 +314,7 @@ private fun SeverityPage(
         selected = draft.severity?.name ?: ANY_CHOICE,
         onSelect = { key ->
             actions.onEdit { copy(severity = Severity.entries.firstOrNull { it.name == key }) }
-            nav.pop()
+            pop()
         },
     )
 }
@@ -345,9 +345,9 @@ internal fun String.typeWords(): String =
     replace(Regex("(?<=[a-z])(?=[A-Z])"), " ").lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
 @Composable
-private fun TypePage(
+internal fun TypePage(
     draft: ActivityFilter,
-    nav: BingeSheetNav,
+    pop: () -> Unit,
     actions: ActivityFilterActions,
 ) {
     val choices =
@@ -359,7 +359,7 @@ private fun TypePage(
         selected = draft.type ?: ANY_CHOICE,
         onSelect = { key ->
             actions.onEdit { copy(type = key.takeIf { it != ANY_CHOICE }) }
-            nav.pop()
+            pop()
         },
     )
 }
