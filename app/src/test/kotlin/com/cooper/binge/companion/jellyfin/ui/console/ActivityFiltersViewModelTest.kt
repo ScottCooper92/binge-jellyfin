@@ -12,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
@@ -49,7 +50,8 @@ class ActivityFiltersViewModelTest {
     @After
     fun close() = teardown.close(jellyfin)
 
-    private fun vm() = made(ActivityViewModel(connection, pageSize = 2, now = { now }, zone = ZoneOffset.UTC))
+    private fun vm() =
+        made(ActivityViewModel(connection, pageSize = 2, now = { now }, zone = ZoneOffset.UTC, debounceMillis = DEBOUNCE_MILLIS))
 
     private fun ActivityViewModel.ready(check: (ActivityUiState.Ready) -> Boolean = { true }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is ActivityUiState.Ready && check(it) } } } as ActivityUiState.Ready
@@ -170,7 +172,86 @@ class ActivityFiltersViewModelTest {
         assertEquals(1, jellyfin.hits("/Users"))
     }
 
+    private fun settled(requests: Int) =
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (entries().size < requests) delay(POLL_MILLIS) } }
+
+    @Test
+    fun `typing sends one search once it pauses, from the first page, and the field shows the text at once`() {
+        val vm = vm()
+        vm.ready()
+        vm.search("s")
+        vm.search("si")
+        vm.search("sign")
+        assertEquals("sign", vm.filters.value.query)
+        settled(2)
+        vm.ready()
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertEquals(2, entries().size)
+        val query = entries().last().url
+        assertEquals("sign", query.queryParameter("name"))
+        assertEquals("0", query.queryParameter("startIndex"))
+        assertEquals("sign", vm.filters.value.applied.query)
+    }
+
+    @Test
+    fun `a search combines with the filters and the next page carries both`() {
+        val vm = vm().opened()
+        vm.edit { copy(severity = Severity.Warning) }
+        vm.apply()
+        vm.ready()
+        vm.search("play")
+        settled(3)
+        vm.ready()
+        vm.loadMore()
+        vm.ready { it.entries.size == 4 }
+        val paged = entries().last().url
+        assertEquals("play", paged.queryParameter("name"))
+        assertEquals("Warning", paged.queryParameter("severity"))
+        assertEquals("2", paged.queryParameter("startIndex"))
+    }
+
+    @Test
+    fun `clearing the field restores the whole list`() {
+        val vm = vm()
+        vm.ready()
+        vm.search("sign")
+        settled(2)
+        vm.ready()
+        vm.search("")
+        settled(3)
+        vm.ready()
+        assertNull(entries().last().url.queryParameter("name"))
+        assertTrue(vm.filters.value.applied.isEmpty)
+    }
+
+    @Test
+    fun `the search chip clears the search and the field`() {
+        val vm = vm()
+        vm.ready()
+        vm.search("sign")
+        settled(2)
+        vm.ready()
+        vm.clear(ActivityFilterKind.Search)
+        vm.ready()
+        assertEquals("", vm.filters.value.query)
+        assertNull(vm.filters.value.applied.query)
+    }
+
+    @Test
+    fun `Clear all drops a search that was still waiting out its pause`() {
+        val vm = vm()
+        vm.ready()
+        vm.search("sign")
+        vm.clearAll()
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertEquals("", vm.filters.value.query)
+        assertTrue(entries().none { it.url.queryParameter("name") != null })
+    }
+
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
+        const val DEBOUNCE_MILLIS = 60L
+        const val POLL_MILLIS = 20L
+        const val SETTLE_MILLIS = 300L
     }
 }

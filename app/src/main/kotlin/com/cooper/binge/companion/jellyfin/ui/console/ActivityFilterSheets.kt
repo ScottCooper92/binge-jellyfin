@@ -48,6 +48,7 @@ data class ActivityFilterActions(
     val onRange: (from: Long, to: Long?) -> Unit = { _, _ -> },
     val onEdit: (ActivityFilter.() -> ActivityFilter) -> Unit = {},
     val onLoadUsers: () -> Unit = {},
+    val onSearch: (String) -> Unit = {},
 )
 
 private const val MAIN_PAGE = "main"

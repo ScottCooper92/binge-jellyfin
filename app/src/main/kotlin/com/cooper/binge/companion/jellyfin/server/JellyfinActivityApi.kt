@@ -66,7 +66,7 @@ enum class ActivityWho { Anyone, System, Users }
  * [ActivityWho.System] and [ActivityWho.Users]; the end time ([toMillis]), one [username], a [severity] and a [type] need Jellyfin 12
  * (`JellyfinServerProfile.hasActivityFilters`), and an older server ignores them, so the page does not offer them there.
  * [preset] is the span [fromMillis] was worked out from, for the chip that says so; it is null for a range the user picked.
- * The server matches [username] and [type] as text they *contain* (`LIKE %text%`), not exactly, so "sam" also finds "samantha"; the severity is exact.
+ * The server matches [username], [type] and [query] as text they *contain* (`LIKE %text%`), not exactly, so "sam" also finds "samantha"; the severity is exact.
  */
 data class ActivityFilter(
     val fromMillis: Long? = null,
@@ -76,12 +76,20 @@ data class ActivityFilter(
     val username: String? = null,
     val severity: Severity? = null,
     val type: String? = null,
+    /** Text the entry's title contains. Jellyfin 12 only. */
+    val query: String? = null,
 ) {
     val isEmpty: Boolean get() = this == ActivityFilter()
 
-    /** How many things the filter narrows by: the time, whose, severity and type each count once. */
+    /** How many things the filter narrows by: the time, whose, severity, type and search each count once. */
     val count: Int get() =
-        listOf(fromMillis != null || toMillis != null, who != ActivityWho.Anyone, severity != null, type != null).count { it }
+        listOf(
+            fromMillis != null || toMillis != null,
+            who != ActivityWho.Anyone,
+            severity != null,
+            type != null,
+            query != null,
+        ).count { it }
 
     /** The query the server takes. A named user is a user's activity, so the split is left out for it. */
     fun query(): Map<String, String> =
@@ -100,6 +108,8 @@ data class ActivityFilter(
             }
             severity?.let { put("severity", it.name) }
             type?.takeIf { it.isNotBlank() }?.let { put("type", it) }
+            // The server ANDs its text parameters, so one box cannot match the title or the detail; it searches the title, which is what a row names.
+            query?.takeIf { it.isNotBlank() }?.let { put("name", it) }
         }
 }
 

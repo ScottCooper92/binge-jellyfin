@@ -1,10 +1,15 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onAllNodes
+import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import com.binge.designsystem.testing.assertNoTextClipped
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
@@ -93,6 +98,41 @@ class ActivityFiltersScreenTest {
     fun `an empty log with no filter keeps its own empty state`() {
         show(state = ActivityUiState.Ready(emptyList(), 0))
         compose.onNodeWithText("Nothing has happened on this server yet.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the search field is offered with the filters beyond Jellyfin 12, and typing reaches the page`() {
+        val typed = mutableListOf<String>()
+        show(actions = ActivityFilterActions(onSearch = { typed += it }))
+        compose.onNode(hasSetTextAction()).performTextInput("sign")
+        assertEquals(listOf("sign"), typed)
+    }
+
+    @Test
+    fun `an older server has no search field`() {
+        show(extended = false)
+        compose.onAllNodes(hasSetTextAction()).assertCountEquals(0)
+    }
+
+    @Test
+    fun `an active search is a chip that clears it, and a search that matches nothing says so`() {
+        val cleared = mutableListOf<ActivityFilterKind>()
+        val search = ActivityFilter(query = "zzz")
+        show(
+            state = ActivityUiState.Ready(emptyList(), 0),
+            filters = ActivityFilters(applied = search, draft = search, query = "zzz"),
+            actions = ActivityFilterActions(onClear = { cleared += it }),
+        )
+        compose.onNodeWithText("Nothing matches that search").assertIsDisplayed()
+        compose.onNodeWithText("Clear search").performClick()
+        assertEquals(listOf(ActivityFilterKind.Search), cleared)
+    }
+
+    @Test
+    fun `the field keeps the text while the list is loading`() {
+        val search = ActivityFilter(query = "sign")
+        show(state = ActivityUiState.Loading, filters = ActivityFilters(applied = search, draft = search, query = "sign"))
+        compose.onNodeWithText("sign").assertIsDisplayed()
     }
 
     @Test

@@ -20,6 +20,11 @@ app:activity_filters_clear  29a390f9237e
 app:activity_filters_show  90efa191f97a
 app:activity_range_title  add9164abf66
 app:activity_range_use  3ecf629d2b70
+app:activity_search_chip  fcfc693f8958
+app:activity_search_empty_clear  3b7ea51793e9
+app:activity_search_empty_message  19a917d0f551
+app:activity_search_empty_title  f1944dc8dd2e
+app:activity_search_hint  1c6ff12078c4
 app:activity_severity_any  626a7548f3df
 app:activity_severity_error  cb702378f315
 app:activity_severity_information  1cb0ba125f84

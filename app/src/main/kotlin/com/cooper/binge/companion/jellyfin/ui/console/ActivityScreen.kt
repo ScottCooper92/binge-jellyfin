@@ -36,10 +36,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingePullToRefresh
+import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.DiscoverQuickClearChip
 import com.binge.designsystem.component.ExpressiveIconButton
@@ -116,15 +119,47 @@ fun ActivityScreen(
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
-            when (state) {
-                ActivityUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
-                is ActivityUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
-                is ActivityUiState.Ready ->
-                    BingePullToRefresh(
-                        isRefreshing = state.refreshing,
-                        onRefresh = actions.onRefresh,
-                        indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Entries(state, actions, inner, now, zone, listState, filters.applied, filterActions) }
+            val searchable = extendedFilters
+            val direction = LocalLayoutDirection.current
+            // The search field stays put while the list under it loads, so typing is not interrupted by the list being replaced.
+            val listInner =
+                if (searchable) {
+                    PaddingValues(
+                        start = inner.calculateStartPadding(direction),
+                        end = inner.calculateEndPadding(direction),
+                        bottom = inner.calculateBottomPadding(),
+                    )
+                } else {
+                    inner
+                }
+            Column(Modifier.fillMaxSize()) {
+                if (searchable) {
+                    BingeSearchField(
+                        query = filters.query,
+                        onQueryChange = filterActions.onSearch,
+                        onClear = { filterActions.onSearch("") },
+                        placeholder = stringResource(R.string.activity_search_hint),
+                        modifier =
+                            Modifier.padding(
+                                start = inner.calculateStartPadding(direction),
+                                end = inner.calculateEndPadding(direction),
+                                top = inner.calculateTopPadding(),
+                                bottom = dimensionResource(DesR.dimen.padding_s),
+                            ),
+                    )
+                }
+                Box(Modifier.weight(1f)) {
+                    when (state) {
+                        ActivityUiState.Loading -> ConsoleLoading(listInner, LOADING_ROWS)
+                        is ActivityUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(listInner))
+                        is ActivityUiState.Ready ->
+                            BingePullToRefresh(
+                                isRefreshing = state.refreshing,
+                                onRefresh = actions.onRefresh,
+                                indicatorTopInset = if (searchable) 0.dp else padding.calculateTopPadding(),
+                            ) { Entries(state, actions, listInner, now, zone, listState, filters.applied, filterActions) }
+                    }
+                }
             }
             ActivityFilterSheet(filters, extendedFilters, filterActions)
             (state as? ActivityUiState.Ready)?.openEntry?.let { entry ->
@@ -159,11 +194,25 @@ private fun Entries(
         } else if (state.entries.isEmpty()) {
             item(key = "filtered-empty") {
                 // A filter that matches nothing is its own state, with the way out, and not the empty log.
+                val searchOnly = filter.query != null && filter.copy(query = null).isEmpty
                 EmptyScreen(
-                    message = stringResource(R.string.activity_filtered_empty_message),
-                    title = stringResource(R.string.activity_filtered_empty_title),
+                    message =
+                        stringResource(
+                            if (searchOnly) R.string.activity_search_empty_message else R.string.activity_filtered_empty_message,
+                        ),
+                    title =
+                        stringResource(
+                            if (searchOnly) R.string.activity_search_empty_title else R.string.activity_filtered_empty_title,
+                        ),
                     icon = Icons.Outlined.FilterListOff,
-                    action = ScreenAction(stringResource(R.string.activity_filtered_empty_clear), filterActions.onClearAll),
+                    action =
+                        if (searchOnly) {
+                            ScreenAction(
+                                stringResource(R.string.activity_search_empty_clear),
+                            ) { filterActions.onClear(ActivityFilterKind.Search) }
+                        } else {
+                            ScreenAction(stringResource(R.string.activity_filtered_empty_clear), filterActions.onClearAll)
+                        },
                     modifier = Modifier.fillParentMaxHeight(FILTERED_EMPTY_FRACTION),
                 )
             }
@@ -288,6 +337,15 @@ internal fun ActivityFilterChips(
         filter.severity?.let { severity ->
             item(key = "severity") {
                 DiscoverQuickClearChip(severitySummary(severity), QuickClearTone.Include, { onClear(ActivityFilterKind.Severity) })
+            }
+        }
+        filter.query?.let { query ->
+            item(key = "search") {
+                DiscoverQuickClearChip(
+                    stringResource(R.string.activity_search_chip, query),
+                    QuickClearTone.Include,
+                    { onClear(ActivityFilterKind.Search) },
+                )
             }
         }
         filter.type?.let { type ->
