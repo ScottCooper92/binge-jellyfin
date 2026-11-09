@@ -3,6 +3,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -196,6 +198,40 @@ class TranscodingScreenTest {
     fun `zero threads reads as all available, not as 0`() {
         show("nvenc", "10.11.6", threads = 0)
         compose.onNodeWithText("All available").performScrollTo().assertExists()
+    }
+
+    private fun openThreads(threads: Int): MutableList<String> {
+        val calls = mutableListOf<String>()
+        show(
+            "nvenc",
+            "10.11.6",
+            TranscodingActions(onEncoding = { key, value -> calls += "$key ${(value as JsonPrimitive).content}" }),
+            threads = threads,
+        )
+        compose.onNodeWithText("Encoding threads").performScrollTo().performClick()
+        return calls
+    }
+
+    @Test
+    fun `the threads sheet saves a number from the stepper, and Auto on saves -1`() {
+        val calls = openThreads(4)
+        compose.onNodeWithContentDescription("Increase Encoding threads").performClick()
+        compose.onAllNodesWithText("Auto").onLast().performClick()
+        assertEquals(listOf("EncodingThreadCount 5", "EncodingThreadCount -1"), calls)
+    }
+
+    @Test
+    fun `Auto off in the threads sheet saves all available when there is no number to restore`() {
+        val calls = openThreads(-1)
+        compose.onAllNodesWithText("Auto").onLast().performClick()
+        assertEquals(listOf("EncodingThreadCount 0"), calls)
+    }
+
+    @Test
+    fun `stepping past the top of the threads scale saves all available`() {
+        val calls = openThreads(16)
+        compose.onNodeWithContentDescription("Increase Encoding threads").performClick()
+        assertEquals(listOf("EncodingThreadCount 0"), calls)
     }
 
     @Test
