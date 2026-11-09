@@ -41,7 +41,7 @@ internal fun ConsolePageRoute(
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
         ConsolePage.Libraries -> LibrariesRoute(graph, openItem, close)
         ConsolePage.Tasks -> TasksRoute(graph, openItem, close)
-        ConsolePage.Activity -> ActivityRoute(graph, close)
+        ConsolePage.Activity -> ActivityRoute(graph, signedIn.profile, close)
         ConsolePage.Logs -> LogsRoute(graph, openItem, close)
         ConsolePage.ApiKeys -> ApiKeysRoute(graph, close)
         ConsolePage.Devices -> DevicesRoute(graph, close)
@@ -220,14 +220,16 @@ private fun TasksRoute(
     )
 }
 
-/** The activity page, read a page at a time. */
+/** The activity page, read a page at a time and narrowed by the filters its sheet sets. */
 @Composable
 private fun ActivityRoute(
     graph: AppGraph,
+    profile: JellyfinServerProfile,
     onBack: () -> Unit,
 ) {
     val activity: ActivityViewModel = viewModel(factory = viewModelFactory { initializer { ActivityViewModel(graph.connection) } })
     val state by activity.state.collectAsStateWithLifecycle()
+    val filters by activity.filters.collectAsStateWithLifecycle()
     ActivityScreen(
         state,
         ActivityActions(
@@ -237,6 +239,20 @@ private fun ActivityRoute(
             onRetry = activity::load,
             onBack = onBack,
         ),
+        filters = filters,
+        filterActions =
+            ActivityFilterActions(
+                onOpen = activity::openFilters,
+                onClose = activity::closeFilters,
+                onApply = activity::apply,
+                onClearAll = activity::clearAll,
+                onClear = activity::clear,
+                onPreset = activity::preset,
+                onRange = activity::range,
+                onEdit = activity::edit,
+                onLoadUsers = activity::loadUsers,
+            ),
+        extendedFilters = profile.hasActivityFilters,
     )
 }
 

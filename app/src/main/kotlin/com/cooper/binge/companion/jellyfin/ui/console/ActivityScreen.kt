@@ -10,11 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.FilterListOff
 import androidx.compose.material.icons.outlined.GppBad
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Info
@@ -38,11 +41,16 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
+import com.binge.designsystem.component.DiscoverQuickClearChip
+import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.QuickClearTone
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.EmptyScreen
+import com.binge.designsystem.template.ScreenAction
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
@@ -50,6 +58,8 @@ import com.binge.designsystem.theme.BingeSentiment
 import com.binge.designsystem.theme.fill
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
+import com.cooper.binge.companion.jellyfin.server.ActivityFilter
+import com.cooper.binge.companion.jellyfin.server.ActivityWho
 import com.cooper.binge.companion.jellyfin.server.Severity
 import java.time.Instant
 import java.time.ZoneId
@@ -78,10 +88,32 @@ fun ActivityScreen(
     actions: ActivityActions,
     now: Long = System.currentTimeMillis(),
     zone: ZoneId = ZoneId.systemDefault(),
+    filters: ActivityFilters = ActivityFilters(),
+    filterActions: ActivityFilterActions = ActivityFilterActions(),
+    /** Whether the server takes the filters beyond start time and the system or user split (Jellyfin 12). */
+    extendedFilters: Boolean = false,
 ) {
     // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
     val listState = rememberLazyListState()
-    BingeScreenScaffold(title = stringResource(R.string.activity_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    BingeScreenScaffold(
+        title = stringResource(R.string.activity_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        actions = {
+            if (state is ActivityUiState.Ready || !filters.applied.isEmpty) {
+                ExpressiveIconButton(
+                    onClick = filterActions.onOpen,
+                    icon = Icons.Outlined.FilterList,
+                    contentDescription =
+                        if (filters.applied.count == 0) {
+                            stringResource(R.string.activity_filters)
+                        } else {
+                            stringResource(R.string.activity_filters_active, filters.applied.count)
+                        },
+                )
+            }
+        },
+    ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
@@ -92,8 +124,9 @@ fun ActivityScreen(
                         isRefreshing = state.refreshing,
                         onRefresh = actions.onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
-                    ) { Entries(state, actions, inner, now, zone, listState) }
+                    ) { Entries(state, actions, inner, now, zone, listState, filters.applied, filterActions) }
             }
+            ActivityFilterSheet(filters, extendedFilters, filterActions)
             (state as? ActivityUiState.Ready)?.openEntry?.let { entry ->
                 ActivityDetailSheet(entry, zone) { actions.onOpen(null) }
             }
@@ -109,6 +142,8 @@ private fun Entries(
     now: Long,
     zone: ZoneId,
     listState: LazyListState,
+    filter: ActivityFilter,
+    filterActions: ActivityFilterActions,
 ) {
     val locale = LocalConfiguration.current.locales[0] ?: Locale.ROOT
     val time = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).withZone(zone)
@@ -118,7 +153,21 @@ private fun Entries(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        if (state.entries.isEmpty()) item { ConsoleEmptyScreen(stringResource(R.string.activity_empty), Icons.Outlined.History) }
+        if (!filter.isEmpty) item(key = "chips") { ActivityFilterChips(filter, filterActions.onClear) }
+        if (state.entries.isEmpty() && filter.isEmpty) {
+            item { ConsoleEmptyScreen(stringResource(R.string.activity_empty), Icons.Outlined.History) }
+        } else if (state.entries.isEmpty()) {
+            item(key = "filtered-empty") {
+                // A filter that matches nothing is its own state, with the way out, and not the empty log.
+                EmptyScreen(
+                    message = stringResource(R.string.activity_filtered_empty_message),
+                    title = stringResource(R.string.activity_filtered_empty_title),
+                    icon = Icons.Outlined.FilterListOff,
+                    action = ScreenAction(stringResource(R.string.activity_filtered_empty_clear), filterActions.onClearAll),
+                    modifier = Modifier.fillParentMaxHeight(FILTERED_EMPTY_FRACTION),
+                )
+            }
+        }
         state.entries.groupBy { day(it.dateMillis, zone) }.entries.forEachIndexed { index, (day, entries) ->
             item(key = "day-$day") {
                 ItemGroup(
@@ -221,3 +270,28 @@ internal fun activityIcon(type: String): ImageVector =
     }
 
 private const val LOADING_ROWS = 8
+private const val FILTERED_EMPTY_FRACTION = 0.6f
+
+/** The filters the list is narrowed by, each a chip that clears it. */
+@Composable
+internal fun ActivityFilterChips(
+    filter: ActivityFilter,
+    onClear: (ActivityFilterKind) -> Unit,
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
+        if (filter.fromMillis != null || filter.toMillis != null) {
+            item(key = "time") { DiscoverQuickClearChip(timeSummary(filter), QuickClearTone.Include, { onClear(ActivityFilterKind.Time) }) }
+        }
+        if (filter.who != ActivityWho.Anyone || filter.username != null) {
+            item(key = "who") { DiscoverQuickClearChip(whoSummary(filter), QuickClearTone.Include, { onClear(ActivityFilterKind.Who) }) }
+        }
+        filter.severity?.let { severity ->
+            item(key = "severity") {
+                DiscoverQuickClearChip(severitySummary(severity), QuickClearTone.Include, { onClear(ActivityFilterKind.Severity) })
+            }
+        }
+        filter.type?.let { type ->
+            item(key = "type") { DiscoverQuickClearChip(typeSummary(type), QuickClearTone.Include, { onClear(ActivityFilterKind.Type) }) }
+        }
+    }
+}
