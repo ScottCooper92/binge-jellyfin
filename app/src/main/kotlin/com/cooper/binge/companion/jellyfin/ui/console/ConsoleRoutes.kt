@@ -69,6 +69,7 @@ internal fun ConsolePageRoute(
                     open(ConsolePage.Tasks)
                 }.takeIf { ConsolePage.Tasks.available(signedIn.profile, signedIn.account) },
                 { open(ConsolePage.LiveTvRecording) }.takeIf { ConsolePage.LiveTvRecording.available(signedIn.profile, signedIn.account) },
+                openItem.takeIf { signedIn.account.isAdministrator },
                 close,
             )
         ConsolePage.LiveTvRecording -> LiveTvRecordingRoute(graph, close)
