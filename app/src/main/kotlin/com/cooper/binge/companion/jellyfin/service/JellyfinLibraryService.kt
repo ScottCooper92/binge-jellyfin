@@ -13,6 +13,8 @@ import com.binge.companion.contracts.library.v1.HandshakeResponse
 import com.binge.companion.contracts.library.v1.LibraryServiceGrpcKt
 import com.binge.companion.contracts.library.v1.ListContinueWatchingRequest
 import com.binge.companion.contracts.library.v1.ListContinueWatchingResponse
+import com.binge.companion.contracts.library.v1.ListEpisodeWatchStateRequest
+import com.binge.companion.contracts.library.v1.ListEpisodeWatchStateResponse
 import com.binge.companion.contracts.library.v1.ListNextUpRequest
 import com.binge.companion.contracts.library.v1.ListNextUpResponse
 import com.binge.companion.contracts.library.v1.ObserveAvailabilityRequest
@@ -130,6 +132,17 @@ class JellyfinLibraryService(
                 .build()
         }
 
+    override suspend fun listEpisodeWatchState(request: ListEpisodeWatchStateRequest): ListEpisodeWatchStateResponse =
+        guard {
+            CAPABILITIES.requireDeclared(Capability.CAPABILITY_EPISODE_WATCH_STATE)
+            val page = reads.episodeStates(request.media).episodePage(request.pageToken, request.pageSize)
+            ListEpisodeWatchStateResponse
+                .newBuilder()
+                .addAllEpisodes(page.episodes)
+                .setNextPageToken(page.nextPageToken)
+                .build()
+        }
+
     override suspend fun getPlaybackSource(request: GetPlaybackSourceRequest): GetPlaybackSourceResponse =
         guard {
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_PLAYBACK_SOURCE)
@@ -228,6 +241,7 @@ class JellyfinLibraryService(
                 Capability.CAPABILITY_AVAILABILITY,
                 Capability.CAPABILITY_WATCH_STATE,
                 Capability.CAPABILITY_WATCH_STATE_WRITE,
+                Capability.CAPABILITY_EPISODE_WATCH_STATE,
                 Capability.CAPABILITY_CONTINUE_WATCHING,
                 Capability.CAPABILITY_PLAYBACK_SOURCE,
                 Capability.CAPABILITY_PLAYBACK_PROGRESS,
