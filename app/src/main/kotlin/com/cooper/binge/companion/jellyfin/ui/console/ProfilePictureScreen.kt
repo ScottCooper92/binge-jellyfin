@@ -113,7 +113,7 @@ fun ProfilePictureScreen(
     }
 }
 
-/** The picture in a circle, or the person icon where there is none. */
+/** The page's intro: the user's own picture, or another user's by name. */
 @Composable
 private fun profilePictureBody(other: String?) =
     if (other == null) {
@@ -130,6 +130,7 @@ private fun PicturePlate() {
     }
 }
 
+/** The picture in a circle, or the person icon where there is none. */
 @Composable
 internal fun Picture(
     state: ProfilePictureUiState.Ready,
