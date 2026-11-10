@@ -40,6 +40,8 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.NowPlaying
 import com.cooper.binge.companion.jellyfin.server.SessionControls
@@ -70,6 +72,7 @@ internal fun SessionPage(
             val who = stringResource(R.string.now_playing_who, session.userName, session.deviceName, session.client)
             ItemGroup(
                 title = null,
+                modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                 rows =
                     listOf(
                         ListItem(

@@ -309,6 +309,7 @@ private fun UserPage(
         item {
             ItemGroup(
                 title = stringResource(R.string.users_access),
+                modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                 rows =
                     if (mine) {
                         listOf(

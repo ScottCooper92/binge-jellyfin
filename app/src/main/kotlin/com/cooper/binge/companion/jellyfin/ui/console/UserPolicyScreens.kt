@@ -36,6 +36,8 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.POLICY_ALL_CHANNELS
@@ -166,10 +168,34 @@ internal fun PolicySection(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         when (section) {
-            UserSection.Access -> ItemGroup(title = null, rows = accessRows(policy, actions) { picker = it })
-            UserSection.Playback -> ItemGroup(title = null, rows = playbackRows(policy, actions) { picker = it })
+            UserSection.Access ->
+                ItemGroup(
+                    title = null,
+                    rows =
+                        accessRows(policy, actions) {
+                            picker = it
+                        },
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
+            UserSection.Playback ->
+                ItemGroup(
+                    title = null,
+                    rows =
+                        playbackRows(policy, actions) {
+                            picker = it
+                        },
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
             UserSection.Content -> ContentSection(state, policy, profile, actions)
-            UserSection.Control -> ItemGroup(title = null, rows = controlRows(policy, actions) { picker = it })
+            UserSection.Control ->
+                ItemGroup(
+                    title = null,
+                    rows =
+                        controlRows(policy, actions) {
+                            picker = it
+                        },
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
             UserSection.LiveTv -> LiveTvSection(policy, choices, actions, section)
             UserSection.Devices -> DevicesSection(policy, choices, actions, section)
             UserSection.Parental ->
