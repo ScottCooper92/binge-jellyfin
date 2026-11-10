@@ -24,6 +24,7 @@ import com.binge.companion.contracts.library.v1.ReportPlaybackResponse
 import com.binge.companion.contracts.library.v1.SetPlayedRequest
 import com.binge.companion.contracts.library.v1.SetPlayedResponse
 import com.binge.companion.sdk.requireDeclared
+import com.binge.companion.sdk.serverUnreachable
 import com.binge.companion.sdk.withUserMessage
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.ServerEvent
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import java.io.IOException
+import java.io.InterruptedIOException
 
 /** The sentences the host may show for a failure, in the device's language. */
 interface UserMessages {
@@ -164,7 +166,11 @@ class JellyfinLibraryService(
             }
         }
 
-    /** The contract's error model: a broken session is UNAUTHENTICATED, a missing item NOT_FOUND, a network failure UNAVAILABLE. */
+    /**
+     * The contract's error model: a broken session is UNAUTHENTICATED, a missing item NOT_FOUND, and a server that does not answer
+     * (it refused, could not be resolved, timed out or answered 5xx) is [serverUnreachable]: UNAVAILABLE, or DEADLINE_EXCEEDED for a
+     * timeout, with the server's name and the sentence for the user. A server that answered with another error keeps its own code.
+     */
     private suspend fun <T> guard(block: suspend () -> T): T =
         try {
             block()
@@ -182,26 +188,40 @@ class JellyfinLibraryService(
                         .withUserMessage(REASON_SIGNED_OUT, messages.signedOut(), messages.locale())
                 HTTP_FORBIDDEN -> StatusException(Status.PERMISSION_DENIED.withDescription("Jellyfin answered 403").withCause(e))
                 HTTP_NOT_FOUND -> StatusException(Status.NOT_FOUND.withDescription("not on this Jellyfin server").withCause(e))
-                else -> StatusException(Status.UNAVAILABLE.withDescription("Jellyfin answered ${e.code}").withCause(e))
+                else ->
+                    if (e.code >= HTTP_SERVER_ERROR) {
+                        unreachable(timedOut = false)
+                    } else {
+                        StatusException(Status.UNAVAILABLE.withDescription("Jellyfin answered ${e.code}").withCause(e))
+                    }
             }
+        } catch (e: InterruptedIOException) {
+            Log.w(TAG, "Jellyfin timed out", e)
+            throw unreachable(timedOut = true)
         } catch (e: IOException) {
             Log.w(TAG, "Jellyfin unreachable", e)
-            throw Status.UNAVAILABLE
-                .withDescription("Jellyfin unreachable")
-                .withCause(e)
-                .withUserMessage(REASON_UNREACHABLE, messages.unreachable(), messages.locale())
+            throw unreachable(timedOut = false)
         }
+
+    /** The failure for a server that did not answer, naming it when the session knows its name. */
+    private suspend fun unreachable(timedOut: Boolean): StatusException =
+        serverUnreachable(
+            serverName = reads.serverName(),
+            timedOut = timedOut,
+            message = messages.unreachable(),
+            locale = messages.locale(),
+        )
 
     private companion object {
         const val TAG = "JellyfinLibrary"
         const val PROVIDER_NAME = "Jellyfin"
-        const val REASON_UNREACHABLE = "UNREACHABLE"
         const val FALLBACK_POLL_MILLIS = 5 * 60_000L
         const val DEFAULT_PAGE = 20
         const val MAX_PAGE = 50
         const val HTTP_UNAUTHORIZED = 401
         const val HTTP_FORBIDDEN = 403
         const val HTTP_NOT_FOUND = 404
+        const val HTTP_SERVER_ERROR = 500
 
         val CAPABILITIES =
             setOf(
@@ -211,6 +231,7 @@ class JellyfinLibraryService(
                 Capability.CAPABILITY_CONTINUE_WATCHING,
                 Capability.CAPABILITY_PLAYBACK_SOURCE,
                 Capability.CAPABILITY_PLAYBACK_PROGRESS,
+                Capability.CAPABILITY_SERVER_UNREACHABLE,
             )
 
         fun pageSize(requested: Int): Int = if (requested <= 0) DEFAULT_PAGE else requested.coerceAtMost(MAX_PAGE)

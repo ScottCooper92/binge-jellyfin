@@ -32,6 +32,14 @@ class LibraryReads(
                 .withDescription("not signed in")
                 .withUserMessage(REASON_SIGNED_OUT, messages.signedOut(), messages.locale())
 
+    /** The signed-in server's display name, or null when signed out or it has none: what a failure names when it did not answer. */
+    suspend fun serverName(): String? =
+        connection
+            .signedIn()
+            ?.first
+            ?.serverName
+            ?.takeIf { it.isNotBlank() }
+
     suspend fun availability(media: MediaId): Availability {
         val (session, client) = signedIn()
         val item =

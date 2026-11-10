@@ -21,6 +21,7 @@ import com.binge.companion.contracts.library.v1.SetPlayedRequest
 import com.binge.companion.contracts.v1.MediaId
 import com.binge.companion.contracts.v1.MediaType
 import com.binge.companion.sdk.problem
+import com.binge.companion.sdk.serverUnreachableOf
 import com.binge.companion.sdk.userMessageOf
 import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
@@ -46,6 +47,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -60,7 +62,15 @@ import java.util.concurrent.TimeUnit
 class JellyfinLibraryServiceTest {
     private val jellyfin = FakeJellyfin()
     private val sessions: SessionStore = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.2.3", Dispatchers.IO)
+    private val connection =
+        Connection(
+            OkHttpClient.Builder().readTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS).build(),
+            sessions,
+            "Jellyfin Companion",
+            "Test",
+            "1.2.3",
+            Dispatchers.IO,
+        )
     private val messages =
         object : UserMessages {
             override fun signedOut() = "Sign in to Jellyfin"
@@ -157,6 +167,7 @@ class JellyfinLibraryServiceTest {
             assertTrue(Capability.CAPABILITY_PLAYBACK_SOURCE in response.capabilitiesList)
             assertTrue(Capability.CAPABILITY_PLAYBACK_PROGRESS in response.capabilitiesList)
             assertFalse(Capability.CAPABILITY_PLAY in response.capabilitiesList)
+            assertTrue(Capability.CAPABILITY_SERVER_UNREACHABLE in response.capabilitiesList)
         }
 
     @Test
@@ -256,28 +267,64 @@ class JellyfinLibraryServiceTest {
         assertEquals(Status.Code.UNAUTHENTICATED, failure.status.code)
     }
 
+    private fun availabilityFailure() = statusOf { stub.getAvailability(GetAvailabilityRequest.newBuilder().setMedia(movie).build()) }
+
     @Test
-    fun `a server error is UNAVAILABLE and a refusal PERMISSION_DENIED`() {
+    fun `a server error is the server not answering, and a refusal PERMISSION_DENIED`() {
         jellyfin.status["/Items"] = 500
-        assertEquals(
-            Status.Code.UNAVAILABLE,
-            statusOf {
-                stub.getAvailability(GetAvailabilityRequest.newBuilder().setMedia(movie).build())
-            }.status.code,
-        )
+        val unanswered = availabilityFailure()
+        assertEquals(Status.Code.UNAVAILABLE, unanswered.status.code)
+        assertEquals("truenas", serverUnreachableOf(unanswered)?.serverName)
         jellyfin.status["/Items"] = 403
-        assertEquals(
-            Status.Code.PERMISSION_DENIED,
-            statusOf { stub.getAvailability(GetAvailabilityRequest.newBuilder().setMedia(movie).build()) }.status.code,
-        )
+        val refused = availabilityFailure()
+        assertEquals(Status.Code.PERMISSION_DENIED, refused.status.code)
+        assertNull(serverUnreachableOf(refused))
     }
 
     @Test
-    fun `a server that cannot be reached is UNAVAILABLE with a sentence for the user`() {
+    fun `a server that refuses connections is UNAVAILABLE, naming the server, with a sentence for the user`() {
         jellyfin.close()
-        val failure = statusOf { stub.getAvailability(GetAvailabilityRequest.newBuilder().setMedia(movie).build()) }
+        val failure = availabilityFailure()
         assertEquals(Status.Code.UNAVAILABLE, failure.status.code)
+        val unreachable = serverUnreachableOf(failure)
+        assertEquals("truenas", unreachable?.serverName)
         assertEquals("Can't reach Jellyfin", userMessageOf(failure.trailers)?.message)
+    }
+
+    @Test
+    fun `a server that does not answer in time is DEADLINE_EXCEEDED, naming the server`() {
+        jellyfin.slow += "/Items"
+        val failure = availabilityFailure()
+        assertEquals(Status.Code.DEADLINE_EXCEEDED, failure.status.code)
+        val unreachable = serverUnreachableOf(failure)
+        assertEquals("truenas", unreachable?.serverName)
+    }
+
+    @Test
+    fun `a server that answered with an error on the merits is not the server not answering`() {
+        jellyfin.status["/Items"] = 404
+        val notFound = availabilityFailure()
+        assertNull(serverUnreachableOf(notFound))
+        jellyfin.status["/Items"] = 401
+        val refusedToken = availabilityFailure()
+        assertEquals(Status.Code.UNAUTHENTICATED, refusedToken.status.code)
+        assertNull(serverUnreachableOf(refusedToken))
+    }
+
+    @Test
+    fun `no session stays UNAUTHENTICATED, never the server not answering`() {
+        runBlocking { sessions.clear() }
+        jellyfin.close()
+        val failure = availabilityFailure()
+        assertEquals(Status.Code.UNAUTHENTICATED, failure.status.code)
+        assertNull(serverUnreachableOf(failure))
+    }
+
+    @Test
+    fun `a server with no name is named by nothing`() {
+        runBlocking { sessions.save(jellyfin.session().copy(serverName = "")) }
+        jellyfin.close()
+        assertNull(serverUnreachableOf(availabilityFailure())?.serverName)
     }
 
     @Test
@@ -791,3 +838,5 @@ class JellyfinLibraryServiceTest {
             job.cancel()
         }
 }
+
+private const val CALL_TIMEOUT_SECONDS = 2L
