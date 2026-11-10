@@ -7,9 +7,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeTextField
 
 /**
- * The console's text field: the design system's [BingeTextField] without its clear button, so a field looks as it did before
- * that button existed. Turning it on everywhere is the one `clearable = false` below. Unlike [BingeTextField] a field here
- * submits on Done unless it asks for Next.
+ * The console's text field: the design system's [BingeTextField], with its clear button on a focused field that has text. A secret
+ * field shows its reveal toggle instead. Unlike [BingeTextField] a field here submits on Done unless it asks for Next.
  */
 @Composable
 internal fun ConsoleTextField(
@@ -44,7 +43,6 @@ internal fun ConsoleTextField(
     placeholder = placeholder,
     supporting = supporting,
     isError = isError,
-    clearable = false,
     revealed = revealed,
     onToggleReveal = onToggleReveal,
     imeAction = imeAction,
