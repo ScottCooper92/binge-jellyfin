@@ -81,6 +81,7 @@ object DeviceProfiles {
                 .flatMap { CONTAINERS[it.lowercase()].orEmpty() }
                 .distinct()
                 .ifEmpty { FLOOR_CONTAINERS }
+        val hlsVideo = hlsVideo(video)
         return obj(
             "Name" to str("Binge"),
             "MaxStreamingBitrate" to JsonPrimitive(maxBitrate(device)),
@@ -96,8 +97,8 @@ object DeviceProfiles {
                         ),
                     ),
                 ),
-            "TranscodingProfiles" to JsonArray(listOf(transcoding(video, audio, decodesAtmos))),
-            "CodecProfiles" to JsonArray(codecProfiles(device, decodesAtmos)),
+            "TranscodingProfiles" to JsonArray(listOf(transcoding(hlsVideo, audio, decodesAtmos))),
+            "CodecProfiles" to JsonArray(codecProfiles(device, decodesAtmos, video + hlsVideo)),
             "SubtitleProfiles" to
                 JsonArray(
                     listOf("vtt", "srt", "subrip", "ass", "ssa", "ttml").map { obj("Format" to str(it), "Method" to str("External")) },
@@ -110,12 +111,13 @@ object DeviceProfiles {
      * Atmos included, and no codec profile stops that copy: without a JOC decoder, E-AC-3 stays out of
      * the transcode and the server re-encodes the audio.
      */
+    private fun hlsVideo(video: List<String>): List<String> = video.filter { it == "h264" || it == "hevc" }.ifEmpty { FLOOR_VIDEO }
+
     private fun transcoding(
-        video: List<String>,
+        hlsVideo: List<String>,
         audio: List<String>,
         decodesAtmos: Boolean,
     ): JsonObject {
-        val hlsVideo = video.filter { it == "h264" || it == "hevc" }.ifEmpty { FLOOR_VIDEO }
         val hlsAudio = audio.filter { it in setOf("aac", "ac3", "mp3") || (it == "eac3" && decodesAtmos) }.ifEmpty { listOf("aac") }
         return obj(
             "Type" to str("Video"),
@@ -132,13 +134,20 @@ object DeviceProfiles {
     private fun codecProfiles(
         device: PlaybackDeviceProfile?,
         decodesAtmos: Boolean,
+        offeredVideo: List<String>,
     ): List<JsonObject> =
         buildList {
             val limits = mutableListOf<JsonElement>()
-            device?.maxWidth?.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Width", it.toString()) }
-            device?.maxHeight?.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Height", it.toString()) }
+            // A device that sends per-codec limits has its frame size set codec by codec below, and a global one would still stop a
+            // codec decoded further than the rest.
+            val perCodec = device?.let { CodecLimits.profiles(it, VIDEO_CODECS.filterValues { codec -> codec in offeredVideo }) }.orEmpty()
+            if (device != null && device.codecLimitsCount == 0) {
+                device.maxWidth.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Width", it.toString()) }
+                device.maxHeight.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Height", it.toString()) }
+            }
             device?.let { limits += condition("EqualsAny", "VideoRangeType", playableRanges(it).joinToString("|")) }
             if (limits.isNotEmpty()) add(obj("Type" to str("Video"), "Conditions" to JsonArray(limits)))
+            addAll(perCodec)
             // E-AC-3 with Atmos (JOC) needs its own decoder; a device with plain E-AC-3 only fails to start on it.
             if (!decodesAtmos) {
                 add(
@@ -209,19 +218,20 @@ object DeviceProfiles {
             else -> null
         }
 
-    private fun condition(
+    internal fun condition(
         type: String,
         property: String,
         value: String,
+        required: Boolean = false,
     ): JsonObject =
         obj(
             "Condition" to str(type),
             "Property" to str(property),
             "Value" to str(value),
-            "IsRequired" to JsonPrimitive(false),
+            "IsRequired" to JsonPrimitive(required),
         )
 
-    private fun obj(vararg pairs: Pair<String, JsonElement>): JsonObject = JsonObject(pairs.toMap())
+    internal fun obj(vararg pairs: Pair<String, JsonElement>): JsonObject = JsonObject(pairs.toMap())
 
     private fun str(value: String): JsonPrimitive = JsonPrimitive(value)
 }
