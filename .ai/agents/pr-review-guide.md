@@ -47,8 +47,14 @@ by inspecting the file itself is a finding. A profile rule that keeps a source t
 decode (10-bit H.264, E-AC-3 with Atmos on a device without a JOC decoder) out of a direct play or a
 stream copy is the right way to fix playback.
 
-**Nothing leaves the device but calls to the user's server.** A new host, an analytics or crash
-SDK, or a log sent anywhere is a finding.
+**Nothing leaves the device but calls to the user's server**, with one carve-out. Firebase Remote
+Config and its Installations service (the `binge-jellyfin-companion` project, for feature flags) and
+consent-gated analytics may reach Google, because they carry only an installation ID and app and
+device metadata. They never carry the access token, the server's URL, user names, media titles or
+anything else read from the user's server. Analytics runs only with the user's consent, as in the
+host. A flag fetch or an analytics event that carries server data, analytics that runs without
+consent, another Firebase product (Crashlytics, Messaging), a new host, a crash SDK, or a log sent
+anywhere is a finding.
 
 **Nothing here defines a contract.** A `.proto`, a hand-written message class, or a constant
 re-stating a contract value is a finding. Those live in binge-companions.
