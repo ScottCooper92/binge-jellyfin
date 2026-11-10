@@ -1126,16 +1126,13 @@ class ConsoleScreensTest {
         keyFrames = false
         compose.onNodeWithText("Key frames only").assertDoesNotExist()
         compose.onNodeWithText("Every 10 s").performScrollTo().performClick()
-        compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Custom…"))
-        compose.onNodeWithText("Custom…").assertExists()
-        compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Every 5 s"))
-        compose.onNodeWithText("Every 5 s").performClick()
+        compose.onNodeWithContentDescription("Increase Interval").performClick()
         compose.onNodeWithText("Don\'t wait for the images").performScrollTo().performClick()
         compose.onNodeWithText("Wait for the images").performClick()
         compose.onNodeWithText("Below normal").performClick()
         compose.onNodeWithText("Idle").performClick()
         assertEquals(
-            listOf("hwAcceleration true", "keyFrameOnly true", "interval 5000", "scan Blocking", "priority Idle"),
+            listOf("hwAcceleration true", "keyFrameOnly true", "interval 11000", "scan Blocking", "priority Idle"),
             calls,
         )
         calls.clear()

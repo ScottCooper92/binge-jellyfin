@@ -913,10 +913,8 @@
     <string name="trickplay_threads_auto">Automático</string>
     <string name="trickplay_threads_body">Cuántos hilos usa ffmpeg. Cero lo deja en manos de ffmpeg.</string>
     <string name="trickplay_interval">Intervalo</string>
-    <string name="trickplay_interval_body">El tiempo entre dos miniaturas, en milisegundos.</string>
     <string name="trickplay_every_seconds">Cada %1$d s</string>
     <string name="trickplay_every_millis">Cada %1$d ms</string>
-    <string name="trickplay_custom">Personalizado…</string>
     <string name="trickplay_widths">Anchuras</string>
     <string name="trickplay_widths_body">Las anchuras, en píxeles, de cada conjunto de miniaturas. Sepáralas con comas, por ejemplo 320, 640.</string>
     <string name="trickplay_widths_invalid">Escribe anchuras de %1$d a %2$d, separadas por comas.</string>

@@ -36,14 +36,13 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * A number (or the widths) edited in a dialog, with the range Jellyfin's own settings page allows, so
- * a value the server would refuse is never sent. [Interval] is in milliseconds; [Widths] is a list.
+ * a value the server would refuse is never sent. [Widths] is a list.
  */
 enum class TrickplayField(
     val key: String,
     val min: Int,
     val max: Int,
 ) {
-    Interval(TRICKPLAY_INTERVAL, 1, MAX_INTERVAL_MILLIS),
     Widths(TRICKPLAY_WIDTHS, 1, MAX_WIDTH),
     TileWidth(TRICKPLAY_TILE_WIDTH, 1, MAX_TILE),
     TileHeight(TRICKPLAY_TILE_HEIGHT, 1, MAX_TILE),
@@ -192,9 +191,9 @@ class TrickplayViewModel(
         if (value in TRICKPLAY_PRIORITIES) change(TRICKPLAY_PROCESS_PRIORITY, JsonPrimitive(value))
     }
 
-    /** A preset interval, in milliseconds. */
+    /** The interval, in milliseconds, if the server accepts it. */
     fun setInterval(millis: Int) {
-        if (TrickplayField.Interval.parse(millis.toString()) != null) change(TRICKPLAY_INTERVAL, JsonPrimitive(millis))
+        if (millis in 1..MAX_INTERVAL_MILLIS) change(TRICKPLAY_INTERVAL, JsonPrimitive(millis))
     }
 
     private fun change(

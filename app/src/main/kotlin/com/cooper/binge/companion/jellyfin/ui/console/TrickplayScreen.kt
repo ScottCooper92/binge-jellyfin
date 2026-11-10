@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -26,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -68,10 +70,8 @@ private const val DETAIL_LINES = 6
 
 private const val MILLIS_PER_SECOND = 1000
 
-/** The intervals offered, in seconds, beside a custom one. */
-private val INTERVAL_PRESETS_SECONDS = listOf(1, 2, 5, 10, 20, 30, 60)
-
-private const val CUSTOM = "custom"
+/** The interval slider's scale, a second to a minute; a stored value outside it reads as stored. */
+private val INTERVAL_RANGE_MILLIS = 1_000..60_000
 
 /**
  * The server's trickplay (seek thumbnail) options: what makes the images, and what they are. Each
@@ -259,11 +259,16 @@ private fun priorityLabel(value: String): String =
 
 /** An interval as people say it: whole seconds when it is, else milliseconds. */
 @Composable
-private fun intervalLabel(millis: Int): String =
+private fun intervalLabel(millis: Int): String = intervalText(LocalContext.current.resources, millis)
+
+internal fun intervalText(
+    resources: Resources,
+    millis: Int,
+): String =
     if (millis % MILLIS_PER_SECOND == 0) {
-        stringResource(R.string.trickplay_every_seconds, millis / MILLIS_PER_SECOND)
+        resources.getString(R.string.trickplay_every_seconds, millis / MILLIS_PER_SECOND)
     } else {
-        stringResource(R.string.trickplay_every_millis, millis)
+        resources.getString(R.string.trickplay_every_millis, millis)
     }
 
 @Composable
@@ -291,18 +296,17 @@ private fun TrickplayPickerSheet(
                 onDismissRequest = onDismiss,
             )
         TrickplayPicker.Interval -> {
-            val presets = INTERVAL_PRESETS_SECONDS.map { it * MILLIS_PER_SECOND }
-            val choices =
-                (presets + settings.intervalMillis).distinct().sorted().map { BingeChoice(it.toString(), intervalLabel(it)) } +
-                    BingeChoice(CUSTOM, stringResource(R.string.trickplay_custom))
-            BingeChoiceSheet(
+            val resources = LocalContext.current.resources
+            // In milliseconds with a step of a second, so a stored 500 ms or 90 s reads as stored and is not rewritten on open.
+            NumberSliderSheet(
                 title = stringResource(R.string.trickplay_interval),
-                choices = BingeChoiceList.Ready(choices),
-                selected = settings.intervalMillis.toString(),
-                onSelect = { value ->
-                    if (value == CUSTOM) actions.onEdit(TrickplayField.Interval) else value.toIntOrNull()?.let(actions.onInterval)
-                },
-                onDismissRequest = onDismiss,
+                value = settings.intervalMillis,
+                range = INTERVAL_RANGE_MILLIS,
+                step = MILLIS_PER_SECOND,
+                format = { intervalText(resources, it) },
+                openEndLabel = null,
+                onSave = { millis -> millis?.let(actions.onInterval) },
+                onDismiss = onDismiss,
             )
         }
     }
@@ -324,7 +328,6 @@ internal fun FieldSheet(
 ) {
     val current =
         when (field) {
-            TrickplayField.Interval -> settings.intervalMillis.toString()
             TrickplayField.Widths -> settings.widths.joinToString(", ")
             TrickplayField.TileWidth -> settings.tileWidth.toString()
             TrickplayField.TileHeight -> settings.tileHeight.toString()
@@ -338,7 +341,6 @@ internal fun FieldSheet(
     val failed = failure?.let { stringResource(R.string.settings_not_saved, it.text()) }
     val (title, body) =
         when (field) {
-            TrickplayField.Interval -> R.string.trickplay_interval to R.string.trickplay_interval_body
             TrickplayField.Widths -> R.string.trickplay_widths to R.string.trickplay_widths_body
             TrickplayField.TileWidth -> R.string.trickplay_tile_width to R.string.trickplay_tile_body
             TrickplayField.TileHeight -> R.string.trickplay_tile_height to R.string.trickplay_tile_body

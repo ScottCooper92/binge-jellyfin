@@ -918,10 +918,8 @@
     <string name="trickplay_threads_auto">Automatic</string>
     <string name="trickplay_threads_body">How many threads ffmpeg uses. Zero leaves it to ffmpeg.</string>
     <string name="trickplay_interval">Interval</string>
-    <string name="trickplay_interval_body">The time between two thumbnails, in milliseconds.</string>
     <string name="trickplay_every_seconds">Every %1$d s</string>
     <string name="trickplay_every_millis">Every %1$d ms</string>
-    <string name="trickplay_custom">Custom…</string>
     <string name="trickplay_widths">Widths</string>
     <string name="trickplay_widths_body">The widths, in pixels, of each set of thumbnails. Separate them with commas, such as 320, 640.</string>
     <string name="trickplay_widths_invalid">Enter widths from %1$d to %2$d, separated by commas.</string>
