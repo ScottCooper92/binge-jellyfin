@@ -128,7 +128,7 @@ fun HomeLayoutLibraryScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                HomeLayoutUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                HomeLayoutUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS, formInset = true) }
                 is HomeLayoutUiState.Failed -> { padding ->
                     ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }

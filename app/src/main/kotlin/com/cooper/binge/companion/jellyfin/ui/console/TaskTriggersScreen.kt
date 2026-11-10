@@ -49,6 +49,8 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.WrappingRow
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.EmptyScreen
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerTask
@@ -112,6 +114,7 @@ internal fun TaskTriggers(
         item {
             ItemGroup(
                 title = stringResource(R.string.tasks_triggers),
+                modifier = Modifier.layoutAnchorIf(task.description.isBlank(), LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                 rows = task.triggers.mapIndexed { index, trigger -> trigger.row(index, state.saving, actions, timeLabel) },
             )
         }
