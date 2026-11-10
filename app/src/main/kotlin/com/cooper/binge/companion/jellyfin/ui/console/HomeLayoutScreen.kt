@@ -35,6 +35,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
@@ -86,7 +88,9 @@ fun HomeLayoutScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                HomeLayoutUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                HomeLayoutUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(R.string.home_layout_body))
+                }
                 is HomeLayoutUiState.Failed -> { padding ->
                     ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
@@ -161,6 +165,7 @@ private fun HomeLayoutBody(
         PageIntro(stringResource(R.string.home_layout_body))
         ItemGroup(
             title = stringResource(R.string.home_layout_libraries),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 state.libraries
                     .map { library ->

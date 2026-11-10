@@ -30,6 +30,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.cooper.binge.companion.jellyfin.R
@@ -67,7 +69,9 @@ fun ProfilePictureScreen(
         snackbarHostState = host,
         notReady =
             when (state) {
-                ProfilePictureUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                ProfilePictureUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, intro = profilePictureBody(other), lead = { PicturePlate() })
+                }
                 is ProfilePictureUiState.Failed -> { padding ->
                     ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
@@ -76,16 +80,11 @@ fun ProfilePictureScreen(
     ) { _ ->
         if (ready != null) {
             Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-                PageIntro(
-                    if (other == null) {
-                        stringResource(R.string.profile_picture_body)
-                    } else {
-                        stringResource(R.string.profile_picture_body_other, other)
-                    },
-                )
+                PageIntro(profilePictureBody(other))
                 Picture(ready, other)
                 ItemGroup(
                     title = null,
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                     rows =
                         listOf(
                             ListItem(
@@ -111,6 +110,23 @@ fun ProfilePictureScreen(
             SnackbarMessage(if (ready.unreadable) stringResource(R.string.profile_picture_unreadable) else null, host)
             if (ready.confirmingRemove) RemovePictureDialog(actions, other = other)
         }
+    }
+}
+
+/** The page's intro: the user's own picture, or another user's by name. */
+@Composable
+private fun profilePictureBody(other: String?) =
+    if (other == null) {
+        stringResource(R.string.profile_picture_body)
+    } else {
+        stringResource(R.string.profile_picture_body_other, other)
+    }
+
+/** The picture's place while the page loads: the empty picture's circle, without its icon. */
+@Composable
+private fun PicturePlate() {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(PICTURE_SIZE).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
     }
 }
 

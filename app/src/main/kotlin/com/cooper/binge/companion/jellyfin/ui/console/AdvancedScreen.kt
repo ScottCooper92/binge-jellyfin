@@ -32,6 +32,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -106,7 +108,9 @@ fun AdvancedScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                AdvancedUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                AdvancedUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(R.string.advanced_body))
+                }
                 is AdvancedUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is AdvancedUiState.Ready -> null
             },
@@ -132,8 +136,12 @@ private fun AdvancedBody(
             R.string.advanced_images to imageRows(settings, actions),
             R.string.advanced_sessions_logs to sessionRows(settings, actions),
             R.string.advanced_clients to clientRows(settings, actions),
-        ).forEach { (title, rows) ->
-            if (rows.isNotEmpty()) ItemGroup(title = stringResource(title), rows = rows)
+        ).filter { (_, rows) -> rows.isNotEmpty() }.forEachIndexed { index, (title, rows) ->
+            ItemGroup(
+                title = stringResource(title),
+                rows = rows,
+                modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+            )
         }
         if (settings.needsRestart()) {
             ItemGroup(

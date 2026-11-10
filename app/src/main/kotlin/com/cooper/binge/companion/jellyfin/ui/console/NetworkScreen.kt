@@ -28,6 +28,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.FormAction
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
@@ -97,7 +99,9 @@ fun NetworkScreen(
             },
         notReady =
             when (state) {
-                NetworkUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                NetworkUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(R.string.network_body))
+                }
                 is NetworkUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is NetworkUiState.Ready -> null
             },
@@ -124,7 +128,13 @@ private fun NetworkBody(
             R.string.network_group_secure to secureRows(state, actions),
             R.string.network_group_access to accessRows(state, actions),
             R.string.network_group_local to localRows(state, actions),
-        ).forEach { (title, rows) -> if (rows.isNotEmpty()) ItemGroup(title = stringResource(title), rows = rows) }
+        ).filter { (_, rows) -> rows.isNotEmpty() }.forEachIndexed { index, (title, rows) ->
+            ItemGroup(
+                title = stringResource(title),
+                rows = rows,
+                modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+            )
+        }
         if (state.restartNeeded) {
             ItemGroup(
                 title = null,

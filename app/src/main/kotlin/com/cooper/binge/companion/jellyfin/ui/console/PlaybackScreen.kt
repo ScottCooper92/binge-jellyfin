@@ -35,6 +35,8 @@ import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -89,7 +91,7 @@ fun PlaybackScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                PlaybackUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                PlaybackUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(playbackBody())) }
                 is PlaybackUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is PlaybackUiState.Ready -> null
             },
@@ -101,6 +103,10 @@ fun PlaybackScreen(
         }
     }
 }
+
+/** The page's intro: it names Binge only behind the promotion flag. */
+@Composable
+private fun playbackBody() = if (LocalFlags.current.bingePromotion) R.string.languages_body else R.string.languages_body_plain
 
 @Composable
 private fun PlaybackBody(
@@ -114,10 +120,10 @@ private fun PlaybackBody(
     fun named(code: String) = if (code == ANY) any else state.cultures.find(code)?.label(locale) ?: code
     val preferences = state.preferences
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        val body = if (LocalFlags.current.bingePromotion) R.string.languages_body else R.string.languages_body_plain
-        PageIntro(stringResource(body))
+        PageIntro(stringResource(playbackBody()))
         ItemGroup(
             title = stringResource(R.string.playback_audio),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 listOf(
                     ListItem(
