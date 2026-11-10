@@ -8,6 +8,9 @@ The name of this app is "Jellyfin Companion". The GPL gives you no right to use 
 easily taken for it, for your own version. (The name is written only in this line, so renaming the app
 is a change to this one line and to the app itself.)
 
+This reserves the app's name, not the name of this repository: a fork on GitHub keeps the repository's name,
+and that is fine.
+
 If you publish a fork or a modified build, you must:
 
 - use a different name, and not one that is easily taken for this app's;

@@ -16,7 +16,7 @@ Everything else in this repository is under the GPL, including the screenshot re
 
 ## Terms
 
-All rights reserved. The name and the artwork are the owner's alone.
+All rights reserved. The app's name and the artwork are the owner's alone.
 
 The only permission is this: you may redistribute these files, unmodified, as part of an unmodified
 copy of the app. A fork, or any modified build, must replace every file listed above with its own,
