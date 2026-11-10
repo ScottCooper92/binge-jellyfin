@@ -22,7 +22,7 @@ import com.binge.designsystem.R as DesR
 /**
  * A number setting in a sheet: the [title] over a slider that shows its value as it moves and saves once, when it lands ([onSave]),
  * for a setting that saves as made. [openEndLabel] is the stop past [range] that means no limit, never or automatic, and is `null`.
- * A [value] outside [range] reads as stored, and nothing is saved until the user moves the control.
+ * A [value] outside [range], or between two of its [step]s, reads as stored, and nothing is saved until the user moves the control.
  */
 @Composable
 internal fun NumberSliderSheet(
@@ -34,9 +34,10 @@ internal fun NumberSliderSheet(
     onSave: (Int?) -> Unit,
     onDismiss: () -> Unit,
     auto: AutoOption? = null,
+    step: Int = 1,
 ) {
     BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) {
-        NumberSliderContent(title, value, range, format, openEndLabel, onSave, auto)
+        NumberSliderContent(title, value, range, format, openEndLabel, onSave, auto, step)
     }
 }
 
@@ -62,6 +63,7 @@ internal fun NumberSliderContent(
     openEndLabel: String?,
     onSave: (Int?) -> Unit,
     auto: AutoOption? = null,
+    step: Int = 1,
 ) {
     // The slider's own value while it moves; it is read when the control lands, so a stepper's tap is saved as it was left.
     var draft by rememberSaveable(value) { mutableStateOf(value) }
@@ -100,6 +102,7 @@ internal fun NumberSliderContent(
             openEndLabel = openEndLabel,
             onValueChangeFinished = { onSave(draft) },
             enabled = !isAuto,
+            step = step,
         )
     }
 }
