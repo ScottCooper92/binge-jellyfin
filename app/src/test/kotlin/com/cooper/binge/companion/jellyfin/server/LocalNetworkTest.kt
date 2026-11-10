@@ -46,6 +46,15 @@ class LocalNetworkTest {
     }
 
     @Test
+    fun `a literal the kit reads strictly is a name, not an address, so a leading zero or a sign does not make a host local`() {
+        // "010.0.0.1" and "+10.0.0.1" are not canonical literals: a resolver may read the zero as octal, so they are names, and a
+        // name with a dot and no home suffix does not need the permission.
+        listOf("010.0.0.1", "+10.0.0.1", "192.168.01.1", "fe80::1%eth0").forEach { assertFalse("$it is a name", it.isLocalNetworkHost()) }
+        // A trailing dot on a real literal is still the literal.
+        assertTrue("10.0.0.1.".isLocalNetworkHost())
+    }
+
+    @Test
     fun `a server address says its host only when reaching it needs the permission`() {
         assertEquals("192.168.1.2", "http://192.168.1.2:8096".localNetworkHostOrNull())
         assertEquals("nas.local", "http://nas.local:8096".localNetworkHostOrNull())

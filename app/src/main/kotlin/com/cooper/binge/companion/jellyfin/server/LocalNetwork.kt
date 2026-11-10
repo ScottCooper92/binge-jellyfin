@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.binge.companion.kit.AddressRange
+import com.binge.companion.kit.ipLiteralBytes
+import com.binge.companion.kit.isIn
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /** The first SDK with the `ACCESS_LOCAL_NETWORK` runtime permission. */
@@ -50,6 +53,9 @@ internal fun String.isLocalNetworkHost(): Boolean =
 /** The host of this server address when reaching it needs the local-network permission; null for any other, or one that does not parse. */
 fun String.localNetworkHostOrNull(): String? = toHttpUrlOrNull()?.host?.takeIf { it.isLocalNetworkHost() }
 
-/** Link-local, the RFC 1918 ranges and IPv6 unique-local, bar Tailscale's own block. */
+/**
+ * Link-local, the RFC 1918 ranges and IPv6 unique-local, bar Tailscale's own block. Which ranges count is this app's policy;
+ * what a range is, and how a literal is read, is the kit's (binge-companions' `AddressRange`).
+ */
 private fun ByteArray.isLocalNetworkAddress(): Boolean =
     isIn(AddressRange.LinkLocal, AddressRange.Private, AddressRange.UniqueLocal) && !isIn(AddressRange.Tailscale)
