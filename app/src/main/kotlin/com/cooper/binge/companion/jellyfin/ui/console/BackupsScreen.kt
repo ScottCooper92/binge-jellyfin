@@ -10,10 +10,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -26,6 +24,9 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -87,7 +88,13 @@ fun BackupsScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                BackupsUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                BackupsUiState.Loading ->
+                    ConsoleLoading(
+                        inner,
+                        LOADING_ROWS,
+                        plainIntro = stringResource(R.string.backups_body),
+                        formInset = false,
+                    )
                 is BackupsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is BackupsUiState.Ready -> {
                     BingePullToRefresh(
@@ -120,12 +127,26 @@ private fun Backups(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        item { Text(stringResource(R.string.backups_body), style = MaterialTheme.typography.bodyMedium) }
-        status?.let { rows -> item { ItemGroup(title = null, rows = rows) } }
+        item { PlainIntro(stringResource(R.string.backups_body)) }
+        status?.let { rows ->
+            item {
+                ItemGroup(
+                    title = null,
+                    rows = rows,
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
+            }
+        }
         if (state.backups.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.backups_empty), Icons.Outlined.Backup) }
         } else {
-            item { ItemGroup(title = null, rows = state.backups.map { it.row(state, actions, now) }) }
+            item {
+                ItemGroup(
+                    title = null,
+                    rows = state.backups.map { it.row(state, actions, now) },
+                    modifier = Modifier.layoutAnchorIf(status == null, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
+            }
         }
     }
 }

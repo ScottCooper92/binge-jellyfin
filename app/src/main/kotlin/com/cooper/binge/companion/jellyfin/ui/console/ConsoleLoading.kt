@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -25,7 +27,7 @@ import com.binge.designsystem.R as DesR
  * A settings page under `FormScreen` also gets the form's own content inset around its body, and leads with a page's intro
  * sentence: pass [intro] for it, or [formInset] alone for a page that has none. The intro is static, so the skeleton shows
  * the text itself and the first group lands where the plate stood at any font size. [lead] is what the settled page puts between
- * the intro and its first group, as a plate.
+ * the intro and its first group, as a plate. [plainIntro] is the same for a page that opens with a plain line of text.
  */
 @Composable
 internal fun ConsoleLoading(
@@ -34,6 +36,7 @@ internal fun ConsoleLoading(
     modifier: Modifier = Modifier,
     intro: String? = null,
     formInset: Boolean = intro != null,
+    plainIntro: String? = null,
     lead: (@Composable () -> Unit)? = null,
 ) {
     val inset = if (formInset) resolvedContentInset() else 0.dp
@@ -53,16 +56,20 @@ internal fun ConsoleLoading(
         height = dimensionResource(DesR.dimen.item_group_icon_size) + dimensionResource(DesR.dimen.item_group_row_padding_v) * 2,
         description = stringResource(R.string.console_loading),
         header =
-            intro?.let { text ->
+            (intro ?: plainIntro)?.let { text ->
                 {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
                         modifier = Modifier.padding(bottom = gap),
                     ) {
-                        PageIntro(text)
+                        if (intro != null) PageIntro(text) else PlainIntro(text)
                         lead?.invoke()
                     }
                 }
             },
     )
 }
+
+/** The sentence that opens a page which has not moved to `PageIntro`: the page and its skeleton share it, so they cannot drift. */
+@Composable
+internal fun PlainIntro(text: String) = Text(text, style = MaterialTheme.typography.bodyMedium)

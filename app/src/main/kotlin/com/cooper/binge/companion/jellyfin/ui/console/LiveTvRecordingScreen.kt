@@ -26,6 +26,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -78,7 +80,9 @@ fun LiveTvRecordingScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                LiveTvRecordingUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                LiveTvRecordingUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, plainIntro = stringResource(R.string.live_tv_recording_body), formInset = true)
+                }
                 is LiveTvRecordingUiState.Failed -> { padding ->
                     ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
@@ -99,9 +103,10 @@ private fun RecordingBody(
     actions: LiveTvRecordingActions,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        Text(stringResource(R.string.live_tv_recording_body), style = MaterialTheme.typography.bodyMedium)
+        PlainIntro(stringResource(R.string.live_tv_recording_body))
         ItemGroup(
             title = stringResource(R.string.live_tv_recording_folders),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows = RecordingFolder.entries.map { folderRow(it, config, actions) },
         )
         Text(stringResource(R.string.live_tv_recording_folder_note), style = MaterialTheme.typography.bodySmall)

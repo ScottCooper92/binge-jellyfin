@@ -50,6 +50,8 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.LogRow
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -236,6 +238,7 @@ private fun FilesList(
             item {
                 ItemGroup(
                     title = null,
+                    modifier = Modifier.layoutAnchorIf(state.retention == null, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                     rows =
                         files.map { file ->
                             ListItem(

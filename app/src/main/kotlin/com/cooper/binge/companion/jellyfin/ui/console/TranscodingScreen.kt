@@ -6,9 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +19,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -73,7 +73,9 @@ fun TranscodingScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                TranscodingUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                TranscodingUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, plainIntro = stringResource(R.string.transcoding_body), formInset = true)
+                }
                 is TranscodingUiState.Failed -> { padding ->
                     ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
@@ -100,9 +102,10 @@ private fun TranscodingBody(
     Column(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        Text(stringResource(R.string.transcoding_body), style = MaterialTheme.typography.bodyMedium)
+        PlainIntro(stringResource(R.string.transcoding_body))
         ItemGroup(
             title = stringResource(R.string.transcoding_hardware),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 listOf(
                     ListItem(
