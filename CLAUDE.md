@@ -31,6 +31,11 @@ The contracts, the SDK and the design system are consumed as source. `binge-comp
 an author bot's commit can revert a change to it: bump a submodule in a commit of its own, and check
 the pins after any bot push.
 
+The licence is GPL-3.0-or-later (`LICENSE`), with the section 7 exception for Google's Play services and Firebase
+libraries in `LICENSE-EXCEPTION.md` (the app links Firebase Remote Config). The name and artwork are kept apart from the
+code, in `TRADEMARKS.md` and `ASSETS.md`. binge-companions stays Apache 2.0, and the design system's licence is decided
+separately. A new dependency must be under a licence the GPL is compatible with.
+
 The app is called **Jellyfin Companion**, and so is the client it signs in as. It names Binge only behind
 `FeatureFlags` (`flags/`): `Flags.bingePromotion`, off by default, as binge-seerr has. Every string or surface that
 names Binge reads `LocalFlags` and has a plain alternative. The value comes from Firebase Remote Config, in the `binge-jellyfin-companion` project, key
