@@ -706,6 +706,8 @@ class FakeJellyfin : Dispatcher() {
             path == "/Users" -> json(serverUsers.values.joinToString(",", "[", "]") { it.toString() })
             path == "/Users/New" -> createUser(request)
             path.startsWith("/Users/") && path.endsWith("/Policy") -> savePolicy(path.split('/')[2], request)
+            path.startsWith("/Users/") && request.method == "GET" && path.count { it == '/' } == 2 ->
+                serverUsers[path.removePrefix("/Users/")]?.let { json(it.toString()) } ?: MockResponse(code = 404)
             path.startsWith("/Users/") && request.method == "DELETE" -> {
                 serverUsers.remove(path.removePrefix("/Users/"))
                 MockResponse(code = 204)

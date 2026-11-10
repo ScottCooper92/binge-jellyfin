@@ -13,6 +13,7 @@ import com.cooper.binge.companion.jellyfin.server.deleteUser
 import com.cooper.binge.companion.jellyfin.server.libraries
 import com.cooper.binge.companion.jellyfin.server.savePolicy
 import com.cooper.binge.companion.jellyfin.server.setPassword
+import com.cooper.binge.companion.jellyfin.server.user
 import com.cooper.binge.companion.jellyfin.server.users
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -265,13 +266,17 @@ class UsersViewModel(
         changes++
         viewModelScope.launch {
             saving.withLock {
-                val next = change(saved[user.id] ?: user.policy)
-                val result = connection.consoleCall(TAG) { _, client -> client.savePolicy(user.id, next) }
-                result.onSuccess { saved[user.id] = next }
+                // The change goes on what the server holds now, not on a copy read earlier: Jellyfin replaces the whole policy, so a
+                // field changed elsewhere since would otherwise be saved back as it was. A read that fails saves nothing.
+                val result =
+                    connection.consoleCall(TAG) { _, client ->
+                        change(client.user(user.id).policy).also { client.savePolicy(user.id, it) }
+                    }
+                result.onSuccess { saved[user.id] = it }
                 val queued = pending.getValue(user.id).also { it.remove(change) }
                 changes++
                 // What the screen shows is what the server holds, plus the changes still waiting their turn.
-                val shown = queued.fold(saved[user.id] ?: next) { policy, queuedChange -> queuedChange(policy) }
+                val shown = queued.fold(saved[user.id] ?: user.policy) { policy, queuedChange -> queuedChange(policy) }
                 update {
                     copy(
                         users = users.withPolicy(user.id, shown),
