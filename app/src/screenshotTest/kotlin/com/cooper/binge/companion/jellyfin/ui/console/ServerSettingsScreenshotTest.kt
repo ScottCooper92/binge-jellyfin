@@ -66,6 +66,13 @@ class ServerSettingsScreenshotTest {
             splashscreenAvailable = false,
         )
 
+    /** Before 10.11: no splash image row, and a note that a branding save can reset an image set in another app. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun before10_11() = ServerSettingsScreen(previewSettings, ServerSettingsActions(), splashImageKnown = false)
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
@@ -159,21 +166,6 @@ class ServerSettingsScreenshotTest {
     @Composable
     fun splashDefaultNoPreview() =
         Surface { SplashSheet(custom = false, state = SplashUiState(open = true), actions = ServerSettingsActions(), inWindow = false) }
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @JellyfinSpanishPreviews
-    @Composable
-    fun splashUnknown() =
-        Surface {
-            SplashSheet(
-                custom = false,
-                state = SplashUiState(open = true),
-                actions = ServerSettingsActions(),
-                inWindow = false,
-                known = false,
-            )
-        }
 
     @PreviewTest
     @JellyfinScreenStatePreview
