@@ -135,10 +135,16 @@ object DeviceProfiles {
     ): List<JsonObject> =
         buildList {
             val limits = mutableListOf<JsonElement>()
-            device?.maxWidth?.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Width", it.toString()) }
-            device?.maxHeight?.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Height", it.toString()) }
+            // A device that sends per-codec limits has its frame size set codec by codec below, and a global one would still stop a
+            // codec decoded further than the rest.
+            val perCodec = device?.let { CodecLimits.profiles(it, VIDEO_CODECS) }.orEmpty()
+            if (device != null && device.codecLimitsCount == 0) {
+                device.maxWidth.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Width", it.toString()) }
+                device.maxHeight.takeIf { it > 0 }?.let { limits += condition("LessThanEqual", "Height", it.toString()) }
+            }
             device?.let { limits += condition("EqualsAny", "VideoRangeType", playableRanges(it).joinToString("|")) }
             if (limits.isNotEmpty()) add(obj("Type" to str("Video"), "Conditions" to JsonArray(limits)))
+            addAll(perCodec)
             // E-AC-3 with Atmos (JOC) needs its own decoder; a device with plain E-AC-3 only fails to start on it.
             if (!decodesAtmos) {
                 add(
@@ -209,19 +215,20 @@ object DeviceProfiles {
             else -> null
         }
 
-    private fun condition(
+    internal fun condition(
         type: String,
         property: String,
         value: String,
+        required: Boolean = false,
     ): JsonObject =
         obj(
             "Condition" to str(type),
             "Property" to str(property),
             "Value" to str(value),
-            "IsRequired" to JsonPrimitive(false),
+            "IsRequired" to JsonPrimitive(required),
         )
 
-    private fun obj(vararg pairs: Pair<String, JsonElement>): JsonObject = JsonObject(pairs.toMap())
+    internal fun obj(vararg pairs: Pair<String, JsonElement>): JsonObject = JsonObject(pairs.toMap())
 
     private fun str(value: String): JsonPrimitive = JsonPrimitive(value)
 }
