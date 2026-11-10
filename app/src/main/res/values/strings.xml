@@ -759,7 +759,7 @@
     <string name="transcoding_h265_crf">H.265 quality (CRF)</string>
     <string name="transcoding_muxing_queue">Max muxing queue size</string>
     <string name="transcoding_auto">Auto</string>
-    <string name="transcoding_threads_max">Max</string>
+    <string name="transcoding_threads_max">All available</string>
     <string name="transcoding_none">None</string>
     <string name="transcoding_deinterlace">Deinterlace method</string>
     <string name="transcoding_double_rate">Double the frame rate</string>

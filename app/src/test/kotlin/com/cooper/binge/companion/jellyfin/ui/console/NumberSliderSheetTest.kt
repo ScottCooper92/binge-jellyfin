@@ -2,10 +2,21 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import com.binge.designsystem.testing.assertNoTextClipped
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -77,6 +88,128 @@ class NumberSliderSheetTest {
         assertEquals(listOf<Int?>(90), saved)
         compose.onNodeWithContentDescription("Increase Refresh metadata").performClick()
         assertEquals(listOf(90, null), saved)
+    }
+
+    /** Drags from near the start to [fraction] of the track's width and lets go, then checks the label against the one save. */
+    private fun releaseAt(fraction: Float) {
+        show(30)
+        compose.onNodeWithContentDescription("Refresh metadata").performTouchInput {
+            down(Offset(width * 0.1f, centerY))
+            moveTo(Offset(width * fraction, centerY))
+            up()
+        }
+        assertEquals("one save per release", 1, saved.size)
+        compose
+            .onNodeWithContentDescription("Refresh metadata")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Every ${saved.single()} days"))
+    }
+
+    // A drag lands between two stops more often than on one, so rounding is the one rule for the label and the save.
+    @Test
+    fun `a release between two stops saves the number the label shows, low`() = releaseAt(0.337f)
+
+    @Test
+    fun `a release between two stops saves the number the label shows, middle`() = releaseAt(0.512f)
+
+    @Test
+    fun `a release between two stops saves the number the label shows, high`() = releaseAt(0.678f)
+
+    private val autoChanges = mutableListOf<Pair<Boolean, Int?>>()
+
+    private fun showWithAuto(
+        value: Int?,
+        auto: Boolean,
+    ) = compose.setContent {
+        JellyfinTheme {
+            Surface {
+                NumberSliderContent(
+                    title = "Encoding threads",
+                    value = value,
+                    range = 1..16,
+                    format = { "$it" },
+                    openEndLabel = "All available",
+                    onSave = { saved += it },
+                    auto = AutoOption("Auto", auto) { on, number -> autoChanges += on to number },
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `with auto on the slider is dimmed and nothing is saved`() {
+        showWithAuto(null, auto = true)
+        compose.onNodeWithContentDescription("Increase Encoding threads").assertIsNotEnabled()
+        compose.onNodeWithContentDescription("Decrease Encoding threads").assertIsNotEnabled()
+        assertTrue(saved.isEmpty() && autoChanges.isEmpty())
+    }
+
+    @Test
+    fun `turning auto off is saved at once by the caller and leaves the slider at its open end`() {
+        showWithAuto(null, auto = true)
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(false to null), autoChanges)
+        compose.onNodeWithText("All available").assertIsDisplayed()
+        assertTrue(saved.isEmpty())
+        compose.onNodeWithContentDescription("Decrease Encoding threads").assertIsEnabled()
+    }
+
+    @Test
+    fun `turning auto on is saved at once, and a number set with it off is saved by the slider`() {
+        showWithAuto(4, auto = false)
+        compose.onNodeWithContentDescription("Increase Encoding threads").performClick()
+        assertEquals(listOf<Int?>(5), saved)
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(true to null), autoChanges)
+        assertEquals(listOf<Int?>(5), saved)
+    }
+
+    /** A host that does what the Threads page does: auto on has no number, and off saves the one it is handed. */
+    private fun showAsThreads(start: Int?) =
+        compose.setContent {
+            var stored by remember { mutableStateOf(start) }
+            var auto by remember { mutableStateOf(false) }
+            JellyfinTheme {
+                Surface {
+                    NumberSliderContent(
+                        title = "Encoding threads",
+                        value = if (auto) null else stored,
+                        range = 1..16,
+                        format = { "$it" },
+                        openEndLabel = "All available",
+                        onSave = {
+                            saved += it
+                            stored = it
+                        },
+                        auto =
+                            AutoOption("Auto", auto) { on, number ->
+                                autoChanges += on to number
+                                auto = on
+                                if (!on) stored = number
+                            },
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun `auto on keeps the number, and auto off saves it again`() {
+        showAsThreads(4)
+        repeat(2) { compose.onNodeWithContentDescription("Increase Encoding threads").performClick() }
+        assertEquals(listOf<Int?>(5, 6), saved)
+        compose.onNodeWithText("Auto").performClick()
+        compose.onNodeWithText("6").assertIsDisplayed()
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(true to null, false to 6), autoChanges)
+        compose.onNodeWithText("6").assertIsDisplayed()
+    }
+
+    @Test
+    fun `auto off with no number before it lands on all available`() {
+        showAsThreads(null)
+        compose.onNodeWithText("Auto").performClick()
+        compose.onNodeWithText("Auto").performClick()
+        assertEquals(listOf(true to null, false to null), autoChanges)
+        compose.onNodeWithText("All available").assertIsDisplayed()
     }
 
     @Test
