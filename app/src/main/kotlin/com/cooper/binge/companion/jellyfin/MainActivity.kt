@@ -30,6 +30,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.binge.companion.kit.isTelevision
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.AndroidLocalNetworkPermission
@@ -47,7 +48,6 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
-import com.cooper.binge.companion.jellyfin.ui.tv.isTelevision
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
 import kotlinx.coroutines.launch
 
