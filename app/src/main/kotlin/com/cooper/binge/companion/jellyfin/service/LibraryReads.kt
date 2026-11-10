@@ -77,9 +77,17 @@ class LibraryReads(
         if (media.mediaType != MediaType.MEDIA_TYPE_TV) return fresh.toWatchState()
         val episodes = client.episodes(session.userId, item.id).mapNotNull { episode -> episode.episodeRefOrNull()?.let { it to episode } }
         val builder = fresh.toWatchState().toBuilder()
-        episodes.forEach { (ref, episode) ->
-            builder.addEpisodes(EpisodeWatchState.newBuilder().setEpisode(ref).setState(episode.toWatchState()))
-        }
+        // The window is cut from every episode, but the series' own last_played below is read from them all.
+        builder.addAllEpisodes(
+            episodes
+                .map { (ref, episode) ->
+                    EpisodeWatchState
+                        .newBuilder()
+                        .setEpisode(ref)
+                        .setState(episode.toWatchState())
+                        .build()
+                }.episodeWindow(),
+        )
         episodes
             .mapNotNull { (_, episode) -> episode.userData?.lastPlayedDate?.toTimestamp() }
             .maxByOrNull { it.seconds }
