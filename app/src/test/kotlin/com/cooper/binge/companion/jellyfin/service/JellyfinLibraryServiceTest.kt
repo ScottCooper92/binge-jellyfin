@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.OkHttpClient
 import org.junit.After
@@ -351,6 +352,69 @@ class JellyfinLibraryServiceTest {
                 state.episodesList
                     .first { it.episode.episodeNumber == 2 }
                     .state.played,
+            )
+        }
+
+    /** A season of [count] episodes of the series, two of them played: 115 most recently, 118 earlier. */
+    private fun addLongSeason(count: Int = 120) {
+        jellyfin.items +=
+            (1..count).map { n ->
+                FakeItem(
+                    "long-$n",
+                    "Episode $n",
+                    "Episode",
+                    seriesId = "series-1",
+                    season = 2,
+                    episode = n,
+                    played = n == 115 || n == 118,
+                    lastPlayed =
+                        when (n) {
+                            115 -> "2026-11-01T10:00:00Z"
+                            118 -> "2026-10-01T10:00:00Z"
+                            else -> null
+                        },
+                )
+            }
+    }
+
+    @Test
+    fun `a long series' watch state is the window, the most recently played first, even past the hundredth episode`() =
+        runBlocking {
+            addLongSeason()
+            val state = stub.getWatchState(GetWatchStateRequest.newBuilder().setMedia(series).build()).state
+            assertEquals(100, state.episodesCount)
+            val order = state.episodesList.map { it.episode.seasonNumber to it.episode.episodeNumber }
+            // The two played ones lead, latest first, though both are late in season order; the rest follow in season order.
+            assertEquals(listOf(2 to 115, 2 to 118, 1 to 1, 1 to 2, 2 to 1), order.take(5))
+            assertEquals(2 to 96, order.last())
+            assertFalse(2 to 100 in order)
+            // The series' own last_played reads every episode, not only the window.
+            assertEquals(Instant.parse("2026-11-01T10:00:00Z").epochSecond, state.lastPlayed.seconds)
+        }
+
+    @Test
+    fun `a series that fits the window keeps every episode`() =
+        runBlocking {
+            addLongSeason(count = 10)
+            val state = stub.getWatchState(GetWatchStateRequest.newBuilder().setMedia(series).build()).state
+            assertEquals(12, state.episodesCount)
+        }
+
+    @Test
+    fun `a watch state stream pushes the same window`() =
+        runBlocking {
+            addLongSeason()
+            val first =
+                withTimeout(10_000) {
+                    stub.observeWatchState(ObserveWatchStateRequest.newBuilder().setMedia(series).build()).first()
+                }
+            assertEquals(100, first.state.episodesCount)
+            assertEquals(
+                2 to 115,
+                first.state.episodesList
+                    .first()
+                    .episode
+                    .let { it.seasonNumber to it.episodeNumber },
             )
         }
 
