@@ -29,6 +29,8 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -161,7 +163,11 @@ private fun Server(
         modifier = Modifier.fillMaxSize().verticalScroll(scroll).padding(inner),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        ItemGroup(title = null, rows = state.info.rows())
+        ItemGroup(
+            title = null,
+            rows = state.info.rows(),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+        )
         // Where a restart or shutdown has got to, while it is going on or done. A failure is a message instead.
         if (state.refusal() == null) {
             (state.shutdown?.message ?: state.restart?.takeIf { it != Restart.NotBack }?.message)?.let {

@@ -29,6 +29,8 @@ import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -77,7 +79,8 @@ fun ChannelMappingsScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                ChannelMappingsUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                ChannelMappingsUiState.Loading ->
+                    ConsoleLoading(inner, LOADING_ROWS, plainIntro = stringResource(R.string.channel_mappings_body), formInset = false)
                 is ChannelMappingsUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ChannelMappingsUiState.Ready -> {
                     ChannelMappingsBody(state, actions, inner)
@@ -156,12 +159,20 @@ private fun ProviderChannels(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item(key = "intro") {
-            Text(stringResource(R.string.channel_mappings_body), style = MaterialTheme.typography.bodyMedium)
+            PlainIntro(stringResource(R.string.channel_mappings_body))
         }
         if (rows.isEmpty()) {
             item(key = "empty") { ConsoleEmptyScreen(stringResource(R.string.channel_mappings_no_channels), Icons.Outlined.Tv) }
         }
-        rows.chunked(GROUP_ROWS).forEachIndexed { index, group -> item(key = "group-$index") { ItemGroup(title = null, rows = group) } }
+        rows.chunked(GROUP_ROWS).forEachIndexed { index, group ->
+            item(key = "group-$index") {
+                ItemGroup(
+                    title = null,
+                    rows = group,
+                    modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
+            }
+        }
     }
 }
 
