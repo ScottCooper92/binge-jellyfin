@@ -1,11 +1,13 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import android.content.res.Resources
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
@@ -39,9 +41,11 @@ internal enum class PolicyAdd { BlockedTag, AllowedTag, Schedule }
 
 private const val BITS_PER_MEGABIT = 1_000_000
 private const val NEVER = -1
-private val LOCKOUT_PRESETS = listOf(0, NEVER, 3, 5, 10, 20)
-private val SESSION_PRESETS = listOf(0, 1, 2, 3, 5, 10)
-private val BITRATE_PRESETS_MBPS = listOf(0, 1, 2, 4, 6, 8, 10, 15, 20, 40, 60, 80)
+private const val BITS_PER_KILOBIT = 1_000
+private const val KILOBITS_PER_MEGABIT = 1_000
+private val LOCKOUT_ATTEMPTS = 1..20
+private val SESSIONS_AT_ONCE = 1..20
+private val BITRATE_KILOBITS = 1_000..100_000
 
 /** A list with [id] in it or out of it, for a setting that is a list of ids. */
 internal fun memberChange(
@@ -73,12 +77,29 @@ internal fun sessionsLabel(sessions: Int): String =
 
 /** A bitrate in bits per second, as megabits. */
 @Composable
-internal fun bitrateLabel(bits: Int): String {
-    if (bits <= 0) return stringResource(R.string.users_no_limit)
+internal fun bitrateLabel(bits: Int): String = bitrateText(LocalContext.current.resources, bits)
+
+/** [bitrateLabel] for a caller that is not composable: "No limit" for none, else whole megabits as such and the rest to a tenth. */
+internal fun bitrateText(
+    resources: Resources,
+    bits: Int,
+): String {
+    if (bits <= 0) return resources.getString(R.string.users_no_limit)
     val mbps = bits.toDouble() / BITS_PER_MEGABIT
     val shown = if (bits % BITS_PER_MEGABIT == 0) (bits / BITS_PER_MEGABIT).toString() else "%.1f".format(java.util.Locale.ROOT, mbps)
-    return stringResource(R.string.users_mbps, shown)
+    return resources.getString(R.string.users_mbps, shown)
 }
+
+/** A lockout count; 0, which a stored policy may still hold, is the server's default. */
+internal fun lockoutText(
+    resources: Resources,
+    attempts: Int,
+): String =
+    if (attempts <= 0) {
+        resources.getString(R.string.users_lockout_default)
+    } else {
+        resources.getQuantityString(R.plurals.users_lockout_after, attempts, attempts)
+    }
 
 @Composable
 internal fun syncPlayLabel(value: String): String =
@@ -127,28 +148,45 @@ internal fun PolicyPickerSheet(
     val ratings = (choices.ratings as? Loaded.Ready)?.value.orEmpty()
     when (picker) {
         PolicyPicker.Lockout -> {
+            val resources = LocalContext.current.resources
+            // The server keeps "its default" as 3 and reads 3 back, so there is no default to switch on: a count, or never (-1).
             val current = policy.int(POLICY_LOCKOUT) ?: 0
-            NumberSheet(R.string.users_lockout, LOCKOUT_PRESETS, current, { lockoutLabel(it) }, onDismiss) {
-                actions.onPolicy(POLICY_LOCKOUT, JsonPrimitive(it))
-            }
+            NumberSliderSheet(
+                title = stringResource(R.string.users_lockout),
+                value = current.takeIf { it >= 0 },
+                range = LOCKOUT_ATTEMPTS,
+                format = { lockoutText(resources, it) },
+                openEndLabel = stringResource(R.string.users_lockout_never),
+                onSave = { attempts -> actions.onPolicy(POLICY_LOCKOUT, JsonPrimitive(attempts ?: NEVER)) },
+                onDismiss = onDismiss,
+            )
         }
         PolicyPicker.Sessions -> {
-            val current = policy.int(POLICY_MAX_SESSIONS) ?: 0
-            NumberSheet(R.string.users_max_sessions, SESSION_PRESETS, current, { sessionsLabel(it) }, onDismiss) {
-                actions.onPolicy(POLICY_MAX_SESSIONS, JsonPrimitive(it))
-            }
+            val resources = LocalContext.current.resources
+            NumberSliderSheet(
+                title = stringResource(R.string.users_max_sessions),
+                value = (policy.int(POLICY_MAX_SESSIONS) ?: 0).takeIf { it > 0 },
+                range = SESSIONS_AT_ONCE,
+                format = { resources.getQuantityString(R.plurals.users_sessions_at_once, it, it) },
+                openEndLabel = stringResource(R.string.users_no_limit),
+                onSave = { sessions -> actions.onPolicy(POLICY_MAX_SESSIONS, JsonPrimitive(sessions ?: 0)) },
+                onDismiss = onDismiss,
+            )
         }
         PolicyPicker.Bitrate -> {
-            val current = policy.int(POLICY_BITRATE_LIMIT) ?: 0
-            NumberSheet(
-                R.string.users_bitrate,
-                BITRATE_PRESETS_MBPS.map { it * BITS_PER_MEGABIT },
-                current,
-                { bitrateLabel(it) },
-                onDismiss,
-            ) {
-                actions.onPolicy(POLICY_BITRATE_LIMIT, JsonPrimitive(it))
-            }
+            val resources = LocalContext.current.resources
+            // In kilobits, a step to the megabit, so a stored 2.5 Mbps reads as 2.5 between two steps and is not rewritten on open.
+            val stored = (policy.int(POLICY_BITRATE_LIMIT) ?: 0).takeIf { it > 0 }
+            NumberSliderSheet(
+                title = stringResource(R.string.users_bitrate),
+                value = stored?.let { (it / BITS_PER_KILOBIT).coerceAtLeast(1) },
+                range = BITRATE_KILOBITS,
+                format = { bitrateText(resources, it * BITS_PER_KILOBIT) },
+                openEndLabel = stringResource(R.string.users_no_limit),
+                onSave = { kilobits -> actions.onPolicy(POLICY_BITRATE_LIMIT, JsonPrimitive((kilobits ?: 0) * BITS_PER_KILOBIT)) },
+                onDismiss = onDismiss,
+                step = KILOBITS_PER_MEGABIT,
+            )
         }
         PolicyPicker.SyncPlay ->
             BingeChoiceSheet(
@@ -187,26 +225,6 @@ internal fun PolicyPickerSheet(
             )
         }
     }
-}
-
-/** A pick from [presets], and the user's own value if it is another. */
-@Composable
-private fun NumberSheet(
-    title: Int,
-    presets: List<Int>,
-    current: Int,
-    label: @Composable (Int) -> String,
-    onDismiss: () -> Unit,
-    onPick: (Int) -> Unit,
-) {
-    val all = (presets + current).distinct().sortedWith(compareBy { if (it < 0) Int.MAX_VALUE else it })
-    BingeChoiceSheet(
-        title = stringResource(title),
-        choices = BingeChoiceList.Ready(all.map { BingeChoice(it.toString(), label(it)) }),
-        selected = current.toString(),
-        onSelect = { value -> value.toIntOrNull()?.let(onPick) },
-        onDismissRequest = onDismiss,
-    )
 }
 
 /** The sheet a section's Add opens. */
