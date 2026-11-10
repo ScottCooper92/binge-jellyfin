@@ -38,6 +38,8 @@ import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -95,7 +97,9 @@ fun TrickplayScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                TrickplayUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                TrickplayUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(R.string.trickplay_body))
+                }
                 is TrickplayUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is TrickplayUiState.Ready -> null
             },
@@ -135,6 +139,7 @@ private fun ProcessingGroup(
 ) {
     ItemGroup(
         title = stringResource(R.string.trickplay_processing),
+        modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
         rows =
             listOfNotNull(
                 ListItem(

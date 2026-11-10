@@ -47,6 +47,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -103,7 +105,9 @@ fun ServerSettingsScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                ServerSettingsUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS) }
+                ServerSettingsUiState.Loading -> { padding ->
+                    ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(R.string.server_settings_body))
+                }
                 is ServerSettingsUiState.Failed -> { padding ->
                     ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding))
                 }
@@ -138,6 +142,7 @@ private fun ServerSettingsBody(
         PageIntro(stringResource(R.string.server_settings_body))
         ItemGroup(
             title = stringResource(R.string.server_settings_general),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 listOf(
                     ListItem(
