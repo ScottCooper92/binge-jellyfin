@@ -32,6 +32,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -88,7 +90,13 @@ fun ApiKeysScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                ApiKeysUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                ApiKeysUiState.Loading ->
+                    ConsoleLoading(
+                        inner,
+                        LOADING_ROWS,
+                        intro = stringResource(R.string.api_keys_body),
+                        formInset = false,
+                    )
                 is ApiKeysUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is ApiKeysUiState.Ready -> {
                     BingePullToRefresh(
@@ -122,7 +130,13 @@ private fun Keys(
         if (state.keys.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.api_keys_empty), Icons.Outlined.Key) }
         } else {
-            item { ItemGroup(title = null, rows = state.keys.map { it.row(state, actions, now) }) }
+            item {
+                ItemGroup(
+                    title = null,
+                    rows = state.keys.map { it.row(state, actions, now) },
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
+            }
         }
     }
     if (state.naming) {

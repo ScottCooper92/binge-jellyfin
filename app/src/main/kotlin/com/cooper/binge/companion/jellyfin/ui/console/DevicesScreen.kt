@@ -33,6 +33,8 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -78,7 +80,13 @@ fun DevicesScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                DevicesUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                DevicesUiState.Loading ->
+                    ConsoleLoading(
+                        inner,
+                        LOADING_ROWS,
+                        intro = stringResource(R.string.devices_body),
+                        formInset = false,
+                    )
                 is DevicesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is DevicesUiState.Ready -> {
                     BingePullToRefresh(
@@ -113,7 +121,13 @@ private fun Devices(
         if (state.devices.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.devices_empty), Icons.Outlined.Devices) }
         } else {
-            item { ItemGroup(title = null, rows = state.devices.map { it.row(state, actions, now) }) }
+            item {
+                ItemGroup(
+                    title = null,
+                    rows = state.devices.map { it.row(state, actions, now) },
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
+            }
         }
     }
     state.renaming?.let {

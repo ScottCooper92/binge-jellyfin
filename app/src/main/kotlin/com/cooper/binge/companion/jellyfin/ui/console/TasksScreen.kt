@@ -32,6 +32,8 @@ import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -83,7 +85,13 @@ fun TasksScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when {
-                state is TasksUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                state is TasksUiState.Loading ->
+                    ConsoleLoading(
+                        inner,
+                        LOADING_ROWS,
+                        intro = stringResource(R.string.tasks_intro),
+                        formInset = false,
+                    )
                 state is TasksUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 ready != null ->
                     BingePullToRefresh(
@@ -175,10 +183,11 @@ private fun Tasks(
         } else {
             item { PageIntro(stringResource(R.string.tasks_intro)) }
         }
-        board.tasks.groupBy { it.category }.forEach { (category, tasks) ->
+        board.tasks.groupBy { it.category }.entries.forEachIndexed { index, (category, tasks) ->
             item(key = category) {
                 ItemGroup(
                     title = category.ifBlank { null },
+                    modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                     rows =
                         tasks.map { task ->
                             task.row(task.id == openTask, board, actions, now).item()
