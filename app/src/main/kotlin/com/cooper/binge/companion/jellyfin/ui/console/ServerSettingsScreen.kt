@@ -84,7 +84,8 @@ private const val MULTILINE_MIN = 3
  * The server's general settings (its name, the language and country metadata is fetched for, Quick
  * Connect) and the login branding. Each change saves as it's made; a text saves when its dialog does.
  * The splash screen switch shows only on a server that has one ([splashscreenAvailable], 10.9). Whether the image is the user's own is
- * read only where the server says ([splashImageKnown], 10.11); before that the page makes no claim and Remove is always offered.
+ * read only where the server says ([splashImageKnown], 10.11). Before that, the image row is left out and a note says that saving here
+ * can reset an image set in another app: those servers drop it on any branding save.
  */
 @Composable
 fun ServerSettingsScreen(
@@ -120,8 +121,8 @@ fun ServerSettingsScreen(
             RefusedMessage(ready.refused, host)
             picker?.let { ServerPickerSheet(it, ready, actions) { picker = null } }
             ready.editing?.let { TextSheet(it, ready, actions) }
-            if (splash.open && splashscreenAvailable) {
-                SplashSheet(ready.branding.customSplashscreen, splash, actions, known = splashImageKnown)
+            if (splash.open && splashscreenAvailable && splashImageKnown) {
+                SplashSheet(ready.branding.customSplashscreen, splash, actions)
             }
         }
     }
@@ -189,6 +190,28 @@ private fun LoginScreenGroup(
     splashscreenAvailable: Boolean,
     splashImageKnown: Boolean,
 ) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
+        LoginScreenRows(branding, actions, splashscreenAvailable, splashImageKnown)
+        // Before 10.11 the server saves the whole branding on every write and drops the splash image's location, so an image set in
+        // another app is lost on any save here. The image row is left out, since the app can neither read nor put it back.
+        if (splashscreenAvailable && !splashImageKnown) {
+            Text(
+                text = stringResource(R.string.server_settings_branding_reset_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_s)),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoginScreenRows(
+    branding: Branding,
+    actions: ServerSettingsActions,
+    splashscreenAvailable: Boolean,
+    splashImageKnown: Boolean,
+) {
     ItemGroup(
         title = stringResource(R.string.server_settings_branding),
         rows =
@@ -225,15 +248,14 @@ private fun LoginScreenGroup(
                 ListItem(
                     icon = Icons.Outlined.Image,
                     label = stringResource(R.string.server_settings_splash_image),
-                    // Before 10.11 the server doesn't say which image is set, so the row doesn't claim to know.
                     detail =
-                        when {
-                            !splashImageKnown -> null
-                            branding.customSplashscreen -> stringResource(R.string.server_settings_splash_custom)
-                            else -> stringResource(R.string.server_settings_splash_default)
+                        if (branding.customSplashscreen) {
+                            stringResource(R.string.server_settings_splash_custom)
+                        } else {
+                            stringResource(R.string.server_settings_splash_default)
                         },
                     onClick = { actions.onOpenSplash(true) },
-                ).takeIf { splashscreenAvailable },
+                ).takeIf { splashscreenAvailable && splashImageKnown },
             ),
     )
 }
@@ -357,7 +379,6 @@ internal fun SplashSheet(
     state: SplashUiState,
     actions: ServerSettingsActions,
     inWindow: Boolean = true,
-    known: Boolean = true,
 ) {
     ConsoleSheet(onDismissRequest = { actions.onOpenSplash(false) }, inWindow = inWindow) {
         Column(
@@ -389,15 +410,7 @@ internal fun SplashSheet(
                     else -> null
                 }
             problem?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-            if (!known) {
-                Text(
-                    stringResource(R.string.server_settings_splash_unknown),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            // Where the server doesn't say whether an image is set, Remove is always offered: it does nothing when there is none.
-            if (custom || !known) {
+            if (custom) {
                 BingeOutlinedButton(
                     label = stringResource(R.string.server_settings_splash_remove),
                     onClick = { actions.onAskRemoveSplash(true) },

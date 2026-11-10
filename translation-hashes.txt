@@ -872,6 +872,7 @@ app:server_restarted  7eb9052b6ec1
 app:server_restarting  a7457e59e2da
 app:server_settings_body  7fe76867c60b
 app:server_settings_branding  dfa0da0c0392
+app:server_settings_branding_reset_note  b05118a3a983
 app:server_settings_css  9d3b9a0e78ea
 app:server_settings_css_body  dccbcc847511
 app:server_settings_css_lines  075254793285
@@ -897,7 +898,6 @@ app:server_settings_splash_not_changed  98dfb2490c31
 app:server_settings_splash_remove  c3812fc4acb8
 app:server_settings_splash_remove_body  094ee8608770
 app:server_settings_splash_remove_title  8e632d08540c
-app:server_settings_splash_unknown  d435a687942a
 app:server_settings_splashscreen  3fc15c46953b
 app:server_settings_splashscreen_detail  a616eff63b0b
 app:server_settings_title  3e8fb11efc9e

@@ -381,21 +381,27 @@ class ConsoleScreensTest {
     }
 
     @Test
-    fun `before 10_11 the splash row makes no claim about the image, and the sheet always offers Remove with why`() {
+    fun `before 10_11 the splash image row is left out and a note says a branding save resets an image from another app`() {
         val state = ServerSettingsUiState.Ready(ServerSettings("truenas", "en", "GB"), Branding(splashscreen = true))
         var known by mutableStateOf(false)
-        compose.setContent {
-            JellyfinTheme {
-                ServerSettingsScreen(state, ServerSettingsActions(), splashImageKnown = known, splash = SplashUiState(open = true))
-            }
-        }
-        compose.onNodeWithText("Remove").assertExists()
-        compose.onNodeWithText("Your own image").assertDoesNotExist()
-        compose.onNodeWithText("Jellyfin’s default").assertDoesNotExist()
-        compose.onNodeWithText("This server doesn’t say", substring = true).assertExists()
+        compose.setContent { JellyfinTheme { ServerSettingsScreen(state, ServerSettingsActions(), splashImageKnown = known) } }
+        compose.onNodeWithText("Splash screen").performScrollTo().assertExists()
+        compose.onNodeWithText("Splash image").assertDoesNotExist()
+        compose.onNodeWithText("Saving here resets a custom splash image", substring = true).performScrollTo().assertExists()
         known = true
-        compose.onNodeWithText("Remove").assertDoesNotExist()
-        compose.onNodeWithText("This server doesn’t say", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Splash image").performScrollTo().assertExists()
+        compose.onNodeWithText("Saving here resets a custom splash image", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a server with no splash screen at all shows neither the image row nor the note`() {
+        val state = ServerSettingsUiState.Ready(ServerSettings("truenas", "en", "GB"), Branding())
+        compose.setContent {
+            JellyfinTheme { ServerSettingsScreen(state, ServerSettingsActions(), splashscreenAvailable = false, splashImageKnown = false) }
+        }
+        compose.onNodeWithText("Login disclaimer").performScrollTo().assertExists()
+        compose.onNodeWithText("Splash image").assertDoesNotExist()
+        compose.onNodeWithText("Saving here resets a custom splash image", substring = true).assertDoesNotExist()
     }
 
     @Test

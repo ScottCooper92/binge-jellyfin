@@ -638,8 +638,8 @@
     <string name="server_settings_splash_remove_title">¿Quitar la imagen de inicio?</string>
     <string name="server_settings_splash_remove_body">La página de inicio de sesión vuelve a la imagen propia de Jellyfin.</string>
     <string name="server_settings_splash_no_preview">No hay nada que mostrar. El servidor no sirve una imagen de inicio mientras la pantalla de inicio está desactivada, ni antes de haber creado una.</string>
+    <string name="server_settings_branding_reset_note">Al guardar aquí se restablece una imagen de inicio personalizada puesta en otra aplicación.</string>
     <string name="server_settings_splash_not_changed">No se cambió la imagen de inicio. %1$s</string>
-    <string name="server_settings_splash_unknown">Este servidor no indica si tiene una imagen tuya, así que Quitar siempre está disponible. En esta versión, cambiar los demás ajustes de la pantalla de inicio de sesión también puede restablecerla.</string>
     <string name="server_settings_save">Guardar</string>
     <string name="server_shutdown">Apagar servidor</string>
     <string name="server_shutdown_title">¿Apagar %1$s?</string>
