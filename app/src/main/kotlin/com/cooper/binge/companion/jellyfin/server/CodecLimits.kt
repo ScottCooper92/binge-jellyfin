@@ -37,17 +37,18 @@ internal object CodecLimits {
             "video/av01" to mapOf("main" to listOf("main"), "high" to listOf("high"), "professional" to listOf("professional")),
         )
 
-    /** The `CodecProfile`s for [device]'s codecs, or none when it sent no `codec_limits`: the global limit then stands. */
+    /**
+     * The `CodecProfile`s for [jellyfinCodecs] (lowercase MIME type to Jellyfin's name), the codecs Jellyfin may use for a play: those
+     * the device lists, and the one an HLS transcode falls back to, so each keeps at least the maximum. None when [device] sent no
+     * `codec_limits`, and the global limit then stands.
+     */
     fun profiles(
         device: PlaybackDeviceProfile,
         jellyfinCodecs: Map<String, String>,
     ): List<JsonObject> {
         if (device.codecLimitsCount == 0) return emptyList()
         val entries = entries(device)
-        return device.videoCodecsList.distinct().flatMap { mime ->
-            val codec = jellyfinCodecs[mime] ?: return@flatMap emptyList()
-            forCodec(mime, codec, entries, device)
-        }
+        return jellyfinCodecs.flatMap { (mime, codec) -> forCodec(mime, codec, entries, device) }
     }
 
     /** The first [MAX_ENTRIES] entries, minus any that are all-zero, and for one (codec, profile) the first that remains. */

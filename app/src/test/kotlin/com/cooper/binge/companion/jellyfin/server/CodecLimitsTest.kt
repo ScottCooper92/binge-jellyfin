@@ -81,7 +81,7 @@ class CodecLimitsTest {
         val hevc = rules(phone, "hevc")
         assertEquals("EqualsAny main 10|main10" to ("3840" to "2160"), hevc.first())
         // Every other HEVC profile, and the unknown one, falls to the fallback, as AVC does.
-        assertEquals("NotEquals main 10" to ("1920" to "1080"), hevc.last().let { it.first.substringBefore(" & ") to it.second })
+        assertEquals("NotEquals main 10 & NotEquals main10" to ("1920" to "1080"), hevc.last())
         assertEquals(listOf("" to ("1920" to "1080")).map { it.second }, rules(phone, "h264").map { it.second })
     }
 
@@ -166,5 +166,32 @@ class CodecLimitsTest {
         assertEquals("true", main10.conditions("ApplyConditions").single().text("IsRequired"))
         val others = codecProfiles(phone).last { it["Codec"]?.jsonPrimitive?.content == "hevc" && it["ApplyConditions"] != null }
         assertTrue(others.conditions("ApplyConditions").all { it.text("IsRequired") == "false" })
+    }
+
+    @Test
+    fun `a video codec in upper case still gets its limits`() {
+        val phone =
+            PlaybackDeviceProfile
+                .newBuilder()
+                .addAllVideoCodecs(listOf("VIDEO/HEVC"))
+                .setMaxWidth(1920)
+                .setMaxHeight(1080)
+                .addCodecLimits(limit("video/hevc", "main10", 3840, 2160))
+                .build()
+        assertEquals("3840" to "2160", rules(phone, "hevc").first().second)
+        assertEquals("1920" to "1080", rules(phone, "hevc").last().second)
+    }
+
+    @Test
+    fun `the codec an HLS transcode falls back to keeps the maximum when the device lists no codec Jellyfin can use`() {
+        val phone =
+            PlaybackDeviceProfile
+                .newBuilder()
+                .addAllVideoCodecs(listOf("video/av01"))
+                .setMaxWidth(1920)
+                .setMaxHeight(1080)
+                .addCodecLimits(limit("video/av01", "main", 3840, 2160))
+                .build()
+        assertEquals(listOf("1920" to "1080"), rules(phone, "h264").map { it.second })
     }
 }
