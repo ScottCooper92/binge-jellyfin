@@ -6,8 +6,9 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import com.cooper.binge.companion.jellyfin.auth.KeystoreSecretCipher
+import com.binge.companion.kit.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
+import com.cooper.binge.companion.jellyfin.auth.TOKEN_KEY_ALIAS
 import com.cooper.binge.companion.jellyfin.flags.FeatureFlags
 import com.cooper.binge.companion.jellyfin.flags.FirebaseRemoteFlagSource
 import com.cooper.binge.companion.jellyfin.flags.Flag
@@ -48,7 +49,7 @@ class AppGraph(
                 corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
                 produceFile = { appContext.preferencesDataStoreFile("session") },
             ),
-            KeystoreSecretCipher(),
+            KeystoreSecretCipher(TOKEN_KEY_ALIAS),
             io,
         )
     }

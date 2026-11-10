@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.auth
 
+import com.binge.companion.kit.SecretCipher
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.PlainCipher
 import com.cooper.binge.companion.jellyfin.session
