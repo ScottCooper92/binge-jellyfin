@@ -95,6 +95,23 @@ class LibraryReads(
         return builder.build()
     }
 
+    /** Every episode of the series [media] names, with its state; INVALID_ARGUMENT for a movie, NOT_FOUND for a series the server does not hold. */
+    suspend fun episodeStates(media: MediaId): List<EpisodeWatchState> {
+        val key = media.toKey()
+        if (media.mediaType != MediaType.MEDIA_TYPE_TV) throw invalid("a movie has no episodes")
+        val (session, client) = signedIn()
+        val item = index.find(client, session.userId, key) ?: throw notFound()
+        return client.episodes(session.userId, item.id).mapNotNull { episode ->
+            episode.episodeRefOrNull()?.let {
+                EpisodeWatchState
+                    .newBuilder()
+                    .setEpisode(it)
+                    .setState(episode.toWatchState())
+                    .build()
+            }
+        }
+    }
+
     /** The movie, or the series' episode, as a Jellyfin item; NOT_FOUND when the server does not hold it. */
     suspend fun playableItem(
         session: JellyfinSession,
