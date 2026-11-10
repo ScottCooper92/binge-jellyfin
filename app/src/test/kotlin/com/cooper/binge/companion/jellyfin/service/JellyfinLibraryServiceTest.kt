@@ -10,6 +10,7 @@ import com.binge.companion.contracts.library.v1.GetWatchStateRequest
 import com.binge.companion.contracts.library.v1.HandshakeRequest
 import com.binge.companion.contracts.library.v1.LibraryServiceGrpcKt
 import com.binge.companion.contracts.library.v1.ListContinueWatchingRequest
+import com.binge.companion.contracts.library.v1.ListEpisodeWatchStateRequest
 import com.binge.companion.contracts.library.v1.ListNextUpRequest
 import com.binge.companion.contracts.library.v1.ObserveAvailabilityRequest
 import com.binge.companion.contracts.library.v1.ObserveWatchStateRequest
@@ -169,6 +170,7 @@ class JellyfinLibraryServiceTest {
             assertTrue(Capability.CAPABILITY_PLAYBACK_PROGRESS in response.capabilitiesList)
             assertFalse(Capability.CAPABILITY_PLAY in response.capabilitiesList)
             assertTrue(Capability.CAPABILITY_SERVER_UNREACHABLE in response.capabilitiesList)
+            assertTrue(Capability.CAPABILITY_EPISODE_WATCH_STATE in response.capabilitiesList)
         }
 
     @Test
@@ -391,6 +393,64 @@ class JellyfinLibraryServiceTest {
             // The series' own last_played reads every episode, not only the window.
             assertEquals(Instant.parse("2026-11-01T10:00:00Z").epochSecond, state.lastPlayed.seconds)
         }
+
+    private fun listEpisodes(
+        token: String = "",
+        size: Int = 0,
+    ) = ListEpisodeWatchStateRequest
+        .newBuilder()
+        .setMedia(series)
+        .setPageToken(token)
+        .setPageSize(size)
+        .build()
+
+    @Test
+    fun `episode watch state pages through a long series in order, past the window`() =
+        runBlocking {
+            jellyfin.items +=
+                (1..250).map { n ->
+                    FakeItem("many-$n", "E$n", "Episode", seriesId = "series-1", season = 2, episode = n, played = true)
+                } + FakeItem("special", "Special", "Episode", seriesId = "series-1", season = 0, episode = 1, positionTicks = 600_000_000L)
+            val seen = mutableListOf<Pair<Int, Int>>()
+            var token = ""
+            var pages = 0
+            do {
+                val page = stub.listEpisodeWatchState(listEpisodes(token, size = 100))
+                assertTrue(page.episodesCount <= 100)
+                seen += page.episodesList.map { it.episode.seasonNumber to it.episode.episodeNumber }
+                token = page.nextPageToken
+                pages++
+            } while (token.isNotEmpty())
+            // The special first, the played ep 1 of season 1, then season 2; ep 2 of season 1 has no state.
+            assertEquals(listOf(0 to 1, 1 to 1), seen.take(2))
+            assertEquals(252, seen.size)
+            assertEquals(seen.sortedWith(compareBy({ it.first }, { it.second })), seen)
+            assertEquals(3, pages)
+        }
+
+    @Test
+    fun `episode watch state with no page size sends the default and leaves out episodes with no state`() =
+        runBlocking {
+            val page = stub.listEpisodeWatchState(listEpisodes())
+            assertEquals(listOf(1), page.episodesList.map { it.episode.episodeNumber })
+            assertTrue(
+                page.episodesList
+                    .single()
+                    .state.played,
+            )
+            assertEquals("", page.nextPageToken)
+        }
+
+    @Test
+    fun `episode watch state rejects a movie, a bad token and a missing title, and needs a session`() {
+        val movieRequest = ListEpisodeWatchStateRequest.newBuilder().setMedia(movie).build()
+        assertEquals(Status.Code.INVALID_ARGUMENT, statusOf { stub.listEpisodeWatchState(movieRequest) }.status.code)
+        assertEquals(Status.Code.INVALID_ARGUMENT, statusOf { stub.listEpisodeWatchState(listEpisodes("p1s0")) }.status.code)
+        val unknown = ListEpisodeWatchStateRequest.newBuilder().setMedia(media(MediaType.MEDIA_TYPE_TV, 424242)).build()
+        assertEquals(Status.Code.NOT_FOUND, statusOf { stub.listEpisodeWatchState(unknown) }.status.code)
+        runBlocking { sessions.clear() }
+        assertEquals(Status.Code.UNAUTHENTICATED, statusOf { stub.listEpisodeWatchState(listEpisodes()) }.status.code)
+    }
 
     @Test
     fun `a series that fits the window keeps every episode`() =
