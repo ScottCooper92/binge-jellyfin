@@ -23,6 +23,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -88,7 +90,13 @@ fun LiveTvScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                LiveTvUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                LiveTvUiState.Loading ->
+                    ConsoleLoading(
+                        inner,
+                        LOADING_ROWS,
+                        intro = stringResource(R.string.live_tv_body),
+                        formInset = false,
+                    )
                 is LiveTvUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LiveTvUiState.Ready -> {
                     LiveTvContent(state.summary, actions, guideActions, inner, now, listState)
@@ -122,6 +130,7 @@ private fun LiveTvContent(
         item(key = "tuners") {
             ItemGroup(
                 title = stringResource(R.string.live_tv_tuners),
+                modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                 rows = summary.tuners.map { it.row(actions) }.ifEmpty { listOf(emptyRow(R.string.live_tv_no_tuners)) },
             )
         }

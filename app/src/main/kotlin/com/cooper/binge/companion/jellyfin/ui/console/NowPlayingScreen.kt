@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
@@ -27,6 +27,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -82,7 +84,8 @@ fun NowPlayingScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                NowPlayingUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                NowPlayingUiState.Loading ->
+                    ConsoleLoading(inner, LOADING_ROWS, intro = stringResource(nowPlayingBody(administrator)), formInset = false)
                 is NowPlayingUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is NowPlayingUiState.Ready -> Streams(state, administrator, actions, inner, open, listState)
             }
@@ -146,6 +149,9 @@ internal fun sessionItem(sessionId: String) = "session:$sessionId"
 
 internal fun sessionItemId(item: String) = item.removePrefix("session:")
 
+/** The page's intro: an administrator sees everyone's streams, anyone else their own. */
+private fun nowPlayingBody(administrator: Boolean) = if (administrator) R.string.now_playing_body_admin else R.string.now_playing_body
+
 @Composable
 private fun Streams(
     state: NowPlayingUiState.Ready,
@@ -161,16 +167,17 @@ private fun Streams(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item {
-            PageIntro(stringResource(if (administrator) R.string.now_playing_body_admin else R.string.now_playing_body))
+            PageIntro(stringResource(nowPlayingBody(administrator)))
         }
         if (state.sessions.isEmpty()) {
             item { ConsoleEmptyScreen(stringResource(R.string.now_playing_empty), Icons.Outlined.PlayCircle) }
         }
-        items(state.sessions, key = { it.sessionId }) { session ->
+        itemsIndexed(state.sessions, key = { _, session -> session.sessionId }) { index, session ->
             Stream(
                 session,
                 controllable = state.controlsFor(session).any,
                 selected = session.sessionId == open,
+                modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             ) { actions.onSelect(session) }
         }
     }
@@ -200,11 +207,13 @@ private fun Stream(
     session: NowPlaying,
     controllable: Boolean,
     selected: Boolean,
+    modifier: Modifier = Modifier,
     onOpen: () -> Unit,
 ) {
     val who = stringResource(R.string.now_playing_who, session.userName, session.deviceName, session.client)
     ItemGroup(
         title = null,
+        modifier = modifier,
         rows =
             listOf(
                 ListItem(

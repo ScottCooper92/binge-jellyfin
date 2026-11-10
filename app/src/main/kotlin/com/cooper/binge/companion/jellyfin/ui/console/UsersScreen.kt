@@ -38,6 +38,8 @@ import com.binge.designsystem.component.ListItemNote
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.component.TextEntrySurface
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -111,7 +113,7 @@ fun UsersScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                UsersUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS, intro = stringResource(R.string.users_body), formInset = false)
                 is UsersUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is UsersUiState.Ready ->
                     BingePullToRefresh(
@@ -250,7 +252,13 @@ private fun UserList(
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
         item { PageIntro(stringResource(R.string.users_body)) }
-        item { ItemGroup(title = null, rows = state.users.map { it.row(state.me, it.id == openUser, now, actions, avatar) }) }
+        item {
+            ItemGroup(
+                title = null,
+                rows = state.users.map { it.row(state.me, it.id == openUser, now, actions, avatar) },
+                modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+            )
+        }
     }
 }
 
