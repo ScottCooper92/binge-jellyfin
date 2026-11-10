@@ -160,6 +160,19 @@ class CodecLimitsTest {
     }
 
     @Test
+    fun `a device that listed no codecs still has the floor codec held to the maximum`() {
+        val silent =
+            PlaybackDeviceProfile
+                .newBuilder()
+                .setMaxWidth(1920)
+                .setMaxHeight(1080)
+                .addCodecLimits(limit("video/hevc", "main10", 3840, 2160))
+                .build()
+        assertEquals(listOf("1920" to "1080"), rules(silent, "h264").map { it.second })
+        assertTrue(rules(silent, "hevc").isEmpty())
+    }
+
+    @Test
     fun `the profile a rule applies to is required, so a source with an unknown profile falls to the codec's own limit`() {
         val phone = device(limit("video/hevc", "main10", 3840, 2160))
         val main10 = codecProfiles(phone).first { it["Codec"]?.jsonPrimitive?.content == "hevc" && it["ApplyConditions"] != null }
