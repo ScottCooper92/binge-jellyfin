@@ -1,8 +1,8 @@
 package com.cooper.binge.companion.jellyfin
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.binge.companion.kit.SecretCipher
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
-import com.cooper.binge.companion.jellyfin.auth.SecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
