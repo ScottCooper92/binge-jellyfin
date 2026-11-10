@@ -195,9 +195,12 @@ class JellyfinLibraryService(
                         StatusException(Status.UNAVAILABLE.withDescription("Jellyfin answered ${e.code}").withCause(e))
                     }
             }
+        } catch (e: InterruptedIOException) {
+            Log.w(TAG, "Jellyfin timed out", e)
+            throw unreachable(timedOut = true)
         } catch (e: IOException) {
             Log.w(TAG, "Jellyfin unreachable", e)
-            throw unreachable(timedOut = e is InterruptedIOException)
+            throw unreachable(timedOut = false)
         }
 
     /** The failure for a server that did not answer, naming it when the session knows its name. */
