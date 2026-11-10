@@ -1,6 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -95,6 +98,25 @@ class LiveTvRecordingScreenTest {
     @Test
     fun `a guide length of none set reads as automatic`() {
         show(LiveTvRecordingUiState.Ready(JsonObject(config + ("GuideDays" to kotlinx.serialization.json.JsonNull))))
+        compose.onNodeWithText("Automatic").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `a config with no guide length still offers the days of guide, reading automatic`() {
+        show(LiveTvRecordingUiState.Ready(JsonObject(config - "GuideDays")))
+        compose.onNodeWithText("Days of guide").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Automatic").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `the days of guide stays after it is set and cleared, as the server leaves the key out when it holds none`() {
+        var state by mutableStateOf<LiveTvRecordingUiState>(LiveTvRecordingUiState.Ready(JsonObject(config - "GuideDays")))
+        compose.setContent { JellyfinTheme { LiveTvRecordingScreen(state, LiveTvRecordingActions()) } }
+        compose.onNodeWithText("Automatic").performScrollTo().assertIsDisplayed()
+        state = LiveTvRecordingUiState.Ready(JsonObject(config + ("GuideDays" to JsonPrimitive(5))))
+        compose.onNodeWithText("5 days").performScrollTo().assertIsDisplayed()
+        state = LiveTvRecordingUiState.Ready(JsonObject(config - "GuideDays"))
+        compose.onNodeWithText("Days of guide").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Automatic").performScrollTo().assertIsDisplayed()
     }
 
