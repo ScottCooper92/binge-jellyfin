@@ -1320,7 +1320,6 @@
     <string name="live_tv_recording_guide">Guía</string>
     <string name="live_tv_recording_guide_days">Días de guía</string>
     <string name="live_tv_recording_guide_auto">Automático</string>
-    <string name="live_tv_recording_guide_hint">Déjalo en blanco para que lo elija el servidor.</string>
     <plurals name="live_tv_recording_days">
         <item quantity="one">%1$d día</item>
         <item quantity="many">%1$d días</item>

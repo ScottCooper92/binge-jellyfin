@@ -28,7 +28,6 @@ internal fun LiveTvRecordingRoute(
             onSet = recording::set,
             onSheet = recording::sheet,
             onFolder = recording::saveFolder,
-            onNumber = recording::saveNumber,
             onRetry = recording::load,
             onRetrySave = recording::retrySave,
             onBack = onBack,

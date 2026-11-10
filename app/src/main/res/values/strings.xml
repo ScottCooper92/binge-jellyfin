@@ -1323,7 +1323,6 @@
     <string name="live_tv_recording_guide">Guide</string>
     <string name="live_tv_recording_guide_days">Days of guide</string>
     <string name="live_tv_recording_guide_auto">Automatic</string>
-    <string name="live_tv_recording_guide_hint">Leave it blank for the server to choose.</string>
     <plurals name="live_tv_recording_days">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>

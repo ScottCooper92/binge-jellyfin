@@ -4,7 +4,6 @@ import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetKind
@@ -25,6 +23,8 @@ import com.binge.designsystem.component.BingeSheetStepHandle
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.string
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import com.binge.designsystem.R as DesR
 
 private const val PATH_LINES = 2
@@ -106,7 +106,7 @@ internal fun RecordingFolder.title(): Int =
         RecordingFolder.Series -> R.string.live_tv_recording_folder_series
     }
 
-/** A whole number in its range, from a sheet: Save keeps it if it is in range, and says what range if it isn't. */
+/** A number of the Live TV page in a sheet: the padding as minutes, and the days of guide as a slider that ends in "Automatic". */
 @Composable
 internal fun RecordingNumberForm(
     field: RecordingNumber,
@@ -117,21 +117,15 @@ internal fun RecordingNumberForm(
         RecordingPaddingSlider(field, current.toIntOrNull() ?: 0, actions)
         return
     }
-    var text by rememberSaveable { mutableStateOf(current) }
-    val valid = field.parse(text) != null
-    TextEntrySurface(
+    val resources = LocalContext.current.resources
+    // A stored length outside 1 to 14 reads as stored; no length, which the server takes as its own choice, is the open end.
+    NumberSliderContent(
         title = stringResource(field.title()),
-        value = text,
-        onValueChange = { text = it },
-        onSubmit = { actions.onNumber(field, text) },
-        onCancel = { actions.onSheet(null) },
-        submitLabel = stringResource(R.string.library_save),
-        header = { Text(stringResource(R.string.live_tv_recording_guide_hint), style = MaterialTheme.typography.bodyMedium) },
-        submitEnabled = valid,
-        error = stringResource(R.string.transcoding_number_invalid, field.min, field.max).takeIf { text.isNotBlank() && !valid },
-        minLines = 1,
-        maxLines = 1,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        value = current.toIntOrNull(),
+        range = field.min..field.max,
+        format = { resources.getQuantityString(R.plurals.live_tv_recording_days, it, it) },
+        openEndLabel = stringResource(R.string.live_tv_recording_guide_auto),
+        onSave = { days -> actions.onSet(field.key, days?.let(::JsonPrimitive) ?: JsonNull) },
     )
 }
 

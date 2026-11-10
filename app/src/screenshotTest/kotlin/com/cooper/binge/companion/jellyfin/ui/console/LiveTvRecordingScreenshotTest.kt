@@ -74,8 +74,21 @@ class LiveTvRecordingScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
     @Composable
     fun guideDays() = Surface { RecordingNumberForm(RecordingNumber.GuideDays, "7", LiveTvRecordingActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun guideDaysAutomatic() = Surface { RecordingNumberForm(RecordingNumber.GuideDays, "", LiveTvRecordingActions()) }
+
+    /** A stored length beyond the scale reads as stored. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun guideDaysBeyondScale() = Surface { RecordingNumberForm(RecordingNumber.GuideDays, "20", LiveTvRecordingActions()) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

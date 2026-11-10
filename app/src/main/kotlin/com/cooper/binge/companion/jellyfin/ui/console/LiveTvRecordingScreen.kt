@@ -46,7 +46,6 @@ data class LiveTvRecordingActions(
     val onSet: (key: String, value: JsonElement) -> Unit = { _, _ -> },
     val onSheet: (RecordingSheet?) -> Unit = {},
     val onFolder: (RecordingFolder, String) -> Unit = { _, _ -> },
-    val onNumber: (RecordingNumber, String) -> Unit = { _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
@@ -115,7 +114,7 @@ private fun RecordingBody(
                 ),
         )
         ItemGroup(title = stringResource(R.string.live_tv_recording_files), rows = fileRows(config, actions))
-        guideRow(config, actions)?.let { ItemGroup(title = stringResource(R.string.live_tv_recording_guide), rows = listOf(it)) }
+        ItemGroup(title = stringResource(R.string.live_tv_recording_guide), rows = listOf(guideRow(config, actions)))
     }
 }
 
@@ -152,15 +151,22 @@ private fun numberRow(
     icon: ImageVector,
     config: JsonObject,
     actions: LiveTvRecordingActions,
-): ListItem? {
-    if (field.key !in config) return null
-    return ListItem(
+): ListItem? = if (field.key in config) numberItem(field, label, icon, config, actions) else null
+
+@Composable
+private fun numberItem(
+    field: RecordingNumber,
+    label: Int,
+    icon: ImageVector,
+    config: JsonObject,
+    actions: LiveTvRecordingActions,
+): ListItem =
+    ListItem(
         icon = icon,
         label = stringResource(label),
         detail = numberDetail(field, field.shown(config)),
         onClick = { actions.onSheet(RecordingSheet.Number(field)) },
     )
-}
 
 @Composable
 private fun numberDetail(
@@ -175,11 +181,12 @@ private fun numberDetail(
     }
 }
 
+/** The days of guide, which is always there: the server leaves the key out when no length is set, and that reads as automatic. */
 @Composable
 private fun guideRow(
     config: JsonObject,
     actions: LiveTvRecordingActions,
-): ListItem? = numberRow(RecordingNumber.GuideDays, R.string.live_tv_recording_guide_days, Icons.Outlined.CalendarMonth, config, actions)
+): ListItem = numberItem(RecordingNumber.GuideDays, R.string.live_tv_recording_guide_days, Icons.Outlined.CalendarMonth, config, actions)
 
 @Composable
 private fun fileRows(
