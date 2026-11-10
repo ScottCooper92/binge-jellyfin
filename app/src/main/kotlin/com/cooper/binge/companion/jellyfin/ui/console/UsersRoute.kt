@@ -70,6 +70,8 @@ internal fun UserItemRoute(
         }
     // A section reads what it picks from the first time it opens.
     LaunchedEffect(section) { choices.ensure(section) }
+    // The user, and each page of their settings, reads the policy again on opening, so a change made elsewhere shows.
+    LaunchedEffect(userId, section) { users.refresh() }
     val actions =
         UsersActions(
             onSelect = users::select,

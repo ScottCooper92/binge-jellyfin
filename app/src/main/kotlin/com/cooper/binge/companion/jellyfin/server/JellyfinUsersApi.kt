@@ -34,6 +34,12 @@ suspend fun JellyfinClient.users(): List<ServerUser> {
     return answer.mapNotNull { (it as? JsonObject)?.serverUser() }.sortedBy { it.name.lowercase() }
 }
 
+/** [id] as the server holds them now, with the policy a save would replace; a failure, not null, when it cannot be read. */
+suspend fun JellyfinClient.user(id: String): ServerUser {
+    val answer = get("$USERS/$id") as? JsonObject ?: throw JellyfinUnreadableAnswer("$USERS/$id")
+    return answer.serverUser() ?: throw JellyfinUnreadableAnswer("$USERS/$id")
+}
+
 /** Creates a user, who can see every library and isn't an administrator, as Jellyfin's own default. */
 suspend fun JellyfinClient.createUser(
     name: String,

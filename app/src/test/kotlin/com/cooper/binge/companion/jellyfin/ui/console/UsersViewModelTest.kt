@@ -14,6 +14,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -70,6 +71,17 @@ class UsersViewModelTest {
 
     private fun awaitPolicy(holds: (kotlinx.serialization.json.JsonObject) -> Boolean) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { while (!holds(policy("user-2"))) kotlinx.coroutines.delay(POLL_MILLIS) } }
+
+    /** Changes one field of a user's policy on the server, as Jellyfin's web UI would while this app is open. */
+    private fun changeElsewhere(
+        id: String,
+        key: String,
+        value: kotlinx.serialization.json.JsonElement,
+    ) {
+        val user = jellyfin.serverUsers.getValue(id)
+        val policy = kotlinx.serialization.json.JsonObject(user.getValue("Policy").jsonObject + (key to value))
+        jellyfin.serverUsers[id] = kotlinx.serialization.json.JsonObject(user + ("Policy" to policy))
+    }
 
     private fun saves() = jellyfin.requests.count { it.url.encodedPath.endsWith("/Policy") }
 
@@ -181,6 +193,55 @@ class UsersViewModelTest {
         }
         assertEquals("true", policy("user-2").getValue("EnableAllFolders").jsonPrimitive.content)
         assertEquals("[\"lib-shows\"]", policy("user-2").getValue("EnabledFolders").toString())
+    }
+
+    @Test
+    fun `a field changed on the server since the first load is not saved back as it was`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        changeElsewhere("user-2", "MaxActiveSessions", kotlinx.serialization.json.JsonPrimitive(7))
+        vm.setCanSignIn(false)
+        awaitPolicy { it.getValue("IsDisabled").jsonPrimitive.content == "true" }
+        // The change made here is saved on what the server held, so the other change is kept.
+        assertEquals("7", policy("user-2").getValue("MaxActiveSessions").jsonPrimitive.content)
+        // And the page now shows what the server holds.
+        vm.ready {
+            it.openUser
+                ?.policy
+                ?.getValue("MaxActiveSessions")
+                ?.jsonPrimitive
+                ?.content == "7"
+        }
+    }
+
+    @Test
+    fun `a change whose policy cannot be read first saves nothing, goes back, and says so`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        jellyfin.status["/Users/user-2"] = 500
+        vm.setAdministrator(true)
+        val back = vm.ready { it.actionFailed != null }
+        assertEquals(0, saves())
+        assertFalse(policy("user-2").getValue("IsAdministrator").jsonPrimitive.boolean)
+        assertFalse(back.openUser!!.administrator)
+    }
+
+    @Test
+    fun `a policy changed on the server shows when the user is opened again`() {
+        val vm = made(UsersViewModel(connection))
+        vm.openSam()
+        changeElsewhere("user-2", "MaxActiveSessions", kotlinx.serialization.json.JsonPrimitive(9))
+        vm.refresh()
+        val fresh =
+            vm.ready {
+                !it.refreshing &&
+                    it.openUser
+                        ?.policy
+                        ?.getValue("MaxActiveSessions")
+                        ?.jsonPrimitive
+                        ?.content == "9"
+            }
+        assertNull(fresh.refreshFailed)
     }
 
     @Test
