@@ -46,7 +46,6 @@ data class LiveTvRecordingActions(
     val onSet: (key: String, value: JsonElement) -> Unit = { _, _ -> },
     val onSheet: (RecordingSheet?) -> Unit = {},
     val onFolder: (RecordingFolder, String) -> Unit = { _, _ -> },
-    val onNumber: (RecordingNumber, String) -> Unit = { _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},

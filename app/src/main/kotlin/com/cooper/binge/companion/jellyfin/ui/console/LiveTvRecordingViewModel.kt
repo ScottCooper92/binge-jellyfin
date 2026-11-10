@@ -39,16 +39,14 @@ enum class RecordingNumber(
     val min: Int,
     val max: Int,
     val seconds: Boolean,
-    val blankClears: Boolean,
 ) {
-    PrePadding(LIVE_TV_PRE_PADDING, 0, 7200, seconds = true, blankClears = false),
-    PostPadding(LIVE_TV_POST_PADDING, 0, 7200, seconds = true, blankClears = false),
-    GuideDays(LIVE_TV_GUIDE_DAYS, 1, 14, seconds = false, blankClears = true),
+    PrePadding(LIVE_TV_PRE_PADDING, 0, 7200, seconds = true),
+    PostPadding(LIVE_TV_POST_PADDING, 0, 7200, seconds = true),
+    GuideDays(LIVE_TV_GUIDE_DAYS, 1, 14, seconds = false),
     ;
 
-    /** [text] as the value to store, or null when it is not a whole number in range (an empty entry is [JsonNull] where it clears). */
+    /** [text] as the value to store, or null when it is not a whole number in range. */
     fun parse(text: String): JsonElement? {
-        if (text.isBlank()) return JsonNull.takeIf { blankClears }
         val shown = text.trim().toIntOrNull()?.takeIf { it in min..max } ?: return null
         return JsonPrimitive(shown)
     }
@@ -150,16 +148,6 @@ class LiveTvRecordingViewModel(
         path: String,
     ) {
         saves.set(folder.key, JsonPrimitive(path.trim()))
-        update { copy(sheet = null) }
-    }
-
-    /** Saves the number [text] in [field] and closes its sheet; text out of range keeps it open and saves nothing. */
-    fun saveNumber(
-        field: RecordingNumber,
-        text: String,
-    ) {
-        val value = field.parse(text) ?: return
-        saves.set(field.key, value)
         update { copy(sheet = null) }
     }
 

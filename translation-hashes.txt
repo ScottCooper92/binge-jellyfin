@@ -579,7 +579,6 @@ app:live_tv_recording_folders  c4d6bb200f4c
 app:live_tv_recording_guide  8dd65d0952ed
 app:live_tv_recording_guide_auto  d461a493a375
 app:live_tv_recording_guide_days  46e9d364f9a4
-app:live_tv_recording_guide_hint  a4a6d207cd25
 app:live_tv_recording_images  300164171911
 app:live_tv_recording_images_detail  ceeb088133b3
 app:live_tv_recording_nfo  9bfdac846f07

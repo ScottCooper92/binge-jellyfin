@@ -121,8 +121,8 @@ class LiveTvRecordingViewModelTest {
     fun `padding keeps whole seconds without converting to minutes`() {
         val vm = made(LiveTvRecordingViewModel(connection))
         vm.ready()
-        vm.saveNumber(RecordingNumber.PrePadding, "2")
-        vm.saveNumber(RecordingNumber.PostPadding, "10")
+        vm.set(LIVE_TV_PRE_PADDING, JsonPrimitive(2))
+        vm.set(LIVE_TV_POST_PADDING, JsonPrimitive(10))
         saved(1)
         val sent = jellyfin.lastBody(PATH)
         assertEquals(2, sent.getValue(LIVE_TV_PRE_PADDING).jsonPrimitive.int)
@@ -131,25 +131,12 @@ class LiveTvRecordingViewModelTest {
     }
 
     @Test
-    fun `a number out of range saves nothing and keeps its sheet open`() {
-        val vm = made(LiveTvRecordingViewModel(connection))
-        vm.ready()
-        vm.sheet(RecordingSheet.Number(RecordingNumber.PostPadding))
-        vm.saveNumber(RecordingNumber.PostPadding, "7201")
-        vm.saveNumber(RecordingNumber.PostPadding, "-1")
-        vm.saveNumber(RecordingNumber.PostPadding, "1.5")
-        vm.saveNumber(RecordingNumber.PostPadding, "")
-        assertEquals(RecordingSheet.Number(RecordingNumber.PostPadding), vm.ready().sheet)
-        assertEquals(0, jellyfin.requests.count { it.url.encodedPath == PATH && it.method == "POST" })
-    }
-
-    @Test
-    fun `an empty guide length clears it for the server to choose, and a length out of range is refused`() {
+    fun `an empty guide length clears it for the server to choose`() {
         val vm = made(LiveTvRecordingViewModel(connection))
         vm.ready()
         assertNull(RecordingNumber.GuideDays.parse("0"))
         assertNull(RecordingNumber.GuideDays.parse("15"))
-        vm.saveNumber(RecordingNumber.GuideDays, " ")
+        vm.set(LIVE_TV_GUIDE_DAYS, JsonNull)
         saved(1)
         assertEquals(JsonNull, jellyfin.lastBody(PATH).getValue(LIVE_TV_GUIDE_DAYS))
         assertEquals("", RecordingNumber.GuideDays.shown(vm.ready().config))
