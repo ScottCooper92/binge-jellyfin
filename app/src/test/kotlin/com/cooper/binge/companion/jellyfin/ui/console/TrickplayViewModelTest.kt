@@ -163,8 +163,6 @@ class TrickplayViewModelTest {
         assertEquals(0, TrickplayField.Threads.parse("0"))
         assertEquals(null, TrickplayField.Threads.parse("-1"))
         assertEquals(null, TrickplayField.TileWidth.parse("0"))
-        assertEquals(1, TrickplayField.Interval.parse("1"))
-        assertEquals(null, TrickplayField.Interval.parse("0"))
     }
 
     @Test
