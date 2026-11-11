@@ -12,13 +12,13 @@ Why: the name is the app's own, and "for Jellyfin" says what it works with witho
 
 > Manage your Jellyfin server and your own account, and see your library in Binge.
 
-(79 characters)
+(80 characters)
 
 ## Full description
 
 4,000 characters at most.
 
-> Run your Jellyfin server from your phone or your TV, and tell Binge what you have.
+> Run your Jellyfin server from your phone, and tell Binge what you have.
 >
 > **For your own account.** Your playback languages and preferences, your home screen and libraries view, your profile picture, your password, and approving a Quick Connect code for another device. Now playing shows your own sessions, and others' where your account may control them.
 >
@@ -26,9 +26,9 @@ Why: the name is the app's own, and "for Jellyfin" says what it works with witho
 >
 > **Binge.** Install Binge alongside and this app tells it which titles are in your Jellyfin library, plays them, and reports what you have watched. Binge is optional; everything above works without it.
 >
-> **Android TV.** A remote-friendly layout for the same pages.
+> **Android TV.** Sign in with Quick Connect, and set your playback preferences.
 >
-> **Your server, your data.** Sign in with your Jellyfin account or Quick Connect. The access token is encrypted with an Android Keystore key and stays on your device, and nothing is backed up. The app talks to the server you entered. It has no analytics, no crash reporting and no adverts, and no account of its own.
+> **Your server, your data.** Sign in with your Jellyfin account or Quick Connect. The access token is encrypted with an Android Keystore key and stored only on your device, and nothing is backed up. The app talks to the server you entered, and gives Binge's player the access it needs to play from it. It has no analytics, no crash reporting and no adverts, and no account of its own.
 >
 > Open source, under the GPL 3.0 or later: github.com/ScottCooper92/binge-jellyfin. Ephyra is an independent app and is not made by or affiliated with the Jellyfin project.
 

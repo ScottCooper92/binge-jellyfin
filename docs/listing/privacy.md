@@ -15,7 +15,8 @@ The app sets `allowBackup="false"` and excludes everything from cloud backup and
 ## Where the app sends data
 
 - **To the server you entered**, for everything the app shows and every change you make, signed in as you. If you enter a plain `http://` address, that traffic is unencrypted on the network; use `https://` where you can.
-- **To Binge**, on the same device, when Binge is installed and you allow it: which titles are in your library, playback and watch state, over an Android service binding that never leaves the device. Binge cannot read the server address or the access token.
+- **To Binge**, on the same device, when Binge is installed: which titles are in your library, playback and watch state, over an Android service binding that never leaves the device. For playback, Binge gets an address on your server, carrying the access token so its player can stream from that server. The token is not sent anywhere else.
+- **To your local network**, in the server step: the app broadcasts a discovery query and lists the servers that answer. Nothing is sent to a server until you pick it.
 - **To Google (Firebase Remote Config)**, when the app starts: the app asks for one on/off value, whether to mention Binge in the app's text. Firebase's SDK sends a random Firebase installation id and the usual device and app details (app id, version, Android version and locale) with the request. Nothing from your server or account is sent. A build without the Firebase configuration file makes no request at all.
 
 The app has no server of its own.
@@ -30,7 +31,7 @@ The app has no server of its own.
 ## Permissions
 
 - **Internet**, to reach your server.
-- **Network state**, to tell whether a connection is available.
+- **Network state**, to find the device's Wi-Fi and Ethernet networks and send the discovery broadcast on them.
 - **Local network**, on Android versions that ask for it, so the app can find a Jellyfin server on your home network.
 
 Libraries the app includes add more to the installed app's manifest; none is used to reach anything beyond what this policy describes.
