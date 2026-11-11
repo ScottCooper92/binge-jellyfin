@@ -23,7 +23,7 @@ Nothing is linked to the user's identity, and nothing is used for advertising or
 | Practice | Answer | Why |
 |---|---|---|
 | Data is encrypted in transit | Yes | The Firebase SDK uses HTTPS. The user's own server is not collection. |
-| You can request that data be deleted | No | The installation id is not linked to a person. Signing out or uninstalling removes what is on the device. |
+| You can request that data be deleted | No | The installation id is not linked to a person. Uninstalling removes what is on the device. Signing out removes the session and index, but cached user pictures and the last shared log stay until storage is cleared. |
 | Committed to the Play Families policy | No | Not a children's app. |
 | Independent security review | No | |
 

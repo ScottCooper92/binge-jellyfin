@@ -9,13 +9,15 @@
 - **A random identifier for this install**, which the app sends to your server as its device id, so the install appears once in the server's devices list. It survives signing out, because it is this install's identity to every server.
 - **An index of the movies and series in your library** (their TMDB ids), held in memory only, so the app can tell Binge what you have. It is dropped when you sign out and when the app is closed.
 - **The last values of one remote on/off setting** (see Firebase Remote Config below).
+- **Cached user pictures** fetched from your server, and **the last log you shared** (redacted), both in the app's cache.
 
-The app sets `allowBackup="false"` and excludes everything from cloud backup and device transfer, so Android's own backup does not copy any of the above. Uninstalling the app removes it. Signing out inside the app removes the session and drops the index; only the random install identifier stays.
+The app sets `allowBackup="false"` and excludes everything from cloud backup and device transfer, so Android's own backup does not copy any of the above. Uninstalling the app removes it. Signing out inside the app removes the session and drops the index. The random install identifier, the cached user pictures and the last shared log stay until you clear the app's storage or uninstall it.
 
 ## Where the app sends data
 
 - **To the server you entered**, for everything the app shows and every change you make, signed in as you. If you enter a plain `http://` address, that traffic is unencrypted on the network; use `https://` where you can.
 - **To Binge**, on the same device, when Binge is installed: which titles are in your library, playback and watch state, over an Android service binding that never leaves the device. For playback, Binge gets an address on your server, carrying the access token so its player can stream from that server. The token is not sent anywhere else.
+- **To the app you pick**, when you share a log: the file goes to whichever app you choose in the share sheet. **To your server**, when you pick an image: it is uploaded as a profile picture or splash screen.
 - **To your local network**, in the server step: the app broadcasts a discovery query and lists the servers that answer. Nothing is sent to a server until you pick it.
 - **To Google (Firebase Remote Config)**, when the app starts: the app asks for one on/off value, whether to mention Binge in the app's text. Firebase's SDK sends a random Firebase installation id and the usual device and app details (app id, version, Android version and locale) with the request. Nothing from your server or account is sent. A build without the Firebase configuration file makes no request at all.
 
@@ -25,7 +27,7 @@ The app has no server of its own.
 
 - No analytics, no crash reporting and no advertising libraries.
 - No account with the app's author, and no sign-in other than to your own server.
-- No access to contacts, location, files, the camera, the microphone or the clipboard beyond the copy actions you press.
+- No access to contacts, location, files beyond the photos you pick, the camera, the microphone or the clipboard beyond the copy actions you press.
 - No background activity of its own beyond answering Binge when it asks.
 
 ## Permissions
