@@ -6,11 +6,11 @@
 
 - **Your server's address, its name and version, and your user name and id**, as the server reported them, stored in the clear in the app's private storage.
 - **The access token** Jellyfin issued when you signed in. It is encrypted with a key held in the Android Keystore, so the key material never leaves the device's secure hardware, and it is stored on the device.
-- **A random identifier for this install**, which the app sends to your server as its device id, so the install appears once in the server's devices list.
-- **A cache of what the server showed you** (titles, lists and settings), so pages open quickly. It is cleared when you sign out.
+- **A random identifier for this install**, which the app sends to your server as its device id, so the install appears once in the server's devices list. It survives signing out, because it is this install's identity to every server.
+- **An index of the movies and series in your library** (their TMDB ids), held in memory only, so the app can tell Binge what you have. It is dropped when you sign out and when the app is closed.
 - **The last values of one remote on/off setting** (see Firebase Remote Config below).
 
-The app sets `allowBackup="false"` and excludes everything from cloud backup and device transfer, so Android's own backup does not copy any of the above. Uninstalling the app removes it. Signing out inside the app removes the session and the cache.
+The app sets `allowBackup="false"` and excludes everything from cloud backup and device transfer, so Android's own backup does not copy any of the above. Uninstalling the app removes it. Signing out inside the app removes the session and drops the index; only the random install identifier stays.
 
 ## Where the app sends data
 
