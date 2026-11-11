@@ -1,6 +1,6 @@
 # binge-jellyfin
 
-A Jellyfin companion app for [Binge](https://github.com/ScottCooper92), on phones and Android TV.
+Ephyra, a Jellyfin companion app for [Binge](https://github.com/ScottCooper92), on phones and Android TV.
 
 Binge ships as a plain TMDB client with zero bundled providers. A companion app is a separate APK
 that exports a bound Android Service implementing a contract from

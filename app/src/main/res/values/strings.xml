@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_label" translatable="false">Jellyfin Companion</string>
+    <string name="app_label" translatable="false">Ephyra</string>
     <string name="companion_label">Jellyfin</string>
 
     <string name="setup_server_title">Connect to Jellyfin</string>
