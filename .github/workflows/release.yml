@@ -14,6 +14,10 @@ name: Release
 #   GOOGLE_SERVICES_JSON_BASE64  base64 -w0 app/google-services.json
 # The google-services plugin applies only when that file exists, so without it a release would
 # quietly ship with every remote flag at its default. The step that writes it fails instead.
+#
+# Usage data goes to PostHog, whose project key and host are secrets too (the key is not secret in the app, but it is
+# configuration, and a fork must not report into this project):
+#   POSTHOG_API_KEY, POSTHOG_HOST
 
 on:
   push:
@@ -89,6 +93,10 @@ jobs:
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          # PostHog's project key and host, built in. A blank key means no analytics client, so a release made without them
+          # still builds and simply reports nothing.
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
         run: ./gradlew :app:bundleRelease
 
       # A bundle signed with the debug key, or one R8 did not shrink, must never be attached.
