@@ -18,11 +18,11 @@ import kotlinx.coroutines.launch
 
 /**
  * The user's answers about what this app reports, as the home and the account show them: usage data (PostHog, only if the user
- * agreed) and crash reports (Crashlytics, on until the user turns it off). Both are the user's to change at any time.
+ * agreed) and crash reports (Crashlytics, off until the user agrees). Both are the user's to change at any time.
  */
 data class AppSettings(
     val shareUsageData: Boolean = false,
-    val sendCrashReports: Boolean = true,
+    val sendCrashReports: Boolean = false,
 )
 
 /** The "This app" group: two switches that save as they are flipped. */
@@ -66,23 +66,31 @@ internal fun LazyListScope.homeFoot(actions: Actions) {
 class AppSettingsBinding(
     val consent: AnalyticsConsent?,
     val answerConsent: (Boolean) -> Unit,
+    private val setUsageData: (Boolean) -> Unit,
     private val settings: AppSettings,
     private val setCrashReports: (Boolean) -> Unit,
 ) {
     /** [actions] with the group's state and its two ways to change it. */
     fun applyTo(actions: Actions): Actions =
-        actions.copy(appSettings = settings, onShareUsageData = answerConsent, onSendCrashReports = setCrashReports)
+        actions.copy(appSettings = settings, onShareUsageData = setUsageData, onSendCrashReports = setCrashReports)
 }
 
 /** Reads [prefs] for the life of the composition; the stored answer is null until it has been read. */
 @Composable
 fun rememberAppSettingsBinding(prefs: TelemetryPrefs): AppSettingsBinding {
     val consent by prefs.analyticsConsent.collectAsStateWithLifecycle(initialValue = null)
-    val crashReports by prefs.crashReportingEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val crashReports by prefs.crashReportingEnabled.collectAsStateWithLifecycle(initialValue = false)
     val scope = rememberCoroutineScope()
     return AppSettingsBinding(
         consent = consent,
-        answerConsent = { granted -> scope.launch { prefs.setAnalyticsGranted(granted) } },
+        // The first-run question covers both, so one answer sets usage data and crash reports; Settings changes each on its own.
+        answerConsent = { granted ->
+            scope.launch {
+                prefs.setAnalyticsGranted(granted)
+                prefs.setCrashReportingEnabled(granted)
+            }
+        },
+        setUsageData = { granted -> scope.launch { prefs.setAnalyticsGranted(granted) } },
         settings = AppSettings(shareUsageData = consent == AnalyticsConsent.GRANTED, sendCrashReports = crashReports),
         setCrashReports = { enabled -> scope.launch { prefs.setCrashReportingEnabled(enabled) } },
     )

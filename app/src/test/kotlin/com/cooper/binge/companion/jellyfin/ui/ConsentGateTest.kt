@@ -47,7 +47,7 @@ class ConsentGateTest {
         val answers = mutableListOf<Boolean>()
         gate(AnalyticsConsent.UNDECIDED, answers)
         compose.onNodeWithText("Not now").performClick()
-        compose.onNodeWithText("Share usage data").performClick()
+        compose.onNodeWithText("Share").performClick()
         assertEquals(listOf(false, true), answers)
     }
 

@@ -1342,15 +1342,15 @@
     <string name="settings_send_crash_reports_caption">Envía lo que hacía la aplicación cuando falló</string>
     <string name="consent_kicker">Privacidad</string>
     <string name="consent_title">Ayuda a mejorar esta aplicación</string>
-    <string name="consent_subtitle">Comparte datos de uso para que veamos qué partes de la aplicación se usan y qué falla.</string>
+    <string name="consent_subtitle">Comparte datos de uso e informes de fallos para que veamos qué partes de la aplicación se usan y qué falla.</string>
     <string name="consent_point_shared_title">Decide qué se arregla</string>
-    <string name="consent_point_shared_detail">Vemos qué pantallas se usan, para dedicar el trabajo a lo que importa.</string>
+    <string name="consent_point_shared_detail">Vemos qué pantallas se usan y qué falla, para dedicar el trabajo a lo que importa.</string>
     <string name="consent_point_never_title">Privado por diseño</string>
-    <string name="consent_point_never_detail">Pantallas que abres, acciones que haces y si funcionaron. Nunca la dirección de tu servidor, tu biblioteca, sus títulos ni el nombre de nadie.</string>
+    <string name="consent_point_never_detail">Pantallas que abres, acciones que haces, si funcionaron y la traza de un fallo. Nunca la dirección de tu servidor, tu biblioteca, sus títulos ni el nombre de nadie.</string>
     <string name="consent_point_change_title">Se desactiva con un toque</string>
-    <string name="consent_point_change_detail">Cambia de opinión cuando quieras en la pantalla de inicio, en Esta aplicación.</string>
-    <string name="consent_accept">Compartir datos de uso</string>
+    <string name="consent_point_change_detail">Cambia de opinión cuando quieras en la pantalla de inicio, en Esta aplicación, cada cosa por separado.</string>
+    <string name="consent_accept">Compartir</string>
     <string name="consent_decline">Ahora no</string>
     <string name="tv_consent_point_change_title">Se desactiva con una pulsación</string>
-    <string name="tv_consent_reassurance">No se recoge nada a menos que elijas Compartir datos de uso.</string>
+    <string name="tv_consent_reassurance">No se recoge nada a menos que elijas Compartir.</string>
 </resources>

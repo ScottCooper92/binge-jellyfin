@@ -1346,15 +1346,15 @@
     <string name="settings_send_crash_reports_caption">Sends what the app was doing when it crashed</string>
     <string name="consent_kicker">Privacy</string>
     <string name="consent_title">Help make this app better</string>
-    <string name="consent_subtitle">Share usage data so we can see which parts of the app get used and what breaks.</string>
+    <string name="consent_subtitle">Share usage data and crash reports so we can see which parts of the app get used and what breaks.</string>
     <string name="consent_point_shared_title">Shapes what gets fixed</string>
-    <string name="consent_point_shared_detail">We see which screens get used, so the work goes where it matters.</string>
+    <string name="consent_point_shared_detail">We see which screens get used and what crashes, so the work goes where it matters.</string>
     <string name="consent_point_never_title">Private by design</string>
-    <string name="consent_point_never_detail">Screens you open, actions you take and whether they worked. Never your server\'s address, your library, its titles or anyone\'s name.</string>
+    <string name="consent_point_never_detail">Screens you open, actions you take, whether they worked, and a crash\'s stack trace. Never your server\'s address, your library, its titles or anyone\'s name.</string>
     <string name="consent_point_change_title">Off with one tap</string>
-    <string name="consent_point_change_detail">Change your mind any time on the home screen, under This app.</string>
-    <string name="consent_accept">Share usage data</string>
+    <string name="consent_point_change_detail">Change your mind any time on the home screen, under This app, for each on its own.</string>
+    <string name="consent_accept">Share</string>
     <string name="consent_decline">Not now</string>
     <string name="tv_consent_point_change_title">Off with one press</string>
-    <string name="tv_consent_reassurance">Nothing is collected unless you choose Share usage data.</string>
+    <string name="tv_consent_reassurance">Nothing is collected unless you choose Share.</string>
 </resources>
