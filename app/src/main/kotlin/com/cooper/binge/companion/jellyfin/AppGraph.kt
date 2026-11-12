@@ -18,7 +18,16 @@ import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
 import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
 import com.cooper.binge.companion.jellyfin.server.lanTargets
+import com.cooper.binge.companion.jellyfin.telemetry.Analytics
+import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsentGate
+import com.cooper.binge.companion.jellyfin.telemetry.CrashReportingSwitch
+import com.cooper.binge.companion.jellyfin.telemetry.FirebaseCrashCollection
+import com.cooper.binge.companion.jellyfin.telemetry.PostHogAnalytics
+import com.cooper.binge.companion.jellyfin.telemetry.PostHogClient
+import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
+import com.cooper.binge.companion.jellyfin.telemetry.postHogConfig
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
+import com.posthog.android.PostHogAndroid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +73,33 @@ class AppGraph(
             overrides = if (BuildConfig.BINGE_PROMOTION) mapOf(Flag.BingePromotion to true) else emptyMap(),
             io = io,
         )
+    }
+
+    /** The user's answers about usage data and crash reports, in a store of their own. */
+    val telemetryPrefs: TelemetryPrefs by lazy {
+        TelemetryPrefs(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("telemetry") },
+            ),
+        )
+    }
+
+    /** The one owner of "may analytics report"; every backend registers with it. */
+    val consentGate: AnalyticsConsentGate by lazy { AnalyticsConsentGate(telemetryPrefs, scope) }
+
+    /** PostHog behind the consent gate. A build with no project key has no client, and then every call is a no-op. */
+    val analytics: Analytics by lazy {
+        val client =
+            BuildConfig.POSTHOG_API_KEY
+                .takeIf { it.isNotBlank() }
+                ?.let { PostHogClient(PostHogAndroid.with(appContext, postHogConfig(it, BuildConfig.POSTHOG_HOST))) }
+        PostHogAnalytics(client, consentGate, scope)
+    }
+
+    /** Holds Crashlytics' collection to the user's crash-reporting answer. */
+    val crashReporting: CrashReportingSwitch by lazy {
+        CrashReportingSwitch(FirebaseCrashCollection(appContext), telemetryPrefs, scope)
     }
 
     val connection: Connection by lazy {

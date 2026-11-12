@@ -11,9 +11,10 @@ plugins {
     id("binge.gates.translation-staleness")
 }
 
-// Remote Config needs this app's own Firebase project, whose google-services.json is never committed:
-// a release writes it from a secret, as binge-seerr's does. Without it the plugin isn't applied, so a fork
-// or a local build still builds, and the flags keep their defaults (flags/FeatureFlags.kt).
+// Remote Config and crash reporting need this app's own Firebase project, whose google-services.json is never
+// committed: a release writes it from a secret, as binge-seerr's does. Without it neither plugin is applied, so a
+// fork or a local build still builds, the flags keep their defaults (flags/FeatureFlags.kt) and crash reporting is
+// off (telemetry/CrashReporting.kt).
 if (file("google-services.json").exists()) {
     apply(
         plugin =
@@ -21,7 +22,30 @@ if (file("google-services.json").exists()) {
                 .get()
                 .pluginId,
     )
+    apply(
+        plugin =
+            libs.plugins.firebase.crashlytics
+                .get()
+                .pluginId,
+    )
 }
+
+// PostHog's project key, from local.properties or the environment; blank means analytics is off.
+val localProperties =
+    Properties().apply {
+        val file = rootDir.resolve("local.properties")
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
+
+// Blank is unset: a workflow passes a secret that was never set as an empty string, not a missing one,
+// and an empty host would otherwise win over the default.
+fun telemetryValue(
+    key: String,
+    default: String = "",
+): String =
+    localProperties.getProperty(key)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(key)?.takeIf { it.isNotBlank() }
+        ?: default
 
 android {
     namespace = "com.cooper.binge.companion.jellyfin"
@@ -41,6 +65,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Whether the app names Binge (FeatureFlags). Off unless a build asks: ./gradlew … -PbingePromotion=true.
         buildConfigField("boolean", "BINGE_PROMOTION", (findProperty("bingePromotion") == "true").toString())
+        buildConfigField("String", "POSTHOG_API_KEY", "\"${telemetryValue("POSTHOG_API_KEY")}\"")
+        buildConfigField("String", "POSTHOG_HOST", "\"${telemetryValue("POSTHOG_HOST", "https://eu.i.posthog.com")}\"")
     }
 
     buildFeatures {
@@ -194,6 +220,8 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.posthog.android)
     implementation(libs.androidx.fragment)
     testImplementation(libs.junit)
     // The design system's take-down compose rules (createTakeDownAndroidComposeRule and its wrapper).
