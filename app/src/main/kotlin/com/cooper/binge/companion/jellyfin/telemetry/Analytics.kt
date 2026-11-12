@@ -6,8 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * What this app reports about its own use, and about the failures it meets. About the server, only its
- * software and version, never its address or contents; nothing about its libraries or its users.
+ * What this app reports about its own use. Nothing read from the user's server: not its address, its
+ * software or version, its libraries or its users.
  */
 interface Analytics {
     /** A screen was shown; [name] is one of this app's fixed screen names, never an id. */

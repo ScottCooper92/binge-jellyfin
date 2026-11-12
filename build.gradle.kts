@@ -6,5 +6,4 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     // Applied by :app only when a google-services.json is present; see the note there.
     alias(libs.plugins.google.services) apply false
-    alias(libs.plugins.firebase.crashlytics) apply false
 }
