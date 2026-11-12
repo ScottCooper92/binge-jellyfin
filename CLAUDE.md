@@ -36,7 +36,7 @@ libraries in `LICENSE-EXCEPTION.md` (the app links Firebase Remote Config). The 
 code, in `TRADEMARKS.md` and `ASSETS.md`. binge-companions stays Apache 2.0, and the design system's licence is decided
 separately. A new dependency must be under a licence the GPL is compatible with.
 
-The app is called **Jellyfin Companion**, and so is the client it signs in as. It names Binge only behind
+The app is called **Ephyra** (with "for Jellyfin" as a subtitle where a descriptor helps), and so is the client it signs in as. "Jellyfin" names the server it talks to, never the app; the application id and package names keep their old form. It names Binge only behind
 `FeatureFlags` (`flags/`): `Flags.bingePromotion`, off by default, as binge-seerr has. Every string or surface that
 names Binge reads `LocalFlags` and has a plain alternative. The value comes from Firebase Remote Config, in the `binge-jellyfin-companion` project, key
 `binge_promotion_enabled`. A build with `-PbingePromotion=true` turns it on whatever the remote says. A build

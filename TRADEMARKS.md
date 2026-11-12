@@ -4,7 +4,7 @@ The GNU General Public License covers this app's code. It does not cover its nam
 
 ## The name
 
-The name of this app is "Jellyfin Companion". The GPL gives you no right to use it, or a name that is
+The name of this app is "Ephyra". The GPL gives you no right to use it, or a name that is
 easily taken for it, for your own version. (The name is written only in this line, so renaming the app
 is a change to this one line and to the app itself.)
 

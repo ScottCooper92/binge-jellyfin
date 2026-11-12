@@ -13,7 +13,7 @@ enum class Flag(
 }
 
 /**
- * Every flag at once. Off by default, so the app stands on its own as Jellyfin Companion and says
+ * Every flag at once. Off by default, so the app stands on its own as Ephyra and says
  * nothing about Binge. The LIBRARY Service isn't flagged: a host that binds it can always use it.
  */
 data class Flags(

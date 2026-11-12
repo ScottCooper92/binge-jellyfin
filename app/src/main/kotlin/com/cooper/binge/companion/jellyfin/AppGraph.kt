@@ -91,4 +91,4 @@ class AppGraph(
 }
 
 /** The client name Jellyfin shows for this app, in its dashboard's devices, sessions and activity. */
-internal const val CLIENT_NAME = "Jellyfin Companion"
+internal const val CLIENT_NAME = "Ephyra"
