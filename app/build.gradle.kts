@@ -11,13 +11,20 @@ plugins {
     id("binge.gates.translation-staleness")
 }
 
-// Remote Config needs this app's own Firebase project, whose google-services.json is never committed: a release
-// writes it from a secret, as binge-seerr's does. Without it the plugin is not applied, so a fork or a local build
-// still builds and the flags keep their defaults (flags/FeatureFlags.kt).
+// Remote Config and crash reporting need this app's own Firebase project, whose google-services.json is never
+// committed: a release writes it from a secret, as binge-seerr's does. Without it neither plugin is applied, so a
+// fork or a local build still builds, the flags keep their defaults (flags/FeatureFlags.kt) and crash reporting is
+// off (telemetry/CrashReporting.kt).
 if (file("google-services.json").exists()) {
     apply(
         plugin =
             libs.plugins.google.services
+                .get()
+                .pluginId,
+    )
+    apply(
+        plugin =
+            libs.plugins.firebase.crashlytics
                 .get()
                 .pluginId,
     )
@@ -213,6 +220,7 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)
+    implementation(libs.firebase.crashlytics)
     implementation(libs.posthog.android)
     implementation(libs.androidx.fragment)
     testImplementation(libs.junit)

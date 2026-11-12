@@ -20,6 +20,8 @@ import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
 import com.cooper.binge.companion.jellyfin.server.lanTargets
 import com.cooper.binge.companion.jellyfin.telemetry.Analytics
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsentGate
+import com.cooper.binge.companion.jellyfin.telemetry.CrashReportingSwitch
+import com.cooper.binge.companion.jellyfin.telemetry.FirebaseCrashCollection
 import com.cooper.binge.companion.jellyfin.telemetry.PostHogAnalytics
 import com.cooper.binge.companion.jellyfin.telemetry.PostHogClient
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
@@ -73,7 +75,7 @@ class AppGraph(
         )
     }
 
-    /** The user's answer about usage data, in a store of their own. */
+    /** The user's answers about usage data and crash reports, in a store of their own. */
     val telemetryPrefs: TelemetryPrefs by lazy {
         TelemetryPrefs(
             PreferenceDataStoreFactory.create(
@@ -93,6 +95,11 @@ class AppGraph(
                 .takeIf { it.isNotBlank() }
                 ?.let { PostHogClient(PostHogAndroid.with(appContext, postHogConfig(it, BuildConfig.POSTHOG_HOST))) }
         PostHogAnalytics(client, consentGate, scope)
+    }
+
+    /** Holds Crashlytics' collection to the user's crash-reporting answer. */
+    val crashReporting: CrashReportingSwitch by lazy {
+        CrashReportingSwitch(FirebaseCrashCollection(appContext), telemetryPrefs, scope)
     }
 
     val connection: Connection by lazy {
