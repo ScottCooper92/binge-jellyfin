@@ -10,7 +10,7 @@ General Public License in all respects for all of the code used other than those
 Corresponding Source for the resulting work need not include the source code of those libraries.
 
 This permission applies only if and as far as this program is combined with those libraries. This
-program does link them: it uses Firebase Remote Config, which brings in Google Play services.
+program does link them: it uses Firebase Remote Config and Firebase Crashlytics, which bring in Google Play services.
 
 If you modify this program, you may extend this exception to your version, but you are not obliged to.
 If you do not wish to, delete this exception statement from your version. Under section 7 of the GPL,

@@ -103,6 +103,10 @@ data class Actions(
     val localNetworkAsked: Boolean = false,
     /** The page showing beside the home, marked in its list; null where none is (the pages' own actions carry none). */
     val selectedPage: ConsolePage? = null,
+    /** What the user has chosen this app may report, and the two ways to change it. */
+    val appSettings: AppSettings = AppSettings(),
+    val onShareUsageData: (Boolean) -> Unit = {},
+    val onSendCrashReports: (Boolean) -> Unit = {},
 )
 
 /** Whether [page] is the one open beside this list: marked only where a pane is beside it, so never on a narrow window. */
@@ -383,7 +387,7 @@ private fun SignedIn(
             }
             // What Binge can find in the library is Binge's to show; without the flag the app names no Binge.
             if (promoted) item { LibraryGroup(state, actions) }
-            if (!state.isAdministrator) item { SignOutButton(actions) }
+            if (!state.isAdministrator) homeFoot(actions)
         }
     }
     if (state.confirmingSignOut) SignOutConfirm(actions)

@@ -24,6 +24,6 @@
 >
 > **Android TV.** Inicia sesión con Quick Connect y ajusta tus preferencias de reproducción.
 >
-> **Tu servidor, tus datos.** Inicia sesión con tu cuenta de Jellyfin o con Quick Connect. El token de acceso se cifra con una clave del Android Keystore y se guarda solo en tu dispositivo; no se hace copia de seguridad de nada. La app habla con el servidor que indicas y da al reproductor de Binge el acceso que necesita para reproducir desde él. No tiene analítica, ni informes de fallos, ni anuncios, ni cuenta propia.
+> **Tu servidor, tus datos.** Inicia sesión con tu cuenta de Jellyfin o con Quick Connect. El token de acceso se cifra con una clave del Android Keystore y se guarda solo en tu dispositivo; no se hace copia de seguridad de nada. La app habla con el servidor que indicas y da al reproductor de Binge el acceso que necesita para reproducir desde él. Los datos de uso van a PostHog solo si aceptas, y los informes de fallos a Firebase Crashlytics salvo que los desactives en Esta aplicación. Sin anuncios y sin cuenta propia.
 >
 > Código abierto, con licencia GPL 3.0 o posterior: github.com/ScottCooper92/binge-jellyfin. Ephyra es una app independiente y no está hecha por el proyecto Jellyfin ni afiliada a él.

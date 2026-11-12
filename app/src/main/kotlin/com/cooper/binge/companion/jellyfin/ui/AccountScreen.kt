@@ -50,6 +50,7 @@ fun AccountScreen(
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
             ) {
                 item { AccountGroup(state, actions, titled = false) }
+                item { AppGroup(actions.appSettings, actions) }
                 item { SignOutButton(actions) }
             }
         }

@@ -40,6 +40,7 @@ import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.consent.ConsentGate
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
@@ -47,6 +48,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
+import com.cooper.binge.companion.jellyfin.ui.rememberAppSettingsBinding
+import com.cooper.binge.companion.jellyfin.ui.tv.TvConsentGate
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
 import kotlinx.coroutines.launch
@@ -159,13 +162,21 @@ class MainActivity : ComponentActivity() {
                     selectedPage = stack.entries.firstOrNull()?.page ?: ConsolePage.NowPlaying,
                 )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
+            // What the user has said about usage data and crash reports; the stored answer is null until it is read.
+            val telemetry = rememberAppSettingsBinding(graph.telemetryPrefs)
             CompositionLocalProvider(LocalFlags provides flags, LocalUserPictures provides graph.userPictures) {
                 if (LocalConfiguration.current.isTelevision()) {
-                    JellyfinTvTheme { TvJellyfinRoot(state, actions, playback = rememberTvPlayback(graph.connection, state)) }
+                    JellyfinTvTheme {
+                        TvConsentGate(telemetry.consent, telemetry.answerConsent) {
+                            TvJellyfinRoot(state, telemetry.applyTo(actions), playback = rememberTvPlayback(graph.connection, state))
+                        }
+                    }
                 } else {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                            ConsoleHost(state, stack, { stack = it }, graph, actions, homeActions)
+                            ConsentGate(telemetry.consent, telemetry.answerConsent) {
+                                ConsoleHost(state, stack, { stack = it }, graph, telemetry.applyTo(actions), telemetry.applyTo(homeActions))
+                            }
                         }
                     }
                 }
