@@ -208,7 +208,11 @@ private fun ConsoleHost(
     val signedIn = state is UiState.SignedIn
     // A tap acts on the stack as it is then, not as it was when the screen under it was composed.
     val latest by rememberUpdatedState(stack)
-    ReviewPromptOnReturnToRoot(atRoot = signedIn && stack.entries.isEmpty(), onReturnedToRoot = graph.reviewPrompt::maybeAsk)
+    ReviewPromptOnReturnToRoot(
+        signedIn = signedIn,
+        atRoot = stack.entries.isEmpty(),
+        onReturnedToRoot = graph.reviewPrompt::maybeAsk,
+    )
     ConsoleNavHost(
         stack = if (signedIn) stack else ConsoleBackStack(),
         signedIn = signedIn,
