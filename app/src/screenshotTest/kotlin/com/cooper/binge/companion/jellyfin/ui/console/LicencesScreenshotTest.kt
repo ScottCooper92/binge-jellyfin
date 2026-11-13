@@ -11,8 +11,20 @@ private val previewLibraries =
     listOf(
         LicenceEntry("okhttp", "OkHttp", "5.0.0", listOf("Apache License 2.0"), "https://square.github.io/okhttp/"),
         LicenceEntry("coil", "Coil", "3.3.0", listOf("Apache License 2.0"), "https://coil-kt.github.io/coil/"),
-        LicenceEntry("kotlinx-coroutines", "Kotlin Coroutines", "1.11.0", listOf("Apache License 2.0"), "https://github.com/Kotlin/kotlinx.coroutines"),
-        LicenceEntry("some-lib", "A library with a much longer name that has to wrap", null, listOf("MIT License", "Eclipse Public License 2.0"), null),
+        LicenceEntry(
+            "kotlinx-coroutines",
+            "Kotlin Coroutines",
+            "1.11.0",
+            listOf("Apache License 2.0"),
+            "https://github.com/Kotlin/kotlinx.coroutines",
+        ),
+        LicenceEntry(
+            "some-lib",
+            "A library with a much longer name that has to wrap",
+            null,
+            listOf("MIT License", "Eclipse Public License 2.0"),
+            null,
+        ),
         LicenceEntry("no-licence", "No licence given", "0.1", emptyList(), "https://example.com"),
     )
 
