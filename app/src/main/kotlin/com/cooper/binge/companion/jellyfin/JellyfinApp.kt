@@ -8,7 +8,9 @@ class JellyfinApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Built at start: building the analytics registers it with the consent gate.
+        // Built at start: building the analytics registers it with the consent gate, and the switch holds crash collection to the
+        // user's answer from the first launch.
         graph.analytics
+        graph.crashReporting.start()
     }
 }

@@ -97,6 +97,12 @@
                 android:name="com.binge.companion.majors.library"
                 android:value="1" />
         </service>
+
+        <!-- Crash reports are opt-in. Crashlytics collects from the first launch unless told not to, so this switches it off
+             until the user's stored answer turns it on (telemetry/CrashReporting.kt). -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
     </application>
 
 </manifest>
