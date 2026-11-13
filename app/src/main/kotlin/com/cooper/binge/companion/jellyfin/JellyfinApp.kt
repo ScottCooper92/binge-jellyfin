@@ -12,5 +12,6 @@ class JellyfinApp : Application() {
         // user's answer from the first launch.
         graph.analytics
         graph.crashReporting.start()
+        graph.reviewPrompt.start()
     }
 }

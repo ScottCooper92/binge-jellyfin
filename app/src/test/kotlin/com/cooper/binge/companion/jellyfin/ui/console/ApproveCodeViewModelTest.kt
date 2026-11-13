@@ -79,6 +79,15 @@ class ApproveCodeViewModelTest {
     }
 
     @Test
+    fun `only an approved code counts towards the review prompt`() {
+        var counted = 0
+        made(ApproveCodeViewModel(connection) { counted++ }).resultAfter("111111")
+        assertEquals(0, counted)
+        made(ApproveCodeViewModel(connection) { counted++ }).resultAfter("654321")
+        assertEquals(1, counted)
+    }
+
+    @Test
     fun `a code the server is not waiting on says so and stays to be corrected`() {
         val state = made(ApproveCodeViewModel(connection)).resultAfter("111111")
         assertEquals(ApproveResult.WrongCode, state.result)

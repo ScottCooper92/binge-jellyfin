@@ -10,6 +10,9 @@ enum class Flag(
 ) {
     /** Anything that names Binge to the user: what it can see, what it stops doing, where it plays. */
     BingePromotion("binge_promotion_enabled"),
+
+    /** Whether the app may ask Google Play to show its review card. Off until the flag is turned on remotely. */
+    ReviewPrompt("review_prompt_enabled"),
 }
 
 /**
@@ -18,14 +21,16 @@ enum class Flag(
  */
 data class Flags(
     val bingePromotion: Boolean = false,
+    val reviewPrompt: Boolean = false,
 ) {
     operator fun get(flag: Flag): Boolean =
         when (flag) {
             Flag.BingePromotion -> bingePromotion
+            Flag.ReviewPrompt -> reviewPrompt
         }
 
     companion object {
-        val AllOn = Flags(bingePromotion = true)
+        val AllOn = Flags(bingePromotion = true, reviewPrompt = true)
     }
 }
 

@@ -2,6 +2,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cooper.binge.companion.jellyfin.review.NoReviewSignals
+import com.cooper.binge.companion.jellyfin.review.ReviewSignalSink
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
@@ -49,6 +51,7 @@ sealed interface TasksUiState {
  */
 class TasksViewModel(
     private val connection: Connection,
+    private val reviewSignals: ReviewSignalSink = NoReviewSignals,
 ) : ViewModel() {
     private val _state = MutableStateFlow<TasksUiState>(TasksUiState.Loading)
     val state: StateFlow<TasksUiState> = _state.asStateFlow()
@@ -146,8 +149,10 @@ class TasksViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> if (run) client.runTask(task.id) else client.stopTask(task.id) }
-                .onSuccess { update { copy(board = if (run) board.started(task.id) else board.copy(busy = board.busy - task.id)) } }
-                .onFailure { error ->
+                .onSuccess {
+                    if (run) reviewSignals.recordPositiveAction()
+                    update { copy(board = if (run) board.started(task.id) else board.copy(busy = board.busy - task.id)) }
+                }.onFailure { error ->
                     update { copy(board = board.copy(busy = board.busy - task.id), actionFailed = error.consoleFailure()) }
                 }
         }

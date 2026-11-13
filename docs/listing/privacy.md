@@ -10,6 +10,7 @@
 - **An index of the movies and series in your library** (their TMDB ids), held in memory only, so the app can tell Binge what you have. It is dropped when you sign out and when the app is closed.
 - **The last values of one remote on/off setting** (see Firebase Remote Config below).
 - **Your answers about usage data and crash reports**: whether you agreed to share usage data (it is off until you do), and whether crash reports are on (they are off until you agree; the first-run question covers both, and you can change each on its own).
+- **Three numbers for the rating prompt**: when you first opened the app, how many sign-in codes you approved and scheduled tasks you ran, and when you were last asked to rate the app. They never leave the device. When you have used the app for a while, Google Play may offer to let you rate it; Play draws that card and tells the app nothing about what you do with it.
 - **Cached user pictures** fetched from your server, and **the last log you shared** (redacted), both in the app's cache.
 
 The app sets `allowBackup="false"` and excludes everything from cloud backup and device transfer, so Android's own backup does not copy any of the above. Uninstalling the app removes it. Signing out inside the app removes the session and drops the index. The random install identifier, the cached user pictures and the last shared log stay until you clear the app's storage or uninstall it.

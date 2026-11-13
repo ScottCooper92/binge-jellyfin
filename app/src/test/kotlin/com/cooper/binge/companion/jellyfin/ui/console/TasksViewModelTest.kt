@@ -117,6 +117,25 @@ class TasksViewModelTest {
     }
 
     @Test
+    fun `a run that was sent counts towards the review prompt, a stop and a failed run do not`() {
+        var counted = 0
+        val vm = made(TasksViewModel(connection) { counted++ })
+        val clean = vm.ready().board.tasks[1]
+        vm.stop(clean)
+        waitFor { hit("DELETE") }
+        vm.ready { it.board.busy.isEmpty() }
+        assertEquals(0, counted)
+        jellyfin.status["/ScheduledTasks/Running/t-clean"] = 500
+        vm.run(clean)
+        vm.ready { it.actionFailed != null }
+        assertEquals(0, counted)
+        jellyfin.status.remove("/ScheduledTasks/Running/t-clean")
+        vm.run(clean)
+        waitFor { counted == 1 }
+        assertEquals(1, counted)
+    }
+
+    @Test
     fun `stop asks the server to stop the run`() {
         val vm = made(TasksViewModel(connection))
         val clean = vm.ready().board.tasks[1]
