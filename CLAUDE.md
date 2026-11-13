@@ -46,6 +46,13 @@ traffic carries the installation ID and app and device metadata. It never carrie
 from the user's server. The LIBRARY Service and the manifest's `com.binge.companion.*` names are the contract, not text,
 and aren't flagged.
 
+Two more things leave the device, both only after the user agrees on the first-run screen (`ui/consent/`) and until they
+turn them off under This app. Usage data goes to PostHog (`telemetry/`): the app's own fixed screen and action names, never an
+id, a title, an address or a name. Crash reports go to Firebase Crashlytics in the same Firebase project: a stack trace and
+the device and app version, never a debug build's. No user id, custom key or log line is set, and no exception message in this
+app's code may contain the server's address or the token. A build without `POSTHOG_API_KEY` or `google-services.json` has the
+matching one off. Neither carries the access token or anything from the user's server.
+
 The screens wear the design system's `BingeExpressiveTheme`, with this app's own purple
 `JellyfinBrand` in place of Binge's amber (`theme/JellyfinTheme.kt`).
 

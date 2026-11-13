@@ -273,7 +273,7 @@ class UsersViewModel(
                         change(client.user(user.id).policy).also { client.savePolicy(user.id, it) }
                     }
                 result.onSuccess { saved[user.id] = it }
-                val queued = pending.getValue(user.id).also { it.remove(change) }
+                val queued = pending.getValue(user.id).also { it.remove(change) }.toList()
                 changes++
                 // What the screen shows is what the server holds, plus the changes still waiting their turn.
                 val shown = queued.fold(saved[user.id] ?: user.policy) { policy, queuedChange -> queuedChange(policy) }
