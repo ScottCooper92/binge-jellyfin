@@ -34,6 +34,7 @@ import com.binge.companion.kit.isTelevision
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.AndroidLocalNetworkPermission
+import com.cooper.binge.companion.jellyfin.telemetry.ReportScreen
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -100,6 +101,7 @@ class MainActivity : ComponentActivity() {
                         graph.index,
                         discover = graph.discovery::find,
                         localNetwork = AndroidLocalNetworkPermission(applicationContext),
+                        analytics = graph.analytics,
                     )
                 }
             }
@@ -123,6 +125,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             val openPage = stack.top.takeIf { signedIn }
+            ReportScreen(state, openPage?.page, graph.analytics)
             RefreshGatesWhenHomeReturns(openPage?.opening, stack.openings) { viewModel.refresh(gatesOnly = true) }
             val actions =
                 Actions(

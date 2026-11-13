@@ -11,6 +11,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
+import com.cooper.binge.companion.jellyfin.telemetry.Analytics
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +61,22 @@ class JellyfinViewModelTest {
 
     private val stores = mutableListOf<ViewModelStore>()
 
-    private fun viewModel() = track(JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L))
+    private val reported = mutableListOf<Pair<String, Map<String, Any>>>()
+
+    private val analytics =
+        object : Analytics {
+            override fun screen(name: String) = Unit
+
+            override fun event(
+                name: String,
+                properties: Map<String, Any>,
+            ) {
+                reported += name to properties
+            }
+        }
+
+    private fun viewModel() =
+        track(JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L, analytics = analytics))
 
     private fun track(vm: JellyfinViewModel): JellyfinViewModel {
         val store = ViewModelStore().also { stores += it }
@@ -124,6 +140,49 @@ class JellyfinViewModelTest {
         assertEquals("Claude", signedIn.session.userName)
         assertEquals(1, signedIn.titles)
         assertEquals("token-1", runBlocking { sessions.current() }?.token)
+    }
+
+    @Test
+    fun `a sign-in is reported by its method and a failure by its category, never by name or address`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("Claude")
+        vm.onPassword("wrong")
+        vm.signInWithPassword()
+        vm.await<UiState.SignIn> { it.passwordError != null }
+        vm.onPassword("right")
+        vm.signInWithPassword()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        assertEquals(
+            listOf(
+                "sign_in_failed" to mapOf("method" to "password", "reason" to "wrong_credentials"),
+                "sign_in" to mapOf("method" to "password"),
+            ),
+            reported,
+        )
+    }
+
+    @Test
+    fun `Quick Connect is reported as its own method, and signing out is reported`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectCode != null }
+        jellyfin.quickConnectApproved = true
+        vm.await<UiState.SignedIn> { it.titles != null }
+        vm.signOut()
+        vm.await<UiState.EnterServer>()
+        assertEquals(listOf("sign_in" to mapOf("method" to "quick_connect"), "sign_out" to emptyMap<String, Any>()), reported)
+    }
+
+    @Test
+    fun `Quick Connect turned off on the server is reported as that reason`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        jellyfin.quickConnectEnabled = false
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectError != null }
+        assertEquals(listOf("sign_in_failed" to mapOf("method" to "quick_connect", "reason" to "quick_connect_off")), reported)
     }
 
     @Test
