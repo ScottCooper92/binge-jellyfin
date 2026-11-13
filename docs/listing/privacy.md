@@ -9,6 +9,7 @@
 - **A random identifier for this install**, which the app sends to your server as its device id, so the install appears once in the server's devices list. It survives signing out, because it is this install's identity to every server.
 - **An index of the movies and series in your library** (their TMDB ids), held in memory only, so the app can tell Binge what you have. It is dropped when you sign out and when the app is closed.
 - **The last values of one remote on/off setting** (see Firebase Remote Config below).
+- **Your answers about usage data and crash reports**: whether you agreed to share usage data (it is off until you do), and whether crash reports are on (they are off until you agree; the first-run question covers both, and you can change each on its own).
 - **Cached user pictures** fetched from your server, and **the last log you shared** (redacted), both in the app's cache.
 
 The app sets `allowBackup="false"` and excludes everything from cloud backup and device transfer, so Android's own backup does not copy any of the above. Uninstalling the app removes it. Signing out inside the app removes the session and drops the index. The random install identifier, the cached user pictures and the last shared log stay until you clear the app's storage or uninstall it.
@@ -21,11 +22,14 @@ The app sets `allowBackup="false"` and excludes everything from cloud backup and
 - **To your local network**, in the server step: the app broadcasts a discovery query and lists the servers that answer. Nothing is sent to a server until you pick it.
 - **To Google (Firebase Remote Config)**, when the app starts: the app asks for one on/off value, whether to mention Binge in the app's text. Firebase's SDK sends a random Firebase installation id and the usual device and app details (app id, version, Android version and locale) with the request. Nothing from your server or account is sent. A build without the Firebase configuration file makes no request at all.
 
+- **To PostHog**, only if you agree to share usage data when the app first asks, or later under This app in your settings: which of the app's screens you open, and which action you take. Both are the app's own fixed names, with at most a fixed category as a detail, never an id, a title, your server's address, your library or anyone's name, plus PostHog's own app events (installed, updated, opened, backgrounded). Nothing is sent until you agree, and turning it off stops it. PostHog records it against a random identifier for this install, not against you, and derives a rough location from the IP address.
+- **To Google (Firebase Crashlytics)**, when the app crashes: what the app was doing, the device model and Android version. This is off until you agree on the first-run screen, and you can turn it off under This app. No user identifier is set, and the app does not forward its logs. A debug build never sends one.
+
 The app has no server of its own.
 
 ## What the app does not do
 
-- No analytics, no crash reporting and no advertising libraries.
+- No advertising or tracking libraries, and no analytics beyond the screen names and action categories above.
 - No account with the app's author, and no sign-in other than to your own server.
 - No access to contacts, location, files beyond the photos you pick, the camera, the microphone or the clipboard beyond the copy actions you press.
 - No background activity of its own beyond answering Binge when it asks.

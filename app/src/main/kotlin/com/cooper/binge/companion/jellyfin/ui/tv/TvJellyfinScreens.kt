@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
@@ -385,6 +387,7 @@ private fun TvSignedInPage(
         listOfNotNull(
             TvPaneGroup(title = stringResource(R.string.settings_signed_in_as), rows = accountRows),
             playback?.takeIf { !problem }?.let { playbackGroup(it) },
+            appGroup(actions),
         )
     TvListPaneBoard(
         title = stringResource(R.string.app_label),
@@ -497,3 +500,52 @@ private fun TvStatusLine(
 
 /** Lines a found server's address may take, so it stays readable at large font sizes. */
 private const val ADDRESS_LINES = 2
+
+/** The "This app" group on the board: usage data and crash reports, each one switch in the pane. */
+@Composable
+private fun appGroup(actions: Actions): TvPaneGroup {
+    val settings = actions.appSettings
+
+    @Composable
+    fun switch(
+        key: String,
+        label: Int,
+        body: Int,
+        icon: ImageVector,
+        value: Boolean,
+        change: (Boolean) -> Unit,
+    ) = TvPaneRow(
+        key = key,
+        label = stringResource(label),
+        body = stringResource(body),
+        icon = icon,
+        detail = stringResource(if (value) R.string.library_provider_on else R.string.library_provider_off),
+        multiSelect = true,
+        options = listOf(TvPaneOption(label = stringResource(label), selected = value, onSelect = { change(!value) })),
+    )
+    return TvPaneGroup(
+        title = stringResource(R.string.settings_group_app),
+        rows =
+            listOf(
+                switch(
+                    USAGE_DATA_KEY,
+                    R.string.settings_share_usage_data,
+                    R.string.settings_share_usage_data_caption,
+                    Icons.Outlined.BarChart,
+                    settings.shareUsageData,
+                    actions.onShareUsageData,
+                ),
+                switch(
+                    CRASH_REPORTS_KEY,
+                    R.string.settings_send_crash_reports,
+                    R.string.settings_send_crash_reports_caption,
+                    Icons.Outlined.BugReport,
+                    settings.sendCrashReports,
+                    actions.onSendCrashReports,
+                ),
+            ),
+    )
+}
+
+private const val USAGE_DATA_KEY = "usageData"
+private const val CRASH_REPORTS_KEY = "crashReports"

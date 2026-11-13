@@ -28,7 +28,7 @@ Why: the name is the app's own, and "for Jellyfin" says what it works with witho
 >
 > **Android TV.** Sign in with Quick Connect, and set your playback preferences.
 >
-> **Your server, your data.** Sign in with your Jellyfin account or Quick Connect. The access token is encrypted with an Android Keystore key and stored only on your device, and nothing is backed up. The app talks to the server you entered, and gives Binge's player the access it needs to play from it. It has no analytics, no crash reporting and no adverts, and no account of its own.
+> **Your server, your data.** Sign in with your Jellyfin account or Quick Connect. The access token is encrypted with an Android Keystore key and stored only on your device, and nothing is backed up. The app talks to the server you entered, and gives Binge's player the access it needs to play from it. Usage data goes to PostHog only if you agree, and crash reports go to Firebase Crashlytics only if you agree, and each can be turned off under This app. No adverts, no account of its own.
 >
 > Open source, under the GPL 3.0 or later: github.com/ScottCooper92/binge-jellyfin. Ephyra is an independent app and is not made by or affiliated with the Jellyfin project.
 

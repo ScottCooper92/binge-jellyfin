@@ -1334,4 +1334,23 @@
     <string name="live_tv_add_by_address">Añadir por dirección</string>
     <string name="users_schedule_midnight">La medianoche como hora final significa el final de este día.</string>
     <string name="users_schedule_order">La hora final debe ser posterior a la inicial.</string>
+
+    <string name="settings_group_app">Esta aplicación</string>
+    <string name="settings_share_usage_data">Compartir datos de uso</string>
+    <string name="settings_share_usage_data_caption">Envía qué pantallas y acciones usas</string>
+    <string name="settings_send_crash_reports">Enviar informes de fallos</string>
+    <string name="settings_send_crash_reports_caption">Envía lo que hacía la aplicación cuando falló</string>
+    <string name="consent_kicker">Privacidad</string>
+    <string name="consent_title">Ayuda a mejorar esta aplicación</string>
+    <string name="consent_subtitle">Comparte datos de uso e informes de fallos para que veamos qué partes de la aplicación se usan y qué falla.</string>
+    <string name="consent_point_shared_title">Decide qué se arregla</string>
+    <string name="consent_point_shared_detail">Vemos qué pantallas se usan y qué falla, para dedicar el trabajo a lo que importa.</string>
+    <string name="consent_point_never_title">Privado por diseño</string>
+    <string name="consent_point_never_detail">Pantallas que abres, acciones que haces, si funcionaron y la traza de un fallo. Nunca la dirección de tu servidor, tu biblioteca, sus títulos ni el nombre de nadie.</string>
+    <string name="consent_point_change_title">Se desactiva con un toque</string>
+    <string name="consent_point_change_detail">Cambia de opinión cuando quieras en Esta aplicación, dentro de tus ajustes, cada cosa por separado.</string>
+    <string name="consent_accept">Compartir</string>
+    <string name="consent_decline">Ahora no</string>
+    <string name="tv_consent_point_change_title">Se desactiva con una pulsación</string>
+    <string name="tv_consent_reassurance">No se recoge nada a menos que elijas Compartir.</string>
 </resources>

@@ -43,6 +43,17 @@ class TelemetryPrefs(
         dataStore.edit { it[ANALYTICS_GRANTED] = granted }
     }
 
+    /**
+     * The first-run question covers both usage data and crash reports, so one answer records both in one write. Settings changes
+     * each on its own afterwards, through [setAnalyticsGranted] and [setCrashReportingEnabled].
+     */
+    suspend fun answerFirstRun(granted: Boolean) {
+        dataStore.edit {
+            it[ANALYTICS_GRANTED] = granted
+            it[CRASH_REPORTING_ENABLED] = granted
+        }
+    }
+
     suspend fun setCrashReportingEnabled(enabled: Boolean) {
         dataStore.edit { it[CRASH_REPORTING_ENABLED] = enabled }
     }
