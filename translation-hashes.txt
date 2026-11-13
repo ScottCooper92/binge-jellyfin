@@ -927,6 +927,8 @@ app:settings_group_app  0982cb1775e6
 app:settings_library  dc20b3d5d2cd
 app:settings_not_saved  34bacdd62ff6
 app:settings_refresh  046c434d323d
+app:settings_report_bug  f75e0bd8ff23
+app:settings_report_bug_caption  d91cdd5edb81
 app:settings_send_crash_reports  2b8f06d96293
 app:settings_send_crash_reports_caption  590713339d2e
 app:settings_server  aef7de28d529
@@ -1135,6 +1137,8 @@ app:tv_consent_point_change_title  4a8011b9ca93
 app:tv_consent_reassurance  2de00dac832e
 app:tv_loading  ba3bbbe10d8b
 app:tv_quick_connect_getting  7b0a260d7428
+app:tv_settings_report_bug_code_description  f9ec3a4be5c3
+app:tv_settings_report_bug_scan  788e6d3aaded
 app:tv_sign_in_to  5657abe2920e
 app:tv_signed_in_as  f8e475bec2c5
 app:tv_titles_count  766d9492fbea
