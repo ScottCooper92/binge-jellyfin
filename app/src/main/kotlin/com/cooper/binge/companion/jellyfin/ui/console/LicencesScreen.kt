@@ -59,6 +59,7 @@ internal fun LicencesScreen(
             val inner = padding.screenListPadding()
             when (state) {
                 LicencesUiState.Loading -> ConsoleLoading(inner, LOADING_ROWS)
+                // Not ErrorScreen: the list is bundled at build time, so Retry could never succeed.
                 LicencesUiState.Unreadable -> EmptyLicences(inner, R.string.licences_unreadable)
                 is LicencesUiState.Ready ->
                     if (state.entries.isEmpty()) {
