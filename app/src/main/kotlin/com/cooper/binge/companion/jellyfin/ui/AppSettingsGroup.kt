@@ -20,7 +20,6 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
 import com.cooper.binge.companion.jellyfin.BuildConfig
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.feedback.BUG_REPORT_REPOSITORY
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
 import com.cooper.binge.companion.jellyfin.feedback.openInBrowser
 import com.cooper.binge.companion.jellyfin.feedback.openPlayStoreListing
@@ -30,8 +29,8 @@ import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import kotlinx.coroutines.launch
 
-/** The privacy policy as it is published today: its text in the repository, until the page Play wants is hosted. */
-private const val PRIVACY_POLICY_URL = "$BUG_REPORT_REPOSITORY/blob/main/docs/listing/privacy.md"
+/** The hosted privacy policy page, built from `docs/listing/privacy.md` by `privacy-policy.yml`: the URL Play links to. */
+private const val PRIVACY_POLICY_URL = "https://scottcooper92.github.io/binge-jellyfin/privacy/"
 
 /**
  * The user's answers about what this app reports, as the home and the account show them: usage data (PostHog, only if the user
