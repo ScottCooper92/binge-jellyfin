@@ -47,7 +47,11 @@ class FirebaseRemoteFlagSource(
         return if (fetched) read(remote) else null
     }
 
-    private fun read(remote: FirebaseRemoteConfig) = Flags(bingePromotion = remote.getBoolean(Flag.BingePromotion.key))
+    private fun read(remote: FirebaseRemoteConfig) =
+        Flags(
+            bingePromotion = remote.getBoolean(Flag.BingePromotion.key),
+            reviewPrompt = remote.getBoolean(Flag.ReviewPrompt.key),
+        )
 
     private companion object {
         const val MIN_FETCH_SECONDS = 3_600L

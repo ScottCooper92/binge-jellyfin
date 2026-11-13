@@ -12,6 +12,8 @@ kotlin = "2.4.21"
 coreKtx = "1.19.1"
 # Data only: the plugin writes the licence list of the shipped dependencies, the core library parses it.
 aboutLibraries = "15.3.0"
+# The in-app review card; the system draws it. kotlinx-coroutines-play-services awaits its Tasks.
+playReview = "2.0.2"
 junit = "4.13.2"
 # The version binge-design-system pins.
 robolectric = "4.17"
@@ -58,6 +60,8 @@ binge-companion-kit = { module = "io.github.scottcooper92:binge-companion-kit" }
 # Version-less for the same reason: these resolve to the included binge-design-system build.
 binge-designsystem = { module = "com.binge:designsystem" }
 binge-designsystem-tv = { module = "com.binge:designsystem-tv" }
+play-review = { module = "com.google.android.play:review", version.ref = "playReview" }
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }

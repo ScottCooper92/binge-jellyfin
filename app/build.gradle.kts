@@ -207,6 +207,9 @@ dependencies {
     // The television surface in ui/tv. tv-material and the phone's Material 3 are never mixed in one file.
     implementation(libs.binge.designsystem.tv)
     implementation(libs.kotlinx.coroutines.android)
+    // Play's in-app review card and the await for its Tasks; see review/PlayReviewPromptLauncher.
+    implementation(libs.play.review)
+    implementation(libs.kotlinx.coroutines.play.services)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)

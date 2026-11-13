@@ -20,7 +20,8 @@ internal fun TaskItemRoute(
     taskId: String,
     onBack: () -> Unit,
 ) {
-    val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
+    val tasks: TasksViewModel =
+        viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection, graph.reviewPrompt) } })
     val state by tasks.state.collectAsStateWithLifecycle()
     TaskScreen(
         state,

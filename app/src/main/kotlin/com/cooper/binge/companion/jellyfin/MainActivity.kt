@@ -40,6 +40,7 @@ import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
+import com.cooper.binge.companion.jellyfin.ui.ReviewPromptOnReturnToRoot
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.consent.ConsentGate
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
@@ -207,6 +208,11 @@ private fun ConsoleHost(
     val signedIn = state is UiState.SignedIn
     // A tap acts on the stack as it is then, not as it was when the screen under it was composed.
     val latest by rememberUpdatedState(stack)
+    ReviewPromptOnReturnToRoot(
+        signedIn = signedIn,
+        atRoot = stack.entries.isEmpty(),
+        onReturnedToRoot = graph.reviewPrompt::maybeAsk,
+    )
     ConsoleNavHost(
         stack = if (signedIn) stack else ConsoleBackStack(),
         signedIn = signedIn,

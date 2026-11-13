@@ -26,5 +26,9 @@ class RemoteFeatureFlags(
         }
     }
 
-    private fun resolve(remote: Flags) = Flags(bingePromotion = overrides[Flag.BingePromotion] ?: remote.bingePromotion)
+    private fun resolve(remote: Flags) =
+        Flags(
+            bingePromotion = overrides[Flag.BingePromotion] ?: remote.bingePromotion,
+            reviewPrompt = overrides[Flag.ReviewPrompt] ?: remote.reviewPrompt,
+        )
 }

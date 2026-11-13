@@ -13,6 +13,9 @@ import com.cooper.binge.companion.jellyfin.flags.FeatureFlags
 import com.cooper.binge.companion.jellyfin.flags.FirebaseRemoteFlagSource
 import com.cooper.binge.companion.jellyfin.flags.Flag
 import com.cooper.binge.companion.jellyfin.flags.RemoteFeatureFlags
+import com.cooper.binge.companion.jellyfin.review.PlayReviewPromptLauncher
+import com.cooper.binge.companion.jellyfin.review.ReviewPrompt
+import com.cooper.binge.companion.jellyfin.review.ReviewSignalStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
@@ -86,6 +89,22 @@ class AppGraph(
                 corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
                 produceFile = { appContext.preferencesDataStoreFile("telemetry") },
             ),
+        )
+    }
+
+    /** Asks Play for its review card once the user has done enough and waited long enough; off until the flag is on. */
+    val reviewPrompt: ReviewPrompt by lazy {
+        ReviewPrompt(
+            store =
+                ReviewSignalStore(
+                    PreferenceDataStoreFactory.create(
+                        corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                        produceFile = { appContext.preferencesDataStoreFile("review") },
+                    ),
+                ),
+            launcher = PlayReviewPromptLauncher(appContext),
+            featureFlags = flags,
+            scope = scope,
         )
     }
 
