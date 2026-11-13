@@ -11,7 +11,7 @@ What the store page says, in the repository so it is reviewed like code and stay
 
 ## What is not here
 
-- **The privacy policy's public URL.** Play needs the policy at a public page. binge-seerr publishes its own with a GitHub Pages workflow; this repository does not yet, so `privacy.md` is the text and the page is still to do.
+- **The privacy policy's public URL.** `.github/workflows/privacy-policy.yml` publishes `privacy.md` to https://scottcooper92.github.io/binge-jellyfin/privacy/ when it changes on `main`. It needs Pages switched on with GitHub Actions as its source (Settings > Pages).
 - **Store graphics.** The 512 px icon, the 1024x500 feature graphic and phone and TV screenshots are design assets and device captures (use the demo mode, and check the status bar is clean). The icon and the artwork wait on the new mark (#170).
 - **The release upload.** Wiring the upload the way binge-seerr does is the other half of #447.
 

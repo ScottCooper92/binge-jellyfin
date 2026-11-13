@@ -1,0 +1,110 @@
+name: Privacy policy
+
+# Publishes docs/listing/privacy.md to GitHub Pages, which is the URL the Play listing links to
+# (#170). The file is the source and the page is a copy of it, so the page is rebuilt whenever the
+# file changes on main and a merged policy change goes live with no further step.
+#
+# Only the policy is published, not the docs tree: the artifact holds one rendered page, at
+# https://scottcooper92.github.io/binge-jellyfin/privacy/. The page is self-contained, with its styles
+# inline and no scripts, fonts or stylesheets from anywhere else, so opening a privacy policy does
+# not itself send a request to a third party.
+#
+# This needs Pages turned on with GitHub Actions as its source (Settings > Pages). Until then the
+# deploy job fails.
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/listing/privacy.md
+      - .github/workflows/privacy-policy.yml
+  workflow_dispatch:
+
+# One deployment at a time. A newer run waits rather than cancelling one already deploying, so a
+# deployment is never cut off halfway, and the last policy to merge is the one that ends up live.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # No configure-pages step: it only tells a static-site generator the site's base path, and this
+    # page is rendered by pandoc with no links into the site. Its settings read answered 404 here with
+    # Pages on and `pages: read` granted, failing the build before anything was published.
+    permissions:
+      contents: read
+    steps:
+      # Full history, so the last-updated date is that of the last commit to change the policy. A
+      # shallow clone would give the date of whatever commit triggered the run.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # A pinned release verified against its published checksum, the same way ci.yml installs
+      # actionlint. The runner image's apt archive would give whatever version it carries that week.
+      - name: Install pandoc
+        env:
+          VERSION: '3.12'
+          SHA256: 67d7d011fed8c8543306022b985b9b2499ab9b74818df91d8727c7e9ebc5ba06
+        run: |
+          set -euo pipefail
+          curl -sSLo pandoc.tar.gz \
+            "https://github.com/jgm/pandoc/releases/download/${VERSION}/pandoc-${VERSION}-linux-amd64.tar.gz"
+          echo "${SHA256}  pandoc.tar.gz" | sha256sum -c -
+          tar xzf pandoc.tar.gz --strip-components=2 "pandoc-${VERSION}/bin/pandoc"
+          ./pandoc --version | head -n 1
+
+      # The policy's first line is its heading. The last-updated line goes straight under it, so
+      # the date is the first thing a reader sees.
+      - name: Render the policy
+        env:
+          SOURCE: docs/listing/privacy.md
+          HISTORY_URL: ${{ github.server_url }}/${{ github.repository }}/commits/${{ github.ref_name }}/docs/listing/privacy.md
+        run: |
+          set -euo pipefail
+          head -n 1 "$SOURCE" | grep -q '^# ' || {
+            echo "::error file=$SOURCE::The policy must start with a '# ' heading"
+            exit 1
+          }
+          updated=$(git log -1 --format=%cs -- "$SOURCE")
+          mkdir -p _site/privacy
+          {
+            head -n 1 "$SOURCE"
+            printf '\n*Last updated %s. [Change history](%s).*\n' "$updated" "$HISTORY_URL"
+            tail -n +2 "$SOURCE"
+          } | ./pandoc \
+            --from=gfm \
+            --to=html5 \
+            --standalone \
+            --metadata pagetitle="Privacy policy - Ephyra for Jellyfin" \
+            --metadata lang=en \
+            --output=_site/privacy/index.html
+          # The point of rendering it here is that the page loads nothing from anywhere else. Fail
+          # rather than publish a page that does, if a pandoc upgrade or the policy itself adds a
+          # script, a stylesheet link or an embedded resource.
+          if grep -Eni '<script|<link|<iframe|<img|@import|url\(' _site/privacy/index.html; then
+            echo "::error::The rendered page loads an external resource"
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}privacy/
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
