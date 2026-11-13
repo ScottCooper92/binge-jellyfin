@@ -1357,4 +1357,8 @@
     <string name="consent_decline">Not now</string>
     <string name="tv_consent_point_change_title">Off with one press</string>
     <string name="tv_consent_reassurance">Nothing is collected unless you choose Share.</string>
+    <string name="settings_report_bug">Report a bug</string>
+    <string name="settings_report_bug_caption">Opens GitHub with your device details filled in</string>
+    <string name="tv_settings_report_bug_scan">Scan it with your phone\'s camera. The report opens with this app\'s version and this TV\'s details filled in.</string>
+    <string name="tv_settings_report_bug_code_description">QR code that opens a bug report for this app on GitHub</string>
 </resources>
