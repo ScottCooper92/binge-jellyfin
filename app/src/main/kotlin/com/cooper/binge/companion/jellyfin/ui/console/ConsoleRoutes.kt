@@ -93,7 +93,7 @@ private fun ApproveCodeRoute(
     onBack: () -> Unit,
 ) {
     val approve: ApproveCodeViewModel =
-        viewModel(factory = viewModelFactory { initializer { ApproveCodeViewModel(graph.connection) } })
+        viewModel(factory = viewModelFactory { initializer { ApproveCodeViewModel(graph.connection, graph.reviewPrompt) } })
     val state by approve.state.collectAsStateWithLifecycle()
     ApproveCodeScreen(state, ApproveActions(onCode = approve::onCode, onApprove = approve::approve, onBack = onBack))
 }
@@ -219,7 +219,8 @@ private fun TasksRoute(
     openItem: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    val tasks: TasksViewModel = viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection) } })
+    val tasks: TasksViewModel =
+        viewModel(factory = viewModelFactory { initializer { TasksViewModel(graph.connection, graph.reviewPrompt) } })
     val state by tasks.state.collectAsStateWithLifecycle()
     TasksScreen(
         state,

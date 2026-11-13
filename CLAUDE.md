@@ -31,7 +31,7 @@ The contracts, the SDK and the design system are consumed as source. `binge-comp
 an author bot's commit can revert a change to it: bump a submodule in a commit of its own, and check
 the pins after any bot push.
 
-The licence is GPL-3.0-or-later (`LICENSE`), with the section 7 exception for Google's Play services and Firebase
+The licence is GPL-3.0-or-later (`LICENSE`), with the section 7 exception for Google's Play services, Play In-App Review and Firebase
 libraries in `LICENSE-EXCEPTION.md` (the app links Firebase Remote Config). The name and artwork are kept apart from the
 code, in `TRADEMARKS.md` and `ASSETS.md`. binge-companions stays Apache 2.0, and the design system's licence is decided
 separately. A new dependency must be under a licence the GPL is compatible with.

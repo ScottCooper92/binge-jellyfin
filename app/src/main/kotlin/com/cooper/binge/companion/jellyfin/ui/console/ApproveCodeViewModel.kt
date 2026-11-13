@@ -2,6 +2,8 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cooper.binge.companion.jellyfin.review.NoReviewSignals
+import com.cooper.binge.companion.jellyfin.review.ReviewSignalSink
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.authorizeQuickConnect
@@ -31,6 +33,7 @@ internal const val CODE_LENGTH = 6
  */
 class ApproveCodeViewModel(
     private val connection: Connection,
+    private val reviewSignals: ReviewSignalSink = NoReviewSignals,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ApproveUiState())
     val state: StateFlow<ApproveUiState> = _state.asStateFlow()
@@ -47,6 +50,7 @@ class ApproveCodeViewModel(
                 connection
                     .consoleCall(TAG) { _, client -> client.authorizeQuickConnect(current.code) }
                     .fold(onSuccess = { ApproveResult.Approved }, onFailure = { it.approveResult() })
+            if (result == ApproveResult.Approved) reviewSignals.recordPositiveAction()
             // An approved code is spent, so the field empties for the next one.
             _state.update {
                 it.copy(approving = false, result = result, code = if (result == ApproveResult.Approved) "" else it.code)

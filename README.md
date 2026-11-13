@@ -59,8 +59,8 @@ The copyright holders are the owner, Scott Cooper, and the Claude and bot identi
 commits in this repository (`Claude`, `binge-pr-author[bot]` and `binge-pr-reviewer[bot]`), at the
 owner's direction.
 
-- **An additional permission** under section 7 of the GPL, for Google's Play services and Firebase
-  libraries, is in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md). The app links Firebase Remote Config.
+- **An additional permission** under section 7 of the GPL, for Google's Play services, Play In-App Review
+  and Firebase libraries, is in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md). The app links Firebase Remote Config.
 - **The name and artwork are not licensed by the GPL.** See [TRADEMARKS.md](TRADEMARKS.md) and
   [ASSETS.md](ASSETS.md). A fork has to use another name and other artwork.
 - **The contracts and SDK stay Apache 2.0.** They are in
@@ -68,5 +68,5 @@ owner's direction.
   companion without taking on the GPL. The design system's licence is decided separately.
 - **Dependencies** are all under licences the GPL is compatible with: Apache 2.0 for AndroidX, Compose,
   Kotlin, kotlinx, OkHttp, Okio and gRPC; BSD 3-Clause for protobuf; and Google's own terms for
-  Firebase Remote Config and the Play services under it, which the exception above covers. JUnit
+  Firebase Remote Config, the Play services under it and Play In-App Review (Play Core), which the exception above covers. JUnit
   (EPL 1.0), Robolectric (MIT) and the other test libraries are used for tests only and are not shipped.
