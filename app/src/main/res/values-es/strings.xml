@@ -1357,4 +1357,12 @@
     <string name="settings_report_bug_caption">Abre GitHub con los datos de tu dispositivo ya rellenados</string>
     <string name="tv_settings_report_bug_scan">Escanéalo con la cámara del móvil. El informe se abre con la versión de esta aplicación y los datos de este televisor ya rellenados.</string>
     <string name="tv_settings_report_bug_code_description">Código QR que abre un informe de error de esta aplicación en GitHub</string>
+    <string name="settings_group_about">Acerca de</string>
+    <string name="about_app_version">Versión de la app</string>
+    <string name="about_privacy_policy">Política de privacidad</string>
+    <string name="about_join_beta">Unirse a la beta</string>
+    <string name="licences_title">Licencias de código abierto</string>
+    <string name="licences_unspecified">Licencia no especificada</string>
+    <string name="licences_empty">No hay licencias que mostrar.</string>
+    <string name="licences_unreadable">No se pudo leer la lista de licencias.</string>
 </resources>

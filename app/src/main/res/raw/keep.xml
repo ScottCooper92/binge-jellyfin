@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The licences page reads this by name at runtime, which the resource shrinker cannot see, so it would drop the list from a release build. -->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/aboutlibraries" />

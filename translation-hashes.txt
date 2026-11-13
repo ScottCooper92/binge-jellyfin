@@ -1,6 +1,9 @@
 # The hash of every source string a locale translates, so an edit to the source cannot
 # pass silently while a translation still carries the old wording. Generated -
 # run ./gradlew updateTranslationHashes after re-reading the translations it names.
+app:about_app_version  80a7db3b236f
+app:about_join_beta  7d880db12b08
+app:about_privacy_policy  ba445cff3898
 app:activity_detail_close  7d9eb7acb13e
 app:activity_detail_more  45989de49fb7
 app:activity_detail_summary  483bd49023ae
@@ -498,6 +501,10 @@ app:library_type_video  c9a9639463c2
 app:library_whitelist  ffa0299c7324
 app:library_whitelist_count  4fa7549fdcda
 app:library_whitelist_hint  8758e9d95e16
+app:licences_empty  dbfbd5cd500d
+app:licences_title  e33c2431b4dc
+app:licences_unreadable  a5adf1af2109
+app:licences_unspecified  344fcdefca87
 app:live_tv_add_body  f7c1f6fd17d8
 app:live_tv_add_by_address  fb56fe2c76fc
 app:live_tv_add_title  9c892e2f98d0
@@ -923,6 +930,7 @@ app:server_title  aef7de28d529
 app:server_unnamed  8e03b3c29d2b
 app:server_update  fbb077ce2901
 app:server_version  8b089712c085
+app:settings_group_about  4efca0d10c5f
 app:settings_group_app  0982cb1775e6
 app:settings_library  dc20b3d5d2cd
 app:settings_not_saved  34bacdd62ff6

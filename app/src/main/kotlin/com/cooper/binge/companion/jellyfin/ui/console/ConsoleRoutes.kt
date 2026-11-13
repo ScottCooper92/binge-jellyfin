@@ -37,6 +37,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Playback -> PlaybackRoute(graph, close)
         ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
+        ConsolePage.Licences -> LicencesRoute(graph, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
