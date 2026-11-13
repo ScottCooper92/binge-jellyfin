@@ -95,12 +95,7 @@ fun rememberAppSettingsBinding(prefs: TelemetryPrefs): AppSettingsBinding {
     return AppSettingsBinding(
         consent = consent,
         // The first-run question covers both, so one answer sets usage data and crash reports; Settings changes each on its own.
-        answerConsent = { granted ->
-            scope.launch {
-                prefs.setAnalyticsGranted(granted)
-                prefs.setCrashReportingEnabled(granted)
-            }
-        },
+        answerConsent = { granted -> scope.launch { prefs.answerFirstRun(granted) } },
         setUsageData = { granted -> scope.launch { prefs.setAnalyticsGranted(granted) } },
         settings = AppSettings(shareUsageData = consent == AnalyticsConsent.GRANTED, sendCrashReports = crashReports),
         setCrashReports = { enabled -> scope.launch { prefs.setCrashReportingEnabled(enabled) } },

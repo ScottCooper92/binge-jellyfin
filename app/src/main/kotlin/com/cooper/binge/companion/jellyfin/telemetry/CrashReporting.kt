@@ -15,14 +15,19 @@ fun interface CrashCollection {
 
 /**
  * Crashlytics' collection switch. A build without this app's `google-services.json` has no Firebase
- * app to report into, so there it does nothing rather than fail.
+ * app to report into, so there it does nothing rather than fail. Turning collection off also deletes
+ * any report not yet sent.
  */
 class FirebaseCrashCollection(
     private val context: Context,
 ) : CrashCollection {
     override fun setEnabled(enabled: Boolean) {
         if (FirebaseApp.getApps(context).isEmpty()) return
-        FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = enabled
+        val crashlytics = FirebaseCrashlytics.getInstance()
+        crashlytics.isCrashlyticsCollectionEnabled = enabled
+        // Reports are written to disk even while collection is off, and sent once it is on. Clear
+        // them, so a crash from before the user agreed is never uploaded after.
+        if (!enabled) crashlytics.deleteUnsentReports()
     }
 }
 
