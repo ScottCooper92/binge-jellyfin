@@ -36,7 +36,7 @@ libraries in `LICENSE-EXCEPTION.md` (the app links Firebase Remote Config). The 
 code, in `TRADEMARKS.md` and `ASSETS.md`. binge-companions stays Apache 2.0, and the design system's licence is decided
 separately. A new dependency must be under a licence the GPL is compatible with.
 
-The app is called **Ephyra** (with "for Jellyfin" as a subtitle where a descriptor helps), and so is the client it signs in as. "Jellyfin" names the server it talks to, never the app; the application id and package names keep their old form. It names Binge only behind
+The app is called **Ephyra** (with "for Jellyfin" as a subtitle where a descriptor helps), and so is the client it signs in as. "Jellyfin" names the server it talks to, never the app; the application id is `com.cooper.binge.companion.ephyra`, and the Kotlin package keeps its old form. It names Binge only behind
 `FeatureFlags` (`flags/`): `Flags.bingePromotion`, off by default, as binge-seerr has. Every string or surface that
 names Binge reads `LocalFlags` and has a plain alternative. The value comes from Firebase Remote Config, in the `binge-jellyfin-companion` project, key
 `binge_promotion_enabled`. A build with `-PbingePromotion=true` turns it on whatever the remote says. A build
@@ -219,7 +219,7 @@ as binge-seerr's TV is.
 - The `org.jetbrains.kotlin.android` plugin is declared `apply false` in the root build and never
   applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
 - The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
-- Package `com.cooper.binge.companion.jellyfin`; a debug build adds `.debug`.
+- Application id `com.cooper.binge.companion.ephyra`; a debug build adds `.debug`. The Kotlin package and `namespace` stay `com.cooper.binge.companion.jellyfin`, so a component's class name is built from the package, never the application id.
 - One module, `:app`. Tests are JUnit 4.
 - No DI framework: `AppGraph` builds the handful of objects by hand, and `JellyfinApp` holds it.
 - A Robolectric test needs no `@Config` for the SDK: `app/src/test/resources/robolectric.properties`

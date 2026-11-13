@@ -57,7 +57,9 @@ android {
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
-        applicationId = "com.cooper.binge.companion.jellyfin"
+        // What Play and the device know the app by, and permanent once published. The Kotlin package and `namespace` above keep
+        // their old form: they are invisible to users, and moving 449 files is a diff with no reader.
+        applicationId = "com.cooper.binge.companion.ephyra"
         minSdk = 26
         targetSdk = 36
         // A release workflow overrides both from the tag it builds; a local build keeps the placeholders.
