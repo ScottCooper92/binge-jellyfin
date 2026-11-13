@@ -1364,7 +1364,7 @@
     <string name="settings_group_about">About</string>
     <string name="about_app_version">App version</string>
     <string name="about_version_format" translatable="false">v%1$s</string>
-    <string name="about_privacy_policy">Privacy Policy</string>
+    <string name="about_privacy_policy">Privacy policy</string>
     <string name="about_join_beta">Join the beta</string>
     <string name="licences_title">Open-source licences</string>
     <string name="licences_detail_format" translatable="false">%1$s · %2$s</string>

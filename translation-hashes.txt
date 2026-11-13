@@ -3,7 +3,7 @@
 # run ./gradlew updateTranslationHashes after re-reading the translations it names.
 app:about_app_version  80a7db3b236f
 app:about_join_beta  7d880db12b08
-app:about_privacy_policy  506ff3946215
+app:about_privacy_policy  ba445cff3898
 app:activity_detail_close  7d9eb7acb13e
 app:activity_detail_more  45989de49fb7
 app:activity_detail_summary  483bd49023ae
