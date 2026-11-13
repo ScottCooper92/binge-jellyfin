@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Healing
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.QrCode2
@@ -543,7 +544,7 @@ private fun appGroup(actions: Actions): TvPaneGroup {
                     CRASH_REPORTS_KEY,
                     R.string.settings_send_crash_reports,
                     R.string.settings_send_crash_reports_caption,
-                    Icons.Outlined.BugReport,
+                    Icons.Outlined.Healing,
                     settings.sendCrashReports,
                     actions.onSendCrashReports,
                 ),
