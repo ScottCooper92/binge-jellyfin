@@ -1352,7 +1352,7 @@
     <string name="consent_point_never_title">Private by design</string>
     <string name="consent_point_never_detail">Screens you open, actions you take, whether they worked, and a crash\'s stack trace. Never your server\'s address, your library, its titles or anyone\'s name.</string>
     <string name="consent_point_change_title">Off with one tap</string>
-    <string name="consent_point_change_detail">Change your mind any time on the home screen, under This app, for each on its own.</string>
+    <string name="consent_point_change_detail">Change your mind any time under This app, in your settings, for each on its own.</string>
     <string name="consent_accept">Share</string>
     <string name="consent_decline">Not now</string>
     <string name="tv_consent_point_change_title">Off with one press</string>
