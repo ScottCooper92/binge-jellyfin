@@ -209,7 +209,7 @@ app:connection_unreachable_headline  4da010bad62f
 app:consent_accept  29887a5ff984
 app:consent_decline  a0e63d7c7125
 app:consent_kicker  54a57c3147c4
-app:consent_point_change_detail  ade6dc075727
+app:consent_point_change_detail  919735a6678b
 app:consent_point_change_title  6b4afbef99d2
 app:consent_point_never_detail  a7991ae5c154
 app:consent_point_never_title  485ca594ccc9

@@ -1348,7 +1348,7 @@
     <string name="consent_point_never_title">Privado por diseño</string>
     <string name="consent_point_never_detail">Pantallas que abres, acciones que haces, si funcionaron y la traza de un fallo. Nunca la dirección de tu servidor, tu biblioteca, sus títulos ni el nombre de nadie.</string>
     <string name="consent_point_change_title">Se desactiva con un toque</string>
-    <string name="consent_point_change_detail">Cambia de opinión cuando quieras en la pantalla de inicio, en Esta aplicación, cada cosa por separado.</string>
+    <string name="consent_point_change_detail">Cambia de opinión cuando quieras en Esta aplicación, dentro de tus ajustes, cada cosa por separado.</string>
     <string name="consent_accept">Compartir</string>
     <string name="consent_decline">Ahora no</string>
     <string name="tv_consent_point_change_title">Se desactiva con una pulsación</string>

@@ -25,5 +25,5 @@ The listing describes behaviour, so a change to what the app stores, sends or as
 
 - The access token is encrypted with an Android Keystore key (`auth/SessionStore.kt`, alias `binge_jellyfin_secret`); everything else about the session is stored in the clear.
 - `allowBackup="false"` and the data-extraction rules exclude everything from cloud backup and device transfer.
-- Traffic goes to the Jellyfin server the user entered, plus a UDP discovery broadcast to the local network in the server step (`UdpDiscovery`). The one other network use is Firebase Remote Config (`flags/RemoteFlagSource.kt`), which fetches one on/off value.
+- Traffic goes to the Jellyfin server the user entered, plus a UDP discovery broadcast to the local network in the server step (`UdpDiscovery`). The other network uses are Firebase Remote Config (`flags/RemoteFlagSource.kt`), which fetches one on/off value, and, only once the user agrees, PostHog (usage data) and Firebase Crashlytics (crash reports).
 - There are two reporting SDKs and no advertising SDK: PostHog (usage data, opted out until the user agrees on the first-run screen, which covers both) and Firebase Crashlytics (crash reports, also opted out until the user agrees; never in a debug build). Check `app/build.gradle.kts` before changing this claim in either direction; adding another is a change to every file here.
