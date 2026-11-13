@@ -29,7 +29,7 @@ internal fun TvConsentGate(
 
 /**
  * The usage data question on the design system's [TvDecisionPage]: the heading and reassurance beside a read-out points card,
- * and the two answers under it. Share usage data is the primary and takes the arrival focus; Not now sits beside it, one
+ * and the two answers under it. Share is the primary and takes the arrival focus; Not now sits beside it, one
  * press away and reversible in Settings. Each point is a focusable read-out, so a line is never hidden from someone who is
  * about to agree to it.
  */
@@ -50,7 +50,7 @@ internal fun TvConsentScreen(
         accept = ScreenAction(stringResource(R.string.consent_accept), onClick = { onChoice(true) }),
         decline = ScreenAction(stringResource(R.string.consent_decline), onClick = { onChoice(false) }),
         modifier = modifier,
-        // A gate before sign-in and the home, so the page places its own first focus on Share usage data.
+        // A gate before sign-in and the home, so the page places its own first focus on Share.
         hosting = TvPageHosting.PreShell,
     )
 }

@@ -6,7 +6,7 @@ The answers for Play Console's *Data safety* section, each with the reason so a 
 
 | Question | Answer | Why |
 |---|---|---|
-| Does your app collect or share any of the required user data types? | **Yes** | Crash reports go to Firebase Crashlytics, usage data goes to PostHog once the user agrees, and Firebase Remote Config receives a random installation id and device and app details with each fetch. All three are the developer's chosen processors. Everything else goes to the server the user entered, or stays on the device. |
+| Does your app collect or share any of the required user data types? | **Yes** | Crash reports go to Firebase Crashlytics and usage data goes to PostHog, both only once the user agrees, and Firebase Remote Config receives a random installation id and device and app details with each fetch. All three are the developer's chosen processors. Everything else goes to the server the user entered, or stays on the device. |
 | Is all of the user data collected by your app encrypted in transit? | **Yes** | The Firebase and PostHog SDKs send over HTTPS. The user's own server uses whatever scheme its address has, and is not collection. |
 | Do you provide a way for users to request that their data is deleted? | **No** | None of it is linked to a person, so there is nothing to look a request up by. Both usage data and crash reports can be turned off under This app. Uninstalling the app removes what is on the device. |
 
