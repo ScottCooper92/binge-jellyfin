@@ -14,7 +14,7 @@ The answers for Play Console's *Data safety* section, each with the reason so a 
 
 | Data type | Collected | Shared | Optional | Purpose | Why |
 |---|---|---|---|---|---|
-| App activity: *App interactions* | Yes | No | Yes: asked on first launch, off unless granted | Analytics | The app's own screen names and action names, each with at most a fixed category, to PostHog. Never an id, a title, an address or a name. PostHog is a service provider processing on the developer's behalf. |
+| App activity: *App interactions* | Yes | No | Yes: asked on first launch, off unless granted | Analytics | The app's own screen names, and sign-in and sign-out events with at most a fixed category (the method, and for a failure its reason), to PostHog. Never an id, a title, an address or a name. PostHog is a service provider processing on the developer's behalf. |
 | App info and performance: *Crash logs*, *Diagnostics* | Yes | No | Yes: asked on first launch, off unless granted, switch under This app | App functionality | Crash reports to Firebase Crashlytics, a service provider. No user id; logs are not forwarded. Never from a debug build. |
 | Device or other IDs | Yes | No | Partly: Remote Config's is not optional | App functionality, Analytics | The random Firebase installation id that Remote Config uses to fetch the on/off setting, and the random per-install ids the Crashlytics and PostHog SDKs mint. Not linked to an account. |
 
