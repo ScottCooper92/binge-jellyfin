@@ -4,14 +4,18 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Healing
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
+import com.cooper.binge.companion.jellyfin.feedback.openInBrowser
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import kotlinx.coroutines.launch
@@ -25,16 +29,23 @@ data class AppSettings(
     val sendCrashReports: Boolean = false,
 )
 
-/** The "This app" group: two switches that save as they are flipped. */
+/** The "This app" group: Report a bug, then two switches that save as they are flipped. */
 @Composable
 internal fun AppGroup(
     settings: AppSettings,
     actions: Actions,
 ) {
+    val context = LocalContext.current
     ItemGroup(
         title = stringResource(R.string.settings_group_app),
         rows =
             listOf(
+                ListItem(
+                    icon = Icons.Outlined.BugReport,
+                    label = stringResource(R.string.settings_report_bug),
+                    detail = stringResource(R.string.settings_report_bug_caption),
+                    onClick = { context.openInBrowser(installBugReportUrl()) },
+                ),
                 ListItem(
                     icon = Icons.Outlined.BarChart,
                     label = stringResource(R.string.settings_share_usage_data),
@@ -43,7 +54,7 @@ internal fun AppGroup(
                     onClick = { actions.onShareUsageData(!settings.shareUsageData) },
                 ),
                 ListItem(
-                    icon = Icons.Outlined.BugReport,
+                    icon = Icons.Outlined.Healing,
                     label = stringResource(R.string.settings_send_crash_reports),
                     detail = stringResource(R.string.settings_send_crash_reports_caption),
                     toggled = settings.sendCrashReports,

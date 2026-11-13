@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The bug report code on the television: large enough to scan from a sofa. -->
+    <dimen name="tv_bug_report_code_size">240dp</dimen>
+</resources>

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.BarChart
@@ -39,6 +40,7 @@ import androidx.tv.material3.Text
 import com.binge.designsystem.tv.component.TvButton
 import com.binge.designsystem.tv.component.TvConfirmDialog
 import com.binge.designsystem.tv.component.TvOptionRow
+import com.binge.designsystem.tv.component.TvQrCode
 import com.binge.designsystem.tv.component.TvTextField
 import com.binge.designsystem.tv.template.TvListPaneBoard
 import com.binge.designsystem.tv.template.TvMessagePage
@@ -50,6 +52,7 @@ import com.binge.designsystem.tv.template.TvTwoPanePage
 import com.binge.designsystem.tv.template.TvTwoPaneStyle
 import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ConnectionAutoRetry
@@ -527,6 +530,7 @@ private fun appGroup(actions: Actions): TvPaneGroup {
         title = stringResource(R.string.settings_group_app),
         rows =
             listOf(
+                bugReportRow(),
                 switch(
                     USAGE_DATA_KEY,
                     R.string.settings_share_usage_data,
@@ -547,5 +551,24 @@ private fun appGroup(actions: Actions): TvPaneGroup {
     )
 }
 
-private const val USAGE_DATA_KEY = "usageData"
+/**
+ * Report a bug on a television, which cannot open the form itself: a read-out whose pane shows a code the phone scans. The
+ * link fills in this install's app version and device, and nothing about the server.
+ */
+@Composable
+private fun bugReportRow(): TvPaneRow {
+    val url = remember { installBugReportUrl() }
+    val codeSize = dimensionResource(R.dimen.tv_bug_report_code_size)
+    val description = stringResource(R.string.tv_settings_report_bug_code_description)
+    return TvPaneRow(
+        key = REPORT_BUG_KEY,
+        label = stringResource(R.string.settings_report_bug),
+        body = stringResource(R.string.tv_settings_report_bug_scan),
+        icon = Icons.Outlined.BugReport,
+        hero = { TvQrCode(content = url, contentDescription = description, modifier = Modifier.size(codeSize)) },
+    )
+}
+
+internal const val REPORT_BUG_KEY = "reportBug"
+internal const val USAGE_DATA_KEY = "usageData"
 private const val CRASH_REPORTS_KEY = "crashReports"

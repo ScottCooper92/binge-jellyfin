@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import android.app.Application
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
@@ -7,15 +9,18 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import com.cooper.binge.companion.jellyfin.ui.consent.ConsentGate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 
 /** The usage data question stands in front of the app until it has an answer, and the settings reach the same answer after. */
 @RunWith(RobolectricTestRunner::class)
@@ -75,5 +80,16 @@ class ConsentGateTest {
         compose.onNodeWithText("Share usage data").performClick()
         compose.onNodeWithText("Send crash reports").performClick()
         assertEquals(listOf("usage:true", "crash:false"), calls)
+    }
+
+    @Test
+    fun `Report a bug opens the bug form on GitHub with the device filled in`() {
+        compose.setContent { JellyfinTheme { Column { AppGroup(AppSettings(), Actions()) } } }
+        compose.onNodeWithText("Report a bug").performClick()
+        val opened = shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity
+        assertEquals(Intent.ACTION_VIEW, opened.action)
+        val url = opened.data.toString()
+        assertTrue(url.startsWith("https://github.com/ScottCooper92/binge-jellyfin/issues/new?template=bug.yml"))
+        assertTrue(url.contains("app-version=") && url.contains("device="))
     }
 }
