@@ -112,7 +112,9 @@ class PasswordViewModelTest {
         jellyfin.status["/Users/Password"] = 500
         assertEquals(PasswordResult.Refused, made(PasswordViewModel(connection)).fill("old-secret", "n").resultOfChange().result)
         runBlocking { sessions.clear() }
-        assertEquals(PasswordResult.Unreachable, made(PasswordViewModel(connection)).fill("old-secret", "n").resultOfChange().result)
+        // A connection built after the clear, so its session watcher can't see the clear late and cancel the save (#165).
+        val signedOut = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+        assertEquals(PasswordResult.Unreachable, made(PasswordViewModel(signedOut)).fill("old-secret", "n").resultOfChange().result)
     }
 
     @Test
