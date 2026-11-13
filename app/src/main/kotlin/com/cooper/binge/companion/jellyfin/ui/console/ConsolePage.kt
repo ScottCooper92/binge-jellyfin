@@ -86,6 +86,9 @@ enum class ConsolePage {
 
     /** The server itself: its info, restarting it and shutting it down. Admin only. */
     Server,
+
+    /** The open-source licences of the libraries this app ships. For everyone. */
+    Licences,
     ;
 
     /**
@@ -100,7 +103,7 @@ enum class ConsolePage {
             ApproveCode -> profile.quickConnect
             Playback, HomeLayout, ProfilePicture -> account.canEditPreferences
             Password -> account.hasLocalPassword
-            NowPlaying -> true
+            NowPlaying, Licences -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
             LiveTv -> account.canManageLiveTv

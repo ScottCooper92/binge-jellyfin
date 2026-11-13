@@ -2,6 +2,7 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ktlint)
     id("binge.gates.detekt")
@@ -197,6 +198,8 @@ tvMaterialSeparation {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    // The licences page reads the list the AboutLibraries plugin writes at build time.
+    implementation(libs.aboutlibraries.core)
     implementation(libs.binge.companion.sdk)
     implementation(libs.binge.companion.kit)
     implementation(libs.binge.companion.contracts)

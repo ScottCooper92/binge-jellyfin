@@ -26,6 +26,7 @@ import com.cooper.binge.companion.jellyfin.telemetry.PostHogAnalytics
 import com.cooper.binge.companion.jellyfin.telemetry.PostHogClient
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.telemetry.postHogConfig
+import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.posthog.android.PostHogAndroid
 import kotlinx.coroutines.CoroutineDispatcher
@@ -43,6 +44,9 @@ class AppGraph(
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val appContext = context.applicationContext
+
+    /** The licences of the libraries this app ships, read once for the licences page. */
+    val licences: LicenceSource by lazy { LicenceSource(appContext, io) }
 
     val http: OkHttpClient by lazy {
         OkHttpClient

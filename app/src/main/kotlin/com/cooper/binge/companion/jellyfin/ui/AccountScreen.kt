@@ -51,6 +51,7 @@ fun AccountScreen(
             ) {
                 item { AccountGroup(state, actions, titled = false) }
                 item { AppGroup(actions.appSettings, actions) }
+                item { AboutGroup(actions) }
                 item { SignOutButton(actions) }
             }
         }
