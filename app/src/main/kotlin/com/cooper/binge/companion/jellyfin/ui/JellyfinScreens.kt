@@ -84,6 +84,7 @@ import com.binge.designsystem.R as DesR
 data class Actions(
     val onAddress: (String) -> Unit = {},
     val onConnect: () -> Unit = {},
+    val onTryDemo: () -> Unit = {},
     val onUsername: (String) -> Unit = {},
     val onPassword: (String) -> Unit = {},
     val onSignIn: () -> Unit = {},
@@ -185,6 +186,12 @@ private fun EnterServer(
             onClick = actions.onConnect,
             loading = state.checking,
             enabled = state.address.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        BingeOutlinedButton(
+            label = stringResource(R.string.setup_try_demo),
+            onClick = actions.onTryDemo,
+            enabled = !state.checking,
             modifier = Modifier.fillMaxWidth(),
         )
     }
