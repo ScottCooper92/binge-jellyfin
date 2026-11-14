@@ -61,6 +61,23 @@ private const val LIVE_TV =
 private const val GUIDE_DAYS = 6L
 private const val DISCOVERED_PORT = 80
 
+private fun discovered() =
+    JsonArray(
+        listOf(
+            buildJsonObject {
+                put("Url", "http://192.168.1.51:$DISCOVERED_PORT")
+                put("Type", "hdhomerun")
+                put("FriendlyName", "HDHomeRun Connect")
+            },
+        ),
+    )
+
+private fun guideInfo() =
+    buildJsonObject {
+        put("StartDate", Instant.now().toString())
+        put("EndDate", Instant.now().plus(Duration.ofDays(GUIDE_DAYS)).toString())
+    }
+
 /** The server's configuration documents (the main one, branding, network, encoding and Live TV), kept as the server keeps them: whole. */
 internal class DemoConfiguration : DemoState {
     private val documents: MutableMap<String, JsonObject> = seed()
@@ -145,23 +162,6 @@ internal class DemoConfiguration : DemoState {
         documents["System/Configuration/livetv"] = liveTvDocument().with(key, JsonArray(entries(key).filter { it.string("Id") != id }))
         return noContent
     }
-
-    private fun discovered() =
-        JsonArray(
-            listOf(
-                buildJsonObject {
-                    put("Url", "http://192.168.1.51:$DISCOVERED_PORT")
-                    put("Type", "hdhomerun")
-                    put("FriendlyName", "HDHomeRun Connect")
-                },
-            ),
-        )
-
-    private fun guideInfo() =
-        buildJsonObject {
-            put("StartDate", Instant.now().toString())
-            put("EndDate", Instant.now().plus(Duration.ofDays(GUIDE_DAYS)).toString())
-        }
 
     private fun channelList() =
         buildJsonObject {
