@@ -417,7 +417,14 @@ class JellyfinViewModel(
                     }
                     // The gates first, so a library index that fails can't leave them unread.
                     val gates = signedIn.second.readGates(signedIn.first.serverVersion)
-                    _state.update { (it as? UiState.SignedIn)?.copy(profile = gates.first, account = gates.second) ?: it }
+                    // The server has answered: end the first check here, not when the index finishes. A health that is already a problem stays one.
+                    _state.update {
+                        (it as? UiState.SignedIn)?.copy(
+                            profile = gates.first,
+                            account = gates.second,
+                            health = if (it.health == ConnectionHealth.Checking) ConnectionHealth.Healthy else it.health,
+                        ) ?: it
+                    }
                     card.refresh(viewModelScope, _state, signedIn.first, signedIn.second, gates.second, force = true)
                     index.refresh(signedIn.second, signedIn.first.userId)
                     ConnectionHealth.Healthy
