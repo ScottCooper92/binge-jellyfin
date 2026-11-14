@@ -588,6 +588,19 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `the home is healthy once the server answers, before the library index is built`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        // The index's pages are the /Items reads that ask for titles with a TMDB id; hold the first, so the index cannot finish.
+        val held = jellyfin.hold("/Items", query = "hasTmdbId" to "true")
+        val vm = viewModel()
+        held.awaitArrival()
+        val state = vm.await<UiState.SignedIn> { it.health == ConnectionHealth.Healthy }
+        assertTrue(state.refreshing)
+        held.release()
+        vm.await<UiState.SignedIn> { !it.refreshing && it.titles != null }
+    }
+
+    @Test
     fun `a gates-only refresh picks up a change without reading the library again`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()

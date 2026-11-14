@@ -79,19 +79,21 @@ class FakeJellyfin : Dispatcher() {
     private val holds = CopyOnWriteArrayList<Hold>()
 
     /**
-     * Holds the next request to [path] (to a [method], if given) in flight: the server has the request and does not answer it
+     * Holds the next request to [path] (to a [method], and with a [query] parameter, if given) in flight: the server has the request and does not answer it
      * until the test calls [Hold.release], [Hold.refuse] or [Hold.cut]. Only that one request is held; the ones after it are
      * answered as usual. This is for a call that is still running when the screen changes under it.
      */
     fun hold(
         path: String,
         method: String? = null,
-    ): Hold = Hold(path, method).also { holds += it }
+        query: Pair<String, String>? = null,
+    ): Hold = Hold(path, method, query).also { holds += it }
 
     /** One held request, and how the test ends it. */
     class Hold internal constructor(
         internal val path: String,
         internal val method: String?,
+        internal val query: Pair<String, String>? = null,
     ) {
         private val arrived = CountDownLatch(1)
         private val outcome = CompletableFuture<HoldOutcome>()
@@ -102,6 +104,7 @@ class FakeJellyfin : Dispatcher() {
 
         internal fun takes(request: RecordedRequest): Boolean {
             if (request.url.encodedPath != path || (method != null && request.method != method)) return false
+            if (query != null && request.url.queryParameter(query.first) != query.second) return false
             return taken.compareAndSet(false, true) || cutOff.get()
         }
 
