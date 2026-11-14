@@ -28,6 +28,9 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 
 /** The dialog open over the users page, if any. */
 enum class UserDialog { Create, Password, Delete }
@@ -84,15 +87,21 @@ class UsersViewModel(
     private val _state = MutableStateFlow<UsersUiState>(UsersUiState.Loading)
     val state: StateFlow<UsersUiState> = _state.asStateFlow()
 
-    /** Each user's policy as the server last accepted it. Changes take turns, each building on the last. */
-    private val saved = mutableMapOf<String, JsonObject>()
+    /**
+     * Each user's policy as the server last accepted it. Changes take turns, each building on the last.
+     *
+     * [saved], [pending] and [changes] are safe to touch from any thread. On the main thread alone they would not need to be,
+     * but a coroutine resumes on whichever thread finished the call when Main is unconfined, as a test's is, and two threads
+     * then change a plain map or list at once: a `ConcurrentModificationException` that lands in whatever test runs next (#493).
+     */
+    private val saved = ConcurrentHashMap<String, JsonObject>()
     private val saving = Mutex()
 
     /** Each user's changes that are made but not yet answered, oldest first. */
-    private val pending = mutableMapOf<String, MutableList<(JsonObject) -> JsonObject>>()
+    private val pending = ConcurrentHashMap<String, CopyOnWriteArrayList<(JsonObject) -> JsonObject>>()
 
     /** Counts every start and finish of a policy change, create, password or delete, so a read can tell one happened while it was in flight. */
-    private var changes = 0
+    private val changes = AtomicInteger()
 
     init {
         load()
@@ -127,7 +136,7 @@ class UsersViewModel(
         val ready = _state.value as? UsersUiState.Ready ?: return
         if (ready.refreshing) return
         update { copy(refreshing = true, refreshFailed = null) }
-        val changesAtStart = changes
+        val changesAtStart = changes.get()
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client ->
@@ -137,7 +146,7 @@ class UsersViewModel(
                     }
                 }.onSuccess { (users, libraries) ->
                     val settled =
-                        changes == changesAtStart &&
+                        changes.get() == changesAtStart &&
                             pending.values.all { it.isEmpty() } &&
                             !saving.isLocked &&
                             (_state.value as? UsersUiState.Ready)?.busy == false
@@ -231,11 +240,11 @@ class UsersViewModel(
     ) {
         if ((_state.value as? UsersUiState.Ready)?.busy != false) return
         update { copy(dialog = if (form != null) dialog else null, busy = true, done = null, formFailure = null, actionFailed = null) }
-        changes++
+        changes.incrementAndGet()
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> call(client) }
-                .also { changes++ }
+                .also { changes.incrementAndGet() }
                 .onSuccess { update { copy(busy = false, done = done, dialog = if (form != null && form()) null else dialog) } }
                 .onFailure { error ->
                     // A form left meanwhile has nowhere to say it, so the page does.
@@ -262,8 +271,8 @@ class UsersViewModel(
         val user = ready.openUser ?: return
         if (!mineAllowed && user.id == ready.me) return
         update { copy(users = users.withPolicy(user.id, change(user.policy)), done = null, actionFailed = null) }
-        pending.getOrPut(user.id) { mutableListOf() }.add(change)
-        changes++
+        pending.getOrPut(user.id) { CopyOnWriteArrayList() }.add(change)
+        changes.incrementAndGet()
         viewModelScope.launch {
             saving.withLock {
                 // The change goes on what the server holds now, not on a copy read earlier: Jellyfin replaces the whole policy, so a
@@ -274,7 +283,7 @@ class UsersViewModel(
                     }
                 result.onSuccess { saved[user.id] = it }
                 val queued = pending.getValue(user.id).also { it.remove(change) }.toList()
-                changes++
+                changes.incrementAndGet()
                 // What the screen shows is what the server holds, plus the changes still waiting their turn.
                 val shown = queued.fold(saved[user.id] ?: user.policy) { policy, queuedChange -> queuedChange(policy) }
                 update {
