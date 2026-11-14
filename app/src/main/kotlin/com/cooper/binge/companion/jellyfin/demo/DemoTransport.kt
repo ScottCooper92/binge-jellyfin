@@ -49,4 +49,10 @@ internal class DemoTransport(
         url.queryParameterNames
             .firstOrNull { it.equals(name, ignoreCase = true) }
             ?.let(url::queryParameter)
+
+    /** The demo's event socket: what a real server would push, from the demo's state. */
+    fun openSocket(
+        request: okhttp3.Request,
+        listener: okhttp3.WebSocketListener,
+    ): okhttp3.WebSocket = DemoSocket(model, request, listener)
 }

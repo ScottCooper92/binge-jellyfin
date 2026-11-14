@@ -29,7 +29,9 @@ import com.cooper.binge.companion.jellyfin.server.serverConfiguration
 import com.cooper.binge.companion.jellyfin.server.tasks
 import com.cooper.binge.companion.jellyfin.server.uninstallPlugin
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -50,18 +52,17 @@ class DemoPagesTest {
         )
 
     @Test
-    fun `running a task finishes it at once`() =
+    fun `a task that is run shows as running, then as completed`() =
         runBlocking {
             val failed = client.tasks().first { it.lastRun?.status == TaskStatus.Failed }
             client.runTask(failed.id)
-            assertEquals(
-                TaskStatus.Completed,
-                client
-                    .tasks()
-                    .first { it.id == failed.id }
-                    .lastRun
-                    ?.status,
-            )
+            assertTrue(client.tasks().first { it.id == failed.id }.running)
+            val done =
+                withTimeout(15_000) {
+                    while (client.tasks().first { it.id == failed.id }.running) delay(250)
+                    client.tasks().first { it.id == failed.id }
+                }
+            assertEquals(TaskStatus.Completed, done.lastRun?.status)
         }
 
     @Test

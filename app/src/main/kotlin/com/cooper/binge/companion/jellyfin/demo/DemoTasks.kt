@@ -15,6 +15,8 @@ private const val SCAN_HOURS = 3L
 private const val DAY_HOURS = 24L
 private const val SCAN_MINUTES_AGO = 40L
 private const val OLD_HOURS_AGO = 9L
+private const val RUN_MILLIS = 4_000L
+private const val FULL = 100L
 
 /** One scheduled task as the sample server defines it. */
 private class TaskSeed(
@@ -100,26 +102,56 @@ private val SEEDS =
 internal class DemoTasks : DemoState {
     private val now = Instant.now()
     private val tasks: MutableList<JsonObject> = seed()
+    private val running: MutableMap<String, Instant> = mutableMapOf()
 
     private fun seed(): MutableList<JsonObject> = SEEDS.map(::task).toMutableList()
 
     override fun reset() {
         tasks.clear()
         tasks.addAll(seed())
+        running.clear()
     }
 
     override fun routes(): List<DemoRoute> =
         listOf(
-            route("GET", "ScheduledTasks") { _, _ -> ok(tasks.toList()) },
+            route("GET", "ScheduledTasks") { _, _ -> ok(current()) },
             route("POST", "ScheduledTasks", "Running", "{}") { _, (id) -> run(id) },
-            route("DELETE", "ScheduledTasks", "Running", "{}") { _, _ -> noContent },
+            route("DELETE", "ScheduledTasks", "Running", "{}") { _, (id) -> stop(id) },
             route("POST", "ScheduledTasks", "{}", "Triggers") { call, (id) -> saveTriggers(id, call) },
         )
 
-    private fun run(id: String): DemoAnswer {
+    /** The tasks as the server reports them now: one that was started is running for a few seconds, then it has finished. */
+    private fun current(): List<JsonObject> {
+        val now = Instant.now()
+        running.entries.removeAll { (id, since) ->
+            val done = Duration.between(since, now).toMillis() >= RUN_MILLIS
+            if (done) finish(id, "Completed", now)
+            done
+        }
+        return tasks.map { task ->
+            val since = running[task.string("Id")] ?: return@map task
+            val percent = Duration.between(since, now).toMillis() * FULL / RUN_MILLIS
+            task.with("State", JsonPrimitive("Running")).with("CurrentProgressPercentage", JsonPrimitive(percent))
+        }
+    }
+
+    private fun finish(
+        id: String,
+        status: String,
+        at: Instant,
+    ) {
         val index = tasks.indexOfFirst { it.string("Id") == id }
-        if (index < 0) return demoNotFound
-        tasks[index] = tasks[index].with("LastExecutionResult", result("Completed", Instant.now(), null))
+        if (index >= 0) tasks[index] = tasks[index].with("LastExecutionResult", result(status, at, null))
+    }
+
+    private fun run(id: String): DemoAnswer {
+        if (tasks.none { it.string("Id") == id }) return demoNotFound
+        running.putIfAbsent(id, Instant.now())
+        return noContent
+    }
+
+    private fun stop(id: String): DemoAnswer {
+        if (running.remove(id) != null) finish(id, "Cancelled", Instant.now())
         return noContent
     }
 
