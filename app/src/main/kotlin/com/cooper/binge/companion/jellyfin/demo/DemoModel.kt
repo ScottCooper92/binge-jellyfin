@@ -11,8 +11,8 @@ private const val WITHOUT_TMDB_ID = 0
 private const val EPISODES = 612
 
 /**
- * The demo server's state and what it answers. One instance lives as long as the process. Pages added in later slices
- * bring their routes and their state here, and a way to put the sample data back when the demo is left.
+ * The demo server's state and what it answers. One instance lives as long as the process. Each page's routes and state
+ * live in a `DemoState`, which can put its sample data back when the demo is left.
  */
 internal class DemoModel {
     private val users = DemoUsers()

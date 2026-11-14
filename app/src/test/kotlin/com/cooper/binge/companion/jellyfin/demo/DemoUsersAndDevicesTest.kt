@@ -8,15 +8,21 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.PlaystateCommand
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.activity
+import com.cooper.binge.companion.jellyfin.server.channelMappingOptions
 import com.cooper.binge.companion.jellyfin.server.createUser
 import com.cooper.binge.companion.jellyfin.server.deleteUser
 import com.cooper.binge.companion.jellyfin.server.devices
+import com.cooper.binge.companion.jellyfin.server.logout
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.removeDevice
+import com.cooper.binge.companion.jellyfin.server.removeUserImage
 import com.cooper.binge.companion.jellyfin.server.renameDevice
 import com.cooper.binge.companion.jellyfin.server.savePolicy
 import com.cooper.binge.companion.jellyfin.server.sendPlaystate
+import com.cooper.binge.companion.jellyfin.server.setChannelMapping
+import com.cooper.binge.companion.jellyfin.server.setUserImage
 import com.cooper.binge.companion.jellyfin.server.user
+import com.cooper.binge.companion.jellyfin.server.userImage
 import com.cooper.binge.companion.jellyfin.server.users
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -26,6 +32,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,6 +61,14 @@ class DemoUsersAndDevicesTest {
         }
 
     @Test
+    fun `a profile picture is read, set and removed on the newer route`() =
+        runBlocking {
+            assertNull(client.userImage(DEMO_USER_ID, newRoute = true))
+            client.setUserImage(DEMO_USER_ID, byteArrayOf(1, 2, 3), newRoute = true)
+            client.removeUserImage(DEMO_USER_ID, newRoute = true)
+        }
+
+    @Test
     fun `the demo refuses to remove the last administrator or the signed-in user`() {
         val failure =
             assertThrows(JellyfinHttpException::class.java) {
@@ -76,6 +91,28 @@ class DemoUsersAndDevicesTest {
         }
 
     @Test
+    fun `signing out puts the Live TV channel mappings back`() =
+        runBlocking {
+            client.setChannelMapping("p", "c3", "p3")
+            assertEquals(
+                "p3",
+                client
+                    .channelMappingOptions("p")
+                    .tunerChannels
+                    .first { it.id == "c3" }
+                    .providerChannelId,
+            )
+            transport.model.reset()
+            assertNull(
+                client
+                    .channelMappingOptions("p")
+                    .tunerChannels
+                    .first { it.id == "c3" }
+                    .providerChannelId,
+            )
+        }
+
+    @Test
     fun `pausing a session is seen the next time sessions are read`() =
         runBlocking {
             assertFalse(client.nowPlaying().first { it.sessionId == "demo-session-1" }.paused)
@@ -94,5 +131,27 @@ class DemoUsersAndDevicesTest {
             assertTrue(system.entries.isNotEmpty() && system.entries.all { it.userId == null })
             val errors = client.activity(0, 100, ActivityFilter(severity = Severity.Error))
             assertTrue(errors.entries.isNotEmpty() && errors.entries.all { it.severity == Severity.Error })
+        }
+
+    @Test
+    fun `signing out puts the activity log back on the sample users`() =
+        runBlocking {
+            client.deleteUser(DEMO_SAM_ID)
+            val without =
+                client
+                    .activity(0, 100)
+                    .entries
+                    .map { it.userId }
+                    .toSet()
+            client.logout()
+            val restored =
+                client
+                    .activity(0, 100)
+                    .entries
+                    .map { it.userId }
+                    .toSet()
+            assertEquals(without, restored)
+            assertTrue(DEMO_SAM_ID in restored)
+            assertTrue(client.users().any { it.id == DEMO_SAM_ID })
         }
 }

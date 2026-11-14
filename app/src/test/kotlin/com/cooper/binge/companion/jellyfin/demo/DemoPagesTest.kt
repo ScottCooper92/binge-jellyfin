@@ -76,6 +76,15 @@ class DemoPagesTest {
         }
 
     @Test
+    fun `a library added under a renamed library's old name gets an id of its own`() =
+        runBlocking {
+            client.renameLibrary("Movies", "Films")
+            client.addLibrary("Movies", "movies", "/media/more-movies")
+            val ids = client.libraries().map { it.id }
+            assertEquals(ids.size, ids.toSet().size)
+        }
+
+    @Test
     fun `a backup is made and an API key is made and revoked`() =
         runBlocking {
             val before = client.backups().size

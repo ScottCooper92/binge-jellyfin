@@ -44,6 +44,9 @@ internal class DemoUsers : DemoState {
 
     fun administrator(): JsonObject = users.first { it.string(ID) == DEMO_USER_ID }
 
+    /** The sample users' names and ids, whatever has been added or removed since. */
+    fun seeded(): List<Pair<String, String?>> = seed().map { it.string("Name").orEmpty() to it.string(ID) }
+
     fun names(): List<String> = users.mapNotNull { it.string("Name") }
 
     fun idOf(name: String): String? = users.firstOrNull { it.string("Name") == name }?.string(ID)
@@ -59,8 +62,9 @@ internal class DemoUsers : DemoState {
             route("POST", "Users", "{}", "Policy") { call, (id) -> savePolicy(id, call.jsonBody()) },
             route("DELETE", "Users", "{}") { _, (id) -> delete(id) },
             route("GET", "Users", "{}", "Images", "Primary") { _, _ -> demoNotFound },
-            route("POST", "Users", "{}", "Images", "Primary") { _, _ -> noContent },
-            route("DELETE", "Users", "{}", "Images", "Primary") { _, _ -> noContent },
+            route("GET", "UserImage") { _, _ -> demoNotFound },
+            route("POST", "UserImage") { _, _ -> noContent },
+            route("DELETE", "UserImage") { _, _ -> noContent },
         )
 
     private fun find(id: String) = users.firstOrNull { it.string(ID).equals(id, ignoreCase = true) }
