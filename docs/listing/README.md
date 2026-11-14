@@ -18,7 +18,7 @@ What the store page says, in the repository so it is reviewed like code and stay
 
 ## The name
 
-The app is **Ephyra**. The store title is `Ephyra for Jellyfin` (see `listing.md`): the name, with "for Jellyfin" as the descriptor the branding guide allows. "Jellyfin" never names the app, and nothing here claims the app is official.
+The app is **Ephyra**. The store title is `Ephyra` (see `listing.md`), with Jellyfin named in the descriptions as what it works with, as the branding guide allows. "Jellyfin" never names the app, and nothing here claims the app is official. `listing.md` says why the title is not `Ephyra for Jellyfin`, and what changing it back would risk.
 
 ## Keeping it true
 
