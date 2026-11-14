@@ -1,6 +1,8 @@
 package com.cooper.binge.companion.jellyfin.server
 
 import com.binge.companion.sdk.attempt
+import com.cooper.binge.companion.jellyfin.demo.DemoTransport
+import com.cooper.binge.companion.jellyfin.demo.isDemo
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -100,15 +102,17 @@ class JellyfinClient(
      * The server's event socket (`/socket`), authenticated by the same `Authorization` header as every
      * call, so the token stays out of the URL. [listener] hears every message the server pushes.
      */
-    fun openSocket(listener: WebSocketListener): WebSocket =
-        http.newWebSocket(
+    fun openSocket(listener: WebSocketListener): WebSocket {
+        val request =
             Request
                 .Builder()
                 .url(url("socket"))
                 .header("Authorization", authorization())
-                .build(),
-            listener,
-        )
+                .build()
+        // The demo server has no network to open a socket on: it pushes from memory.
+        val demo = http.interceptors.filterIsInstance<DemoTransport>().firstOrNull()
+        return if (demo != null && baseUrl.isDemo()) demo.openSocket(request, listener) else http.newWebSocket(request, listener)
+    }
 
     /** A server-relative URL the server handed back (a transcoding or subtitle URL), made absolute. */
     fun resolve(relative: String): String = baseUrl.toString().trimEnd('/') + "/" + relative.trimStart('/')
