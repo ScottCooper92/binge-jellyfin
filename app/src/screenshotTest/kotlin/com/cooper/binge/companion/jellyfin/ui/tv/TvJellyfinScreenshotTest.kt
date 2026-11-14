@@ -32,6 +32,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInCouldNotLoad
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInFailed
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInLocalNetworkDenied
+import com.cooper.binge.companion.jellyfin.ui.previewSignedInWaiting
 import com.cooper.binge.companion.jellyfin.ui.tv.ACCOUNT_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUDIO_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUTOPLAY_KEY
@@ -117,6 +118,12 @@ class TvJellyfinScreenshotTest {
     @Composable
     fun signedInChecking() =
         CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInChecking, Actions()) }
+
+    /** The saved server has not answered yet: its row says it is checking, and only the way out is offered. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun signedInWaiting() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInWaiting, Actions()) }
 
     @PreviewTest
     @JellyfinTvScreenPreviews

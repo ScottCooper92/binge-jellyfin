@@ -77,6 +77,7 @@
     <string name="tv_try_again">Reintentar</string>
     <string name="tv_use_password">Iniciar sesión con contraseña</string>
     <string name="tv_signed_in_as">Sesión iniciada como %1$s</string>
+    <string name="tv_checking_server">Comprobando tu servidor…</string>
     <plurals name="tv_titles_count">
         <item quantity="one">%1$d película o serie que Binge puede ver</item>
         <item quantity="many">%1$d películas y series que Binge puede ver</item>

@@ -349,8 +349,10 @@ private fun TvSignedInPage(
     val entry = remember { FocusRequester() }
     LaunchedEffect(Unit) { entry.requestFocus() }
     val titles = state.titles
-    // A server that cannot be reached or read: the board offers its ways out instead of the user's settings.
+    // A server that cannot be reached or read: the board offers its ways out instead of the user's settings. One that has not
+    // answered yet offers neither its settings nor a refresh, only the way out, so a start off the network does not look usable.
     val problem = state.health.isProblem
+    val settled = state.health == ConnectionHealth.Healthy
     if (problem) ConnectionAutoRetry(state.health, state.refreshing, actions.onRefresh)
     val accountRows =
         serverRows(state, actions) +
@@ -376,7 +378,7 @@ private fun TvSignedInPage(
                                 icon = Icons.Outlined.Refresh,
                             ),
                         ),
-                ).takeIf { promoted && !problem },
+                ).takeIf { promoted && settled },
                 TvPaneRow(
                     key = SIGN_OUT_KEY,
                     label = stringResource(R.string.settings_sign_out),
@@ -395,7 +397,7 @@ private fun TvSignedInPage(
     val groups =
         listOfNotNull(
             TvPaneGroup(title = stringResource(R.string.settings_signed_in_as), rows = accountRows),
-            playback?.takeIf { !problem }?.let { playbackGroup(it) },
+            playback?.takeIf { settled }?.let { playbackGroup(it) },
             appGroup(actions),
         )
     TvListPaneBoard(
@@ -429,10 +431,10 @@ private fun serverRows(
             key = ACCOUNT_KEY,
             label = session.serverName.ifBlank { session.baseUrl },
             body =
-                if (state.health.isProblem) {
-                    stringResource(connectionHeadline(state.health))
-                } else {
-                    stringResource(R.string.tv_signed_in_as, session.userName)
+                when {
+                    state.health.isProblem -> stringResource(connectionHeadline(state.health))
+                    state.health == ConnectionHealth.Checking -> stringResource(R.string.tv_checking_server)
+                    else -> stringResource(R.string.tv_signed_in_as, session.userName)
                 },
             note =
                 if (state.health.isProblem) {

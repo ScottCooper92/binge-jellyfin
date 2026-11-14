@@ -77,6 +77,7 @@
     <string name="tv_try_again">Try again</string>
     <string name="tv_use_password">Sign in with a password</string>
     <string name="tv_signed_in_as">Signed in as %1$s</string>
+    <string name="tv_checking_server">Checking your server…</string>
     <plurals name="tv_titles_count">
         <item quantity="one">%1$d movie or show Binge can see</item>
         <item quantity="other">%1$d movies and shows Binge can see</item>
