@@ -19,6 +19,7 @@ import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ThisAppScreen
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
 import kotlinx.coroutines.launch
 
 /** The open console page, with its own view model from the page's store. */
@@ -40,6 +41,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
         ConsolePage.ThisApp -> ThisAppScreen(actions, close)
+        ConsolePage.Search -> SettingsSearchScreen(signedIn.profile, signedIn.account, open, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)

@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */
 class JellyfinScreenshotTest {
@@ -236,6 +237,26 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun thisApp() = ThisAppScreen(Actions(), onBack = {})
+
+    /** The settings search before a query, with results (each with where it is) and with none. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchPrompt() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {})
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchResults() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "port")
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchNoMatch() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "zzz")
 
     /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
     @PreviewTest
