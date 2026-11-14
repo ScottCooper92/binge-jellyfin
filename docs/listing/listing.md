@@ -40,7 +40,7 @@ If the maintainer prefers a descriptor, `Ephyra for Jellyfin` (20 characters) is
 >
 > Try it first
 >
-> Tap Try the demo on the first screen to use every page on sample data, with no server and no account. Nothing leaves your device.
+> Tap Try the demo on the first screen to use every page on sample data, with no server and no account. The demo reaches no server, and nothing from it is stored.
 >
 > Your server, your data
 >
@@ -52,7 +52,7 @@ If the maintainer prefers a descriptor, `Ephyra for Jellyfin` (20 characters) is
 >
 > Ephyra is an independent app. It is not made, endorsed or sponsored by the Jellyfin project. "Jellyfin" is used here only to say what Ephyra works with.
 
-(2210 characters)
+(2241 characters)
 
 ## What's new (first release)
 

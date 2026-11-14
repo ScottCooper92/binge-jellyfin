@@ -34,7 +34,7 @@
 >
 > Pruébala primero
 >
-> Toca Probar la demo en la primera pantalla para usar todas las páginas con datos de ejemplo, sin servidor ni cuenta. Nada sale de tu dispositivo.
+> Toca Probar la demo en la primera pantalla para usar todas las páginas con datos de ejemplo, sin servidor ni cuenta. La demo no se conecta a ningún servidor y no guarda nada.
 >
 > Tu servidor, tus datos
 >
@@ -46,7 +46,7 @@
 >
 > Ephyra es una app independiente. No está hecha, respaldada ni patrocinada por el proyecto Jellyfin. «Jellyfin» se usa aquí solo para indicar con qué funciona Ephyra.
 
-(2497 caracteres)
+(2526 caracteres)
 
 ## Novedades (primera versión)
 
