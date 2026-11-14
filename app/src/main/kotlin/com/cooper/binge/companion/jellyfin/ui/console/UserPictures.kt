@@ -41,6 +41,15 @@ class UserPictures(
 ) : UserPictureSource {
     private val permits = Semaphore(CONCURRENT_PICTURES)
     private val locks = ConcurrentHashMap<String, Mutex>()
+
+    /**
+     * Counts the times the cache has been cleared. A read notes it before it asks the server, and keeps what comes back only if
+     * it is unchanged, so a fetch already on the wire when the session ends cannot put its picture back (#518).
+     */
+    @Volatile private var generation = 0
+
+    /** Held by [clear] and by the moment a read keeps a picture, so the one cannot land half-way through the other. */
+    private val keeping = Any()
     private val memory =
         object : LruCache<String, Bitmap>(MEMORY_BYTES) {
             override fun sizeOf(
@@ -56,18 +65,20 @@ class UserPictures(
             connection
                 .consoleCall(TAG) { session, client ->
                     val key = cacheKey("${client.baseUrl}|${session.userId}|${user.id}|$tag")
+                    val started = generation
                     permits.withPermit {
                         locks.getOrPut(key) { Mutex() }.withLock {
                             memory.get(key) ?: run {
                                 val file = File(directory, "$key.image")
+                                val onDisk = file.isFile && file.length() <= MAX_PICTURE_BYTES
                                 val bytes =
-                                    if (file.isFile && file.length() <= MAX_PICTURE_BYTES) {
+                                    if (onDisk) {
                                         file.setLastModified(System.currentTimeMillis())
                                         file.readBytes()
                                     } else {
-                                        client.userThumbnail(user.id, tag)?.also { bytes -> attempt { save(file, bytes) } }
+                                        client.userThumbnail(user.id, tag)
                                     }
-                                bytes?.let(::decode)?.also { memory.put(key, it) }
+                                bytes?.let(::decode)?.takeIf { keep(started, key, file, bytes.takeUnless { onDisk }, it) }
                             }
                         }
                     }
@@ -76,10 +87,31 @@ class UserPictures(
 
     /** Forgets every picture, in memory and on disk: they are the signed-in account's, and stay no longer than its session. */
     fun clear() {
-        memory.evictAll()
-        locks.clear()
-        directory.deleteRecursively()
+        synchronized(keeping) {
+            generation++
+            memory.evictAll()
+            locks.clear()
+            directory.deleteRecursively()
+        }
     }
+
+    /**
+     * Puts a picture in the memory cache, and on disk when it was fetched, unless the cache was cleared since the read began:
+     * then it belongs to a session that is gone, and the read answers nothing.
+     */
+    private fun keep(
+        started: Int,
+        key: String,
+        file: File,
+        fetched: ByteArray?,
+        bitmap: Bitmap,
+    ): Boolean =
+        synchronized(keeping) {
+            if (generation != started) return false
+            fetched?.let { attempt { save(file, it) } }
+            memory.put(key, bitmap)
+            true
+        }
 
     private fun save(
         file: File,
