@@ -21,9 +21,6 @@ import com.binge.designsystem.component.ListItemDestination
 import com.cooper.binge.companion.jellyfin.BuildConfig
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
-import com.cooper.binge.companion.jellyfin.feedback.openInBrowser
-import com.cooper.binge.companion.jellyfin.feedback.openPlayStoreListing
-import com.cooper.binge.companion.jellyfin.feedback.openTestingOptIn
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage

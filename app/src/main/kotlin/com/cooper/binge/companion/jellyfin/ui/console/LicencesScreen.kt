@@ -26,7 +26,7 @@ import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.feedback.openInBrowser
+import com.cooper.binge.companion.jellyfin.ui.openInBrowser
 import com.binge.designsystem.R as DesR
 
 private const val LICENCE_DETAIL_MAX_LINES = 2

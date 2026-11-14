@@ -32,11 +32,13 @@ import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.telemetry.postHogConfig
 import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
+import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
 import com.posthog.android.PostHogAndroid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -140,6 +142,13 @@ class AppGraph(
     }
 
     val index: LibraryIndex by lazy { LibraryIndex() }
+
+    /** Everything the app keeps on disk about the account that was signed in: its pictures and the last log shared. */
+    suspend fun clearAccountCaches() =
+        withContext(io) {
+            userPictures.clear()
+            clearSharedLogs(appContext.cacheDir)
+        }
 
     val userPictures: UserPictures by lazy { UserPictures(connection, File(appContext.cacheDir, "user-pictures")) }
 
