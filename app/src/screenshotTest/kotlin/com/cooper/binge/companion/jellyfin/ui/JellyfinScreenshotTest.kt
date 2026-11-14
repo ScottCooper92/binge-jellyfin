@@ -229,6 +229,14 @@ class JellyfinScreenshotTest {
     @Composable
     fun account() = AccountScreen(previewSignedInAdmin, Actions(), onBack = {})
 
+    /** The This app page, behind the home's This app row: what the app reports, feedback, and About. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun thisApp() = ThisAppScreen(Actions(), onBack = {})
+
     /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
     @PreviewTest
     @JellyfinScreenStatePreview

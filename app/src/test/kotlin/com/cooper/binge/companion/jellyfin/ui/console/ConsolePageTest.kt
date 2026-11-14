@@ -53,6 +53,7 @@ class ConsolePageTest {
                 ConsolePage.ProfilePicture,
                 ConsolePage.NowPlaying,
                 ConsolePage.Licences,
+                ConsolePage.ThisApp,
             ),
             ConsolePage.entries.filter { it.available(server, user) },
         )

@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Article
@@ -9,15 +11,21 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Healing
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Science
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
+import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.ScreenBody
+import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.BuildConfig
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
@@ -25,6 +33,7 @@ import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import kotlinx.coroutines.launch
+import com.binge.designsystem.R as DesR
 
 /** The hosted privacy policy page, built from `docs/listing/privacy.md` by `privacy-policy.yml`: the URL Play links to. */
 private const val PRIVACY_POLICY_URL = "https://scottcooper92.github.io/binge-jellyfin/privacy/"
@@ -43,10 +52,11 @@ data class AppSettings(
 internal fun AppGroup(
     settings: AppSettings,
     actions: Actions,
+    titled: Boolean = true,
 ) {
     val context = LocalContext.current
     ItemGroup(
-        title = stringResource(R.string.settings_group_app),
+        title = if (titled) stringResource(R.string.settings_group_app) else null,
         rows =
             listOf(
                 ListItem(
@@ -113,13 +123,47 @@ internal fun AboutGroup(actions: Actions) {
     )
 }
 
-/**
- * What ends an ordinary user's home: what this app reports, and Sign out last. An administrator reaches both in the account, where
- * their own settings are.
- */
+/** The "This app" page: what the app reports and feedback, then About. Opened from the home's This app row, for everyone. */
+@Composable
+internal fun ThisAppScreen(
+    actions: Actions,
+    onBack: () -> Unit,
+) {
+    BingeScreenScaffold(title = stringResource(R.string.settings_group_app), bar = ScreenBar.Small, onBack = onBack) { padding ->
+        ScreenBody(padding) { _ ->
+            LazyColumn(
+                contentPadding = padding.screenListPadding(),
+                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+            ) {
+                item { AppGroup(actions.appSettings, actions, titled = false) }
+                item { AboutGroup(actions) }
+            }
+        }
+    }
+}
+
+/** The home's way to the This app page, a row of its own after the server's pages. Everyone has it. */
+internal fun LazyListScope.thisAppRow(actions: Actions) {
+    item {
+        ItemGroup(
+            title = null,
+            rows =
+                listOf(
+                    ListItem(
+                        icon = Icons.Outlined.Tune,
+                        label = stringResource(R.string.settings_group_app),
+                        detail = stringResource(R.string.this_app_detail),
+                        selected = actions.isOpenBeside(ConsolePage.ThisApp),
+                        onClick = { actions.onOpenPage(ConsolePage.ThisApp) },
+                    ),
+                ),
+        )
+    }
+}
+
+/** What ends an ordinary user's home: the This app row, and Sign out last. */
 internal fun LazyListScope.homeFoot(actions: Actions) {
-    item { AppGroup(actions.appSettings, actions) }
-    item { AboutGroup(actions) }
+    thisAppRow(actions)
     item { SignOutButton(actions) }
 }
 
