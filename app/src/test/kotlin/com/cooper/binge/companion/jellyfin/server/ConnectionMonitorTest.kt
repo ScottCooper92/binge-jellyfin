@@ -4,7 +4,10 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -109,6 +112,24 @@ class ConnectionMonitorTest {
     }
 
     @Test
+    fun `calls cancelled in flight say nothing about the server`() {
+        val first = jellyfin.hold("/Users/Me")
+        val second = jellyfin.hold("/Users/Me")
+        runBlocking {
+            val (_, client) = checkNotNull(connection.signedIn())
+            val calls = launch(Dispatchers.IO) { listOf(async { client.me() }, async { client.me() }).forEach { it.await() } }
+            first.awaitArrival()
+            second.awaitArrival()
+            calls.cancelAndJoin()
+            // The cancelled calls fail on OkHttp's threads, a moment after the join.
+            delay(SETTLE_MILLIS)
+        }
+        first.release()
+        second.release()
+        assertEquals(Reach.Unchecked, connection.monitor.reach.value)
+    }
+
+    @Test
     fun `a new session starts the monitor again`() {
         call()
         assertEquals(Reach.Reached, connection.monitor.reach.value)
@@ -122,5 +143,6 @@ class ConnectionMonitorTest {
     private companion object {
         const val WAIT_MILLIS = 5_000L
         const val POLL_MILLIS = 10L
+        const val SETTLE_MILLIS = 500L
     }
 }

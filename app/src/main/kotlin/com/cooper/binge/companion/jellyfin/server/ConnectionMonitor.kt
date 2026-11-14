@@ -71,7 +71,7 @@ private const val HTTP_GATEWAY_TIMEOUT = 504
 /**
  * Reports each saved-server call's outcome to the monitor and returns the response untouched. A transport failure, or a
  * gateway that says the server behind it is down (502, 503 or 504, as a reverse proxy answers when Jellyfin is stopped),
- * is no answer. Any other response, an error included, means the server was reached: binge-seerr also counts 429 and every
+ * is no answer; a call cancelled by its caller is neither. Any other response, an error included, means the server was reached: binge-seerr also counts 429 and every
  * 5xx, but here a server that answers with a failure is the home's "couldn't load" and not "can't reach".
  */
 class ReachInterceptor(
@@ -82,7 +82,8 @@ class ReachInterceptor(
             try {
                 chain.proceed(chain.request())
             } catch (e: IOException) {
-                reporter.reportSilent()
+                // A call its caller cancelled says nothing about the server.
+                if (!chain.call().isCanceled()) reporter.reportSilent()
                 throw e
             }
         when (response.code) {
