@@ -40,6 +40,9 @@ import com.binge.designsystem.component.BingeTabRow
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -273,6 +276,7 @@ private fun InstalledList(
             item(key = "restart") {
                 ItemGroup(
                     title = null,
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                     rows =
                         listOf(
                             ListItem(
@@ -286,7 +290,13 @@ private fun InstalledList(
                 )
             }
         }
-        item(key = "plugins") { ItemGroup(title = null, rows = state.plugins.map { it.row(state, actions, it.id == openPlugin) }) }
+        item(key = "plugins") {
+            ItemGroup(
+                title = null,
+                rows = state.plugins.map { it.row(state, actions, it.id == openPlugin) },
+                modifier = Modifier.layoutAnchorIf(!state.restartNeeded, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+            )
+        }
     }
 }
 
