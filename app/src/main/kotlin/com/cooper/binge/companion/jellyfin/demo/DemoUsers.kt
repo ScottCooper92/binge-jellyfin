@@ -44,6 +44,9 @@ internal class DemoUsers : DemoState {
 
     fun administrator(): JsonObject = users.first { it.string(ID) == DEMO_USER_ID }
 
+    /** The sample users' names and ids, whatever has been added or removed since. */
+    fun seeded(): List<Pair<String, String?>> = seed().map { it.string("Name").orEmpty() to it.string(ID) }
+
     fun names(): List<String> = users.mapNotNull { it.string("Name") }
 
     fun idOf(name: String): String? = users.firstOrNull { it.string("Name") == name }?.string(ID)

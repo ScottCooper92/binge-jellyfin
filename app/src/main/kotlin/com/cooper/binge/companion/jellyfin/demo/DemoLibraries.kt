@@ -84,7 +84,7 @@ internal class DemoLibraries : DemoState {
         val index = indexOf(name)
         if (index < 0 ||
             newName.isNullOrBlank() ||
-            indexOf(newName) >= 0
+            indexOf(newName.trim()) >= 0
         ) {
             return DemoAnswer(HTTP_BAD_REQUEST, """{"title":"That name cannot be used."}""")
         }

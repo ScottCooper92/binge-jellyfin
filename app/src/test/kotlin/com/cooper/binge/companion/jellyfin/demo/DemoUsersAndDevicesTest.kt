@@ -12,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.channelMappingOptions
 import com.cooper.binge.companion.jellyfin.server.createUser
 import com.cooper.binge.companion.jellyfin.server.deleteUser
 import com.cooper.binge.companion.jellyfin.server.devices
+import com.cooper.binge.companion.jellyfin.server.logout
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.removeDevice
 import com.cooper.binge.companion.jellyfin.server.removeUserImage
@@ -130,5 +131,27 @@ class DemoUsersAndDevicesTest {
             assertTrue(system.entries.isNotEmpty() && system.entries.all { it.userId == null })
             val errors = client.activity(0, 100, ActivityFilter(severity = Severity.Error))
             assertTrue(errors.entries.isNotEmpty() && errors.entries.all { it.severity == Severity.Error })
+        }
+
+    @Test
+    fun `signing out puts the activity log back on the sample users`() =
+        runBlocking {
+            client.deleteUser(DEMO_SAM_ID)
+            val without =
+                client
+                    .activity(0, 100)
+                    .entries
+                    .map { it.userId }
+                    .toSet()
+            client.logout()
+            val restored =
+                client
+                    .activity(0, 100)
+                    .entries
+                    .map { it.userId }
+                    .toSet()
+            assertEquals(without, restored)
+            assertTrue(DEMO_SAM_ID in restored)
+            assertTrue(client.users().any { it.id == DEMO_SAM_ID })
         }
 }

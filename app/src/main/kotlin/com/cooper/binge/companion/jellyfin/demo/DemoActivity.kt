@@ -47,21 +47,21 @@ internal class DemoActivity(
     override fun routes(): List<DemoRoute> = listOf(route("GET", "System", "ActivityLog", "Entries") { call, _ -> ok(page(call)) })
 
     private fun build(): List<JsonObject> {
-        val names = users.names()
+        val seeded = users.seeded()
         return (0 until ENTRIES).map { n ->
             val kind = KINDS[(n * KIND_STRIDE + n / KIND_REPEAT) % KINDS.size]
-            val user = if (kind.system) null else names[n % names.size]
+            val user = if (kind.system) null else seeded[n % seeded.size]
             buildJsonObject {
                 put("Id", (ENTRIES - n).toLong())
-                put("Name", kind.title(user ?: "System"))
+                put("Name", kind.title(user?.first ?: "System"))
                 put("Type", kind.type)
                 put("Severity", kind.severity)
                 put("Date", now.minus(Duration.ofMinutes(MINUTES_BETWEEN * n + FIRST_MINUTES)).toString())
-                kind.detail(user.orEmpty())?.let {
+                kind.detail(user?.first.orEmpty())?.let {
                     put("ShortOverview", it)
                     put("Overview", it)
                 }
-                put("UserId", user?.let(users::idOf) ?: "00000000000000000000000000000000")
+                put("UserId", user?.second ?: "00000000000000000000000000000000")
             }
         }
     }
