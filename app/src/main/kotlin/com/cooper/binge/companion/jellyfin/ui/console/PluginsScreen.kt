@@ -224,8 +224,15 @@ private fun PluginsPage(
 
 /** The page's rows as they load: the shape of the list, not a spinner. */
 @Composable
-internal fun PluginsLoading(inner: PaddingValues) {
-    ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS, description = stringResource(R.string.plugins_loading))
+internal fun PluginsLoading(
+    inner: PaddingValues,
+    intro: String? = null,
+) {
+    if (intro == null) {
+        ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS, description = stringResource(R.string.plugins_loading))
+    } else {
+        ConsoleLoading(inner, LOADING_ROWS, intro = intro, formInset = false)
+    }
 }
 
 private const val LOADING_ROWS = 6

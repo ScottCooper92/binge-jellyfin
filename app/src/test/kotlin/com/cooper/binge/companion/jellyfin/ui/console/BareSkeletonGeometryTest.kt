@@ -6,7 +6,9 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.testing.assertSkeletonReservesGeometry
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.PluginRepository
 import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerPlugin
@@ -116,6 +118,61 @@ class BareSkeletonGeometryTest {
                 state = if (resolved) MetadataDefaultsUiState.Ready(JsonObject(emptyMap())) else MetadataDefaultsUiState.Loading,
                 actions = MetadataDefaultsActions(),
                 open = null,
+            )
+        }
+
+    private val plugin = ServerPlugin("p", "AniDB", "9.0.0.0", "", PluginStatus.Active, true, false)
+
+    @Test
+    fun `the catalog`() =
+        compose.holdsFirstGroup { resolved ->
+            PluginsScreen(
+                installed = PluginsUiState.Loading,
+                catalog =
+                    if (resolved) {
+                        CatalogUiState.Ready(listOf(CatalogPackage("g", "Trakt", "", "", "jellyfin", "General", emptyList())))
+                    } else {
+                        CatalogUiState.Loading
+                    },
+                repositories = RepositoriesUiState.Loading,
+                actions = PluginsActions(),
+                catalogActions = CatalogActions(),
+                repositoryActions = RepositoriesActions(),
+                onBack = {},
+                initialTab = 1,
+                openItem = null,
+            )
+        }
+
+    @Test
+    fun `the repositories`() =
+        compose.holdsFirstGroup { resolved ->
+            PluginsScreen(
+                installed = PluginsUiState.Loading,
+                catalog = CatalogUiState.Loading,
+                repositories =
+                    if (resolved) {
+                        RepositoriesUiState.Ready(listOf(PluginRepository("Stable", "https://repo", true)))
+                    } else {
+                        RepositoriesUiState.Loading
+                    },
+                actions = PluginsActions(),
+                catalogActions = CatalogActions(),
+                repositoryActions = RepositoriesActions(),
+                onBack = {},
+                initialTab = 2,
+                openItem = null,
+            )
+        }
+
+    @Test
+    fun `a plugin`() =
+        compose.holdsFirstGroup { resolved ->
+            PluginScreen(
+                state = if (resolved) PluginsUiState.Ready(listOf(plugin)) else PluginsUiState.Loading,
+                pluginId = plugin.id,
+                actions = PluginsActions(),
+                onBack = {},
             )
         }
 }
