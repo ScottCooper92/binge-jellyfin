@@ -131,6 +131,12 @@ class JellyfinScreenshotTest {
     @Composable
     fun signedInChecking() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInChecking, Actions()) }
 
+    /** The saved server has not answered yet: nothing of the home, only the wait, until it does or its problem replaces it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun signedInWaiting() = JellyfinRoot(previewSignedInWaiting, Actions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable

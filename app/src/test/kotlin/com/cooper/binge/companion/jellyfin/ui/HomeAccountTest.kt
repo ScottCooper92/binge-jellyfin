@@ -41,6 +41,7 @@ class HomeAccountTest {
         UiState.SignedIn(
             session,
             titles = null,
+            health = ConnectionHealth.Healthy,
             account = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":$admin}""").jsonObject),
         )
 

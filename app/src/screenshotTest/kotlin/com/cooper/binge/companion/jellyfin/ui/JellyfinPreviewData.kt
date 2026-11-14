@@ -62,7 +62,7 @@ private val session =
 /** What a server card shows once it has read everything a non-administrator may see. */
 private val previewCard = ServerCardState(connected = true, playing = 2, movies = 842, series = 120)
 
-val previewSignedIn = UiState.SignedIn(session = session, titles = 1_284, card = previewCard)
+val previewSignedIn = UiState.SignedIn(session = session, titles = 1_284, health = ConnectionHealth.Healthy, card = previewCard)
 
 /** A library where 12 of 134 titles carry no TMDB id, so nothing that looks one up can find them. */
 val previewSignedInNoTmdb =
@@ -71,7 +71,10 @@ val previewSignedInNoTmdb =
 /** The card before any read has come in: a placeholder in each total, and no Connected. */
 val previewSignedInCardLoading = previewSignedIn.copy(card = ServerCardState())
 
-val previewSignedInChecking = UiState.SignedIn(session = session, titles = null, refreshing = true)
+val previewSignedInChecking = UiState.SignedIn(session = session, titles = null, refreshing = true, health = ConnectionHealth.Healthy)
+
+/** The saved server has not answered yet, which is where every start begins: nothing of the home is drawn until it does. */
+val previewSignedInWaiting = UiState.SignedIn(session = session, titles = null, refreshing = true)
 
 /** The saved server did not answer: the home gives way to the connection problem. */
 val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = true, health = ConnectionHealth.Unreachable)

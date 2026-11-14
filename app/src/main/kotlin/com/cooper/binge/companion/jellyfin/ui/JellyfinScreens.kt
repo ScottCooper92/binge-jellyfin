@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,8 +43,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +59,6 @@ import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
-import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -126,7 +122,14 @@ fun JellyfinRoot(
         title = stringResource(R.string.app_label),
         bar = ScreenBar.Small,
         // An administrator's own settings are one tap away, in the account: avatar, as binge-seerr has it.
-        actions = { if (state is UiState.SignedIn && state.isAdministrator && !state.health.isProblem) AccountAction(state, actions) },
+        actions = {
+            if (state is UiState.SignedIn &&
+                state.isAdministrator &&
+                state.health == ConnectionHealth.Healthy
+            ) {
+                AccountAction(state, actions)
+            }
+        },
     ) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
@@ -360,42 +363,15 @@ private fun SignedIn(
     inner: PaddingValues,
     topInset: Dp,
 ) {
-    val promoted = LocalFlags.current.bingePromotion
-    // A server that cannot be reached or read takes the place of the home, with its ways out.
-    if (state.health.isProblem) {
-        ConnectionProblem(state, actions, Modifier.padding(inner))
-        if (state.confirmingSignOut) SignOutConfirm(actions)
-        return
-    }
-    // A pull reads the server and the library again in place. Only a pull shows the spinner: the read every start makes would
-    // otherwise draw it.
-    var pulled by remember { mutableStateOf(false) }
-    LaunchedEffect(state.refreshing) { if (!state.refreshing) pulled = false }
-    BingePullToRefresh(
-        isRefreshing = pulled && state.refreshing,
-        onRefresh = {
-            pulled = true
-            actions.onRefresh()
-        },
-        indicatorTopInset = topInset,
-    ) {
-        LazyColumn(
-            contentPadding = inner,
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-        ) {
-            item { ServerHomeCard(state) }
-            if ((state.card.tmdb?.withoutTmdbId ?: 0) > 0) item { TmdbCoverageNote(state.card.tmdb) }
-            item { ServerGroup(state, actions) }
-            // An administrator's own settings are in the account, behind the avatar. Everyone else has nothing else to
-            // show, so their home is their account: the same rows, inline, and Sign out last.
-            if (!state.isAdministrator) item { AccountGroup(state, actions) }
-            if (ConsolePage.entries.any { it.isAdmin && it.available(state.profile, state.account) }) {
-                item { AdminGroup(state, actions) }
-            }
-            // What Binge can find in the library is Binge's to show; without the flag the app names no Binge.
-            if (promoted) item { LibraryGroup(state, actions) }
-            if (!state.isAdministrator) homeFoot(actions)
-        }
+    when {
+        // Nothing is shown of a server that has not answered yet: its pages would only fail one by one, and the home is drawn
+        // from what was saved the last time. A start that cannot reach the server lands on its problem, not on a console that
+        // looks usable until the read times out.
+        state.health == ConnectionHealth.Checking ->
+            Box(Modifier.fillMaxSize().padding(inner), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+        // A server that cannot be reached or read takes the place of the home, with its ways out.
+        state.health.isProblem -> ConnectionProblem(state, actions, Modifier.padding(inner))
+        else -> SignedInHome(state, actions, inner, topInset)
     }
     if (state.confirmingSignOut) SignOutConfirm(actions)
 }
@@ -421,7 +397,7 @@ internal fun SignOutConfirm(
 
 /** Who is signed in, and what's playing on the server, under the server card. */
 @Composable
-private fun ServerGroup(
+internal fun ServerGroup(
     state: UiState.SignedIn,
     actions: Actions,
 ) {
@@ -489,7 +465,7 @@ private val adminPages =
 
 /** The console's pages for an administrator, shown only to one: the server would refuse anyone else. */
 @Composable
-private fun AdminGroup(
+internal fun AdminGroup(
     state: UiState.SignedIn,
     actions: Actions,
 ) {
@@ -509,7 +485,7 @@ private fun AdminGroup(
 }
 
 @Composable
-private fun LibraryGroup(
+internal fun LibraryGroup(
     state: UiState.SignedIn,
     actions: Actions,
 ) {

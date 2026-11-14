@@ -43,6 +43,7 @@ class OwnAvatarTest {
         UiState.SignedIn(
             session,
             titles = null,
+            health = ConnectionHealth.Healthy,
             account =
                 JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":true}""").jsonObject, imageTag = tag),
         )
