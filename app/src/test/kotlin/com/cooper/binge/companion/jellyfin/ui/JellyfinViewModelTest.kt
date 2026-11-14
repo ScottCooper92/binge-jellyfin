@@ -4,9 +4,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.binge.companion.kit.SecretCipher
 import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
+import com.cooper.binge.companion.jellyfin.PlainCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
+import com.cooper.binge.companion.jellyfin.demo.DEMO_ORIGIN
+import com.cooper.binge.companion.jellyfin.demo.DEMO_TOKEN
+import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
@@ -91,6 +96,47 @@ class JellyfinViewModelTest {
         onAddress(jellyfin.baseUrl)
         connect()
         return await()
+    }
+
+    private fun demoViewModel(cipher: SecretCipher = PlainCipher): JellyfinViewModel {
+        val demoSessions = testSessionStore(cipher)
+        val demoConnection =
+            Connection(
+                OkHttpClient.Builder().addInterceptor(DemoTransport()).build(),
+                demoSessions,
+                "Jellyfin Companion",
+                "Test",
+                "1.0",
+                Dispatchers.IO,
+            )
+        return track(JellyfinViewModel(demoSessions, demoConnection, index, discover = { found }, analytics = analytics))
+    }
+
+    @Test
+    fun `Try the demo signs in to the demo server with no address and no account`() {
+        val vm = demoViewModel()
+        vm.await<UiState.EnterServer>()
+        vm.tryDemo()
+        val signedIn = vm.await<UiState.SignedIn>()
+        assertEquals(DEMO_ORIGIN, signedIn.session.baseUrl)
+        assertEquals(DEMO_TOKEN, signedIn.session.token)
+        assertEquals(listOf("sign_in" to mapOf<String, Any>("method" to "demo")), reported.filter { it.first == "sign_in" })
+    }
+
+    @Test
+    fun `a demo that cannot be saved ends the spinner with an error and counts the failure`() {
+        val refusing =
+            object : SecretCipher {
+                override fun encrypt(plaintext: String): String = error("The Keystore refused")
+
+                override fun decrypt(ciphertext: String): String? = null
+            }
+        val vm = demoViewModel(refusing)
+        vm.await<UiState.EnterServer>()
+        vm.tryDemo()
+        val state = vm.await<UiState.EnterServer> { !it.checking && it.error != null }
+        assertEquals(SetupError.Generic, state.error)
+        assertTrue(reported.any { it.first == "sign_in_failed" && it.second["method"] == "demo" })
     }
 
     @Test

@@ -265,11 +265,13 @@ class JellyfinViewModel(
                 }
             if (info == null) {
                 _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.NotJellyfin) ?: it }
-            } else if (info.baseUrl.toString().isDemoOrigin()) {
+            } else if (url.toString().isDemoOrigin() && info.baseUrl.toString().isDemoOrigin()) {
                 // The demo has no account to ask for: it signs in as its own administrator, through the same calls.
                 val demo = attempt { connection.anonymous(url).authenticateByName(DEMO_USER_NAME, "") }
                 demo.onSuccess { finish(url, info, it, AnalyticsEvents.METHOD_DEMO) }
                 demo.onFailure {
+                    Log.i(TAG, "The demo sign-in failed", it)
+                    reports.failed(AnalyticsEvents.METHOD_DEMO, SetupError.Generic)
                     _state.update { s ->
                         (s as? UiState.EnterServer)?.copy(checking = false, error = SetupError.Generic) ?: s
                     }
@@ -483,11 +485,16 @@ class JellyfinViewModel(
             reports.failed(method, SetupError.Generic)
             // The failure belongs to the method that got this far: Quick Connect holds a code, a password does not.
             _state.update {
-                val signIn = it as? UiState.SignIn ?: return@update it
-                if (signIn.quickConnectCode != null) {
-                    signIn.copy(quickConnectCode = null, gettingCode = false, quickConnectError = SetupError.Generic)
-                } else {
-                    signIn.copy(busy = false, passwordError = SetupError.Generic)
+                when (it) {
+                    is UiState.SignIn ->
+                        if (it.quickConnectCode != null) {
+                            it.copy(quickConnectCode = null, gettingCode = false, quickConnectError = SetupError.Generic)
+                        } else {
+                            it.copy(busy = false, passwordError = SetupError.Generic)
+                        }
+                    // The demo signs in from the server step, so that is where its failure has to land.
+                    is UiState.EnterServer -> it.copy(checking = false, error = SetupError.Generic)
+                    else -> it
                 }
             }
             return
