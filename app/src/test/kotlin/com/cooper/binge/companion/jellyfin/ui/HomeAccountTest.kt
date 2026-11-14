@@ -49,7 +49,7 @@ class HomeAccountTest {
     private fun scrollTo(text: String) = compose.onNode(hasScrollAction()).performScrollToNode(hasText(text))
 
     @Test
-    fun `an administrator's home has the avatar, the server and Administration, and none of the account's rows`() {
+    fun `an administrator's home has the avatar and the server's own sections, and none of the account's rows`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions()) } }
         compose.onNodeWithContentDescription("Your account").assertExists()
         scrollTo("Libraries")
@@ -57,6 +57,26 @@ class HomeAccountTest {
         compose.onAllNodesWithText("Approve a sign-in code").assertCountEquals(0)
         compose.onAllNodesWithText("Change password").assertCountEquals(0)
         compose.onAllNodesWithText("Sign out").assertCountEquals(0)
+    }
+
+    @Test
+    fun `an administrator's home lists every section's pages, reached by scrolling`() {
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions()) } }
+        val pages =
+            listOf(
+                "Users",
+                "Libraries",
+                "Playback and transcoding",
+                "Activity",
+                "Scheduled tasks",
+                "Logs",
+                "Networking",
+                "API keys",
+            )
+        pages.forEach { name ->
+            scrollTo(name)
+            compose.onNodeWithText(name).assertExists()
+        }
     }
 
     @Test

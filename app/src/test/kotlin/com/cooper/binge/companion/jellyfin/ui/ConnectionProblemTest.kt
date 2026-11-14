@@ -51,7 +51,7 @@ class ConnectionProblemTest {
         compose.onNodeWithText("Try again").assertExists()
         compose.onNodeWithText("Edit server details").assertExists()
         compose.onNodeWithText("Sign out").assertExists()
-        compose.onAllNodesWithText("Administration").assertCountEquals(0)
+        compose.onAllNodesWithText("Scheduled tasks").assertCountEquals(0)
         compose.onAllNodesWithContentDescription("Your account").assertCountEquals(0)
     }
 
@@ -76,7 +76,7 @@ class ConnectionProblemTest {
     @Test
     fun `a server that has not answered yet shows neither the home nor a problem`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(ConnectionHealth.Checking), Actions()) } }
-        compose.onAllNodesWithText("Administration").assertCountEquals(0)
+        compose.onAllNodesWithText("Scheduled tasks").assertCountEquals(0)
         compose.onAllNodesWithContentDescription("Your account").assertCountEquals(0)
         compose.onAllNodesWithText("Try again").assertCountEquals(0)
         compose.onAllNodesWithText("Can't reach your server").assertCountEquals(0)

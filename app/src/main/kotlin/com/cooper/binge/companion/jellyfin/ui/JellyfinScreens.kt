@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,31 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Backup
-import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.outlined.Category
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Dns
-import androidx.compose.material.icons.outlined.Extension
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.Group
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.LockOpen
-import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Router
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.SettingsApplications
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -403,7 +384,7 @@ internal fun ServerGroup(
 ) {
     val picture = rememberOwnPicture(state)
     ItemGroup(
-        title = stringResource(R.string.settings_server),
+        title = null,
         rows =
             listOfNotNull(
                 ListItem(
@@ -431,56 +412,6 @@ internal fun ServerGroup(
                     onClick = { actions.onOpenPage(ConsolePage.LiveTv) },
                 ).takeIf { ConsolePage.LiveTv.available(state.profile, state.account) },
             ),
-    )
-}
-
-/** One of the administrator's pages as the home lists it: its icon, name and the line under it. */
-private class AdminPage(
-    val page: ConsolePage,
-    val icon: ImageVector,
-    @StringRes val label: Int,
-    @StringRes val detail: Int,
-)
-
-private val adminPages =
-    listOf(
-        AdminPage(ConsolePage.Libraries, Icons.Outlined.Folder, R.string.libraries_title, R.string.console_libraries_detail),
-        AdminPage(ConsolePage.Tasks, Icons.Outlined.Schedule, R.string.tasks_title, R.string.console_tasks_detail),
-        AdminPage(ConsolePage.Activity, Icons.Outlined.History, R.string.activity_title, R.string.console_activity_detail),
-        AdminPage(ConsolePage.Logs, Icons.Outlined.Description, R.string.logs_title, R.string.console_logs_detail),
-        AdminPage(ConsolePage.ApiKeys, Icons.Outlined.Key, R.string.api_keys_title, R.string.console_api_keys_detail),
-        AdminPage(ConsolePage.Devices, Icons.Outlined.Devices, R.string.devices_title, R.string.console_devices_detail),
-        AdminPage(ConsolePage.Users, Icons.Outlined.Group, R.string.users_title, R.string.console_users_detail),
-        AdminPage(ConsolePage.ServerSettings, Icons.Outlined.Tune, R.string.server_settings_title, R.string.console_server_settings_detail),
-        AdminPage(ConsolePage.Network, Icons.Outlined.Router, R.string.network_title, R.string.console_network_detail),
-        AdminPage(ConsolePage.Advanced, Icons.Outlined.Build, R.string.advanced_title, R.string.console_advanced_detail),
-        AdminPage(ConsolePage.Trickplay, Icons.Outlined.Image, R.string.trickplay_title, R.string.console_trickplay_detail),
-        AdminPage(ConsolePage.LibraryDisplay, Icons.Outlined.ViewModule, R.string.display_title, R.string.console_display_detail),
-        AdminPage(ConsolePage.MetadataDefaults, Icons.Outlined.Category, R.string.metadata_title, R.string.console_metadata_detail),
-        AdminPage(ConsolePage.Plugins, Icons.Outlined.Extension, R.string.plugins_title, R.string.console_plugins_detail),
-        AdminPage(ConsolePage.Transcoding, Icons.Outlined.Memory, R.string.transcoding_title, R.string.console_transcoding_detail),
-        AdminPage(ConsolePage.Backups, Icons.Outlined.Backup, R.string.backups_title, R.string.console_backups_detail),
-        AdminPage(ConsolePage.Server, Icons.Outlined.SettingsApplications, R.string.server_title, R.string.console_server_detail),
-    )
-
-/** The console's pages for an administrator, shown only to one: the server would refuse anyone else. */
-@Composable
-internal fun AdminGroup(
-    state: UiState.SignedIn,
-    actions: Actions,
-) {
-    ItemGroup(
-        title = stringResource(R.string.console_admin_title),
-        rows =
-            adminPages.filter { it.page.available(state.profile, state.account) }.map { entry ->
-                ListItem(
-                    icon = entry.icon,
-                    label = stringResource(entry.label),
-                    detail = stringResource(entry.detail),
-                    selected = actions.isOpenBeside(entry.page),
-                    onClick = { actions.onOpenPage(entry.page) },
-                )
-            },
     )
 }
 

@@ -13,7 +13,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import com.binge.designsystem.component.BingePullToRefresh
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
-import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.binge.designsystem.R as DesR
 
 /**
@@ -50,9 +49,7 @@ internal fun SignedInHome(
             // An administrator's own settings are in the account, behind the avatar. Everyone else has nothing else to
             // show, so their home is their account: the same rows, inline, and Sign out last.
             if (!state.isAdministrator) item { AccountGroup(state, actions) }
-            if (ConsolePage.entries.any { it.isAdmin && it.available(state.profile, state.account) }) {
-                item { AdminGroup(state, actions) }
-            }
+            adminSections(state, actions)
             // What Binge can find in the library is Binge's to show; without the flag the app names no Binge.
             if (promoted) item { LibraryGroup(state, actions) }
             if (!state.isAdministrator) homeFoot(actions)

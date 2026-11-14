@@ -209,7 +209,6 @@
     <string name="transcode_bitrate">Transcodificando: supera el límite de bitrate</string>
     <string name="transcode_container">Transcodificando: el dispositivo no puede abrir el archivo</string>
     <string name="transcode_other">Transcodificando</string>
-    <string name="console_admin_title">Administración</string>
     <string name="console_libraries_detail">Añade, escanea y configura bibliotecas</string>
     <string name="libraries_title">Bibliotecas</string>
     <string name="libraries_body">Jellyfin busca archivos nuevos según su propia programación. Escanea para encontrarlos ahora.</string>
