@@ -15,7 +15,7 @@ const val DEMO_ORIGIN = "https://$DEMO_HOST"
 internal const val DEMO_TOKEN = "demo-token"
 internal const val DEMO_SERVER_ID = "demo0000000000000000000000000001"
 internal const val DEMO_SERVER_NAME = "Ephyra demo server"
-internal const val DEMO_VERSION = "10.10.7"
+internal const val DEMO_VERSION = "10.11.4"
 
 /** Whether [this] is the demo server's address. */
 fun String.isDemoOrigin(): Boolean = trimEnd('/').equals(DEMO_ORIGIN, ignoreCase = true)

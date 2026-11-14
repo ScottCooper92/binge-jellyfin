@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.demo
 
+import com.binge.companion.sdk.attempt
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -79,3 +80,21 @@ internal fun DemoCall.match(
     }
     return captured
 }
+
+/** A piece of the demo's state: its routes, and the way back to the sample data. */
+internal interface DemoState {
+    fun routes(): List<DemoRoute>
+
+    fun reset()
+}
+
+private val bodyParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+/** The call's body as a JSON object; empty when it has none or it is not an object. */
+internal fun DemoCall.jsonBody(): JsonObject =
+    attempt { bodyParser.parseToJsonElement(body) as? JsonObject }.getOrNull() ?: JsonObject(emptyMap())
+
+/** [text], JSON written out, as a value: for the sample data that is easier to read as JSON than as builders. */
+internal fun json(text: String): kotlinx.serialization.json.JsonElement = bodyParser.parseToJsonElement(text.trimIndent())
+
+internal fun jsonObject(text: String): JsonObject = json(text) as JsonObject

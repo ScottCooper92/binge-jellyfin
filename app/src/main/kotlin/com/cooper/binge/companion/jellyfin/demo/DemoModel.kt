@@ -4,40 +4,49 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
-
-internal const val DEMO_USER_ID = "d3m00000000000000000000000000001"
-internal const val DEMO_USER_NAME = "Alex"
 
 private const val MOVIES = 128
 private const val SERIES = 34
 private const val WITHOUT_TMDB_ID = 0
-private const val TICKS_PER_MINUTE = 600_000_000L
 private const val EPISODES = 612
-private const val RUNTIME_MINUTES = 118
-private const val POSITION_MINUTES = 42
 
 /**
- * The demo server's state and what it answers. One instance lives as long as the process. Pages added in later slices
- * bring their routes and their state here, and a way to put the sample data back when the demo is left.
+ * The demo server's state and what it answers. One instance lives as long as the process. Each page's routes and state
+ * live in a `DemoState`, which can put its sample data back when the demo is left.
  */
 internal class DemoModel {
-    private val routes: List<DemoRoute> by lazy { serverRoutes() }
+    private val users = DemoUsers()
+    private val sessions = DemoSessions()
+    private val devices = DemoDevices()
+    private val activity = DemoActivity(users)
+    private val libraries = DemoLibraries()
+    private val lookups = DemoLookups(libraries)
+    private val tasks = DemoTasks()
+    private val files = DemoServerFiles()
+    private val plugins = DemoPlugins()
+    private val configuration = DemoConfiguration()
+    private val states: List<DemoState> =
+        listOf(users, sessions, devices, activity, libraries, lookups, tasks, files, plugins, configuration)
+
+    private val routes: List<DemoRoute> by lazy {
+        serverRoutes() + states.flatMap { it.routes() }
+    }
 
     @Synchronized
     fun answer(call: DemoCall): DemoAnswer = routes.answer(call) ?: notInTheDemo
+
+    /** Puts every change back: the sample data as it was when the demo was opened. */
+    @Synchronized
+    fun reset() = states.forEach(DemoState::reset)
 
     private fun serverRoutes(): List<DemoRoute> =
         listOf(
             route("GET", "System", "Info", "Public") { _, _ -> ok(publicInfo()) },
             route("GET", "System", "Info") { _, _ -> ok(systemInfo()) },
-            route("GET", "QuickConnect", "Enabled") { _, _ -> ok(JsonPrimitive(false)) },
+            route("GET", "QuickConnect", "Enabled") { _, _ -> ok(JsonPrimitive(configuration.quickConnectAvailable())) },
             route("POST", "Users", "AuthenticateByName") { _, _ -> ok(authentication()) },
-            route("POST", "Sessions", "Logout") { _, _ -> noContent },
-            route("GET", "Users", "Me") { _, _ -> ok(administrator()) },
-            route("GET", "Users") { _, _ -> ok(users()) },
-            route("GET", "Sessions") { _, _ -> ok(sessions()) },
+            route("POST", "QuickConnect", "Authorize") { _, _ -> noContent },
+            route("POST", "Sessions", "Logout") { _, _ -> reset().let { noContent } },
             route("GET", "Items", "Counts") { _, _ -> ok(itemCounts()) },
             route("GET", "Items") { call, _ -> ok(items(call)) },
         )
@@ -70,65 +79,8 @@ internal class DemoModel {
         buildJsonObject {
             put("AccessToken", DEMO_TOKEN)
             put("ServerId", DEMO_SERVER_ID)
-            put("User", administrator())
+            put("User", users.administrator())
         }
-
-    private fun administrator() = user(DEMO_USER_ID, DEMO_USER_NAME, admin = true)
-
-    private fun users() =
-        listOf(
-            administrator(),
-            user("d3m00000000000000000000000000002", "Sam", admin = false),
-            user("d3m00000000000000000000000000003", "Kids", admin = false),
-        )
-
-    private fun user(
-        id: String,
-        name: String,
-        admin: Boolean,
-    ) = buildJsonObject {
-        put("Id", id)
-        put("Name", name)
-        put("ServerId", DEMO_SERVER_ID)
-        put("HasPassword", true)
-        putJsonObject("Policy") {
-            put("IsAdministrator", admin)
-            put("IsDisabled", false)
-            put("EnableUserPreferenceAccess", true)
-            put("EnableRemoteControlOfOtherUsers", admin)
-            put("EnableSharedDeviceControl", admin)
-            put("EnableLiveTvManagement", admin)
-            put("EnableLiveTvAccess", true)
-            put("AuthenticationProviderId", "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider")
-        }
-    }
-
-    private fun sessions() =
-        listOf(
-            buildJsonObject {
-                put("Id", "demo-session-1")
-                put("UserId", "d3m00000000000000000000000000002")
-                put("UserName", "Sam")
-                put("DeviceName", "Living room TV")
-                put("DeviceId", "demo-device-1")
-                put("Client", "Jellyfin for Android TV")
-                put("SupportsMediaControl", true)
-                put("SupportsRemoteControl", true)
-                putJsonObject("NowPlayingItem") {
-                    put("Id", "demo-item-1")
-                    put("Name", "The Long Voyage")
-                    put("Type", "Movie")
-                    put("RunTimeTicks", RUNTIME_MINUTES * TICKS_PER_MINUTE)
-                }
-                putJsonObject("PlayState") {
-                    put("PositionTicks", POSITION_MINUTES * TICKS_PER_MINUTE)
-                    put("IsPaused", false)
-                    put("CanSeek", true)
-                    put("PlayMethod", "DirectPlay")
-                }
-                putJsonArray("SupportedCommands") {}
-            },
-        )
 
     private fun itemCounts() =
         buildJsonObject {

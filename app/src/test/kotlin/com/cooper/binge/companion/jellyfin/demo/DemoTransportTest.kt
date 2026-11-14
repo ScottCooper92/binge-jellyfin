@@ -4,7 +4,6 @@ import com.cooper.binge.companion.jellyfin.server.ClientIdentity
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
-import com.cooper.binge.companion.jellyfin.server.backups
 import com.cooper.binge.companion.jellyfin.server.itemCounts
 import com.cooper.binge.companion.jellyfin.server.libraryPage
 import com.cooper.binge.companion.jellyfin.server.me
@@ -46,7 +45,7 @@ class DemoTransportTest {
             val signedIn = client.withToken(DEMO_TOKEN)
             assertEquals("Arm64", signedIn.serverInfo().architecture)
             assertEquals(3, signedIn.users().size)
-            assertEquals(1, signedIn.nowPlaying().size)
+            assertEquals(2, signedIn.nowPlaying().size)
             assertEquals(128, signedIn.itemCounts(DEMO_USER_ID).movies)
         }
 
@@ -62,7 +61,7 @@ class DemoTransportTest {
 
     @Test
     fun `a call the demo does not serve says so`() {
-        val failure = assertThrows(JellyfinHttpException::class.java) { runBlocking { client.withToken(DEMO_TOKEN).backups() } }
+        val failure = assertThrows(JellyfinHttpException::class.java) { runBlocking { client.withToken(DEMO_TOKEN).get("Not/Served") } }
         assertEquals(501, failure.code)
     }
 
