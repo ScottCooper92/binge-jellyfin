@@ -19,8 +19,9 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
@@ -152,7 +153,9 @@ private fun metadataNotReady(
     actions: MetadataDefaultsActions,
 ): (@Composable (PaddingValues) -> Unit)? =
     when (state) {
-        MetadataDefaultsUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+        MetadataDefaultsUiState.Loading -> { padding ->
+            ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(R.string.metadata_body))
+        }
         is MetadataDefaultsUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
         is MetadataDefaultsUiState.Ready -> null
     }
@@ -177,6 +180,7 @@ private fun TypeList(
         PageIntro(stringResource(R.string.metadata_body))
         ItemGroup(
             title = null,
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 state.types().map { type ->
                     val off = FetcherKind.entries.sumOf { kind -> state.fetchers(type, kind).count { !it.enabled } }

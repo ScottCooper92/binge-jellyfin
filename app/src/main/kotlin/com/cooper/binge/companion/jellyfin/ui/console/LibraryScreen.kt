@@ -26,7 +26,8 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
-import com.binge.designsystem.component.ListRowSkeletonColumn
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -96,7 +97,7 @@ fun LibraryScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                LibraryUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+                LibraryUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS, formInset = true) }
                 is LibraryUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is LibraryUiState.Ready -> null
             },
@@ -136,7 +137,11 @@ private fun LibraryBody(
 ) {
     var picker by rememberSaveable { mutableStateOf<LibraryPicker?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        ItemGroup(title = null, rows = libraryRows(state, actions, profile))
+        ItemGroup(
+            title = null,
+            rows = libraryRows(state, actions, profile),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+        )
         FoldersGroup(state, actions)
         MetadataGroup(state, actions, profile) { picker = it }
         VideoGroups(state, actions, profile) { picker = it }
