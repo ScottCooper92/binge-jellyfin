@@ -19,6 +19,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.LocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.Reach
 import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
 import com.cooper.binge.companion.jellyfin.server.authenticateWithQuickConnect
@@ -136,6 +137,26 @@ fun JellyfinViewModel.localNetworkAnswered() {
     }
 }
 
+/**
+ * Moves the home's [ConnectionHealth] with what the live calls say, in two places only. A home that was fine becomes the
+ * server's problem when a run of calls goes unanswered; a problem of that kind clears when one is answered. A server that
+ * answered with something unusable, and one the app may not reach, are the read's to name and to clear, and a start's first
+ * read is its own: [ConnectionHealth.Checking] is not touched here.
+ */
+internal fun UiState.afterReach(
+    reach: Reach,
+    localNetwork: LocalNetworkPermission,
+): UiState {
+    val signedIn = this as? UiState.SignedIn ?: return this
+    return when {
+        reach == Reach.Unreached && signedIn.health == ConnectionHealth.Healthy ->
+            signedIn.copy(health = unreachableHealth(signedIn.session.baseUrl, localNetwork), refreshFailed = true)
+        reach == Reach.Reached && signedIn.health == ConnectionHealth.Unreachable ->
+            signedIn.copy(health = ConnectionHealth.Healthy, refreshFailed = false)
+        else -> signedIn
+    }
+}
+
 sealed interface UiState {
     data object Loading : UiState
 
@@ -220,6 +241,8 @@ class JellyfinViewModel(
         viewModelScope.launch {
             connection.refused.collect { (_state.value as? UiState.SignedIn)?.let { sessionRefused(it.session) } }
         }
+        // The saved server stopped answering, or began again, while the app is open: the home follows it, as binge-seerr's does.
+        viewModelScope.launch { connection.monitor.reach.collect { reach -> _state.update { it.afterReach(reach, localNetwork) } } }
     }
 
     fun onAddress(value: String) = _state.update { (it as? UiState.EnterServer)?.copy(address = value, error = null) ?: it }

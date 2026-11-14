@@ -331,13 +331,44 @@ class JellyfinViewModelTest {
         assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { it.titles != null }.health)
         jellyfin.dropped += "/Items"
         vm.refresh()
-        assertEquals(ConnectionHealth.Unreachable, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
+        // The live calls may show the problem a moment before the read that failed ends, and a read in flight swallows a new one.
+        assertEquals(ConnectionHealth.Unreachable, vm.await<UiState.SignedIn> { it.health.isProblem && !it.refreshing }.health)
         jellyfin.dropped -= "/Items"
         vm.refresh()
         assertEquals(
             ConnectionHealth.Healthy,
             vm.await<UiState.SignedIn> { it.health == ConnectionHealth.Healthy && !it.refreshing }.health,
         )
+    }
+
+    @Test
+    fun `a run of calls without an answer turns a fine home into the server's problem, and an answer clears it`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { it.titles != null }.health)
+        connection.monitor.reportSilent()
+        // One call without an answer is a blip, as binge-seerr counts it.
+        assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn>().health)
+        connection.monitor.reportSilent()
+        assertEquals(ConnectionHealth.Unreachable, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
+        connection.monitor.reportAnswered()
+        assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { !it.health.isProblem }.health)
+    }
+
+    @Test
+    fun `the live calls leave a server that answered an error, and a start's first read, to the read`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        jellyfin.status["/Items"] = 500
+        vm.refresh()
+        assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
+        // An answered call elsewhere does not clear "couldn't load", and calls without an answer do not rename it.
+        connection.monitor.reportAnswered()
+        assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { !it.refreshing }.health)
+        connection.monitor.reportSilent()
+        connection.monitor.reportSilent()
+        assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { !it.refreshing }.health)
     }
 
     @Test
