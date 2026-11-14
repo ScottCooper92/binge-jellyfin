@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.PlaystateCommand
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.activity
+import com.cooper.binge.companion.jellyfin.server.channelMappingOptions
 import com.cooper.binge.companion.jellyfin.server.createUser
 import com.cooper.binge.companion.jellyfin.server.deleteUser
 import com.cooper.binge.companion.jellyfin.server.devices
@@ -17,6 +18,7 @@ import com.cooper.binge.companion.jellyfin.server.removeUserImage
 import com.cooper.binge.companion.jellyfin.server.renameDevice
 import com.cooper.binge.companion.jellyfin.server.savePolicy
 import com.cooper.binge.companion.jellyfin.server.sendPlaystate
+import com.cooper.binge.companion.jellyfin.server.setChannelMapping
 import com.cooper.binge.companion.jellyfin.server.setUserImage
 import com.cooper.binge.companion.jellyfin.server.user
 import com.cooper.binge.companion.jellyfin.server.userImage
@@ -85,6 +87,28 @@ class DemoUsersAndDevicesTest {
             assertFalse(client.devices().any { it.id == tablet.id })
             transport.model.reset()
             assertEquals("Tablet", client.devices().first { it.id == tablet.id }.displayName)
+        }
+
+    @Test
+    fun `signing out puts the Live TV channel mappings back`() =
+        runBlocking {
+            client.setChannelMapping("p", "c3", "p3")
+            assertEquals(
+                "p3",
+                client
+                    .channelMappingOptions("p")
+                    .tunerChannels
+                    .first { it.id == "c3" }
+                    .providerChannelId,
+            )
+            transport.model.reset()
+            assertNull(
+                client
+                    .channelMappingOptions("p")
+                    .tunerChannels
+                    .first { it.id == "c3" }
+                    .providerChannelId,
+            )
         }
 
     @Test

@@ -77,6 +77,8 @@ internal class DemoConfiguration : DemoState {
     override fun reset() {
         documents.clear()
         documents.putAll(seed())
+        mappings.clear()
+        mappings.putAll(seedMappings())
     }
 
     fun quickConnectAvailable(): Boolean = documents["System/Configuration"]?.bool("QuickConnectAvailable") != false
@@ -177,7 +179,9 @@ internal class DemoConfiguration : DemoState {
             put("TotalRecordCount", CHANNELS.size)
         }
 
-    private val mappings: MutableMap<String, String> = mutableMapOf("c1" to "p1", "c2" to "p2")
+    private val mappings: MutableMap<String, String> = seedMappings()
+
+    private fun seedMappings(): MutableMap<String, String> = mutableMapOf("c1" to "p1", "c2" to "p2")
 
     private fun mappingOptions() =
         buildJsonObject {
