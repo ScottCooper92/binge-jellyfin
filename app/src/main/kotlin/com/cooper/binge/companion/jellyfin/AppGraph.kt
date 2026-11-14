@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.binge.companion.kit.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.auth.TOKEN_KEY_ALIAS
+import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.flags.FeatureFlags
 import com.cooper.binge.companion.jellyfin.flags.FirebaseRemoteFlagSource
 import com.cooper.binge.companion.jellyfin.flags.Flag
@@ -54,6 +55,8 @@ class AppGraph(
     val http: OkHttpClient by lazy {
         OkHttpClient
             .Builder()
+            // Answers the demo server's address from memory and passes every other host through.
+            .addInterceptor(DemoTransport())
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

@@ -42,6 +42,7 @@ import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.ReviewPromptOnReturnToRoot
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.chooseServer
 import com.cooper.binge.companion.jellyfin.ui.consent.ConsentGate
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
@@ -51,6 +52,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
 import com.cooper.binge.companion.jellyfin.ui.rememberAppSettingsBinding
+import com.cooper.binge.companion.jellyfin.ui.tryDemo
 import com.cooper.binge.companion.jellyfin.ui.tv.TvConsentGate
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
@@ -132,6 +134,7 @@ class MainActivity : ComponentActivity() {
                 Actions(
                     onAddress = viewModel::onAddress,
                     onConnect = viewModel::connect,
+                    onTryDemo = viewModel::tryDemo,
                     onUsername = viewModel::onUsername,
                     onPassword = viewModel::onPassword,
                     onSignIn = viewModel::signInWithPassword,
@@ -143,10 +146,7 @@ class MainActivity : ComponentActivity() {
                     onCancelSignOut = { viewModel.confirmSignOut(false) },
                     onSignOut = viewModel::signOut,
                     onDiscover = { withLocalNetwork(viewModel::discoverServers) },
-                    onChooseServer = { server ->
-                        viewModel.onAddress(server.address)
-                        viewModel.connect()
-                    },
+                    onChooseServer = viewModel::chooseServer,
                     onOpenPage = { stack = stack.open(it) },
                     onAllowLocalNetwork = {
                         if (askedLocalNetwork) {

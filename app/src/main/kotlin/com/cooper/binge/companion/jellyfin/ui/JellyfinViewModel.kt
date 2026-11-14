@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
+import com.cooper.binge.companion.jellyfin.demo.DEMO_ORIGIN
+import com.cooper.binge.companion.jellyfin.demo.DEMO_USER_NAME
+import com.cooper.binge.companion.jellyfin.demo.isDemoOrigin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
@@ -105,6 +108,18 @@ internal fun unreachableSetup(
     } else {
         SetupError.Unreachable
     }
+
+/** Picks a server found on the network: connects to it as if its address had been typed. */
+fun JellyfinViewModel.chooseServer(server: DiscoveredServer) {
+    onAddress(server.address)
+    connect()
+}
+
+/** Opens the demo server, which answers from memory and signs in as its own administrator. */
+fun JellyfinViewModel.tryDemo() {
+    onAddress(DEMO_ORIGIN)
+    connect()
+}
 
 /**
  * The user has answered the local-network prompt, or come back from the app's settings: try again whatever it was that
@@ -250,6 +265,15 @@ class JellyfinViewModel(
                 }
             if (info == null) {
                 _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.NotJellyfin) ?: it }
+            } else if (info.baseUrl.toString().isDemoOrigin()) {
+                // The demo has no account to ask for: it signs in as its own administrator, through the same calls.
+                val demo = attempt { connection.anonymous(url).authenticateByName(DEMO_USER_NAME, "") }
+                demo.onSuccess { finish(url, info, it, AnalyticsEvents.METHOD_DEMO) }
+                demo.onFailure {
+                    _state.update { s ->
+                        (s as? UiState.EnterServer)?.copy(checking = false, error = SetupError.Generic) ?: s
+                    }
+                }
             } else {
                 _state.value = UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
             }

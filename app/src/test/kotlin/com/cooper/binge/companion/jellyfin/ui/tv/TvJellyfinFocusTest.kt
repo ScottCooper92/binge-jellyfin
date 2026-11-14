@@ -84,6 +84,7 @@ class TvJellyfinFocusTest {
             onSignOut = { calls += "signOut" },
             onDiscover = { calls += "discover" },
             onChooseServer = { calls += "choose:${it.name}" },
+            onTryDemo = { calls += "demo" },
         )
 
     private val lan = "http://192.168.1.20:8096"
@@ -152,6 +153,18 @@ class TvJellyfinFocusTest {
         up()
         up()
         on(R.string.setup_connect).assertIsFocused()
+    }
+
+    @Test
+    fun `the demo is the last stop below the servers, and OK on it opens the demo`() {
+        show(UiState.EnterServer(discovered = listOf(living, cabin)))
+        down()
+        down()
+        down()
+        down()
+        on(R.string.setup_try_demo).assertIsFocused()
+        ok()
+        assertEquals("demo", calls.last())
     }
 
     @Test

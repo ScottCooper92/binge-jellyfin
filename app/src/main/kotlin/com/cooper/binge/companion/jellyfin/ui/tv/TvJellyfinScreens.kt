@@ -134,6 +134,11 @@ private fun TvServerPage(
                 loading = state.checking,
             )
             TvFoundServers(state, actions)
+            TvButton(
+                label = stringResource(R.string.setup_try_demo),
+                onClick = actions.onTryDemo,
+                style = TvButtonStyle.Text,
+            )
         },
     )
 }

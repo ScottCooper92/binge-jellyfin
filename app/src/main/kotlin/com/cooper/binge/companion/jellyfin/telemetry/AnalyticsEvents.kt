@@ -22,6 +22,7 @@ object AnalyticsEvents {
 
     const val METHOD_PASSWORD = "password"
     const val METHOD_QUICK_CONNECT = "quick_connect"
+    const val METHOD_DEMO = "demo"
 }
 
 /** A failed sign-in as a fixed reason name, so no message or address ever goes with it. */
