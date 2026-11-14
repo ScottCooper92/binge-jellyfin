@@ -13,10 +13,13 @@ import com.cooper.binge.companion.jellyfin.server.deleteUser
 import com.cooper.binge.companion.jellyfin.server.devices
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.removeDevice
+import com.cooper.binge.companion.jellyfin.server.removeUserImage
 import com.cooper.binge.companion.jellyfin.server.renameDevice
 import com.cooper.binge.companion.jellyfin.server.savePolicy
 import com.cooper.binge.companion.jellyfin.server.sendPlaystate
+import com.cooper.binge.companion.jellyfin.server.setUserImage
 import com.cooper.binge.companion.jellyfin.server.user
+import com.cooper.binge.companion.jellyfin.server.userImage
 import com.cooper.binge.companion.jellyfin.server.users
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -26,6 +29,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,6 +55,14 @@ class DemoUsersAndDevicesTest {
             assertTrue(client.user(created.id).disabled)
             client.deleteUser(created.id)
             assertFalse(client.users().any { it.id == created.id })
+        }
+
+    @Test
+    fun `a profile picture is read, set and removed on the newer route`() =
+        runBlocking {
+            assertNull(client.userImage(DEMO_USER_ID, newRoute = true))
+            client.setUserImage(DEMO_USER_ID, byteArrayOf(1, 2, 3), newRoute = true)
+            client.removeUserImage(DEMO_USER_ID, newRoute = true)
         }
 
     @Test

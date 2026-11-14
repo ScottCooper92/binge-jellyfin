@@ -28,9 +28,9 @@ internal class DemoLibraries : DemoState {
 
     private fun seed() =
         mutableListOf(
-            library("Movies", "movies", listOf("/media/movies")),
-            library("TV shows", "tvshows", listOf("/media/tv")),
-            library("Music", "music", listOf("/media/music")),
+            library("Movies", "movies", listOf("/media/movies"), seededId("Movies")),
+            library("TV shows", "tvshows", listOf("/media/tv"), seededId("TV shows")),
+            library("Music", "music", listOf("/media/music"), seededId("Music")),
         )
 
     override fun reset() {
@@ -120,15 +120,18 @@ internal class DemoLibraries : DemoState {
         return noContent
     }
 
+    private fun seededId(name: String) = UUID.nameUUIDFromBytes(name.toByteArray())
+
     private fun JsonObject.locations() = (get("Locations") as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.content }
 
     private fun library(
         name: String,
         kind: String,
         paths: List<String>,
+        itemId: UUID = UUID.randomUUID(),
     ) = buildJsonObject {
         put("Name", name)
-        put("ItemId", UUID.nameUUIDFromBytes(name.toByteArray()).toString().replace("-", ""))
+        put("ItemId", itemId.toString().replace("-", ""))
         if (kind.isNotEmpty()) put("CollectionType", kind)
         put("Locations", JsonArray(paths.map(::JsonPrimitive)))
         put("LibraryOptions", jsonObject(DEFAULT_OPTIONS))

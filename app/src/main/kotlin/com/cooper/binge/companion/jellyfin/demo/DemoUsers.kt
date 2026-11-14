@@ -59,8 +59,9 @@ internal class DemoUsers : DemoState {
             route("POST", "Users", "{}", "Policy") { call, (id) -> savePolicy(id, call.jsonBody()) },
             route("DELETE", "Users", "{}") { _, (id) -> delete(id) },
             route("GET", "Users", "{}", "Images", "Primary") { _, _ -> demoNotFound },
-            route("POST", "Users", "{}", "Images", "Primary") { _, _ -> noContent },
-            route("DELETE", "Users", "{}", "Images", "Primary") { _, _ -> noContent },
+            route("GET", "UserImage") { _, _ -> demoNotFound },
+            route("POST", "UserImage") { _, _ -> noContent },
+            route("DELETE", "UserImage") { _, _ -> noContent },
         )
 
     private fun find(id: String) = users.firstOrNull { it.string(ID).equals(id, ignoreCase = true) }
