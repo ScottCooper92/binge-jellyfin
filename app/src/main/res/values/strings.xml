@@ -1340,6 +1340,7 @@
     <string name="users_schedule_midnight">An until time of midnight means the end of this day.</string>
     <string name="users_schedule_order">Until must be later than From.</string>
 
+    <string name="this_app_detail">Preferences, feedback and more</string>
     <string name="settings_group_app">This app</string>
     <string name="settings_share_usage_data">Share usage data</string>
     <string name="settings_share_usage_data_caption">Sends which screens and actions you use</string>

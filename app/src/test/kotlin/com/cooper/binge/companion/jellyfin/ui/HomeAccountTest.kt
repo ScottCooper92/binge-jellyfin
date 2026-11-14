@@ -59,6 +59,20 @@ class HomeAccountTest {
         compose.onAllNodesWithText("Sign out").assertCountEquals(0)
     }
 
+    private fun thisAppRowOpensItsPage(admin: Boolean) {
+        var opened: ConsolePage? = null
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin), Actions(onOpenPage = { opened = it })) } }
+        scrollTo("This app")
+        compose.onNodeWithText("Preferences, feedback and more").performClick()
+        assertEquals(ConsolePage.ThisApp, opened)
+    }
+
+    @Test
+    fun `an administrator's home has a This app row that opens the page`() = thisAppRowOpensItsPage(admin = true)
+
+    @Test
+    fun `a user's home has a This app row that opens the page`() = thisAppRowOpensItsPage(admin = false)
+
     @Test
     fun `an administrator's home lists every section's pages, reached by scrolling`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions()) } }

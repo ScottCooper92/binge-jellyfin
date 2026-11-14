@@ -1336,6 +1336,7 @@
     <string name="users_schedule_midnight">La medianoche como hora final significa el final de este día.</string>
     <string name="users_schedule_order">La hora final debe ser posterior a la inicial.</string>
 
+    <string name="this_app_detail">Preferencias, comentarios y más</string>
     <string name="settings_group_app">Esta aplicación</string>
     <string name="settings_share_usage_data">Compartir datos de uso</string>
     <string name="settings_share_usage_data_caption">Envía qué pantallas y acciones usas</string>

@@ -17,6 +17,7 @@ import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
+import com.cooper.binge.companion.jellyfin.ui.ThisAppScreen
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import kotlinx.coroutines.launch
 
@@ -38,6 +39,7 @@ internal fun ConsolePageRoute(
         ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
+        ConsolePage.ThisApp -> ThisAppScreen(actions, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)

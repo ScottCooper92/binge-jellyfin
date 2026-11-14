@@ -52,7 +52,7 @@ internal fun SignedInHome(
             adminSections(state, actions)
             // What Binge can find in the library is Binge's to show; without the flag the app names no Binge.
             if (promoted) item { LibraryGroup(state, actions) }
-            if (!state.isAdministrator) homeFoot(actions)
+            if (state.isAdministrator) thisAppRow(actions) else homeFoot(actions)
         }
     }
 }
