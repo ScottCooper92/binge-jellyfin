@@ -35,6 +35,7 @@ import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
+import com.cooper.binge.companion.jellyfin.ui.ConnectionHealth
 import com.cooper.binge.companion.jellyfin.ui.SetupError
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
@@ -326,7 +327,7 @@ class TvJellyfinFocusTest {
 
     @Test
     fun `signed in lands on the account, Down reaches Sign out, and Right then OK asks first`() {
-        show(UiState.SignedIn(session = session))
+        show(UiState.SignedIn(session = session, health = ConnectionHealth.Healthy))
         compose.onNode(isFocused() and hasText("Living room")).assertIsFocused()
         down()
         focusedOn(R.string.settings_sign_out).assertIsFocused()
@@ -339,13 +340,30 @@ class TvJellyfinFocusTest {
     @Test
     fun `with Binge behind its flag on, Refresh is the row below the account and Sign out is below it`() {
         promoted = true
-        show(UiState.SignedIn(session = session, titles = 1_284))
+        show(UiState.SignedIn(session = session, health = ConnectionHealth.Healthy, titles = 1_284))
         down()
         focusedOn(R.string.settings_refresh).assertIsFocused()
         right()
         ok()
         assertEquals("refresh", calls.last())
         left()
+        down()
+        focusedOn(R.string.settings_sign_out).assertIsFocused()
+    }
+
+    /**
+     * A saved server that has not answered yet offers its way out and nothing of the server: no Playback group, no Refresh
+     * row, and the server's row says it is checking, so a start off the network does not look usable.
+     */
+    @Test
+    fun `a server that has not answered yet shows only itself and the way out`() {
+        promoted = true
+        playback = TvPlayback(PlaybackUiState.Ready(prefs, cultures), playbackActions)
+        show(UiState.SignedIn(session = session))
+        compose.onNode(isFocused() and hasText("Living room")).assertIsFocused()
+        compose.onAllNodesWithText(text(R.string.tv_checking_server)).assertCountEquals(1)
+        compose.onAllNodesWithText(text(R.string.settings_refresh)).assertCountEquals(0)
+        compose.onAllNodesWithText("English").assertCountEquals(0)
         down()
         focusedOn(R.string.settings_sign_out).assertIsFocused()
     }
@@ -370,7 +388,7 @@ class TvJellyfinFocusTest {
 
     private fun signedInWith(playbackState: PlaybackUiState) {
         playback = TvPlayback(playbackState, playbackActions)
-        show(UiState.SignedIn(session = session))
+        show(UiState.SignedIn(session = session, health = ConnectionHealth.Healthy))
     }
 
     @Test
@@ -442,13 +460,13 @@ class TvJellyfinFocusTest {
 
     @Test
     fun `a user who may not change preferences has no playback rows`() {
-        show(UiState.SignedIn(session = session))
+        show(UiState.SignedIn(session = session, health = ConnectionHealth.Healthy))
         compose.onAllNodesWithText(text(R.string.playback_title)).assertCountEquals(0)
     }
 
     @Test
     fun `the sign-out confirm opens on Cancel, so a stray OK cancels rather than signs out`() {
-        show(UiState.SignedIn(session = session, confirmingSignOut = true))
+        show(UiState.SignedIn(session = session, health = ConnectionHealth.Healthy, confirmingSignOut = true))
         compose.onNodeWithText(text(R.string.sign_out_title)).assertIsDisplayed()
         compose.onNodeWithText("Cancel").assertIsFocused()
         compose.onNode(isDialog()).performKeyInput { pressKey(Key.DirectionCenter) }
@@ -458,7 +476,7 @@ class TvJellyfinFocusTest {
 
     @Test
     fun `Back on the sign-out confirm closes it without signing out`() {
-        show(UiState.SignedIn(session = session, confirmingSignOut = true))
+        show(UiState.SignedIn(session = session, health = ConnectionHealth.Healthy, confirmingSignOut = true))
         // Back goes to the dialog's own window, which the Activity's dispatcher never sees.
         compose.runOnUiThread {
             val dialog = checkNotNull(ShadowDialog.getLatestDialog()) { "no dialog is showing" }
