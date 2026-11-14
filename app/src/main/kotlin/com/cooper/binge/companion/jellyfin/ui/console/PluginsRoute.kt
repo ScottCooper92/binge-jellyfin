@@ -1,18 +1,16 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
+import com.cooper.binge.companion.jellyfin.ui.openInBrowser
 
 /**
  * The plugins page, with a view model for each tab. A plugin or a package opens as an entry above it on the stack
@@ -91,11 +89,7 @@ internal fun PluginItemRoute(
     val settingsUrl = (state as? PluginsUiState.Ready)?.settingsUrl
     LaunchedEffect(settingsUrl) {
         if (settingsUrl != null) {
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, settingsUrl.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            } catch (_: ActivityNotFoundException) {
-                // No browser to open it with: nothing to show, and nothing was sent anywhere.
-            }
+            context.openInBrowser(settingsUrl)
             installed.settingsOpened()
         }
     }

@@ -80,8 +80,20 @@ class JellyfinViewModelTest {
             }
         }
 
+    private var sessionsEnded = 0
+
     private fun viewModel() =
-        track(JellyfinViewModel(sessions, connection, index, discover = { found }, quickConnectPollMillis = 10L, analytics = analytics))
+        track(
+            JellyfinViewModel(
+                sessions,
+                connection,
+                index,
+                discover = { found },
+                quickConnectPollMillis = 10L,
+                analytics = analytics,
+                onSessionEnded = { sessionsEnded++ },
+            ),
+        )
 
     private fun track(vm: JellyfinViewModel): JellyfinViewModel {
         val store = ViewModelStore().also { stores += it }
@@ -281,6 +293,25 @@ class JellyfinViewModelTest {
         assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
         assertEquals(1, jellyfin.hits("/Sessions/Logout"))
         assertNull(runBlocking { sessions.current() })
+        assertEquals("what was cached about the account goes with the session", 1, sessionsEnded)
+    }
+
+    @Test
+    fun `a second connect while a check is in flight is ignored, whoever asks for it`() {
+        val vm = viewModel()
+        vm.await<UiState.EnterServer>()
+        val held = jellyfin.hold("/System/Info/Public")
+        vm.onAddress(jellyfin.baseUrl)
+        vm.connect()
+        held.awaitArrival()
+        vm.connect()
+        vm.chooseServer(DiscoveredServer("cabin", "Cabin", "https://jellyfin.example.com"))
+        vm.tryDemo()
+        assertEquals(jellyfin.baseUrl, (vm.state.value as UiState.EnterServer).address)
+        held.release()
+        vm.await<UiState.SignIn>()
+        assertEquals("only the first check asked the server", 1, jellyfin.hits("/System/Info/Public"))
+        assertNull(runBlocking { sessions.current() })
     }
 
     @Test
@@ -345,6 +376,7 @@ class JellyfinViewModelTest {
         vm.refresh()
         assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
         assertNull(runBlocking { sessions.current() })
+        assertEquals(1, sessionsEnded)
     }
 
     @Test

@@ -42,6 +42,11 @@ internal fun writeSharedLog(
 
 private const val SHARED_DIR = "logs"
 
+/** Deletes the last log shared, which the share sheet left in the cache directory: it holds a server's own log lines. */
+internal fun clearSharedLogs(cacheDir: File) {
+    File(cacheDir, SHARED_DIR).deleteRecursively()
+}
+
 /** Puts one log entry on the clipboard: its text is the redacted entry, so the clipboard holds nothing the page did not show. */
 internal fun copyLogEntry(
     context: Context,

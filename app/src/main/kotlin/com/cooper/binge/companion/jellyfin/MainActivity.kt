@@ -105,6 +105,7 @@ class MainActivity : ComponentActivity() {
                         discover = graph.discovery::find,
                         localNetwork = AndroidLocalNetworkPermission(applicationContext),
                         analytics = graph.analytics,
+                        onSessionEnded = graph::clearAccountCaches,
                     )
                 }
             }

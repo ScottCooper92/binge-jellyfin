@@ -74,6 +74,13 @@ class UserPictures(
                 }.getOrNull()
         }
 
+    /** Forgets every picture, in memory and on disk: they are the signed-in account's, and stay no longer than its session. */
+    fun clear() {
+        memory.evictAll()
+        locks.clear()
+        directory.deleteRecursively()
+    }
+
     private fun save(
         file: File,
         bytes: ByteArray,

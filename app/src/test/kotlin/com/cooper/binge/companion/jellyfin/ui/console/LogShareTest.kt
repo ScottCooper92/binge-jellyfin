@@ -27,6 +27,15 @@ class LogShareTest {
     }
 
     @Test
+    fun `signing out deletes the last file shared, and is fine when there is none`() {
+        val cache = tmp.newFolder("cache")
+        writeSharedLog(java.io.File(cache, "logs"), "one.log", "a server's log lines")
+        clearSharedLogs(cache)
+        assertFalse(java.io.File(cache, "logs").exists())
+        clearSharedLogs(cache)
+    }
+
+    @Test
     fun `the last file shared is replaced`() {
         val dir = tmp.newFolder("logs")
         val old = writeSharedLog(dir, "one.log", "1")

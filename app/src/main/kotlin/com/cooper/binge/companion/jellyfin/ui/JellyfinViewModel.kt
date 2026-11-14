@@ -111,12 +111,14 @@ internal fun unreachableSetup(
 
 /** Picks a server found on the network: connects to it as if its address had been typed. */
 fun JellyfinViewModel.chooseServer(server: DiscoveredServer) {
+    if ((state.value as? UiState.EnterServer)?.checking == true) return
     onAddress(server.address)
     connect()
 }
 
 /** Opens the demo server, which answers from memory and signs in as its own administrator. */
 fun JellyfinViewModel.tryDemo() {
+    if ((state.value as? UiState.EnterServer)?.checking == true) return
     onAddress(DEMO_ORIGIN)
     connect()
 }
@@ -198,6 +200,8 @@ class JellyfinViewModel(
     private val localNetwork: LocalNetworkPermission = LocalNetworkPermission.AlwaysGranted,
     /** What the app reports about its own use, once the user has agreed; nothing by default. */
     private val analytics: Analytics = NoOpAnalytics,
+    /** Runs when the session ends, by sign-out or a refused token: what the app cached about the account goes with it. */
+    private val onSessionEnded: suspend () -> Unit = {},
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -237,6 +241,8 @@ class JellyfinViewModel(
 
     fun connect() {
         val current = _state.value as? UiState.EnterServer ?: return
+        // A check already in flight is the only one: a second would finish in either order and replace a later state.
+        if (current.checking) return
         val url = JellyfinClient.parseBaseUrl(current.address)
         if (url == null) {
             _state.value = current.copy(error = SetupError.InvalidAddress)
@@ -446,6 +452,7 @@ class JellyfinViewModel(
     private suspend fun sessionRefused(session: JellyfinSession) {
         sessions.clear()
         index.clear()
+        onSessionEnded()
         _state.value = UiState.EnterServer(address = session.baseUrl)
     }
 
@@ -461,6 +468,7 @@ class JellyfinViewModel(
             reports.signedOut()
             sessions.clear()
             index.clear()
+            onSessionEnded()
             _state.value = UiState.EnterServer(address = signedIn?.first?.baseUrl.orEmpty())
         }
     }

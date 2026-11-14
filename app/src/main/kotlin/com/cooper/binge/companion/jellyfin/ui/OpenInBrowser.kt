@@ -1,4 +1,4 @@
-package com.cooper.binge.companion.jellyfin.feedback
+package com.cooper.binge.companion.jellyfin.ui
 
 import android.content.ActivityNotFoundException
 import android.content.Context

@@ -25,7 +25,7 @@ None of it is linked to the user's identity, and none is used for advertising.
 | Practice | Answer | Why |
 |---|---|---|
 | Data is encrypted in transit | Yes | The Firebase and PostHog SDKs use HTTPS. The user's own server is not collection. |
-| You can request that data be deleted | No | Nothing collected is linked to a person. Uninstalling removes what is on the device. Signing out removes the session and index, but cached user pictures and the last shared log stay until storage is cleared. |
+| You can request that data be deleted | No | Nothing collected is linked to a person. Uninstalling removes what is on the device. Signing out removes the session, the index, the cached user pictures and the last shared log; only the random install identifier stays until storage is cleared. |
 | Committed to the Play Families policy | No | Not a children's app. |
 | Independent security review | No | |
 

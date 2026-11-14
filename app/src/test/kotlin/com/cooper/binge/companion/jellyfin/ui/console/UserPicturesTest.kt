@@ -54,6 +54,18 @@ class UserPicturesTest {
     }
 
     @Test
+    fun `clearing forgets every picture on disk and in memory, so the next read asks the server again`() =
+        runBlocking {
+            jellyfin.userImage = picture()
+            val pictures = UserPictures(connection, temporary.newFolder("pictures"))
+            assertTrue(pictures.read(user) != null)
+            val hits = jellyfin.hits("/Users/user-1/Images/Primary")
+            pictures.clear()
+            assertTrue(pictures.read(user) != null)
+            assertEquals(hits + 1, jellyfin.hits("/Users/user-1/Images/Primary"))
+        }
+
+    @Test
     fun `the user list reads picture tags and treats absent or blank tags as no picture`() =
         runBlocking {
             jellyfin.status["/Users"] = 200
