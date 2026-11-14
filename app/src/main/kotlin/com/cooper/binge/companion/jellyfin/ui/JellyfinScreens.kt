@@ -85,6 +85,10 @@ data class Actions(
     val appSettings: AppSettings = AppSettings(),
     val onShareUsageData: (Boolean) -> Unit = {},
     val onSendCrashReports: (Boolean) -> Unit = {},
+    /** An administrator's notification settings; null for anyone else, who is shown no such group. */
+    val notifications: NotificationSettings? = null,
+    val onNotificationsEnabled: (Boolean) -> Unit = {},
+    val onNotificationInterval: (Int) -> Unit = {},
 )
 
 /** Whether [page] is the one open beside this list: marked only where a pane is beside it, so never on a narrow window. */

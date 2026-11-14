@@ -223,6 +223,7 @@ dependencies {
     implementation(libs.navigation3.ui)
     implementation(libs.lifecycle.viewmodel.navigation3)
     implementation(libs.datastore.preferences)
+    implementation(libs.work.runtime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
 
@@ -232,6 +233,7 @@ dependencies {
     implementation(libs.posthog.android)
     implementation(libs.androidx.fragment)
     testImplementation(libs.junit)
+    testImplementation(libs.work.testing)
     // The design system's take-down compose rules (createTakeDownAndroidComposeRule and its wrapper).
     testImplementation(testFixtures(libs.binge.designsystem))
     testImplementation(libs.robolectric)

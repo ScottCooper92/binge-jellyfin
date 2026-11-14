@@ -136,6 +136,7 @@ internal fun ThisAppScreen(
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
             ) {
                 item { AppGroup(actions.appSettings, actions, titled = false) }
+                actions.notifications?.let { notifications -> item { NotificationsGroup(notifications, actions) } }
                 item { AboutGroup(actions) }
             }
         }

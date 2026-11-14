@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!--
@@ -10,6 +11,8 @@
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <!-- To find the device's Wi-Fi and Ethernet networks, and send the broadcast on them. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- An administrator's opt-in notifications of failed sign-ins, lockouts and server warnings. Asked for when the switch is turned on. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-feature
         android:name="android.software.leanback"
@@ -97,6 +100,18 @@
                 android:name="com.binge.companion.majors.library"
                 android:value="1" />
         </service>
+
+        <!-- WorkManager's own initialiser is removed so it starts through JellyfinApp's configuration, whose worker factory builds the poll's worker. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
         <!-- Crash reports are opt-in. Crashlytics collects from the first launch unless told not to, so this switches it off
              until the user's stored answer turns it on (telemetry/CrashReporting.kt). -->

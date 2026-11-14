@@ -237,6 +237,39 @@ class JellyfinScreenshotTest {
     @Composable
     fun thisApp() = ThisAppScreen(Actions(), onBack = {})
 
+    /** An administrator's This app page with the notifications switch off: only the switch. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun thisAppNotificationsOff() = ThisAppScreen(Actions(notifications = NotificationSettings()), onBack = {})
+
+    /** With the switch on: the cadence, and the system warnings that apply, both here. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun thisAppNotificationsOn() =
+        ThisAppScreen(
+            Actions(notifications = NotificationSettings(enabled = true, intervalMinutes = 30, blocked = true, unrestricted = false)),
+            onBack = {},
+        )
+
+    /** On, with nothing in Android's way: the switch and the cadence alone. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @Composable
+    fun thisAppNotificationsClear() = ThisAppScreen(Actions(notifications = NotificationSettings(enabled = true)), onBack = {})
+
+    /** The Check every choices, drawn in place because a frame can't capture the sheet's own window. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun notificationsInterval() =
+        Surface { IntervalChoices(NotificationSettings(enabled = true, intervalMinutes = 120), Actions(), close = {}) }
+
     /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
     @PreviewTest
     @JellyfinScreenStatePreview
