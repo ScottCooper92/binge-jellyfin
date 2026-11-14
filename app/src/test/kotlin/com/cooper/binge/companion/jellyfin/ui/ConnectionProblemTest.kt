@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
@@ -61,8 +62,22 @@ class ConnectionProblemTest {
     }
 
     @Test
-    fun `a healthy or still-checking server shows the home`() {
+    fun `a healthy server shows the home`() {
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(ConnectionHealth.Healthy), Actions()) } }
+        compose.onNodeWithContentDescription("Your account").assertExists()
+        compose.onAllNodesWithText("Try again").assertCountEquals(0)
+        compose.onAllNodesWithText("Can't reach your server").assertCountEquals(0)
+    }
+
+    /**
+     * A server that has not answered yet shows nothing of itself: the home is drawn from what was saved last time, so a start
+     * that cannot reach it would otherwise show a console that looks usable until the read times out.
+     */
+    @Test
+    fun `a server that has not answered yet shows neither the home nor a problem`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(ConnectionHealth.Checking), Actions()) } }
+        compose.onAllNodesWithText("Administration").assertCountEquals(0)
+        compose.onAllNodesWithContentDescription("Your account").assertCountEquals(0)
         compose.onAllNodesWithText("Try again").assertCountEquals(0)
         compose.onAllNodesWithText("Can't reach your server").assertCountEquals(0)
     }
