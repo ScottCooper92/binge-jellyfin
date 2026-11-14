@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.server.users
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
@@ -62,6 +63,26 @@ class UserPicturesTest {
             val hits = jellyfin.hits("/Users/user-1/Images/Primary")
             pictures.clear()
             assertTrue(pictures.read(user) != null)
+            assertEquals(hits + 1, jellyfin.hits("/Users/user-1/Images/Primary"))
+        }
+
+    @Test
+    fun `a picture still being fetched when the cache is cleared is not kept, in memory or on disk`() =
+        runBlocking {
+            jellyfin.userImage = picture()
+            val directory = temporary.newFolder("pictures")
+            val pictures = UserPictures(connection, directory)
+            val hold = jellyfin.hold("/Users/user-1/Images/Primary")
+            val fetch = async(Dispatchers.IO) { pictures.read(user) }
+            hold.awaitArrival()
+
+            pictures.clear()
+            hold.release()
+
+            assertNull(fetch.await())
+            assertTrue(directory.listFiles().orEmpty().isEmpty())
+            val hits = jellyfin.hits("/Users/user-1/Images/Primary")
+            assertNotNull(pictures.read(user))
             assertEquals(hits + 1, jellyfin.hits("/Users/user-1/Images/Primary"))
         }
 
