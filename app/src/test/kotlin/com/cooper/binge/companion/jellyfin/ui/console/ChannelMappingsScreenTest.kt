@@ -86,12 +86,18 @@ class ChannelMappingsScreenTest {
     }
 
     @Test
-    fun `typing in the search reaches the page, and a search that matches nothing says so`() {
-        val queries = mutableListOf<String>()
-        show(ChannelMappingsUiState.Ready(options, selected = "p3", query = "zzz"), ChannelMappingsActions(onSearch = { queries += it }))
-        compose.onNodeWithText("No tuner channels match").assertIsDisplayed()
-        compose.onNode(hasSetTextAction()).performTextInput("a")
-        assertTrue(queries.isNotEmpty())
+    fun `the sheet filters the tuner channels as the user types`() {
+        show(ChannelMappingsUiState.Ready(options, selected = "p3"))
+        compose.onNodeWithText("103 ITV HD").assertIsDisplayed()
+        compose.onNode(hasSetTextAction()).performTextInput("itv2")
+        compose.onNodeWithText("104 ITV2").assertIsDisplayed()
+        compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a tuner with no channels says so in the sheet`() {
+        show(ChannelMappingsUiState.Ready(options.copy(tunerChannels = emptyList()), selected = "p3"))
+        compose.onNodeWithText("Your tuners offer no channels").assertIsDisplayed()
     }
 
     @Test
@@ -122,7 +128,7 @@ class ChannelMappingsScreenTest {
         compose.setContent {
             JellyfinTheme {
                 Surface {
-                    TunerChannelChoices(
+                    TunerChannelPane(
                         ChannelMappingsUiState.Ready(options, selected = "p1"),
                         options.providerChannels.first(),
                         ChannelMappingsActions(),
@@ -140,6 +146,15 @@ class ChannelMappingsScreenTest {
         show(ChannelMappingsUiState.Ready(options))
         compose.onNodeWithText("Choose a channel to pick its tuner channel.").assertIsDisplayed()
         compose.onNodeWithText("BBC One").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w900dp-h900dp")
+    fun `beside the list the filter narrows the tuner channels`() {
+        show(ChannelMappingsUiState.Ready(options, selected = "p3"))
+        compose.onNode(hasSetTextAction()).performTextInput("itv2")
+        compose.onNodeWithText("104 ITV2").assertIsDisplayed()
+        compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
     }
 
     @Test

@@ -33,10 +33,7 @@ private val options =
             ),
     )
 
-private fun ready(
-    selected: String? = null,
-    query: String = "",
-) = ChannelMappingsUiState.Ready(options, selected, query)
+private fun ready(selected: String? = null) = ChannelMappingsUiState.Ready(options, selected)
 
 /** Channel mappings: the list across the matrix, the tuner channels in the phone's sheet and beside the list on a wide window. */
 class ChannelMappingsScreenshotTest {
@@ -63,26 +60,14 @@ class ChannelMappingsScreenshotTest {
     fun noChannels() =
         ChannelMappingsScreen(ChannelMappingsUiState.Ready(options.copy(providerChannels = emptyList())), ChannelMappingsActions())
 
-    /** The phone's sheet, as its content: the search, the channel it is paired with ticked, and one paired with another channel. */
+    /** The tuner channels as the pane draws them (the sheet's list): the filter, the channel it is paired with ticked, and one paired with another channel. */
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun tunerChannels() =
-        Surface { TunerChannelChoices(ready("p1"), options.providerChannels.first(), ChannelMappingsActions(), PaddingValues()) }
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun tunerChannelsSearched() =
-        Surface { TunerChannelChoices(ready("p3", "itv"), options.providerChannels[2], ChannelMappingsActions(), PaddingValues()) }
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun tunerChannelsNoMatch() =
-        Surface { TunerChannelChoices(ready("p3", "zzz"), options.providerChannels[2], ChannelMappingsActions(), PaddingValues()) }
+        Surface { TunerChannelPane(ready("p1"), options.providerChannels.first(), ChannelMappingsActions(), PaddingValues()) }
 
     /** From 600 dp wide: the list and the tuner channels of the open channel, side by side. */
     @PreviewTest
