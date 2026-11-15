@@ -228,7 +228,7 @@ private fun PackageContent(
                     ),
             )
         }
-        version?.changelog?.let { changelog -> item { Text(plainChangelog(changelog), style = MaterialTheme.typography.bodySmall) } }
+        version?.changelog?.let { changelog -> item { ChangelogMarkdown(changelog, MaterialTheme.typography.bodySmall) } }
         item { Outcome(state.outcomes[pkg.name]) }
         item {
             when {
@@ -395,10 +395,12 @@ internal fun VersionContent(
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        Text(
-            version.changelog?.let(::plainChangelog) ?: stringResource(R.string.catalog_no_changelog),
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        val changelog = version.changelog
+        if (changelog == null) {
+            Text(stringResource(R.string.catalog_no_changelog), style = MaterialTheme.typography.bodyMedium)
+        } else {
+            ChangelogMarkdown(changelog, MaterialTheme.typography.bodyMedium)
+        }
         BingeFilledButton(
             label = stringResource(R.string.catalog_install),
             onClick = onInstall,

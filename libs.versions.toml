@@ -51,6 +51,8 @@ fragment = "1.9.1"
 googleServices = "4.5.0"
 firebaseCrashlytics = "3.0.8"
 posthog = "3.76.0"
+# Renders a plugin changelog's Markdown. Apache-2.0, as is its parser (JetBrains markdown). The m3 module has no image loader, so nothing is fetched.
+markdownRenderer = "0.46.0"
 
 [libraries]
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutLibraries" }
@@ -101,6 +103,7 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-config = { module = "com.google.firebase:firebase-config" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 posthog-android = { module = "com.posthog:posthog-android", version.ref = "posthog" }
+markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3-android", version.ref = "markdownRenderer" }
 androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "fragment" }
 
 [plugins]

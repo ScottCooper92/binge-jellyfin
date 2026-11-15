@@ -53,6 +53,27 @@ private val history =
         ),
     )
 
+private val richChangelog =
+    """
+    ## 14.0
+
+    ![A chart](https://tracker.example/chart.png)
+
+    * **New:** export to `CSV`
+      * Includes the user's name
+      * Skips hidden libraries
+    * Fixes the report on a slow disk
+
+    > Needs Jellyfin 10.11 or later.
+
+    | Report | Speed |
+    | --- | --- |
+    | Daily | Fast |
+    | Yearly | Slow |
+
+    See the [full notes](https://github.com/example/plugin/releases/tag/14.0).
+    """.trimIndent()
+
 private val catalogPackages =
     listOf(
         CatalogPackage(
@@ -183,6 +204,18 @@ class PluginsScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun versionSheet() = Surface { VersionContent(history, history.versions[1], canInstall = true) {} }
+
+    /**
+     * A changelog that uses most of Markdown: headings, nested lists, a table, a quote, code and a link. Its image draws nothing, as the
+     * renderer has no loader, so nothing is fetched.
+     */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun versionRichChangelog() =
+        Surface { VersionContent(history, history.versions[0].copy(changelog = richChangelog), canInstall = true) {} }
 
     /** The confirm before an older version goes over a newer one. */
     @PreviewTest

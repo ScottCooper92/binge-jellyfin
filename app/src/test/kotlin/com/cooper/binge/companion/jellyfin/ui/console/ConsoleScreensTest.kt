@@ -860,7 +860,8 @@ class ConsoleScreensTest {
         compose.setContent { JellyfinTheme { PackageScreen(state, shown, actions, onBack = {}) } }
         compose.onNodeWithText("Shows who watched what.").assertExists()
         compose.onNodeWithText("13.0.0.0 · Jellyfin Stable").assertExists()
-        compose.onNodeWithText("Fixes a thing.").assertExists()
+        // The changelog is Markdown, parsed off the main thread, so it appears a moment after the page.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Fixes a thing.").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Install").performClick()
         assertEquals(listOf("install Playback Reporting"), calls)
         state = state.copy(installing = mapOf("Playback Reporting" to null))
@@ -904,7 +905,8 @@ class ConsoleScreensTest {
         // The older version asks first, and Cancel installs nothing.
         compose.onNodeWithText("12.0.0.0", substring = true).performScrollTo()
         compose.onNodeWithText("12.0.0.0", substring = true).performClick()
-        compose.onNodeWithText("• Older fix").assertExists()
+        // The Markdown is parsed off the main thread, so it appears a moment after the sheet.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Older fix").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Install").performClick()
         compose.onNodeWithText("Install version 12.0.0.0?").assertExists()
         compose.onNodeWithText("Cancel").performClick()
