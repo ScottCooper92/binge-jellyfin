@@ -32,6 +32,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
+import com.cooper.binge.companion.jellyfin.server.ImageSlot
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
@@ -55,6 +56,7 @@ data class LibraryActions(
     val onMove: (ProviderGroup, String, Int) -> Unit = { _, _, _ -> },
     val onFetcher: (FetcherKind, type: String, name: String, enabled: Boolean) -> Unit = { _, _, _, _ -> },
     val onMoveFetcher: (FetcherKind, type: String, name: String, by: Int) -> Unit = { _, _, _, _ -> },
+    val onImage: (type: String, ImageSlot) -> Unit = { _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},

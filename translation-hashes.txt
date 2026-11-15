@@ -446,7 +446,13 @@ app:library_folder_title  5c71b8cd7822
 app:library_folder_type  e502b8b27275
 app:library_folder_up  ef9a7ae0b5be
 app:library_folders  c4d6bb200f4c
+app:library_image_detail  fdd4c4c0a856
 app:library_image_fetchers  08e3feaa02d2
+app:library_image_limit  865fb02833a3
+app:library_image_min_width  a72eab8a2304
+app:library_image_none  5569a4e0a4ce
+app:library_image_options  dfb0ff4a8b9a
+app:library_image_px  2054e60c6123
 app:library_images  36262939f5fc
 app:library_kind_books  9da7f76bc81d
 app:library_kind_home_videos  662cfdd6e349
