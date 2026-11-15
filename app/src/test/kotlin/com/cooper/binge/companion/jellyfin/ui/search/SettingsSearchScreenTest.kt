@@ -16,6 +16,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,7 +32,7 @@ class SettingsSearchScreenTest {
     private fun show(admin: Boolean) {
         val account = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":$admin}""").jsonObject)
         compose.setContent {
-            JellyfinTheme { SettingsSearchScreen(JellyfinServerProfile.from("10.11.6"), account, { opened = it }, {}) }
+            JellyfinTheme { SettingsSearchScreen(JellyfinServerProfile.from("10.11.6"), account, { opened = it.page }, {}) }
         }
     }
 
@@ -56,5 +57,34 @@ class SettingsSearchScreenTest {
         compose.onNode(hasSetTextAction()).performTextInput("hardware")
         compose.onAllNodesWithText("Hardware acceleration").assertCountEquals(0)
         compose.onNodeWithText("No settings found").assertExists()
+    }
+
+    @Test
+    fun `before a query it lists what was opened last, and Clear asks to forget them`() {
+        var cleared = false
+        compose.setContent {
+            JellyfinTheme {
+                SettingsSearchScreen(
+                    JellyfinServerProfile.from("10.11.6"),
+                    JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":true}""").jsonObject),
+                    { opened = it.page },
+                    {},
+                    recent = settingsIndex.filter { it.page == ConsolePage.Transcoding && it.pageLabel == null },
+                    onClearRecent = { cleared = true },
+                )
+            }
+        }
+        compose.onNodeWithText("Recent search results").assertExists()
+        compose.onNodeWithText("Type the name of a setting, or what it does.").assertDoesNotExist()
+        compose.onNodeWithText("Playback and transcoding").performClick()
+        assertEquals(ConsolePage.Transcoding, opened)
+        compose.onNodeWithText("Clear").performClick()
+        assertTrue(cleared)
+    }
+
+    @Test
+    fun `an entry's id names its page and its label, not a number`() {
+        val entry = settingsIndex.first { it.page == ConsolePage.Transcoding && it.pageLabel == null }
+        assertEquals("Transcoding:transcoding_title", entry.id(compose.activity.resources))
     }
 }

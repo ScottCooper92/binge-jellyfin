@@ -13,8 +13,10 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
+import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
 import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
+import com.cooper.binge.companion.jellyfin.ui.search.settingsIndex
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */
 class JellyfinScreenshotTest {
@@ -301,6 +303,24 @@ class JellyfinScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun searchNoMatch() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "zzz")
+
+    /** The search before a query, with what the user opened last and its Clear. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchRecent() =
+        SettingsSearchScreen(
+            previewSignedInAdmin.profile,
+            previewSignedInAdmin.account,
+            {},
+            {},
+            recent =
+                settingsIndex
+                    .filter { it.page in listOf(ConsolePage.Network, ConsolePage.Transcoding, ConsolePage.Playback) }
+                    .distinctBy { it.page },
+        )
 
     /** The This app page with the tip jar priced, so its row shows. */
     @PreviewTest

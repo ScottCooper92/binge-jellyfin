@@ -15,11 +15,13 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,6 +32,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -38,10 +43,12 @@ import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
+import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import kotlinx.coroutines.launch
 import com.binge.designsystem.R as DesR
 
 /** The search field at the top of the home: it looks like Android's Settings one and opens the search page when tapped. */
@@ -66,16 +73,51 @@ internal fun SettingsSearchEntry(onClick: () -> Unit) {
 }
 
 /**
+ * The search route: the page, with the entries the user last opened from it, kept on this device ([RecentSearches]). Opening a result
+ * remembers it before the page opens.
+ */
+@Composable
+internal fun SettingsSearchRoute(
+    graph: AppGraph,
+    profile: JellyfinServerProfile,
+    account: JellyfinAccount,
+    open: (ConsolePage) -> Unit,
+    onBack: () -> Unit,
+) {
+    val resources = LocalContext.current.resources
+    val scope = rememberCoroutineScope()
+    val ids by graph.recentSearches.ids.collectAsStateWithLifecycle(emptyList())
+    val recent =
+        remember(ids, profile, account) {
+            val byId = settingsIndex.filter { it.available(profile, account) }.associateBy { it.id(resources) }
+            ids.mapNotNull(byId::get)
+        }
+    SettingsSearchScreen(
+        profile,
+        account,
+        { entry ->
+            scope.launch { graph.recentSearches.remember(entry.id(resources)) }
+            open(entry.page)
+        },
+        onBack,
+        recent = recent,
+        onClearRecent = { scope.launch { graph.recentSearches.clear() } },
+    )
+}
+
+/**
  * The search page: a field, focused as it opens, and the settings the query finds among those this user may open, each with where it is.
- * A result opens its page through [open].
+ * With nothing typed it shows the [recent] results, with Clear, or says what to type when there are none. A result opens through [open].
  */
 @Composable
 internal fun SettingsSearchScreen(
     profile: JellyfinServerProfile,
     account: JellyfinAccount,
-    open: (ConsolePage) -> Unit,
+    open: (SettingEntry) -> Unit,
     onBack: () -> Unit,
     initialQuery: String = "",
+    recent: List<SettingEntry> = emptyList(),
+    onClearRecent: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var query by rememberSaveable { mutableStateOf(initialQuery) }
@@ -101,6 +143,7 @@ internal fun SettingsSearchScreen(
                     focusRequester = focus,
                 )
                 when {
+                    query.isBlank() && recent.isNotEmpty() -> Recent(recent, open, onClearRecent)
                     query.isBlank() ->
                         EmptyScreen(
                             stringResource(R.string.search_prompt),
@@ -119,27 +162,60 @@ internal fun SettingsSearchScreen(
     }
 }
 
+/** "Recent search results" and its Clear, over the entries the user last opened. */
+@Composable
+private fun Recent(
+    entries: List<SettingEntry>,
+    open: (SettingEntry) -> Unit,
+    onClear: () -> Unit,
+) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.search_recent),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                TextButton(onClick = onClear) { Text(stringResource(R.string.search_recent_clear)) }
+            }
+        }
+        item { Entries(entries, open) }
+    }
+}
+
 @Composable
 private fun Results(
     found: List<SettingEntry>,
-    open: (ConsolePage) -> Unit,
+    open: (SettingEntry) -> Unit,
 ) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        item {
-            ItemGroup(
-                title = null,
-                rows =
-                    found.map { entry ->
-                        ListItem(
-                            icon = entry.icon,
-                            label = stringResource(entry.label),
-                            detail = entry.path(),
-                            onClick = { open(entry.page) },
-                        )
-                    },
-            )
-        }
+        item { Entries(found, open) }
     }
+}
+
+@Composable
+private fun Entries(
+    entries: List<SettingEntry>,
+    open: (SettingEntry) -> Unit,
+) {
+    ItemGroup(
+        title = null,
+        rows =
+            entries.map { entry ->
+                ListItem(
+                    icon = entry.icon,
+                    label = stringResource(entry.label),
+                    detail = entry.path(),
+                    onClick = { open(entry) },
+                )
+            },
+    )
 }
 
 /** Where an entry is: its section, and for a setting its page too. */
