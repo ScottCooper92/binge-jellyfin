@@ -212,7 +212,7 @@ class JellyfinViewModelTest {
         val picked = vm.await<UiState.SignIn> { it.username == "Mum" }
         assertFalse(picked.busy)
         assertEquals("", picked.password)
-        assertTrue(jellyfin.requests.none { it.path == "/Users/AuthenticateByName" })
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/AuthenticateByName" })
 
         vm.pickPublicUser(users.first { it.name == "Kid" })
         vm.await<UiState.SignedIn> { it.titles != null }

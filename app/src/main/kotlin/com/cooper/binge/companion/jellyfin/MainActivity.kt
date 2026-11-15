@@ -51,6 +51,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
+import com.cooper.binge.companion.jellyfin.ui.pickPublicUser
 import com.cooper.binge.companion.jellyfin.ui.rememberAppSettingsBinding
 import com.cooper.binge.companion.jellyfin.ui.rememberNotificationBinding
 import com.cooper.binge.companion.jellyfin.ui.tryDemo
