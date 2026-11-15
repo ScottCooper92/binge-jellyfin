@@ -11,6 +11,7 @@
     <string name="setup_try_demo">Probar la demo</string>
     <string name="setup_change">Cambiar</string>
     <string name="setup_sign_in_title">Iniciar sesión</string>
+    <string name="setup_pick_user">O elige tu cuenta</string>
     <string name="setup_username">Nombre de usuario</string>
     <string name="setup_password">Contraseña</string>
     <string name="setup_sign_in">Iniciar sesión</string>
@@ -752,6 +753,27 @@
         <item quantity="many">Se detiene tras %1$d minutos</item>
         <item quantity="other">Se detiene tras %1$d minutos</item>
     </plurals>
+    <string name="nfo_title">NFO</string>
+    <string name="console_nfo_detail">Archivos de metadatos de Kodi</string>
+    <string name="nfo_body">Lo que el servidor escribe en los archivos NFO, los de metadatos que lee Kodi. Cada biblioteca activa NFO en sus propias opciones. Un cambio se guarda al hacerlo.</string>
+    <string name="nfo_user">Usuario del estado de visionado</string>
+    <string name="nfo_user_none">Ninguno</string>
+    <string name="nfo_user_other">Otro usuario</string>
+    <string name="nfo_users_failed">No se pudieron cargar los usuarios.</string>
+    <string name="nfo_date_format">Formato de la fecha de estreno</string>
+    <string name="nfo_date_format_hint">Por ejemplo yyyy-MM-dd</string>
+    <string name="nfo_image_paths">Guardar rutas de imágenes</string>
+    <string name="nfo_image_paths_detail">Escribe la ruta de cada imagen en el archivo NFO.</string>
+    <string name="nfo_path_substitution">Sustituir rutas</string>
+    <string name="nfo_path_substitution_detail">Aplica las sustituciones de rutas del servidor a las rutas de los archivos NFO.</string>
+    <string name="nfo_extra_thumbs">Copiar miniaturas como extrathumbs</string>
+    <string name="nfo_extra_thumbs_detail">Guarda también cada miniatura como extrathumb, para temas antiguos de Kodi.</string>
+    <string name="kw_nfo">kodi xbmc metadatos nfo archivos locales</string>
+    <string name="kw_nfo_user">kodi nfo visto reproducido estado usuario</string>
+    <string name="kw_nfo_date">kodi nfo fecha de estreno formato</string>
+    <string name="kw_nfo_images">kodi nfo carátulas imágenes rutas</string>
+    <string name="kw_nfo_paths">kodi nfo sustitución de rutas</string>
+    <string name="kw_nfo_thumbs">kodi nfo extrathumbs miniaturas duplicar</string>
     <string name="trickplay_title">Trickplay</string>
     <string name="console_trickplay_detail">Miniaturas al buscar</string>
     <string name="console_transcoding_detail">Aceleración por hardware, reanudación y streaming</string>

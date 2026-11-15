@@ -19,6 +19,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.LocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.PublicUser
 import com.cooper.binge.companion.jellyfin.server.Reach
 import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
@@ -27,6 +28,7 @@ import com.cooper.binge.companion.jellyfin.server.localNetworkHostOrNull
 import com.cooper.binge.companion.jellyfin.server.logout
 import com.cooper.binge.companion.jellyfin.server.me
 import com.cooper.binge.companion.jellyfin.server.publicInfo
+import com.cooper.binge.companion.jellyfin.server.publicUsers
 import com.cooper.binge.companion.jellyfin.server.quickConnectAuthenticated
 import com.cooper.binge.companion.jellyfin.server.quickConnectEnabled
 import com.cooper.binge.companion.jellyfin.server.quickConnectInitiate
@@ -117,6 +119,31 @@ fun JellyfinViewModel.chooseServer(server: DiscoveredServer) {
     connect()
 }
 
+/** Picks a listed account: its name fills the username, and one with no password signs in straight away. */
+fun JellyfinViewModel.pickPublicUser(user: PublicUser) {
+    val current = state.value as? UiState.SignIn ?: return
+    if (current.busy) return
+    onUsername(user.name)
+    onPassword("")
+    if (!user.hasPassword) signInWithPassword()
+}
+
+/** Reads the server's public users once, for the sign-in step. A failure or an empty list leaves the step as it is. */
+private fun CoroutineScope.loadPublicUsers(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    url: HttpUrl,
+    base: String,
+) {
+    launch {
+        attempt { connection.anonymous(url).publicUsers() }
+            .onSuccess { users ->
+                // Only for the step it was asked for: the user may have changed server while it was in flight.
+                state.update { (it as? UiState.SignIn)?.takeIf { s -> s.baseUrl == base }?.copy(publicUsers = users) ?: it }
+            }.onFailure { Log.i("JellyfinSetup", "The server's public users could not be read", it) }
+    }
+}
+
 /** Opens the demo server, which answers from memory and signs in as its own administrator. */
 fun JellyfinViewModel.tryDemo() {
     if ((state.value as? UiState.EnterServer)?.checking == true) return
@@ -184,6 +211,8 @@ sealed interface UiState {
         val quickConnectError: SetupError? = null,
         /** A Quick Connect code is being asked for, so a retry shows progress rather than the last failure. */
         val gettingCode: Boolean = false,
+        /** The accounts the server lists on its login screen. Empty when it lists none or could not be asked: nothing is shown then. */
+        val publicUsers: List<PublicUser> = emptyList(),
     ) : UiState {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
     }
@@ -306,7 +335,9 @@ class JellyfinViewModel(
                     }
                 }
             } else {
-                _state.value = UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
+                val base = info.baseUrl.toString().trimEnd('/')
+                _state.value = UiState.SignIn(baseUrl = base, server = info)
+                viewModelScope.loadPublicUsers(connection, _state, info.baseUrl, base)
             }
         }
     }
