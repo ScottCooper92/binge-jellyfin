@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.BatteryAlert
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Dashboard
@@ -259,24 +258,6 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_group_app,
             R.string.settings_group_app,
             R.string.kw_notifications,
-            shown = { _, account -> account.isAdministrator },
-        ),
-        setting(
-            ConsolePage.ThisApp,
-            R.string.notifications_interval,
-            Icons.Outlined.Notifications,
-            R.string.settings_group_app,
-            R.string.settings_group_app,
-            R.string.kw_notifications,
-            shown = { _, account -> account.isAdministrator },
-        ),
-        setting(
-            ConsolePage.ThisApp,
-            R.string.notifications_battery,
-            Icons.Outlined.BatteryAlert,
-            R.string.settings_group_app,
-            R.string.settings_group_app,
-            R.string.kw_battery,
             shown = { _, account -> account.isAdministrator },
         ),
         page(ConsolePage.Licences, R.string.licences_title, Icons.Outlined.Description, R.string.settings_group_app),
