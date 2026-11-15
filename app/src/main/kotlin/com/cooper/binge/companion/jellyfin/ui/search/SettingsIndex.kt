@@ -144,6 +144,14 @@ internal val settingsIndex: List<SettingEntry> =
         page(ConsolePage.Server, R.string.server_title, Icons.Outlined.SettingsApplications, R.string.advanced_title, R.string.kw_restart),
         // Settings on them.
         setting(
+            ConsolePage.Libraries,
+            R.string.library_image_limits,
+            Icons.Outlined.Image,
+            R.string.settings_server,
+            R.string.libraries_title,
+            R.string.kw_image_limits,
+        ),
+        setting(
             ConsolePage.ServerSettings,
             R.string.server_settings_name,
             Icons.Outlined.Tune,
