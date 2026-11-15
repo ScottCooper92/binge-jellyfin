@@ -166,6 +166,9 @@ fun PackageScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when {
+                // The bare row skeleton, with no geometry test (#514): a package opens from the loaded catalog, so this shows only
+                // after the app is restored with the page open. The settled page starts with the package's overview, a text of
+                // unknown length, so no skeleton can reserve where its first group sits.
                 state is CatalogUiState.Loading -> PluginsLoading(inner)
                 state is CatalogUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
                 ready != null && pkg != null -> PackageContent(pkg, ready, actions, inner, listState, inlineInstall = false)
