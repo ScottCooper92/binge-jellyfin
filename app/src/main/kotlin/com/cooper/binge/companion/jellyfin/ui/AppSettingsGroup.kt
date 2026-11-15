@@ -42,6 +42,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsoleMessage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.TipResults
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheet
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -77,6 +78,7 @@ internal fun AppGroup(
                     label = stringResource(R.string.settings_report_bug),
                     detail = stringResource(R.string.settings_report_bug_caption),
                     onClick = { context.openInBrowser(installBugReportUrl()) },
+                    key = SettingRows.THIS_APP_REPORT_BUG,
                 ),
                 ListItem(
                     icon = Icons.Outlined.BarChart,
@@ -84,6 +86,7 @@ internal fun AppGroup(
                     detail = stringResource(R.string.settings_share_usage_data_caption),
                     toggled = settings.shareUsageData,
                     onClick = { actions.onShareUsageData(!settings.shareUsageData) },
+                    key = SettingRows.THIS_APP_USAGE_DATA,
                 ),
                 ListItem(
                     icon = Icons.Outlined.Healing,
@@ -91,6 +94,7 @@ internal fun AppGroup(
                     detail = stringResource(R.string.settings_send_crash_reports_caption),
                     toggled = settings.sendCrashReports,
                     onClick = { actions.onSendCrashReports(!settings.sendCrashReports) },
+                    key = SettingRows.THIS_APP_CRASH_REPORTS,
                 ),
                 // The tip jar's row: only once Play has priced every step (see `TipUiState.Ready`).
                 onOpenTip?.let {

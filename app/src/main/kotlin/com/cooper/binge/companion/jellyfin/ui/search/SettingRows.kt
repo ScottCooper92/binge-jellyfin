@@ -16,6 +16,12 @@ internal object SettingRows {
     val NETWORK_HTTPS_PORT = network("HttpsPort")
 
     const val TRANSCODING_ACCELERATION = "transcoding.acceleration"
+    const val ADVANCED_CACHE = "advanced.cache"
+    const val LOGS_RETENTION = "logs.retention"
+    const val THIS_APP_USAGE_DATA = "this-app.usage-data"
+    const val THIS_APP_CRASH_REPORTS = "this-app.crash-reports"
+    const val THIS_APP_REPORT_BUG = "this-app.report-bug"
+    const val THIS_APP_NOTIFICATIONS = "this-app.notifications"
     const val SERVER_NAME = "server.name"
     const val SERVER_QUICK_CONNECT = "server.quick-connect"
 }
