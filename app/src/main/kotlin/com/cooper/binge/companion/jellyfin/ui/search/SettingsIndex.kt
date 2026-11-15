@@ -327,8 +327,22 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.kw_proxy,
             row = SettingRows.network(NETWORK_BASE_URL),
         ),
-        setting(ConsolePage.Advanced, R.string.advanced_cache, Icons.Outlined.Build, R.string.advanced_title, R.string.advanced_title),
-        setting(ConsolePage.Logs, R.string.logs_retention_title, Icons.Outlined.Description, R.string.advanced_title, R.string.logs_title),
+        setting(
+            ConsolePage.Advanced,
+            R.string.advanced_cache,
+            Icons.Outlined.Build,
+            R.string.advanced_title,
+            R.string.advanced_title,
+            row = SettingRows.ADVANCED_CACHE,
+        ),
+        setting(
+            ConsolePage.Logs,
+            R.string.logs_retention_title,
+            Icons.Outlined.Description,
+            R.string.advanced_title,
+            R.string.logs_title,
+            row = SettingRows.LOGS_RETENTION,
+        ),
         setting(ConsolePage.Users, R.string.users_remote_access, Icons.Outlined.Group, R.string.settings_server, R.string.users_title),
         setting(ConsolePage.Users, R.string.users_downloading, Icons.Outlined.Group, R.string.settings_server, R.string.users_title),
         // This app.
@@ -340,6 +354,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_group_app,
             R.string.settings_group_app,
             R.string.kw_privacy,
+            row = SettingRows.THIS_APP_USAGE_DATA,
         ),
         setting(
             ConsolePage.ThisApp,
@@ -348,6 +363,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_group_app,
             R.string.settings_group_app,
             R.string.kw_privacy,
+            row = SettingRows.THIS_APP_CRASH_REPORTS,
         ),
         setting(
             ConsolePage.ThisApp,
@@ -356,6 +372,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_group_app,
             R.string.settings_group_app,
             R.string.kw_feedback,
+            row = SettingRows.THIS_APP_REPORT_BUG,
         ),
         setting(
             ConsolePage.ThisApp,
@@ -365,6 +382,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_group_app,
             R.string.kw_notifications,
             shown = { _, account -> account.isAdministrator },
+            row = SettingRows.THIS_APP_NOTIFICATIONS,
         ),
         page(ConsolePage.Licences, R.string.licences_title, Icons.Outlined.Description, R.string.settings_group_app),
     )
