@@ -4,17 +4,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Extension
+import androidx.compose.material.icons.outlined.PhotoSizeSelectLarge
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingeAdaptiveSheet
+import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.FetcherType
+import com.cooper.binge.companion.jellyfin.server.ImageSlot
 import com.cooper.binge.companion.jellyfin.server.fetchers
+import com.cooper.binge.companion.jellyfin.server.imageOptions
 import com.binge.designsystem.R as DesR
 
 /** The words for a kind of fetcher. */
@@ -75,9 +82,90 @@ internal fun FetchersPage(
                         },
                 )
             }
+            if (kind == FetcherKind.Images) ImageOptionsGroup(type, state, actions)
         }
     }
 }
+
+/** A type's image types, each with how many images are kept and the narrowest accepted, opening the sheet that sets them. */
+@Composable
+private fun ImageOptionsGroup(
+    type: FetcherType,
+    state: LibraryUiState.Ready,
+    actions: LibraryActions,
+) {
+    val slots = state.options.imageOptions(type)
+    if (slots.isNotEmpty()) {
+        ItemGroup(
+            title = stringResource(R.string.library_image_options, typeLabel(type.type)),
+            rows =
+                slots.map { slot ->
+                    ListItem(
+                        icon = Icons.Outlined.PhotoSizeSelectLarge,
+                        label = slot.type,
+                        detail = slot.detail(),
+                        onClick = { actions.onAsk(LibraryDialog.ImageOptions(type.type, slot.type)) },
+                    )
+                },
+        )
+    }
+}
+
+@Composable
+private fun ImageSlot.detail(): String =
+    if (limit == 0) {
+        stringResource(R.string.library_image_none)
+    } else {
+        pluralStringResource(R.plurals.library_image_detail, limit, limit, minWidth)
+    }
+
+/** The sheet for one image type of an item type: how many images to keep, and the narrowest width accepted. Each saves as it lands. */
+@Composable
+internal fun ImageOptionsSheet(
+    dialog: LibraryDialog.ImageOptions,
+    state: LibraryUiState.Ready,
+    actions: LibraryActions,
+) {
+    val type = state.available.types.firstOrNull { it.type == dialog.type }
+    val slot = type?.let { state.options.imageOptions(it) }?.firstOrNull { it.type == dialog.image }
+    if (slot != null) {
+        BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = { actions.onAsk(null) }) {
+            ImageOptionsContent(slot) { actions.onImage(dialog.type, it) }
+        }
+    }
+}
+
+/** The sheet's body, which draws without a window for a frame. */
+@Composable
+internal fun ImageOptionsContent(
+    slot: ImageSlot,
+    onSave: (ImageSlot) -> Unit,
+) {
+    val resources = LocalContext.current.resources
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+        NumberSliderContent(
+            title = stringResource(R.string.library_image_limit, slot.type),
+            value = slot.limit,
+            range = 0..IMAGE_LIMIT_MAX,
+            format = { it.toString() },
+            openEndLabel = null,
+            onSave = { onSave(slot.copy(limit = it ?: slot.limit)) },
+        )
+        NumberSliderContent(
+            title = stringResource(R.string.library_image_min_width, slot.type),
+            value = slot.minWidth,
+            range = 0..IMAGE_WIDTH_MAX,
+            format = { resources.getString(R.string.library_image_px, it) },
+            openEndLabel = null,
+            onSave = { onSave(slot.copy(minWidth = it ?: slot.minWidth)) },
+            step = IMAGE_WIDTH_STEP,
+        )
+    }
+}
+
+private const val IMAGE_LIMIT_MAX = 20
+private const val IMAGE_WIDTH_MAX = 4000
+private const val IMAGE_WIDTH_STEP = 20
 
 /** One fetcher of one type: whether the library uses it, and its place in that type's order. */
 @Composable
