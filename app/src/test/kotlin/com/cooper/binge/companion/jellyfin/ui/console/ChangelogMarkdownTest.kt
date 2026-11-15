@@ -37,4 +37,13 @@ class ChangelogMarkdownTest {
         object : UriHandler {
             override fun openUri(uri: String) = onOpen(uri)
         }
+
+    @Test
+    fun `an image becomes its alt text, and a link is left alone`() {
+        assertEquals("A chart", withoutImages("![A chart](https://tracker.example/chart.png)"))
+        assertEquals("", withoutImages("![](https://tracker.example/pixel.png)"))
+        assertEquals("see A chart here", withoutImages("see ![A chart][c] here\n\n[c]: https://x.example/c.png".substringBefore("\n\n")))
+        assertEquals("a [link](https://x.example) and logo", withoutImages("a [link](https://x.example) and ![logo](u)"))
+        assertEquals("no images, just **text**", withoutImages("no images, just **text**"))
+    }
 }
