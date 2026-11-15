@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
 private val config: JsonObject =
@@ -34,13 +35,12 @@ class NfoScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun userChosen() = NfoScreen(ready(JsonObject(config + ("UserId" to kotlinx.serialization.json.JsonPrimitive("user-1")))), NfoActions())
+    fun userChosen() = NfoScreen(ready(JsonObject(config + ("UserId" to JsonPrimitive("user-1")))), NfoActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun usersUnreadable() =
-        NfoScreen(NfoUiState.Ready(JsonObject(config + ("UserId" to kotlinx.serialization.json.JsonPrimitive("user-9")))), NfoActions())
+    fun usersUnreadable() = NfoScreen(NfoUiState.Ready(JsonObject(config + ("UserId" to JsonPrimitive("user-9")))), NfoActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

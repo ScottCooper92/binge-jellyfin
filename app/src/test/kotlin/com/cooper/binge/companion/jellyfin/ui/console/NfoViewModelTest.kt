@@ -127,6 +127,32 @@ class NfoViewModelTest {
     }
 
     @Test
+    fun `the picker's retry reads only the users, so a change still waiting to be sent is kept and sent`() {
+        jellyfin.status["/Users"] = 500
+        val vm = made(NfoViewModel(connection))
+        assertNull(vm.ready().users)
+        vm.set(NFO_PATH_SUBSTITUTION, JsonPrimitive(false))
+        jellyfin.status.remove("/Users")
+        vm.loadUsers()
+        val ready = vm.ready { it.users != null }
+        assertEquals(listOf("Claude", "Sam"), ready.users?.map { it.name })
+        assertEquals(
+            false,
+            ready.config
+                .getValue(NFO_PATH_SUBSTITUTION)
+                .jsonPrimitive.boolean,
+        )
+        saved(1)
+        assertEquals(
+            false,
+            jellyfin
+                .lastBody(PATH)
+                .getValue(NFO_PATH_SUBSTITUTION)
+                .jsonPrimitive.boolean,
+        )
+    }
+
+    @Test
     fun `a configuration the server will not give is a failure the page can retry`() {
         jellyfin.nfoConfiguration = ""
         val vm = made(NfoViewModel(connection))

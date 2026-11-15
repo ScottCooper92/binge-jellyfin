@@ -23,6 +23,7 @@ internal fun NfoRoute(
             onUser = nfo::setUser,
             onDateFormat = nfo::setDateFormat,
             onSheet = nfo::sheet,
+            onLoadUsers = nfo::loadUsers,
             onRetry = nfo::load,
             onRetrySave = nfo::retrySave,
             onBack = onBack,

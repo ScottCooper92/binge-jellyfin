@@ -39,6 +39,8 @@ sealed interface NfoUiState {
     data class Ready(
         val config: JsonObject,
         val users: List<ServerUser>? = null,
+        /** True while the picker's own retry reads the users again; the page and its saves are left alone. */
+        val usersLoading: Boolean = false,
         val sheet: NfoSheet? = null,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
@@ -99,6 +101,20 @@ class NfoViewModel(
                         },
                         onFailure = { NfoUiState.Failed(it.consoleFailure()) },
                     )
+        }
+    }
+
+    /**
+     * Reads the users again after a failure, for the picker's Retry. It touches nothing else: the page is not reloaded and
+     * [ConfigurationSaves] is not told, so a change still waiting to be sent, or one that failed, stays as it is.
+     */
+    fun loadUsers() {
+        val ready = _state.value as? NfoUiState.Ready ?: return
+        if (ready.usersLoading || ready.users != null) return
+        update { copy(usersLoading = true) }
+        viewModelScope.launch {
+            val users = connection.consoleCall(TAG) { _, client -> client.users() }.getOrNull()
+            update { copy(users = users ?: this.users, usersLoading = false) }
         }
     }
 

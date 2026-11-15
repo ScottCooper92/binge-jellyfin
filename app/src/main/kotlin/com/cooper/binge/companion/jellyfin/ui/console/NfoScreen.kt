@@ -39,6 +39,7 @@ import com.cooper.binge.companion.jellyfin.server.NFO_EXTRA_THUMBS
 import com.cooper.binge.companion.jellyfin.server.NFO_PATH_SUBSTITUTION
 import com.cooper.binge.companion.jellyfin.server.NFO_RELEASE_DATE_FORMAT
 import com.cooper.binge.companion.jellyfin.server.NFO_SAVE_IMAGE_PATHS
+import com.cooper.binge.companion.jellyfin.server.NFO_USER_ID
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.string
 import kotlinx.serialization.json.JsonElement
@@ -52,6 +53,7 @@ data class NfoActions(
     val onUser: (String?) -> Unit = {},
     val onDateFormat: (String) -> Unit = {},
     val onSheet: (NfoSheet?) -> Unit = {},
+    val onLoadUsers: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
@@ -110,7 +112,7 @@ private fun NfoBody(
             modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 listOfNotNull(
-                    userRow(state, actions),
+                    userRow(state, actions).takeIf { NFO_USER_ID in config },
                     config.string(NFO_RELEASE_DATE_FORMAT)?.let { format ->
                         ListItem(
                             icon = Icons.Outlined.CalendarMonth,
@@ -208,11 +210,15 @@ private fun NfoUserSheet(
     val users = state.users
     val choices: BingeChoiceList<String> =
         if (users == null) {
-            BingeChoiceList.Failed(
-                message = stringResource(R.string.nfo_users_failed),
-                retryLabel = stringResource(R.string.console_retry),
-                onRetry = actions.onRetry,
-            )
+            if (state.usersLoading) {
+                BingeChoiceList.Loading
+            } else {
+                BingeChoiceList.Failed(
+                    message = stringResource(R.string.nfo_users_failed),
+                    retryLabel = stringResource(R.string.console_retry),
+                    onRetry = actions.onLoadUsers,
+                )
+            }
         } else {
             BingeChoiceList.Ready(listOf(none) + users.map { BingeChoice(it.id, it.name, icon = Icons.Outlined.Person) })
         }
