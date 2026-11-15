@@ -18,8 +18,9 @@
 #            themselves, or (the $SENSITIVE env, set by the caller from the diff's content) code
 #            that R8 can break without a file above changing: serialization, reflection.
 #
-# Never state a skip-set path here that a bot reads or that the build reads. `.github/workflows`
-# is in no set: a change to the pipeline is validated by running the pipeline.
+# Never put a path the build reads in a skip set. `.ai/*` is the one exception: the bots read it,
+# but they run on their own triggers, and `build` still reports. `.github/workflows` is in no set:
+# a change to the pipeline is validated by running the pipeline.
 set -euo pipefail
 
 list="${1:?usage: classify-changes.sh <file listing the changed paths>}"
