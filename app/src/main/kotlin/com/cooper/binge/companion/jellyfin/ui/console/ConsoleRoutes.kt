@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +16,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.tip.TipViewModel
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ThisAppScreen
@@ -40,7 +42,7 @@ internal fun ConsolePageRoute(
         ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
-        ConsolePage.ThisApp -> ThisAppScreen(actions, close)
+        ConsolePage.ThisApp -> ThisAppRoute(graph, actions, close)
         ConsolePage.Search -> SettingsSearchScreen(signedIn.profile, signedIn.account, open, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
@@ -396,5 +398,24 @@ private fun LogsRoute(
             onRefresh = logs::refresh,
             onBack = onBack,
         ),
+    )
+}
+
+/** The This app page with the tip jar's view model, which reads Play's prices once and runs one purchase at a time. */
+@Composable
+private fun ThisAppRoute(
+    graph: AppGraph,
+    actions: Actions,
+    onBack: () -> Unit,
+) {
+    val tip: TipViewModel = viewModel(factory = viewModelFactory { initializer { TipViewModel(graph.tipBilling) } })
+    val state by tip.uiState.collectAsStateWithLifecycle()
+    val activity = LocalActivity.current
+    ThisAppScreen(
+        actions,
+        onBack,
+        tip = state,
+        tipEvents = tip.events,
+        onGiveTip = { step -> activity?.let { tip.give(it, step) } },
     )
 }

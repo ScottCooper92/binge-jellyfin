@@ -30,6 +30,9 @@ import com.cooper.binge.companion.jellyfin.telemetry.PostHogAnalytics
 import com.cooper.binge.companion.jellyfin.telemetry.PostHogClient
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.telemetry.postHogConfig
+import com.cooper.binge.companion.jellyfin.tip.DebugTipBilling
+import com.cooper.binge.companion.jellyfin.tip.PlayTipBilling
+import com.cooper.binge.companion.jellyfin.tip.TipBilling
 import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
@@ -112,6 +115,9 @@ class AppGraph(
             scope = scope,
         )
     }
+
+    /** The tip jar's store: Google Play in a release build, a stand-in in a debug one, which is installed over adb where Play sells nothing. */
+    internal val tipBilling: TipBilling by lazy { if (BuildConfig.DEBUG) DebugTipBilling() else PlayTipBilling(appContext) }
 
     /** The one owner of "may analytics report"; every backend registers with it. */
     val consentGate: AnalyticsConsentGate by lazy { AnalyticsConsentGate(telemetryPrefs, scope) }

@@ -1022,6 +1022,15 @@ app:tasks_triggers  e62f2148a64d
 app:tasks_triggers_empty  0941d30cc781
 app:tasks_triggers_empty_title  ea3c76042e1c
 app:this_app_detail  26650a95c608
+app:tip_amount  441cf7f0a6f3
+app:tip_body  4dd0f8991a8d
+app:tip_failed_body  08cdb58c479a
+app:tip_failed_title  3f6e748dd871
+app:tip_give  130572423ad5
+app:tip_pending  9b8bfabf5e5c
+app:tip_row  f65a6e40cbc4
+app:tip_thanks  c28777de06d7
+app:tip_title  f65a6e40cbc4
 app:tmdb_missing_detail_plain  6a3eb81922d8
 app:tmdb_missing_detail_promoted  de6e11c829f2
 app:tmdb_missing_title  de853f0db7b2
