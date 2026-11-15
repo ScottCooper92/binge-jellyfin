@@ -146,7 +146,7 @@ private fun LibraryBody(
             rows = libraryRows(state, actions, profile),
             modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
         )
-        FoldersGroup(state, actions)
+        FoldersGroup(state, actions, profile)
         MetadataGroup(state, actions, profile) { picker = it }
         VideoGroups(state, actions, profile) { picker = it }
         MusicGroups(state, actions, profile)
@@ -204,6 +204,7 @@ private fun libraryRows(
 private fun FoldersGroup(
     state: LibraryUiState.Ready,
     actions: LibraryActions,
+    profile: JellyfinServerProfile,
 ) {
     ItemGroup(
         title = stringResource(R.string.library_folders),
@@ -212,7 +213,13 @@ private fun FoldersGroup(
                 ListItem(
                     icon = Icons.Outlined.Folder,
                     label = path,
-                    detail = state.options.networkPath(path) ?: stringResource(R.string.library_network_path_none),
+                    detail =
+                        if (profile.hasMediaPathNetworkPath) {
+                            state.options.networkPath(path) ?: stringResource(R.string.library_network_path_none)
+                        } else {
+                            null
+                        },
+                    clickable = profile.hasMediaPathNetworkPath,
                     enabled = !state.busy,
                     onClick = { actions.onAsk(LibraryDialog.NetworkPath(path)) },
                     trailingContent = {

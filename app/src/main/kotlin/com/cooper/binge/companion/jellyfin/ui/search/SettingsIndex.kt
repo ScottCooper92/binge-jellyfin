@@ -127,6 +127,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_server,
             R.string.libraries_title,
             R.string.kw_network_path,
+            shown = { profile, _ -> profile.hasMediaPathNetworkPath },
         ),
         page(ConsolePage.Transcoding, R.string.transcoding_title, Icons.Outlined.Memory, R.string.settings_server, R.string.kw_transcoding),
         page(ConsolePage.ServerSettings, R.string.server_settings_title, Icons.Outlined.Tune, R.string.settings_server),

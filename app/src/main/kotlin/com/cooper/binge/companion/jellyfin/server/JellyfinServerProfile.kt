@@ -128,6 +128,9 @@ data class JellyfinServerProfile(
     /** UPnP port mapping: in the network configuration until 10.11 marks it no longer supported. */
     val hasUpnpOption: Boolean get() = version?.let { it < JellyfinVersion(TEN, ELEVEN, 0) } ?: true
 
+    /** A library folder's shared network path (`MediaPathInfo.NetworkPath`), which 10.10 dropped. Until 10.9. */
+    val hasMediaPathNetworkPath: Boolean get() = version?.let { it < JellyfinVersion(TEN, TEN, 0) } ?: true
+
     /** Library update duration, parallel image encoding, the inactive session threshold and cast receivers, in the server's configuration. 10.9. */
     val hasAdvancedPerformance: Boolean get() = atLeast(TEN, NINE)
 
