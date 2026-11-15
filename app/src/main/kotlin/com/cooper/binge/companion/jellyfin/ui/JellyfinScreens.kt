@@ -225,6 +225,39 @@ private fun DiscoveredServers(
     }
 }
 
+/** The server being signed in to: its name, its address (marked when it is not encrypted), and the way to change it. */
+@Composable
+private fun SignInServerCard(
+    state: UiState.SignIn,
+    actions: Actions,
+) {
+    ItemGroup(
+        title = null,
+        rows =
+            listOf(
+                ListItem(
+                    icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
+                    label = state.server.serverName.ifBlank { state.baseUrl },
+                    detail =
+                        if (state.cleartext) {
+                            stringResource(R.string.server_detail_cleartext, state.baseUrl)
+                        } else {
+                            state.baseUrl
+                        },
+                    // Change sits beside it, so at large fonts the address wraps rather than shrinking to a few characters.
+                    supportingMaxLines = ADDRESS_LINES,
+                    trailingContent = {
+                        BingeTextButton(
+                            label = stringResource(R.string.setup_change),
+                            onClick = actions.onChangeServer,
+                        )
+                    },
+                    clickable = false,
+                ),
+            ),
+    )
+}
+
 @Composable
 private fun SignIn(
     state: UiState.SignIn,
@@ -232,31 +265,7 @@ private fun SignIn(
     inner: PaddingValues,
 ) {
     SetupColumn(inner) {
-        ItemGroup(
-            title = null,
-            rows =
-                listOf(
-                    ListItem(
-                        icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
-                        label = state.server.serverName.ifBlank { state.baseUrl },
-                        detail =
-                            if (state.cleartext) {
-                                stringResource(R.string.server_detail_cleartext, state.baseUrl)
-                            } else {
-                                state.baseUrl
-                            },
-                        // Change sits beside it, so at large fonts the address wraps rather than shrinking to a few characters.
-                        supportingMaxLines = ADDRESS_LINES,
-                        trailingContent = {
-                            BingeTextButton(
-                                label = stringResource(R.string.setup_change),
-                                onClick = actions.onChangeServer,
-                            )
-                        },
-                        clickable = false,
-                    ),
-                ),
-        )
+        SignInServerCard(state, actions)
         val code = state.quickConnectCode
         if (code != null) {
             QuickConnectCode(code, actions)
