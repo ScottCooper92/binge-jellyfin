@@ -90,7 +90,7 @@ internal fun ConsolePageRoute(
                 close,
             )
         ConsolePage.LiveTvRecording -> LiveTvRecordingRoute(graph, close)
-        ConsolePage.Server -> ServerRoute(graph, signedIn.profile.hasStorageInfo, close)
+        ConsolePage.Server -> ServerRoute(graph, signedIn.profile.hasStorageInfo, signedIn.profile.hasActivityFilters, close)
     }
 }
 
@@ -353,10 +353,22 @@ private fun ServerSettingsRoute(
 private fun ServerRoute(
     graph: AppGraph,
     storageAvailable: Boolean,
+    alertsFilteredByServer: Boolean,
     onBack: () -> Unit,
 ) {
     val server: ServerViewModel =
-        viewModel(factory = viewModelFactory { initializer { ServerViewModel(graph.connection, storageAvailable = storageAvailable) } })
+        viewModel(
+            factory =
+                viewModelFactory {
+                    initializer {
+                        ServerViewModel(
+                            graph.connection,
+                            storageAvailable = storageAvailable,
+                            alertsFilteredByServer = alertsFilteredByServer,
+                        )
+                    }
+                },
+        )
     val state by server.state.collectAsStateWithLifecycle()
     ServerScreen(
         state,

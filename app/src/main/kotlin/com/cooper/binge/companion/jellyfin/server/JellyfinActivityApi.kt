@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonObject
 import java.time.Duration
 import java.time.Instant
@@ -126,6 +128,34 @@ suspend fun JellyfinClient.activity(
     val entries = json.array("Items").mapNotNull { (it as? JsonObject)?.activityEntry() }
     return ActivityPage(entries, json.int("TotalRecordCount") ?: entries.size)
 }
+
+/** How many alerts the Server page's card shows. */
+const val ALERT_COUNT = 5
+
+/** How many of the newest entries a server that cannot filter by severity is read for, to find [ALERT_COUNT] alerts among them. */
+private const val ALERT_SCAN = 100
+
+/**
+ * The newest warnings and errors of the activity log, newest first, at most [ALERT_COUNT]: the web dashboard's Alerts. A server
+ * that filters by severity ([byServer], `hasActivityFilters`, 12.0) is asked for each of the two severities and the answers are
+ * merged. An older one ignores the filter, so its newest [ALERT_SCAN] entries are read and the rest dropped here: a quiet log
+ * of older entries can show fewer than there are, never wrong ones.
+ */
+suspend fun JellyfinClient.alerts(byServer: Boolean): List<ActivityEntry> =
+    if (byServer) {
+        coroutineScope {
+            val warnings = async { activity(0, ALERT_COUNT, ActivityFilter(severity = Severity.Warning)).entries }
+            val errors = async { activity(0, ALERT_COUNT, ActivityFilter(severity = Severity.Error)).entries }
+            (warnings.await() + errors.await()).newestAlerts()
+        }
+    } else {
+        activity(0, ALERT_SCAN).entries.newestAlerts()
+    }
+
+private fun List<ActivityEntry>.newestAlerts(): List<ActivityEntry> =
+    filter { it.severity != Severity.Information }
+        .sortedByDescending { it.dateMillis ?: Long.MIN_VALUE }
+        .take(ALERT_COUNT)
 
 private fun JsonObject.activityEntry(): ActivityEntry? {
     val id = long("Id") ?: return null

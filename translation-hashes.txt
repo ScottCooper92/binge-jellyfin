@@ -378,6 +378,7 @@ app:job_running  46c541363b02
 app:job_running_percent  8fdf2981dd31
 app:job_stop  cae7d57bc067
 app:kw_activity  8b07081ada66
+app:kw_alerts  508f1a919580
 app:kw_codecs  6f170406ddf3
 app:kw_feedback  aaef9bf07c61
 app:kw_hardware  bff64e0cd58b
@@ -972,6 +973,8 @@ app:search_prompt  26f49f1ef5fe
 app:search_recent  a2203076b555
 app:search_recent_clear  83b12c2216ef
 app:search_title  255b076dd828
+app:server_alerts  f62e9267d196
+app:server_alerts_none  715578b09f64
 app:server_cant_restart  1df046962fb5
 app:server_card_connected  22965568d22a
 app:server_card_movies  dff924b69f96

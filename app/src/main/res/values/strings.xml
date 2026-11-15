@@ -642,6 +642,9 @@
     <string name="server_path_transcodes">Transcodes</string>
     <string name="server_path_logs">Logs</string>
     <string name="server_path_web">Web</string>
+    <string name="server_alerts">Alerts</string>
+    <string name="server_alerts_none">No warnings or errors lately</string>
+    <string name="kw_alerts">recent warnings errors problems failed log alerts dashboard</string>
     <string name="kw_storage">disk space free full drive capacity usage</string>
     <string name="kw_paths">folders directories locations cache logs metadata transcode data</string>
     <string name="server_cant_restart">This server can\'t restart itself. Restart it where it runs.</string>

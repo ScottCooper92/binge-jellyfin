@@ -7,12 +7,15 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.LibraryStorage
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.server.ServerPaths
 import com.cooper.binge.companion.jellyfin.server.ServerStorage
+import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.StorageFolder
 import com.cooper.binge.companion.jellyfin.server.StorageKind
+import java.time.ZoneOffset
 
 private val previewInfo =
     ServerInfo(
@@ -59,6 +62,44 @@ class ServerScreenshotTest {
             ),
             ServerActions(),
         )
+
+    /** The recent alerts, a warning beside an error with and without a line of detail, and the calm row when there are none. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun alerts() =
+        Surface {
+            AlertsGroup(
+                listOf(
+                    ActivityEntry(
+                        3,
+                        "Scheduled task failed",
+                        "Scan media library",
+                        "ScheduledTaskFailed",
+                        1_794_000_000_000L,
+                        Severity.Error,
+                    ),
+                    ActivityEntry(2, "Slow query", null, "TaskFailed", 1_793_990_000_000L, Severity.Warning),
+                    ActivityEntry(
+                        1,
+                        "Failed login attempt",
+                        "from 192.168.1.40",
+                        "AuthenticationFailed",
+                        1_793_900_000_000L,
+                        Severity.Warning,
+                    ),
+                ),
+                zone = ZoneOffset.UTC,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun noAlerts() = Surface { AlertsGroup(emptyList(), zone = ZoneOffset.UTC) }
 
     /** A pull in progress: the page stays, with the pull spinner over it. */
     @PreviewTest

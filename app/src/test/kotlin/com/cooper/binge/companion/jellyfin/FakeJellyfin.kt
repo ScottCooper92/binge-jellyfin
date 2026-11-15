@@ -342,6 +342,9 @@ class FakeJellyfin : Dispatcher() {
                 """"Date":"2026-10-31T1$n:00:00Z","ShortOverview":"IP address: 10.0.0.$n"}"""
         }
 
+    /** Whether the activity log filters by `severity`, as Jellyfin 12 does. Off, it ignores the parameter, as an older server does. */
+    var activityFiltersSeverity = false
+
     /** `/System/Logs`: the log files, as the server lists them. */
     var logFiles: List<String> =
         listOf(
@@ -993,8 +996,10 @@ class FakeJellyfin : Dispatcher() {
     private fun activityPage(request: RecordedRequest): MockResponse {
         val start = request.url.queryParameter("startIndex")?.toInt() ?: 0
         val limit = request.url.queryParameter("limit")?.toInt() ?: activityEntries.size
-        val page = activityEntries.drop(start).take(limit)
-        return json("""{"Items":[${page.joinToString(",")}],"TotalRecordCount":${activityEntries.size},"StartIndex":$start}""")
+        val severity = request.url.queryParameter("severity")?.takeIf { activityFiltersSeverity }
+        val matching = if (severity == null) activityEntries else activityEntries.filter { """"Severity":"$severity"""" in it }
+        val page = matching.drop(start).take(limit)
+        return json("""{"Items":[${page.joinToString(",")}],"TotalRecordCount":${matching.size},"StartIndex":$start}""")
     }
 
     private fun renameDevice(request: RecordedRequest): MockResponse {
