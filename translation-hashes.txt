@@ -356,7 +356,7 @@ app:job_running  46c541363b02
 app:job_running_percent  8fdf2981dd31
 app:job_stop  cae7d57bc067
 app:kw_activity  8b07081ada66
-app:kw_battery  f179afd3f6b8
+app:kw_battery  1b21f79567ff
 app:kw_codecs  6f170406ddf3
 app:kw_feedback  aaef9bf07c61
 app:kw_hardware  bff64e0cd58b
@@ -379,7 +379,6 @@ app:kw_remote  9d93a1f584ce
 app:kw_restart  5d20eaf8a754
 app:kw_tasks  05a75187fd5e
 app:kw_this_app  b93955fad9de
-app:kw_tip  5fc59cfb5863
 app:kw_transcoding  7baddb539ab3
 app:kw_trickplay  e912a8c295b4
 app:kw_users  61e1db1dcb76
