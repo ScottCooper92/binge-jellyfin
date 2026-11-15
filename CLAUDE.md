@@ -277,6 +277,12 @@ CI runs the same tasks as four jobs in parallel (`checks`, `tests`, `screenshots
 job, `build`, is green only if all of them are. It is the check branch protection requires, and the
 one the bots read. `ci.yml` explains the split.
 
+On a pull request a `changes` job runs first and `build` reads its answers: a docs-only diff skips every Gradle job, a diff
+that cannot move a frame skips `screenshots`, and `release` runs only when something R8 reads changed. The rules are the
+lists in `.github/scripts/classify-changes.sh`, tested by `classify-changes.test.sh`. For the Gradle jobs and `screenshots` a
+path in no skip list runs the job. `release` is the reverse, an allow-list: a path runs it only if `release_input` names it, so a
+new R8 input (a source set, assets, a `.pro` file) is added there or the PR skips R8. Push and the nightly run everything.
+
 ### Screenshot frames
 
 Frames live in `app/src/screenshotTest/kotlin/…`, each a `@Composable` with `@PreviewTest`. The PNGs

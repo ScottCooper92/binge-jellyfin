@@ -55,6 +55,7 @@ internal fun LibraryDialogs(
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
                 NetworkPathForm(dialog.path, state.options.networkPath(dialog.path).orEmpty(), actions)
             }
+        is LibraryDialog.ImageOptions -> ImageOptionsSheet(dialog, state, actions)
         is LibraryDialog.RemoveFolder -> RemoveFolderDialog(dialog.path, actions)
         LibraryDialog.Remove -> RemoveLibraryDialog(state.library.name, actions)
     }

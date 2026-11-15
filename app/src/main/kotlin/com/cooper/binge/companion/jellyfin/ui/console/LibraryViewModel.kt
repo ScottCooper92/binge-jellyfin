@@ -101,6 +101,12 @@ sealed interface LibraryDialog {
     data class NetworkPath(
         val path: String,
     ) : LibraryDialog
+
+    /** The image limits of one image type (`Backdrop`) of an item type (`Movie`). */
+    data class ImageOptions(
+        val type: String,
+        val image: String,
+    ) : LibraryDialog
 }
 
 sealed interface LibraryUiState {

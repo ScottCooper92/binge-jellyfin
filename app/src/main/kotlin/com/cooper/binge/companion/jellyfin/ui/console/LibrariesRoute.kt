@@ -172,6 +172,7 @@ private fun LibraryLoadedRoute(
             onMove = model::moveProvider,
             onFetcher = model.fetcherEdits::set,
             onMoveFetcher = model.fetcherEdits::move,
+            onImage = model.fetcherEdits::setImage,
             onRetry = model::load,
             onRetrySave = model::retrySave,
             onBack = back,

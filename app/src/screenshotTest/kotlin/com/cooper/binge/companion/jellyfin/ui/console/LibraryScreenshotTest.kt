@@ -16,6 +16,7 @@ import com.cooper.binge.companion.jellyfin.server.Country
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.FetcherType
+import com.cooper.binge.companion.jellyfin.server.ImageSlot
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.MetadataSaver
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
@@ -126,11 +127,13 @@ private val fetcherTypes =
             "Series",
             metadata = listOf(AvailableFetcher("TheMovieDb", true), AvailableFetcher("TheTVDB", true)),
             images = listOf(AvailableFetcher("TheMovieDb", false), AvailableFetcher("TheTVDB", true)),
+            imageSlots = listOf(ImageSlot("Primary", 1, 0), ImageSlot("Backdrop", 3, 1280), ImageSlot("Logo", 0, 0)),
         ),
         FetcherType(
             "Episode",
             metadata = listOf(AvailableFetcher("TheMovieDb", false), AvailableFetcher("TheTVDB", true)),
             images = listOf(AvailableFetcher("TheTVDB", true), AvailableFetcher("Screen Grabber", true)),
+            imageSlots = listOf(ImageSlot("Primary", 1, 0)),
         ),
     )
 
@@ -280,8 +283,16 @@ class LibraryScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
     @Composable
     fun imageFetchers() = LibraryScreen(fetchersReady(), LibraryActions(), newest, page = LibraryPage.Fetchers(FetcherKind.Images))
+
+    /** The sheet for one image type: how many to keep and the narrowest accepted. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun imageOptions() = Surface { ImageOptionsContent(ImageSlot("Backdrop", 3, 1280)) {} }
 
     @PreviewTest
     @JellyfinScreenStatePreview

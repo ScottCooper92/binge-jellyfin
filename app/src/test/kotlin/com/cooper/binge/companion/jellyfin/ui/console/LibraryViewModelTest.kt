@@ -5,6 +5,7 @@ import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
+import com.cooper.binge.companion.jellyfin.server.ImageSlot
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_REALTIME
 import com.cooper.binge.companion.jellyfin.server.MetadataSaver
@@ -26,6 +27,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -284,6 +286,82 @@ class LibraryViewModelTest {
         assertEquals(listOf<String>(), entry().getValue("MetadataFetchers").jsonArray.map { it.jsonPrimitive.content })
         // A type the server doesn't offer is ignored.
         vm.fetcherEdits.set(FetcherKind.Images, "Gone", "TheMovieDb", enabled = false)
+    }
+
+    private val movieImages =
+        """{"Type":"Movie","MetadataFetchers":["TheMovieDb"],"MetadataFetcherOrder":["TheMovieDb"],"ImageFetchers":["TheMovieDb"],""" +
+            """"ImageFetcherOrder":["TheMovieDb"],"ImageOptions":[{"Type":"Backdrop","Limit":2,"MinWidth":1280},""" +
+            """{"Type":"Primary","Limit":1,"MinWidth":0},{"Type":"Gone","Limit":9,"MinWidth":7}],"Future":7}"""
+
+    private fun withMovieImages() {
+        jellyfin.availableOptions =
+            jellyfin.availableOptions.replace(
+                "\"TypeOptions\":[]",
+                """"TypeOptions":[{"Type":"Movie","MetadataFetchers":[{"Name":"TheMovieDb","DefaultEnabled":true}],""" +
+                    """"ImageFetchers":[{"Name":"TheMovieDb","DefaultEnabled":true}],""" +
+                    """"SupportedImageTypes":["Primary","Backdrop","Screenshot"],""" +
+                    """"DefaultImageOptions":[{"Type":"Backdrop","Limit":1,"MinWidth":0},{"Type":"Screenshot","Limit":3,"MinWidth":640}]}]""",
+            )
+        jellyfin.libraries =
+            Json
+                .parseToJsonElement(
+                    """[{"Name":"Movies","CollectionType":"movies","ItemId":"lib-movies","Locations":["/media/movies"],""" +
+                        """"LibraryOptions":{"Enabled":true,"TypeOptions":[$movieImages]}}]""",
+                ).jsonArray
+    }
+
+    @Test
+    fun `saving a type's fetchers sends its image options back untouched`() {
+        withMovieImages()
+        val vm = made(LibraryViewModel(connection, movies))
+        vm.ready()
+        vm.fetcherEdits.set(FetcherKind.Images, "Movie", "TheMovieDb", enabled = false)
+        saves(1)
+        val sent = savedOptions().getValue("TypeOptions").jsonArray[0].jsonObject
+        val before = Json.parseToJsonElement(movieImages).jsonObject
+        assertEquals(before.getValue("ImageOptions"), sent.getValue("ImageOptions"))
+        assertEquals(before.getValue("Future"), sent.getValue("Future"))
+    }
+
+    @Test
+    fun `an image type's limits are read as chosen or as the server starts them, and saved with the rest of the array`() {
+        withMovieImages()
+        val vm = made(LibraryViewModel(connection, movies))
+        val ready = vm.ready()
+        val movie = ready.available.types.single()
+        assertEquals(listOf("Primary", "Backdrop", "Screenshot"), movie.imageSlots.map { it.type })
+        vm.fetcherEdits.setImage("Movie", ImageSlot("Screenshot", limit = 5, minWidth = 800))
+        saves(1)
+        val options =
+            savedOptions()
+                .getValue(
+                    "TypeOptions",
+                ).jsonArray[0]
+                .jsonObject
+                .getValue("ImageOptions")
+                .jsonArray
+                .map { it.jsonObject }
+
+        fun of(type: String) = options.first { it.getValue("Type").jsonPrimitive.content == type }
+        // The one changed, from the start value the server showed.
+        assertEquals(5, of("Screenshot").getValue("Limit").jsonPrimitive.int)
+        assertEquals(800, of("Screenshot").getValue("MinWidth").jsonPrimitive.int)
+        // The ones the library had chosen are as chosen, and a type the server no longer offers goes back as it was.
+        assertEquals(2, of("Backdrop").getValue("Limit").jsonPrimitive.int)
+        assertEquals(1280, of("Backdrop").getValue("MinWidth").jsonPrimitive.int)
+        assertEquals(9, of("Gone").getValue("Limit").jsonPrimitive.int)
+        // The fetchers it had chosen are written out with it.
+        assertEquals(
+            listOf("TheMovieDb"),
+            savedOptions()
+                .getValue(
+                    "TypeOptions",
+                ).jsonArray[0]
+                .jsonObject
+                .getValue("ImageFetchers")
+                .jsonArray
+                .map { it.jsonPrimitive.content },
+        )
     }
 
     @Test

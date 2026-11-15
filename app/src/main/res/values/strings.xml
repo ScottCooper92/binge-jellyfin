@@ -336,6 +336,16 @@
     <string name="library_metadata_fetchers">Metadata downloaders</string>
     <string name="library_image_fetchers">Image fetchers</string>
     <string name="library_fetchers_body">Each type of item has its own list, asked in this order. A change here is the library\'s own choice from then on, for that type.</string>
+    <string name="library_image_options">%1$s images</string>
+    <string name="library_image_limits">Image limits</string>
+    <string name="library_image_none">Not downloaded</string>
+    <plurals name="library_image_detail">
+        <item quantity="one">%1$d image, at least %2$d px wide</item>
+        <item quantity="other">%1$d images, at least %2$d px wide</item>
+    </plurals>
+    <string name="library_image_limit">%1$s: how many to keep</string>
+    <string name="library_image_min_width">%1$s: narrowest accepted</string>
+    <string name="library_image_px">%1$d px</string>
     <string name="library_type_movie">Movies</string>
     <string name="library_type_series">Shows</string>
     <string name="library_type_season">Seasons</string>
@@ -1371,6 +1381,7 @@
     <string name="kw_network_path">network path share smb nfs unc</string>
     <string name="kw_transcoding">streaming resume ffmpeg encode bitrate</string>
     <string name="kw_metadata">artwork images nfo language country sorting</string>
+    <string name="kw_image_limits">backdrop screenshot artwork images fetchers minimum width how many</string>
     <string name="kw_trickplay">seek thumbnails preview scrubbing</string>
     <string name="kw_plugins">extensions repository catalog install</string>
     <string name="kw_activity">history audit events sign ins</string>
