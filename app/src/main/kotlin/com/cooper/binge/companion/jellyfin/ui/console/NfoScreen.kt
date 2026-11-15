@@ -29,6 +29,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.component.TextEntrySurface
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
@@ -105,6 +107,7 @@ private fun NfoBody(
         PageIntro(stringResource(R.string.nfo_body))
         ItemGroup(
             title = null,
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 listOfNotNull(
                     userRow(state, actions),
@@ -116,7 +119,14 @@ private fun NfoBody(
                             onClick = { actions.onSheet(NfoSheet.DateFormat) },
                         )
                     },
-                    switchRow(config, actions, NFO_SAVE_IMAGE_PATHS, Icons.Outlined.Image, R.string.nfo_image_paths, R.string.nfo_image_paths_detail),
+                    switchRow(
+                        config,
+                        actions,
+                        NFO_SAVE_IMAGE_PATHS,
+                        Icons.Outlined.Image,
+                        R.string.nfo_image_paths,
+                        R.string.nfo_image_paths_detail,
+                    ),
                     switchRow(
                         config,
                         actions,

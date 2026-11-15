@@ -46,7 +46,12 @@ sealed interface NfoUiState {
 }
 
 /** The id of the user whose watch state goes into NFO files, or null for none. */
-fun JsonObject.nfoUserId(): String? = (this[NFO_USER_ID] as? JsonPrimitive)?.takeUnless { it is JsonNull }?.content?.takeIf { it.isNotBlank() }
+fun JsonObject.nfoUserId(): String? =
+    (this[NFO_USER_ID] as? JsonPrimitive)
+        ?.takeUnless {
+            it is JsonNull
+        }?.content
+        ?.takeIf { it.isNotBlank() }
 
 /**
  * The server's NFO options, each saved as it's made (see [ConfigurationSaves]) with the whole configuration sent back. The users the

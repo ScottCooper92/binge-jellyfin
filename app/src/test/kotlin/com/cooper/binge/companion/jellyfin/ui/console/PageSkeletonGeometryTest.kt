@@ -85,7 +85,11 @@ class PageSkeletonGeometryTest {
     @Test
     fun `nfo`() =
         compose.holdsFirstGroup { resolved ->
-            val config = Json.parseToJsonElement("""{"UserId":null,"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":true}""").jsonObject
+            val config =
+                Json
+                    .parseToJsonElement(
+                        """{"UserId":null,"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":true}""",
+                    ).jsonObject
             NfoScreen(
                 state = if (resolved) NfoUiState.Ready(config) else NfoUiState.Loading,
                 actions = NfoActions(),

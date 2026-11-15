@@ -34,8 +34,7 @@ class NfoScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun userChosen() =
-        NfoScreen(ready(JsonObject(config + ("UserId" to kotlinx.serialization.json.JsonPrimitive("user-1")))), NfoActions())
+    fun userChosen() = NfoScreen(ready(JsonObject(config + ("UserId" to kotlinx.serialization.json.JsonPrimitive("user-1")))), NfoActions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

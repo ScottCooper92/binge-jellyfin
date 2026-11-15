@@ -92,7 +92,13 @@ class NfoViewModelTest {
         vm.setUser("user-2")
         assertNull(vm.ready().sheet)
         saved(1)
-        assertEquals("user-2", jellyfin.lastBody(PATH).getValue("UserId").jsonPrimitive.content)
+        assertEquals(
+            "user-2",
+            jellyfin
+                .lastBody(PATH)
+                .getValue("UserId")
+                .jsonPrimitive.content,
+        )
         assertEquals("user-2", vm.ready().config.nfoUserId())
         vm.setUser(null)
         saved(2)
@@ -110,7 +116,13 @@ class NfoViewModelTest {
         vm.setDateFormat(" dd/MM/yyyy ")
         assertNull(vm.ready().sheet)
         saved(1)
-        assertEquals("dd/MM/yyyy", jellyfin.lastBody(PATH).getValue("ReleaseDateFormat").jsonPrimitive.content)
+        assertEquals(
+            "dd/MM/yyyy",
+            jellyfin
+                .lastBody(PATH)
+                .getValue("ReleaseDateFormat")
+                .jsonPrimitive.content,
+        )
         assertTrue(jellyfin.requests.count { it.url.encodedPath == PATH && it.method == "POST" } == 1)
     }
 
