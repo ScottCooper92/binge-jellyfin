@@ -64,6 +64,10 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** What `/Users/ForgotPassword` answers, and the PIN `/Users/ForgotPassword/Pin` accepts. */
+    var forgotAnswer = """{"Action":"ContactAdmin"}"""
+    var forgotPin = "1234"
+
     /** What `/Users/Public` answers: the accounts the server lists on its login screen. */
     var publicUsers = "[]"
 
@@ -703,6 +707,12 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Info/Public" ->
                 json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":true}""")
+            path == "/Users/ForgotPassword" -> json(forgotAnswer)
+            path == "/Users/ForgotPassword/Pin" -> {
+                val pin = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject["Pin"].toString()
+                // The server answers a PIN that matches no request with a 404, not with Success false.
+                if (pin == "\"$forgotPin\"") json("""{"Success":true,"UsersReset":["Mum"]}""") else MockResponse(code = 404)
+            }
             path == "/Users/Public" -> json(publicUsers)
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject

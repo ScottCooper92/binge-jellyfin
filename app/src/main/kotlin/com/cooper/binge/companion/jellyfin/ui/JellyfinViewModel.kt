@@ -211,6 +211,8 @@ sealed interface UiState {
         val quickConnectError: SetupError? = null,
         /** A Quick Connect code is being asked for, so a retry shows progress rather than the last failure. */
         val gettingCode: Boolean = false,
+        /** Where a forgotten-password reset is, or null when none is under way. */
+        val forgot: ForgotPasswordStep? = null,
         /** The accounts the server lists on its login screen. Empty when it lists none or could not be asked: nothing is shown then. */
         val publicUsers: List<PublicUser> = emptyList(),
     ) : UiState {
@@ -259,6 +261,9 @@ class JellyfinViewModel(
     private val reports = SignInReports(analytics)
 
     private var quickConnect: Job? = null
+
+    /** The forgotten-password steps of the sign-in step. */
+    val forgotPassword = ForgotPasswordFlow(viewModelScope, connection, _state)
 
     init {
         viewModelScope.launch {

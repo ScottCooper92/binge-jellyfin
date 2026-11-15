@@ -133,16 +133,10 @@ class MainActivity : ComponentActivity() {
             ReportScreen(state, openPage?.page, graph.analytics)
             RefreshGatesWhenHomeReturns(openPage?.opening, stack.openings) { viewModel.refresh(gatesOnly = true) }
             val actions =
-                Actions(
+                viewModel.signInActions().copy(
                     onAddress = viewModel::onAddress,
                     onConnect = viewModel::connect,
                     onTryDemo = viewModel::tryDemo,
-                    onUsername = viewModel::onUsername,
-                    onPassword = viewModel::onPassword,
-                    onPickUser = viewModel::pickPublicUser,
-                    onSignIn = viewModel::signInWithPassword,
-                    onQuickConnect = viewModel::startQuickConnect,
-                    onCancelQuickConnect = viewModel::cancelQuickConnect,
                     onChangeServer = viewModel::changeServer,
                     onRefresh = viewModel::refresh,
                     onAskSignOut = { viewModel.confirmSignOut(true) },
@@ -282,3 +276,15 @@ private fun RefreshGatesWhenHomeReturns(
         onPauseOrDispose {}
     }
 }
+
+/** What the sign-in step asks of the view model: the account, its password, the picks and resets around it, and Quick Connect. */
+private fun JellyfinViewModel.signInActions() =
+    Actions(
+        onUsername = ::onUsername,
+        onPassword = ::onPassword,
+        onPickUser = ::pickPublicUser,
+        forgotPassword = forgotPassword,
+        onSignIn = ::signInWithPassword,
+        onQuickConnect = ::startQuickConnect,
+        onCancelQuickConnect = ::cancelQuickConnect,
+    )

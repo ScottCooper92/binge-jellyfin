@@ -14,6 +14,7 @@ import com.cooper.binge.companion.jellyfin.demo.DEMO_TOKEN
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.telemetry.Analytics
@@ -181,6 +182,74 @@ class JellyfinViewModelTest {
         vm.onAddress(jellyfin.baseUrl)
         vm.connect()
         assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `forgot password needs a name, sends only the name, and tells what the server answered`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.forgotPassword.start()
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/ForgotPassword" })
+
+        vm.onUsername(" Mum ")
+        vm.forgotPassword.start()
+        assertEquals(
+            ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin),
+            vm.await<UiState.SignIn> { it.forgot is ForgotPasswordStep.Told }.forgot,
+        )
+        val sent = jellyfin.requests.last { it.url.encodedPath == "/Users/ForgotPassword" }
+        assertEquals("""{"EnteredUsername":"Mum"}""", sent.body?.utf8())
+        assertNull(sent.headers["Authorization"]?.takeIf { it.contains("Token=") })
+
+        vm.forgotPassword.dismiss()
+        assertNull(vm.await<UiState.SignIn> { it.forgot == null }.forgot)
+        jellyfin.forgotAnswer = """{"Action":"InNetworkRequired"}"""
+        vm.forgotPassword.start()
+        assertEquals(
+            ForgotPasswordStep.Told(ForgotPasswordAction.InNetworkRequired),
+            vm.await<UiState.SignIn> { it.forgot is ForgotPasswordStep.Told }.forgot,
+        )
+    }
+
+    @Test
+    fun `a PIN reset asks for the PIN, keeps the sheet on a wrong one (the server's 404), and sets the password to the right one`() {
+        jellyfin.forgotAnswer =
+            """{"Action":"PinCode","PinFile":"/config/data/passwordreset.json","PinExpirationDate":"2026-11-16T00:00:00Z"}"""
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("Mum")
+        vm.onPassword("typed")
+        vm.forgotPassword.start()
+        assertEquals(
+            ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"),
+            vm.await<UiState.SignIn> { it.forgot is ForgotPasswordStep.EnterPin }.forgot,
+        )
+
+        vm.forgotPassword.submitPin("0000")
+        assertTrue(
+            (
+                vm.await<UiState.SignIn> {
+                    (it.forgot as? ForgotPasswordStep.EnterPin)?.wrongPin == true
+                }
+            ).forgot is ForgotPasswordStep.EnterPin,
+        )
+
+        jellyfin.forgotPin = "AB-12"
+        vm.forgotPassword.submitPin(" ab-12 ")
+        val done = vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Done }
+        // The password is now the PIN as sent: upper case, as the server keeps it.
+        assertEquals("AB-12", done.password)
+        assertEquals("Mum", done.username)
+    }
+
+    @Test
+    fun `a server that does not answer a reset says so instead of closing silently`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("Mum")
+        jellyfin.status["/Users/ForgotPassword"] = 500
+        vm.forgotPassword.start()
+        vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Failed }
     }
 
     @Test

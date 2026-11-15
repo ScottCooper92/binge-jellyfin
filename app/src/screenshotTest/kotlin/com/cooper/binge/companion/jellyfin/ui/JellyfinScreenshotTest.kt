@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
@@ -336,4 +337,53 @@ class JellyfinScreenshotTest {
     @Composable
     fun signOutConfirmPromoted() =
         CompositionLocalProvider(LocalFlags provides Flags.AllOn) { Surface { SignOutConfirm(Actions(), inWindow = false) } }
+
+    // Forgot password: each step of the reset.
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun forgotContactAdmin() =
+        Surface { ForgotPasswordOverlay(ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin), null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun forgotInNetworkRequired() =
+        Surface { ForgotPasswordOverlay(ForgotPasswordStep.Told(ForgotPasswordAction.InNetworkRequired), null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun forgotPin() =
+        Surface { ForgotPasswordOverlay(ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"), null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun forgotPinWrong() =
+        Surface {
+            ForgotPasswordOverlay(
+                ForgotPasswordStep.EnterPin("/config/data/passwordreset.json", wrongPin = true),
+                null,
+                inWindow = false,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun forgotFailed() = Surface { ForgotPasswordOverlay(ForgotPasswordStep.Failed, null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun forgotDone() = Surface { ForgotPasswordOverlay(ForgotPasswordStep.Done, null, inWindow = false) }
 }

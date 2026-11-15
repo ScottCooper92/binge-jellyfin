@@ -27,6 +27,15 @@ data class SignedIn(
     val serverId: String,
 )
 
+/** What the server will do for a user who forgot their password. A value this app does not know is [ContactAdmin]. */
+enum class ForgotPasswordAction { ContactAdmin, PinCode, InNetworkRequired }
+
+/** The server's answer to a forgotten password: what happens next, and for [ForgotPasswordAction.PinCode] the file that holds the PIN. */
+data class ForgotPasswordAnswer(
+    val action: ForgotPasswordAction,
+    val pinFile: String?,
+)
+
 /** An account the server lists on its login screen, as `/Users/Public` gives it: no sign-in needed to read it. */
 data class PublicUser(
     val id: String,
@@ -49,6 +58,26 @@ suspend fun JellyfinClient.publicInfo(): PublicServerInfo {
         baseUrl = baseOf(from) ?: baseUrl,
     )
 }
+
+/** Asks the server to start a password reset for [username]. Anonymous; only the name is sent. */
+suspend fun JellyfinClient.forgotPassword(username: String): ForgotPasswordAnswer {
+    val json = postObject("Users/ForgotPassword", JsonObject(mapOf("EnteredUsername" to JsonPrimitive(username))))
+    val action = ForgotPasswordAction.entries.firstOrNull { it.name == json.string("Action") } ?: ForgotPasswordAction.ContactAdmin
+    return ForgotPasswordAnswer(action, json.string("PinFile")?.takeIf { it.isNotBlank() })
+}
+
+/**
+ * Redeems the PIN from the file the server wrote. True when it was right: the server then sets the account's password to the PIN
+ * as sent. A PIN that matches no request, or one that has run out, is a 404 from the server, so that is false here too.
+ */
+suspend fun JellyfinClient.redeemPasswordPin(pin: String): Boolean =
+    try {
+        postObject("Users/ForgotPassword/Pin", JsonObject(mapOf("Pin" to JsonPrimitive(pin)))).bool("Success") == true
+    } catch (e: JellyfinHttpException) {
+        if (e.code == HTTP_NOT_FOUND) false else throw e
+    }
+
+private const val HTTP_NOT_FOUND = 404
 
 /** The accounts the server's owner has not hidden from the login screen; empty when there are none. */
 suspend fun JellyfinClient.publicUsers(): List<PublicUser> {
