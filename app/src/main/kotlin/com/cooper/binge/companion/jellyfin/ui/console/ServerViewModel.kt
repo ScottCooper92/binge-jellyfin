@@ -2,11 +2,17 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
+import com.cooper.binge.companion.jellyfin.server.ServerStorage
 import com.cooper.binge.companion.jellyfin.server.restartServer
 import com.cooper.binge.companion.jellyfin.server.serverInfo
+import com.cooper.binge.companion.jellyfin.server.serverStorage
 import com.cooper.binge.companion.jellyfin.server.shutdownServer
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +38,8 @@ sealed interface ServerUiState {
      */
     data class Ready(
         val info: ServerInfo,
+        /** The disk space of the server's folders; null where the server has none to give (an older release, or a read that failed). */
+        val storage: ServerStorage? = null,
         val confirming: Boolean = false,
         val restart: Restart? = null,
         val confirmingShutdown: Boolean = false,
@@ -55,6 +63,8 @@ class ServerViewModel(
     pollMillis: Long = RestartTiming.POLL_MILLIS,
     downWaitMillis: Long = RestartTiming.DOWN_WAIT_MILLIS,
     backWaitMillis: Long = RestartTiming.BACK_WAIT_MILLIS,
+    /** Whether the server has the storage report (`hasStorageInfo`); a release without it is not asked. */
+    private val storageAvailable: Boolean = false,
 ) : ViewModel() {
     private val timing = RestartTiming(pollMillis, downWaitMillis, backWaitMillis)
 
@@ -70,8 +80,11 @@ class ServerViewModel(
         viewModelScope.launch {
             _state.value =
                 connection
-                    .consoleCall(TAG) { _, client -> client.serverInfo() }
-                    .fold(onSuccess = { ServerUiState.Ready(it) }, onFailure = { ServerUiState.Failed(it.consoleFailure()) })
+                    .consoleCall(TAG) { _, client -> client.infoAndStorage() }
+                    .fold(
+                        onSuccess = { (info, storage) -> ServerUiState.Ready(info, storage) },
+                        onFailure = { ServerUiState.Failed(it.consoleFailure()) },
+                    )
         }
     }
 
@@ -123,16 +136,23 @@ class ServerViewModel(
         update { copy(refreshing = true, refreshFailed = null) }
         viewModelScope.launch {
             connection
-                .consoleCall(TAG) { _, client -> client.serverInfo() }
-                .onSuccess { fresh -> update { copy(info = fresh, refreshing = false) } }
+                .consoleCall(TAG) { _, client -> client.infoAndStorage() }
+                .onSuccess { (fresh, storage) -> update { copy(info = fresh, storage = storage, refreshing = false) } }
                 .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 
     private suspend fun reloaded() {
-        val info = connection.consoleCall(TAG) { _, client -> client.serverInfo() }.getOrNull()
-        update { copy(info = info ?: this.info, restart = Restart.Restarted) }
+        val read = connection.consoleCall(TAG) { _, client -> client.infoAndStorage() }.getOrNull()
+        update { copy(info = read?.first ?: info, storage = read?.second ?: storage, restart = Restart.Restarted) }
     }
+
+    /** The server's info, with the disk space beside it where the server has it. The space is a nicety: a read that fails leaves it out. */
+    private suspend fun JellyfinClient.infoAndStorage(): Pair<ServerInfo, ServerStorage?> =
+        coroutineScope {
+            val storage = async { if (storageAvailable) attempt { serverStorage() }.getOrNull()?.takeUnless { it.isEmpty } else null }
+            serverInfo() to storage.await()
+        }
 
     private fun update(change: ServerUiState.Ready.() -> ServerUiState.Ready) =
         _state.update { (it as? ServerUiState.Ready)?.change() ?: it }

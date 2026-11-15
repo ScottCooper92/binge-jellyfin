@@ -54,6 +54,7 @@ class ConsolePageTest {
                 ConsolePage.NowPlaying,
                 ConsolePage.Licences,
                 ConsolePage.ThisApp,
+                ConsolePage.Search,
             ),
             ConsolePage.entries.filter { it.available(server, user) },
         )
