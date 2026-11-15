@@ -30,6 +30,7 @@ import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.PublicUser
@@ -37,6 +38,7 @@ import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ConnectionHealth
+import com.cooper.binge.companion.jellyfin.ui.ForgotPasswordStep
 import com.cooper.binge.companion.jellyfin.ui.SetupError
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
@@ -255,9 +257,12 @@ class TvJellyfinFocusTest {
         down()
         on(R.string.setup_sign_in).assertIsFocused()
         down()
+        on(R.string.forgot_password).assertIsFocused()
+        down()
         on(R.string.setup_quick_connect).assertIsFocused()
         down()
         on(R.string.tv_change_server).assertIsFocused()
+        up()
         up()
         up()
         ok()
@@ -283,6 +288,65 @@ class TvJellyfinFocusTest {
         field(R.string.setup_password).assertIsFocused()
     }
 
+    // Sign-in: a forgotten password, in place.
+
+    private fun passwordForm(from: UiState.SignIn = signIn) {
+        show(from.copy(quickConnectCode = "482913"))
+        ok()
+    }
+
+    @Test
+    fun `Forgot password with no name takes the remote to the name field and starts nothing`() {
+        passwordForm(signIn.copy(username = ""))
+        down()
+        down()
+        down()
+        on(R.string.forgot_password).assertIsFocused()
+        ok()
+        field(R.string.setup_username).assertIsFocused()
+    }
+
+    @Test
+    fun `a message step replaces the form, the remote lands on its OK, and Back returns to the form`() {
+        passwordForm()
+        state = signIn.copy(forgot = ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin))
+        compose.waitForIdle()
+        on(R.string.forgot_admin_title).assertIsDisplayed()
+        compose.onNodeWithText(text(com.binge.designsystem.R.string.action_ok)).assertIsFocused()
+        compose.onAllNodesWithText(text(R.string.setup_sign_in)).assertCountEquals(0)
+        state = signIn
+        compose.waitForIdle()
+        field(R.string.setup_username).assertIsFocused()
+    }
+
+    @Test
+    fun `the PIN step lands on the PIN field and walks to Reset and Back, and a wrong PIN leaves the remote where it was`() {
+        passwordForm()
+        state = signIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"))
+        compose.waitForIdle()
+        field(R.string.forgot_pin_hint).assertIsFocused()
+        down()
+        on(R.string.forgot_pin_submit).assertIsFocused()
+        down()
+        on(R.string.tv_forgot_back).assertIsFocused()
+        up()
+        state = signIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json", wrongPin = true))
+        compose.waitForIdle()
+        on(R.string.forgot_pin_wrong).assertIsDisplayed()
+        on(R.string.forgot_pin_submit).assertIsFocused()
+    }
+
+    @Test
+    fun `a failed reset collapses to its message and OK, with the remote there`() {
+        passwordForm()
+        state = signIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"))
+        compose.waitForIdle()
+        state = signIn.copy(forgot = ForgotPasswordStep.Failed)
+        compose.waitForIdle()
+        on(R.string.forgot_failed_title).assertIsDisplayed()
+        compose.onNodeWithText(text(com.binge.designsystem.R.string.action_ok)).assertIsFocused()
+    }
+
     @Test
     fun `a listed account with no password is picked in place and the remote stays on it`() {
         val listed = signIn.copy(publicUsers = listOf(PublicUser("u2", "Kid", hasPassword = false)))
@@ -299,6 +363,7 @@ class TvJellyfinFocusTest {
     fun `Quick Connect from the password form returns to the code, on the control that stays`() {
         show(signIn.copy(quickConnectCode = "482913"))
         ok()
+        down()
         down()
         down()
         down()
