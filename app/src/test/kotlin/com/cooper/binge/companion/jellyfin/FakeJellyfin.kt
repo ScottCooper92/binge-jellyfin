@@ -67,6 +67,7 @@ class FakeJellyfin : Dispatcher() {
     /** What `/Users/ForgotPassword` answers, and the PIN `/Users/ForgotPassword/Pin` accepts. */
     var forgotAnswer = """{"Action":"ContactAdmin"}"""
     var forgotPin = "1234"
+
     /** What `/Users/Public` answers: the accounts the server lists on its login screen. */
     var publicUsers = "[]"
 

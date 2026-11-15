@@ -34,6 +34,8 @@ enum class ForgotPasswordAction { ContactAdmin, PinCode, InNetworkRequired }
 data class ForgotPasswordAnswer(
     val action: ForgotPasswordAction,
     val pinFile: String?,
+)
+
 /** An account the server lists on its login screen, as `/Users/Public` gives it: no sign-in needed to read it. */
 data class PublicUser(
     val id: String,
