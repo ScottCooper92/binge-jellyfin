@@ -1363,7 +1363,7 @@
     <string name="kw_picture">avatar foto imagen</string>
     <string name="kw_password">contraseña clave pin seguridad iniciar sesión</string>
     <string name="kw_users">cuentas personas control parental acceso permisos</string>
-    <string name="kw_libraries">escanear carpetas películas peliculas series medios rutas</string>
+    <string name="kw_libraries">escanear carpetas películas peliculas series medios rutas ruta de red compartida recurso compartido</string>
     <string name="kw_transcoding">streaming reanudar ffmpeg codificar bitrate</string>
     <string name="kw_metadata">carátulas caratulas imágenes imagenes nfo idioma país pais orden</string>
     <string name="kw_trickplay">buscar miniaturas vista previa</string>
