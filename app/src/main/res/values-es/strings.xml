@@ -12,6 +12,7 @@
     <string name="setup_change">Cambiar</string>
     <string name="setup_sign_in_title">Iniciar sesión</string>
     <string name="forgot_password">¿Olvidaste la contraseña?</string>
+    <string name="tv_forgot_back">Volver a iniciar sesión</string>
     <string name="forgot_admin_title">Pídeselo a un administrador</string>
     <string name="forgot_admin_body">Este servidor no te deja restablecer tu propia contraseña. Pide a un administrador que la restablezca y vuelve a iniciar sesión.</string>
     <string name="forgot_network_title">Restablécela desde tu red doméstica</string>

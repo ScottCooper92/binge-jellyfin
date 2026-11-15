@@ -1,9 +1,21 @@
 name: Release
 
 # Pushing a version tag (`git tag v0.1.0 && git push origin v0.1.0`) builds a signed release bundle
-# and attaches it, with the R8 mapping, to a GitHub Release for that tag. Publishing to Play is a
-# separate step that arrives with the Play Console app and its service account; until then the
-# bundle is uploaded by hand.
+# and attaches it, with the R8 mapping, to a GitHub Release for that tag. The last step uploads the
+# bundle and the mapping to Play's internal testing track (`internal`), as a completed release with
+# its changes left unsent for review. Internal testing reaches only the testers listed in the Play
+# Console and never reaches production on its own.
+#
+# The upload skips with a notice, and the release still succeeds, when PLAY_SERVICE_ACCOUNT_JSON is
+# not set. It runs last, so a Play failure cannot withhold the bundle from the GitHub Release.
+# If Play refuses `completed` for an app it has not published yet ("Only releases with status draft
+# may be created on draft app"), switch `status` to `draft` until the first review has passed, as
+# binge-seerr did.
+#
+# Once, in the Play Console, before the first upload can work: create the app for
+# `com.cooper.binge.companion.ephyra`; upload the first bundle by hand if Play asks for it; invite the
+# service account (the email in PLAY_SERVICE_ACCOUNT_JSON) under Users and permissions with permission
+# to release to testing tracks. docs/listing/README.md ("The release upload") has the steps.
 #
 # The keystore is the upload key, held in secrets and never in the repository:
 #   RELEASE_KEYSTORE_BASE64  base64 -w0 release.keystore
@@ -18,6 +30,8 @@ name: Release
 # Usage data goes to PostHog, whose project key and host are secrets too (the key is not secret in the app, but it is
 # configuration, and a fork must not report into this project):
 #   POSTHOG_API_KEY, POSTHOG_HOST
+#
+# The Play upload reads the service account's key from the secret PLAY_SERVICE_ACCOUNT_JSON.
 
 on:
   push:
@@ -124,3 +138,33 @@ jobs:
           app/build/outputs/bundle/release/app-release.aab
           app/build/outputs/mapping/release/mapping.txt
           --title "$GITHUB_REF_NAME" --generate-notes
+
+      # Secrets are not available to a step's `if`, so the check runs in a step of its own.
+      - name: Check for the Play service account
+        id: play
+        shell: bash
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::notice::PLAY_SERVICE_ACCOUNT_JSON is not set, so the bundle was not uploaded to Play. Upload $GITHUB_REF_NAME by hand from the GitHub Release."
+            echo "upload=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "upload=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Last, so a Play failure cannot withhold the bundle from the GitHub Release.
+      - name: Upload to Play's internal testing track
+        if: steps.play.outputs.upload == 'true'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.cooper.binge.companion.ephyra
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          mappingFile: app/build/outputs/mapping/release/mapping.txt
+          tracks: internal
+          status: completed
+          # Play will not send changes for review through the API (binge-seerr's v0.3.0 upload failed on it), so the
+          # edit is committed unsent and the release is sent for review from the Play Console.
+          changesNotSentForReview: true

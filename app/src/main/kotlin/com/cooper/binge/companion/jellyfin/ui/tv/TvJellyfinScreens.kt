@@ -1,10 +1,13 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
+import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -15,7 +18,6 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Healing
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Router
@@ -26,10 +28,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -39,6 +45,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.binge.designsystem.theme.BingeShapes
+import com.binge.designsystem.tv.component.BingeTvInitialsAvatar
 import com.binge.designsystem.tv.component.TvButton
 import com.binge.designsystem.tv.component.TvConfirmDialog
 import com.binge.designsystem.tv.component.TvOptionRow
@@ -56,13 +64,16 @@ import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ConnectionAutoRetry
 import com.cooper.binge.companion.jellyfin.ui.ConnectionHealth
+import com.cooper.binge.companion.jellyfin.ui.ForgotPasswordStep
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.connectionBody
 import com.cooper.binge.companion.jellyfin.ui.connectionHeadline
 import com.cooper.binge.companion.jellyfin.ui.errorText
+import com.binge.designsystem.R as DesR
 import com.binge.designsystem.tv.R as TvR
 
 /** Lines a status under a TV form always takes, so a longer message never moves what is above it. */
@@ -195,9 +206,13 @@ internal fun TvSignInPage(
     // Back steps back, as the remote expects: from the password to the code, and from the code to the server step (which
     // cancels the code). It does not leave the app from the middle of setting it up.
     BackHandler { if (usePassword) usePassword = false else actions.onChangeServer() }
+    // A forgotten-password step replaces the password form in place; Back closes it, to the form.
+    val forgot = state.forgot.takeUnless { it == null || it == ForgotPasswordStep.Asking }
+    BackHandler(enabled = forgot != null) { actions.forgotPassword?.dismiss() }
     val entry = remember { FocusRequester() }
-    // Moving between the code and the password moves the remote to the new panel's first control, once.
-    LaunchedEffect(usePassword) { entry.requestFocus() }
+    // Moving between the code and the password, or into and out of a reset step (and from one step to the next, which has other
+    // controls), moves the remote to the new panel's first control, once.
+    LaunchedEffect(usePassword, forgot?.let { it::class }) { entry.requestFocus() }
     // Top-aligned, so a code arriving or failing never moves the controls the remote is on.
     TvTwoPanePage(
         title = stringResource(R.string.app_label),
@@ -216,7 +231,11 @@ internal fun TvSignInPage(
             )
         },
         action = {
-            if (usePassword) {
+            // A reset step shows whichever panel the user is on when the answer arrives (they may have left the password form
+            // while it was asked), so the step, Back and Change server all follow `forgot` alone.
+            if (forgot != null) {
+                TvForgotPanel(step = forgot, actions = actions, entry = entry)
+            } else if (usePassword) {
                 TvPasswordPanel(
                     state = state,
                     actions = actions,
@@ -234,7 +253,9 @@ internal fun TvSignInPage(
                     },
                 )
             }
-            TvButton(label = stringResource(R.string.tv_change_server), onClick = actions.onChangeServer, style = TvButtonStyle.Text)
+            if (forgot == null) {
+                TvButton(label = stringResource(R.string.tv_change_server), onClick = actions.onChangeServer, style = TvButtonStyle.Text)
+            }
         },
     )
 }
@@ -290,6 +311,25 @@ private fun ColumnScope.TvQuickConnectPanel(
     )
 }
 
+/** A listed account's picture in a circle as tall as the button beside it, or its initials where it has none. */
+@Composable
+private fun TvUserPicture(
+    name: String,
+    picture: Bitmap?,
+) {
+    val size = dimensionResource(TvR.dimen.tv_button_height)
+    if (picture == null) {
+        BingeTvInitialsAvatar(name = name, size = size)
+    } else {
+        Image(
+            picture.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(size).clip(BingeShapes.Pill),
+        )
+    }
+}
+
 @Composable
 private fun ColumnScope.TvPasswordPanel(
     state: UiState.SignIn,
@@ -300,15 +340,22 @@ private fun ColumnScope.TvPasswordPanel(
     val passwordFocus = remember { FocusRequester() }
     // The server's listed accounts, one press each; a name fills the username and the remote moves on to the password.
     state.publicUsers.forEach { user ->
-        TvButton(
-            label = user.name,
-            onClick = {
-                actions.onPickUser(user)
-                if (user.hasPassword) passwordFocus.requestFocus()
-            },
-            leadingIcon = Icons.Outlined.Person,
-            enabled = !state.busy,
-        )
+        // The picture (or the initials) sits beside the button, not in it: the design system's button takes an icon only. It is
+        // decoration, so the remote still lands on one control per account.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(TvR.dimen.tv_button_icon_gap)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TvUserPicture(user.name, state.publicPictures[user.id])
+            TvButton(
+                label = user.name,
+                onClick = {
+                    actions.onPickUser(user)
+                    if (user.hasPassword) passwordFocus.requestFocus()
+                },
+                enabled = !state.busy,
+            )
+        }
     }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(TvR.dimen.tv_two_pane_action_gap))) {
         TvTextField(
@@ -342,7 +389,91 @@ private fun ColumnScope.TvPasswordPanel(
         // Never disabled on TV, as Connect: a disabled button the remote can land on reads as broken.
         loading = state.busy,
     )
+    // Without a name there is nothing to reset, so the press takes the remote to the name field instead of doing nothing.
+    TvButton(
+        label = stringResource(R.string.forgot_password),
+        onClick = { if (state.username.isBlank()) entry.requestFocus() else actions.forgotPassword?.start() },
+        style = TvButtonStyle.Text,
+        loading = state.forgot == ForgotPasswordStep.Asking,
+    )
     TvButton(label = stringResource(R.string.setup_quick_connect), onClick = onUseQuickConnect, leadingIcon = Icons.Outlined.QrCode2)
+}
+
+/**
+ * A step of a forgotten password, in place of the password form (the TV has no dialogs or snackbars). A message step is its
+ * cause, what to do next and one standard button the remote lands on; the PIN step is the file's path, the PIN field and the
+ * reset button, with Back to sign in below. The PIN has letters (the server's is upper-case hex with dashes), so it is typed
+ * with the TV keyboard, and it is sent in upper case.
+ */
+@Composable
+private fun ColumnScope.TvForgotPanel(
+    step: ForgotPasswordStep,
+    actions: Actions,
+    entry: FocusRequester,
+) {
+    val flow = actions.forgotPassword
+    if (step is ForgotPasswordStep.EnterPin) {
+        var pin by rememberSaveable { mutableStateOf("") }
+        Text(
+            text = stringResource(R.string.forgot_pin_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            // Set, not inherited: the content colour here is dark on a TV (found on the emulator), as every other text on this page sets its own.
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        TvStatusLine(
+            text = step.pinFile?.let { stringResource(R.string.forgot_pin_where, it) } ?: stringResource(R.string.forgot_pin_where_unknown),
+            isError = false,
+            capped = false,
+        )
+        TvTextField(
+            value = pin,
+            onValueChange = { pin = it.uppercase() },
+            label = stringResource(R.string.forgot_pin_hint),
+            autoCorrect = false,
+            keyboardType = KeyboardType.Ascii,
+            imeAction = ImeAction.Go,
+            onImeAction = { flow?.submitPin(pin) },
+            enabled = !step.busy,
+            fillWidth = true,
+            modifier = Modifier.focusRequester(entry),
+        )
+        TvStatusLine(stringResource(R.string.forgot_pin_wrong).takeIf { step.wrongPin }, isError = true)
+        TvButton(
+            label = stringResource(R.string.forgot_pin_submit),
+            onClick = { flow?.submitPin(pin) },
+            style = TvButtonStyle.Primary,
+            loading = step.busy,
+        )
+        TvButton(label = stringResource(R.string.tv_forgot_back), onClick = { flow?.dismiss() }, style = TvButtonStyle.Text)
+        return
+    }
+    val (title, body) =
+        when (step) {
+            is ForgotPasswordStep.Told ->
+                if (step.action == ForgotPasswordAction.InNetworkRequired) {
+                    R.string.forgot_network_title to R.string.forgot_network_body
+                } else {
+                    R.string.forgot_admin_title to R.string.forgot_admin_body
+                }
+            ForgotPasswordStep.Done -> R.string.forgot_done_title to R.string.forgot_done_body
+            else -> R.string.forgot_failed_title to R.string.forgot_failed_body
+        }
+    Text(
+        text = stringResource(title),
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    TvStatusLine(stringResource(body), isError = false, capped = false)
+    TvButton(
+        label = stringResource(DesR.string.action_ok),
+        onClick = { flow?.dismiss() },
+        style = TvButtonStyle.Primary,
+        modifier = Modifier.focusRequester(entry),
+    )
 }
 
 /**

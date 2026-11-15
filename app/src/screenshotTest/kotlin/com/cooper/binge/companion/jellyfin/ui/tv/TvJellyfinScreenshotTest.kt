@@ -9,9 +9,11 @@ import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvStressPreviews
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.ui.Actions
+import com.cooper.binge.companion.jellyfin.ui.ForgotPasswordStep
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
@@ -27,6 +29,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectOff
 import com.cooper.binge.companion.jellyfin.ui.previewSignIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignInUsers
+import com.cooper.binge.companion.jellyfin.ui.previewSignInUsersPictures
 import com.cooper.binge.companion.jellyfin.ui.previewSignInWrongPassword
 import com.cooper.binge.companion.jellyfin.ui.previewSignedIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
@@ -111,8 +114,67 @@ class TvJellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun passwordWithPictures() = TvSignInPage(previewSignInUsersPictures, Actions(), startWithPassword = true)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
     @Composable
     fun passwordWrong() = TvSignInPage(previewSignInWrongPassword, Actions(), startWithPassword = true)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun forgotContactAdmin() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin)),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotInNetworkRequired() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.Told(ForgotPasswordAction.InNetworkRequired)),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun forgotPin() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json")),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotPinWrong() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json", wrongPin = true)),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotFailed() = TvSignInPage(previewSignIn.copy(forgot = ForgotPasswordStep.Failed), Actions(), startWithPassword = true)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotDone() =
+        TvSignInPage(previewSignIn.copy(forgot = ForgotPasswordStep.Done, password = "A1B2-C3D4"), Actions(), startWithPassword = true)
 
     @PreviewTest
     @JellyfinTvScreenPreviews

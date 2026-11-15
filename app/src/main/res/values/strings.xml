@@ -13,6 +13,7 @@
     <string name="setup_change">Change</string>
     <string name="setup_sign_in_title">Sign in</string>
     <string name="forgot_password">Forgot password?</string>
+    <string name="tv_forgot_back">Back to sign in</string>
     <string name="forgot_admin_title">Ask an administrator</string>
     <string name="forgot_admin_body">This server doesn\'t let you reset your own password. Ask an administrator to reset it for you, then sign in again.</string>
     <string name="forgot_network_title">Reset it from your home network</string>

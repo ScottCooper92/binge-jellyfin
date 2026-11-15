@@ -149,16 +149,17 @@ fun PackageScreen(
         onBack = onBack,
         snackbarHostState = host,
         bottomBar = {
+            val installing = ready != null && pkg != null && pkg.name in ready.installing
+            val installed = ready != null && pkg != null && pkg.name in ready.installed
             CreateFooter(
-                label = stringResource(R.string.catalog_install),
-                icon = Icons.Outlined.Download,
+                label = stringResource(if (installed) R.string.catalog_installed else R.string.catalog_install),
+                icon = if (installed) Icons.Outlined.CheckCircle else Icons.Outlined.Download,
                 onClick = { pkg?.let { actions.onInstall(it, null) } },
-                visible =
-                    ready != null &&
-                        pkg != null &&
-                        pkg.installable(ready.server) != null &&
-                        pkg.name !in ready.installed &&
-                        pkg.name !in ready.installing,
+                // Always there once the package is known, so the page never moves under a tap: disabled while the install
+                // runs and once the plugin is installed, where it reads "Installed".
+                visible = ready != null && pkg != null && (pkg.installable(ready.server) != null || installing || installed),
+                enabled = !installing && !installed,
+                loading = installing,
             )
         },
     ) { padding ->
