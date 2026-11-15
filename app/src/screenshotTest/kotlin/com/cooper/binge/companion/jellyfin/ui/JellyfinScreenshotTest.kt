@@ -10,10 +10,10 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
-import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
 import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
+import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */
 class JellyfinScreenshotTest {
