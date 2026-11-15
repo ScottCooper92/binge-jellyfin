@@ -41,6 +41,8 @@ data class PublicUser(
     val id: String,
     val name: String,
     val hasPassword: Boolean,
+    /** The tag of the user's picture (`PrimaryImageTag`), or null when they have none. */
+    val imageTag: String? = null,
 )
 
 /** A Quick Connect request: the code the user approves, and the secret this app polls with. */
@@ -85,7 +87,12 @@ suspend fun JellyfinClient.publicUsers(): List<PublicUser> {
     return answer.mapNotNull { element ->
         val json = element as? JsonObject ?: return@mapNotNull null
         val name = json.string("Name")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-        PublicUser(id = json.string("Id").orEmpty(), name = name, hasPassword = json.bool("HasPassword") != false)
+        PublicUser(
+            id = json.string("Id").orEmpty(),
+            name = name,
+            hasPassword = json.bool("HasPassword") != false,
+            imageTag = json.string("PrimaryImageTag")?.takeIf { it.isNotBlank() },
+        )
     }
 }
 

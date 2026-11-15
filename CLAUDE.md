@@ -130,6 +130,8 @@ transport alone.
   (`/Users/AuthenticateByName`), or Quick Connect, where the app shows a code and polls until the
   user approves it in a Jellyfin app they are already signed in to. Quick Connect is the TV's way
   in.
+- **Sign-in pictures.** The accounts `/Users/Public` lists show their pictures, read with the anonymous client and no token
+  (`loadPublicPictures`). They live in `UiState.SignIn` only: never on disk, never in `UserPictures`, gone when the step is left.
 - **Device id.** Minted once per install and kept across sign-outs. Jellyfin keys sessions and
   Quick Connect by it.
 - **No query by TMDB id.** Jellyfin can filter on `hasTmdbId` but not on a value, so `LibraryIndex`

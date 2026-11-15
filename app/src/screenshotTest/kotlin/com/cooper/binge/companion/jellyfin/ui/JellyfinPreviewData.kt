@@ -1,5 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
@@ -49,6 +51,14 @@ val previewSignInUsers =
                 PublicUser("u3", "Kid", hasPassword = false),
             ),
     )
+
+/** Two of the three listed accounts have a picture (a flat colour is enough to tell it from the initials); Dad keeps his initials. */
+val previewSignInUsersPictures =
+    previewSignInUsers.copy(
+        publicPictures = mapOf("u1" to previewPicture(Color.rgb(0x2E, 0x7D, 0x32)), "u3" to previewPicture(Color.rgb(0xC6, 0x28, 0x28))),
+    )
+
+private fun previewPicture(color: Int): Bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
 
 val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 
