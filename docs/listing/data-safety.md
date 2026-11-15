@@ -29,6 +29,10 @@ None of it is linked to the user's identity, and none is used for advertising.
 | Committed to the Play Families policy | No | Not a children's app. |
 | Independent security review | No | |
 
+## Google Play Billing
+
+A tip is bought and consumed through Google Play under the user's own Google account (`tip/PlayTipBilling.kt`). Play takes the payment. The app receives no card or payment details and keeps no purchase history. It sends nothing about a purchase to the developer or anyone else. This is Google's platform feature, not collection by the developer, so the Financial info and Purchase history answers stay as they are. The library adds the `com.android.vending.BILLING` permission to the merged manifest. Whether the form should list it is a question for the maintainer and Play's review; record the answer here once it is known.
+
 ## Check before submitting
 
 Re-derive this from the code on the release head: `app/build.gradle.kts` for the SDKs, the merged manifest for permissions and `allowBackup`, and `flags/RemoteFlagSource.kt` for what is fetched. If a release build ships without `google-services.json`, Remote Config makes no request and the first row above becomes "No".

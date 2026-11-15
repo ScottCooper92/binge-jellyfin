@@ -211,6 +211,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     // Play's in-app review card and the await for its Tasks; see review/PlayReviewPromptLauncher.
     implementation(libs.play.review)
+    // Tips are sold through Google Play; see tip/PlayTipBilling.
+    implementation(libs.play.billing.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

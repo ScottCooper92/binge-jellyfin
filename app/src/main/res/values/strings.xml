@@ -1373,4 +1373,13 @@
     <string name="licences_unspecified">Licence not specified</string>
     <string name="licences_empty">There are no licences to list.</string>
     <string name="licences_unreadable">The licence list couldn\'t be read.</string>
+    <string name="tip_row">Buy me a coffee</string>
+    <string name="tip_title">Buy me a coffee</string>
+    <string name="tip_body">Ephyra is free and open source. If it\'s useful to you, a tip helps keep it going. Thank you!</string>
+    <string name="tip_amount">Tip amount</string>
+    <string name="tip_give">Give %1$s</string>
+    <string name="tip_thanks">Thank you! Your tip means a lot.</string>
+    <string name="tip_pending">Your tip is waiting for Google Play to confirm it.</string>
+    <string name="tip_failed_title">The tip didn\'t go through</string>
+    <string name="tip_failed_body">Google Play couldn\'t finish the payment. Try again in a moment, and check your Google Play order history if you see a charge.</string>
 </resources>
