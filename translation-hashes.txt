@@ -969,6 +969,8 @@ app:search_no_match  5d3b08b065fc
 app:search_no_match_title  3e4d15d46dc7
 app:search_path  697d7f5c1520
 app:search_prompt  26f49f1ef5fe
+app:search_recent  a2203076b555
+app:search_recent_clear  83b12c2216ef
 app:search_title  255b076dd828
 app:server_cant_restart  1df046962fb5
 app:server_card_connected  22965568d22a
