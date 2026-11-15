@@ -37,6 +37,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.bool
+import com.cooper.binge.companion.jellyfin.server.networkPath
 import kotlinx.serialization.json.JsonElement
 import com.binge.designsystem.R as DesR
 
@@ -50,6 +51,7 @@ data class LibraryActions(
     val onRename: (String) -> Unit = {},
     val onAddFolder: (String) -> Unit = {},
     val onRemoveFolder: (String) -> Unit = {},
+    val onNetworkPath: (path: String, networkPath: String) -> Unit = { _, _ -> },
     val onRemove: () -> Unit = {},
     val onProvider: (ProviderGroup, String, Boolean) -> Unit = { _, _, _ -> },
     val onJson: (key: String, value: JsonElement) -> Unit = { _, _ -> },
@@ -208,7 +210,9 @@ private fun FoldersGroup(
                 ListItem(
                     icon = Icons.Outlined.Folder,
                     label = path,
-                    clickable = false,
+                    detail = state.options.networkPath(path) ?: stringResource(R.string.library_network_path_none),
+                    enabled = !state.busy,
+                    onClick = { actions.onAsk(LibraryDialog.NetworkPath(path)) },
                     trailingContent = {
                         ExpressiveIconButton(
                             onClick = { actions.onAsk(LibraryDialog.RemoveFolder(path)) },

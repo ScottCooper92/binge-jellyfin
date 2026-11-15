@@ -165,6 +165,7 @@ private fun LibraryLoadedRoute(
             onRename = model::rename,
             onAddFolder = model::addFolder,
             onRemoveFolder = model::removeFolder,
+            onNetworkPath = model::setNetworkPath,
             onRemove = model::remove,
             onProvider = model::setProvider,
             onJson = model::set,

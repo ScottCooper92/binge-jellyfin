@@ -15,6 +15,7 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_SEASON_ZERO
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TAG_DELIMITERS
 import com.cooper.binge.companion.jellyfin.server.delimiterList
 import com.cooper.binge.companion.jellyfin.server.delimiterWhitelist
+import com.cooper.binge.companion.jellyfin.server.networkPath
 import com.cooper.binge.companion.jellyfin.server.string
 import com.cooper.binge.companion.jellyfin.server.tagDelimiters
 import com.cooper.binge.companion.jellyfin.server.whitelistList
@@ -50,6 +51,10 @@ internal fun LibraryDialogs(
             BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close, stackPagesWhenCompact = true) { nav ->
                 AddFolderForm(state, folders, folderActions, actions, nav.typePath())
             }
+        is LibraryDialog.NetworkPath ->
+            BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = close) {
+                NetworkPathForm(dialog.path, state.options.networkPath(dialog.path).orEmpty(), actions)
+            }
         is LibraryDialog.RemoveFolder -> RemoveFolderDialog(dialog.path, actions)
         LibraryDialog.Remove -> RemoveLibraryDialog(state.library.name, actions)
     }
@@ -77,6 +82,30 @@ internal fun RenameForm(
         minLines = 1,
         maxLines = 1,
         maxLength = NAME_LENGTH,
+    )
+}
+
+/** A folder's shared network path, for clients that play over a share: blank clears it. Saves with its button, and closes. */
+@Composable
+internal fun NetworkPathForm(
+    path: String,
+    current: String,
+    actions: LibraryActions,
+) {
+    var typed by rememberSaveable { mutableStateOf(current) }
+    TextEntrySurface(
+        title = stringResource(R.string.library_network_path_title),
+        value = typed,
+        onValueChange = { typed = it },
+        onSubmit = {
+            actions.onNetworkPath(path, typed)
+            actions.onAsk(null)
+        },
+        onCancel = { actions.onAsk(null) },
+        submitLabel = stringResource(R.string.library_save),
+        hint = stringResource(R.string.library_network_path_hint, path),
+        minLines = 1,
+        maxLines = 1,
     )
 }
 

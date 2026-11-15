@@ -330,6 +330,12 @@ class LibraryScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun networkPath() = Surface { NetworkPathForm("/media/movies", "\\\\nas\\movies", LibraryActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun specialsName() = Surface { SeasonZeroForm("Extras", LibraryActions()) }
 

@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_REALTIME
 import com.cooper.binge.companion.jellyfin.server.MetadataSaver
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
+import com.cooper.binge.companion.jellyfin.server.networkPath
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -60,6 +61,8 @@ class LibraryViewModelTest {
                 .parseToJsonElement(
                     """[{"Name":"Movies","CollectionType":"movies","ItemId":"lib-movies","Locations":["/media/movies"],""" +
                         """"LibraryOptions":{"Enabled":true,"EnableRealtimeMonitor":false,"FutureOption":{"keep":"me"},""" +
+                        """"PathInfos":[{"Path":"/media/movies","NetworkPath":"\\\\nas\\movies","FutureKey":7},""" +
+                        """{"Path":"/media/other","NetworkPath":"\\\\nas\\other"}],""" +
                         """"SubtitleFetcherOrder":["Podnapisi"],"DisabledSubtitleFetchers":[]}},""" +
                         """{"Name":"Shows","CollectionType":"tvshows","ItemId":"lib-shows","Locations":["/media/tv"]}]""",
                 ).jsonArray
@@ -188,6 +191,56 @@ class LibraryViewModelTest {
             listOf("Open Subtitles", "Podnapisi"),
             savedOptions().getValue("SubtitleFetcherOrder").jsonArray.map { it.jsonPrimitive.content },
         )
+    }
+
+    @Test
+    fun `a folder's network path saves as it is made and keeps every other PathInfo key and entry`() {
+        val vm = made(LibraryViewModel(connection, movies))
+        assertEquals("\\\\nas\\movies", vm.ready().options.networkPath("/media/movies"))
+        vm.setNetworkPath("/media/movies", " //nas/films ")
+        assertEquals(
+            "//nas/films",
+            vm.ready { it.options.networkPath("/media/movies") == "//nas/films" }.options.networkPath("/media/movies"),
+        )
+        saves(1)
+        val sent = savedOptions()
+        val infos = sent.getValue("PathInfos").jsonArray.map { it.jsonObject }
+        assertEquals(2, infos.size)
+        assertEquals("//nas/films", infos[0].getValue("NetworkPath").jsonPrimitive.content)
+        assertEquals(
+            7,
+            infos[0]
+                .getValue("FutureKey")
+                .jsonPrimitive.content
+                .toInt(),
+        )
+        assertEquals("/media/movies", infos[0].getValue("Path").jsonPrimitive.content)
+        assertEquals(Json.parseToJsonElement("""{"Path":"/media/other","NetworkPath":"\\\\nas\\other"}"""), infos[1])
+        assertEquals(
+            "me",
+            sent
+                .getValue("FutureOption")
+                .jsonObject
+                .getValue("keep")
+                .jsonPrimitive.content,
+        )
+        assertEquals(true, sent.getValue(LIBRARY_ENABLED).jsonPrimitive.boolean)
+    }
+
+    @Test
+    fun `a blank network path clears only that key, and a folder with no entry gets one`() {
+        val vm = made(LibraryViewModel(connection, movies))
+        vm.ready()
+        vm.setNetworkPath("/media/movies", "  ")
+        saves(1)
+        val first = savedOptions().getValue("PathInfos").jsonArray.map { it.jsonObject }
+        assertEquals(setOf("Path", "FutureKey"), first[0].keys)
+        vm.setNetworkPath("/media/new", "//nas/new")
+        saves(2)
+        val second = savedOptions().getValue("PathInfos").jsonArray.map { it.jsonObject }
+        assertEquals(3, second.size)
+        assertEquals(first[0], second[0])
+        assertEquals(Json.parseToJsonElement("""{"Path":"/media/new","NetworkPath":"//nas/new"}"""), second[2])
     }
 
     @Test

@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.server.Country
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
+import com.cooper.binge.companion.jellyfin.server.LIBRARY_PATH_INFOS
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.addLibraryPath
@@ -24,6 +25,7 @@ import com.cooper.binge.companion.jellyfin.server.removeLibrary
 import com.cooper.binge.companion.jellyfin.server.removeLibraryPath
 import com.cooper.binge.companion.jellyfin.server.renameLibrary
 import com.cooper.binge.companion.jellyfin.server.saveLibraryOptions
+import com.cooper.binge.companion.jellyfin.server.withNetworkPath
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -92,6 +94,11 @@ sealed interface LibraryDialog {
     data object DelimiterWhitelist : LibraryDialog
 
     data class RemoveFolder(
+        val path: String,
+    ) : LibraryDialog
+
+    /** The shared network path of the folder at [path]. */
+    data class NetworkPath(
         val path: String,
     ) : LibraryDialog
 }
@@ -343,3 +350,12 @@ internal fun ProviderGroup.available(providers: AvailableProviders): List<String
         ProviderGroup.Lyrics -> providers.lyricFetchers
         ProviderGroup.Segments -> providers.segmentProviders
     }
+
+/** Saves the shared network path of the folder at [path], as made; blank clears it. The other `PathInfos` keys go back untouched. */
+fun LibraryViewModel.setNetworkPath(
+    path: String,
+    networkPath: String,
+) {
+    val options = (state.value as? LibraryUiState.Ready)?.options ?: return
+    set(LIBRARY_PATH_INFOS, options.withNetworkPath(path, networkPath))
+}

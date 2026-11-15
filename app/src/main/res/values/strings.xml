@@ -227,6 +227,9 @@
     <string name="library_enabled">Enabled</string>
     <string name="library_enabled_detail">A library that is off is hidden from everyone. Its settings and files stay.</string>
     <string name="library_folders">Folders</string>
+    <string name="library_network_path_none">No shared network path</string>
+    <string name="library_network_path_title">Shared network path</string>
+    <string name="library_network_path_hint">For clients that play over a share. The folder is %1$s on the server. Leave it blank for none.</string>
     <string name="library_folder_add">Add folder</string>
     <string name="library_folder_remove">Remove folder</string>
     <string name="library_folder_remove_title">Remove %1$s?</string>

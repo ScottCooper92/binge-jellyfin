@@ -228,6 +228,9 @@
     <string name="library_enabled">Activada</string>
     <string name="library_enabled_detail">Una biblioteca desactivada se oculta para todos. Sus ajustes y archivos se conservan.</string>
     <string name="library_folders">Carpetas</string>
+    <string name="library_network_path_none">Sin ruta de red compartida</string>
+    <string name="library_network_path_title">Ruta de red compartida</string>
+    <string name="library_network_path_hint">Para clientes que reproducen desde un recurso compartido. La carpeta es %1$s en el servidor. Déjala en blanco para ninguna.</string>
     <string name="library_folder_add">Añadir carpeta</string>
     <string name="library_folder_remove">Quitar carpeta</string>
     <string name="library_folder_remove_title">¿Quitar %1$s?</string>
