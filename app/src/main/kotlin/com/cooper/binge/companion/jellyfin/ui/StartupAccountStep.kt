@@ -16,7 +16,7 @@ import okhttp3.HttpUrl
 
 /**
  * The setup wizard's account step. The password is sent once, to the server the user chose, over the anonymous client (the route is
- * anonymous until setup is complete); it is held only in [StartupPhase.Account] until then, and is cleared when the account is made.
+ * anonymous until setup is complete); it is held only in [StartupPhase.Account] until then, and goes on to [StartupPhase.Finish] only for the sign-in that ends setup.
  */
 class StartupAccountStep internal constructor(
     private val connection: Connection,
@@ -52,7 +52,7 @@ class StartupAccountStep internal constructor(
             state.update { current ->
                 val s = current as? UiState.Startup ?: return@update current
                 if (saved.isSuccess) {
-                    s.copy(phase = StartupPhase.Saved)
+                    s.copy(phase = StartupPhase.Finish(step.name.trim(), step.password))
                 } else {
                     val refusal = saved.exceptionOrNull() as? JellyfinHttpException
                     val error = if (refusal != null) SetupError.Generic else unreachableSetup(s.baseUrl, localNetwork)

@@ -122,7 +122,15 @@ val previewStartupLoading = previewStartup.copy(phase = StartupPhase.Loading)
 
 val previewStartupFailed = previewStartup.copy(phase = StartupPhase.Failed(ConsoleFailure.Unreachable))
 
-val previewStartupSaved = previewStartup.copy(phase = StartupPhase.Saved)
+val previewStartupFinish = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2"))
+
+val previewStartupFinishPorts = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", portMapping = true))
+
+val previewStartupFinishOff = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", remoteAccess = false))
+
+val previewStartupFinishSaving = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", busy = true))
+
+val previewStartupFinishRefused = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", error = SetupError.Generic))
 
 val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 

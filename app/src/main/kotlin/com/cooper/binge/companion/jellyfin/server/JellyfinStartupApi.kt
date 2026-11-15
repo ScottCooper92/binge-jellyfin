@@ -65,6 +65,30 @@ suspend fun JellyfinClient.saveStartupUser(
     )
 }
 
+/**
+ * Saves the two remote-access choices the first-run setup asks for: whether the server accepts connections from outside the
+ * network, and whether it maps its port on the router itself.
+ */
+suspend fun JellyfinClient.saveStartupRemoteAccess(
+    enableRemoteAccess: Boolean,
+    enableAutomaticPortMapping: Boolean,
+) {
+    post(
+        STARTUP_REMOTE_ACCESS,
+        buildJsonObject {
+            put("EnableRemoteAccess", enableRemoteAccess)
+            put("EnableAutomaticPortMapping", enableAutomaticPortMapping)
+        },
+    )
+}
+
+/** Ends the first-run setup. From here the Startup routes answer only an administrator. */
+suspend fun JellyfinClient.completeStartup() {
+    post(STARTUP_COMPLETE, null)
+}
+
+private const val STARTUP_REMOTE_ACCESS = "Startup/RemoteAccess"
+private const val STARTUP_COMPLETE = "Startup/Complete"
 private const val STARTUP_FIRST_USER = "Startup/FirstUser"
 private const val STARTUP_USER = "Startup/User"
 private const val STARTUP_CONFIGURATION = "Startup/Configuration"

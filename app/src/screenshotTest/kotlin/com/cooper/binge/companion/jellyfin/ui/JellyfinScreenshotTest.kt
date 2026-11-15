@@ -169,9 +169,31 @@ class JellyfinScreenshotTest {
     fun startupFailed() = JellyfinRoot(previewStartupFailed, Actions())
 
     @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun startupFinish() = JellyfinRoot(previewStartupFinish, Actions())
+
+    @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun startupSaved() = JellyfinRoot(previewStartupSaved, Actions())
+    fun startupFinishPorts() = JellyfinRoot(previewStartupFinishPorts, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFinishOff() = JellyfinRoot(previewStartupFinishOff, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFinishSaving() = JellyfinRoot(previewStartupFinishSaving, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFinishRefused() = JellyfinRoot(previewStartupFinishRefused, Actions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

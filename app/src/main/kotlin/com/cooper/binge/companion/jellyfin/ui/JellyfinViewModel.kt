@@ -313,7 +313,10 @@ class JellyfinViewModel(
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     /** The setup wizard for a server that has not finished its first-run setup. */
-    val startup = StartupWizard(connection, _state, viewModelScope, localNetwork)
+    val startup =
+        StartupWizard(connection, _state, viewModelScope, localNetwork) { url, server, signedIn ->
+            finish(url, server, signedIn, AnalyticsEvents.METHOD_PASSWORD)
+        }
 
     private val reports = SignInReports(analytics)
 
@@ -629,6 +632,9 @@ class JellyfinViewModel(
                         }
                     // The demo signs in from the server step, so that is where its failure has to land.
                     is UiState.EnterServer -> it.copy(checking = false, error = SetupError.Generic)
+                    // Setup is complete but the session could not be kept: the last step stays, with the reason.
+                    is UiState.Startup ->
+                        it.copy(phase = (it.phase as? StartupPhase.Finish)?.copy(busy = false, error = SetupError.Generic) ?: it.phase)
                     else -> it
                 }
             }
