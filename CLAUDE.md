@@ -274,8 +274,9 @@ one the bots read. `ci.yml` explains the split.
 
 On a pull request a `changes` job runs first and `build` reads its answers: a docs-only diff skips every Gradle job, a diff
 that cannot move a frame skips `screenshots`, and `release` runs only when something R8 reads changed. The rules are the
-closed lists in `.github/scripts/classify-changes.sh`, tested by `classify-changes.test.sh`; a path in no list runs the job,
-and push and the nightly run everything. A new top-level source set or build input goes in a list there, or it runs the lot.
+lists in `.github/scripts/classify-changes.sh`, tested by `classify-changes.test.sh`. For the Gradle jobs and `screenshots` a
+path in no skip list runs the job. `release` is the reverse, an allow-list: a path runs it only if `release_input` names it, so a
+new R8 input (a source set, assets, a `.pro` file) is added there or the PR skips R8. Push and the nightly run everything.
 
 ### Screenshot frames
 
