@@ -21,7 +21,7 @@ class ChangelogMarkdownTest {
     @Test
     fun `a tap opens a web link and nothing else`() {
         val opened = mutableListOf<String>()
-        val handler = WebLinksOnly(UriHandler { opened += it })
+        val handler = WebLinksOnly(handlerOf { opened += it })
         handler.openUri("https://example.com/a")
         handler.openUri("file:///data/x")
         handler.openUri("tel:123")
@@ -30,6 +30,11 @@ class ChangelogMarkdownTest {
 
     @Test
     fun `a link no app can open does not crash`() {
-        WebLinksOnly(UriHandler { error("no browser") }).openUri("https://example.com")
+        WebLinksOnly(handlerOf { error("no browser") }).openUri("https://example.com")
     }
+
+    private fun handlerOf(onOpen: (String) -> Unit) =
+        object : UriHandler {
+            override fun openUri(uri: String) = onOpen(uri)
+        }
 }
