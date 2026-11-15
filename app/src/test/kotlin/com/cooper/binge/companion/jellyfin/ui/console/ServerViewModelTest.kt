@@ -69,6 +69,7 @@ class ServerViewModelTest {
 
     @Test
     fun `alerts are the newest warnings and errors, asked of a server that filters by severity once for each`() {
+        jellyfin.activityFiltersSeverity = true
         jellyfin.activityEntries =
             listOf(
                 entry(9, "Information", 9),
@@ -90,7 +91,6 @@ class ServerViewModelTest {
 
     @Test
     fun `a server that cannot filter is read whole, and the alerts are picked here, at most five`() {
-        jellyfin.activityIgnoresSeverity = true
         jellyfin.activityEntries = (1..9).map { n -> entry(10 - n, if (n % 2 == 0) "Information" else "Error", 10 - n) }
         val alerts = viewModel().ready().alerts!!
         assertEquals(listOf(9L, 7L, 5L, 3L, 1L), alerts.map { it.id })
