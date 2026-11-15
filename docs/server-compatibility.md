@@ -68,6 +68,7 @@ older server shows less rather than failing on a call it can't answer.
 | A library's media segment providers (the server lists them from 10.11, and 10.10 misspells the order option) | 10.11 | `hasLibrarySegmentProviders` |
 | A library's metadata downloaders and image fetchers for each item type (`TypeOptions`) | every release from 10.8 | none: the page lists what `Libraries/AvailableOptions` offers for the library, so a type it offers nothing for shows nothing |
 | Backups | 10.11 | `hasBackups` |
+| Disk space of the server's folders and its libraries' (the Server page's Storage groups, `GET /System/Info/Storage`). From the issue's audit (#526), which has it at 10.11.0; the release that added it, and the exact field names, are not re-read in the server source and are checked on a device. A report that fails to read leaves the groups out | 10.11 | `hasStorageInfo` |
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |
 | Grouping movies and shows into collections separately | 10.11 | `hasSeparateCollectionGrouping` |
 | Activity filters by end time, user, severity and type (every server filters by start time and by whether an entry has a user; the others are ignored before 12.0, so the page does not offer them) | 12.0 | `hasActivityFilters` |

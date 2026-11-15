@@ -429,6 +429,14 @@ class FakeJellyfin : Dispatcher() {
         """{"ServerName":"truenas","Version":"10.11.6","LocalAddress":"http://192.168.1.10:8096","SystemArchitecture":"X64",""" +
             """"OperatingSystemDisplayName":"Linux","HasUpdateAvailable":false,"HasPendingRestart":true,"CanSelfRestart":true}"""
 
+    /** `/System/Info/Storage`: the disk space of the server's folders, and of each library's. */
+    var systemStorage =
+        """{"ProgramDataFolder":{"Path":"/config","FreeSpace":400,"UsedSpace":100,"StorageType":"ext4","DeviceId":"a"},""" +
+            """"CacheFolder":{"Path":"/cache","FreeSpace":5,"UsedSpace":95,"StorageType":"zfs","DeviceId":"b"},""" +
+            """"LogFolder":{"Path":"/config/log"},"Libraries":[{"Id":"lib-movies","Name":"Movies","Folders":[""" +
+            """{"Path":"/media/movies","FreeSpace":1000,"UsedSpace":3000,"StorageType":"ext4","DeviceId":"c"}]},""" +
+            """{"Name":"Empty","Folders":[]},{"Id":"x"}]}"""
+
     /** `/Items/Counts`, as the signed-in user's library answers it. */
     var itemCounts = """{"MovieCount":120,"SeriesCount":14,"EpisodeCount":900,"SongCount":0}"""
 
@@ -608,6 +616,7 @@ class FakeJellyfin : Dispatcher() {
                 down--
                 MockResponse(code = 503)
             }
+            path == "/System/Info/Storage" -> json(systemStorage)
             path == "/System/Info" -> json(systemInfo)
             path == "/UserImage" || OLD_USER_IMAGE.matches(path) -> userImage(request)
             path == "/Branding/Splashscreen" -> splashscreen(request)
