@@ -12,6 +12,8 @@ data class ConsoleEntry(
     val page: ConsolePage,
     val opening: Int,
     val item: String? = null,
+    /** The setting the page was opened on, by its row key, for a search result: the page scrolls to it and washes it once. */
+    val row: String? = null,
 )
 
 /** What Navigation 3 shows: the home, or one open page under its opening number. A key's identity is its content. */
@@ -87,9 +89,21 @@ data class ConsoleBackStack(
         return copy(entries = entries + ConsoleEntry(on.page, on.opening, item))
     }
 
-    /** [page] opened from the page on top, or from the home. Opening the page already on top does nothing. */
-    fun open(page: ConsolePage): ConsoleBackStack =
-        if (top?.page == page) this else copy(entries = entries + ConsoleEntry(page, next), next = next + 1)
+    /**
+     * [page] opened from the page on top, or from the home, on [row] if one is named. Opening the page already on top does nothing,
+     * except that a [row] it is not on is shown.
+     */
+    fun open(
+        page: ConsolePage,
+        row: String? = null,
+    ): ConsoleBackStack {
+        val on = top
+        return when {
+            on == null || on.page != page -> copy(entries = entries + ConsoleEntry(page, next, row = row), next = next + 1)
+            row != null && on.item == null && on.row != row -> copy(entries = entries.dropLast(1) + on.copy(row = row))
+            else -> this
+        }
+    }
 
     /**
      * [item] of [page] opened from the page on top, as a user is from the activity log: the page, then its item over it, so
@@ -105,11 +119,14 @@ data class ConsoleBackStack(
      * it returns to the home rather than walking every page visited on the way. The page already at the bottom
      * stays, with its view models, and only what it opened closes.
      */
-    fun openFromHome(page: ConsolePage): ConsoleBackStack =
+    fun openFromHome(
+        page: ConsolePage,
+        row: String? = null,
+    ): ConsoleBackStack =
         if (entries.firstOrNull()?.page == page) {
-            copy(entries = entries.take(1))
+            copy(entries = entries.take(1).map { it.copy(row = row) })
         } else {
-            copy(entries = listOf(ConsoleEntry(page, next)), next = next + 1)
+            copy(entries = listOf(ConsoleEntry(page, next, row = row)), next = next + 1)
         }
 
     /** Back: the page on top closes, and the one under it, or the home, shows. */
@@ -123,19 +140,25 @@ data class ConsoleBackStack(
         entries.filter { allowed(it.page) }.let { if (it.size == entries.size) this else copy(entries = it) }
 
     companion object {
-        /** Saves as the next opening number, then each entry's page (by its name), opening and item (empty for none). */
+        /** Saves as the next opening number, then each entry's page (by its name), opening, item and row (empty for none). */
         val Saver: Saver<ConsoleBackStack, List<Any>> =
             object : Saver<ConsoleBackStack, List<Any>> {
                 override fun SaverScope.save(value: ConsoleBackStack): List<Any> =
-                    listOf<Any>(value.next) + value.entries.flatMap { listOf(it.page.name, it.opening, it.item.orEmpty()) }
+                    listOf<Any>(value.next) +
+                        value.entries.flatMap { listOf(it.page.name, it.opening, it.item.orEmpty(), it.row.orEmpty()) }
 
                 override fun restore(value: List<Any>): ConsoleBackStack? {
                     val next = value.firstOrNull() as? Int ?: return null
                     val entries =
-                        value.drop(1).chunked(3).map { chunk ->
-                            if (chunk.size != 3) return null
+                        value.drop(1).chunked(4).map { chunk ->
+                            if (chunk.size != 4) return null
                             val page = ConsolePage.entries.firstOrNull { it.name == chunk[0] } ?: return null
-                            ConsoleEntry(page, chunk[1] as? Int ?: return null, (chunk[2] as? String ?: return null).ifEmpty { null })
+                            ConsoleEntry(
+                                page,
+                                chunk[1] as? Int ?: return null,
+                                (chunk[2] as? String ?: return null).ifEmpty { null },
+                                (chunk[3] as? String ?: return null).ifEmpty { null },
+                            )
                         }
                     return ConsoleBackStack(entries, next)
                 }

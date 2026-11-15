@@ -145,6 +145,7 @@ class MainActivity : ComponentActivity() {
                     onDiscover = { withLocalNetwork(viewModel::discoverServers) },
                     onChooseServer = viewModel::chooseServer,
                     onOpenPage = { stack = stack.open(it) },
+                    onOpenRow = { page, row -> stack = stack.open(page, row) },
                     onAllowLocalNetwork = {
                         if (askedLocalNetwork) {
                             openAppSettings()
@@ -160,6 +161,7 @@ class MainActivity : ComponentActivity() {
             val homeActions =
                 actions.copy(
                     onOpenPage = { stack = stack.openFromHome(it) },
+                    onOpenRow = { page, row -> stack = stack.openFromHome(page, row) },
                     selectedPage = stack.entries.firstOrNull()?.page ?: ConsolePage.NowPlaying,
                 )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
@@ -242,6 +244,7 @@ private fun ConsoleHost(
                     actions,
                     { onStack(latest.openItem(it)) },
                     { page, item -> onStack(latest.openPageItem(page, item)) },
+                    row = entry.row,
                 )
             }
         },

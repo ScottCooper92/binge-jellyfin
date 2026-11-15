@@ -71,6 +71,7 @@ import com.cooper.binge.companion.jellyfin.server.hasToneMappingMode
 import com.cooper.binge.companion.jellyfin.server.int
 import com.cooper.binge.companion.jellyfin.server.isAccelerated
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -97,6 +98,7 @@ private fun TranscodingUiState.Ready.switch(
         icon = icon,
         label = stringResource(label),
         detail = detail?.let { stringResource(it) },
+        key = SettingRows.transcoding(key),
         supportingMaxLines = TRANSCODING_DETAIL_LINES,
         toggled = on,
         onClick = { actions.onEncoding(key, JsonPrimitive(!on)) },

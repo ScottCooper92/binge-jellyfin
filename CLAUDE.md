@@ -169,6 +169,8 @@ as binge-seerr's TV is.
   by another word, a keywords string in both languages. A test holds that every page has an entry. The search lists only what
   `ConsolePage.available` allows. A setting its page hides on some servers or accounts (a row behind `takeIf { profile.has… }`)
   carries the same gate as `shown` on its entry, or the search would offer a setting the page does not show.
+  A page whose rows carry a `ListItem.key` (`ui/search/SettingRows.kt`) opens on that row, scrolled to and washed once
+  (`ProvideRowFocus`); the entry names it with `row`, and a setting on a page without keys opens the page at the top.
 - **For everyone:** approving a Quick Connect code another device shows, Playback (their languages and
   playback switches), the Home screen, their password, and their own active sessions.
 - **For an admin:** every session, libraries and scans, scheduled tasks, activity, devices, users,

@@ -1,0 +1,21 @@
+package com.cooper.binge.companion.jellyfin.ui.search
+
+/**
+ * The keys a console page gives its rows (`ListItem.key`) so the settings search can open the page on one of them. A page and
+ * the search take the key from here, so the two cannot drift: a row is found by the same name it is given.
+ */
+internal object SettingRows {
+    /** A Networking row, by the name of its field in the server's network configuration. */
+    fun network(field: String) = "network.$field"
+
+    /** A Playback and transcoding row, by the name of its field in the server's encoding configuration. */
+    fun transcoding(field: String) = "transcoding.$field"
+
+    /** Networking's two local ports, which the page names by their [com.cooper.binge.companion.jellyfin.ui.console.NetworkNumber]. */
+    val NETWORK_HTTP_PORT = network("HttpPort")
+    val NETWORK_HTTPS_PORT = network("HttpsPort")
+
+    const val TRANSCODING_ACCELERATION = "transcoding.acceleration"
+    const val SERVER_NAME = "server.name"
+    const val SERVER_QUICK_CONNECT = "server.quick-connect"
+}

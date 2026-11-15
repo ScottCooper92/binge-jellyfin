@@ -29,6 +29,7 @@ import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.encodingChoice
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import kotlinx.serialization.json.JsonElement
 import com.binge.designsystem.R as DesR
 
@@ -111,6 +112,7 @@ private fun TranscodingBody(
                     ListItem(
                         icon = Icons.Outlined.Memory,
                         label = stringResource(R.string.transcoding_acceleration),
+                        key = SettingRows.TRANSCODING_ACCELERATION,
                         detail = accelerationLabel(type),
                         note =
                             ListItemNote(
