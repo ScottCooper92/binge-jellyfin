@@ -242,7 +242,9 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && needs.changes.result == 'success' && needs.changes.outputs.screens == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The job normally takes 8 to 14 minutes. A render that has not finished in 20 has hung, and a hang
+    # costs the full limit before anyone can rerun it, so the limit sits above the slowest run seen, not at 30.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
