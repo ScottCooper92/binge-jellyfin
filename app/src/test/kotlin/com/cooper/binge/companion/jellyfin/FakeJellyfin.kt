@@ -262,6 +262,11 @@ class FakeJellyfin : Dispatcher() {
             """"EnableDecodingColorDepth12HevcRext":false,"H264Crf":23,"H265Crf":28,"MaxMuxingQueueSize":2048,""" +
             """"FutureOption":{"keep":"me"}}"""
 
+    /** The NFO configuration, as `/System/Configuration/xbmcmetadata` answers it and a save replaces it. */
+    var nfoConfiguration =
+        """{"UserId":null,"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":false,"EnablePathSubstitution":true,""" +
+            """"EnableExtraThumbsDuplication":false,"FutureOption":{"keep":"me"}}"""
+
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
     var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""
 
@@ -634,6 +639,11 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Configuration/encoding" -> json(encodingConfiguration)
+            path == "/System/Configuration/xbmcmetadata" && request.method == "POST" -> {
+                nfoConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/xbmcmetadata" -> json(nfoConfiguration)
             path == "/System/Configuration/branding" && request.method == "POST" -> {
                 brandingConfiguration = savedBranding(request.body?.utf8().orEmpty())
                 MockResponse(code = 204)
