@@ -113,12 +113,18 @@ jobs:
           base=""
           if [ "$SAME_REPO" = true ]; then
             green="$(gh run list --workflow ci.yml --branch "$HEAD_REF" --event pull_request --status success --limit 5 \
-              --json headSha -q '.[].headSha' 2>/dev/null || true)"
-            for sha in $green; do
+              --json headSha,databaseId -q '.[] | "\(.headSha) \(.databaseId)"' 2>/dev/null || true)"
+            while read -r sha run_id; do
+              [ -n "$sha" ] || continue
+              # A draft's run skips every job, `build` too, and may still conclude success: only a run
+              # whose `build` job itself succeeded vouches for its commit.
+              built="$(gh api "repos/${{ github.repository }}/actions/runs/$run_id/jobs" \
+                -q '[.jobs[] | select(.name == "build" and .conclusion == "success")] | length' 2>/dev/null || echo 0)"
+              [ "$built" -gt 0 ] || continue
               if [ "$sha" != "$head" ] && git cat-file -e "$sha^{commit}" 2>/dev/null && git merge-base --is-ancestor "$sha" "$head"; then
                 base="$sha"; label="its last green run ($sha)"; break
               fi
-            done
+            done <<< "$green"
           fi
           if [ -z "$base" ]; then
             git fetch --no-tags origin "$BASE_REF" 2>/dev/null || true

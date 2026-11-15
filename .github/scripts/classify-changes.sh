@@ -3,14 +3,16 @@
 # as $1. Prints `product=`, `screens=` and `release=`, each true or false, one per line.
 #
 # The design is Binge's change classifier, kept deliberately small. A job is skipped only when
-# EVERY changed path is in a closed, finite set that provably cannot affect it. A path in no set
-# runs the job, an empty list runs everything, and so does anything this script cannot read. The
+# EVERY changed path is in a closed, finite set that provably cannot affect it. For `product` and
+# `screens` a path in no set runs the job. `release` is the reverse, an allow-list: it runs only for a
+# listed input, so a new R8 input (a source set, assets, a .pro file outside keepRules/) must be added
+# to `release_input`. An empty list runs everything, and so does anything this script cannot read. The
 # suite on main and the nightly never call this, so a wrong skip is found at the next merge.
 #
 #   product  the Gradle jobs: checks (lint, detekt, ktlint, assemble) and tests. False only when
 #            every path is documentation or tooling nothing compiles or packages.
 #   screens  the screenshot frames. False when no path can move a frame: tests, the exported
-#            Service, notifications, the review and feedback launchers, keep rules and the like.
+#            Service, the review launcher, keep rules and the like.
 #   release  the R8 build. True only for what R8 reads: the version catalog, Gradle files, keep
 #            rules, the manifest, XML and raw resources, a submodule pin, the workflows
 #            themselves, or (the $SENSITIVE env, set by the caller from the diff's content) code
@@ -35,8 +37,8 @@ non_product() {
 no_frames() {
   case "$1" in
     app/src/test/* | app/src/androidTest/* | app/src/debug/keepRules/* | app/src/main/keepRules/*) return 0 ;;
-    app/src/main/kotlin/com/cooper/binge/companion/jellyfin/service/* | app/src/main/kotlin/com/cooper/binge/companion/jellyfin/notifications/*) return 0 ;;
-    app/src/main/kotlin/com/cooper/binge/companion/jellyfin/review/* | app/src/main/kotlin/com/cooper/binge/companion/jellyfin/feedback/*) return 0 ;;
+    app/src/main/kotlin/com/cooper/binge/companion/jellyfin/service/*) return 0 ;;
+    app/src/main/kotlin/com/cooper/binge/companion/jellyfin/review/*) return 0 ;;
     translation-hashes.txt | detekt.yml | .editorconfig | binge-companions | binge-ci) return 0 ;;
   esac
   return 1

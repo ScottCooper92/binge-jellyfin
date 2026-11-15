@@ -31,7 +31,8 @@ check "server code can reach UI"   "true true false"   false "$K/server/Jellyfin
 check "a resource string"          "true true false"   false app/src/main/res/values/strings.xml
 check "tests only"                 "true false false"  false app/src/test/kotlin/x/YTest.kt
 check "the exported Service"       "true false false"  false "$K/service/JellyfinCompanionService.kt"
-check "notifications"              "true false false"  false "$K/notifications/NotificationWorker.kt"
+check "notifications"              "true true false"   false "$K/notifications/NotificationPrefs.kt"
+check "the bug report URL"         "true true false"   false "$K/feedback/BugReport.kt"
 check "hashes only"                "true false false"  false translation-hashes.txt
 check "the version catalog"        "true true true"    false libs.versions.toml
 check "a build file"               "true true true"    false app/build.gradle.kts
@@ -39,7 +40,7 @@ check "a keep rule"                "true false true"   false app/src/main/keepRu
 check "the manifest"               "true true true"    false app/src/main/AndroidManifest.xml
 check "the design system pin"      "true true true"    false design-system
 check "the companions pin"         "true false true"   false binge-companions
-check "sensitive code"             "true false true"   true  "$K/notifications/NotificationPrefs.kt"
+check "sensitive code"             "true true true"    true  "$K/notifications/NotificationPrefs.kt"
 check "sensitive but docs only"    "false false false" true  CLAUDE.md
 check "docs with a screen"         "true true false"   false CLAUDE.md "$K/ui/SignedInHome.kt"
 
