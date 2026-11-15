@@ -118,10 +118,9 @@ class MainActivity : ComponentActivity() {
             // The console pages open over the home, the last on top. A page that opens another stays under it, so
             // Back returns to the opener, and to the home from the first. Leaving SignedIn closes them all.
             var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
-            val signedIn = state is UiState.SignedIn
             // The permission is asked for once; after that the way to it is the app's settings, as the prompt may not come back.
             var askedLocalNetwork by rememberSaveable { mutableStateOf(false) }
-            LaunchedEffect(signedIn) { if (!signedIn) stack = stack.clear() }
+            LaunchedEffect(state is UiState.SignedIn) { if (state !is UiState.SignedIn) stack = stack.clear() }
             // A page the server or the user lost (Quick Connect turned off, admin rights taken away) closes,
             // once the refresh has read what they now allow; Back skips it.
             (state as? UiState.SignedIn)?.let { gated ->
@@ -129,7 +128,7 @@ class MainActivity : ComponentActivity() {
                     if (gated.account.isRead) stack = stack.keeping { it.available(gated.profile, gated.account) }
                 }
             }
-            val openPage = stack.top.takeIf { signedIn }
+            val openPage = stack.top.takeIf { state is UiState.SignedIn }
             ReportScreen(state, openPage?.page, graph.analytics)
             RefreshGatesWhenHomeReturns(openPage?.opening, stack.openings) { viewModel.refresh(gatesOnly = true) }
             val actions =

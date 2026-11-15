@@ -119,6 +119,31 @@ fun JellyfinViewModel.chooseServer(server: DiscoveredServer) {
     connect()
 }
 
+/** Picks a listed account: its name fills the username, and one with no password signs in straight away. */
+fun JellyfinViewModel.pickPublicUser(user: PublicUser) {
+    val current = state.value as? UiState.SignIn ?: return
+    if (current.busy) return
+    onUsername(user.name)
+    onPassword("")
+    if (!user.hasPassword) signInWithPassword()
+}
+
+/** Reads the server's public users once, for the sign-in step. A failure or an empty list leaves the step as it is. */
+private fun CoroutineScope.loadPublicUsers(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    url: HttpUrl,
+    base: String,
+) {
+    launch {
+        attempt { connection.anonymous(url).publicUsers() }
+            .onSuccess { users ->
+                // Only for the step it was asked for: the user may have changed server while it was in flight.
+                state.update { (it as? UiState.SignIn)?.takeIf { s -> s.baseUrl == base }?.copy(publicUsers = users) ?: it }
+            }.onFailure { Log.i("JellyfinSetup", "The server's public users could not be read", it) }
+    }
+}
+
 /** Opens the demo server, which answers from memory and signs in as its own administrator. */
 fun JellyfinViewModel.tryDemo() {
     if ((state.value as? UiState.EnterServer)?.checking == true) return
@@ -312,31 +337,9 @@ class JellyfinViewModel(
             } else {
                 val base = info.baseUrl.toString().trimEnd('/')
                 _state.value = UiState.SignIn(baseUrl = base, server = info)
-                loadPublicUsers(info.baseUrl, base)
+                viewModelScope.loadPublicUsers(connection, _state, info.baseUrl, base)
             }
         }
-    }
-
-    /** Reads the server's public users once, for the sign-in step. A failure or an empty list leaves the step as it is. */
-    private fun loadPublicUsers(
-        url: HttpUrl,
-        base: String,
-    ) {
-        viewModelScope.launch {
-            attempt { connection.anonymous(url).publicUsers() }
-                .onSuccess { users ->
-                    // Only for the step it was asked for: the user may have changed server while it was in flight.
-                    _state.update { (it as? UiState.SignIn)?.takeIf { s -> s.baseUrl == base }?.copy(publicUsers = users) ?: it }
-                }.onFailure { Log.i(TAG, "The server's public users could not be read", it) }
-        }
-    }
-
-    /** Picks a listed account: its name fills the username, and one with no password signs in straight away. */
-    fun pickPublicUser(user: PublicUser) {
-        val current = _state.value as? UiState.SignIn ?: return
-        if (current.busy) return
-        _state.value = current.copy(username = user.name, password = "", passwordError = null)
-        if (!user.hasPassword) signInWithPassword()
     }
 
     fun signInWithPassword() {
