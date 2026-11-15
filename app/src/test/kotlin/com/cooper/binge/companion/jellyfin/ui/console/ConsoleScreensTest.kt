@@ -4,12 +4,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -76,6 +78,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowDialog
 
 /** The console's pages, driven as a user would: each tap reaches the action it should. */
@@ -848,6 +851,7 @@ class ConsoleScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
     fun `a package's screen installs the version for this server, or says there is none`() {
         val calls = mutableListOf<String>()
         var state by mutableStateOf(CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7")))
@@ -861,6 +865,9 @@ class ConsoleScreensTest {
         assertEquals(listOf("install Playback Reporting"), calls)
         state = state.copy(installing = mapOf("Playback Reporting" to null))
         compose.onNodeWithText("Cancel install").assertIsNotEnabled()
+        // The footer stays where it was, as a spinner that swallows taps, so the page doesn't move under a tap.
+        compose.onNodeWithText("Install").assertDoesNotExist()
+        compose.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
         state = state.copy(installing = mapOf("Playback Reporting" to "install-1"))
         compose.onNodeWithText("Cancel install").performClick()
         assertEquals("cancel Playback Reporting", calls.last())
@@ -872,6 +879,7 @@ class ConsoleScreensTest {
             )
         compose.onNodeWithText("Installed. Restart the server to start using it.").assertExists()
         compose.onNodeWithText("Install").assertDoesNotExist()
+        compose.onNodeWithText("Installed").assertIsNotEnabled()
         state = state.copy(outcomes = emptyMap())
         shown = "Future Plugin"
         compose.onNodeWithText("None built for this server's release").assertExists()
@@ -879,6 +887,7 @@ class ConsoleScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
     fun `a package lists its versions, installs a chosen one, and asks before putting an older one over a newer`() {
         val calls = mutableListOf<String>()
         val newer = catalogVersion.copy(version = "14.0.0.0", targetAbi = "10.11.0.0", changelog = "For a newer server.")
@@ -893,7 +902,8 @@ class ConsoleScreensTest {
         compose.onNodeWithText("Built for Jellyfin 10.11.0.0, newer than this server").assertIsNotEnabled()
         compose.onNodeWithText("2026-01-02").assertExists()
         // The older version asks first, and Cancel installs nothing.
-        compose.onNodeWithText("12.0.0.0", substring = true).performScrollTo().performClick()
+        compose.onNodeWithText("12.0.0.0", substring = true).performScrollTo()
+        compose.onNodeWithText("12.0.0.0", substring = true).performClick()
         compose.onNodeWithText("• Older fix").assertExists()
         compose.onNodeWithText("Install").performClick()
         compose.onNodeWithText("Install version 12.0.0.0?").assertExists()

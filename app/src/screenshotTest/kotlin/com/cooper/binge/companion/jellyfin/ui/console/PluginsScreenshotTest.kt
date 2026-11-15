@@ -154,6 +154,7 @@ class PluginsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun catalogPackage() = Package("Playback Reporting", CatalogUiState.Ready(catalogPackages, server = server))
 
@@ -161,6 +162,7 @@ class PluginsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun catalogVersions() =
         Package(
@@ -191,6 +193,8 @@ class PluginsScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun catalogInstalling() =
         Package(
@@ -204,6 +208,8 @@ class PluginsScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun catalogDone() =
         Package(
