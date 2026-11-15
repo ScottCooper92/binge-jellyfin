@@ -360,10 +360,11 @@ app:kw_codecs  6f170406ddf3
 app:kw_feedback  aaef9bf07c61
 app:kw_hardware  bff64e0cd58b
 app:kw_https  47135d9b0123
-app:kw_libraries  107d849798a7
+app:kw_libraries  08ed83bd71ba
 app:kw_live_tv  e551de074ee5
 app:kw_metadata  468c47024ff8
 app:kw_network  88c994d7d5c3
+app:kw_network_path  4bf9227b2633
 app:kw_notifications  ded8eb6f51a5
 app:kw_now_playing  a760abbd0c66
 app:kw_password  16e3b01abd44

@@ -1367,7 +1367,8 @@
     <string name="kw_picture">avatar photo image</string>
     <string name="kw_password">pin security sign in</string>
     <string name="kw_users">accounts people parental access permissions</string>
-    <string name="kw_libraries">scan folders movies shows media paths network path share</string>
+    <string name="kw_libraries">scan folders movies shows media paths</string>
+    <string name="kw_network_path">network path share smb nfs unc</string>
     <string name="kw_transcoding">streaming resume ffmpeg encode bitrate</string>
     <string name="kw_metadata">artwork images nfo language country sorting</string>
     <string name="kw_trickplay">seek thumbnails preview scrubbing</string>
