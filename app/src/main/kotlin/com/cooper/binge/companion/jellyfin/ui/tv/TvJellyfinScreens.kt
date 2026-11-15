@@ -384,6 +384,8 @@ private fun ColumnScope.TvForgotPanel(
             text = stringResource(R.string.forgot_pin_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
+            // Set, not inherited: the content colour here is dark on a TV (found on the emulator), as every other text on this page sets its own.
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
         )
         TvStatusLine(
@@ -428,6 +430,7 @@ private fun ColumnScope.TvForgotPanel(
         text = stringResource(title),
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.fillMaxWidth(),
     )
     TvStatusLine(stringResource(body), isError = false, capped = false)
