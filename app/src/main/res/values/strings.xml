@@ -710,6 +710,27 @@
         <item quantity="one">Stops after %1$d minute</item>
         <item quantity="other">Stops after %1$d minutes</item>
     </plurals>
+    <string name="nfo_title">NFO</string>
+    <string name="console_nfo_detail">Kodi metadata files</string>
+    <string name="nfo_body">What the server writes into NFO files, the metadata files Kodi reads. Each library turns NFO on for itself, under its own options. A change saves as you make it.</string>
+    <string name="nfo_user">Watch state user</string>
+    <string name="nfo_user_none">None</string>
+    <string name="nfo_user_other">Another user</string>
+    <string name="nfo_users_failed">Couldn\'t load the users.</string>
+    <string name="nfo_date_format">Release date format</string>
+    <string name="nfo_date_format_hint">For example yyyy-MM-dd</string>
+    <string name="nfo_image_paths">Save image paths</string>
+    <string name="nfo_image_paths_detail">Write the path of each image into the NFO file.</string>
+    <string name="nfo_path_substitution">Substitute paths</string>
+    <string name="nfo_path_substitution_detail">Apply the server\'s path substitutions to the paths in NFO files.</string>
+    <string name="nfo_extra_thumbs">Copy thumbnails to extra thumbs</string>
+    <string name="nfo_extra_thumbs_detail">Also save each thumbnail as an extra thumb, for older Kodi skins.</string>
+    <string name="kw_nfo">kodi xbmc metadata nfo files local</string>
+    <string name="kw_nfo_user">kodi nfo watched played state user</string>
+    <string name="kw_nfo_date">kodi nfo release date format</string>
+    <string name="kw_nfo_images">kodi nfo artwork images paths</string>
+    <string name="kw_nfo_paths">kodi nfo path substitution</string>
+    <string name="kw_nfo_thumbs">kodi nfo extrathumbs thumbnails duplicate</string>
     <string name="trickplay_title">Trickplay</string>
     <string name="console_trickplay_detail">Seek thumbnails</string>
     <string name="console_transcoding_detail">Hardware acceleration, resume and streaming</string>

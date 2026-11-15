@@ -75,6 +75,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.MetadataDefaults -> MetadataDefaultsRoute(graph, openItem, close)
+        ConsolePage.Nfo -> NfoRoute(graph, close)
         ConsolePage.Backups -> BackupsRoute(graph, signedIn.profile.version, close)
         ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
         ConsolePage.LiveTv ->

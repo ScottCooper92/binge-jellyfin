@@ -42,6 +42,15 @@ class ConsolePageTest {
     }
 
     @Test
+    fun `NFO is an administrator's page with no version gate`() {
+        val admin = account("""{"IsAdministrator":true}""")
+        val user = account("""{"IsAdministrator":false}""")
+        assertTrue(ConsolePage.Nfo.available(server, admin))
+        assertFalse(ConsolePage.Nfo.available(server, user))
+        assertTrue(ConsolePage.Nfo.isAdmin)
+    }
+
+    @Test
     fun `a user gets only their own pages`() {
         val user = account("""{"IsAdministrator":false}""")
         assertEquals(
