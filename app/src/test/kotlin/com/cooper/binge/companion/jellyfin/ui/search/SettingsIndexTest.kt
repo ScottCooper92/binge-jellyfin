@@ -86,12 +86,12 @@ class SettingsIndexTest {
     }
 
     @Test
-    fun `the alerts rows are offered to an administrator only`() {
+    fun `the alerts row is offered to an administrator only`() {
         val profile = JellyfinServerProfile.from("10.11.6")
 
         fun offered(admin: Boolean) =
             find("battery") { it.available(profile, account(admin)) } + find("server alerts") { it.available(profile, account(admin)) }
-        assertTrue("Allow background checks" in offered(admin = true))
+        assertTrue("Server alerts" in offered(admin = true))
         assertEquals(emptyList<String>(), offered(admin = false))
     }
 

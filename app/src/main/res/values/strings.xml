@@ -1384,8 +1384,7 @@
     <string name="kw_feedback">bug issue report github</string>
     <string name="kw_now_playing">watching sessions streams stop</string>
     <string name="kw_live_tv">tuner guide recordings dvr channels</string>
-    <string name="kw_notifications">alerts push notify warnings errors sign in failed</string>
-    <string name="kw_battery">battery doze background optimisation optimization power saving</string>
+    <string name="kw_notifications">alerts push notify warnings errors sign in failed battery doze background optimisation optimization power saving interval check</string>
     <string name="this_app_detail">Preferences, feedback and more</string>
     <string name="settings_group_app">This app</string>
     <string name="settings_share_usage_data">Share usage data</string>
