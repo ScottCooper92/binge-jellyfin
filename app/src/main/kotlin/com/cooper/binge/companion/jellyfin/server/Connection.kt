@@ -51,6 +51,12 @@ class Connection(
 ) {
     private val refusals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
+    /** Whether the saved server has been answering, from every call a signed-in client makes (not a typed address's probes). */
+    val monitor = ConnectionMonitor()
+
+    /** [http] with the monitor listening: the clients signed in to the saved server use it, and an address being tried does not. */
+    private val signedInHttp: OkHttpClient by lazy { http.newBuilder().addInterceptor(ReachInterceptor(monitor)).build() }
+
     /**
      * The saved session's token stopped working: the server refused it outright (revoked, the device
      * removed, the password changed elsewhere). The home answers by sending the user to sign in.
@@ -82,6 +88,7 @@ class Connection(
                 .distinctUntilChanged()
                 .drop(1)
                 .collect {
+                    monitor.reset()
                     pendingSaves.toList().forEach { it.cancel() }
                     backupJobs.toList().forEach { it.cancel() }
                     creations.value = BackupCreation.Idle
@@ -135,12 +142,12 @@ class Connection(
     /** The saved session and a client signed in as it, or null when signed out. */
     suspend fun signedIn(): Pair<JellyfinSession, JellyfinClient>? {
         val session = sessions.current() ?: return null
-        return session to JellyfinClient(http, session.baseUrl.toHttpUrl(), identity(), io, session.token)
+        return session to JellyfinClient(signedInHttp, session.baseUrl.toHttpUrl(), identity(), io, session.token)
     }
 
     /** The signed-in client, again each time the saved session changes; null while signed out. */
     fun clients(): Flow<JellyfinClient?> =
         sessions.session.map { session ->
-            session?.let { JellyfinClient(http, it.baseUrl.toHttpUrl(), identity(), io, it.token) }
+            session?.let { JellyfinClient(signedInHttp, it.baseUrl.toHttpUrl(), identity(), io, it.token) }
         }
 }
