@@ -3,6 +3,9 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
@@ -171,5 +174,25 @@ class ChannelMappingsScreenTest {
         compose.onNodeWithText("103 ITV HD").performClick()
         assertEquals(listOf("c3"), picks)
         assertTrue(selections.isEmpty())
+    }
+
+    @Test
+    @Config(qualifiers = "w900dp-h900dp")
+    fun `beside the list another channel opens with an empty filter`() {
+        var selected by mutableStateOf("p1")
+        compose.setContent {
+            JellyfinTheme {
+                ChannelMappingsScreen(
+                    ChannelMappingsUiState.Ready(options, selected = selected),
+                    ChannelMappingsActions(onSelect = { if (it != null) selected = it }),
+                )
+            }
+        }
+        compose.onNode(hasSetTextAction()).performTextInput("bbc")
+        compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
+        compose.onNodeWithText("ITV").performClick()
+        compose.onNodeWithText("Tuner channel for ITV").assertIsDisplayed()
+        compose.onNodeWithText("103 ITV HD").assertIsDisplayed()
+        compose.onNodeWithText("101 BBC One HD").assertIsDisplayed()
     }
 }
