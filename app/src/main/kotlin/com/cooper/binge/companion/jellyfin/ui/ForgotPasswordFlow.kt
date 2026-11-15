@@ -85,9 +85,12 @@ class ForgotPasswordFlow(
             redeemed.onFailure { Log.i(TAG, "The password PIN was not answered", it) }
             state.update {
                 val signIn = it as? UiState.SignIn ?: return@update it
+                // A Done answer always shows, since the password changed on the server; the rest only while the sheet is still open.
+                val open = signIn.forgot is ForgotPasswordStep.EnterPin
                 when {
-                    redeemed.isFailure -> signIn.copy(forgot = ForgotPasswordStep.Failed)
                     redeemed.getOrNull() == true -> signIn.copy(forgot = ForgotPasswordStep.Done, password = sent, passwordError = null)
+                    !open -> it
+                    redeemed.isFailure -> signIn.copy(forgot = ForgotPasswordStep.Failed)
                     else -> signIn.copy(forgot = step.copy(busy = false, wrongPin = true))
                 }
             }

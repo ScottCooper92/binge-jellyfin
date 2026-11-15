@@ -20,7 +20,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsoleSheet
 
 /**
  * What a forgotten password has reached: a message for a cause and its next step (the server won't reset it here, did not answer, or
- * has removed the password), or the sheet that takes the PIN from the file the server wrote. Nothing is shown for no step, or while the
+ * has made the PIN its password), or the sheet that takes the PIN from the file the server wrote. Nothing is shown for no step, or while the
  * server is being asked, which the button's own spinner says. With [inWindow] false it draws in place, for a frame.
  */
 @Composable
