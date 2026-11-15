@@ -18,8 +18,14 @@
     <string name="startup_body">Elige un nombre y los idiomas que usa Jellyfin. Puedes cambiarlos más tarde en los ajustes del servidor.</string>
     <string name="startup_filter">Buscar</string>
     <string name="startup_save">Guardar</string>
+    <string name="startup_account_title">Crea tu cuenta</string>
+    <string name="startup_account_body">Esta es la cuenta de administrador del servidor. Guarda la contraseña en un lugar seguro.</string>
+    <string name="startup_password_optional">Opcional. Puedes poner una más tarde.</string>
+    <string name="startup_password_again">Repite la contraseña</string>
+    <string name="startup_password_mismatch">Las contraseñas no coinciden.</string>
+    <string name="startup_account_save">Crear cuenta</string>
     <string name="startup_saved_title">Guardado</string>
-    <string name="startup_saved_body">Tus elecciones están guardadas. Crea la primera cuenta en la página web de Jellyfin para terminar la configuración y vuelve a comprobar.</string>
+    <string name="startup_saved_body">Los ajustes del servidor y la primera cuenta están guardados. Termina la configuración en la página web de Jellyfin y vuelve a comprobar.</string>
     <string name="startup_back">Atrás</string>
     <string name="setup_sign_in_title">Iniciar sesión</string>
     <string name="forgot_password">¿Olvidaste la contraseña?</string>

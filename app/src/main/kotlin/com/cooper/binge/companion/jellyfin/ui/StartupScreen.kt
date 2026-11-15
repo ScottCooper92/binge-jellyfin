@@ -18,6 +18,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
@@ -50,6 +51,7 @@ internal fun StartupStep(
             ConsoleLoading(inner, rows = LOADING_ROWS, plainIntro = stringResource(R.string.startup_body), formInset = false)
         is StartupPhase.Failed -> ConsoleFailureScreen(phase.failure, startup.onRetry, Modifier.padding(inner))
         is StartupPhase.Configuring -> SetupColumn(inner) { ConfiguringStep(phase, startup) }
+        is StartupPhase.Account -> SetupColumn(inner) { AccountStep(phase, startup) }
         StartupPhase.Saved -> SetupColumn(inner) { SavedStep(actions) }
     }
 }
@@ -162,7 +164,52 @@ private fun StartupPickerSheet(
     }
 }
 
-/** The first step is saved. The account comes next, and for now it is made in Jellyfin's own web page. */
+/** The account step: who administers the server. The password is typed twice, and nothing is sent until the two agree. */
+@Composable
+private fun AccountStep(
+    step: StartupPhase.Account,
+    startup: StartupActions,
+) {
+    Text(stringResource(R.string.startup_account_title), style = MaterialTheme.typography.headlineSmall)
+    Text(stringResource(R.string.startup_account_body), style = MaterialTheme.typography.bodyMedium)
+    ConsoleTextField(
+        value = step.name,
+        onValueChange = startup.onAccountName,
+        label = stringResource(R.string.setup_username),
+        enabled = !step.busy,
+        imeAction = ImeAction.Next,
+    )
+    ConsoleTextField(
+        value = step.password,
+        onValueChange = startup.onPassword,
+        label = stringResource(R.string.setup_password),
+        supporting = stringResource(R.string.startup_password_optional),
+        secret = true,
+        enabled = !step.busy,
+        imeAction = ImeAction.Next,
+    )
+    ConsoleTextField(
+        value = step.confirmation,
+        onValueChange = startup.onConfirmation,
+        label = stringResource(R.string.startup_password_again),
+        isError = step.mismatch,
+        supporting = if (step.mismatch) stringResource(R.string.startup_password_mismatch) else null,
+        secret = true,
+        enabled = !step.busy,
+        imeAction = ImeAction.Go,
+        onDone = { if (step.canSave) startup.onSaveAccount() },
+    )
+    step.error?.let { Text(errorText(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+    BingeFilledButton(
+        label = stringResource(R.string.startup_account_save),
+        onClick = startup.onSaveAccount,
+        loading = step.busy,
+        enabled = step.canSave || step.busy,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+/** The account is made. The server still has to be completed, which is done in Jellyfin's web page for now. */
 @Composable
 private fun SavedStep(actions: Actions) {
     Text(stringResource(R.string.startup_saved_title), style = MaterialTheme.typography.headlineSmall)

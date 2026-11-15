@@ -44,7 +44,26 @@ sealed interface StartupPhase {
         val error: SetupError? = null,
     ) : StartupPhase
 
-    /** The first step was saved. */
+    /**
+     * The second step: the first account, the server's administrator. The password lives here, in memory, from the moment it is typed
+     * until it is sent or the wizard is left. It is never saved (no saved state), never logged, and [toString] leaves it out.
+     */
+    data class Account(
+        val name: String = "",
+        val password: String = "",
+        val confirmation: String = "",
+        val busy: Boolean = false,
+        val error: SetupError? = null,
+    ) : StartupPhase {
+        /** The two passwords differ, so the account cannot be sent yet. */
+        val mismatch: Boolean get() = confirmation.isNotEmpty() && password != confirmation
+
+        val canSave: Boolean get() = name.isNotBlank() && password == confirmation && !busy
+
+        override fun toString() = "Account(name=$name, busy=$busy, error=$error)"
+    }
+
+    /** The account was made. The server still reports setup as unfinished until it is completed. */
     data object Saved : StartupPhase
 }
 
@@ -57,6 +76,10 @@ data class StartupActions(
     val onMetadataLanguage: (String) -> Unit = {},
     val onMetadataCountry: (String) -> Unit = {},
     val onSave: () -> Unit = {},
+    val onAccountName: (String) -> Unit = {},
+    val onPassword: (String) -> Unit = {},
+    val onConfirmation: (String) -> Unit = {},
+    val onSaveAccount: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -70,6 +93,9 @@ class StartupWizard internal constructor(
     private val scope: CoroutineScope,
     private val localNetwork: LocalNetworkPermission,
 ) {
+    /** The first account: its fields and its save. */
+    val account = StartupAccountStep(connection, state, scope, localNetwork)
+
     /** Opens the wizard from the notice, and reads what it needs. */
     fun open() {
         val current = state.value as? UiState.SignIn ?: return
@@ -110,9 +136,10 @@ class StartupWizard internal constructor(
         scope.launch {
             val saved = attempt { connection.anonymous(url).saveStartupConfiguration(step.configuration) }
             saved.exceptionOrNull()?.let { Log.i(TAG, "Setup save failed", it) }
+            if (saved.isSuccess) account.suggestName(url)
             update {
                 if (saved.isSuccess) {
-                    copy(phase = StartupPhase.Saved)
+                    copy(phase = StartupPhase.Account())
                 } else {
                     val error = if (saved.exceptionOrNull().isRefusal()) SetupError.Generic else unreachableSetup(baseUrl, localNetwork)
                     copy(phase = (phase as? StartupPhase.Configuring)?.copy(busy = false, error = error) ?: phase)
@@ -137,6 +164,10 @@ class StartupWizard internal constructor(
             onMetadataLanguage = ::onMetadataLanguage,
             onMetadataCountry = ::onMetadataCountry,
             onSave = ::save,
+            onAccountName = account::onName,
+            onPassword = account::onPassword,
+            onConfirmation = account::onConfirmation,
+            onSaveAccount = account::save,
             onBack = ::back,
         )
 

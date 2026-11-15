@@ -2,6 +2,8 @@ package com.cooper.binge.companion.jellyfin.server
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * What a server that has not finished its first-run setup holds: its name, the language of its own pages, and the language and
@@ -43,6 +45,28 @@ suspend fun JellyfinClient.saveStartupConfiguration(configuration: StartupConfig
     post(STARTUP_CONFIGURATION, configuration.toJson())
 }
 
+/** The name the server suggests for its first account, or null when it suggests none (an older server may not). */
+suspend fun JellyfinClient.startupFirstUserName(): String? = getObject(STARTUP_FIRST_USER).string("Name")?.takeIf { it.isNotBlank() }
+
+/**
+ * Creates the server's first account, which is its administrator. The password is sent once, in the body of this request to the
+ * server the user chose, and kept nowhere. The route is anonymous until `POST /Startup/Complete`.
+ */
+suspend fun JellyfinClient.saveStartupUser(
+    name: String,
+    password: String,
+) {
+    post(
+        STARTUP_USER,
+        buildJsonObject {
+            put("Name", name)
+            put("Password", password)
+        },
+    )
+}
+
+private const val STARTUP_FIRST_USER = "Startup/FirstUser"
+private const val STARTUP_USER = "Startup/User"
 private const val STARTUP_CONFIGURATION = "Startup/Configuration"
 private const val STARTUP_SERVER_NAME = "ServerName"
 private const val STARTUP_UI_CULTURE = "UICulture"
