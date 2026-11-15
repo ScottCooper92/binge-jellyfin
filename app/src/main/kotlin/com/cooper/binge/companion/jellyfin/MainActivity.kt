@@ -139,6 +139,7 @@ class MainActivity : ComponentActivity() {
                     onTryDemo = viewModel::tryDemo,
                     onUsername = viewModel::onUsername,
                     onPassword = viewModel::onPassword,
+                    onPickUser = viewModel::pickPublicUser,
                     onSignIn = viewModel::signInWithPassword,
                     onQuickConnect = viewModel::startQuickConnect,
                     onCancelQuickConnect = viewModel::cancelQuickConnect,

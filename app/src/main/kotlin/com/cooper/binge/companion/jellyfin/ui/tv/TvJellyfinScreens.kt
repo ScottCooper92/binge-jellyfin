@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Healing
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Router
@@ -296,6 +297,19 @@ private fun ColumnScope.TvPasswordPanel(
     entry: FocusRequester,
     onUseQuickConnect: () -> Unit,
 ) {
+    val passwordFocus = remember { FocusRequester() }
+    // The server's listed accounts, one press each; a name fills the username and the remote moves on to the password.
+    state.publicUsers.forEach { user ->
+        TvButton(
+            label = user.name,
+            onClick = {
+                actions.onPickUser(user)
+                if (user.hasPassword) passwordFocus.requestFocus()
+            },
+            leadingIcon = Icons.Outlined.Person,
+            enabled = !state.busy,
+        )
+    }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(TvR.dimen.tv_two_pane_action_gap))) {
         TvTextField(
             value = state.username,
@@ -317,6 +331,7 @@ private fun ColumnScope.TvPasswordPanel(
             onImeAction = actions.onSignIn,
             enabled = !state.busy,
             fillWidth = true,
+            modifier = Modifier.focusRequester(passwordFocus),
         )
     }
     TvStatusLine(state.passwordError?.let { errorText(it) }, isError = true)

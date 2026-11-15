@@ -4,6 +4,7 @@ import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.PublicUser
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -37,6 +38,17 @@ val previewEnterServerNotJellyfin = UiState.EnterServer(address = "192.168.1.30:
 val previewEnterServerGeneric = UiState.EnterServer(address = "192.168.1.20:8096", error = SetupError.Generic)
 
 val previewSignIn = UiState.SignIn(baseUrl = LAN, server = lanServer, username = "sam")
+
+val previewSignInUsers =
+    previewSignIn.copy(
+        username = "",
+        publicUsers =
+            listOf(
+                PublicUser("u1", "Mum", hasPassword = true),
+                PublicUser("u2", "Dad", hasPassword = true),
+                PublicUser("u3", "Kid", hasPassword = false),
+            ),
+    )
 
 val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 
