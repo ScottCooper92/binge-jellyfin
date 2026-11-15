@@ -38,6 +38,9 @@ check "hashes only"                "true false false"  false translation-hashes.
 check "the version catalog"        "true true true"    false libs.versions.toml
 check "a build file"               "true true true"    false app/build.gradle.kts
 check "a keep rule"                "true false true"   false app/src/main/keepRules/app.pro
+check "a pro file outside keepRules" "true true true" false app/proguard-rules.pro
+check "the release source set"     "true true true" false app/src/release/kotlin/X.kt
+check "assets"                     "true true true" false app/src/main/assets/x.json
 check "the manifest"               "true true true"    false app/src/main/AndroidManifest.xml
 check "the design system pin"      "true true true"    false design-system
 check "the companions pin"         "true false true"   false binge-companions

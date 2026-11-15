@@ -14,7 +14,7 @@
 #   screens  the screenshot frames. False when no path can move a frame: tests, the exported
 #            Service, the review launcher, keep rules and the like.
 #   release  the R8 build. True only for what R8 reads: the version catalog, Gradle files, keep
-#            rules, the manifest, XML and raw resources, a submodule pin, the workflows
+#            rules and .pro files, the release source set, assets, the manifest, XML and raw resources, a submodule pin, the workflows
 #            themselves, or (the $SENSITIVE env, set by the caller from the diff's content) code
 #            that R8 can break without a file above changing: serialization, reflection.
 #
@@ -51,6 +51,7 @@ release_input() {
   case "$1" in
     libs.versions.toml | *.gradle.kts | gradle/* | gradle.properties | .gitmodules) return 0 ;;
     app/src/main/keepRules/* | app/src/main/AndroidManifest.xml | app/src/main/res/xml/* | app/src/main/res/raw/*) return 0 ;;
+    app/*.pro | app/proguard* | app/src/release/* | app/src/main/assets/*) return 0 ;;
     design-system | binge-companions | binge-ci | .github/workflows/*) return 0 ;;
   esac
   return 1

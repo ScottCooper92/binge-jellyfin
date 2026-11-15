@@ -112,7 +112,9 @@ jobs:
           # vouch for: it is sound because each skip it makes is of a delta that cannot reach the job. A
           # fork's branch name is not ours, so a fork PR never borrows a green run. Without one, or when it
           # is not an ancestor of this head (a force push), the baseline is the merge base with the base
-          # branch, which is the PR's own files.
+          # branch, which is the PR's own files. `head` is GitHub's merge commit, so the delta also holds what
+          # the base branch gained since the fork point. That is deliberate: it covers a semantic merge
+          # conflict. Do not switch to the PR head SHA to save runs.
           base=""
           if [ "$SAME_REPO" = true ]; then
             green="$(gh run list --workflow ci.yml --branch "$HEAD_REF" --event pull_request --status success --limit 5 \
@@ -138,7 +140,10 @@ jobs:
 
           git diff --name-only "$base" "$head" > "$RUNNER_TEMP/changed.txt" || all "The diff could not be read"
           # Code that R8 can break with no keep rule or build file changing: serialization and reflection.
-          if git diff -U0 "$base" "$head" -- 'app/src/main/*.kt' | grep -qE '^\+.*(@Serializable|@Keep|Class\.forName|ServiceLoader|\.javaClass\.)'; then
+          # Written to a file and grepped there: `grep -q` exits on its first match, and under pipefail a
+          # large diff would then die of SIGPIPE (141) and read as "no match".
+          git diff -U0 "$base" "$head" -- 'app/src/main/*.kt' > "$RUNNER_TEMP/main-kt.diff" || all "The diff could not be read"
+          if grep -qE '^\+.*(@Serializable|@Keep|Class\.forName|ServiceLoader|\.javaClass\.)' "$RUNNER_TEMP/main-kt.diff"; then
             export SENSITIVE=true
           fi
           .github/scripts/classify-changes.sh "$RUNNER_TEMP/changed.txt" | tee -a "$GITHUB_OUTPUT"
