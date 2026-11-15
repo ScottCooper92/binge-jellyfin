@@ -75,6 +75,8 @@ data class Actions(
     val onQuickConnect: () -> Unit = {},
     val onCancelQuickConnect: () -> Unit = {},
     val onChangeServer: () -> Unit = {},
+    /** Asks the server again whether its setup is done, from the notice a server that is not set up gets. */
+    val onRecheckServer: () -> Unit = {},
     val onRefresh: () -> Unit = {},
     val onAskSignOut: () -> Unit = {},
     val onCancelSignOut: () -> Unit = {},
@@ -270,6 +272,10 @@ private fun SignIn(
 ) {
     SetupColumn(inner) {
         SignInServerCard(state, actions)
+        if (state.server.setupIncomplete) {
+            SetupIncomplete(actions)
+            return@SetupColumn
+        }
         val code = state.quickConnectCode
         if (code != null) {
             QuickConnectCode(code, actions)

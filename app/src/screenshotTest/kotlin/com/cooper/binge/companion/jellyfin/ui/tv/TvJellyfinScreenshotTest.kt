@@ -27,6 +27,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewQuickConnect
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectExpired
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectOff
+import com.cooper.binge.companion.jellyfin.ui.previewSetupIncomplete
 import com.cooper.binge.companion.jellyfin.ui.previewSignIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignInUsers
 import com.cooper.binge.companion.jellyfin.ui.previewSignInUsersPictures
@@ -77,6 +78,12 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvStressPreviews
     @Composable
     fun quickConnectCode() = TvJellyfinRoot(previewQuickConnect, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun setupIncomplete() = TvJellyfinRoot(previewSetupIncomplete, Actions())
 
     @PreviewTest
     @JellyfinTvScreenPreviews

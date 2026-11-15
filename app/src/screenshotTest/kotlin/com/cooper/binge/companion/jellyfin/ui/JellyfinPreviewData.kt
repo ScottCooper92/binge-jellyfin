@@ -41,6 +41,8 @@ val previewEnterServerGeneric = UiState.EnterServer(address = "192.168.1.20:8096
 
 val previewSignIn = UiState.SignIn(baseUrl = LAN, server = lanServer, username = "sam")
 
+val previewSetupIncomplete = previewSignIn.copy(server = lanServer.copy(startupWizardCompleted = false))
+
 val previewSignInUsers =
     previewSignIn.copy(
         username = "",

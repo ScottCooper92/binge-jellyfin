@@ -17,7 +17,15 @@ data class PublicServerInfo(
      * a redirected POST into a GET and drops `Authorization` on a change of scheme or host.
      */
     val baseUrl: HttpUrl,
-)
+    /**
+     * Whether the server has finished its first-run setup, from `StartupWizardCompleted`. A server that does not say (an older one)
+     * counts as finished, so nothing here depends on a version number.
+     */
+    val startupWizardCompleted: Boolean = true,
+) {
+    /** A fresh server with no account yet: nothing can sign in to it until its setup is done. */
+    val setupIncomplete: Boolean get() = !startupWizardCompleted
+}
 
 /** A session the server minted: its token, and who it is for. */
 data class SignedIn(
@@ -58,6 +66,7 @@ suspend fun JellyfinClient.publicInfo(): PublicServerInfo {
         version = json.string("Version").orEmpty(),
         serverId = json.string("Id").orEmpty(),
         baseUrl = baseOf(from) ?: baseUrl,
+        startupWizardCompleted = json.bool("StartupWizardCompleted") ?: true,
     )
 }
 

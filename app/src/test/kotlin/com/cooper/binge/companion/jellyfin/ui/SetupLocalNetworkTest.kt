@@ -88,4 +88,21 @@ class SetupLocalNetworkTest {
         compose.onNodeWithText(message).assertExists()
         compose.onNodeWithText("Allow local network access").assertExists()
     }
+
+    @Test
+    fun `a server that has not finished its setup says so in place of the sign-in, and can be checked again`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                JellyfinRoot(
+                    UiState.SignIn(baseUrl = "http://192.168.1.20:8096", server = server.copy(startupWizardCompleted = false)),
+                    Actions(onRecheckServer = { calls += "recheck" }),
+                )
+            }
+        }
+        compose.onNodeWithText("This server isn’t set up yet").assertExists()
+        compose.onAllNodesWithText("Sign in").assertCountEquals(0)
+        compose.onNodeWithText("Check again").performClick()
+        assertEquals(listOf("recheck"), calls)
+    }
 }

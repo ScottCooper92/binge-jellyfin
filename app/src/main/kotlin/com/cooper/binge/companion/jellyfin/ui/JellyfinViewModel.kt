@@ -486,8 +486,10 @@ class JellyfinViewModel(
     /**
      * The server step again, with the address filled in: from the sign-in step, or from a saved server that cannot be
      * reached. A saved session stays saved until a new sign-in replaces it, so closing the app comes back to the gate.
+     * With [recheck], from the sign-in step, the address is read again at once: the notice for a server that was not set up
+     * says to finish that elsewhere, and this finds out whether it has been.
      */
-    fun changeServer() {
+    fun changeServer(recheck: Boolean = false) {
         quickConnect?.cancel()
         val address =
             when (val current = _state.value) {
@@ -496,6 +498,7 @@ class JellyfinViewModel(
                 else -> ""
             }
         _state.value = UiState.EnterServer(address = address)
+        if (recheck && address.isNotBlank()) connect()
     }
 
     /**

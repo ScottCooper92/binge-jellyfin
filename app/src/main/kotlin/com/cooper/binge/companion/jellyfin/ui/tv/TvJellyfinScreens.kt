@@ -202,6 +202,10 @@ internal fun TvSignInPage(
     modifier: Modifier = Modifier,
     startWithPassword: Boolean = false,
 ) {
+    if (state.server.setupIncomplete) {
+        TvSetupIncompletePage(actions, modifier)
+        return
+    }
     var usePassword by rememberSaveable(state.baseUrl) { mutableStateOf(startWithPassword) }
     // Back steps back, as the remote expects: from the password to the code, and from the code to the server step (which
     // cancels the code). It does not leave the app from the middle of setting it up.
