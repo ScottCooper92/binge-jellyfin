@@ -60,6 +60,11 @@ titles or anything else read from the user's server:
   the first-run screen, and stop when they turn it off. A debug build never sends one. No user id, custom
   key or log line is set, and the app's own code never puts the server's address or the token in an
   exception message.
+- Google Play's in-app review (`review/PlayReviewPromptLauncher`) and Play Billing for the tip jar (`tip/PlayTipBilling.kt`). Both
+  are calls to the Play Store app on the device, not a host this app connects to, so neither is a "new host". Billing queries the four
+  `donation_*` products each time the This app page opens in a release build, and buys one only when the user confirms in Google's own
+  screen. Neither carries the token or anything from the user's server. A call that sends server data to either, or any other Play
+  library that talks to Google, is a finding.
 
 A flag fetch, an analytics event or a crash report that carries server data, either of the last two that
 runs without consent, another Firebase product (Messaging), a new host, another crash or analytics SDK, or a
