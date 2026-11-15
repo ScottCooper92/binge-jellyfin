@@ -51,6 +51,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
+import com.cooper.binge.companion.jellyfin.ui.pickPublicUser
 import com.cooper.binge.companion.jellyfin.ui.rememberAppSettingsBinding
 import com.cooper.binge.companion.jellyfin.ui.rememberNotificationBinding
 import com.cooper.binge.companion.jellyfin.ui.tryDemo
@@ -139,6 +140,7 @@ class MainActivity : ComponentActivity() {
                     onUsername = viewModel::onUsername,
                     onPassword = viewModel::onPassword,
                     forgotPassword = viewModel.forgotPassword,
+                    onPickUser = viewModel::pickPublicUser,
                     onSignIn = viewModel::signInWithPassword,
                     onQuickConnect = viewModel::startQuickConnect,
                     onCancelQuickConnect = viewModel::cancelQuickConnect,

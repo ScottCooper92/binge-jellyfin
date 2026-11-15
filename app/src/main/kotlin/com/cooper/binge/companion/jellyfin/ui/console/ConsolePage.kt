@@ -72,6 +72,9 @@ enum class ConsolePage {
     /** The server's per-item-type metadata and image provider defaults. Admin only. */
     MetadataDefaults,
 
+    /** The server's NFO (Kodi) metadata options: whose watch state is written, the date format, what else is saved. Admin only. */
+    Nfo,
+
     /** The server's backups: made, and restored from. Admin only, on a server with backups. */
     Backups,
 
@@ -116,7 +119,7 @@ enum class ConsolePage {
             LiveTvRecording -> account.isAdministrator && account.canManageLiveTv
             Backups -> account.isAdministrator && profile.hasBackups
             Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
-            ServerSettings, Network, LibraryDisplay, MetadataDefaults, Transcoding, Server,
+            ServerSettings, Network, LibraryDisplay, MetadataDefaults, Nfo, Transcoding, Server,
             -> account.isAdministrator
         }
 
@@ -152,6 +155,7 @@ enum class ConsolePage {
                 Advanced,
                 LibraryDisplay,
                 MetadataDefaults,
+                Nfo,
                 Transcoding,
                 Trickplay,
                 Plugins,

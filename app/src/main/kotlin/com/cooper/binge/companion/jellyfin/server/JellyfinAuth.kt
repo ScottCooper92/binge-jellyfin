@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -33,6 +34,11 @@ enum class ForgotPasswordAction { ContactAdmin, PinCode, InNetworkRequired }
 data class ForgotPasswordAnswer(
     val action: ForgotPasswordAction,
     val pinFile: String?,
+/** An account the server lists on its login screen, as `/Users/Public` gives it: no sign-in needed to read it. */
+data class PublicUser(
+    val id: String,
+    val name: String,
+    val hasPassword: Boolean,
 )
 
 /** A Quick Connect request: the code the user approves, and the secret this app polls with. */
@@ -70,6 +76,16 @@ suspend fun JellyfinClient.redeemPasswordPin(pin: String): Boolean =
     }
 
 private const val HTTP_NOT_FOUND = 404
+
+/** The accounts the server's owner has not hidden from the login screen; empty when there are none. */
+suspend fun JellyfinClient.publicUsers(): List<PublicUser> {
+    val answer = get(PUBLIC_USERS) as? JsonArray ?: throw JellyfinUnreadableAnswer(PUBLIC_USERS)
+    return answer.mapNotNull { element ->
+        val json = element as? JsonObject ?: return@mapNotNull null
+        val name = json.string("Name")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        PublicUser(id = json.string("Id").orEmpty(), name = name, hasPassword = json.bool("HasPassword") != false)
+    }
+}
 
 suspend fun JellyfinClient.authenticateByName(
     username: String,
@@ -128,6 +144,7 @@ private fun JsonObject.toSignedIn(): SignedIn {
     )
 }
 
+private const val PUBLIC_USERS = "Users/Public"
 private const val PUBLIC_INFO = "System/Info/Public"
 
 /** The base [answered] sits under, or null for a redirect to somewhere that is not this call's path. */

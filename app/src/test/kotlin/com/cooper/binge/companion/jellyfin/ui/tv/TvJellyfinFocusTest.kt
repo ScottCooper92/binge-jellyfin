@@ -32,6 +32,7 @@ import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.PublicUser
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -75,6 +76,7 @@ class TvJellyfinFocusTest {
             onConnect = { calls += "connect" },
             onUsername = { calls += "username:$it" },
             onPassword = { calls += "password:$it" },
+            onPickUser = { calls += "pick:${it.name}" },
             onSignIn = { calls += "signIn" },
             onQuickConnect = { calls += "quickConnect" },
             onCancelQuickConnect = { calls += "cancelQuickConnect" },
@@ -261,6 +263,36 @@ class TvJellyfinFocusTest {
         ok()
         // Sign in is never disabled on TV: an empty form answers with its error, so the press always reaches the action.
         assertEquals("signIn", calls.last())
+    }
+
+    @Test
+    fun `a listed account is one press from the form, and a pick with a password moves the remote to the password`() {
+        val listed =
+            signIn.copy(
+                publicUsers = listOf(PublicUser("u1", "Mum", hasPassword = true), PublicUser("u2", "Kid", hasPassword = false)),
+            )
+        show(listed.copy(quickConnectCode = "482913"))
+        ok()
+        field(R.string.setup_username).assertIsFocused()
+        up()
+        compose.onNodeWithText("Kid").assertIsFocused()
+        up()
+        compose.onNodeWithText("Mum").assertIsFocused()
+        ok()
+        assertEquals("pick:Mum", calls.last())
+        field(R.string.setup_password).assertIsFocused()
+    }
+
+    @Test
+    fun `a listed account with no password is picked in place and the remote stays on it`() {
+        val listed = signIn.copy(publicUsers = listOf(PublicUser("u2", "Kid", hasPassword = false)))
+        show(listed.copy(quickConnectCode = "482913"))
+        ok()
+        up()
+        compose.onNodeWithText("Kid").assertIsFocused()
+        ok()
+        assertEquals("pick:Kid", calls.last())
+        compose.onNodeWithText("Kid").assertIsFocused()
     }
 
     @Test

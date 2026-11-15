@@ -5,7 +5,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
@@ -20,12 +22,14 @@ import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Password
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsApplications
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewModule
@@ -130,6 +134,47 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_server,
             R.string.kw_metadata,
         ),
+        page(ConsolePage.Nfo, R.string.nfo_title, Icons.Outlined.Description, R.string.settings_server, R.string.kw_nfo),
+        setting(
+            ConsolePage.Nfo,
+            R.string.nfo_user,
+            Icons.Outlined.Person,
+            R.string.settings_server,
+            R.string.nfo_title,
+            R.string.kw_nfo_user,
+        ),
+        setting(
+            ConsolePage.Nfo,
+            R.string.nfo_date_format,
+            Icons.Outlined.CalendarMonth,
+            R.string.settings_server,
+            R.string.nfo_title,
+            R.string.kw_nfo_date,
+        ),
+        setting(
+            ConsolePage.Nfo,
+            R.string.nfo_image_paths,
+            Icons.Outlined.Image,
+            R.string.settings_server,
+            R.string.nfo_title,
+            R.string.kw_nfo_images,
+        ),
+        setting(
+            ConsolePage.Nfo,
+            R.string.nfo_path_substitution,
+            Icons.Outlined.SwapHoriz,
+            R.string.settings_server,
+            R.string.nfo_title,
+            R.string.kw_nfo_paths,
+        ),
+        setting(
+            ConsolePage.Nfo,
+            R.string.nfo_extra_thumbs,
+            Icons.Outlined.ContentCopy,
+            R.string.settings_server,
+            R.string.nfo_title,
+            R.string.kw_nfo_thumbs,
+        ),
         page(ConsolePage.Trickplay, R.string.trickplay_title, Icons.Outlined.Image, R.string.settings_server, R.string.kw_trickplay),
         page(ConsolePage.Plugins, R.string.plugins_title, Icons.Outlined.Extension, R.string.settings_server, R.string.kw_plugins),
         page(ConsolePage.Devices, R.string.devices_title, Icons.Outlined.Devices, R.string.devices_title),
@@ -159,6 +204,14 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.kw_paths,
         ),
         // Settings on them.
+        setting(
+            ConsolePage.Libraries,
+            R.string.library_image_limits,
+            Icons.Outlined.Image,
+            R.string.settings_server,
+            R.string.libraries_title,
+            R.string.kw_image_limits,
+        ),
         setting(
             ConsolePage.ServerSettings,
             R.string.server_settings_name,

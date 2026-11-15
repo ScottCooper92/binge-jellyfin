@@ -253,6 +253,42 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `the server's public users are listed on sign-in, and none or a failure leaves the step as it is`() {
+        jellyfin.publicUsers = PUBLIC_USERS
+        val users = viewModel().also { it.toSignIn() }.await<UiState.SignIn> { it.publicUsers.isNotEmpty() }.publicUsers
+        assertEquals(listOf("Kid", "Mum"), users.map { it.name })
+        assertEquals(listOf(false, true), users.map { it.hasPassword })
+
+        jellyfin.publicUsers = "[]"
+        val none = viewModel().toSignIn()
+        assertTrue(none.publicUsers.isEmpty())
+        assertNull(none.passwordError)
+
+        jellyfin.status["/Users/Public"] = 500
+        val failed = viewModel().toSignIn()
+        assertTrue(failed.publicUsers.isEmpty())
+        assertNull(failed.passwordError)
+    }
+
+    @Test
+    fun `picking a public user with a password fills the name and waits, one without signs in`() {
+        jellyfin.publicUsers = PUBLIC_USERS
+        val vm = viewModel()
+        vm.toSignIn()
+        val users = vm.await<UiState.SignIn> { it.publicUsers.isNotEmpty() }.publicUsers
+
+        vm.pickPublicUser(users.first { it.name == "Mum" })
+        val picked = vm.await<UiState.SignIn> { it.username == "Mum" }
+        assertFalse(picked.busy)
+        assertEquals("", picked.password)
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/AuthenticateByName" })
+
+        vm.pickPublicUser(users.first { it.name == "Kid" })
+        vm.await<UiState.SignedIn> { it.titles != null }
+        assertEquals("token-1", runBlocking { sessions.current() }?.token)
+    }
+
+    @Test
     fun `a wrong password says so, a right one signs in and counts the library`() {
         val vm = viewModel()
         vm.toSignIn()
@@ -716,3 +752,6 @@ class JellyfinViewModelTest {
         assertEquals(before, libraryReads())
     }
 }
+
+private const val PUBLIC_USERS =
+    """[{"Name":"Kid","Id":"u-kid","HasPassword":false},{"Name":"Mum","Id":"u-mum","HasPassword":true}]"""

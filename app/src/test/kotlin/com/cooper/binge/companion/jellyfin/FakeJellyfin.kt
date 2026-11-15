@@ -67,6 +67,8 @@ class FakeJellyfin : Dispatcher() {
     /** What `/Users/ForgotPassword` answers, and the PIN `/Users/ForgotPassword/Pin` accepts. */
     var forgotAnswer = """{"Action":"ContactAdmin"}"""
     var forgotPin = "1234"
+    /** What `/Users/Public` answers: the accounts the server lists on its login screen. */
+    var publicUsers = "[]"
 
     /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
     var failsTheMissingIdCount = false
@@ -262,6 +264,11 @@ class FakeJellyfin : Dispatcher() {
             """"EnableDecodingColorDepth10Vp9":true,"EnableDecodingColorDepth10HevcRext":false,""" +
             """"EnableDecodingColorDepth12HevcRext":false,"H264Crf":23,"H265Crf":28,"MaxMuxingQueueSize":2048,""" +
             """"FutureOption":{"keep":"me"}}"""
+
+    /** The NFO configuration, as `/System/Configuration/xbmcmetadata` answers it and a save replaces it. */
+    var nfoConfiguration =
+        """{"UserId":null,"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":false,"EnablePathSubstitution":true,""" +
+            """"EnableExtraThumbsDuplication":false,"FutureOption":{"keep":"me"}}"""
 
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
     var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""
@@ -635,6 +642,11 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Configuration/encoding" -> json(encodingConfiguration)
+            path == "/System/Configuration/xbmcmetadata" && request.method == "POST" -> {
+                nfoConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/xbmcmetadata" -> json(nfoConfiguration)
             path == "/System/Configuration/branding" && request.method == "POST" -> {
                 brandingConfiguration = savedBranding(request.body?.utf8().orEmpty())
                 MockResponse(code = 204)
@@ -700,9 +712,11 @@ class FakeJellyfin : Dispatcher() {
                 // The server answers a PIN that matches no request with a 404, not with Success false.
                 if (pin == "\"$forgotPin\"") json("""{"Success":true,"UsersReset":["Mum"]}""") else MockResponse(code = 404)
             }
+            path == "/Users/Public" -> json(publicUsers)
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
-                if (body["Pw"].toString() == "\"right\"") signedIn() else MockResponse(code = 401)
+                val passwordless = body["Username"].toString() == "\"Kid\"" && body["Pw"].toString() == "\"\""
+                if (body["Pw"].toString() == "\"right\"" || passwordless) signedIn() else MockResponse(code = 401)
             }
             path == "/QuickConnect/Enabled" -> json(quickConnectEnabled.toString())
             path == "/QuickConnect/Initiate" -> json("""{"Secret":"qc-secret","Code":"123456"}""")

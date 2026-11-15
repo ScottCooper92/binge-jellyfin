@@ -25,9 +25,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +54,7 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.PublicUser
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleTextField
 import com.cooper.binge.companion.jellyfin.ui.console.UserAvatar
@@ -66,6 +70,7 @@ data class Actions(
     val onPassword: (String) -> Unit = {},
     /** The forgotten-password steps; null where none is wired (a frame). */
     val forgotPassword: ForgotPasswordFlow? = null,
+    val onPickUser: (PublicUser) -> Unit = {},
     val onSignIn: () -> Unit = {},
     val onQuickConnect: () -> Unit = {},
     val onCancelQuickConnect: () -> Unit = {},
@@ -258,6 +263,25 @@ private fun SignIn(
             return@SetupColumn
         }
         Text(stringResource(R.string.setup_sign_in_title), style = MaterialTheme.typography.headlineSmall)
+        val passwordFocus = remember { FocusRequester() }
+        if (state.publicUsers.isNotEmpty()) {
+            ItemGroup(
+                title = stringResource(R.string.setup_pick_user),
+                rows =
+                    state.publicUsers.map { user ->
+                        ListItem(
+                            icon = Icons.Outlined.Person,
+                            label = user.name,
+                            leadingContent = { UserAvatar(user.name) },
+                            selected = user.name == state.username,
+                            onClick = {
+                                actions.onPickUser(user)
+                                if (user.hasPassword) passwordFocus.requestFocus()
+                            },
+                        )
+                    },
+            )
+        }
         ConsoleTextField(
             value = state.username,
             onValueChange = actions.onUsername,
@@ -268,6 +292,7 @@ private fun SignIn(
             value = state.password,
             onValueChange = actions.onPassword,
             label = stringResource(R.string.setup_password),
+            modifier = Modifier.focusRequester(passwordFocus),
             secret = true,
             // Only a wrong password is the field's fault; any other failure is said beside the button that failed.
             isError = state.passwordError == SetupError.WrongCredentials,
