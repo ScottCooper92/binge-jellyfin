@@ -25,6 +25,8 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemNote
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -79,9 +81,13 @@ private fun PackageList(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        state.packages.groupBy { it.category }.forEach { (category, packages) ->
+        state.packages.groupBy { it.category }.entries.forEachIndexed { index, (category, packages) ->
             item(key = "category:$category") {
-                ItemGroup(title = category.ifBlank { null }, rows = packages.map { it.row(state, actions, it.name == openPackage) })
+                ItemGroup(
+                    title = category.ifBlank { null },
+                    rows = packages.map { it.row(state, actions, it.name == openPackage) },
+                    modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
             }
         }
     }
