@@ -240,7 +240,7 @@ jobs:
 
   # The screenshot frames, in shards. The plugin renders every frame in one JVM that keeps each frame's
   # native memory until it exits, so the whole suite in one JVM grew past a hosted runner's memory and
-  # stalled: a job that sat to its time limit with no log (#550). Each shard renders a third of the
+  # stalled: a job that sat to its time limit with no log (#552). Each shard renders a third of the
   # classes, chosen by .github/scripts/shard-screenshots.sh so that every class lands in exactly one
   # shard and none is ever left out, and the shards run side by side. The job's result is the shards'
   # together: one red shard is a red `screenshots`.
