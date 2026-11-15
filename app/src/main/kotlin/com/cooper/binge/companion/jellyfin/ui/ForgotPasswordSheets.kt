@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.TextEntrySurface
 import com.cooper.binge.companion.jellyfin.R
@@ -93,7 +94,12 @@ internal fun PinForm(
         error = stringResource(R.string.forgot_pin_wrong).takeIf { step.wrongPin },
         minLines = 1,
         maxLines = 1,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Ascii,
+                capitalization = KeyboardCapitalization.Characters,
+                autoCorrectEnabled = false,
+            ),
         header = { PinFileLine(step.pinFile) },
     )
 }

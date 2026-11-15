@@ -18,8 +18,8 @@
     <string name="forgot_network_body">Este servidor solo restablece contraseñas desde su propia red. Conéctate a la misma red que el servidor y vuelve a intentarlo.</string>
     <string name="forgot_failed_title">No se inició el restablecimiento</string>
     <string name="forgot_failed_body">Tu servidor no respondió. Comprueba que puedes llegar a él y que está en marcha, y vuelve a intentarlo.</string>
-    <string name="forgot_done_title">Contraseña eliminada</string>
-    <string name="forgot_done_body">Tu cuenta ya no tiene contraseña. Inicia sesión con la contraseña vacía y define una nueva en tu cuenta.</string>
+    <string name="forgot_done_title">Contraseña restablecida</string>
+    <string name="forgot_done_body">Tu contraseña ahora es el PIN que escribiste, y ya está rellenada. Inicia sesión y cámbiala en tu cuenta.</string>
     <string name="forgot_pin_title">Introduce el PIN</string>
     <string name="forgot_pin_where">El servidor escribió un PIN en este archivo. Ábrelo en el servidor y escribe el PIN que contiene:\n%1$s</string>
     <string name="forgot_pin_where_unknown">El servidor escribió un PIN en un archivo de su carpeta de datos. Ábrelo en el servidor y escribe el PIN que contiene.</string>

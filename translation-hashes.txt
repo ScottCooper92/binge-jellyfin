@@ -319,8 +319,8 @@ app:error_unreachable  8224327e4cec
 app:error_wrong_credentials  c16954ee58f2
 app:forgot_admin_body  3c620625c184
 app:forgot_admin_title  9d73fcf8672f
-app:forgot_done_body  77380f5789f8
-app:forgot_done_title  1b5906f1c1fb
+app:forgot_done_body  d1cafa1fde80
+app:forgot_done_title  359f68acb9b4
 app:forgot_failed_body  d61b8570d2d1
 app:forgot_failed_title  3fbea644fe8f
 app:forgot_network_body  8cb819151786

@@ -688,7 +688,8 @@ class FakeJellyfin : Dispatcher() {
             path == "/Users/ForgotPassword" -> json(forgotAnswer)
             path == "/Users/ForgotPassword/Pin" -> {
                 val pin = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject["Pin"].toString()
-                json("""{"Success":${pin == "\"$forgotPin\""},"UsersReset":[]}""")
+                // The server answers a PIN that matches no request with a 404, not with Success false.
+                if (pin == "\"$forgotPin\"") json("""{"Success":true,"UsersReset":["Mum"]}""") else MockResponse(code = 404)
             }
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject

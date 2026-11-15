@@ -58,9 +58,18 @@ suspend fun JellyfinClient.forgotPassword(username: String): ForgotPasswordAnswe
     return ForgotPasswordAnswer(action, json.string("PinFile")?.takeIf { it.isNotBlank() })
 }
 
-/** Redeems the PIN from the file the server wrote: true when it was right, and the password is now none. */
+/**
+ * Redeems the PIN from the file the server wrote. True when it was right: the server then sets the account's password to the PIN
+ * as sent. A PIN that matches no request, or one that has run out, is a 404 from the server, so that is false here too.
+ */
 suspend fun JellyfinClient.redeemPasswordPin(pin: String): Boolean =
-    postObject("Users/ForgotPassword/Pin", JsonObject(mapOf("Pin" to JsonPrimitive(pin)))).bool("Success") == true
+    try {
+        postObject("Users/ForgotPassword/Pin", JsonObject(mapOf("Pin" to JsonPrimitive(pin)))).bool("Success") == true
+    } catch (e: JellyfinHttpException) {
+        if (e.code == HTTP_NOT_FOUND) false else throw e
+    }
+
+private const val HTTP_NOT_FOUND = 404
 
 suspend fun JellyfinClient.authenticateByName(
     username: String,

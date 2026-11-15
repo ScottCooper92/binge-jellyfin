@@ -212,7 +212,7 @@ class JellyfinViewModelTest {
     }
 
     @Test
-    fun `a PIN reset asks for the PIN, keeps the sheet on a wrong one, and removes the password on the right one`() {
+    fun `a PIN reset asks for the PIN, keeps the sheet on a wrong one (the server's 404), and sets the password to the right one`() {
         jellyfin.forgotAnswer =
             """{"Action":"PinCode","PinFile":"/config/data/passwordreset.json","PinExpirationDate":"2026-11-16T00:00:00Z"}"""
         val vm = viewModel()
@@ -234,9 +234,11 @@ class JellyfinViewModelTest {
             ).forgot is ForgotPasswordStep.EnterPin,
         )
 
-        vm.forgotPassword.submitPin("1234")
+        jellyfin.forgotPin = "AB-12"
+        vm.forgotPassword.submitPin(" ab-12 ")
         val done = vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Done }
-        assertEquals("", done.password)
+        // The password is now the PIN as sent: upper case, as the server keeps it.
+        assertEquals("AB-12", done.password)
         assertEquals("Mum", done.username)
     }
 

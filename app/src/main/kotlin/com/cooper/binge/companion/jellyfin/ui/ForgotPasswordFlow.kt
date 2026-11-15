@@ -32,7 +32,7 @@ sealed interface ForgotPasswordStep {
     /** The server did not answer, or answered with something that is not Jellyfin. */
     data object Failed : ForgotPasswordStep
 
-    /** The PIN was right: the account has no password now. */
+    /** The PIN was right: the account's password is now the PIN as sent, and the password field holds it. */
     data object Done : ForgotPasswordStep
 }
 
@@ -79,13 +79,15 @@ class ForgotPasswordFlow(
         if (step.busy || pin.isBlank()) return
         state.value = current.copy(forgot = step.copy(busy = true, wrongPin = false))
         scope.launch {
-            val redeemed = attempt { anonymous(current.baseUrl).redeemPasswordPin(pin.trim()) }
+            // The server keeps the PIN in upper case and compares it exactly; its dashes are optional.
+            val sent = pin.trim().uppercase()
+            val redeemed = attempt { anonymous(current.baseUrl).redeemPasswordPin(sent) }
             redeemed.onFailure { Log.i(TAG, "The password PIN was not answered", it) }
             state.update {
                 val signIn = it as? UiState.SignIn ?: return@update it
                 when {
                     redeemed.isFailure -> signIn.copy(forgot = ForgotPasswordStep.Failed)
-                    redeemed.getOrNull() == true -> signIn.copy(forgot = ForgotPasswordStep.Done, password = "", passwordError = null)
+                    redeemed.getOrNull() == true -> signIn.copy(forgot = ForgotPasswordStep.Done, password = sent, passwordError = null)
                     else -> signIn.copy(forgot = step.copy(busy = false, wrongPin = true))
                 }
             }

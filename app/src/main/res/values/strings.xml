@@ -19,8 +19,8 @@
     <string name="forgot_network_body">This server only resets passwords from its own network. Connect to the same network as the server, then try again.</string>
     <string name="forgot_failed_title">The reset didn\'t start</string>
     <string name="forgot_failed_body">Your server didn\'t answer. Check that you can reach it and that it is running, then try again.</string>
-    <string name="forgot_done_title">Password removed</string>
-    <string name="forgot_done_body">Your account has no password now. Sign in with the password left empty, then set a new one in your account.</string>
+    <string name="forgot_done_title">Password reset</string>
+    <string name="forgot_done_body">Your password is now the PIN you typed, and it is filled in for you. Sign in, then change it in your account.</string>
     <string name="forgot_pin_title">Enter the PIN</string>
     <string name="forgot_pin_where">The server wrote a PIN to this file. Open it on the server and type the PIN it holds:\n%1$s</string>
     <string name="forgot_pin_where_unknown">The server wrote a PIN to a file in its data folder. Open it on the server and type the PIN it holds.</string>
