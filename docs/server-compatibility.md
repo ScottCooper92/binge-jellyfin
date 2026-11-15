@@ -57,6 +57,7 @@ older server shows less rather than failing on a call it can't answer.
 | Advanced options: user-data cache size, legacy authorization (server configuration) | 10.11 | `hasCacheAndLegacyAuth` |
 | Network: the ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`, `EnableIPv4`) | 10.9 | `hasInternalPortNames` |
 | Network: the UPnP port mapping switch, which 10.11 marks no longer supported (so it shows before 10.11) | until 10.10 | `hasUpnpOption` |
+| A library folder's shared network path (`PathInfos[].NetworkPath`), which 10.10 dropped | until 10.9 | `hasMediaPathNetworkPath` |
 | Trickplay can extract key frames only | 10.10 | `hasKeyFrameOnlyTrickplay` |
 | Media segments (intro and outro skipping) and their providers | 10.10 | `hasMediaSegments` |
 | Chapter image resolution and dummy chapter duration (server configuration) | 10.9 | `hasChapterImageSettings` |

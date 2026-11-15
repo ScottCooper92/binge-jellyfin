@@ -86,6 +86,16 @@ class SettingsIndexTest {
     }
 
     @Test
+    fun `the shared network path is offered only where the server still has it`() {
+        val admin = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":true}""").jsonObject)
+
+        fun offered(version: String) = find("shared network") { it.available(JellyfinServerProfile.from(version), admin) }
+        assertTrue("Shared network path" in offered("10.9.11"))
+        assertFalse("Shared network path" in offered("10.10.0"))
+        assertFalse("Shared network path" in offered("10.11.6"))
+    }
+
+    @Test
     fun `the alerts row is offered to an administrator only`() {
         val profile = JellyfinServerProfile.from("10.11.6")
 

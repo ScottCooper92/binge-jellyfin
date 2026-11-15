@@ -56,6 +56,14 @@ class JellyfinNetworkSettingsTest {
     }
 
     @Test
+    fun `a folder's network path is there until 10_9 and not from 10_10`() {
+        assertTrue(JellyfinServerProfile.from("10.9.11").hasMediaPathNetworkPath)
+        assertFalse(JellyfinServerProfile.from("10.10.0").hasMediaPathNetworkPath)
+        assertFalse(JellyfinServerProfile.from("10.11.6").hasMediaPathNetworkPath)
+        assertTrue(JellyfinServerProfile.from(null).hasMediaPathNetworkPath)
+    }
+
+    @Test
     fun `UPnP is there before 10_11 and not from it`() {
         assertTrue(JellyfinServerProfile.from("10.10.7").hasUpnpOption)
         assertFalse(JellyfinServerProfile.from("10.11.0").hasUpnpOption)
