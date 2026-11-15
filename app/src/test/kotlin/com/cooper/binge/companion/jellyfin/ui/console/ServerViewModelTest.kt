@@ -78,7 +78,13 @@ class ServerViewModelTest {
     @Test
     fun `reads each folder's space where the server has the report, leaving out what it cannot read`() {
         val storage = made(ServerViewModel(connection, storageAvailable = true)).ready().storage!!
-        assertEquals(listOf(StorageKind.ProgramData, StorageKind.Cache), storage.system.map { it.first })
+        assertEquals(listOf(StorageKind.ProgramData, StorageKind.Cache, StorageKind.Logs), storage.system.map { it.first })
+        // A folder with a path and no sizes is kept, with no bar to draw.
+        assertNull(
+            storage.system
+                .first { it.first == StorageKind.Logs }
+                .second.usedFraction,
+        )
         val cache = storage.system.first { it.first == StorageKind.Cache }.second
         assertEquals(100L, cache.totalBytes)
         assertEquals(0.95f, cache.usedFraction!!, 0.001f)
