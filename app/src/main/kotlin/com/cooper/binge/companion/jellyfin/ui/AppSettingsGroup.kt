@@ -191,6 +191,7 @@ internal fun ThisAppScreen(
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
             ) {
                 item { AppGroup(actions.appSettings, actions, titled = false, onOpenTip = prices?.let { { tipOpen = true } }) }
+                actions.notifications?.let { notifications -> item { NotificationsGroup(notifications, actions) } }
                 item { AboutGroup(actions) }
             }
         }

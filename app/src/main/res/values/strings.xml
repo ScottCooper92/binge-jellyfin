@@ -1404,6 +1404,39 @@
     <string name="licences_unspecified">Licence not specified</string>
     <string name="licences_empty">There are no licences to list.</string>
     <string name="licences_unreadable">The licence list couldn\'t be read.</string>
+
+    <string name="settings_group_notifications">Notifications</string>
+    <string name="notifications_switch">Server alerts</string>
+    <string name="notifications_switch_caption">Failed sign-ins, lockouts, warnings and errors in the activity log</string>
+    <string name="notifications_interval">Check every</string>
+    <string name="notifications_interval_15">15 minutes</string>
+    <string name="notifications_interval_30">30 minutes</string>
+    <string name="notifications_interval_60">1 hour</string>
+    <string name="notifications_interval_120">2 hours</string>
+    <string name="notifications_interval_360">6 hours</string>
+    <string name="notifications_blocked">Android won\'t show alerts</string>
+    <string name="notifications_blocked_caption">Notifications are off for this app. Open its notification settings to allow them.</string>
+    <string name="notifications_battery">Allow background checks</string>
+    <string name="notifications_battery_caption">Android may delay checks to save battery. Open this app\'s settings and set Battery to Unrestricted.</string>
+    <string name="notif_channel_activity_name">Server alerts</string>
+    <string name="notif_channel_activity_description">Failed sign-ins, lockouts, warnings and errors on your server</string>
+    <string name="notif_channel_connection_name">Sign-in</string>
+    <string name="notif_channel_connection_description">When the server needs you to sign in again</string>
+    <string name="notif_activity_title">Your server needs a look</string>
+    <string name="notif_connection_title">Sign in to your server again</string>
+    <string name="notif_connection_body">The server refused the saved sign-in. Open the app to sign in.</string>
+    <plurals name="notif_lockouts">
+        <item quantity="one">%d user was locked out</item>
+        <item quantity="other">%d users were locked out</item>
+    </plurals>
+    <plurals name="notif_failed_sign_ins">
+        <item quantity="one">%d failed sign-in</item>
+        <item quantity="other">%d failed sign-ins</item>
+    </plurals>
+    <plurals name="notif_problems">
+        <item quantity="one">%d warning or error in the activity log</item>
+        <item quantity="other">%d warnings or errors in the activity log</item>
+    </plurals>
     <string name="tip_row">Buy me a coffee</string>
     <string name="tip_title">Buy me a coffee</string>
     <string name="tip_body">Ephyra is free and open source. If it\'s useful to you, a tip helps keep it going. Thank you!</string>

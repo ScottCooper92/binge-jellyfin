@@ -1398,6 +1398,42 @@
     <string name="licences_unspecified">Licencia no especificada</string>
     <string name="licences_empty">No hay licencias que mostrar.</string>
     <string name="licences_unreadable">No se pudo leer la lista de licencias.</string>
+
+    <string name="settings_group_notifications">Notificaciones</string>
+    <string name="notifications_switch">Alertas del servidor</string>
+    <string name="notifications_switch_caption">Inicios de sesión fallidos, bloqueos, advertencias y errores del registro de actividad</string>
+    <string name="notifications_interval">Comprobar cada</string>
+    <string name="notifications_interval_15">15 minutos</string>
+    <string name="notifications_interval_30">30 minutos</string>
+    <string name="notifications_interval_60">1 hora</string>
+    <string name="notifications_interval_120">2 horas</string>
+    <string name="notifications_interval_360">6 horas</string>
+    <string name="notifications_blocked">Android no mostrará alertas</string>
+    <string name="notifications_blocked_caption">Las notificaciones están desactivadas para esta aplicación. Abre sus ajustes de notificaciones para permitirlas.</string>
+    <string name="notifications_battery">Permitir comprobaciones en segundo plano</string>
+    <string name="notifications_battery_caption">Android puede retrasar las comprobaciones para ahorrar batería. Abre los ajustes de esta aplicación y pon Batería en Sin restricciones.</string>
+    <string name="notif_channel_activity_name">Alertas del servidor</string>
+    <string name="notif_channel_activity_description">Inicios de sesión fallidos, bloqueos, advertencias y errores de tu servidor</string>
+    <string name="notif_channel_connection_name">Inicio de sesión</string>
+    <string name="notif_channel_connection_description">Cuando el servidor necesita que vuelvas a iniciar sesión</string>
+    <string name="notif_activity_title">Tu servidor necesita atención</string>
+    <string name="notif_connection_title">Vuelve a iniciar sesión en tu servidor</string>
+    <string name="notif_connection_body">El servidor rechazó el inicio de sesión guardado. Abre la aplicación para iniciar sesión.</string>
+    <plurals name="notif_lockouts">
+        <item quantity="one">%d usuario fue bloqueado</item>
+        <item quantity="many">%d usuarios fueron bloqueados</item>
+        <item quantity="other">%d usuarios fueron bloqueados</item>
+    </plurals>
+    <plurals name="notif_failed_sign_ins">
+        <item quantity="one">%d inicio de sesión fallido</item>
+        <item quantity="many">%d inicios de sesión fallidos</item>
+        <item quantity="other">%d inicios de sesión fallidos</item>
+    </plurals>
+    <plurals name="notif_problems">
+        <item quantity="one">%d advertencia o error en el registro de actividad</item>
+        <item quantity="many">%d advertencias o errores en el registro de actividad</item>
+        <item quantity="other">%d advertencias o errores en el registro de actividad</item>
+    </plurals>
     <string name="tip_row">Invítame a un café</string>
     <string name="tip_title">Invítame a un café</string>
     <string name="tip_body">Ephyra es gratuita y de código abierto. Si te resulta útil, una propina ayuda a mantenerla. ¡Gracias!</string>

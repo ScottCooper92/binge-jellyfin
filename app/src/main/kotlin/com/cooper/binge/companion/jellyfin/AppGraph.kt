@@ -14,6 +14,16 @@ import com.cooper.binge.companion.jellyfin.flags.FeatureFlags
 import com.cooper.binge.companion.jellyfin.flags.FirebaseRemoteFlagSource
 import com.cooper.binge.companion.jellyfin.flags.Flag
 import com.cooper.binge.companion.jellyfin.flags.RemoteFeatureFlags
+import com.cooper.binge.companion.jellyfin.notifications.ActivityChecker
+import com.cooper.binge.companion.jellyfin.notifications.AndroidBackgroundAccess
+import com.cooper.binge.companion.jellyfin.notifications.AndroidNotifier
+import com.cooper.binge.companion.jellyfin.notifications.BackgroundAccess
+import com.cooper.binge.companion.jellyfin.notifications.NotificationPlanner
+import com.cooper.binge.companion.jellyfin.notifications.NotificationPrefs
+import com.cooper.binge.companion.jellyfin.notifications.NotificationScheduler
+import com.cooper.binge.companion.jellyfin.notifications.PollReactor
+import com.cooper.binge.companion.jellyfin.notifications.PollRunner
+import com.cooper.binge.companion.jellyfin.notifications.WorkManagerNotificationScheduler
 import com.cooper.binge.companion.jellyfin.review.PlayReviewPromptLauncher
 import com.cooper.binge.companion.jellyfin.review.ReviewPrompt
 import com.cooper.binge.companion.jellyfin.review.ReviewSignalStore
@@ -98,6 +108,35 @@ class AppGraph(
                 produceFile = { appContext.preferencesDataStoreFile("telemetry") },
             ),
         )
+    }
+
+    /** The administrator's background notifications: their own store, off until the switch is turned on. */
+    val notificationPrefs: NotificationPrefs by lazy {
+        NotificationPrefs(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("notifications") },
+            ),
+        )
+    }
+
+    val notifier: AndroidNotifier by lazy { AndroidNotifier(appContext) }
+
+    val notificationScheduler: NotificationScheduler by lazy { WorkManagerNotificationScheduler(appContext) }
+
+    val backgroundAccess: BackgroundAccess by lazy { AndroidBackgroundAccess(appContext) }
+
+    /** What the periodic worker runs. */
+    val pollRunner: PollRunner by lazy {
+        PollRunner(
+            ActivityChecker(connection, notificationPrefs, notifier),
+            PollReactor(notifier, notificationScheduler, notificationPrefs),
+        )
+    }
+
+    /** Keeps the poll scheduled while an administrator is signed in and has the switch on. */
+    val notificationPlanner: NotificationPlanner by lazy {
+        NotificationPlanner(sessions, notificationPrefs, notificationScheduler, notifier, scope)
     }
 
     /** Asks Play for its review card once the user has done enough and waited long enough; off until the flag is on. */

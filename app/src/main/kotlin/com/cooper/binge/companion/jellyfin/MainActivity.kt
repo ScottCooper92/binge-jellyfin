@@ -52,6 +52,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
 import com.cooper.binge.companion.jellyfin.ui.rememberAppSettingsBinding
+import com.cooper.binge.companion.jellyfin.ui.rememberNotificationBinding
 import com.cooper.binge.companion.jellyfin.ui.tryDemo
 import com.cooper.binge.companion.jellyfin.ui.tv.TvConsentGate
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
@@ -169,6 +170,8 @@ class MainActivity : ComponentActivity() {
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             // What the user has said about usage data and crash reports; the stored answer is null until it is read.
             val telemetry = rememberAppSettingsBinding(graph.telemetryPrefs)
+            // The telemetry choices, and an administrator's notifications, which no one else is shown.
+            val appActions = rememberNotificationBinding(graph, (state as? UiState.SignedIn)?.isAdministrator == true, telemetry::applyTo)
             CompositionLocalProvider(LocalFlags provides flags, LocalUserPictures provides graph.userPictures) {
                 if (LocalConfiguration.current.isTelevision()) {
                     JellyfinTvTheme {
@@ -180,7 +183,7 @@ class MainActivity : ComponentActivity() {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                             ConsentGate(telemetry.consent, telemetry.answerConsent) {
-                                ConsoleHost(state, stack, { stack = it }, graph, telemetry.applyTo(actions), telemetry.applyTo(homeActions))
+                                ConsoleHost(state, stack, { stack = it }, graph, appActions(actions), appActions(homeActions))
                             }
                         }
                     }
