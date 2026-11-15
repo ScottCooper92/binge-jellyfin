@@ -303,7 +303,7 @@ private fun StorageFolder.row(
     val full = fraction != null && fraction >= NEARLY_FULL
     val space =
         if (fraction == null) {
-            path
+            path.takeIf { it != label }
         } else {
             stringResource(
                 R.string.server_storage_used,
@@ -315,7 +315,7 @@ private fun StorageFolder.row(
     return ListItem(
         icon = icon,
         label = label,
-        detail = listOfNotNull(space, type?.takeIf { it.isNotBlank() }).joinToString(" · "),
+        detail = listOfNotNull(space, type?.takeIf { it.isNotBlank() }).joinToString(" · ").ifEmpty { null },
         supportingMaxLines = DETAIL_LINES,
         note = if (full) ListItemNote(stringResource(R.string.server_storage_full), warning = true) else null,
         clickable = false,
