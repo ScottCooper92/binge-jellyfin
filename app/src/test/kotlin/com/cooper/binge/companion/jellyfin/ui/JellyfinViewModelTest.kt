@@ -27,6 +27,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -178,6 +182,99 @@ class JellyfinViewModelTest {
         jellyfin.startupWizardCompleted = true
         vm.changeServer(recheck = true)
         assertTrue(!vm.await<UiState.SignIn>().server.setupIncomplete)
+    }
+
+    private fun JellyfinViewModel.toStartup(): StartupPhase.Configuring {
+        toSignIn()
+        startup.open()
+        return await<UiState.Startup> { it.phase is StartupPhase.Configuring }.phase as StartupPhase.Configuring
+    }
+
+    @Test
+    fun `the wizard reads the setup configuration and the lists, and changes nothing until Save`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        val step = vm.toStartup()
+        assertEquals("truenas", step.configuration.serverName)
+        assertEquals("en-US", step.configuration.uiCulture)
+        assertTrue(step.uiLanguages.isNotEmpty() && step.cultures.isNotEmpty() && step.countries.isNotEmpty())
+        assertEquals(null, jellyfin.savedStartupConfiguration)
+        assertTrue(jellyfin.requests.none { it.method == "POST" && it.url.encodedPath.startsWith("/Startup") })
+    }
+
+    @Test
+    fun `Save sends what the server sent with the user's changes, and never a token`() {
+        jellyfin.startupWizardCompleted = false
+        jellyfin.startupConfiguration =
+            """{"ServerName":"truenas","UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en","Other":7}"""
+        val vm = viewModel()
+        vm.toStartup()
+        vm.startup.onName("Living room")
+        vm.startup.onUiLanguage("es")
+        vm.startup.onMetadataCountry("GB")
+        vm.startup.save()
+        vm.await<UiState.Startup> { it.phase == StartupPhase.Saved }
+        val sent = Json.parseToJsonElement(jellyfin.savedStartupConfiguration.orEmpty()).jsonObject
+        assertEquals("Living room", sent["ServerName"]?.jsonPrimitive?.content)
+        assertEquals("es", sent["UICulture"]?.jsonPrimitive?.content)
+        assertEquals("GB", sent["MetadataCountryCode"]?.jsonPrimitive?.content)
+        assertEquals("en", sent["PreferredMetadataLanguage"]?.jsonPrimitive?.content)
+        assertEquals(7, sent["Other"]?.jsonPrimitive?.int)
+        val startupCalls = jellyfin.requests.filter { it.url.encodedPath.startsWith("/Startup") }
+        assertTrue(startupCalls.isNotEmpty())
+        assertTrue(startupCalls.none { it.headers["Authorization"].orEmpty().contains("Token=") })
+    }
+
+    @Test
+    fun `a server that sends no name gets no name field, and is sent back without one`() {
+        jellyfin.startupWizardCompleted = false
+        jellyfin.startupConfiguration = """{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}"""
+        val vm = viewModel()
+        assertTrue(!vm.toStartup().configuration.hasServerName)
+        vm.startup.onMetadataCountry("GB")
+        vm.startup.save()
+        vm.await<UiState.Startup> { it.phase == StartupPhase.Saved }
+        assertTrue("ServerName" !in jellyfin.savedStartupConfiguration.orEmpty())
+    }
+
+    @Test
+    fun `a save the server refuses keeps the step and the choices, with the reason beside Save`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toStartup()
+        vm.startup.onName("Living room")
+        jellyfin.status["/Startup/Configuration"] = 500
+        vm.startup.save()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Configuring)?.error != null }.phase as StartupPhase.Configuring
+        assertEquals(SetupError.Generic, step.error)
+        assertEquals("Living room", step.configuration.serverName)
+        assertTrue(!step.busy)
+    }
+
+    @Test
+    fun `a list the server refuses fails the read, and Try again reads it once the server allows it`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toSignIn()
+        jellyfin.status["/Localization/Countries"] = 401
+        vm.startup.open()
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Failed }
+        jellyfin.status.remove("/Localization/Countries")
+        vm.startup.load()
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Configuring }
+    }
+
+    @Test
+    fun `the wizard opens only for a server that has not finished setup, and Back returns to the notice`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.startup.open()
+        assertTrue(vm.state.value is UiState.SignIn)
+        jellyfin.startupWizardCompleted = false
+        val other = viewModel()
+        other.toStartup()
+        other.startup.back()
+        assertTrue(other.await<UiState.SignIn>().server.setupIncomplete)
     }
 
     @Test

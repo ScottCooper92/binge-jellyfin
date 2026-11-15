@@ -1,0 +1,150 @@
+package com.cooper.binge.companion.jellyfin.ui
+
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import com.binge.designsystem.testing.assertNoTextClipped
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.binge.companion.jellyfin.server.Country
+import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.StartupConfiguration
+import com.cooper.binge.companion.jellyfin.server.UiLanguage
+import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/** The setup wizard's screens, drawn from state: what each phase shows and what its controls ask for. */
+@RunWith(RobolectricTestRunner::class)
+@Config(qualifiers = "w411dp-h2000dp")
+class StartupScreenTest {
+    @get:Rule
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
+
+    private val server =
+        PublicServerInfo("Living room", "10.11.6", "a1", "http://192.168.1.20:8096".toHttpUrl(), startupWizardCompleted = false)
+
+    private fun configuration(withName: Boolean = true) =
+        StartupConfiguration(
+            Json
+                .parseToJsonElement(
+                    (if (withName) """{"ServerName":"Living room",""" else "{") +
+                        """"UICulture":"en-GB","MetadataCountryCode":"GB","PreferredMetadataLanguage":"en"}""",
+                ).jsonObject,
+        )
+
+    private fun configuring(
+        withName: Boolean = true,
+        busy: Boolean = false,
+        error: SetupError? = null,
+    ) = StartupPhase.Configuring(
+        configuration = configuration(withName),
+        uiLanguages = listOf(UiLanguage("English (United Kingdom)", "en-GB"), UiLanguage("Español", "es")),
+        cultures = listOf(Culture("English", "en", listOf("eng")), Culture("Spanish", "es", listOf("spa"))),
+        countries = listOf(Country("GB", "United Kingdom"), Country("ES", "Spain")),
+        busy = busy,
+        error = error,
+    )
+
+    private fun show(
+        phase: StartupPhase,
+        actions: StartupActions = StartupActions(),
+    ) = compose.setContent {
+        JellyfinTheme { JellyfinRoot(UiState.Startup("http://192.168.1.20:8096", server, phase), Actions(startup = actions)) }
+    }
+
+    @Test
+    fun `the first step shows the name and the three choices as they are held, and Save asks to save`() {
+        val calls = mutableListOf<String>()
+        show(configuring(), StartupActions(onSave = { calls += "save" }))
+        compose.onNodeWithText("Set up your server").assertIsDisplayed()
+        compose.onNodeWithText("Living room").assertIsDisplayed()
+        compose.onNodeWithText("English (United Kingdom)").assertIsDisplayed()
+        compose.onNodeWithText("United Kingdom").assertIsDisplayed()
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("save"), calls)
+    }
+
+    @Test
+    fun `a server that sent no name gets no name field`() {
+        show(configuring(withName = false))
+        compose.onNodeWithText("Server name").assertDoesNotExist()
+        compose.onNodeWithText("Metadata country").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a language is chosen in a sheet with a filter, and the pick reaches the wizard`() {
+        val picked = mutableListOf<String>()
+        show(configuring(), StartupActions(onMetadataCountry = { picked += it }))
+        compose.onNodeWithText("Metadata country").performClick()
+        // The name field and the sheet's filter.
+        compose.onAllNodes(hasSetTextAction()).assertCountEquals(2)
+        compose.onNodeWithText("Spain").performClick()
+        assertEquals(listOf("ES"), picked)
+    }
+
+    @Test
+    fun `a refused save says so beside Save`() {
+        show(configuring(error = SetupError.Generic))
+        compose.onNodeWithText("Something went wrong. Try again.").assertExists()
+    }
+
+    @Test
+    fun `a failed read is an error screen with Try again`() {
+        val calls = mutableListOf<String>()
+        show(StartupPhase.Failed(ConsoleFailure.Unreachable), StartupActions(onRetry = { calls += "retry" }))
+        compose.onNodeWithText("Try again").performClick()
+        assertEquals(listOf("retry"), calls)
+    }
+
+    @Test
+    fun `once saved it says so and offers to check again or go back`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                JellyfinRoot(
+                    UiState.Startup("http://192.168.1.20:8096", server, StartupPhase.Saved),
+                    Actions(onRecheckServer = { calls += "check" }, startup = StartupActions(onBack = { calls += "back" })),
+                )
+            }
+        }
+        compose.onNodeWithText("Saved").assertIsDisplayed()
+        compose.onNodeWithText("Check again").performClick()
+        compose.onNodeWithText("Back").performClick()
+        assertEquals(listOf("check", "back"), calls)
+    }
+
+    @Test
+    fun `the notice offers to set the server up`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                JellyfinRoot(
+                    UiState.SignIn("http://192.168.1.20:8096", server),
+                    Actions(startup = StartupActions(onOpen = { calls += "open" })),
+                )
+            }
+        }
+        compose.onNodeWithText("Set up this server").performClick()
+        assertEquals(listOf("open"), calls)
+    }
+
+    @Test
+    @Config(fontScale = 2f)
+    fun `at twice the font nothing on the first step is cropped`() {
+        show(configuring(error = SetupError.Generic))
+        assertTrue(compose.assertNoTextClipped() > 0)
+    }
+}

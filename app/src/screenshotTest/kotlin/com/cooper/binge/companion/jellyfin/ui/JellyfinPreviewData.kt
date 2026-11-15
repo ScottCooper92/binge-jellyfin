@@ -3,11 +3,16 @@ package com.cooper.binge.companion.jellyfin.ui
 import android.graphics.Bitmap
 import android.graphics.Color
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
+import com.cooper.binge.companion.jellyfin.server.Country
+import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.PublicUser
+import com.cooper.binge.companion.jellyfin.server.StartupConfiguration
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
+import com.cooper.binge.companion.jellyfin.server.UiLanguage
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -61,6 +66,45 @@ val previewSignInUsersPictures =
     )
 
 private fun previewPicture(color: Int): Bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
+
+private val setupServer = lanServer.copy(startupWizardCompleted = false)
+
+private fun previewStartupConfiguration(withName: Boolean = true) =
+    StartupConfiguration(
+        buildJsonObject {
+            if (withName) put("ServerName", "Living room")
+            put("UICulture", "en-GB")
+            put("MetadataCountryCode", "GB")
+            put("PreferredMetadataLanguage", "en")
+        },
+    )
+
+private fun previewStartupStep(
+    withName: Boolean = true,
+    busy: Boolean = false,
+    error: SetupError? = null,
+) = StartupPhase.Configuring(
+    configuration = previewStartupConfiguration(withName),
+    uiLanguages = listOf(UiLanguage("English (United Kingdom)", "en-GB"), UiLanguage("Español", "es")),
+    cultures = listOf(Culture("English", "en", listOf("eng")), Culture("Spanish", "es", listOf("spa"))),
+    countries = listOf(Country("GB", "United Kingdom"), Country("ES", "Spain")),
+    busy = busy,
+    error = error,
+)
+
+val previewStartup = UiState.Startup(LAN, setupServer, previewStartupStep())
+
+val previewStartupNoName = previewStartup.copy(phase = previewStartupStep(withName = false))
+
+val previewStartupSaving = previewStartup.copy(phase = previewStartupStep(busy = true))
+
+val previewStartupRefused = previewStartup.copy(phase = previewStartupStep(error = SetupError.Generic))
+
+val previewStartupLoading = previewStartup.copy(phase = StartupPhase.Loading)
+
+val previewStartupFailed = previewStartup.copy(phase = StartupPhase.Failed(ConsoleFailure.Unreachable))
+
+val previewStartupSaved = previewStartup.copy(phase = StartupPhase.Saved)
 
 val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 

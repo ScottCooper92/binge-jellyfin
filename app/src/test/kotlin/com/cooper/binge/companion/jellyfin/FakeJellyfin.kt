@@ -165,6 +165,13 @@ class FakeJellyfin : Dispatcher() {
 
     /** What `/System/Info/Public` says of the server's first-run setup. */
     var startupWizardCompleted = true
+
+    /** What `/Startup/Configuration` holds; a save replaces it. A server that sends no `ServerName` models an older one. */
+    var startupConfiguration =
+        """{"ServerName":"truenas","UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}"""
+
+    /** The body of the last `POST /Startup/Configuration`, or null before one. */
+    var savedStartupConfiguration: String? = null
     var quickConnectApproved = false
 
     /** Whether `/Users/Me` answers with an administrator's policy. */
@@ -720,6 +727,12 @@ class FakeJellyfin : Dispatcher() {
                 if (pin == "\"$forgotPin\"") json("""{"Success":true,"UsersReset":["Mum"]}""") else MockResponse(code = 404)
             }
             path == "/Users/Public" -> json(publicUsers)
+            path == "/Startup/Configuration" && request.method == "POST" -> {
+                savedStartupConfiguration = request.body?.utf8().orEmpty()
+                startupConfiguration = savedStartupConfiguration.orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/Startup/Configuration" -> json(startupConfiguration)
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
                 val passwordless = body["Username"].toString() == "\"Kid\"" && body["Pw"].toString() == "\"\""

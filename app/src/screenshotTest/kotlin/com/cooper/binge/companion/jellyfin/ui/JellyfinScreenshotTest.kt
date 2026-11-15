@@ -101,6 +101,45 @@ class JellyfinScreenshotTest {
     @Composable
     fun signInUsersPictures() = JellyfinRoot(previewSignInUsersPictures, Actions())
 
+    // The setup wizard of a server that has not finished its first-run setup.
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun startup() = JellyfinRoot(previewStartup, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupNoName() = JellyfinRoot(previewStartupNoName, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupSaving() = JellyfinRoot(previewStartupSaving, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupRefused() = JellyfinRoot(previewStartupRefused, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupLoading() = JellyfinRoot(previewStartupLoading, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFailed() = JellyfinRoot(previewStartupFailed, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupSaved() = JellyfinRoot(previewStartupSaved, Actions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable

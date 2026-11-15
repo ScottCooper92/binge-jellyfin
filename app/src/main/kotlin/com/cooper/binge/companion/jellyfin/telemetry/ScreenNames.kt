@@ -11,6 +11,7 @@ object ScreenNames {
     const val ENTER_SERVER = "enter_server"
     const val SIGN_IN = "sign_in"
     const val SIGN_IN_QUICK_CONNECT = "sign_in_quick_connect"
+    const val STARTUP = "startup"
     const val HOME = "home"
 
     /** The console page [page], as `console_` and the page's own name in snake case. */
@@ -25,6 +26,7 @@ object ScreenNames {
             UiState.Loading -> null
             is UiState.EnterServer -> ENTER_SERVER
             is UiState.SignIn -> if (state.quickConnectCode != null || state.gettingCode) SIGN_IN_QUICK_CONNECT else SIGN_IN
+            is UiState.Startup -> STARTUP
             is UiState.SignedIn -> openPage?.let(::console) ?: HOME
         }
 }

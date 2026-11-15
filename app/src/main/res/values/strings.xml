@@ -14,6 +14,14 @@
     <string name="setup_incomplete_title">This server isn’t set up yet</string>
     <string name="setup_incomplete_body">Finish setting it up in Jellyfin’s web page, then check again. There is no account to sign in to until you do.</string>
     <string name="setup_incomplete_check">Check again</string>
+    <string name="startup_open">Set up this server</string>
+    <string name="startup_title">Set up your server</string>
+    <string name="startup_body">Choose a name and the languages Jellyfin uses. You can change them later in the server settings.</string>
+    <string name="startup_filter">Search</string>
+    <string name="startup_save">Save</string>
+    <string name="startup_saved_title">Saved</string>
+    <string name="startup_saved_body">Your choices are saved. Create the first account in Jellyfin’s web page to finish setting up, then check again.</string>
+    <string name="startup_back">Back</string>
     <string name="setup_sign_in_title">Sign in</string>
     <string name="forgot_password">Forgot password?</string>
     <string name="tv_forgot_back">Back to sign in</string>
