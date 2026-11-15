@@ -904,7 +904,8 @@ class ConsoleScreensTest {
         // The older version asks first, and Cancel installs nothing.
         compose.onNodeWithText("12.0.0.0", substring = true).performScrollTo()
         compose.onNodeWithText("12.0.0.0", substring = true).performClick()
-        compose.onNodeWithText("• Older fix").assertExists()
+        // The Markdown is parsed off the main thread, so it appears a moment after the sheet.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Older fix").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Install").performClick()
         compose.onNodeWithText("Install version 12.0.0.0?").assertExists()
         compose.onNodeWithText("Cancel").performClick()
