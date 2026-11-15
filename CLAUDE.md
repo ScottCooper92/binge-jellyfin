@@ -53,6 +53,12 @@ the device and app version, never a debug build's. No user id, custom key or log
 app's code may contain the server's address or the token. A build without `POSTHOG_API_KEY` or `google-services.json` has the
 matching one off. Neither carries the access token or anything from the user's server.
 
+Two Google Play features also talk to Google, through the Play Store app on the device rather than a host this app connects to:
+Play In-App Review (`review/PlayReviewPromptLauncher`), which may ask the user for a rating, and Play Billing for the tip jar
+(`tip/PlayTipBilling.kt`), which in a release build queries the four `donation_*` products each time the This app page opens and
+buys one only when the user confirms in Google's own screen. Neither carries the access token or anything from the user's server,
+and neither is a new host.
+
 The screens wear the design system's `BingeExpressiveTheme`, with this app's own purple
 `JellyfinBrand` in place of Binge's amber (`theme/JellyfinTheme.kt`).
 
