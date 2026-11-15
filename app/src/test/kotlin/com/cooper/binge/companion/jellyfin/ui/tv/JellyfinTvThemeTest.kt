@@ -1,9 +1,11 @@
-package com.cooper.binge.companion.jellyfin.theme
+package com.cooper.binge.companion.jellyfin.ui.tv
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.graphics.Color
 import androidx.tv.material3.LocalContentColor
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.binge.companion.jellyfin.theme.JellyfinTvColorScheme
+import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
