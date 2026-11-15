@@ -36,6 +36,12 @@ done < <(find "$tests" -name '*.kt')
 classes="$(grep -rhE "$class_re" "$tests" | sed -E 's/^.*class[[:space:]]+([A-Za-z0-9_]*ScreenshotTest).*$/\1/' | sort -u)"
 [ -n "$classes" ] || { echo "no screenshot test classes under $tests" >&2; exit 1; }
 
+# A reference directory no class owns is a frame nothing renders, and the validate task does not
+# fail on it. Fail here so a renamed or deleted class takes its PNGs with it.
+while IFS= read -r d; do
+  grep -qx "$d" <<< "$classes" || { echo "$d: reference PNGs with no *ScreenshotTest class; delete them or restore the class" >&2; exit 1; }
+done < <(find "$refs" -type d -name '*ScreenshotTest' -exec basename {} \; 2>/dev/null | sort -u)
+
 weighted=""
 while IFS= read -r c; do
   n="$(find "$refs" -type d -name "$c" -exec find {} -name '*.png' \; 2>/dev/null | wc -l | tr -d ' ')"

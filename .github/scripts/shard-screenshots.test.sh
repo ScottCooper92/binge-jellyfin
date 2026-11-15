@@ -40,19 +40,27 @@ if "$here/shard-screenshots.sh" 3 0 "$tmp/none" "$tmp/refs" >/dev/null 2>&1; the
 fi
 
 # A frame the shards would miss fails the script rather than dropping out of the gate.
-mkdir -p "$tmp/mod" "$tmp/top" "$tmp/stray"
+mkdir -p "$tmp/noRefs" "$tmp/mod" "$tmp/top" "$tmp/stray"
 printf 'package x\ninternal class ModScreenshotTest {\n  @PreviewTest fun a() {}\n}\n' > "$tmp/mod/M.kt"
-mod="$("$here/shard-screenshots.sh" 1 0 "$tmp/mod" "$tmp/refs" | grep -v '^--tests$')"
+mod="$("$here/shard-screenshots.sh" 1 0 "$tmp/mod" "$tmp/noRefs" | grep -v '^--tests$')"
 [ "$mod" = "*.ModScreenshotTest" ] || { echo "FAIL: a class with a modifier should be found, got $mod"; failed=1; }
 printf 'package x\nclass AScreenshotTest {\n}\n@PreviewTest fun c() {}\n' > "$tmp/top/T.kt"
-if "$here/shard-screenshots.sh" 3 0 "$tmp/top" "$tmp/refs" >/dev/null 2>&1; then
+if "$here/shard-screenshots.sh" 3 0 "$tmp/top" "$tmp/noRefs" >/dev/null 2>&1; then
   echo "FAIL: a top-level @PreviewTest should fail"; failed=1
 fi
 printf 'package x\nclass AScreenshotTest {\n}\n' > "$tmp/stray/A.kt"
 printf 'package x\nclass Other {\n  @PreviewTest fun b() {}\n}\n' > "$tmp/stray/B.kt"
-if "$here/shard-screenshots.sh" 3 0 "$tmp/stray" "$tmp/refs" >/dev/null 2>&1; then
+if "$here/shard-screenshots.sh" 3 0 "$tmp/stray" "$tmp/noRefs" >/dev/null 2>&1; then
   echo "FAIL: a @PreviewTest in a file with no *ScreenshotTest class should fail"; failed=1
 fi
+
+# References no class renders fail the script rather than piling up.
+mkdir -p "$tmp/refs/ui/GoneScreenshotTest"
+: > "$tmp/refs/ui/GoneScreenshotTest/f.png"
+if "$here/shard-screenshots.sh" 3 0 "$tmp/tests" "$tmp/refs" >/dev/null 2>&1; then
+  echo "FAIL: orphaned reference PNGs should fail"; failed=1
+fi
+rm -rf "$tmp/refs/ui/GoneScreenshotTest"
 
 [ "$failed" -eq 0 ] && echo "shard-screenshots: all cases pass"
 exit "$failed"
