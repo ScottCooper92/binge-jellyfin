@@ -25,6 +25,7 @@ The app sets `allowBackup="false"` and excludes everything from cloud backup and
 
 - **To PostHog**, only if you agree to share usage data when the app first asks, or later under This app in your settings. It sends the name of each screen you open (the server step, sign-in, the home, or which console page, such as Libraries or Scheduled tasks, but never which library, task or user is open inside it), and three events: a sign-in (by password, by Quick Connect, or into the built-in demo), a failed sign-in with its category (wrong credentials, server unreachable, Quick Connect off or expired, and so on), and signing out. The names are the app's own fixed ones, never an id, a title, an address, a user name or anyone's name, plus PostHog's own app events (installed, updated, opened, backgrounded). Nothing is sent until you agree, and turning it off stops it. PostHog records it against a random identifier for this install, not against you, and derives a rough location from the IP address.
 - **To Google (Firebase Crashlytics)**, when the app crashes: what the app was doing, the device model and Android version. This is off until you agree on the first-run screen, and you can turn it off under This app. No user identifier is set, and the app does not forward its logs. The app's own code never puts your server's address or your access token in an exception message, but a crash report carries the message the system wrote for the crash, and for a failed network call that message can name the host. If that matters to you, leave crash reports off. A debug build never sends one.
+- **To Google (Play Billing)**, only if you choose to leave a tip: the tip is bought and consumed through Google Play under your Google account, and Google takes the payment. The app keeps no payment or purchase data and sends none anywhere else. The row appears only where Google Play can sell it.
 - **To GitHub**, only when you choose Report a bug: the app opens a new issue form in your browser (or shows a code your phone scans, on a television) with the app version and the device and Android version filled in. Nothing about your server is included, and nothing is sent until you submit the form yourself. The issue is public.
 
 The app has no server of its own.
@@ -41,6 +42,8 @@ The app has no server of its own.
 - **Internet**, to reach your server.
 - **Network state**, to find the device's Wi-Fi and Ethernet networks and send the discovery broadcast on them.
 - **Local network**, on Android versions that ask for it, so the app can find a Jellyfin server on your home network.
+
+- **Billing** (`com.android.vending.BILLING`), declared by the Google Play Billing library: it lets the app offer a tip through Google Play. Nothing is bought unless you confirm it in Google's own purchase screen.
 
 Libraries the app includes add more to the installed app's manifest; none is used to reach anything beyond what this policy describes.
 

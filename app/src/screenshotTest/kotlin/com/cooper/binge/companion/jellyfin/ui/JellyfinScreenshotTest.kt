@@ -10,6 +10,9 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
+import com.cooper.binge.companion.jellyfin.tip.TipUiState
+import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */
 class JellyfinScreenshotTest {
@@ -269,6 +272,20 @@ class JellyfinScreenshotTest {
     @Composable
     fun notificationsInterval() =
         Surface { IntervalChoices(NotificationSettings(enabled = true, intervalMinutes = 120), Actions(), close = {}) }
+
+    /** The This app page with the tip jar priced, so its row shows. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun thisAppWithTipJar() = ThisAppScreen(Actions(), onBack = {}, tip = TipUiState.Ready(TIP_STEPS.associateWith { "£$it" }))
+
+    /** The tip jar's sheet body: a slider over the four steps, at the default of 5. A frame can't capture the sheet's own window. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun tipSheet() = Surface { TipSheetContent(prices = TIP_STEPS.associateWith { "£$it" }, onGive = {}) }
 
     /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
     @PreviewTest
