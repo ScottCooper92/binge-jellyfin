@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -46,6 +47,9 @@ private val DetailPane: Map<String, Any> = ListDetailSceneStrategy.detailPane()
  * the default, a single pane.
  */
 private fun pageMetadata(page: ConsolePage): Map<String, Any> = if (page.coversWindow) emptyMap() else DetailPane + pageRole(page)
+
+/** Whether the home is on screen beside the pages: a window wide enough for two panes. The search reads it to open a result beside the home. */
+internal val LocalHubBeside = compositionLocalOf { false }
 
 /** Whether the page is the whole window, so it offers its own Back: a page that covers the window, or any page where the home is not beside. */
 private fun pageAlone(
@@ -128,6 +132,7 @@ fun ConsoleNavHost(
                         CompositionLocalProvider(
                             LocalViewModelStoreOwner provides stores.owner(key.opening),
                             LocalIsSinglePaneNav provides pageAlone(key.page, hubBeside),
+                            LocalHubBeside provides hubBeside,
                             LocalPaneDepth provides if (ownPane) 1 else depth,
                             LocalOpenItem provides openItem?.takeIf { it.opening == key.opening }?.item,
                         ) {

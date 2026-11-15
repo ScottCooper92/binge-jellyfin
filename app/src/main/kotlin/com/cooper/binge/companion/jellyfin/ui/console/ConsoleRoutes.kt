@@ -60,7 +60,14 @@ private fun ConsolePageContent(
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
         ConsolePage.ThisApp -> ThisAppRoute(graph, actions, close)
-        ConsolePage.Search -> SettingsSearchRoute(graph, signedIn.profile, signedIn.account, actions.onOpenRow, close)
+        ConsolePage.Search ->
+            SettingsSearchRoute(
+                graph,
+                signedIn.profile,
+                signedIn.account,
+                if (LocalHubBeside.current) actions.onOpenResult else actions.onOpenRow,
+                close,
+            )
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
