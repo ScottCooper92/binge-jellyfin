@@ -97,6 +97,8 @@ fun TvJellyfinRoot(
         UiState.Loading -> TvMessagePage(body = stringResource(R.string.tv_loading), loading = true, modifier = modifier)
         is UiState.EnterServer -> TvServerPage(state, actions, modifier)
         is UiState.SignIn -> TvSignInPage(state, actions, modifier)
+        // The wizard is the phone's: a TV that lands in it shows the same notice as for any server that is not set up.
+        is UiState.Startup -> TvSetupIncompletePage(actions, modifier)
         is UiState.SignedIn -> TvSignedInPage(state, actions, playback, describing, modifier)
     }
 }

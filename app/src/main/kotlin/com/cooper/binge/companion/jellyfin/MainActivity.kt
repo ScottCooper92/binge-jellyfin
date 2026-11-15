@@ -142,6 +142,7 @@ class MainActivity : ComponentActivity() {
                     onTryDemo = viewModel::tryDemo,
                     onChangeServer = viewModel::changeServer,
                     onRecheckServer = { viewModel.changeServer(recheck = true) },
+                    startup = viewModel.startup.actions(),
                     onRefresh = viewModel::refresh,
                     onAskSignOut = { viewModel.confirmSignOut(true) },
                     onCancelSignOut = { viewModel.confirmSignOut(false) },

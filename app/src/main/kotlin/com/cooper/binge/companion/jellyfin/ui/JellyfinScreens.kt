@@ -77,6 +77,8 @@ data class Actions(
     val onChangeServer: () -> Unit = {},
     /** Asks the server again whether its setup is done, from the notice a server that is not set up gets. */
     val onRecheckServer: () -> Unit = {},
+    /** The setup wizard of a server that has not finished its first-run setup. */
+    val startup: StartupActions = StartupActions(),
     val onRefresh: () -> Unit = {},
     val onAskSignOut: () -> Unit = {},
     val onCancelSignOut: () -> Unit = {},
@@ -135,6 +137,7 @@ fun JellyfinRoot(
                 UiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
                 is UiState.EnterServer -> EnterServer(state, actions, inner)
                 is UiState.SignIn -> SignIn(state, actions, inner)
+                is UiState.Startup -> StartupStep(state, actions, inner)
                 is UiState.SignedIn -> SignedIn(state, actions, inner, padding.calculateTopPadding())
             }
         }
@@ -142,7 +145,7 @@ fun JellyfinRoot(
 }
 
 @Composable
-private fun SetupColumn(
+internal fun SetupColumn(
     inner: PaddingValues,
     content: @Composable () -> Unit,
 ) {

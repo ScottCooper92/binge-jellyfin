@@ -266,6 +266,13 @@ sealed interface UiState {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
     }
 
+    /** The setup wizard of a server that has not finished its first-run setup, reached from the sign-in step's notice. */
+    data class Startup(
+        val baseUrl: String,
+        val server: PublicServerInfo,
+        val phase: StartupPhase = StartupPhase.Loading,
+    ) : UiState
+
     data class SignedIn(
         val session: JellyfinSession,
         val titles: Int? = null,
@@ -304,6 +311,9 @@ class JellyfinViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state.asStateFlow()
+
+    /** The setup wizard for a server that has not finished its first-run setup. */
+    val startup = StartupWizard(connection, _state, viewModelScope, localNetwork)
 
     private val reports = SignInReports(analytics)
 
@@ -494,6 +504,7 @@ class JellyfinViewModel(
         val address =
             when (val current = _state.value) {
                 is UiState.SignIn -> current.baseUrl
+                is UiState.Startup -> current.baseUrl
                 is UiState.SignedIn -> current.session.baseUrl
                 else -> ""
             }
