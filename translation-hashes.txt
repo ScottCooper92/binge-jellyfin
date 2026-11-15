@@ -1099,7 +1099,6 @@ app:startup_filter  49c266baaaa7
 app:startup_open  1825f864f63e
 app:startup_password_again  5b18a6940649
 app:startup_password_mismatch  84bf48678ad0
-app:startup_password_optional  5025f76150fb
 app:startup_save  1509f561f241
 app:startup_saved_body  3f5b0b0f8649
 app:startup_saved_title  b5c120b316c2

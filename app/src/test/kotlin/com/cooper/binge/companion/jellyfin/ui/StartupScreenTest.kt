@@ -128,6 +128,20 @@ class StartupScreenTest {
     }
 
     @Test
+    fun `an empty password turns Create account off`() {
+        show(StartupPhase.Account("sam", "", ""))
+        compose.onNodeWithText("Create account").assertIsNotEnabled()
+        compose.onNodeWithText("Optional. You can set one later.").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the server's own words for a refusal show in place of the generic sentence`() {
+        show(StartupPhase.Account("sam", "pw", "pw", error = SetupError.Generic, reason = "Password must not be empty"))
+        compose.onNodeWithText("Password must not be empty").assertIsDisplayed()
+        compose.onNodeWithText("Something went wrong. Try again.").assertDoesNotExist()
+    }
+
+    @Test
     fun `a blank name turns Create account off`() {
         show(StartupPhase.Account("", "", ""))
         compose.onNodeWithText("Create account").assertIsNotEnabled()

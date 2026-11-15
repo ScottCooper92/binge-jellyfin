@@ -32,19 +32,19 @@ class StartupAccountStep internal constructor(
         }
     }
 
-    fun onName(name: String) = edit { copy(name = name, error = null) }
+    fun onName(name: String) = edit { copy(name = name, error = null, reason = null) }
 
-    fun onPassword(password: String) = edit { copy(password = password, error = null) }
+    fun onPassword(password: String) = edit { copy(password = password, error = null, reason = null) }
 
-    fun onConfirmation(confirmation: String) = edit { copy(confirmation = confirmation, error = null) }
+    fun onConfirmation(confirmation: String) = edit { copy(confirmation = confirmation, error = null, reason = null) }
 
-    /** Makes the account. Nothing is sent while the name is blank or the two passwords differ. */
+    /** Makes the account. Nothing is sent while the name is blank, the password is empty, or the two passwords differ. */
     fun save() {
         val wizard = state.value as? UiState.Startup ?: return
         val step = wizard.phase as? StartupPhase.Account ?: return
         if (!step.canSave) return
         val url = JellyfinClient.parseBaseUrl(wizard.baseUrl) ?: return
-        edit { copy(busy = true, error = null) }
+        edit { copy(busy = true, error = null, reason = null) }
         scope.launch {
             val saved = attempt { connection.anonymous(url).saveStartupUser(step.name.trim(), step.password) }
             // The exception is logged by its type and status alone: a message could carry what was sent.
@@ -54,16 +54,10 @@ class StartupAccountStep internal constructor(
                 if (saved.isSuccess) {
                     s.copy(phase = StartupPhase.Saved)
                 } else {
-                    val error =
-                        if (saved.exceptionOrNull() is JellyfinHttpException) {
-                            SetupError.Generic
-                        } else {
-                            unreachableSetup(
-                                s.baseUrl,
-                                localNetwork,
-                            )
-                        }
-                    s.copy(phase = (s.phase as? StartupPhase.Account)?.copy(busy = false, error = error) ?: s.phase)
+                    val refusal = saved.exceptionOrNull() as? JellyfinHttpException
+                    val error = if (refusal != null) SetupError.Generic else unreachableSetup(s.baseUrl, localNetwork)
+                    val account = s.phase as? StartupPhase.Account
+                    s.copy(phase = account?.copy(busy = false, error = error, reason = refusal?.reason) ?: s.phase)
                 }
             }
         }

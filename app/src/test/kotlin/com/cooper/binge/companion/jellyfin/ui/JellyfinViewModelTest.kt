@@ -276,6 +276,32 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `an empty password is never sent, since the server refuses it`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onName("sam")
+        vm.startup.account.save()
+        assertNull(jellyfin.savedStartupUser)
+    }
+
+    @Test
+    fun `the server's own words for a refused account are kept, to show in place of the generic sentence`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.account.onConfirmation("hunter2")
+        jellyfin.status["/Startup/User"] = 400
+        jellyfin.statusBody["/Startup/User"] = "Password must not be empty"
+        vm.startup.account.save()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Account)?.error != null }.phase as StartupPhase.Account
+        assertEquals("Password must not be empty", step.reason)
+        vm.startup.account.onPassword("hunter3")
+        assertNull((vm.state.value as UiState.Startup).phase.let { (it as StartupPhase.Account).reason })
+    }
+
+    @Test
     fun `a refused account keeps the step and what was typed, and the password out of the text of the step`() {
         jellyfin.startupWizardCompleted = false
         val vm = viewModel()

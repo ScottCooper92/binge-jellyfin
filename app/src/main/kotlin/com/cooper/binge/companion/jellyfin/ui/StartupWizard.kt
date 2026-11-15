@@ -54,11 +54,14 @@ sealed interface StartupPhase {
         val confirmation: String = "",
         val busy: Boolean = false,
         val error: SetupError? = null,
+        /** The server's own words for refusing the account, when it gave any: a plain message, shown in place of [error]'s. */
+        val reason: String? = null,
     ) : StartupPhase {
         /** The two passwords differ, so the account cannot be sent yet. */
         val mismatch: Boolean get() = confirmation.isNotEmpty() && password != confirmation
 
-        val canSave: Boolean get() = name.isNotBlank() && password == confirmation && !busy
+        /** The server will not make an account without a password, so one is needed, typed twice. */
+        val canSave: Boolean get() = name.isNotBlank() && password.isNotEmpty() && password == confirmation && !busy
 
         override fun toString() = "Account(name=$name, busy=$busy, error=$error)"
     }

@@ -21,7 +21,6 @@
     <string name="startup_save">Save</string>
     <string name="startup_account_title">Create your account</string>
     <string name="startup_account_body">This is the administrator account for the server. Keep the password somewhere safe.</string>
-    <string name="startup_password_optional">Optional. You can set one later.</string>
     <string name="startup_password_again">Password again</string>
     <string name="startup_password_mismatch">The passwords don’t match.</string>
     <string name="startup_account_save">Create account</string>
