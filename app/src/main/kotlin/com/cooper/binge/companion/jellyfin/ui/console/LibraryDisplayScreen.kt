@@ -32,8 +32,9 @@ import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
@@ -147,7 +148,9 @@ private fun displayNotReady(
     actions: LibraryDisplayActions,
 ): (@Composable (PaddingValues) -> Unit)? =
     when (state) {
-        LibraryDisplayUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+        LibraryDisplayUiState.Loading -> { padding ->
+            ConsoleLoading(padding, LOADING_ROWS, intro = stringResource(R.string.display_body))
+        }
         is LibraryDisplayUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
         is LibraryDisplayUiState.Ready -> null
     }
@@ -172,7 +175,11 @@ private fun DisplayBody(
     var picker by rememberSaveable { mutableStateOf<DisplayPicker?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         PageIntro(stringResource(R.string.display_body))
-        ItemGroup(title = stringResource(R.string.display_group), rows = displayRows(state, actions, profile) { picker = it })
+        ItemGroup(
+            title = stringResource(R.string.display_group),
+            rows = displayRows(state, actions, profile) { picker = it },
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+        )
         ItemGroup(title = stringResource(R.string.display_metadata), rows = metadataRows(state, actions, profile) { picker = it })
         ItemGroup(
             title = stringResource(R.string.display_sorting),

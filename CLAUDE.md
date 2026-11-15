@@ -53,6 +53,12 @@ the device and app version, never a debug build's. No user id, custom key or log
 app's code may contain the server's address or the token. A build without `POSTHOG_API_KEY` or `google-services.json` has the
 matching one off. Neither carries the access token or anything from the user's server.
 
+Two Google Play features also talk to Google, through the Play Store app on the device rather than a host this app connects to:
+Play In-App Review (`review/PlayReviewPromptLauncher`), which may ask the user for a rating, and Play Billing for the tip jar
+(`tip/PlayTipBilling.kt`), which in a release build queries the four `donation_*` products each time the This app page opens and
+buys one only when the user confirms in Google's own screen. Neither carries the access token or anything from the user's server,
+and neither is a new host.
+
 The screens wear the design system's `BingeExpressiveTheme`, with this app's own purple
 `JellyfinBrand` in place of Binge's amber (`theme/JellyfinTheme.kt`).
 
@@ -270,6 +276,12 @@ CI runs the same tasks as four jobs in parallel (`checks`, `tests`, `screenshots
 `hold`, and `actionlint`, which lints the workflows and is skipped on the nightly schedule. A last
 job, `build`, is green only if all of them are. It is the check branch protection requires, and the
 one the bots read. `ci.yml` explains the split.
+
+On a pull request a `changes` job runs first and `build` reads its answers: a docs-only diff skips every Gradle job, a diff
+that cannot move a frame skips `screenshots`, and `release` runs only when something R8 reads changed. The rules are the
+lists in `.github/scripts/classify-changes.sh`, tested by `classify-changes.test.sh`. For the Gradle jobs and `screenshots` a
+path in no skip list runs the job. `release` is the reverse, an allow-list: a path runs it only if `release_input` names it, so a
+new R8 input (a source set, assets, a `.pro` file) is added there or the PR skips R8. Push and the nightly run everything.
 
 ### Screenshot frames
 

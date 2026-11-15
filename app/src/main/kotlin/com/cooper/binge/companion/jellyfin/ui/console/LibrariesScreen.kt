@@ -25,9 +25,11 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ItemGroup
-import com.binge.designsystem.component.ListRowSkeletonColumn
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -89,7 +91,8 @@ fun LibrariesScreen(
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
-                LibrariesUiState.Loading -> ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS)
+                LibrariesUiState.Loading ->
+                    ConsoleLoading(inner, LOADING_ROWS, intro = stringResource(R.string.libraries_body), formInset = false)
                 is LibrariesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
                 is LibrariesUiState.Ready -> {
                     RefusedMessage(
@@ -161,13 +164,22 @@ private fun Libraries(
                         onRun = actions.onScanEverything,
                         onStop = actions.onStopEverything,
                     )
-                ItemGroup(title = null, rows = listOf(row.item()))
+                ItemGroup(
+                    title = null,
+                    rows = listOf(row.item()),
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
             }
         }
         item {
             ItemGroup(
                 title = stringResource(R.string.libraries_group),
                 rows = state.libraries.map { library -> library.row(state, actions, library.id == openLibrary).item() },
+                modifier =
+                    Modifier.layoutAnchorIf(
+                        state.board.task(LIBRARY_SCAN_TASK) == null,
+                        LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM),
+                    ),
             )
         }
     }
