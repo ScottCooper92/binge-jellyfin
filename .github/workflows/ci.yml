@@ -85,8 +85,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Test the classifier
-        run: .github/scripts/classify-changes.test.sh
+      - name: Test the scripts
+        run: |
+          .github/scripts/classify-changes.test.sh
+          .github/scripts/shard-screenshots.test.sh
 
       - name: Classify the diff
         id: classify
@@ -236,15 +238,23 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
-  # The screenshot frames. The plugin renders in one fork, so this is the longest job and the one
-  # to watch: trimming a preview matrix is the way to shorten it.
+  # The screenshot frames, in shards. The plugin renders every frame in one JVM that keeps each frame's
+  # native memory until it exits, so the whole suite in one JVM grew past a hosted runner's memory and
+  # stalled: a job that sat to its time limit with no log (#550). Each shard renders a third of the
+  # classes, chosen by .github/scripts/shard-screenshots.sh so that every class lands in exactly one
+  # shard and none is ever left out, and the shards run side by side. The job's result is the shards'
+  # together: one red shard is a red `screenshots`.
   screenshots:
     needs: changes
     if: ${{ !cancelled() && needs.changes.result == 'success' && needs.changes.outputs.screens == 'true' }}
     runs-on: ubuntu-latest
-    # The job normally takes 8 to 14 minutes. A render that has not finished in 20 has hung, and a hang
-    # costs the full limit before anyone can rerun it, so the limit sits above the slowest run seen, not at 30.
-    timeout-minutes: 20
+    # A shard normally takes 4 to 7 minutes. A render that has not finished in 15 has stalled, and a stall
+    # costs the whole limit before anyone can rerun it.
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -257,14 +267,19 @@ jobs:
         with:
           cache-read-only: true
 
-      - name: Validate screenshots
-        run: ./gradlew :app:validateDebugScreenshotTest --continue
+      - name: Validate screenshots (shard ${{ matrix.shard }} of 3)
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mapfile -t filters < <(.github/scripts/shard-screenshots.sh 3 "$SHARD")
+          printf '%s\n' "${filters[@]}" | paste - - | sed 's/^/  /'
+          ./gradlew :app:validateDebugScreenshotTest --continue "${filters[@]}"
 
       - name: Upload reports
         if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: build-reports-screenshots
+          name: build-reports-screenshots-${{ matrix.shard }}
           path: |
             **/build/outputs/screenshotTest-results/**/diffs/**
           if-no-files-found: ignore
