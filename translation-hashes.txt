@@ -367,6 +367,7 @@ app:kw_network  88c994d7d5c3
 app:kw_notifications  ded8eb6f51a5
 app:kw_now_playing  a760abbd0c66
 app:kw_password  16e3b01abd44
+app:kw_paths  50980d5ce825
 app:kw_picture  566811a0ff20
 app:kw_playback  716b22d33922
 app:kw_plugins  4b1f74149227
@@ -376,6 +377,7 @@ app:kw_proxy  d6128eee63c6
 app:kw_quick_connect  df6d77b161e2
 app:kw_remote  9d93a1f584ce
 app:kw_restart  5d20eaf8a754
+app:kw_storage  4141b2fada4a
 app:kw_tasks  05a75187fd5e
 app:kw_this_app  b93955fad9de
 app:kw_transcoding  7baddb539ab3
@@ -932,6 +934,15 @@ app:server_detail  48e857ba0ec9
 app:server_detail_cleartext  c830dc79a39a
 app:server_not_back_body  2f000e0c6ef9
 app:server_not_back_title  56bc4ed823aa
+app:server_path_cache  a76ce82a9749
+app:server_path_image_cache  d636a650fa11
+app:server_path_items_by_name  1ea86b6c2ad0
+app:server_path_logs  ea2100dc89ae
+app:server_path_metadata  9eddf573cb50
+app:server_path_program_data  2c9ce3d3da5b
+app:server_path_transcodes  6dafd8814fbf
+app:server_path_web  2975104784a4
+app:server_paths  9c7995b5bc81
 app:server_restart  51cd293a0b55
 app:server_restart_body  cc64dc04d2f5
 app:server_restart_failed  dd1b72b7802c
@@ -977,6 +988,9 @@ app:server_shutdown_body  fc8b4a128df0
 app:server_shutdown_failed  3d2a6f39d6f0
 app:server_shutdown_title  848bc3e00703
 app:server_shutting_down  c93e7b1d3121
+app:server_storage  a69c4dece144
+app:server_storage_full  e95e420652fa
+app:server_storage_used  34d2ae93a11d
 app:server_system_unknown  17458a36a8c1
 app:server_title  aef7de28d529
 app:server_unnamed  8e03b3c29d2b

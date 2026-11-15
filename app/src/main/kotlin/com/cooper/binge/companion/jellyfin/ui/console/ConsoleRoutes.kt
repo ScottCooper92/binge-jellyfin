@@ -89,7 +89,7 @@ internal fun ConsolePageRoute(
                 close,
             )
         ConsolePage.LiveTvRecording -> LiveTvRecordingRoute(graph, close)
-        ConsolePage.Server -> ServerRoute(graph, close)
+        ConsolePage.Server -> ServerRoute(graph, signedIn.profile.hasStorageInfo, close)
     }
 }
 
@@ -351,9 +351,11 @@ private fun ServerSettingsRoute(
 @Composable
 private fun ServerRoute(
     graph: AppGraph,
+    storageAvailable: Boolean,
     onBack: () -> Unit,
 ) {
-    val server: ServerViewModel = viewModel(factory = viewModelFactory { initializer { ServerViewModel(graph.connection) } })
+    val server: ServerViewModel =
+        viewModel(factory = viewModelFactory { initializer { ServerViewModel(graph.connection, storageAvailable = storageAvailable) } })
     val state by server.state.collectAsStateWithLifecycle()
     ServerScreen(
         state,
