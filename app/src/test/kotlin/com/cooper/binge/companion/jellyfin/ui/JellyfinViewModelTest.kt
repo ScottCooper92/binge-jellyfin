@@ -246,18 +246,118 @@ class JellyfinViewModelTest {
         vm.startup.account.onPassword("hunter2")
         vm.startup.account.onConfirmation("hunter2")
         vm.startup.account.save()
-        val done = vm.await<UiState.Startup> { it.phase == StartupPhase.Saved }
+        val done = vm.await<UiState.Startup> { it.phase is StartupPhase.Finish }
         val sent = Json.parseToJsonElement(jellyfin.savedStartupUser.orEmpty()).jsonObject
         assertEquals("sam", sent["Name"]?.jsonPrimitive?.content)
         assertEquals("hunter2", sent["Password"]?.jsonPrimitive?.content)
         assertEquals(1, jellyfin.requests.count { it.url.encodedPath == "/Startup/User" && it.method == "POST" })
         assertTrue(done.toString().contains("hunter2").not())
+        val startup = jellyfin.requests.filter { it.url.encodedPath.startsWith("/Startup") }
+        assertTrue(startup.none { it.headers["Authorization"].orEmpty().contains("Token=") })
+    }
+
+    /** The wizard at its last step, with an account the fake server will let in. */
+    private fun JellyfinViewModel.toFinish(): StartupPhase.Finish {
+        toAccount()
+        startup.account.onName("sam")
+        startup.account.onPassword("right")
+        startup.account.onConfirmation("right")
+        startup.account.save()
+        return await<UiState.Startup> { it.phase is StartupPhase.Finish }.phase as StartupPhase.Finish
+    }
+
+    private fun startupCalls() =
+        jellyfin.requests
+            .filter {
+                it.method == "POST" && it.url.encodedPath.startsWith("/Startup")
+            }.map { it.url.encodedPath }
+
+    @Test
+    fun `Finish setup saves remote access, completes the server, then signs in as the new account`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        vm.startup.finish.onPortMapping(true)
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        assertEquals(
+            listOf("/Startup/Configuration", "/Startup/User", "/Startup/RemoteAccess", "/Startup/Complete"),
+            startupCalls(),
+        )
+        val access = Json.parseToJsonElement(jellyfin.savedStartupRemoteAccess.orEmpty()).jsonObject
+        assertEquals("true", access["EnableRemoteAccess"]?.jsonPrimitive?.content)
+        assertEquals("true", access["EnableAutomaticPortMapping"]?.jsonPrimitive?.content)
+        // The account's password is sent to sign in once, and the token that comes back is not in any Startup request.
+        val signIns = jellyfin.requests.filter { it.url.encodedPath == "/Users/AuthenticateByName" }
+        assertEquals(1, signIns.size)
+        val sent =
+            signIns
+                .single()
+                .body
+                ?.utf8()
+                .orEmpty()
+        val body = Json.parseToJsonElement(sent).jsonObject
+        assertEquals("sam", body["Username"]?.jsonPrimitive?.content)
         assertTrue(
             jellyfin.requests
                 .filter {
                     it.url.encodedPath.startsWith("/Startup")
                 }.none { it.headers["Authorization"].orEmpty().contains("Token=") },
         )
+    }
+
+    @Test
+    fun `with remote access off, port mapping is off whatever it was`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        vm.startup.finish.onPortMapping(true)
+        vm.startup.finish.onRemoteAccess(false)
+        assertTrue(!(vm.state.value as UiState.Startup).phase.let { (it as StartupPhase.Finish).portMapping })
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        val access = Json.parseToJsonElement(jellyfin.savedStartupRemoteAccess.orEmpty()).jsonObject
+        assertEquals("false", access["EnableRemoteAccess"]?.jsonPrimitive?.content)
+        assertEquals("false", access["EnableAutomaticPortMapping"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `a Complete the server refuses keeps the last step, and Finish setup tries both calls again`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        jellyfin.status["/Startup/Complete"] = 500
+        vm.startup.finish.finish()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Finish)?.error != null }.phase as StartupPhase.Finish
+        assertEquals(SetupError.Generic, step.error)
+        assertTrue(!step.busy)
+        jellyfin.status.remove("/Startup/Complete")
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        assertEquals(2, startupCalls().count { it == "/Startup/RemoteAccess" })
+    }
+
+    @Test
+    fun `a sign-in that fails after Complete goes to the sign-in step with the name filled in and no password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        jellyfin.status["/Users/AuthenticateByName"] = 500
+        vm.startup.finish.finish()
+        val signIn = vm.await<UiState.SignIn>()
+        assertEquals("sam", signIn.username)
+        assertEquals("", signIn.password)
+        assertTrue(!signIn.server.setupIncomplete)
+    }
+
+    @Test
+    fun `leaving the last step drops the account's password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        assertTrue(!(vm.state.value as UiState.Startup).phase.toString().contains("right"))
+        vm.startup.back()
+        assertTrue(vm.await<UiState.SignIn>().password.isEmpty())
     }
 
     @Test

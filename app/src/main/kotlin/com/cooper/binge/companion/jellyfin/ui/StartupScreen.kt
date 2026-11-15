@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,7 +24,6 @@ import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
 import com.binge.designsystem.component.BingeFilledButton
-import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.cooper.binge.companion.jellyfin.R
@@ -52,7 +52,7 @@ internal fun StartupStep(
         is StartupPhase.Failed -> ConsoleFailureScreen(phase.failure, startup.onRetry, Modifier.padding(inner))
         is StartupPhase.Configuring -> SetupColumn(inner) { ConfiguringStep(phase, startup) }
         is StartupPhase.Account -> SetupColumn(inner) { AccountStep(phase, startup) }
-        StartupPhase.Saved -> SetupColumn(inner) { SavedStep(actions) }
+        is StartupPhase.Finish -> SetupColumn(inner) { FinishStep(phase, startup) }
     }
 }
 
@@ -209,19 +209,39 @@ private fun AccountStep(
     )
 }
 
-/** The account is made. The server still has to be completed, which is done in Jellyfin's web page for now. */
+/** The last step: who may reach the server from outside the network. Finish setup completes the server and signs in. */
 @Composable
-private fun SavedStep(actions: Actions) {
-    Text(stringResource(R.string.startup_saved_title), style = MaterialTheme.typography.headlineSmall)
-    Text(stringResource(R.string.startup_saved_body), style = MaterialTheme.typography.bodyMedium)
-    BingeFilledButton(
-        label = stringResource(R.string.setup_incomplete_check),
-        onClick = actions.onRecheckServer,
-        modifier = Modifier.fillMaxWidth(),
+private fun FinishStep(
+    step: StartupPhase.Finish,
+    startup: StartupActions,
+) {
+    Text(stringResource(R.string.startup_finish_title), style = MaterialTheme.typography.headlineSmall)
+    Text(stringResource(R.string.startup_finish_body), style = MaterialTheme.typography.bodyMedium)
+    ItemGroup(
+        title = null,
+        rows =
+            listOfNotNull(
+                ListItem(
+                    icon = Icons.Outlined.Public,
+                    label = stringResource(R.string.network_remote_access),
+                    toggled = step.remoteAccess,
+                    enabled = !step.busy,
+                    onClick = { startup.onRemoteAccess(!step.remoteAccess) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.Router,
+                    label = stringResource(R.string.startup_port_mapping),
+                    toggled = step.portMapping,
+                    enabled = !step.busy,
+                    onClick = { startup.onPortMapping(!step.portMapping) },
+                ).takeIf { step.remoteAccess },
+            ),
     )
-    BingeOutlinedButton(
-        label = stringResource(R.string.startup_back),
-        onClick = actions.startup.onBack,
+    step.error?.let { Text(errorText(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+    BingeFilledButton(
+        label = stringResource(R.string.startup_finish),
+        onClick = startup.onFinish,
+        loading = step.busy,
         modifier = Modifier.fillMaxWidth(),
     )
 }

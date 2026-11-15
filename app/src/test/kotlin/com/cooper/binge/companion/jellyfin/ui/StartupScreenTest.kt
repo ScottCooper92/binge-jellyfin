@@ -134,20 +134,28 @@ class StartupScreenTest {
     }
 
     @Test
-    fun `once saved it says so and offers to check again or go back`() {
+    fun `the last step shows the two choices, and Finish setup asks to finish`() {
         val calls = mutableListOf<String>()
-        compose.setContent {
-            JellyfinTheme {
-                JellyfinRoot(
-                    UiState.Startup("http://192.168.1.20:8096", server, StartupPhase.Saved),
-                    Actions(onRecheckServer = { calls += "check" }, startup = StartupActions(onBack = { calls += "back" })),
-                )
-            }
-        }
-        compose.onNodeWithText("Saved").assertIsDisplayed()
-        compose.onNodeWithText("Check again").performClick()
-        compose.onNodeWithText("Back").performClick()
-        assertEquals(listOf("check", "back"), calls)
+        show(StartupPhase.Finish("sam", "pw", remoteAccess = true), StartupActions(onFinish = { calls += "finish" }))
+        compose.onNodeWithText("Remote access").assertIsDisplayed()
+        compose.onNodeWithText("Allow remote connections").assertIsDisplayed()
+        compose.onNodeWithText("Automatic port mapping").assertIsDisplayed()
+        compose.onNodeWithText("Finish setup").performClick()
+        assertEquals(listOf("finish"), calls)
+    }
+
+    @Test
+    fun `port mapping is offered only while remote access is on`() {
+        show(StartupPhase.Finish("sam", "pw", remoteAccess = false))
+        compose.onNodeWithText("Automatic port mapping").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a switch asks the wizard to change it`() {
+        val calls = mutableListOf<Boolean>()
+        show(StartupPhase.Finish("sam", "pw", remoteAccess = true), StartupActions(onRemoteAccess = { calls += it }))
+        compose.onNodeWithText("Allow remote connections").performClick()
+        assertEquals(listOf(false), calls)
     }
 
     @Test
