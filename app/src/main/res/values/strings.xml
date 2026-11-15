@@ -1313,7 +1313,6 @@
     <string name="channel_mappings_pick_title">Tuner channel for %1$s</string>
     <string name="channel_mappings_pick_placeholder">Choose a channel to pick its tuner channel.</string>
     <string name="channel_mappings_search">Search tuner channels</string>
-    <string name="channel_mappings_no_match">No tuner channels match</string>
     <string name="channel_mappings_no_channels">This guide data lists no channels</string>
     <string name="channel_mappings_no_tuner_channels">Your tuners offer no channels</string>
     <string name="channel_mappings_paired_with">Paired with %1$s</string>

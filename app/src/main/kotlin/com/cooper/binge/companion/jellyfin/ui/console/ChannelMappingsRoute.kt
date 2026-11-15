@@ -22,7 +22,6 @@ internal fun ChannelMappingsRoute(
         state,
         ChannelMappingsActions(
             onSelect = mappings::select,
-            onSearch = mappings::search,
             onPick = mappings::pick,
             onRetry = mappings::load,
             onBack = onBack,

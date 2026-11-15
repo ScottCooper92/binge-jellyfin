@@ -63,7 +63,7 @@ class PageSkeletonGeometryTest {
                     listOf(TunerChannel("c1", "101 BBC One HD", "p1")),
                 )
             ChannelMappingsScreen(
-                state = if (resolved) ChannelMappingsUiState.Ready(options, null, "") else ChannelMappingsUiState.Loading,
+                state = if (resolved) ChannelMappingsUiState.Ready(options, null) else ChannelMappingsUiState.Loading,
                 actions = ChannelMappingsActions(),
             )
         }

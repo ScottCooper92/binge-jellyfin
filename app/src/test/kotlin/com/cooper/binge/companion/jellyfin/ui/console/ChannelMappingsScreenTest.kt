@@ -3,6 +3,9 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
@@ -86,12 +89,18 @@ class ChannelMappingsScreenTest {
     }
 
     @Test
-    fun `typing in the search reaches the page, and a search that matches nothing says so`() {
-        val queries = mutableListOf<String>()
-        show(ChannelMappingsUiState.Ready(options, selected = "p3", query = "zzz"), ChannelMappingsActions(onSearch = { queries += it }))
-        compose.onNodeWithText("No tuner channels match").assertIsDisplayed()
-        compose.onNode(hasSetTextAction()).performTextInput("a")
-        assertTrue(queries.isNotEmpty())
+    fun `the sheet filters the tuner channels as the user types`() {
+        show(ChannelMappingsUiState.Ready(options, selected = "p3"))
+        compose.onNodeWithText("103 ITV HD").assertIsDisplayed()
+        compose.onNode(hasSetTextAction()).performTextInput("itv2")
+        compose.onNodeWithText("104 ITV2").assertIsDisplayed()
+        compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a tuner with no channels says so in the sheet`() {
+        show(ChannelMappingsUiState.Ready(options.copy(tunerChannels = emptyList()), selected = "p3"))
+        compose.onNodeWithText("Your tuners offer no channels").assertIsDisplayed()
     }
 
     @Test
@@ -122,7 +131,7 @@ class ChannelMappingsScreenTest {
         compose.setContent {
             JellyfinTheme {
                 Surface {
-                    TunerChannelChoices(
+                    TunerChannelPane(
                         ChannelMappingsUiState.Ready(options, selected = "p1"),
                         options.providerChannels.first(),
                         ChannelMappingsActions(),
@@ -144,6 +153,15 @@ class ChannelMappingsScreenTest {
 
     @Test
     @Config(qualifiers = "w900dp-h900dp")
+    fun `beside the list the filter narrows the tuner channels`() {
+        show(ChannelMappingsUiState.Ready(options, selected = "p3"))
+        compose.onNode(hasSetTextAction()).performTextInput("itv2")
+        compose.onNodeWithText("104 ITV2").assertIsDisplayed()
+        compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w900dp-h900dp")
     fun `beside the list a pick keeps the pane open and the list stays`() {
         val picks = mutableListOf<String>()
         val selections = mutableListOf<String?>()
@@ -156,5 +174,25 @@ class ChannelMappingsScreenTest {
         compose.onNodeWithText("103 ITV HD").performClick()
         assertEquals(listOf("c3"), picks)
         assertTrue(selections.isEmpty())
+    }
+
+    @Test
+    @Config(qualifiers = "w900dp-h900dp")
+    fun `beside the list another channel opens with an empty filter`() {
+        var selected by mutableStateOf("p1")
+        compose.setContent {
+            JellyfinTheme {
+                ChannelMappingsScreen(
+                    ChannelMappingsUiState.Ready(options, selected = selected),
+                    ChannelMappingsActions(onSelect = { if (it != null) selected = it }),
+                )
+            }
+        }
+        compose.onNode(hasSetTextAction()).performTextInput("bbc")
+        compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
+        compose.onNodeWithText("ITV").performClick()
+        compose.onNodeWithText("Tuner channel for ITV").assertIsDisplayed()
+        compose.onNodeWithText("103 ITV HD").assertIsDisplayed()
+        compose.onNodeWithText("101 BBC One HD").assertIsDisplayed()
     }
 }
