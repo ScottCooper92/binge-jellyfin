@@ -1370,7 +1370,6 @@
     <string name="kw_network">puertos https acceso remoto dirección direccion red local</string>
     <string name="kw_restart">apagar reiniciar servidor información informacion</string>
     <string name="kw_hardware">gpu nvenc vaapi qsv amf aceleración aceleracion</string>
-    <string name="kw_tonemapping">hdr dolby vision color</string>
     <string name="kw_codecs">codificador vídeo video h265 av1 hevc</string>
     <string name="kw_port">http https escuchar</string>
     <string name="kw_https">ssl tls certificado seguro</string>
@@ -1381,6 +1380,8 @@
     <string name="kw_feedback">error fallo informar github</string>
     <string name="kw_now_playing">viendo sesiones transmisiones detener</string>
     <string name="kw_live_tv">sintonizador guía guia grabaciones canales</string>
+    <string name="kw_notifications">alertas notificaciones avisos advertencias errores inicio de sesión fallido</string>
+    <string name="kw_battery">doze segundo plano optimización optimizacion ahorro de batería bateria</string>
     <string name="this_app_detail">Preferencias, comentarios y más</string>
     <string name="settings_group_app">Esta aplicación</string>
     <string name="settings_share_usage_data">Compartir datos de uso</string>
