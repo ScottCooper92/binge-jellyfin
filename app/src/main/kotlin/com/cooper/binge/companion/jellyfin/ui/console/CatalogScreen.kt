@@ -1,8 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -16,11 +18,17 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
+import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
@@ -34,12 +42,14 @@ import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.CatalogPackage
+import com.cooper.binge.companion.jellyfin.server.PackageVersion
+import com.cooper.binge.companion.jellyfin.server.compareVersions
 import com.binge.designsystem.R as DesR
 
 /** What the catalog tab can ask of its view model. */
 data class CatalogActions(
     val onOpen: (String) -> Unit = {},
-    val onInstall: (CatalogPackage) -> Unit = {},
+    val onInstall: (CatalogPackage, PackageVersion?) -> Unit = { _, _ -> },
     val onCancel: (CatalogPackage) -> Unit = {},
     val onRetry: () -> Unit = {},
 )
@@ -142,7 +152,7 @@ fun PackageScreen(
             CreateFooter(
                 label = stringResource(R.string.catalog_install),
                 icon = Icons.Outlined.Download,
-                onClick = { pkg?.let(actions.onInstall) },
+                onClick = { pkg?.let { actions.onInstall(it, null) } },
                 visible =
                     ready != null &&
                         pkg != null &&
@@ -217,7 +227,7 @@ private fun PackageContent(
                     ),
             )
         }
-        version?.changelog?.let { changelog -> item { Text(changelog, style = MaterialTheme.typography.bodySmall) } }
+        version?.changelog?.let { changelog -> item { Text(plainChangelog(changelog), style = MaterialTheme.typography.bodySmall) } }
         item { Outcome(state.outcomes[pkg.name]) }
         item {
             when {
@@ -230,12 +240,13 @@ private fun PackageContent(
                 version != null && pkg.name !in state.installed && inlineInstall ->
                     BingeFilledButton(
                         label = stringResource(R.string.catalog_install),
-                        onClick = { actions.onInstall(pkg) },
+                        onClick = { actions.onInstall(pkg, null) },
                         leadingIcon = Icons.Outlined.Download,
                         modifier = Modifier.fillMaxWidth(),
                     )
             }
         }
+        if (pkg.versions.isNotEmpty()) item { VersionsGroup(pkg, state, actions) }
     }
 }
 
@@ -259,5 +270,160 @@ private fun Outcome(outcome: InstallOutcome?) {
             } else {
                 MaterialTheme.colorScheme.onSurface
             },
+    )
+}
+
+/**
+ * Every version the catalog lists, newest first, with the date it was published and which is installed. A version built for a newer
+ * server than this one shows but can't be opened. A tap opens the version's changelog and its Install ([VersionSheet]).
+ */
+@Composable
+private fun VersionsGroup(
+    pkg: CatalogPackage,
+    state: CatalogUiState.Ready,
+    actions: CatalogActions,
+) {
+    var open by rememberSaveable(pkg.name) { mutableStateOf<String?>(null) }
+    val installedVersion = state.installedVersions[pkg.name]
+    val busy = pkg.name in state.installing
+    ItemGroup(
+        title = stringResource(R.string.catalog_versions),
+        rows =
+            pkg.history().map { version ->
+                val installedNow = installedVersion != null && compareVersions(installedVersion, version.version) == 0
+                val fits = version.fits(state.server)
+                ListItem(
+                    icon = if (installedNow) Icons.Outlined.CheckCircle else Icons.Outlined.Download,
+                    label = version.version,
+                    detail =
+                        if (fits) {
+                            version.timestamp?.let(::publishedDate)
+                        } else {
+                            stringResource(R.string.catalog_needs_newer, version.targetAbi.orEmpty())
+                        },
+                    note =
+                        if (installedNow) {
+                            ListItemNote(
+                                stringResource(R.string.catalog_installed),
+                                icon = Icons.Outlined.CheckCircle,
+                            )
+                        } else {
+                            null
+                        },
+                    enabled = fits,
+                    onClick = { open = version.version },
+                )
+            },
+    )
+    pkg.versions.firstOrNull { it.version == open }?.let { version ->
+        VersionSheet(
+            pkg = pkg,
+            version = version,
+            installedVersion = installedVersion,
+            canInstall =
+                version.fits(
+                    state.server,
+                ) &&
+                    !busy &&
+                    (installedVersion == null || compareVersions(installedVersion, version.version) != 0),
+            onInstall = {
+                actions.onInstall(pkg, version)
+                open = null
+            },
+            onDismiss = { open = null },
+        )
+    }
+}
+
+/** The date part of a repository's timestamp (`2026-05-04T10:00:00Z`), or the whole text when it isn't one. */
+private fun publishedDate(timestamp: String): String = timestamp.substringBefore('T')
+
+/** One version: its changelog, and Install. Putting an older version over a newer one asks first. */
+@Composable
+internal fun VersionSheet(
+    pkg: CatalogPackage,
+    version: PackageVersion,
+    installedVersion: String?,
+    canInstall: Boolean,
+    onInstall: () -> Unit,
+    onDismiss: () -> Unit,
+    inWindow: Boolean = true,
+) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    val downgrade = installedVersion != null && version.isOlderThan(installedVersion)
+    if (confirming) {
+        OlderVersionConfirm(
+            pkg,
+            version,
+            installedVersion.orEmpty(),
+            onConfirm = {
+                confirming = false
+                onInstall()
+            },
+            onDismiss = { confirming = false },
+        )
+    }
+    val body: @Composable () -> Unit = {
+        VersionContent(pkg, version, canInstall) { if (downgrade) confirming = true else onInstall() }
+    }
+    if (inWindow) {
+        BingeAdaptiveSheet(kind = BingeSheetKind.Task, onDismissRequest = onDismiss) { body() }
+    } else {
+        body()
+    }
+}
+
+/** The sheet's body, which draws without a window for a frame. */
+@Composable
+internal fun VersionContent(
+    pkg: CatalogPackage,
+    version: PackageVersion,
+    canInstall: Boolean,
+    onInstall: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensionResource(DesR.dimen.padding_m))
+                .padding(bottom = dimensionResource(DesR.dimen.padding_l)),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
+    ) {
+        Text(
+            "${pkg.name} ${version.version}",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            version.changelog?.let(::plainChangelog) ?: stringResource(R.string.catalog_no_changelog),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        BingeFilledButton(
+            label = stringResource(R.string.catalog_install),
+            onClick = onInstall,
+            leadingIcon = Icons.Outlined.Download,
+            enabled = canInstall,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** The confirm before an older version goes over a newer one. With [inWindow] false it draws without a window, for a frame. */
+@Composable
+internal fun OlderVersionConfirm(
+    pkg: CatalogPackage,
+    version: PackageVersion,
+    installedVersion: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    inWindow: Boolean = true,
+) {
+    ConsoleConfirm(
+        title = stringResource(R.string.catalog_older_title, version.version),
+        message = stringResource(R.string.catalog_older_message, pkg.name, installedVersion),
+        confirmLabel = stringResource(R.string.catalog_install),
+        onConfirm = onConfirm,
+        onDismissRequest = onDismiss,
+        inWindow = inWindow,
     )
 }

@@ -205,6 +205,14 @@ internal val settingsIndex: List<SettingEntry> =
         ),
         // Settings on them.
         setting(
+            ConsolePage.Plugins,
+            R.string.catalog_versions_search,
+            Icons.Outlined.History,
+            R.string.settings_server,
+            R.string.plugins_title,
+            R.string.kw_plugin_versions,
+        ),
+        setting(
             ConsolePage.Libraries,
             R.string.library_image_limits,
             Icons.Outlined.Image,

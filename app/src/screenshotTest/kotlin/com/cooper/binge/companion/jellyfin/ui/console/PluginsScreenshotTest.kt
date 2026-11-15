@@ -35,6 +35,24 @@ private val installedPlugins =
 private val version =
     PackageVersion("13.0.0.0", "Fixes the report on a slow disk.", "10.10.0.0", "Jellyfin Stable", "https://repo.example/stable.json")
 
+private val history =
+    CatalogPackage(
+        "g1",
+        "Playback Reporting",
+        "Reports who watched what.",
+        "Shows who watched what, and when, across every user.",
+        "jellyfin",
+        "General",
+        listOf(
+            version.copy(version = "14.0.0.0", targetAbi = "10.11.0.0", changelog = "Needs Jellyfin 10.11."),
+            version.copy(
+                timestamp = "2026-03-04T09:30:00Z",
+                changelog = "## 13.0\n\n* Fixes the report on a slow disk\n* **New:** export to CSV",
+            ),
+            version.copy(version = "12.0.0.0", targetAbi = "10.9.0.0", timestamp = "2025-11-20T18:00:00Z"),
+        ),
+    )
+
 private val catalogPackages =
     listOf(
         CatalogPackage(
@@ -138,6 +156,38 @@ class PluginsScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun catalogPackage() = Package("Playback Reporting", CatalogUiState.Ready(catalogPackages, server = server))
+
+    /** A package with several versions: the installed one marked, one built for a newer server shown but off. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun catalogVersions() =
+        Package(
+            "Playback Reporting",
+            CatalogUiState.Ready(
+                listOf(history),
+                setOf("Playback Reporting"),
+                mapOf(
+                    "Playback Reporting" to "13.0.0.0",
+                ),
+                server = server,
+            ),
+        )
+
+    /** One version's sheet: its changelog and Install. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun versionSheet() = Surface { VersionContent(history, history.versions[1], canInstall = true) {} }
+
+    /** The confirm before an older version goes over a newer one. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun versionOlder() = Surface { OlderVersionConfirm(history, history.versions[2], "13.0.0.0", {}, {}, inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview

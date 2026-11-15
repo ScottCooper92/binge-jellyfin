@@ -1021,6 +1021,12 @@
     <string name="catalog_version">Version</string>
     <string name="catalog_no_version">None built for this server\'s release</string>
     <string name="catalog_install">Install</string>
+    <string name="catalog_versions">Versions</string>
+    <string name="catalog_versions_search">Plugin versions</string>
+    <string name="catalog_needs_newer">Built for Jellyfin %1$s, newer than this server</string>
+    <string name="catalog_no_changelog">No changelog for this version.</string>
+    <string name="catalog_older_title">Install version %1$s?</string>
+    <string name="catalog_older_message">Version %2$s of %1$s is installed, and it is newer. Installing this one replaces it when the server restarts. The plugin\'s settings may not work with the older version.</string>
     <string name="catalog_cancel">Cancel install</string>
     <string name="catalog_done">Installed. Restart the server to start using it.</string>
     <string name="catalog_failed">The install failed.</string>
@@ -1402,6 +1408,7 @@
     <string name="kw_image_limits">backdrop screenshot artwork images fetchers minimum width how many</string>
     <string name="kw_trickplay">seek thumbnails preview scrubbing</string>
     <string name="kw_plugins">extensions repository catalog install</string>
+    <string name="kw_plugin_versions">older version rollback downgrade roll back changelog install specific</string>
     <string name="kw_activity">history audit events sign ins</string>
     <string name="kw_tasks">scan schedule cron jobs triggers</string>
     <string name="kw_network">ports https remote access address lan</string>
