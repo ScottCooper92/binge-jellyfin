@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -287,7 +288,12 @@ internal fun AlertsGroup(
     alerts: List<ActivityEntry>,
     zone: ZoneId = ZoneId.systemDefault(),
 ) {
-    val time = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Locale.getDefault()).withZone(zone)
+    val time =
+        DateTimeFormatter
+            .ofLocalizedDateTime(
+                FormatStyle.SHORT,
+            ).withLocale(LocalConfiguration.current.locales[0] ?: Locale.ROOT)
+            .withZone(zone)
     ItemGroup(
         title = stringResource(R.string.server_alerts),
         rows =
