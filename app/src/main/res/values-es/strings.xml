@@ -341,6 +341,7 @@
     <string name="library_image_none">No se descarga</string>
     <plurals name="library_image_detail">
         <item quantity="one">%1$d imagen, de al menos %2$d px de ancho</item>
+        <item quantity="many">%1$d imágenes, de al menos %2$d px de ancho</item>
         <item quantity="other">%1$d imágenes, de al menos %2$d px de ancho</item>
     </plurals>
     <string name="library_image_limit">%1$s: cuántas conservar</string>
