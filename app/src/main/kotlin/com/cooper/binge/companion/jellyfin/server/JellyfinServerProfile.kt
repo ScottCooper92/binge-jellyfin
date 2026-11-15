@@ -110,6 +110,9 @@ data class JellyfinServerProfile(
     /** Server backups: list, create and restore. 10.11. */
     val hasBackups: Boolean get() = atLeast(TEN, ELEVEN)
 
+    /** The disk space of the server's folders, `GET /System/Info/Storage`. 10.11 (the issue's audit; the exact release is checked on a device). */
+    val hasStorageInfo: Boolean get() = atLeast(TEN, ELEVEN)
+
     /** A second parental rating limit, for a rating's sub-score. 10.11. */
     val hasParentalSubRating: Boolean get() = atLeast(TEN, ELEVEN)
 

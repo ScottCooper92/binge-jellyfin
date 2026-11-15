@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsApplications
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewModule
@@ -139,6 +140,23 @@ internal val settingsIndex: List<SettingEntry> =
         page(ConsolePage.Backups, R.string.backups_title, Icons.Outlined.Backup, R.string.advanced_title),
         page(ConsolePage.Advanced, R.string.advanced_title, Icons.Outlined.Build, R.string.advanced_title),
         page(ConsolePage.Server, R.string.server_title, Icons.Outlined.SettingsApplications, R.string.advanced_title, R.string.kw_restart),
+        setting(
+            ConsolePage.Server,
+            R.string.server_storage,
+            Icons.Outlined.Storage,
+            R.string.advanced_title,
+            R.string.server_title,
+            R.string.kw_storage,
+            shown = { profile, _ -> profile.hasStorageInfo },
+        ),
+        setting(
+            ConsolePage.Server,
+            R.string.server_paths,
+            Icons.Outlined.Folder,
+            R.string.advanced_title,
+            R.string.server_title,
+            R.string.kw_paths,
+        ),
         // Settings on them.
         setting(
             ConsolePage.ServerSettings,

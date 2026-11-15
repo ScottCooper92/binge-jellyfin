@@ -7,7 +7,12 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.server.LibraryStorage
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
+import com.cooper.binge.companion.jellyfin.server.ServerPaths
+import com.cooper.binge.companion.jellyfin.server.ServerStorage
+import com.cooper.binge.companion.jellyfin.server.StorageFolder
+import com.cooper.binge.companion.jellyfin.server.StorageKind
 
 private val previewInfo =
     ServerInfo(
@@ -31,6 +36,29 @@ class ServerScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun server() = ServerScreen(previewReady, ServerActions())
+
+    /** The space of the server's folders and a library's, with one disk nearly full, and the server's paths. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun storageAndPaths() =
+        ServerScreen(
+            ServerUiState.Ready(
+                previewInfo.copy(
+                    paths = ServerPaths(programData = "/config", cache = "/cache", logs = "/config/log", web = "/jellyfin/web"),
+                ),
+                ServerStorage(
+                    listOf(
+                        StorageKind.ProgramData to StorageFolder("/config", 100_000_000_000L, 400_000_000_000L, "ext4"),
+                        StorageKind.Cache to StorageFolder("/cache", 95_000_000_000L, 5_000_000_000L, "zfs"),
+                    ),
+                    listOf(LibraryStorage("Movies", listOf(StorageFolder("/media/movies", 3_000_000_000_000L, 1_000_000_000_000L, null)))),
+                ),
+            ),
+            ServerActions(),
+        )
 
     /** A pull in progress: the page stays, with the pull spinner over it. */
     @PreviewTest

@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
+import android.text.format.Formatter
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,23 +8,30 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.RestartAlt
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
@@ -37,6 +45,11 @@ import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
+import com.cooper.binge.companion.jellyfin.server.ServerPaths
+import com.cooper.binge.companion.jellyfin.server.ServerStorage
+import com.cooper.binge.companion.jellyfin.server.StorageFolder
+import com.cooper.binge.companion.jellyfin.server.StorageKind
+import kotlin.math.roundToInt
 import com.binge.designsystem.R as DesR
 
 /** What the server page can ask of its view model, and of the console. */
@@ -168,6 +181,8 @@ private fun Server(
             rows = state.info.rows(),
             modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
         )
+        state.storage?.let { StorageGroups(it) }
+        PathsGroup(state.info.paths)
         // Where a restart or shutdown has got to, while it is going on or done. A failure is a message instead.
         if (state.refusal() == null) {
             (state.shutdown?.message ?: state.restart?.takeIf { it != Restart.NotBack }?.message)?.let {
@@ -254,3 +269,109 @@ private val Restart.message: Int
         }
 
 private const val LOADING_ROWS = 5
+
+/** A folder is nearly out of space from this fraction used, and its bar and a note say so. */
+private const val NEARLY_FULL = 0.9f
+
+private val BAR_WIDTH = 56.dp
+
+/** The server's own folders, then a group for each library: the space used of the disk each is on. */
+@Composable
+private fun StorageGroups(storage: ServerStorage) {
+    if (storage.system.isNotEmpty()) {
+        ItemGroup(
+            title = stringResource(R.string.server_storage),
+            rows = storage.system.map { (kind, folder) -> folder.row(Icons.Outlined.Folder, stringResource(kind.label())) },
+        )
+    }
+    storage.libraries.filter { it.folders.isNotEmpty() }.forEach { library ->
+        ItemGroup(
+            title = library.name,
+            rows = library.folders.map { folder -> folder.row(Icons.Outlined.Storage, folder.path) },
+        )
+    }
+}
+
+/** A folder's row: its name, the space used of the disk and the file system, and a bar that is red when the disk is nearly full. */
+@Composable
+private fun StorageFolder.row(
+    icon: ImageVector,
+    label: String,
+): ListItem {
+    val context = LocalContext.current
+    val fraction = usedFraction
+    val full = fraction != null && fraction >= NEARLY_FULL
+    val space =
+        if (fraction == null) {
+            path
+        } else {
+            stringResource(
+                R.string.server_storage_used,
+                Formatter.formatFileSize(context, usedBytes),
+                Formatter.formatFileSize(context, totalBytes),
+                (fraction * PERCENT).roundToInt(),
+            )
+        }
+    return ListItem(
+        icon = icon,
+        label = label,
+        detail = listOfNotNull(space, type?.takeIf { it.isNotBlank() }).joinToString(" · "),
+        supportingMaxLines = DETAIL_LINES,
+        note = if (full) ListItemNote(stringResource(R.string.server_storage_full), warning = true) else null,
+        clickable = false,
+        trailingContent =
+            fraction?.let {
+                {
+                    LinearProgressIndicator(
+                        progress = { it },
+                        modifier = Modifier.width(BAR_WIDTH),
+                        color = if (full) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    )
+                }
+            },
+    )
+}
+
+private const val PERCENT = 100
+private const val DETAIL_LINES = 3
+
+@Composable
+private fun StorageKind.label(): Int =
+    when (this) {
+        StorageKind.ProgramData -> R.string.server_path_program_data
+        StorageKind.Web -> R.string.server_path_web
+        StorageKind.ImageCache -> R.string.server_path_image_cache
+        StorageKind.Cache -> R.string.server_path_cache
+        StorageKind.Logs -> R.string.server_path_logs
+        StorageKind.Metadata -> R.string.server_path_metadata
+        StorageKind.Transcodes -> R.string.server_path_transcodes
+    }
+
+/** Where the server keeps its files, read-only. A path the server did not send leaves its row out, and none at all leaves the group out. */
+@Composable
+private fun PathsGroup(paths: ServerPaths) {
+    val rows =
+        listOf(
+            R.string.server_path_program_data to paths.programData,
+            R.string.server_path_cache to paths.cache,
+            R.string.server_path_items_by_name to paths.itemsByName,
+            R.string.server_path_metadata to paths.metadata,
+            R.string.server_path_transcodes to paths.transcodes,
+            R.string.server_path_logs to paths.logs,
+            R.string.server_path_web to paths.web,
+        ).filter { (_, path) -> path.isNotBlank() }
+    if (rows.isEmpty()) return
+    ItemGroup(
+        title = stringResource(R.string.server_paths),
+        rows =
+            rows.map { (label, path) ->
+                ListItem(
+                    icon = Icons.Outlined.Folder,
+                    label = stringResource(label),
+                    detail = path,
+                    supportingMaxLines = DETAIL_LINES,
+                    clickable = false,
+                )
+            },
+    )
+}
