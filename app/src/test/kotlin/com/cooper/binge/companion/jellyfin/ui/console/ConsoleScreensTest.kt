@@ -860,7 +860,8 @@ class ConsoleScreensTest {
         compose.setContent { JellyfinTheme { PackageScreen(state, shown, actions, onBack = {}) } }
         compose.onNodeWithText("Shows who watched what.").assertExists()
         compose.onNodeWithText("13.0.0.0 · Jellyfin Stable").assertExists()
-        compose.onNodeWithText("Fixes a thing.").assertExists()
+        // The changelog is Markdown, parsed off the main thread, so it appears a moment after the page.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Fixes a thing.").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Install").performClick()
         assertEquals(listOf("install Playback Reporting"), calls)
         state = state.copy(installing = mapOf("Playback Reporting" to null))
