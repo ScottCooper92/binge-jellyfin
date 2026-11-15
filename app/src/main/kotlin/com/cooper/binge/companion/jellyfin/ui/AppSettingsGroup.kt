@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
@@ -190,13 +191,16 @@ internal fun ThisAppScreen(
         snackbarHostState = snackbarHostState,
     ) { padding ->
         ScreenBody(padding) { _ ->
-            LazyColumn(
-                contentPadding = padding.screenListPadding(),
-                verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
-            ) {
-                item { AppGroup(actions.appSettings, actions, titled = false, onOpenTip = prices?.let { { tipOpen = true } }) }
-                actions.notifications?.let { notifications -> item { NotificationsGroup(notifications, actions) } }
-                item { AboutGroup(actions) }
+            LazyColumn(contentPadding = padding.screenListPadding()) {
+                // One item, so every group is composed at once: the settings search finds a row by the key it is given, and a row
+                // in a lazy item that is not composed yet is never found (the focus is not given this list's state).
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
+                        AppGroup(actions.appSettings, actions, titled = false, onOpenTip = prices?.let { { tipOpen = true } })
+                        actions.notifications?.let { notifications -> NotificationsGroup(notifications, actions) }
+                        AboutGroup(actions)
+                    }
+                }
             }
         }
     }
