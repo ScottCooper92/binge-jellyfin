@@ -12,9 +12,9 @@ import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.demo.DEMO_ORIGIN
 import com.cooper.binge.companion.jellyfin.demo.DEMO_TOKEN
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
-import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.telemetry.Analytics
@@ -213,7 +213,8 @@ class JellyfinViewModelTest {
 
     @Test
     fun `a PIN reset asks for the PIN, keeps the sheet on a wrong one, and removes the password on the right one`() {
-        jellyfin.forgotAnswer = """{"Action":"PinCode","PinFile":"/config/data/passwordreset.json","PinExpirationDate":"2026-11-16T00:00:00Z"}"""
+        jellyfin.forgotAnswer =
+            """{"Action":"PinCode","PinFile":"/config/data/passwordreset.json","PinExpirationDate":"2026-11-16T00:00:00Z"}"""
         val vm = viewModel()
         vm.toSignIn()
         vm.onUsername("Mum")
@@ -225,7 +226,13 @@ class JellyfinViewModelTest {
         )
 
         vm.forgotPassword.submitPin("0000")
-        assertTrue((vm.await<UiState.SignIn> { (it.forgot as? ForgotPasswordStep.EnterPin)?.wrongPin == true }).forgot is ForgotPasswordStep.EnterPin)
+        assertTrue(
+            (
+                vm.await<UiState.SignIn> {
+                    (it.forgot as? ForgotPasswordStep.EnterPin)?.wrongPin == true
+                }
+            ).forgot is ForgotPasswordStep.EnterPin,
+        )
 
         vm.forgotPassword.submitPin("1234")
         val done = vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Done }

@@ -35,11 +35,23 @@ internal fun ForgotPasswordOverlay(
             ConsoleMessage(
                 title =
                     stringResource(
-                        if (step.action == ForgotPasswordAction.InNetworkRequired) R.string.forgot_network_title else R.string.forgot_admin_title,
+                        if (step.action ==
+                            ForgotPasswordAction.InNetworkRequired
+                        ) {
+                            R.string.forgot_network_title
+                        } else {
+                            R.string.forgot_admin_title
+                        },
                     ),
                 message =
                     stringResource(
-                        if (step.action == ForgotPasswordAction.InNetworkRequired) R.string.forgot_network_body else R.string.forgot_admin_body,
+                        if (step.action ==
+                            ForgotPasswordAction.InNetworkRequired
+                        ) {
+                            R.string.forgot_network_body
+                        } else {
+                            R.string.forgot_admin_body
+                        },
                     ),
                 onDismiss = dismiss,
                 inWindow = inWindow,

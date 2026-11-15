@@ -332,13 +332,20 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @JellyfinFontScalePreviews
     @Composable
-    fun forgotPin() = Surface { ForgotPasswordOverlay(ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"), null, inWindow = false) }
+    fun forgotPin() =
+        Surface { ForgotPasswordOverlay(ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"), null, inWindow = false) }
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun forgotPinWrong() =
-        Surface { ForgotPasswordOverlay(ForgotPasswordStep.EnterPin("/config/data/passwordreset.json", wrongPin = true), null, inWindow = false) }
+        Surface {
+            ForgotPasswordOverlay(
+                ForgotPasswordStep.EnterPin("/config/data/passwordreset.json", wrongPin = true),
+                null,
+                inWindow = false,
+            )
+        }
 
     @PreviewTest
     @JellyfinScreenStatePreview
