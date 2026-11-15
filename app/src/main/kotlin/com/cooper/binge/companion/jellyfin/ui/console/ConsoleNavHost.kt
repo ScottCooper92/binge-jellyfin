@@ -41,6 +41,19 @@ private val Instant = ContentTransform(EnterTransition.None, ExitTransition.None
 private val DetailPane: Map<String, Any> = ListDetailSceneStrategy.detailPane()
 
 /**
+ * A page's pane role: the detail pane beside the home, with its page for the three-pane layout. The search is not given one: it
+ * covers the whole window, as Android's own Settings search does, because without a pane role the strategy leaves the entry to
+ * the default, a single pane.
+ */
+private fun pageMetadata(page: ConsolePage): Map<String, Any> = if (page.coversWindow) emptyMap() else DetailPane + pageRole(page)
+
+/** Whether the page is the whole window, so it offers its own Back: a page that covers the window, or any page where the home is not beside. */
+private fun pageAlone(
+    page: ConsolePage,
+    hubBeside: Boolean,
+): Boolean = page.coversWindow || !hubBeside
+
+/**
  * The console's pages as Navigation 3 entries over [stack]: the home at the bottom, then each open page. Back
  * pops the top page through [onBack], after any `BackHandler` a page has of its own (a list's open detail closes
  * first). Each entry keeps its own saved state, so the home's scroll position is still there when it comes back,
@@ -108,13 +121,13 @@ fun ConsoleNavHost(
                         }
                     }
                 is ConsoleKey.Page ->
-                    NavEntry(key, metadata = DetailPane + pageRole(key.page)) {
+                    NavEntry(key, metadata = pageMetadata(key.page)) {
                         // A page that opens its items as entries is a pane of its own beside them on a tablet; one
                         // that does not is given the two panes' width and draws its list and item itself.
                         val ownPane = threePaneNow && key.page.opensItems
                         CompositionLocalProvider(
                             LocalViewModelStoreOwner provides stores.owner(key.opening),
-                            LocalIsSinglePaneNav provides !hubBeside,
+                            LocalIsSinglePaneNav provides pageAlone(key.page, hubBeside),
                             LocalPaneDepth provides if (ownPane) 1 else depth,
                             LocalOpenItem provides openItem?.takeIf { it.opening == key.opening }?.item,
                         ) {

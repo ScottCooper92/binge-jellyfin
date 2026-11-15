@@ -27,6 +27,9 @@ internal val ThreePaneHub: Map<String, Any> = mapOf(HUB_ROLE to true)
 /** Marks a page's entry, and which page it is, for the pane that stands in for its item while none is open. */
 internal fun pageRole(page: ConsolePage): Map<String, Any> = mapOf(PAGE_ROLE to page)
 
+/** A page that covers the window instead of opening beside the home on a wide one: the settings search. */
+internal val ConsolePage.coversWindow: Boolean get() = this == ConsolePage.Search
+
 /** Marks an item's entry: the third pane on a landscape tablet. */
 internal val ItemRole: Map<String, Any> = mapOf(ITEM_ROLE to true)
 
