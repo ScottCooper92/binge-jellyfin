@@ -84,6 +84,8 @@ data class Actions(
     val onOpenPage: (ConsolePage) -> Unit = {},
     /** A page opened on one of its settings, by row key: a search result. */
     val onOpenRow: (ConsolePage, String?) -> Unit = { page, _ -> },
+    /** A search result opened beside the home: the search closes and the page takes its place in the detail pane. */
+    val onOpenResult: (ConsolePage, String?) -> Unit = { page, _ -> },
     /** Asks for the local-network permission, or, once it has been asked for, opens the app's settings where it can be switched on. */
     val onAllowLocalNetwork: () -> Unit = {},
     /** The permission has been asked for, so the way to it is now the app's settings. */

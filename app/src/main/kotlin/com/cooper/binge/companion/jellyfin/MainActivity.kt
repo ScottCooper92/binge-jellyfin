@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
                     onChooseServer = viewModel::chooseServer,
                     onOpenPage = { stack = stack.open(it) },
                     onOpenRow = { page, row -> stack = stack.open(page, row) },
+                    onOpenResult = { page, row -> stack = stack.back().openFromHome(page, row) },
                     onAllowLocalNetwork = {
                         if (askedLocalNetwork) {
                             openAppSettings()
