@@ -336,6 +336,17 @@
     <string name="library_metadata_fetchers">Descargadores de metadatos</string>
     <string name="library_image_fetchers">Fuentes de imágenes</string>
     <string name="library_fetchers_body">Cada tipo de elemento tiene su propia lista, consultada en este orden. Un cambio aquí es, desde ese momento, la elección propia de la biblioteca para ese tipo.</string>
+    <string name="library_image_options">Imágenes de %1$s</string>
+    <string name="library_image_limits">Límites de imágenes</string>
+    <string name="library_image_none">No se descarga</string>
+    <plurals name="library_image_detail">
+        <item quantity="one">%1$d imagen, de al menos %2$d px de ancho</item>
+        <item quantity="many">%1$d imágenes, de al menos %2$d px de ancho</item>
+        <item quantity="other">%1$d imágenes, de al menos %2$d px de ancho</item>
+    </plurals>
+    <string name="library_image_limit">%1$s: cuántas conservar</string>
+    <string name="library_image_min_width">%1$s: ancho mínimo aceptado</string>
+    <string name="library_image_px">%1$d px</string>
     <string name="library_type_movie">Películas</string>
     <string name="library_type_series">Series</string>
     <string name="library_type_season">Temporadas</string>
@@ -1369,6 +1380,7 @@
     <string name="kw_libraries">escanear carpetas películas peliculas series medios rutas</string>
     <string name="kw_transcoding">streaming reanudar ffmpeg codificar bitrate</string>
     <string name="kw_metadata">carátulas caratulas imágenes imagenes nfo idioma país pais orden</string>
+    <string name="kw_image_limits">fondo captura carátulas caratulas imágenes imagenes proveedores ancho mínimo minimo cuántas cuantas</string>
     <string name="kw_trickplay">buscar miniaturas vista previa</string>
     <string name="kw_plugins">extensiones repositorio catálogo catalogo instalar</string>
     <string name="kw_plugin_versions">versión anterior version anterior revertir volver atrás atras registro de cambios instalar concreta</string>

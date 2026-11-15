@@ -43,6 +43,50 @@ fun JsonObject.fetchers(
         .map { Provider(it.name, chosen?.has(it.name) ?: it.defaultEnabled) }
 }
 
+/** One image type of an item type: how many images a library keeps ([limit], 0 for none) and the narrowest it accepts ([minWidth], pixels). */
+data class ImageSlot(
+    val type: String,
+    val limit: Int,
+    val minWidth: Int,
+)
+
+/** The key of an entry's image choices, and of the keys inside each. */
+const val LIBRARY_IMAGE_OPTIONS = "ImageOptions"
+
+/** [type]'s image types as the library has them: its own choice where its entry holds one, else the server's start value. */
+fun JsonObject.imageOptions(type: FetcherType): List<ImageSlot> {
+    val own = typeEntry(type.type)?.array(LIBRARY_IMAGE_OPTIONS).orEmpty().filterIsInstance<JsonObject>()
+    return type.imageSlots.map { slot ->
+        val chosen = own.firstOrNull { it.string("Type").equals(slot.type, ignoreCase = true) }
+        ImageSlot(slot.type, chosen?.int("Limit") ?: slot.limit, chosen?.int("MinWidth") ?: slot.minWidth)
+    }
+}
+
+/**
+ * The `TypeOptions` array with [type]'s [change]d image slot written. Like a fetcher change, the entry is written in full (both
+ * fetcher lists, every other key), and its `ImageOptions` lists every image type the server offers, as jellyfin-web writes it, so
+ * a type the library never chose keeps the start value it showed. A choice the server no longer offers goes back as it was.
+ */
+fun JsonObject.withImageSlot(
+    type: FetcherType,
+    change: ImageSlot,
+): JsonArray {
+    val current = imageOptions(type)
+    val kept =
+        typeEntry(type.type)?.array(LIBRARY_IMAGE_OPTIONS).orEmpty().filter { element ->
+            current.none { (element as? JsonObject)?.string("Type").equals(it.type, ignoreCase = true) }
+        }
+    val written =
+        current.map { if (it.type.equals(change.type, ignoreCase = true)) change.copy(type = it.type) else it }.map { slot ->
+            JsonObject(
+                mapOf("Type" to JsonPrimitive(slot.type), "Limit" to JsonPrimitive(slot.limit), "MinWidth" to JsonPrimitive(slot.minWidth)),
+            )
+        }
+    return withEntry(type) { entry ->
+        JsonObject(entry + fetcherLists { fetchers(type, it) } + (LIBRARY_IMAGE_OPTIONS to JsonArray(written + kept)))
+    }
+}
+
 /**
  * The `TypeOptions` array with [type]'s entry changed: [change] gets [kind]'s list as the library has it and returns the list it
  * should have. The entry written holds **both** kinds' lists in full, as jellyfin-web writes it, because an entry that exists
@@ -55,17 +99,25 @@ fun JsonObject.withFetchers(
     change: (List<Provider>) -> List<Provider>,
 ): JsonArray {
     fun list(of: FetcherKind) = if (of == kind) change(fetchers(type, of)) else fetchers(type, of)
-    val entry =
-        JsonObject(
-            (typeEntry(type.type) ?: JsonObject(mapOf("Type" to JsonPrimitive(type.type)))).toMap() +
-                FetcherKind.entries.flatMap { of ->
-                    val providers = list(of)
-                    listOf(
-                        of.enabledKey to JsonArray(providers.filter { it.enabled }.map { JsonPrimitive(it.name) }),
-                        of.orderKey to JsonArray(providers.map { JsonPrimitive(it.name) }),
-                    )
-                },
-        )
+    return withEntry(type) { JsonObject(it + fetcherLists(::list)) }
+}
+
+private fun fetcherLists(list: (FetcherKind) -> List<Provider>): Map<String, JsonArray> =
+    FetcherKind.entries
+        .flatMap { of ->
+            val providers = list(of)
+            listOf(
+                of.enabledKey to JsonArray(providers.filter { it.enabled }.map { JsonPrimitive(it.name) }),
+                of.orderKey to JsonArray(providers.map { JsonPrimitive(it.name) }),
+            )
+        }.toMap()
+
+/** `TypeOptions` with [type]'s entry (its current one, or a new one) passed through [change], the rest as it was. */
+private fun JsonObject.withEntry(
+    type: FetcherType,
+    change: (JsonObject) -> JsonObject,
+): JsonArray {
+    val entry = change(typeEntry(type.type) ?: JsonObject(mapOf("Type" to JsonPrimitive(type.type))))
     val entries = array(LIBRARY_TYPE_OPTIONS)
     val at = entries.indexOfFirst { (it as? JsonObject)?.string("Type").equals(type.type, ignoreCase = true) }
     return JsonArray(if (at >= 0) entries.toMutableList().also { it[at] = entry } else entries + entry)

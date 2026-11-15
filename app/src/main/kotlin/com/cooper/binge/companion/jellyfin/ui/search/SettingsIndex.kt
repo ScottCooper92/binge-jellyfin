@@ -168,6 +168,14 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.kw_plugin_versions,
         ),
         setting(
+            ConsolePage.Libraries,
+            R.string.library_image_limits,
+            Icons.Outlined.Image,
+            R.string.settings_server,
+            R.string.libraries_title,
+            R.string.kw_image_limits,
+        ),
+        setting(
             ConsolePage.ServerSettings,
             R.string.server_settings_name,
             Icons.Outlined.Tune,
