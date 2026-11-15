@@ -80,6 +80,13 @@ class JellyfinScreenshotTest {
     @Composable
     fun signIn() = JellyfinRoot(previewSignIn, Actions())
 
+    /** A server that has not finished its first-run setup: the notice stands where the sign-in would. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun setupIncomplete() = JellyfinRoot(previewSetupIncomplete, Actions())
+
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews

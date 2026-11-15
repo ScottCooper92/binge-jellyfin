@@ -93,24 +93,27 @@ class MainActivity : ComponentActivity() {
         attempt { startActivity(intent) }
     }
 
+    /** The view model's factory: the graph's objects, and the permission check the connection failures read. */
+    private fun jellyfinViewModelFactory(graph: AppGraph) =
+        viewModelFactory {
+            initializer {
+                JellyfinViewModel(
+                    graph.sessions,
+                    graph.connection,
+                    graph.index,
+                    discover = graph.discovery::find,
+                    localNetwork = AndroidLocalNetworkPermission(applicationContext),
+                    analytics = graph.analytics,
+                    onSessionEnded = graph::clearAccountCaches,
+                )
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val graph = (application as JellyfinApp).graph
-        val factory =
-            viewModelFactory {
-                initializer {
-                    JellyfinViewModel(
-                        graph.sessions,
-                        graph.connection,
-                        graph.index,
-                        discover = graph.discovery::find,
-                        localNetwork = AndroidLocalNetworkPermission(applicationContext),
-                        analytics = graph.analytics,
-                        onSessionEnded = graph::clearAccountCaches,
-                    )
-                }
-            }
+        val factory = jellyfinViewModelFactory(graph)
         // Fresh Remote Config values for the flags; until they land, the last ones activated are used.
         lifecycleScope.launch { graph.flags.refresh() }
         setContent {
@@ -138,6 +141,7 @@ class MainActivity : ComponentActivity() {
                     onConnect = viewModel::connect,
                     onTryDemo = viewModel::tryDemo,
                     onChangeServer = viewModel::changeServer,
+                    onRecheckServer = { viewModel.changeServer(recheck = true) },
                     onRefresh = viewModel::refresh,
                     onAskSignOut = { viewModel.confirmSignOut(true) },
                     onCancelSignOut = { viewModel.confirmSignOut(false) },

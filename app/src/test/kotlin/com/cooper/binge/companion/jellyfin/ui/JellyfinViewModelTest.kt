@@ -170,6 +170,17 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a server that has not finished its setup says so, and checking again follows it once it has`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        val first = vm.toSignIn()
+        assertTrue(first.server.setupIncomplete)
+        jellyfin.startupWizardCompleted = true
+        vm.changeServer(recheck = true)
+        assertTrue(!vm.await<UiState.SignIn>().server.setupIncomplete)
+    }
+
+    @Test
     fun `an address that is not a Jellyfin server, or not reachable, says which`() {
         val vm = viewModel()
         vm.await<UiState.EnterServer>()

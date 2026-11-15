@@ -162,6 +162,9 @@ class FakeJellyfin : Dispatcher() {
     fun push(message: String) = sockets.forEach { it.send(message) }
 
     var quickConnectEnabled = true
+
+    /** What `/System/Info/Public` says of the server's first-run setup. */
+    var startupWizardCompleted = true
     var quickConnectApproved = false
 
     /** Whether `/Users/Me` answers with an administrator's policy. */
@@ -709,7 +712,7 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Info/Public" ->
-                json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":true}""")
+                json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":$startupWizardCompleted}""")
             path == "/Users/ForgotPassword" -> json(forgotAnswer)
             path == "/Users/ForgotPassword/Pin" -> {
                 val pin = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject["Pin"].toString()
