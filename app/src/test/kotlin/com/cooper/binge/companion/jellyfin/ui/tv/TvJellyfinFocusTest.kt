@@ -337,6 +337,23 @@ class TvJellyfinFocusTest {
     }
 
     @Test
+    fun `a reset answered after the user left the password form still shows its step, with Back and Change server agreeing`() {
+        passwordForm()
+        state = signIn.copy(forgot = ForgotPasswordStep.Asking)
+        compose.waitForIdle()
+        back()
+        on(R.string.tv_use_password).assertIsFocused()
+        state = signIn.copy(forgot = ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin))
+        compose.waitForIdle()
+        on(R.string.forgot_admin_title).assertIsDisplayed()
+        compose.onNodeWithText(text(com.binge.designsystem.R.string.action_ok)).assertIsFocused()
+        compose.onAllNodesWithText(text(R.string.tv_change_server)).assertCountEquals(0)
+        state = signIn
+        compose.waitForIdle()
+        on(R.string.tv_change_server).assertIsDisplayed()
+    }
+
+    @Test
     fun `a failed reset collapses to its message and OK, with the remote there`() {
         passwordForm()
         state = signIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"))

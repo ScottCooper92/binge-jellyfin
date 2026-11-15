@@ -223,7 +223,9 @@ internal fun TvSignInPage(
             )
         },
         action = {
-            if (usePassword && forgot != null) {
+            // A reset step shows whichever panel the user is on when the answer arrives (they may have left the password form
+            // while it was asked), so the step, Back and Change server all follow `forgot` alone.
+            if (forgot != null) {
                 TvForgotPanel(step = forgot, actions = actions, entry = entry)
             } else if (usePassword) {
                 TvPasswordPanel(
