@@ -284,6 +284,26 @@ class TvJellyfinFocusTest {
     }
 
     @Test
+    fun `a listed account's picture is not a control, so the remote still stops once per account`() {
+        val picture = android.graphics.Bitmap.createBitmap(8, 8, android.graphics.Bitmap.Config.ARGB_8888)
+        val listed =
+            signIn.copy(
+                publicUsers = listOf(PublicUser("u1", "Mum", hasPassword = true), PublicUser("u2", "Kid", hasPassword = false)),
+                publicPictures = mapOf("u1" to picture),
+            )
+        show(listed.copy(quickConnectCode = "482913"))
+        ok()
+        field(R.string.setup_username).assertIsFocused()
+        up()
+        compose.onNodeWithText("Kid").assertIsFocused()
+        up()
+        compose.onNodeWithText("Mum").assertIsFocused()
+        ok()
+        assertEquals("pick:Mum", calls.last())
+        field(R.string.setup_password).assertIsFocused()
+    }
+
+    @Test
     fun `a listed account with no password is picked in place and the remote stays on it`() {
         val listed = signIn.copy(publicUsers = listOf(PublicUser("u2", "Kid", hasPassword = false)))
         show(listed.copy(quickConnectCode = "482913"))

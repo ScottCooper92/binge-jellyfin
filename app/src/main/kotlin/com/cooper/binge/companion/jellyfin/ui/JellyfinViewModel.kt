@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,19 +33,25 @@ import com.cooper.binge.companion.jellyfin.server.publicUsers
 import com.cooper.binge.companion.jellyfin.server.quickConnectAuthenticated
 import com.cooper.binge.companion.jellyfin.server.quickConnectEnabled
 import com.cooper.binge.companion.jellyfin.server.quickConnectInitiate
+import com.cooper.binge.companion.jellyfin.server.userThumbnail
 import com.cooper.binge.companion.jellyfin.telemetry.Analytics
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsEvents
 import com.cooper.binge.companion.jellyfin.telemetry.NoOpAnalytics
 import com.cooper.binge.companion.jellyfin.telemetry.SignInReports
+import com.cooper.binge.companion.jellyfin.ui.console.decodeThumbnail
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import java.io.IOException
 
@@ -140,9 +147,44 @@ private fun CoroutineScope.loadPublicUsers(
             .onSuccess { users ->
                 // Only for the step it was asked for: the user may have changed server while it was in flight.
                 state.update { (it as? UiState.SignIn)?.takeIf { s -> s.baseUrl == base }?.copy(publicUsers = users) ?: it }
+                loadPublicPictures(connection, state, url, users)
             }.onFailure { Log.i("JellyfinSetup", "The server's public users could not be read", it) }
     }
 }
+
+/**
+ * Reads each listed account's picture for the sign-in step. There is no token yet, so the client is the anonymous one and the
+ * route is the one the server answers to anyone; a picture that cannot be read stays the account's initials. A picture lands only
+ * in the step whose list it was asked for, and is held in memory alone.
+ */
+private suspend fun loadPublicPictures(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    url: HttpUrl,
+    users: List<PublicUser>,
+) {
+    val client = connection.anonymous(url)
+    val permits = Semaphore(CONCURRENT_PICTURES)
+    coroutineScope {
+        users.forEach { user ->
+            val tag = user.imageTag ?: return@forEach
+            launch {
+                val picture =
+                    permits.withPermit {
+                        withContext(connection.io) {
+                            attempt { client.userThumbnail(user.id, tag)?.let(::decodeThumbnail) }.getOrNull()
+                        }
+                    } ?: return@launch
+                state.update { s ->
+                    val step = (s as? UiState.SignIn)?.takeIf { it.publicUsers === users }
+                    step?.copy(publicPictures = step.publicPictures + (user.id to picture)) ?: s
+                }
+            }
+        }
+    }
+}
+
+private const val CONCURRENT_PICTURES = 4
 
 /** Opens the demo server, which answers from memory and signs in as its own administrator. */
 fun JellyfinViewModel.tryDemo() {
@@ -215,6 +257,11 @@ sealed interface UiState {
         val forgot: ForgotPasswordStep? = null,
         /** The accounts the server lists on its login screen. Empty when it lists none or could not be asked: nothing is shown then. */
         val publicUsers: List<PublicUser> = emptyList(),
+        /**
+         * The listed accounts' pictures, by user id, read without a token and held only here: leaving the step drops them, and
+         * nothing is written to disk. An account missing from the map shows its initials.
+         */
+        val publicPictures: Map<String, Bitmap> = emptyMap(),
     ) : UiState {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
     }

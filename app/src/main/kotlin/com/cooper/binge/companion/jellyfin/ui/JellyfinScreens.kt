@@ -281,7 +281,7 @@ private fun SignIn(
                         ListItem(
                             icon = Icons.Outlined.Person,
                             label = user.name,
-                            leadingContent = { UserAvatar(user.name) },
+                            leadingContent = { UserAvatar(user.name, state.publicPictures[user.id]) },
                             selected = user.name == state.username,
                             onClick = {
                                 actions.onPickUser(user)

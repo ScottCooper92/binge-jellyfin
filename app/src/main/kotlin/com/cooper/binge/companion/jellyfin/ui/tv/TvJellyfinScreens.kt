@@ -1,10 +1,13 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
+import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -15,7 +18,6 @@ import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Healing
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Password
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Router
@@ -26,10 +28,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -39,6 +45,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.binge.designsystem.theme.BingeShapes
+import com.binge.designsystem.tv.component.BingeTvInitialsAvatar
 import com.binge.designsystem.tv.component.TvButton
 import com.binge.designsystem.tv.component.TvConfirmDialog
 import com.binge.designsystem.tv.component.TvOptionRow
@@ -290,6 +298,25 @@ private fun ColumnScope.TvQuickConnectPanel(
     )
 }
 
+/** A listed account's picture in a circle as tall as the button beside it, or its initials where it has none. */
+@Composable
+private fun TvUserPicture(
+    name: String,
+    picture: Bitmap?,
+) {
+    val size = dimensionResource(TvR.dimen.tv_button_height)
+    if (picture == null) {
+        BingeTvInitialsAvatar(name = name, size = size)
+    } else {
+        Image(
+            picture.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(size).clip(BingeShapes.Pill),
+        )
+    }
+}
+
 @Composable
 private fun ColumnScope.TvPasswordPanel(
     state: UiState.SignIn,
@@ -300,15 +327,22 @@ private fun ColumnScope.TvPasswordPanel(
     val passwordFocus = remember { FocusRequester() }
     // The server's listed accounts, one press each; a name fills the username and the remote moves on to the password.
     state.publicUsers.forEach { user ->
-        TvButton(
-            label = user.name,
-            onClick = {
-                actions.onPickUser(user)
-                if (user.hasPassword) passwordFocus.requestFocus()
-            },
-            leadingIcon = Icons.Outlined.Person,
-            enabled = !state.busy,
-        )
+        // The picture (or the initials) sits beside the button, not in it: the design system's button takes an icon only. It is
+        // decoration, so the remote still lands on one control per account.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(TvR.dimen.tv_button_icon_gap)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TvUserPicture(user.name, state.publicPictures[user.id])
+            TvButton(
+                label = user.name,
+                onClick = {
+                    actions.onPickUser(user)
+                    if (user.hasPassword) passwordFocus.requestFocus()
+                },
+                enabled = !state.busy,
+            )
+        }
     }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(TvR.dimen.tv_two_pane_action_gap))) {
         TvTextField(

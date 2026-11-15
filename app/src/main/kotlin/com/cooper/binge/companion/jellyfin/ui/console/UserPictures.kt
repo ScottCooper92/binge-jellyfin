@@ -31,6 +31,16 @@ interface UserPictureSource {
 /** The pictures the app can show, or null where it has none (a preview, a test): every avatar is then its initials. */
 internal val LocalUserPictures = staticCompositionLocalOf<UserPictureSource?> { null }
 
+/** A thumbnail's bytes as a bitmap no larger than [USER_THUMBNAIL_SIZE] on its long side, or null when they are not an image. */
+internal fun decodeThumbnail(bytes: ByteArray): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / sample > USER_THUMBNAIL_SIZE) sample *= 2
+    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
+}
+
 /**
  * Tagged user thumbnails, scoped to the server and the signed-in account. Only image bytes go to disk: no tokens or
  * request headers. The bounded cache survives reopening the page, and at most four thumbnails are fetched at a time.
@@ -78,7 +88,7 @@ class UserPictures(
                                     } else {
                                         client.userThumbnail(user.id, tag)
                                     }
-                                bytes?.let(::decode)?.takeIf { keep(started, key, file, bytes.takeUnless { onDisk }, it) }
+                                bytes?.let(::decodeThumbnail)?.takeIf { keep(started, key, file, bytes.takeUnless { onDisk }, it) }
                             }
                         }
                     }
@@ -130,15 +140,6 @@ class UserPictures(
             kept += it.length()
             if (kept > DISK_BYTES) it.delete()
         }
-    }
-
-    private fun decode(bytes: ByteArray): Bitmap? {
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-        var sample = 1
-        while (maxOf(bounds.outWidth, bounds.outHeight) / sample > USER_THUMBNAIL_SIZE) sample *= 2
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
     }
 
     private fun cacheKey(value: String): String =
