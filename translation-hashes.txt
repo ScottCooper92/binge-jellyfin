@@ -1276,6 +1276,7 @@ app:tv_change_server  b7ee1dabf9b9
 app:tv_checking_server  ac436ef838f4
 app:tv_consent_point_change_title  4a8011b9ca93
 app:tv_consent_reassurance  2de00dac832e
+app:tv_forgot_back  71fe31ccd37c
 app:tv_loading  ba3bbbe10d8b
 app:tv_quick_connect_getting  7b0a260d7428
 app:tv_settings_report_bug_code_description  f9ec3a4be5c3
