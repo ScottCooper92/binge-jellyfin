@@ -145,7 +145,7 @@ internal val settingsIndex: List<SettingEntry> =
         // Settings on them.
         setting(
             ConsolePage.Plugins,
-            R.string.catalog_versions,
+            R.string.catalog_versions_search,
             Icons.Outlined.History,
             R.string.settings_server,
             R.string.plugins_title,

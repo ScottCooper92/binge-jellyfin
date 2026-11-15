@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
+import com.cooper.binge.companion.jellyfin.server.PluginStatus
+import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.server.compareVersions
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -99,6 +101,18 @@ class CatalogViewModelTest {
         assertEquals("https://repo.example/stable.json", installRequests().single().url.queryParameter("repositoryUrl"))
         announce("PackageInstallationCompleted", "Playback Reporting")
         assertEquals("12.0.0.0", vm.ready { it.outcomes.containsKey("Playback Reporting") }.installedVersions["Playback Reporting"])
+    }
+
+    @Test
+    fun `the installed version is the live entry, whatever order the server lists a superseded one in`() {
+        fun plugin(
+            version: String,
+            status: PluginStatus,
+        ) = ServerPlugin("id", "Playback Reporting", version, "", status, canUninstall = true, hasSettings = false)
+        val live = plugin("12.0.0.0", PluginStatus.Active)
+        val old = plugin("13.0.0.0", PluginStatus.Superseded)
+        assertEquals("12.0.0.0", installedVersions(listOf(live, old))["Playback Reporting"])
+        assertEquals("12.0.0.0", installedVersions(listOf(old, live))["Playback Reporting"])
     }
 
     @Test

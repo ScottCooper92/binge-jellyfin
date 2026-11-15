@@ -972,6 +972,7 @@
     <string name="catalog_no_version">Ninguna para la versión de este servidor</string>
     <string name="catalog_install">Instalar</string>
     <string name="catalog_versions">Versiones</string>
+    <string name="catalog_versions_search">Versiones de complementos</string>
     <string name="catalog_needs_newer">Compilada para Jellyfin %1$s, más reciente que este servidor</string>
     <string name="catalog_no_changelog">Esta versión no tiene registro de cambios.</string>
     <string name="catalog_older_title">¿Instalar la versión %1$s?</string>

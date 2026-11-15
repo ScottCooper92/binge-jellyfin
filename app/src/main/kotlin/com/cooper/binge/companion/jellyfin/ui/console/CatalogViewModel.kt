@@ -8,6 +8,8 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.InstallEvent
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.server.PackageVersion
+import com.cooper.binge.companion.jellyfin.server.PluginStatus
+import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.server.cancelInstall
 import com.cooper.binge.companion.jellyfin.server.installEvents
 import com.cooper.binge.companion.jellyfin.server.installPackage
@@ -49,6 +51,12 @@ sealed interface CatalogUiState {
     ) : CatalogUiState
 }
 
+/** Each installed plugin's version by name. `/Plugins` can list one twice, so a superseded or deleted entry gives way to a live one. */
+internal fun installedVersions(plugins: List<ServerPlugin>): Map<String, String> =
+    plugins
+        .sortedByDescending { it.status == PluginStatus.Superseded || it.status == PluginStatus.Deleted }
+        .associate { it.name to it.version }
+
 /**
  * The plugins the server's repositories offer. Install takes the newest version built for this server's
  * release or older (`targetAbi`), and the server downloads it in the background: its progress comes over the
@@ -86,7 +94,7 @@ class CatalogViewModel(
                             CatalogUiState.Ready(
                                 packages,
                                 plugins.map { it.name }.toSet(),
-                                plugins.associate { it.name to it.version },
+                                installedVersions(plugins),
                                 server = server,
                             )
                         client.installEvents().collect { following(it) }
@@ -109,7 +117,10 @@ class CatalogViewModel(
         viewModelScope.launch {
             connection
                 .consoleCall(TAG) { _, client -> client.installPackage(pkg, version) }
-                .onFailure { error -> update { copy(installing = installing - pkg.name, actionFailed = error.consoleFailure()) } }
+                .onFailure { error ->
+                    asked.remove(pkg.name)
+                    update { copy(installing = installing - pkg.name, actionFailed = error.consoleFailure()) }
+                }
         }
     }
 
@@ -123,7 +134,8 @@ class CatalogViewModel(
         }
     }
 
-    private fun following(event: InstallEvent) =
+    private fun following(event: InstallEvent) {
+        if (event is InstallEvent.Failed || event is InstallEvent.Cancelled) asked.remove(event.name)
         update {
             when (event) {
                 is InstallEvent.Started -> if (event.name in installing) copy(installing = installing + (event.name to event.id)) else this
@@ -141,6 +153,7 @@ class CatalogViewModel(
                     copy(installing = installing - event.name, outcomes = outcomes + (event.name to InstallOutcome.Cancelled))
             }
         }
+    }
 
     private fun update(change: CatalogUiState.Ready.() -> CatalogUiState.Ready) =
         _state.update {

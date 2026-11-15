@@ -976,6 +976,7 @@
     <string name="catalog_no_version">None built for this server\'s release</string>
     <string name="catalog_install">Install</string>
     <string name="catalog_versions">Versions</string>
+    <string name="catalog_versions_search">Plugin versions</string>
     <string name="catalog_needs_newer">Built for Jellyfin %1$s, newer than this server</string>
     <string name="catalog_no_changelog">No changelog for this version.</string>
     <string name="catalog_older_title">Install version %1$s?</string>
