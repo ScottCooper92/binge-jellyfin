@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Memory
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
@@ -44,11 +47,18 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
 import com.cooper.binge.companion.jellyfin.server.ServerPaths
 import com.cooper.binge.companion.jellyfin.server.ServerStorage
+import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.StorageFolder
 import com.cooper.binge.companion.jellyfin.server.StorageKind
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 import kotlin.math.roundToInt
 import com.binge.designsystem.R as DesR
 
@@ -181,6 +191,7 @@ private fun Server(
             rows = state.info.rows(),
             modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
         )
+        state.alerts?.let { AlertsGroup(it) }
         state.storage?.let { StorageGroups(it) }
         PathsGroup(state.info.paths)
         // Where a restart or shutdown has got to, while it is going on or done. A failure is a message instead.
@@ -269,6 +280,36 @@ private val Restart.message: Int
         }
 
 private const val LOADING_ROWS = 5
+
+/** The newest warnings and errors of the activity log, as the web dashboard's Alerts; read-only, and one calm row when there are none. */
+@Composable
+internal fun AlertsGroup(
+    alerts: List<ActivityEntry>,
+    zone: ZoneId = ZoneId.systemDefault(),
+) {
+    val time = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Locale.getDefault()).withZone(zone)
+    ItemGroup(
+        title = stringResource(R.string.server_alerts),
+        rows =
+            if (alerts.isEmpty()) {
+                listOf(ListItem(icon = Icons.Outlined.CheckCircle, label = stringResource(R.string.server_alerts_none), clickable = false))
+            } else {
+                alerts.map { entry ->
+                    ListItem(
+                        icon = if (entry.severity == Severity.Error) Icons.Outlined.ErrorOutline else Icons.Outlined.WarningAmber,
+                        iconTint = entry.severity.tint(),
+                        label = entry.name,
+                        detail =
+                            listOfNotNull(entry.dateMillis?.let { time.format(Instant.ofEpochMilli(it)) }, entry.overview)
+                                .joinToString(" · ")
+                                .ifEmpty { null },
+                        supportingMaxLines = DETAIL_LINES,
+                        clickable = false,
+                    )
+                }
+            },
+    )
+}
 
 /** A folder is nearly out of space from this fraction used, and its bar and a note say so. */
 private const val NEARLY_FULL = 0.9f

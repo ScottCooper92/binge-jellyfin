@@ -61,6 +61,52 @@ class ServerViewModelTest {
         )
     }
 
+    private fun entry(
+        id: Int,
+        severity: String,
+        hour: Int,
+    ) = """{"Id":$id,"Name":"Entry $id","Type":"TaskFailed","Severity":"$severity","Date":"2026-11-1${hour / 10}T0${hour % 10}:00:00Z"}"""
+
+    @Test
+    fun `alerts are the newest warnings and errors, asked of a server that filters by severity once for each`() {
+        jellyfin.activityEntries =
+            listOf(
+                entry(9, "Information", 9),
+                entry(8, "Error", 8),
+                entry(7, "Warning", 7),
+                entry(6, "Information", 6),
+                entry(5, "Warning", 5),
+            )
+        val alerts = made(ServerViewModel(connection, alertsFilteredByServer = true)).ready().alerts!!
+        assertEquals(listOf(8L, 7L, 5L), alerts.map { it.id })
+        val asked =
+            jellyfin.requests.filter { it.url.encodedPath == "/System/ActivityLog/Entries" }.map {
+                it.url.queryParameter(
+                    "severity",
+                )
+            }
+        assertEquals(setOf("Warning", "Error"), asked.toSet())
+    }
+
+    @Test
+    fun `a server that cannot filter is read whole, and the alerts are picked here, at most five`() {
+        jellyfin.activityIgnoresSeverity = true
+        jellyfin.activityEntries = (1..9).map { n -> entry(10 - n, if (n % 2 == 0) "Information" else "Error", 10 - n) }
+        val alerts = viewModel().ready().alerts!!
+        assertEquals(listOf(9L, 7L, 5L, 3L, 1L), alerts.map { it.id })
+        assertTrue(
+            jellyfin.requests.filter { it.url.encodedPath == "/System/ActivityLog/Entries" }.all {
+                it.url.queryParameter("severity") ==
+                    null
+            },
+        )
+    }
+
+    @Test
+    fun `no warnings or errors is an empty list, which the card says, and not a missing one`() {
+        assertEquals(emptyList<Any>(), viewModel().ready().alerts)
+    }
+
     @Test
     fun `reads the server's paths, and a path it does not send is empty`() {
         jellyfin.systemInfo =

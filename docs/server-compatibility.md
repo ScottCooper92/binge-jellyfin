@@ -72,6 +72,7 @@ older server shows less rather than failing on a call it can't answer.
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |
 | Grouping movies and shows into collections separately | 10.11 | `hasSeparateCollectionGrouping` |
 | Activity filters by end time, user, severity and type (every server filters by start time and by whether an entry has a user; the others are ignored before 12.0, so the page does not offer them) | 12.0 | `hasActivityFilters` |
+| The Server page's Alerts card: the newest warnings and errors of the activity log (the web dashboard's Alerts). Every server has it. A server that filters by severity is asked once for each severity; an older one is read for its newest 100 entries and the rest dropped here, so a quiet stretch of the log can show fewer than there are | 12.0 for the server-side filter | `hasActivityFilters` chooses which |
 
 ## What each user has
 

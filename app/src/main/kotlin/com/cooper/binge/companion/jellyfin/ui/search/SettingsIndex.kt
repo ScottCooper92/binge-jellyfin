@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewModule
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
@@ -186,6 +187,14 @@ internal val settingsIndex: List<SettingEntry> =
         page(ConsolePage.Backups, R.string.backups_title, Icons.Outlined.Backup, R.string.advanced_title),
         page(ConsolePage.Advanced, R.string.advanced_title, Icons.Outlined.Build, R.string.advanced_title),
         page(ConsolePage.Server, R.string.server_title, Icons.Outlined.SettingsApplications, R.string.advanced_title, R.string.kw_restart),
+        setting(
+            ConsolePage.Server,
+            R.string.server_alerts,
+            Icons.Outlined.WarningAmber,
+            R.string.advanced_title,
+            R.string.server_title,
+            R.string.kw_alerts,
+        ),
         setting(
             ConsolePage.Server,
             R.string.server_storage,

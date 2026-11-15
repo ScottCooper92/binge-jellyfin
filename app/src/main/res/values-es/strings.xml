@@ -649,6 +649,9 @@
     <string name="server_path_transcodes">Transcodificaciones</string>
     <string name="server_path_logs">Registros</string>
     <string name="server_path_web">Web</string>
+    <string name="server_alerts">Alertas</string>
+    <string name="server_alerts_none">Sin advertencias ni errores recientes</string>
+    <string name="kw_alerts">advertencias errores problemas fallos registro alertas panel recientes</string>
     <string name="kw_storage">espacio en disco libre lleno unidad capacidad uso</string>
     <string name="kw_paths">carpetas directorios ubicaciones caché registros metadatos transcodificación datos</string>
     <string name="server_cant_restart">Este servidor no puede reiniciarse solo. Reinícialo donde se ejecuta.</string>
