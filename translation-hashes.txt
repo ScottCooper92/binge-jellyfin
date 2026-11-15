@@ -182,9 +182,14 @@ app:catalog_failed  e5294733a88c
 app:catalog_install  569ca49f4aaf
 app:catalog_installed  f8b32f4e92bd
 app:catalog_installing  8749b1693f74
+app:catalog_needs_newer  d9c7c277fd00
+app:catalog_no_changelog  93c27eea0416
 app:catalog_no_version  8680dc729209
+app:catalog_older_message  a42e49a5180c
+app:catalog_older_title  59c08993a60b
 app:catalog_owner  25a239179c0c
 app:catalog_version  dd167905de0d
+app:catalog_versions  f89ea27036ac
 app:channel_mappings_body  8d0a6e72d884
 app:channel_mappings_more  6d5bfe86865e
 app:channel_mappings_no_channels  7e3431330bbb
@@ -370,6 +375,7 @@ app:kw_now_playing  a760abbd0c66
 app:kw_password  16e3b01abd44
 app:kw_picture  566811a0ff20
 app:kw_playback  716b22d33922
+app:kw_plugin_versions  f09aca6042db
 app:kw_plugins  4b1f74149227
 app:kw_port  b4f559b8f0c5
 app:kw_privacy  049f8649aa00

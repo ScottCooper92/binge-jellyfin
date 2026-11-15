@@ -7,6 +7,7 @@ import com.cooper.binge.companion.jellyfin.server.CatalogPackage
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.InstallEvent
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
+import com.cooper.binge.companion.jellyfin.server.PackageVersion
 import com.cooper.binge.companion.jellyfin.server.cancelInstall
 import com.cooper.binge.companion.jellyfin.server.installEvents
 import com.cooper.binge.companion.jellyfin.server.installPackage
@@ -38,6 +39,8 @@ sealed interface CatalogUiState {
     data class Ready(
         val packages: List<CatalogPackage>,
         val installed: Set<String> = emptySet(),
+        /** The version of each installed plugin, by name, and a version this page installed after it loaded. */
+        val installedVersions: Map<String, String> = emptyMap(),
         val installing: Map<String, String?> = emptyMap(),
         val outcomes: Map<String, InstallOutcome> = emptyMap(),
         val actionFailed: ConsoleFailure? = null,
@@ -61,6 +64,9 @@ class CatalogViewModel(
 
     private var events: Job? = null
 
+    /** The version each install in flight was asked for, which the server's completion event doesn't name. */
+    private val asked = mutableMapOf<String, String>()
+
     init {
         load()
     }
@@ -72,16 +78,17 @@ class CatalogViewModel(
             viewModelScope.launch {
                 connection
                     .consoleCall(TAG) { _, client ->
-                        val names =
-                            attempt { client.plugins() }
-                                .getOrNull()
-                                .orEmpty()
-                                .map { it.name }
-                                .toSet()
-                        Triple(client.packages(), names, client)
+                        val plugins = attempt { client.plugins() }.getOrNull().orEmpty()
+                        Triple(client.packages(), plugins, client)
                     }.onFailure { _state.value = CatalogUiState.Failed(it.consoleFailure()) }
-                    .onSuccess { (packages, installed, client) ->
-                        _state.value = CatalogUiState.Ready(packages, installed, server = server)
+                    .onSuccess { (packages, plugins, client) ->
+                        _state.value =
+                            CatalogUiState.Ready(
+                                packages,
+                                plugins.map { it.name }.toSet(),
+                                plugins.associate { it.name to it.version },
+                                server = server,
+                            )
                         client.installEvents().collect { following(it) }
                     }
             }
@@ -90,8 +97,14 @@ class CatalogViewModel(
     /** A package is being opened: what the last screen reported is not this one's, and a screen composed afresh would say it again. */
     fun itemOpened() = update { copy(actionFailed = null) }
 
-    fun install(pkg: CatalogPackage) {
-        val version = pkg.installable(server) ?: return
+    /** Installs [chosen], or the newest version built for this server when none is given. A version this server can't take is refused. */
+    fun install(
+        pkg: CatalogPackage,
+        chosen: PackageVersion? = null,
+    ) {
+        val version = chosen?.takeIf { it.fits(server) } ?: if (chosen == null) pkg.installable(server) else null
+        if (version == null) return
+        asked[pkg.name] = version.version
         update { copy(installing = installing + (pkg.name to null), outcomes = outcomes - pkg.name, actionFailed = null) }
         viewModelScope.launch {
             connection
@@ -118,6 +131,7 @@ class CatalogViewModel(
                     copy(
                         installing = installing - event.name,
                         installed = installed + event.name,
+                        installedVersions = asked[event.name]?.let { installedVersions + (event.name to it) } ?: installedVersions,
                         outcomes =
                             outcomes + (event.name to InstallOutcome.Done),
                     )

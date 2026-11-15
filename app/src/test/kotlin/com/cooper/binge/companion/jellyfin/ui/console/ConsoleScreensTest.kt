@@ -852,7 +852,7 @@ class ConsoleScreensTest {
         val calls = mutableListOf<String>()
         var state by mutableStateOf(CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7")))
         var shown by mutableStateOf("Playback Reporting")
-        val actions = CatalogActions(onInstall = { calls += "install ${it.name}" }, onCancel = { calls += "cancel ${it.name}" })
+        val actions = CatalogActions(onInstall = { pkg, _ -> calls += "install ${pkg.name}" }, onCancel = { calls += "cancel ${it.name}" })
         compose.setContent { JellyfinTheme { PackageScreen(state, shown, actions, onBack = {}) } }
         compose.onNodeWithText("Shows who watched what.").assertExists()
         compose.onNodeWithText("13.0.0.0 · Jellyfin Stable").assertExists()
@@ -876,6 +876,32 @@ class ConsoleScreensTest {
         shown = "Future Plugin"
         compose.onNodeWithText("None built for this server's release").assertExists()
         compose.onNodeWithText("Install").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a package lists its versions, installs a chosen one, and asks before putting an older one over a newer`() {
+        val calls = mutableListOf<String>()
+        val newer = catalogVersion.copy(version = "14.0.0.0", targetAbi = "10.11.0.0", changelog = "For a newer server.")
+        val older = catalogVersion.copy(version = "12.0.0.0", changelog = "* Older fix", timestamp = "2026-01-02T10:00:00Z")
+        val pkg = reporting.copy(versions = listOf(older, catalogVersion, newer))
+        val state = CatalogUiState.Ready(listOf(pkg), installed = setOf(pkg.name), installedVersions = mapOf(pkg.name to "13.0.0.0"))
+        val actions = CatalogActions(onInstall = { p, v -> calls += "install ${p.name} ${v?.version}" })
+        compose.setContent {
+            JellyfinTheme { PackageScreen(state.copy(server = JellyfinVersion.parse("10.10.7")), pkg.name, actions, onBack = {}) }
+        }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Versions", ignoreCase = true))
+        compose.onNodeWithText("Built for Jellyfin 10.11.0.0, newer than this server").assertIsNotEnabled()
+        compose.onNodeWithText("2026-01-02").assertExists()
+        // The older version asks first, and Cancel installs nothing.
+        compose.onNodeWithText("12.0.0.0", substring = true).performScrollTo().performClick()
+        compose.onNodeWithText("• Older fix").assertExists()
+        compose.onNodeWithText("Install").performClick()
+        compose.onNodeWithText("Install version 12.0.0.0?").assertExists()
+        compose.onNodeWithText("Cancel").performClick()
+        assertEquals(emptyList<String>(), calls)
+        compose.onAllNodesWithText("Install").onLast().performClick()
+        compose.onAllNodesWithText("Install").onLast().performClick()
+        assertEquals(listOf("install Playback Reporting 12.0.0.0"), calls)
     }
 
     @Test
