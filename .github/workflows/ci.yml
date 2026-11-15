@@ -267,11 +267,16 @@ jobs:
         with:
           cache-read-only: true
 
-      - name: Validate screenshots (shard ${{ matrix.shard }} of 3)
+      - name: Validate screenshots (shard ${{ matrix.shard }} of ${{ strategy.job-total }})
         env:
           SHARD: ${{ matrix.shard }}
+          SHARDS: ${{ strategy.job-total }}
         run: |
-          mapfile -t filters < <(.github/scripts/shard-screenshots.sh 3 "$SHARD")
+          mapfile -t filters < <(.github/scripts/shard-screenshots.sh "$SHARDS" "$SHARD")
+          if [ "${#filters[@]}" -eq 0 ]; then
+            echo "shard $SHARD has no classes; an empty filter would run the whole suite in one JVM (#552)" >&2
+            exit 1
+          fi
           printf '%s\n' "${filters[@]}" | paste - - | sed 's/^/  /'
           ./gradlew :app:validateDebugScreenshotTest --continue "${filters[@]}"
 

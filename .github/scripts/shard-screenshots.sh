@@ -7,7 +7,7 @@
 #
 # Usage: shard-screenshots.sh <shards> <index> [<test dir> [<reference dir>]]
 # Prints the `--tests` arguments for shard <index> (0-based), one per line. A class is a file in
-# the test dir with a `class …ScreenshotTest`; its weight is how many reference PNGs it has
+# the test dir with a `class …ScreenshotTest` (modifiers allowed); its weight is how many reference PNGs it has
 # (a class with none yet counts 1). Heaviest classes are placed first, each on the lightest shard,
 # ties by name, so the split is stable and every class lands in exactly one shard.
 set -euo pipefail
@@ -17,7 +17,23 @@ index="${2:?index}"
 tests="${3:-app/src/screenshotTest}"
 refs="${4:-app/src/screenshotTestDebug/reference}"
 
-classes="$(grep -rhoE '^class [A-Za-z0-9_]*ScreenshotTest' "$tests" | awk '{print $2}' | sort -u)"
+# Fail closed: a frame no shard names is a frame nothing validates, and CI would stay green.
+# A class may carry modifiers; a `@PreviewTest` outside a class, or in a file with no matched class, is an error.
+class_re='^[[:space:]]*((public|internal|private|open|final|abstract)[[:space:]]+)*class[[:space:]]+[A-Za-z0-9_]*ScreenshotTest\b'
+while IFS= read -r f; do
+  if grep -q "@PreviewTest" "$f"; then
+    if grep -qE '^@PreviewTest' "$f"; then
+      echo "$f: a top-level @PreviewTest is in no class, so in no shard; put it in a *ScreenshotTest class" >&2
+      exit 1
+    fi
+    if ! grep -qE "$class_re" "$f"; then
+      echo "$f: has @PreviewTest but no class named *ScreenshotTest, so no shard would run it" >&2
+      exit 1
+    fi
+  fi
+done < <(find "$tests" -name '*.kt')
+
+classes="$(grep -rhE "$class_re" "$tests" | sed -E 's/^.*class[[:space:]]+([A-Za-z0-9_]*ScreenshotTest).*$/\1/' | sort -u)"
 [ -n "$classes" ] || { echo "no screenshot test classes under $tests" >&2; exit 1; }
 
 weighted=""

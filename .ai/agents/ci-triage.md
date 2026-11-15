@@ -13,7 +13,7 @@ on a PR, lints the workflows in a sixth, then aggregates them in a last one. `.g
 | `changes` | On a PR: classifies the diff (`.github/scripts/classify-changes.sh`) and says which of the next four jobs run. A job it skipped is skipped on purpose, not a failure: `build` reads its answers. Push and the nightly run all of them |
 | `checks` | `./gradlew build` minus the tasks the next three jobs own: Kotlin compile, `ktlintCheck`, `detekt`, Android `lint`, `checkTvMaterialSeparation`, the debug assemble and `checkTranslationStaleness` |
 | `tests` | `:app:testDebugUnitTest` and `:app:koverVerify` |
-| `screenshots` | `:app:validateDebugScreenshotTest` |
+| `screenshots (0..2)` | `:app:validateDebugScreenshotTest`, three matrix shards, each with its own `--tests` filter |
 | `release` | `:app:assembleRelease`: R8 and lint-vital |
 | `build` | Nothing of its own. Green only if the other six are. Merges the four Gradle jobs' reports into one `build-reports` artifact |
 
