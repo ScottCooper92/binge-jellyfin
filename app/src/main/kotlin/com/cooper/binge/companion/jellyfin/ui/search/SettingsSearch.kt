@@ -84,7 +84,11 @@ internal fun SettingsSearchScreen(
     BingeScreenScaffold(title = stringResource(R.string.search_title), bar = ScreenBar.Small, onBack = onBack) { padding ->
         ScreenBody(padding) { _ ->
             val found =
-                remember(query) { searchSettings(query, settingsIndex, { it.available(profile, account) }, context::getString) }
+                remember(
+                    query,
+                    profile,
+                    account,
+                ) { searchSettings(query, settingsIndex, { it.available(profile, account) }, context::getString) }
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding.screenListPadding()),
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),

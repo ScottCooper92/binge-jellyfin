@@ -3,8 +3,13 @@ package com.cooper.binge.companion.jellyfin.ui.search
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,7 +21,7 @@ class SettingsIndexTest {
 
     private fun find(
         query: String,
-        available: (ConsolePage) -> Boolean = { true },
+        available: (SettingEntry) -> Boolean = { true },
     ) = searchSettings(query, settingsIndex, available, context::getString).map { context.getString(it.label) }
 
     /** A page the search cannot reach is a page nobody finds; these are the ones that are not a place of their own. */
@@ -61,7 +66,7 @@ class SettingsIndexTest {
 
     @Test
     fun `a page the user may not open is never offered`() {
-        val user: (ConsolePage) -> Boolean = { it == ConsolePage.Password || it == ConsolePage.ThisApp }
+        val user: (SettingEntry) -> Boolean = { it.page == ConsolePage.Password || it.page == ConsolePage.ThisApp }
         assertEquals(emptyList<String>(), find("hardware", user))
         assertTrue("Change password" in find("password", user))
     }
@@ -69,5 +74,14 @@ class SettingsIndexTest {
     @Test
     fun `a page comes before a setting that matches as well`() {
         assertEquals(context.getString(R.string.network_title), find("network").first())
+    }
+
+    @Test
+    fun `a setting its page hides on this server is not offered`() {
+        val admin = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":true}""").jsonObject)
+
+        fun offered(version: String) = find("av1") { it.available(JellyfinServerProfile.from(version), admin) }
+        assertTrue("Allow AV1 encoding" in offered("10.11.6"))
+        assertFalse("Allow AV1 encoding" in offered("10.8.13"))
     }
 }

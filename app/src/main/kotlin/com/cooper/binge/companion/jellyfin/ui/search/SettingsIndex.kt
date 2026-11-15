@@ -29,6 +29,8 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
+import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import java.text.Normalizer
 
@@ -46,7 +48,15 @@ internal class SettingEntry(
     /** The page a setting is on, or null for an entry that is the page itself. */
     @StringRes val pageLabel: Int? = null,
     @StringRes val keywords: Int? = null,
+    /** A gate of the entry's own, for a setting its page hides on some servers or accounts; the page's own gate is applied besides. */
+    val shown: (JellyfinServerProfile, JellyfinAccount) -> Boolean = { _, _ -> true },
 )
+
+/** Whether the search may offer this entry: its page is open to the user, and its own gate, if it has one, passes. */
+internal fun SettingEntry.available(
+    profile: JellyfinServerProfile,
+    account: JellyfinAccount,
+): Boolean = page.available(profile, account) && shown(profile, account)
 
 private fun page(
     page: ConsolePage,
@@ -63,7 +73,8 @@ private fun setting(
     @StringRes section: Int,
     @StringRes pageLabel: Int,
     @StringRes keywords: Int? = null,
-) = SettingEntry(page, label, icon, section, pageLabel, keywords)
+    shown: (JellyfinServerProfile, JellyfinAccount) -> Boolean = { _, _ -> true },
+) = SettingEntry(page, label, icon, section, pageLabel, keywords, shown)
 
 /**
  * Everything the search knows. A page of the console, and each setting worth finding by name, is listed here: a new setting adds its
@@ -175,6 +186,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_server,
             R.string.transcoding_title,
             R.string.kw_codecs,
+            shown = { profile, _ -> profile.hasAdvancedEncoding },
         ),
         setting(
             ConsolePage.Network,
@@ -263,20 +275,20 @@ private const val SCORE_WORD_STARTS = 3
 private const val SCORE_OTHER = 1
 
 /**
- * The entries [query] finds among those whose page the user may open ([available]), best first. Every word of the query must match:
+ * The entries [query] finds among those the user may open ([available]), best first. Every word of the query must match:
  * the label counts most (a word of it must start with the query's word, so "port" does not find "reports"), then the path and the keywords. [text] resolves a string resource in the current language, so the search
  * follows the app's locale with nothing of its own to translate.
  */
 internal fun searchSettings(
     query: String,
     entries: List<SettingEntry>,
-    available: (ConsolePage) -> Boolean,
+    available: (SettingEntry) -> Boolean,
     text: (Int) -> String,
 ): List<SettingEntry> {
     val words = query.searchForm().split(' ').filter { it.isNotBlank() }
     if (words.isEmpty()) return emptyList()
     return entries
-        .filter { available(it.page) }
+        .filter(available)
         .mapIndexedNotNull { index, entry ->
             val label = text(entry.label).searchForm()
             val other = listOfNotNull(entry.pageLabel, entry.section, entry.keywords).joinToString(" ") { text(it).searchForm() }
