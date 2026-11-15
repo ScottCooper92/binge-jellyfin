@@ -95,7 +95,10 @@ class ForgotPasswordFlow(
     /** Closes whatever step is showing. */
     fun dismiss() = move(null)
 
-    private suspend fun anonymous(baseUrl: String): JellyfinClient = connection.anonymous(JellyfinClient.parseBaseUrl(baseUrl) ?: error("bad base"))
+    private suspend fun anonymous(baseUrl: String): JellyfinClient =
+        connection.anonymous(
+            JellyfinClient.parseBaseUrl(baseUrl) ?: error("bad base"),
+        )
 
     private fun move(step: ForgotPasswordStep?) = state.update { (it as? UiState.SignIn)?.copy(forgot = step) ?: it }
 
