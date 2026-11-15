@@ -23,6 +23,7 @@ check() {
 K=app/src/main/kotlin/com/cooper/binge/companion/jellyfin
 check "docs only"                  "false false false" false CLAUDE.md docs/listing/privacy.md .ai/agents/pr-review-guide.md
 check "scripts and tooling only"   "false false false" false .github/scripts/classify-changes.sh tools/x.sh
+check "the shard script runs screenshots" "true true false" false .github/scripts/shard-screenshots.sh
 check "workflows run everything"   "true true true"    false .github/workflows/ci.yml
 check "empty diff runs everything" "true true true"    false
 check "a screen"                   "true true false"   false "$K/ui/SignedInHome.kt"

@@ -28,6 +28,8 @@ sensitive="${SENSITIVE:-false}"
 # Paths no Gradle task reads.
 non_product() {
   case "$1" in
+    # The screenshots job runs this script, so it is an input to the build.
+    .github/scripts/shard-screenshots.sh) return 1 ;;
     *.md | LICENSE* | docs/* | .ai/* | tools/* | .gitignore | .github/ISSUE_TEMPLATE/* | .github/renovate.json5 | .github/scripts/*) return 0 ;;
   esac
   return 1
