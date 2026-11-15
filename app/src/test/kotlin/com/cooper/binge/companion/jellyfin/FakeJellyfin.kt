@@ -64,6 +64,10 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** What `/Users/ForgotPassword` answers, and the PIN `/Users/ForgotPassword/Pin` accepts. */
+    var forgotAnswer = """{"Action":"ContactAdmin"}"""
+    var forgotPin = "1234"
+
     /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
     var failsTheMissingIdCount = false
 
@@ -681,6 +685,11 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Info/Public" ->
                 json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":true}""")
+            path == "/Users/ForgotPassword" -> json(forgotAnswer)
+            path == "/Users/ForgotPassword/Pin" -> {
+                val pin = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject["Pin"].toString()
+                json("""{"Success":${pin == "\"$forgotPin\""},"UsersReset":[]}""")
+            }
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
                 if (body["Pw"].toString() == "\"right\"") signedIn() else MockResponse(code = 401)

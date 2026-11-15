@@ -64,6 +64,8 @@ data class Actions(
     val onTryDemo: () -> Unit = {},
     val onUsername: (String) -> Unit = {},
     val onPassword: (String) -> Unit = {},
+    /** The forgotten-password steps; null where none is wired (a frame). */
+    val forgotPassword: ForgotPasswordFlow? = null,
     val onSignIn: () -> Unit = {},
     val onQuickConnect: () -> Unit = {},
     val onCancelQuickConnect: () -> Unit = {},
@@ -280,6 +282,13 @@ private fun SignIn(
             enabled = state.username.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         )
+        BingeTextButton(
+            label = stringResource(R.string.forgot_password),
+            onClick = { actions.forgotPassword?.start() },
+            enabled = state.username.isNotBlank() && !state.busy,
+            loading = state.forgot == ForgotPasswordStep.Asking,
+            modifier = Modifier.fillMaxWidth(),
+        )
         state.passwordError?.takeUnless { it == SetupError.WrongCredentials }?.let { ErrorLine(it) }
         if (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied) {
             AllowLocalNetworkButton(actions)
@@ -292,6 +301,7 @@ private fun SignIn(
             modifier = Modifier.fillMaxWidth(),
         )
         state.quickConnectError?.let { ErrorLine(it) }
+        ForgotPasswordOverlay(state.forgot, actions.forgotPassword)
     }
 }
 

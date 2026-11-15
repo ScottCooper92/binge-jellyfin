@@ -26,6 +26,15 @@ data class SignedIn(
     val serverId: String,
 )
 
+/** What the server will do for a user who forgot their password. A value this app does not know is [ContactAdmin]. */
+enum class ForgotPasswordAction { ContactAdmin, PinCode, InNetworkRequired }
+
+/** The server's answer to a forgotten password: what happens next, and for [ForgotPasswordAction.PinCode] the file that holds the PIN. */
+data class ForgotPasswordAnswer(
+    val action: ForgotPasswordAction,
+    val pinFile: String?,
+)
+
 /** A Quick Connect request: the code the user approves, and the secret this app polls with. */
 data class QuickConnectStart(
     val secret: String,
@@ -41,6 +50,17 @@ suspend fun JellyfinClient.publicInfo(): PublicServerInfo {
         baseUrl = baseOf(from) ?: baseUrl,
     )
 }
+
+/** Asks the server to start a password reset for [username]. Anonymous; only the name is sent. */
+suspend fun JellyfinClient.forgotPassword(username: String): ForgotPasswordAnswer {
+    val json = postObject("Users/ForgotPassword", JsonObject(mapOf("EnteredUsername" to JsonPrimitive(username))))
+    val action = ForgotPasswordAction.entries.firstOrNull { it.name == json.string("Action") } ?: ForgotPasswordAction.ContactAdmin
+    return ForgotPasswordAnswer(action, json.string("PinFile")?.takeIf { it.isNotBlank() })
+}
+
+/** Redeems the PIN from the file the server wrote: true when it was right, and the password is now none. */
+suspend fun JellyfinClient.redeemPasswordPin(pin: String): Boolean =
+    postObject("Users/ForgotPassword/Pin", JsonObject(mapOf("Pin" to JsonPrimitive(pin)))).bool("Success") == true
 
 suspend fun JellyfinClient.authenticateByName(
     username: String,
