@@ -74,6 +74,14 @@ class HomeAccountTest {
     fun `a user's home has a This app row that opens the page`() = thisAppRowOpensItsPage(admin = false)
 
     @Test
+    fun `the home starts with a search that opens the search page`() {
+        var opened: ConsolePage? = null
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions(onOpenPage = { opened = it })) } }
+        compose.onNodeWithText("Search settings").performClick()
+        assertEquals(ConsolePage.Search, opened)
+    }
+
+    @Test
     fun `an administrator's home lists every section's pages, reached by scrolling`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions()) } }
         val pages =
