@@ -81,6 +81,8 @@ fun ConsoleNavHost(
     val stores: ConsolePageStores = viewModel()
     LaunchedEffect(stack.openings) { stores.retain(stack.openings) }
     val openItem by rememberUpdatedState(stack.topItem)
+    // The setting a page was opened on: read inside its content, as the entry is built once for its key.
+    val rows by rememberUpdatedState(stack.entries.filter { it.item == null }.associate { it.opening to it.row })
     NavDisplay(
         backStack = stack.keys(signedIn),
         onBack = onBack,
@@ -117,7 +119,7 @@ fun ConsoleNavHost(
                             LocalOpenItem provides openItem?.takeIf { it.opening == key.opening }?.item,
                         ) {
                             PaneContent(innerEdge = if (ownPane) PaneEdge.Both else PaneEdge.Start) {
-                                pageNow(ConsoleEntry(key.page, key.opening))
+                                pageNow(ConsoleEntry(key.page, key.opening, row = rows[key.opening]))
                             }
                         }
                     }

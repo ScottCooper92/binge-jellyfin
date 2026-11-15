@@ -95,5 +95,13 @@ class SettingsIndexTest {
         assertEquals(emptyList<String>(), offered(admin = false))
     }
 
+    @Test
+    fun `an entry that names a row names it once on its page`() {
+        val named = settingsIndex.filter { it.row != null }
+        assertTrue(named.isNotEmpty())
+        assertEquals(named.map { it.page to it.row }.distinct().size, named.size)
+        named.forEach { assertTrue(it.row!!.isNotBlank()) }
+    }
+
     private fun account(admin: Boolean) = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":$admin}""").jsonObject)
 }

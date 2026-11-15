@@ -36,8 +36,13 @@ import androidx.compose.material.icons.outlined.ViewModule
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.ENCODING_AV1
+import com.cooper.binge.companion.jellyfin.server.ENCODING_HEVC
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.NETWORK_BASE_URL
+import com.cooper.binge.companion.jellyfin.server.NETWORK_ENABLE_HTTPS
+import com.cooper.binge.companion.jellyfin.server.NETWORK_REMOTE_ACCESS
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import java.text.Normalizer
 
@@ -57,6 +62,8 @@ internal class SettingEntry(
     @StringRes val keywords: Int? = null,
     /** A gate of the entry's own, for a setting its page hides on some servers or accounts; the page's own gate is applied besides. */
     val shown: (JellyfinServerProfile, JellyfinAccount) -> Boolean = { _, _ -> true },
+    /** The row to scroll to and wash on the page, by the key the page gives its [com.binge.designsystem.component.ListItem]; null opens the page at the top. */
+    val row: String? = null,
 )
 
 /** Whether the search may offer this entry: its page is open to the user, and its own gate, if it has one, passes. */
@@ -81,7 +88,8 @@ private fun setting(
     @StringRes pageLabel: Int,
     @StringRes keywords: Int? = null,
     shown: (JellyfinServerProfile, JellyfinAccount) -> Boolean = { _, _ -> true },
-) = SettingEntry(page, label, icon, section, pageLabel, keywords, shown)
+    row: String? = null,
+) = SettingEntry(page, label, icon, section, pageLabel, keywords, shown, row)
 
 /**
  * Everything the search knows. A page of the console, and each setting worth finding by name, is listed here: a new setting adds its
@@ -235,6 +243,7 @@ internal val settingsIndex: List<SettingEntry> =
             Icons.Outlined.Tune,
             R.string.settings_server,
             R.string.server_settings_title,
+            row = SettingRows.SERVER_NAME,
         ),
         setting(
             ConsolePage.ServerSettings,
@@ -243,6 +252,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_server,
             R.string.server_settings_title,
             R.string.kw_quick_connect,
+            row = SettingRows.SERVER_QUICK_CONNECT,
         ),
         setting(
             ConsolePage.Transcoding,
@@ -251,6 +261,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_server,
             R.string.transcoding_title,
             R.string.kw_hardware,
+            row = SettingRows.TRANSCODING_ACCELERATION,
         ),
         setting(
             ConsolePage.Transcoding,
@@ -259,6 +270,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_server,
             R.string.transcoding_title,
             R.string.kw_codecs,
+            row = SettingRows.transcoding(ENCODING_HEVC),
         ),
         setting(
             ConsolePage.Transcoding,
@@ -268,6 +280,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.transcoding_title,
             R.string.kw_codecs,
             shown = { profile, _ -> profile.hasAdvancedEncoding },
+            row = SettingRows.transcoding(ENCODING_AV1),
         ),
         setting(
             ConsolePage.Network,
@@ -276,6 +289,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.advanced_title,
             R.string.network_title,
             R.string.kw_port,
+            row = SettingRows.NETWORK_HTTP_PORT,
         ),
         setting(
             ConsolePage.Network,
@@ -284,6 +298,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.advanced_title,
             R.string.network_title,
             R.string.kw_port,
+            row = SettingRows.NETWORK_HTTPS_PORT,
         ),
         setting(
             ConsolePage.Network,
@@ -292,6 +307,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.advanced_title,
             R.string.network_title,
             R.string.kw_https,
+            row = SettingRows.network(NETWORK_ENABLE_HTTPS),
         ),
         setting(
             ConsolePage.Network,
@@ -300,6 +316,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.advanced_title,
             R.string.network_title,
             R.string.kw_remote,
+            row = SettingRows.network(NETWORK_REMOTE_ACCESS),
         ),
         setting(
             ConsolePage.Network,
@@ -308,6 +325,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.advanced_title,
             R.string.network_title,
             R.string.kw_proxy,
+            row = SettingRows.network(NETWORK_BASE_URL),
         ),
         setting(ConsolePage.Advanced, R.string.advanced_cache, Icons.Outlined.Build, R.string.advanced_title, R.string.advanced_title),
         setting(ConsolePage.Logs, R.string.logs_retention_title, Icons.Outlined.Description, R.string.advanced_title, R.string.logs_title),

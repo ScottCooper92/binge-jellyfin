@@ -48,6 +48,7 @@ import com.cooper.binge.companion.jellyfin.server.NETWORK_REMOTE_ACCESS
 import com.cooper.binge.companion.jellyfin.server.NETWORK_REMOTE_IP_FILTER
 import com.cooper.binge.companion.jellyfin.server.NETWORK_REQUIRE_HTTPS
 import com.cooper.binge.companion.jellyfin.server.NETWORK_UPNP
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import com.binge.designsystem.R as DesR
 
 /** What the networking page can ask of its view model, and of the console. */
@@ -163,12 +164,14 @@ private fun NetworkUiState.Ready.formRow(
     icon: ImageVector,
     label: Int,
     detail: String,
+    rowKey: String = SettingRows.network(key),
     onClick: () -> Unit,
 ): ListItem? =
     ListItem(
         icon = icon,
         label = stringResource(label),
         detail = detail,
+        key = rowKey,
         supportingMaxLines = NETWORK_DETAIL_LINES,
         note = if (key in draft) ListItemNote(stringResource(R.string.network_unsaved), icon = Icons.Outlined.Info) else null,
         // Not while Save changes is writing: a change made then would skip the confirm, or be cleared by the write's result.
@@ -189,6 +192,7 @@ private fun NetworkUiState.Ready.formSwitch(
         icon = icon,
         label = stringResource(label),
         detail = detail?.let { stringResource(it) },
+        key = SettingRows.network(key),
         supportingMaxLines = NETWORK_DETAIL_LINES,
         note = if (key in draft) ListItemNote(stringResource(R.string.network_unsaved), icon = Icons.Outlined.Info) else null,
         toggled = on,
@@ -207,6 +211,7 @@ private fun NetworkUiState.Ready.madeSwitch(
     ListItem(
         icon = icon,
         label = stringResource(label),
+        key = SettingRows.network(key),
         toggled = on,
         // Not while Save changes is writing this configuration: the two would overwrite each other.
         enabled = !committing,
@@ -220,7 +225,10 @@ private fun NetworkUiState.Ready.portRow(
     label: Int,
     value: Int,
     actions: NetworkActions,
-): ListItem? = formRow(field.key(keys), icon, label, value.toString()) { actions.onSheet(NetworkSheet.Number(field)) }
+): ListItem? =
+    formRow(field.key(keys), icon, label, value.toString(), rowKey = SettingRows.network(field.name)) {
+        actions.onSheet(NetworkSheet.Number(field))
+    }
 
 @Composable
 private fun NetworkUiState.Ready.listRow(

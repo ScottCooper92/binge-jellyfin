@@ -54,6 +54,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.Branding
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import com.binge.designsystem.R as DesR
 
 /** What the server settings page can ask of its view model, and of the console. */
@@ -149,6 +150,7 @@ private fun ServerSettingsBody(
                     ListItem(
                         icon = Icons.Outlined.Dns,
                         label = stringResource(R.string.server_settings_name),
+                        key = SettingRows.SERVER_NAME,
                         detail = settings.name.ifBlank { notSet },
                         onClick = { actions.onEdit(ServerText.Name) },
                     ),
@@ -171,6 +173,7 @@ private fun ServerSettingsBody(
                     ListItem(
                         icon = Icons.Outlined.QrCode2,
                         label = stringResource(R.string.server_settings_quick_connect),
+                        key = SettingRows.SERVER_QUICK_CONNECT,
                         detail = stringResource(R.string.server_settings_quick_connect_detail),
                         supportingMaxLines = SETTINGS_DETAIL_LINES,
                         toggled = settings.quickConnect,

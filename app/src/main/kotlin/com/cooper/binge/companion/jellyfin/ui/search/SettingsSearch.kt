@@ -81,7 +81,7 @@ internal fun SettingsSearchRoute(
     graph: AppGraph,
     profile: JellyfinServerProfile,
     account: JellyfinAccount,
-    open: (ConsolePage) -> Unit,
+    open: (ConsolePage, String?) -> Unit,
     onBack: () -> Unit,
 ) {
     val resources = LocalContext.current.resources
@@ -97,7 +97,7 @@ internal fun SettingsSearchRoute(
         account,
         { entry ->
             scope.launch { graph.recentSearches.remember(entry.id(resources)) }
-            open(entry.page)
+            open(entry.page, entry.row)
         },
         onBack,
         recent = recent,

@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.sdk.attempt
+import com.binge.designsystem.component.ProvideRowFocus
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.tip.TipViewModel
@@ -35,6 +36,22 @@ internal fun ConsolePageRoute(
     actions: Actions = Actions(),
     openItem: (String) -> Unit = {},
     openPageItem: (ConsolePage, String) -> Unit = { _, _ -> },
+    row: String? = null,
+) {
+    // A page opened on one of its settings scrolls to its row and washes it once.
+    ProvideRowFocus(key = row) { ConsolePageContent(page, graph, signedIn, close, open, actions, openItem, openPageItem) }
+}
+
+@Composable
+private fun ConsolePageContent(
+    page: ConsolePage,
+    graph: AppGraph,
+    signedIn: UiState.SignedIn,
+    close: () -> Unit,
+    open: (ConsolePage) -> Unit,
+    actions: Actions,
+    openItem: (String) -> Unit,
+    openPageItem: (ConsolePage, String) -> Unit,
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
@@ -43,7 +60,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
         ConsolePage.ThisApp -> ThisAppRoute(graph, actions, close)
-        ConsolePage.Search -> SettingsSearchRoute(graph, signedIn.profile, signedIn.account, open, close)
+        ConsolePage.Search -> SettingsSearchRoute(graph, signedIn.profile, signedIn.account, actions.onOpenRow, close)
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
