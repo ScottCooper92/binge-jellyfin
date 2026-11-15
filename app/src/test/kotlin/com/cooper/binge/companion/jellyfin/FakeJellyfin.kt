@@ -173,6 +173,12 @@ class FakeJellyfin : Dispatcher() {
     /** What `/Startup/FirstUser` suggests as the first account's name. */
     var startupFirstUser = """{"Name":"root","Password":""}"""
 
+    /** The body of the last `POST /Startup/RemoteAccess`, or null before one. */
+    var savedStartupRemoteAccess: String? = null
+
+    /** Whether `POST /Startup/Complete` has been made; from then the Startup routes answer only an administrator, so a bare request is refused. */
+    var startupCompleted = false
+
     /** The body of the last `POST /Startup/User`, or null before one. */
     var savedStartupUser: String? = null
 
@@ -733,6 +739,16 @@ class FakeJellyfin : Dispatcher() {
                 if (pin == "\"$forgotPin\"") json("""{"Success":true,"UsersReset":["Mum"]}""") else MockResponse(code = 404)
             }
             path == "/Users/Public" -> json(publicUsers)
+            path.startsWith("/Startup/") && startupCompleted -> MockResponse(code = 401)
+            path == "/Startup/RemoteAccess" -> {
+                savedStartupRemoteAccess = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/Startup/Complete" -> {
+                startupCompleted = true
+                startupWizardCompleted = true
+                MockResponse(code = 204)
+            }
             path == "/Startup/Configuration" && request.method == "POST" -> {
                 savedStartupConfiguration = request.body?.utf8().orEmpty()
                 startupConfiguration = savedStartupConfiguration.orEmpty()

@@ -8,6 +8,8 @@ import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.LocalNetworkPermission
+import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.StartupConfiguration
 import com.cooper.binge.companion.jellyfin.server.UiLanguage
 import com.cooper.binge.companion.jellyfin.server.countries
@@ -23,6 +25,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl
 
 /** What the setup wizard is showing. */
 sealed interface StartupPhase {
@@ -63,8 +66,21 @@ sealed interface StartupPhase {
         override fun toString() = "Account(name=$name, busy=$busy, error=$error)"
     }
 
-    /** The account was made. The server still reports setup as unfinished until it is completed. */
-    data object Saved : StartupPhase
+    /**
+     * The last step: remote access, then Finish setup, which completes the server and signs in as the account just made. [name] and
+     * [password] are that account, held in memory only for the sign-in: never in saved state, never logged, left out of [toString], and
+     * gone when the wizard is left or they are used.
+     */
+    data class Finish(
+        val name: String,
+        val password: String,
+        val remoteAccess: Boolean = true,
+        val portMapping: Boolean = false,
+        val busy: Boolean = false,
+        val error: SetupError? = null,
+    ) : StartupPhase {
+        override fun toString() = "Finish(name=$name, remoteAccess=$remoteAccess, portMapping=$portMapping, busy=$busy, error=$error)"
+    }
 }
 
 /** What the setup wizard's screens can ask of it. */
@@ -80,6 +96,9 @@ data class StartupActions(
     val onPassword: (String) -> Unit = {},
     val onConfirmation: (String) -> Unit = {},
     val onSaveAccount: () -> Unit = {},
+    val onRemoteAccess: (Boolean) -> Unit = {},
+    val onPortMapping: (Boolean) -> Unit = {},
+    val onFinish: () -> Unit = {},
     val onBack: () -> Unit = {},
 )
 
@@ -92,9 +111,13 @@ class StartupWizard internal constructor(
     private val state: MutableStateFlow<UiState>,
     private val scope: CoroutineScope,
     private val localNetwork: LocalNetworkPermission,
+    signIn: suspend (HttpUrl, PublicServerInfo, SignedIn) -> Unit,
 ) {
     /** The first account: its fields and its save. */
     val account = StartupAccountStep(connection, state, scope, localNetwork)
+
+    /** Remote access, then completing the server and signing in as the account. */
+    val finish = StartupFinishStep(connection, state, scope, localNetwork, signIn)
 
     /** Opens the wizard from the notice, and reads what it needs. */
     fun open() {
@@ -168,6 +191,9 @@ class StartupWizard internal constructor(
             onPassword = account::onPassword,
             onConfirmation = account::onConfirmation,
             onSaveAccount = account::save,
+            onRemoteAccess = finish::onRemoteAccess,
+            onPortMapping = finish::onPortMapping,
+            onFinish = finish::finish,
             onBack = ::back,
         )
 
