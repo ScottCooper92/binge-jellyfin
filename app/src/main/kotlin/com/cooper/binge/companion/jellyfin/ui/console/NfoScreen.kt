@@ -39,7 +39,6 @@ import com.cooper.binge.companion.jellyfin.server.NFO_EXTRA_THUMBS
 import com.cooper.binge.companion.jellyfin.server.NFO_PATH_SUBSTITUTION
 import com.cooper.binge.companion.jellyfin.server.NFO_RELEASE_DATE_FORMAT
 import com.cooper.binge.companion.jellyfin.server.NFO_SAVE_IMAGE_PATHS
-import com.cooper.binge.companion.jellyfin.server.NFO_USER_ID
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.string
 import kotlinx.serialization.json.JsonElement
@@ -112,7 +111,8 @@ private fun NfoBody(
             modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 listOfNotNull(
-                    userRow(state, actions).takeIf { NFO_USER_ID in config },
+                    // Always shown: a real server leaves `UserId` out when no user is set, and the row is how one is chosen.
+                    userRow(state, actions),
                     config.string(NFO_RELEASE_DATE_FORMAT)?.let { format ->
                         ListItem(
                             icon = Icons.Outlined.CalendarMonth,

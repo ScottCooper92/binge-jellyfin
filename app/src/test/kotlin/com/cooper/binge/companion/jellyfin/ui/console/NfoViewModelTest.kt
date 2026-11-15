@@ -107,6 +107,18 @@ class NfoViewModelTest {
     }
 
     @Test
+    fun `a server that sends no UserId reads as none, and choosing a user adds the key`() {
+        jellyfin.nfoConfiguration = """{"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":false}"""
+        val vm = made(NfoViewModel(connection))
+        assertNull(vm.ready().config.nfoUserId())
+        vm.setUser("user-2")
+        saved(1)
+        val sent = jellyfin.lastBody(PATH)
+        assertEquals("user-2", sent.getValue("UserId").jsonPrimitive.content)
+        assertEquals("yyyy-MM-dd", sent.getValue("ReleaseDateFormat").jsonPrimitive.content)
+    }
+
+    @Test
     fun `a date format is trimmed and saved, and a blank one is not sent`() {
         val vm = made(NfoViewModel(connection))
         vm.ready()

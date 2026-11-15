@@ -32,6 +32,12 @@ class NfoScreenshotTest {
     @Composable
     fun nfo() = NfoScreen(ready(), NfoActions())
 
+    /** A real server sends no `UserId` when none is set: the row still shows, as None. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun noUserKey() = NfoScreen(ready(JsonObject(config - "UserId")), NfoActions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
