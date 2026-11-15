@@ -213,7 +213,7 @@ class JellyfinViewModelTest {
         vm.startup.onUiLanguage("es")
         vm.startup.onMetadataCountry("GB")
         vm.startup.save()
-        vm.await<UiState.Startup> { it.phase == StartupPhase.Saved }
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Account }
         val sent = Json.parseToJsonElement(jellyfin.savedStartupConfiguration.orEmpty()).jsonObject
         assertEquals("Living room", sent["ServerName"]?.jsonPrimitive?.content)
         assertEquals("es", sent["UICulture"]?.jsonPrimitive?.content)
@@ -225,6 +225,82 @@ class JellyfinViewModelTest {
         assertTrue(startupCalls.none { it.headers["Authorization"].orEmpty().contains("Token=") })
     }
 
+    private fun JellyfinViewModel.toAccount(): StartupPhase.Account {
+        toStartup()
+        startup.save()
+        return await<UiState.Startup> { (it.phase as? StartupPhase.Account)?.name == "root" }.phase as StartupPhase.Account
+    }
+
+    @Test
+    fun `the account step opens with the name the server suggests`() {
+        jellyfin.startupWizardCompleted = false
+        assertEquals("root", viewModel().toAccount().name)
+    }
+
+    @Test
+    fun `the account is sent as typed, once, and the password is cleared with the step`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onName("sam")
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.account.onConfirmation("hunter2")
+        vm.startup.account.save()
+        val done = vm.await<UiState.Startup> { it.phase == StartupPhase.Saved }
+        val sent = Json.parseToJsonElement(jellyfin.savedStartupUser.orEmpty()).jsonObject
+        assertEquals("sam", sent["Name"]?.jsonPrimitive?.content)
+        assertEquals("hunter2", sent["Password"]?.jsonPrimitive?.content)
+        assertEquals(1, jellyfin.requests.count { it.url.encodedPath == "/Startup/User" && it.method == "POST" })
+        assertTrue(done.toString().contains("hunter2").not())
+        assertTrue(
+            jellyfin.requests
+                .filter {
+                    it.url.encodedPath.startsWith("/Startup")
+                }.none { it.headers["Authorization"].orEmpty().contains("Token=") },
+        )
+    }
+
+    @Test
+    fun `nothing is sent while the name is blank or the two passwords differ`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("a")
+        vm.startup.account.onConfirmation("b")
+        vm.startup.account.save()
+        vm.startup.account.onConfirmation("a")
+        vm.startup.account.onName("  ")
+        vm.startup.account.save()
+        assertNull(jellyfin.savedStartupUser)
+        assertTrue((vm.state.value as UiState.Startup).phase.let { it is StartupPhase.Account && !it.busy })
+    }
+
+    @Test
+    fun `a refused account keeps the step and what was typed, and the password out of the text of the step`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.account.onConfirmation("hunter2")
+        jellyfin.status["/Startup/User"] = 500
+        vm.startup.account.save()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Account)?.error != null }.phase as StartupPhase.Account
+        assertEquals(SetupError.Generic, step.error)
+        assertEquals("hunter2", step.password)
+        assertTrue(!step.toString().contains("hunter2"))
+    }
+
+    @Test
+    fun `leaving the wizard drops the password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.back()
+        assertTrue(!vm.await<UiState.SignIn>().toString().contains("hunter2"))
+        assertTrue(vm.state.value !is UiState.Startup)
+    }
+
     @Test
     fun `a server that sends no name gets no name field, and is sent back without one`() {
         jellyfin.startupWizardCompleted = false
@@ -233,7 +309,7 @@ class JellyfinViewModelTest {
         assertTrue(!vm.toStartup().configuration.hasServerName)
         vm.startup.onMetadataCountry("GB")
         vm.startup.save()
-        vm.await<UiState.Startup> { it.phase == StartupPhase.Saved }
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Account }
         assertTrue("ServerName" !in jellyfin.savedStartupConfiguration.orEmpty())
     }
 

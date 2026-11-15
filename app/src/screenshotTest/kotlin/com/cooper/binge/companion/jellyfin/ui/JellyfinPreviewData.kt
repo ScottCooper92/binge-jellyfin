@@ -100,6 +100,19 @@ val previewStartupSaving = previewStartup.copy(phase = previewStartupStep(busy =
 
 val previewStartupRefused = previewStartup.copy(phase = previewStartupStep(error = SetupError.Generic))
 
+val previewStartupAccount = previewStartup.copy(phase = StartupPhase.Account(name = "root"))
+
+val previewStartupAccountFilled = previewStartup.copy(phase = StartupPhase.Account("sam", "hunter2", "hunter2"))
+
+val previewStartupAccountMismatch = previewStartup.copy(phase = StartupPhase.Account("sam", "hunter2", "hunter"))
+
+val previewStartupAccountSaving = previewStartup.copy(phase = StartupPhase.Account("sam", "hunter2", "hunter2", busy = true))
+
+val previewStartupAccountRefused =
+    previewStartup.copy(
+        phase = StartupPhase.Account("sam", "hunter2", "hunter2", error = SetupError.Generic),
+    )
+
 val previewStartupLoading = previewStartup.copy(phase = StartupPhase.Loading)
 
 val previewStartupFailed = previewStartup.copy(phase = StartupPhase.Failed(ConsoleFailure.Unreachable))

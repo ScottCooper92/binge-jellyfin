@@ -170,6 +170,12 @@ class FakeJellyfin : Dispatcher() {
     var startupConfiguration =
         """{"ServerName":"truenas","UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}"""
 
+    /** What `/Startup/FirstUser` suggests as the first account's name. */
+    var startupFirstUser = """{"Name":"root","Password":""}"""
+
+    /** The body of the last `POST /Startup/User`, or null before one. */
+    var savedStartupUser: String? = null
+
     /** The body of the last `POST /Startup/Configuration`, or null before one. */
     var savedStartupConfiguration: String? = null
     var quickConnectApproved = false
@@ -733,6 +739,11 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/Startup/Configuration" -> json(startupConfiguration)
+            path == "/Startup/FirstUser" -> json(startupFirstUser)
+            path == "/Startup/User" && request.method == "POST" -> {
+                savedStartupUser = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
                 val passwordless = body["Username"].toString() == "\"Kid\"" && body["Pw"].toString() == "\"\""

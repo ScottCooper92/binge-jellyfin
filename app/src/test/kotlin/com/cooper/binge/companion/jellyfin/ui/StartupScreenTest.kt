@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -107,6 +108,29 @@ class StartupScreenTest {
         show(StartupPhase.Failed(ConsoleFailure.Unreachable), StartupActions(onRetry = { calls += "retry" }))
         compose.onNodeWithText("Try again").performClick()
         assertEquals(listOf("retry"), calls)
+    }
+
+    @Test
+    fun `the account step shows the fields, and Create account asks to send them once they agree`() {
+        val calls = mutableListOf<String>()
+        show(StartupPhase.Account("sam", "hunter2", "hunter2"), StartupActions(onSaveAccount = { calls += "save" }))
+        compose.onNodeWithText("Create your account").assertIsDisplayed()
+        compose.onNodeWithText("Password again").assertIsDisplayed()
+        compose.onNodeWithText("Create account").performClick()
+        assertEquals(listOf("save"), calls)
+    }
+
+    @Test
+    fun `two passwords that differ say so, and Create account is off`() {
+        show(StartupPhase.Account("sam", "hunter2", "hunter"))
+        compose.onNodeWithText("The passwords don’t match.").assertIsDisplayed()
+        compose.onNodeWithText("Create account").assertIsNotEnabled()
+    }
+
+    @Test
+    fun `a blank name turns Create account off`() {
+        show(StartupPhase.Account("", "", ""))
+        compose.onNodeWithText("Create account").assertIsNotEnabled()
     }
 
     @Test

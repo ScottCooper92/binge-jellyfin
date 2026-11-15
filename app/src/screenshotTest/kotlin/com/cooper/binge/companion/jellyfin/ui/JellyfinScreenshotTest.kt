@@ -111,6 +111,33 @@ class JellyfinScreenshotTest {
     fun startup() = JellyfinRoot(previewStartup, Actions())
 
     @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun startupAccount() = JellyfinRoot(previewStartupAccountFilled, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountEmpty() = JellyfinRoot(previewStartupAccount, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountMismatch() = JellyfinRoot(previewStartupAccountMismatch, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountSaving() = JellyfinRoot(previewStartupAccountSaving, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountRefused() = JellyfinRoot(previewStartupAccountRefused, Actions())
+
+    @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun startupNoName() = JellyfinRoot(previewStartupNoName, Actions())
