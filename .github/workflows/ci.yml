@@ -97,6 +97,7 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
           SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
+          set -o pipefail
           all() {
             printf 'product=true\nscreens=true\nrelease=true\n' >> "$GITHUB_OUTPUT"
             echo "$1: running everything." >> "$GITHUB_STEP_SUMMARY"
@@ -343,6 +344,10 @@ jobs:
           [ "$PINS" = success ] || [ "$PINS" = skipped ] || exit 1
           [ "$ACTIONLINT" = success ] || [ "$ACTIONLINT" = skipped ] || exit 1
           [ "$CHANGES" = success ] || exit 1
+          # An empty or odd answer is a classifier that failed, not a deliberate skip.
+          for answer in "$RUN_PRODUCT" "$RUN_SCREENS" "$RUN_RELEASE"; do
+            [ "$answer" = true ] || [ "$answer" = false ] || exit 1
+          done
           # wanted <result> <whether changes said to run it>
           wanted() {
             if [ "$2" = true ]; then [ "$1" = success ]; else [ "$1" = skipped ]; fi
