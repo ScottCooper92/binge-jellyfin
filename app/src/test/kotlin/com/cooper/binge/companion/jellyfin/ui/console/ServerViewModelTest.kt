@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
+import com.cooper.binge.companion.jellyfin.server.StorageKind
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -58,6 +59,54 @@ class ServerViewModelTest {
             ServerInfo("truenas", "10.11.6", "http://192.168.1.10:8096", "X64", "Linux", false, true, true),
             viewModel().ready().info,
         )
+    }
+
+    @Test
+    fun `reads the server's paths, and a path it does not send is empty`() {
+        jellyfin.systemInfo =
+            jellyfin.systemInfo.dropLast(1) +
+            ""","CachePath":"/cache","ProgramDataPath":"/config","LogPath":"/config/log","WebPath":"/web"}"""
+        val paths = viewModel().ready().info.paths
+        assertEquals("/cache", paths.cache)
+        assertEquals("/config", paths.programData)
+        assertEquals("/config/log", paths.logs)
+        assertEquals("/web", paths.web)
+        assertEquals("", paths.transcodes)
+        assertEquals("", paths.metadata)
+    }
+
+    @Test
+    fun `reads each folder's space where the server has the report, leaving out what it cannot read`() {
+        val storage = made(ServerViewModel(connection, storageAvailable = true)).ready().storage!!
+        assertEquals(listOf(StorageKind.ProgramData, StorageKind.Cache, StorageKind.Logs), storage.system.map { it.first })
+        // A folder with a path and no sizes is kept, with no bar to draw.
+        assertNull(
+            storage.system
+                .first { it.first == StorageKind.Logs }
+                .second.usedFraction,
+        )
+        val cache = storage.system.first { it.first == StorageKind.Cache }.second
+        assertEquals(100L, cache.totalBytes)
+        assertEquals(0.95f, cache.usedFraction!!, 0.001f)
+        assertEquals("zfs", cache.type)
+        assertEquals(listOf("Movies", "Empty"), storage.libraries.map { it.name })
+        assertEquals(
+            listOf("/media/movies"),
+            storage.libraries
+                .first()
+                .folders
+                .map { it.path },
+        )
+    }
+
+    @Test
+    fun `a server without the report is not asked for it, and one whose report fails still shows its info`() {
+        assertNull(viewModel().ready().storage)
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/System/Info/Storage" })
+        jellyfin.status["/System/Info/Storage"] = 500
+        val ready = made(ServerViewModel(connection, storageAvailable = true)).ready()
+        assertNull(ready.storage)
+        assertEquals("truenas", ready.info.name)
     }
 
     @Test

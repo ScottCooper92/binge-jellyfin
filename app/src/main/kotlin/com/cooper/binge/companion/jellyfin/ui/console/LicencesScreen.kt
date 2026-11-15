@@ -20,6 +20,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -97,8 +99,12 @@ private fun LicenceList(
         contentPadding = inner,
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
     ) {
-        itemsIndexed(entries.chunked(LICENCE_GROUP_SIZE), key = { index, _ -> index }) { _, group ->
-            ItemGroup(title = null, rows = group.map { it.toRow(unspecified, onOpenWebsite) })
+        itemsIndexed(entries.chunked(LICENCE_GROUP_SIZE), key = { index, _ -> index }) { index, group ->
+            ItemGroup(
+                title = null,
+                rows = group.map { it.toRow(unspecified, onOpenWebsite) },
+                modifier = Modifier.layoutAnchorIf(index == 0, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+            )
         }
     }
 }

@@ -4,10 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.BatteryAlert
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Category
-import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
@@ -27,6 +25,7 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsApplications
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewModule
@@ -142,6 +141,23 @@ internal val settingsIndex: List<SettingEntry> =
         page(ConsolePage.Backups, R.string.backups_title, Icons.Outlined.Backup, R.string.advanced_title),
         page(ConsolePage.Advanced, R.string.advanced_title, Icons.Outlined.Build, R.string.advanced_title),
         page(ConsolePage.Server, R.string.server_title, Icons.Outlined.SettingsApplications, R.string.advanced_title, R.string.kw_restart),
+        setting(
+            ConsolePage.Server,
+            R.string.server_storage,
+            Icons.Outlined.Storage,
+            R.string.advanced_title,
+            R.string.server_title,
+            R.string.kw_storage,
+            shown = { profile, _ -> profile.hasStorageInfo },
+        ),
+        setting(
+            ConsolePage.Server,
+            R.string.server_paths,
+            Icons.Outlined.Folder,
+            R.string.advanced_title,
+            R.string.server_title,
+            R.string.kw_paths,
+        ),
         // Settings on them.
         setting(
             ConsolePage.Libraries,
@@ -268,30 +284,7 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_group_app,
             R.string.settings_group_app,
             R.string.kw_notifications,
-        ),
-        setting(
-            ConsolePage.ThisApp,
-            R.string.notifications_interval,
-            Icons.Outlined.Notifications,
-            R.string.settings_group_app,
-            R.string.settings_group_app,
-            R.string.kw_notifications,
-        ),
-        setting(
-            ConsolePage.ThisApp,
-            R.string.notifications_battery,
-            Icons.Outlined.BatteryAlert,
-            R.string.settings_group_app,
-            R.string.settings_group_app,
-            R.string.kw_battery,
-        ),
-        setting(
-            ConsolePage.ThisApp,
-            R.string.tip_row,
-            Icons.Outlined.Coffee,
-            R.string.settings_group_app,
-            R.string.settings_group_app,
-            R.string.kw_tip,
+            shown = { _, account -> account.isAdministrator },
         ),
         page(ConsolePage.Licences, R.string.licences_title, Icons.Outlined.Description, R.string.settings_group_app),
     )
@@ -348,6 +341,6 @@ private fun wordScore(
     when {
         label.startsWith(word) -> SCORE_LABEL_STARTS
         label.split(' ').any { it.startsWith(word) } -> SCORE_WORD_STARTS
-        other.contains(word) -> SCORE_OTHER
+        other.split(' ').any { it.startsWith(word) } -> SCORE_OTHER
         else -> 0
     }

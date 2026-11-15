@@ -25,6 +25,8 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
@@ -92,6 +94,7 @@ internal fun PluginPage(
         item {
             ItemGroup(
                 title = null,
+                modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                 rows =
                     listOfNotNull(
                         ListItem(
