@@ -162,6 +162,11 @@ as binge-seerr's TV is.
   administrator that is a page behind an avatar in the home's top bar, so the home keeps the server and Administration. For
   everyone else it is the home itself, inline, with Sign out last. Both come from the same composable (`AccountGroup`), so they
   cannot drift. A new page of the user's own goes in that group, not in a group of its own.
+- **Settings search.** The home's search field finds a page or a setting by name and opens its page (`ui/search/SettingsIndex.kt`).
+  A new page or setting adds its line to `settingsIndex`, with its section, the page it is on and, where people would look for it
+  by another word, a keywords string in both languages. A test holds that every page has an entry. The search lists only what
+  `ConsolePage.available` allows. A setting its page hides on some servers or accounts (a row behind `takeIf { profile.has… }`)
+  carries the same gate as `shown` on its entry, or the search would offer a setting the page does not show.
 - **For everyone:** approving a Quick Connect code another device shows, Playback (their languages and
   playback switches), the Home screen, their password, and their own active sessions.
 - **For an admin:** every session, libraries and scans, scheduled tasks, activity, devices, users,
@@ -271,6 +276,12 @@ CI runs the same tasks as four jobs in parallel (`checks`, `tests`, `screenshots
 `hold`, and `actionlint`, which lints the workflows and is skipped on the nightly schedule. A last
 job, `build`, is green only if all of them are. It is the check branch protection requires, and the
 one the bots read. `ci.yml` explains the split.
+
+On a pull request a `changes` job runs first and `build` reads its answers: a docs-only diff skips every Gradle job, a diff
+that cannot move a frame skips `screenshots`, and `release` runs only when something R8 reads changed. The rules are the
+lists in `.github/scripts/classify-changes.sh`, tested by `classify-changes.test.sh`. For the Gradle jobs and `screenshots` a
+path in no skip list runs the job. `release` is the reverse, an allow-list: a path runs it only if `release_input` names it, so a
+new R8 input (a source set, assets, a `.pro` file) is added there or the PR skips R8. Push and the nightly run everything.
 
 ### Screenshot frames
 

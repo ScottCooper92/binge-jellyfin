@@ -14,6 +14,7 @@ import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
+import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */
 class JellyfinScreenshotTest {
@@ -273,6 +274,26 @@ class JellyfinScreenshotTest {
     @Composable
     fun notificationsInterval() =
         Surface { IntervalChoices(NotificationSettings(enabled = true, intervalMinutes = 120), Actions(), close = {}) }
+
+    /** The settings search before a query, with results (each with where it is) and with none. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchPrompt() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {})
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchResults() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "port")
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchNoMatch() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "zzz")
 
     /** The This app page with the tip jar priced, so its row shows. */
     @PreviewTest

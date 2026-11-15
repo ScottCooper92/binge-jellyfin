@@ -92,6 +92,9 @@ enum class ConsolePage {
 
     /** This app's own preferences: what it reports, feedback, and About. For everyone. */
     ThisApp,
+
+    /** Finds a setting by name and opens its page. For everyone: it lists only what the user may open. */
+    Search,
     ;
 
     /**
@@ -106,7 +109,7 @@ enum class ConsolePage {
             ApproveCode -> profile.quickConnect
             Playback, HomeLayout, ProfilePicture -> account.canEditPreferences
             Password -> account.hasLocalPassword
-            NowPlaying, Licences, ThisApp -> true
+            NowPlaying, Licences, ThisApp, Search -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
             LiveTv -> account.canManageLiveTv
