@@ -4,8 +4,10 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.BatteryAlert
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
@@ -165,14 +168,6 @@ internal val settingsIndex: List<SettingEntry> =
         ),
         setting(
             ConsolePage.Transcoding,
-            R.string.transcoding_tonemapping_enable,
-            Icons.Outlined.Memory,
-            R.string.settings_server,
-            R.string.transcoding_title,
-            R.string.kw_tonemapping,
-        ),
-        setting(
-            ConsolePage.Transcoding,
             R.string.transcoding_hevc,
             Icons.Outlined.Memory,
             R.string.settings_server,
@@ -257,6 +252,38 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_group_app,
             R.string.settings_group_app,
             R.string.kw_feedback,
+        ),
+        setting(
+            ConsolePage.ThisApp,
+            R.string.notifications_switch,
+            Icons.Outlined.Notifications,
+            R.string.settings_group_app,
+            R.string.settings_group_app,
+            R.string.kw_notifications,
+        ),
+        setting(
+            ConsolePage.ThisApp,
+            R.string.notifications_interval,
+            Icons.Outlined.Notifications,
+            R.string.settings_group_app,
+            R.string.settings_group_app,
+            R.string.kw_notifications,
+        ),
+        setting(
+            ConsolePage.ThisApp,
+            R.string.notifications_battery,
+            Icons.Outlined.BatteryAlert,
+            R.string.settings_group_app,
+            R.string.settings_group_app,
+            R.string.kw_battery,
+        ),
+        setting(
+            ConsolePage.ThisApp,
+            R.string.tip_row,
+            Icons.Outlined.Coffee,
+            R.string.settings_group_app,
+            R.string.settings_group_app,
+            R.string.kw_tip,
         ),
         page(ConsolePage.Licences, R.string.licences_title, Icons.Outlined.Description, R.string.settings_group_app),
     )
