@@ -64,6 +64,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** What `/Users/Public` answers: the accounts the server lists on its login screen. */
+    var publicUsers = "[]"
+
     /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
     var failsTheMissingIdCount = false
 
@@ -690,9 +693,11 @@ class FakeJellyfin : Dispatcher() {
             }
             path == "/System/Info/Public" ->
                 json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":true}""")
+            path == "/Users/Public" -> json(publicUsers)
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
-                if (body["Pw"].toString() == "\"right\"") signedIn() else MockResponse(code = 401)
+                val passwordless = body["Username"].toString() == "\"Kid\"" && body["Pw"].toString() == "\"\""
+                if (body["Pw"].toString() == "\"right\"" || passwordless) signedIn() else MockResponse(code = 401)
             }
             path == "/QuickConnect/Enabled" -> json(quickConnectEnabled.toString())
             path == "/QuickConnect/Initiate" -> json("""{"Secret":"qc-secret","Code":"123456"}""")

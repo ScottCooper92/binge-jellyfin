@@ -11,6 +11,7 @@
     <string name="setup_try_demo">Probar la demo</string>
     <string name="setup_change">Cambiar</string>
     <string name="setup_sign_in_title">Iniciar sesión</string>
+    <string name="setup_pick_user">O elige tu cuenta</string>
     <string name="setup_username">Nombre de usuario</string>
     <string name="setup_password">Contraseña</string>
     <string name="setup_sign_in">Iniciar sesión</string>

@@ -26,6 +26,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectExpired
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectOff
 import com.cooper.binge.companion.jellyfin.ui.previewSignIn
+import com.cooper.binge.companion.jellyfin.ui.previewSignInUsers
 import com.cooper.binge.companion.jellyfin.ui.previewSignInWrongPassword
 import com.cooper.binge.companion.jellyfin.ui.previewSignedIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
@@ -101,6 +102,12 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvStressPreviews
     @Composable
     fun password() = TvSignInPage(previewSignIn, Actions(), startWithPassword = true)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun passwordWithUsers() = TvSignInPage(previewSignInUsers, Actions(), startWithPassword = true)
 
     @PreviewTest
     @JellyfinTvScreenPreviews
