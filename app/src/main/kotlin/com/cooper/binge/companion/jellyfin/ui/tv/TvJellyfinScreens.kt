@@ -7,7 +7,6 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -28,7 +27,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -317,13 +315,13 @@ private fun ColumnScope.TvQuickConnectPanel(
     )
 }
 
-/** A listed account's picture in a circle as tall as the button beside it, or its initials where it has none. */
+/** A listed account's picture in a circle at the size the design system gives an avatar in a button, or its initials where it has none. */
 @Composable
-private fun TvUserPicture(
+internal fun TvUserPicture(
     name: String,
     picture: Bitmap?,
 ) {
-    val size = dimensionResource(TvR.dimen.tv_button_height)
+    val size = dimensionResource(TvR.dimen.tv_button_avatar)
     if (picture == null) {
         BingeTvInitialsAvatar(name = name, size = size)
     } else {
@@ -346,22 +344,17 @@ private fun ColumnScope.TvPasswordPanel(
     val passwordFocus = remember { FocusRequester() }
     // The server's listed accounts, one press each; a name fills the username and the remote moves on to the password.
     state.publicUsers.forEach { user ->
-        // The picture (or the initials) sits beside the button, not in it: the design system's button takes an icon only. It is
-        // decoration, so the remote still lands on one control per account.
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(TvR.dimen.tv_button_icon_gap)),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TvUserPicture(user.name, state.publicPictures[user.id])
-            TvButton(
-                label = user.name,
-                onClick = {
-                    actions.onPickUser(user)
-                    if (user.hasPassword) passwordFocus.requestFocus()
-                },
-                enabled = !state.busy,
-            )
-        }
+        // The picture (or the initials) sits inside the button, in its leading slot: decoration, so the button's label stays its
+        // name and the remote lands on one control per account.
+        TvButton(
+            label = user.name,
+            onClick = {
+                actions.onPickUser(user)
+                if (user.hasPassword) passwordFocus.requestFocus()
+            },
+            enabled = !state.busy,
+            leadingContent = { TvUserPicture(user.name, state.publicPictures[user.id]) },
+        )
     }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(TvR.dimen.tv_two_pane_action_gap))) {
         TvTextField(
