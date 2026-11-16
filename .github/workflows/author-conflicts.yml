@@ -33,10 +33,11 @@ jobs:
       (github.event_name == 'workflow_dispatch' ||
        (github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.head_branch == github.event.repository.default_branch))
-    uses: ScottCooper92/binge-ci/.github/workflows/author-conflicts.yml@41179b5c9b9a67d67c4e33d790ea8e44aa165ac9 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/author-conflicts.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
     with:
       dispatched: ${{ github.event_name == 'workflow_dispatch' }}
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
+      private_submodules: homelab-core
       conflict_rules: |
         Two things are never yours to arbitrate.
 
