@@ -65,7 +65,6 @@ jobs:
     with:
       private_submodules: homelab-core,binge-design-system,binge-ci
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
-      private_submodules: homelab-core
       maintainer_handle: ScottCooper92
       # jvm: this repo's ci.yml is setup-java and setup-gradle and nothing else. The Android
       # SDK is preinstalled on the hosted runner image.

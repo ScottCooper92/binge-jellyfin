@@ -66,7 +66,6 @@ jobs:
     with:
       private_submodules: homelab-core,binge-design-system,binge-ci
       dispatch_pr: ${{ inputs.pr }}
-      private_submodules: homelab-core
       auto_merge: true
       # Stacked PRs land here, and squash rewrites the parent's commits into a new SHA. Once the
       # parent merges, every child holds commits that are nowhere in main's history and needs a

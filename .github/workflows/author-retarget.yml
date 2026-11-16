@@ -39,7 +39,6 @@ jobs:
     with:
       private_submodules: homelab-core,binge-design-system,binge-ci
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
-      private_submodules: homelab-core
     secrets:
       AUTHOR_APP_ID: ${{ secrets.AUTHOR_APP_ID }}
       AUTHOR_APP_PRIVATE_KEY: ${{ secrets.AUTHOR_APP_PRIVATE_KEY }}

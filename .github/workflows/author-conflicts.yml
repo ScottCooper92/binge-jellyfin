@@ -38,7 +38,6 @@ jobs:
       private_submodules: homelab-core,binge-design-system,binge-ci
       dispatched: ${{ github.event_name == 'workflow_dispatch' }}
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
-      private_submodules: homelab-core
       conflict_rules: |
         Two things are never yours to arbitrate.
 

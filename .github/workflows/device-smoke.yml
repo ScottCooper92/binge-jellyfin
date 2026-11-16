@@ -63,7 +63,6 @@ jobs:
       private_submodules: homelab-core,binge-design-system,binge-ci
       ref: ${{ github.event.inputs.ref }}
       submodules: recursive
-      private_submodules: homelab-core
       device: smokeAtdApi34
       api_level: '34'
       system_image_source: aosp-atd
