@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -95,6 +96,25 @@ class ChannelMappingsScreenTest {
         compose.onNode(hasSetTextAction()).performTextInput("itv2")
         compose.onNodeWithText("104 ITV2").assertIsDisplayed()
         compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a filter that matches no tuner channel says so, and clearing it brings the rows back`() {
+        show(ChannelMappingsUiState.Ready(options, selected = "p3"))
+        compose.onNode(hasSetTextAction()).performTextInput("zzz")
+        compose.onNodeWithText("No tuner channels match").assertIsDisplayed()
+        compose.onNodeWithText("103 ITV HD").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Clear search").performClick()
+        compose.onNodeWithText("No tuner channels match").assertDoesNotExist()
+        compose.onNodeWithText("103 ITV HD").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w900dp-h900dp")
+    fun `beside the list a filter that matches nothing says so`() {
+        show(ChannelMappingsUiState.Ready(options, selected = "p3"))
+        compose.onNode(hasSetTextAction()).performTextInput("zzz")
+        compose.onNodeWithText("No tuner channels match").assertIsDisplayed()
     }
 
     @Test

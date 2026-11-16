@@ -198,6 +198,7 @@ private fun TunerChannelSheet(
         onSelect = actions.onPick,
         onDismissRequest = close,
         filterPlaceholder = stringResource(R.string.channel_mappings_search),
+        noMatchLabel = stringResource(R.string.channel_mappings_no_match),
     )
 }
 
@@ -208,6 +209,7 @@ internal fun TunerChannelPane(
     channel: ProviderChannel,
     actions: ChannelMappingsActions,
     padding: PaddingValues,
+    initialQuery: String = "",
 ) {
     Column(Modifier.fillMaxWidth()) {
         Text(
@@ -227,6 +229,8 @@ internal fun TunerChannelPane(
                 choices = tunerChoices(state, channel),
                 selected = state.pairedTuner(channel),
                 filterPlaceholder = stringResource(R.string.channel_mappings_search),
+                noMatchLabel = stringResource(R.string.channel_mappings_no_match),
+                initialQuery = initialQuery,
                 modifier = Modifier.padding(padding),
                 onSelect = actions.onPick,
             )

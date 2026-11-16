@@ -17,6 +17,8 @@
     <string name="startup_title">Configura tu servidor</string>
     <string name="startup_body">Elige un nombre y los idiomas que usa Jellyfin. Puedes cambiarlos más tarde en los ajustes del servidor.</string>
     <string name="startup_filter">Buscar</string>
+    <string name="startup_no_match_languages">Ningún idioma coincide</string>
+    <string name="startup_no_match_countries">Ningún país coincide</string>
     <string name="startup_save">Guardar</string>
     <string name="startup_finish_title">Acceso remoto</string>
     <string name="startup_finish_body">Elige si las aplicaciones fuera de tu red doméstica pueden llegar a este servidor. Puedes cambiarlo más tarde en los ajustes del servidor.</string>
@@ -1329,6 +1331,7 @@
     <string name="channel_mappings_pick_title">Canal del sintonizador para %1$s</string>
     <string name="channel_mappings_pick_placeholder">Elige un canal para escoger su canal del sintonizador.</string>
     <string name="channel_mappings_search">Buscar canales del sintonizador</string>
+    <string name="channel_mappings_no_match">Ningún canal del sintonizador coincide</string>
     <string name="channel_mappings_no_channels">Estos datos de guía no listan canales</string>
     <string name="channel_mappings_no_tuner_channels">Tus sintonizadores no ofrecen canales</string>
     <string name="channel_mappings_paired_with">Asignado a %1$s</string>
