@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     The Android TV home-screen banner, 320x180 at xhdpi as the platform asks for, drawn as a vector so the
-    companion's mark is the one source for both the icon and the banner. The group is the launcher
-    foreground's own geometry (a 108 viewport) scaled 1.625 and centred on 160,90.
+    companion's mark is the one source for both the icon and the banner. The first group is the launcher
+    foreground's own geometry (a 108 viewport) scaled 1.2, with the ring centred on 64,90. The second is
+    the wordmark "Ephyra" (Android TV and Play ask for the app's name on the banner), as outlines of
+    Outfit Bold (SIL OFL 1.1; see ASSETS.md) since a vector cannot use a font. Mark and word are one
+    pair, centred on the tile inside the 5% safe area (16 px at the sides, 9 px top and bottom).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
@@ -14,10 +17,10 @@
         android:fillColor="#1F1228"
         android:pathData="M0,0h320v180h-320z" />
     <group
-        android:scaleX="1.625"
-        android:scaleY="1.625"
-        android:translateX="72.25"
-        android:translateY="2.25">
+        android:scaleX="1.2"
+        android:scaleY="1.2"
+        android:translateX="-0.8"
+        android:translateY="25.2">
         <path
             android:pathData="M54,22 A32,32 0 1,0 54,86 A32,32 0 1,0 54,22 Z"
             android:strokeColor="#AA5CC3"
@@ -59,5 +62,15 @@
             android:strokeColor="#AA5CC3"
             android:strokeWidth="3.8"
             android:strokeLineCap="round" />
+    </group>
+    <!-- The wordmark: 0.55 of a 100-unit em, baseline at y 109.4, ink from x 120 to 298. -->
+    <group
+        android:scaleX="0.55"
+        android:scaleY="0.55"
+        android:translateX="116.3"
+        android:translateY="109.4">
+        <path
+            android:fillColor="#FFCC9BDD"
+            android:pathData="M6.75 0V-70.6H22.5V0ZM18.8 0V-13.55H57.5V0ZM18.8 -29.45V-42.6H53.95V-29.45ZM18.8 -57.05V-70.6H56.95V-57.05ZM94.9 1Q89.95 1 85.85 -0.9Q81.75 -2.8 79.17 -6.15Q76.6 -9.5 76.2 -13.8V-34.3Q76.6 -38.6 79.2 -42.08Q81.8 -45.55 85.89 -47.58Q89.99 -49.6 94.9 -49.6Q101.8 -49.6 107.15 -46.3Q112.5 -43 115.55 -37.27Q118.6 -31.55 118.6 -24.25Q118.6 -17 115.55 -11.3Q112.5 -5.6 107.15 -2.3Q101.8 1 94.9 1ZM66.9 20.5V-48.6H82.2V-36.12L79.65 -24.3L81.95 -12.5V20.5ZM92.13 -12.8Q95.37 -12.8 97.83 -14.28Q100.3 -15.75 101.7 -18.35Q103.1 -20.96 103.1 -24.32Q103.1 -27.7 101.7 -30.28Q100.3 -32.85 97.85 -34.33Q95.39 -35.8 92.2 -35.8Q89 -35.8 86.53 -34.34Q84.05 -32.88 82.68 -30.29Q81.3 -27.7 81.3 -24.31Q81.3 -20.95 82.65 -18.35Q84 -15.75 86.47 -14.28Q88.95 -12.8 92.13 -12.8ZM158.5 0V-27.65Q158.5 -31.5 156.15 -33.83Q153.8 -36.15 150.16 -36.15Q147.69 -36.15 145.77 -35.1Q143.85 -34.05 142.77 -32.12Q141.7 -30.2 141.7 -27.65L135.75 -30.55Q135.75 -36.3 138.18 -40.58Q140.6 -44.85 144.89 -47.23Q149.19 -49.6 154.77 -49.6Q160.45 -49.6 164.75 -47.23Q169.05 -44.85 171.43 -40.7Q173.8 -36.55 173.8 -31.1V0ZM126.4 0V-72.6H141.7V0ZM198.55 0.25 178.6 -48.6H195.05L207.75 -9.85H201.7L214.7 -48.6H231.15L210.35 0.25ZM186.05 20.5 200.65 -11 210.35 0.25 201.75 20.5ZM237 0V-48.6H252.3V0ZM252.3 -26.65 245.85 -31.65Q247.75 -40.2 252.3 -44.9Q256.85 -49.6 264.75 -49.6Q268.25 -49.6 270.93 -48.55Q273.6 -47.5 275.6 -45.3L266.5 -33.8Q265.5 -34.9 264.02 -35.48Q262.54 -36.05 260.6 -36.05Q256.8 -36.05 254.55 -33.71Q252.3 -31.38 252.3 -26.65ZM301.7 1Q295 1 289.73 -2.3Q284.45 -5.6 281.42 -11.3Q278.4 -17 278.4 -24.25Q278.4 -31.55 281.42 -37.27Q284.45 -43 289.73 -46.3Q295 -49.6 301.7 -49.6Q306.6 -49.6 310.55 -47.7Q314.5 -45.8 316.98 -42.45Q319.45 -39.1 319.8 -34.8V-13.8Q319.45 -9.5 317 -6.15Q314.55 -2.8 310.58 -0.9Q306.6 1 301.7 1ZM304.8 -12.8Q309.7 -12.8 312.7 -16.02Q315.7 -19.25 315.7 -24.3Q315.7 -27.7 314.35 -30.28Q313 -32.85 310.55 -34.33Q308.1 -35.8 304.85 -35.8Q301.65 -35.8 299.2 -34.33Q296.75 -32.85 295.32 -30.25Q293.9 -27.65 293.9 -24.3Q293.9 -20.95 295.3 -18.35Q296.7 -15.75 299.17 -14.28Q301.65 -12.8 304.8 -12.8ZM315.05 0V-13.05L317.35 -24.9L315.05 -36.65V-48.6H330.1V0Z" />
     </group>
 </vector>
