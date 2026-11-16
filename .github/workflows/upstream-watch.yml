@@ -1,0 +1,27 @@
+name: Upstream watch
+
+# Opens one issue for the newest new stable Jellyfin release, with a compatibility checklist.
+# Weekly, and by hand: run it from the Actions tab with `dry_run` on first to see what it would open.
+#
+# `docs/upstream.json` records the version last checked, without a leading v. A person edits it, in
+# the PR that closes the issue. The workflow never writes it.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Report what would be opened and open nothing
+        type: boolean
+        default: true
+  schedule:
+    - cron: '23 6 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    uses: ScottCooper92/binge-ci/.github/workflows/upstream-watch.yml@41179b5c9b9a67d67c4e33d790ea8e44aa165ac9 # v1
+    with:
+      upstreams: '[{"name":"jellyfin","repo":"jellyfin/jellyfin"}]'
+      dry_run: ${{ inputs.dry_run == true }}
