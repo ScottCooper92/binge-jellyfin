@@ -1,8 +1,12 @@
 package com.cooper.binge.companion.jellyfin.theme
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.tv.material3.Surface
+import androidx.tv.material3.SurfaceDefaults
 import com.binge.designsystem.theme.BingeBrand
 import com.binge.designsystem.theme.BingeExpressiveTheme
 import com.binge.designsystem.theme.DarkColorScheme
@@ -10,6 +14,7 @@ import com.binge.designsystem.theme.LightColorScheme
 import com.binge.designsystem.tv.theme.BingeTvTheme
 import com.binge.designsystem.tv.theme.toTvColorScheme
 import androidx.tv.material3.ColorScheme as TvColorScheme
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 
 private val Purple200 = Color(0xFFE3C6EE)
 private val Purple300 = Color(0xFFCC9BDD)
@@ -70,8 +75,23 @@ fun JellyfinTheme(content: @Composable () -> Unit) {
 /** [JellyfinDarkColorScheme] projected for the TV surface, which is dark-only like [BingeTvTheme]. */
 val JellyfinTvColorScheme: TvColorScheme = JellyfinDarkColorScheme.toTvColorScheme()
 
-/** [BingeTvTheme] wearing [JellyfinTvColorScheme], the TV counterpart of [JellyfinTheme]. */
+/**
+ * [BingeTvTheme] wearing [JellyfinTvColorScheme], the TV counterpart of [JellyfinTheme].
+ *
+ * The content sits on a transparent surface that gives it the light content colour. Without one, a `Text` with no colour of its
+ * own comes out near-black on a device, while a screenshot frame, which is drawn on a surface of its own, shows it light.
+ */
 @Composable
 fun JellyfinTvTheme(content: @Composable () -> Unit) {
-    BingeTvTheme(colorScheme = JellyfinTvColorScheme, content = content)
+    BingeTvTheme(colorScheme = JellyfinTvColorScheme) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            colors =
+                SurfaceDefaults.colors(
+                    containerColor = Color.Transparent,
+                    contentColor = TvMaterialTheme.colorScheme.onBackground,
+                ),
+            content = { content() },
+        )
+    }
 }

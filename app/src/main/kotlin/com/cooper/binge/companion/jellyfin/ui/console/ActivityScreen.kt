@@ -291,7 +291,7 @@ private fun ActivityEntry.row(
     )
 
 @Composable
-private fun Severity.tint(): Color? =
+internal fun Severity.tint(): Color? =
     when (this) {
         Severity.Error -> BingeSentiment.Negative.fill()
         Severity.Warning -> BingeSentiment.Caution.fill()

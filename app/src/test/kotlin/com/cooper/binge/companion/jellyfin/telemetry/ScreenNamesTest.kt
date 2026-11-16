@@ -23,6 +23,7 @@ class ScreenNamesTest {
         assertEquals("sign_in", ScreenNames.of(signIn, null))
         assertEquals("sign_in_quick_connect", ScreenNames.of(signIn.copy(quickConnectCode = "123456"), null))
         assertEquals("sign_in_quick_connect", ScreenNames.of(signIn.copy(gettingCode = true), null))
+        assertEquals("startup", ScreenNames.of(UiState.Startup("http://192.168.1.2:8096", server), null))
     }
 
     @Test

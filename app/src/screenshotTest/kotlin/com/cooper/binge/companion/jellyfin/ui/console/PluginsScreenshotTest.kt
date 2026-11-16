@@ -35,6 +35,45 @@ private val installedPlugins =
 private val version =
     PackageVersion("13.0.0.0", "Fixes the report on a slow disk.", "10.10.0.0", "Jellyfin Stable", "https://repo.example/stable.json")
 
+private val history =
+    CatalogPackage(
+        "g1",
+        "Playback Reporting",
+        "Reports who watched what.",
+        "Shows who watched what, and when, across every user.",
+        "jellyfin",
+        "General",
+        listOf(
+            version.copy(version = "14.0.0.0", targetAbi = "10.11.0.0", changelog = "Needs Jellyfin 10.11."),
+            version.copy(
+                timestamp = "2026-03-04T09:30:00Z",
+                changelog = "## 13.0\n\n* Fixes the report on a slow disk\n* **New:** export to CSV",
+            ),
+            version.copy(version = "12.0.0.0", targetAbi = "10.9.0.0", timestamp = "2025-11-20T18:00:00Z"),
+        ),
+    )
+
+private val richChangelog =
+    """
+    ## 14.0
+
+    ![A chart](https://tracker.example/chart.png)
+
+    * **New:** export to `CSV`
+      * Includes the user's name
+      * Skips hidden libraries
+    * Fixes the report on a slow disk
+
+    > Needs Jellyfin 10.11 or later.
+
+    | Report | Speed |
+    | --- | --- |
+    | Daily | Fast |
+    | Yearly | Slow |
+
+    See the [full notes](https://github.com/example/plugin/releases/tag/14.0).
+    """.trimIndent()
+
 private val catalogPackages =
     listOf(
         CatalogPackage(
@@ -136,11 +175,59 @@ class PluginsScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun catalogPackage() = Package("Playback Reporting", CatalogUiState.Ready(catalogPackages, server = server))
 
+    /** A package with several versions: the installed one marked, one built for a newer server shown but off. */
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun catalogVersions() =
+        Package(
+            "Playback Reporting",
+            CatalogUiState.Ready(
+                listOf(history),
+                setOf("Playback Reporting"),
+                mapOf(
+                    "Playback Reporting" to "13.0.0.0",
+                ),
+                server = server,
+            ),
+        )
+
+    /** One version's sheet: its changelog and Install. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun versionSheet() = Surface { VersionContent(history, history.versions[1], canInstall = true) {} }
+
+    /**
+     * A changelog that uses most of Markdown: headings, nested lists, a table, a quote, code and a link. Its image draws nothing, as the
+     * renderer has no loader, so nothing is fetched.
+     */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun versionRichChangelog() =
+        Surface { VersionContent(history, history.versions[0].copy(changelog = richChangelog), canInstall = true) {} }
+
+    /** The confirm before an older version goes over a newer one. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun versionOlder() = Surface { OlderVersionConfirm(history, history.versions[2], "13.0.0.0", {}, {}, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun catalogInstalling() =
         Package(
@@ -154,6 +241,8 @@ class PluginsScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
     @Composable
     fun catalogDone() =
         Package(

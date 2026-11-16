@@ -151,6 +151,8 @@ data class FetcherType(
     val type: String,
     val metadata: List<AvailableFetcher> = emptyList(),
     val images: List<AvailableFetcher> = emptyList(),
+    /** The image types the server lets a library of this item type fetch, with the limits it starts from. */
+    val imageSlots: List<ImageSlot> = emptyList(),
 ) {
     fun of(kind: FetcherKind): List<AvailableFetcher> = if (kind == FetcherKind.Metadata) metadata else images
 }
@@ -182,7 +184,9 @@ suspend fun JellyfinClient.availableProviders(kind: String): AvailableProviders 
     val types =
         answer.array("TypeOptions").mapNotNull { element ->
             val type = element as? JsonObject ?: return@mapNotNull null
-            type.string("Type")?.let { FetcherType(it, fetchers(type, "MetadataFetchers"), fetchers(type, "ImageFetchers")) }
+            type.string("Type")?.let {
+                FetcherType(it, fetchers(type, "MetadataFetchers"), fetchers(type, "ImageFetchers"), imageSlots(type))
+            }
         }
     return AvailableProviders(
         names("MetadataReaders"),
@@ -197,3 +201,12 @@ suspend fun JellyfinClient.availableProviders(kind: String): AvailableProviders 
 private const val HTTP_NOT_FOUND = 404
 
 internal fun jsonStrings(values: Collection<String>): JsonArray = JsonArray(values.map(::JsonPrimitive))
+
+/** The image types [type] offers and the limits a library has for each until it chooses: `SupportedImageTypes` and `DefaultImageOptions`. */
+private fun imageSlots(type: JsonObject): List<ImageSlot> {
+    val defaults = type.array("DefaultImageOptions").filterIsInstance<JsonObject>()
+    return type.array("SupportedImageTypes").mapNotNull { (it as? JsonPrimitive)?.content }.map { name ->
+        val default = defaults.firstOrNull { it.string("Type").equals(name, ignoreCase = true) }
+        ImageSlot(name, default?.int("Limit") ?: 1, default?.int("MinWidth") ?: 0)
+    }
+}

@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
+import com.cooper.binge.companion.jellyfin.server.PluginStatus
+import com.cooper.binge.companion.jellyfin.server.ServerPlugin
+import com.cooper.binge.companion.jellyfin.server.compareVersions
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -83,6 +86,56 @@ class CatalogViewModelTest {
         assertEquals("5c0f1d6a1e8b4b5aa5d0c7f2b8e1d3a9", request.url.queryParameter("assemblyGuid"))
         assertEquals("https://repo.example/stable.json", request.url.queryParameter("repositoryUrl"))
     }
+
+    @Test
+    fun `a chosen version is installed instead of the newest, and is the installed one once it is done`() {
+        jellyfin.plugins = jellyfin.plugins.map { it.replace("AniDB", "Playback Reporting").replace("1.2.3.4", "13.0.0.0") }
+        val vm = made(CatalogViewModel(connection, server))
+        val ready = vm.ready()
+        assertEquals("13.0.0.0", ready.installedVersions["Playback Reporting"])
+        val pkg = ready.packages.first { it.name == "Playback Reporting" }
+        waitForSocket()
+        vm.install(pkg, pkg.versions.first { it.version == "12.0.0.0" })
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (installRequests().isEmpty()) kotlinx.coroutines.delay(20) } }
+        assertEquals("12.0.0.0", installRequests().single().url.queryParameter("version"))
+        assertEquals("https://repo.example/stable.json", installRequests().single().url.queryParameter("repositoryUrl"))
+        announce("PackageInstallationCompleted", "Playback Reporting")
+        assertEquals("12.0.0.0", vm.ready { it.outcomes.containsKey("Playback Reporting") }.installedVersions["Playback Reporting"])
+    }
+
+    @Test
+    fun `the installed version is the live entry, whatever order the server lists a superseded one in`() {
+        fun plugin(
+            version: String,
+            status: PluginStatus,
+        ) = ServerPlugin("id", "Playback Reporting", version, "", status, canUninstall = true, hasSettings = false)
+        val live = plugin("12.0.0.0", PluginStatus.Active)
+        val old = plugin("13.0.0.0", PluginStatus.Superseded)
+        assertEquals("12.0.0.0", installedVersions(listOf(live, old))["Playback Reporting"])
+        assertEquals("12.0.0.0", installedVersions(listOf(old, live))["Playback Reporting"])
+    }
+
+    @Test
+    fun `a version built for a newer server is refused, not sent`() {
+        val vm = made(CatalogViewModel(connection, server))
+        val pkg = vm.ready().packages.first { it.name == "Playback Reporting" }
+        vm.install(pkg, pkg.versions.first { it.version == "14.0.0.0" })
+        assertEquals(0, installRequests().size)
+        assertTrue(vm.ready().installing.isEmpty())
+    }
+
+    @Test
+    fun `versions are listed newest first by every part of their number`() {
+        val pkg = vm().ready().packages.first { it.name == "Playback Reporting" }
+        assertEquals(listOf("14.0.0.0", "13.0.0.0", "12.0.0.0"), pkg.history().map { it.version })
+        val parts = pkg.versions.first().copy(version = "13.0.0.1")
+        assertTrue(pkg.versions.first { it.version == "13.0.0.0" }.isOlderThan(parts.version))
+        assertFalse(parts.isOlderThan("13.0.0.1"))
+        assertEquals(0, compareVersions("1.2", "1.2.0.0"))
+        assertEquals(1, compareVersions("1.10.0.0", "1.9.0.0"))
+    }
+
+    private fun vm() = made(CatalogViewModel(connection, server))
 
     @Test
     fun `a package with no version built for this server is not installed`() {

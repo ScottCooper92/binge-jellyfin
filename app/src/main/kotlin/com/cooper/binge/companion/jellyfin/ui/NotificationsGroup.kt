@@ -29,6 +29,7 @@ import com.binge.designsystem.theme.fill
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.notifications.DEFAULT_POLL_INTERVAL_MINUTES
 import com.cooper.binge.companion.jellyfin.notifications.POLL_INTERVAL_CHOICES
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 
 /**
  * The notification group as the This app page shows it, for an administrator: whether the poll is on, how often it runs, whether
@@ -65,6 +66,7 @@ internal fun NotificationsGroup(
                     supportingMaxLines = 3,
                     toggled = settings.enabled,
                     onClick = { actions.onNotificationsEnabled(!settings.enabled) },
+                    key = SettingRows.THIS_APP_NOTIFICATIONS,
                 ),
                 ListItem(
                     icon = Icons.Outlined.NotificationsOff,

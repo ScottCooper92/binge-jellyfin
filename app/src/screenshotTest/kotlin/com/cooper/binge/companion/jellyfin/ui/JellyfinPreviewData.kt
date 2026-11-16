@@ -1,10 +1,18 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
+import com.cooper.binge.companion.jellyfin.server.Country
+import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.PublicUser
+import com.cooper.binge.companion.jellyfin.server.StartupConfiguration
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
+import com.cooper.binge.companion.jellyfin.server.UiLanguage
+import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -37,6 +45,92 @@ val previewEnterServerNotJellyfin = UiState.EnterServer(address = "192.168.1.30:
 val previewEnterServerGeneric = UiState.EnterServer(address = "192.168.1.20:8096", error = SetupError.Generic)
 
 val previewSignIn = UiState.SignIn(baseUrl = LAN, server = lanServer, username = "sam")
+
+val previewSetupIncomplete = previewSignIn.copy(server = lanServer.copy(startupWizardCompleted = false))
+
+val previewSignInUsers =
+    previewSignIn.copy(
+        username = "",
+        publicUsers =
+            listOf(
+                PublicUser("u1", "Mum", hasPassword = true),
+                PublicUser("u2", "Dad", hasPassword = true),
+                PublicUser("u3", "Kid", hasPassword = false),
+            ),
+    )
+
+/** Two of the three listed accounts have a picture (a flat colour is enough to tell it from the initials); Dad keeps his initials. */
+val previewSignInUsersPictures =
+    previewSignInUsers.copy(
+        publicPictures = mapOf("u1" to previewPicture(Color.rgb(0x2E, 0x7D, 0x32)), "u3" to previewPicture(Color.rgb(0xC6, 0x28, 0x28))),
+    )
+
+private fun previewPicture(color: Int): Bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
+
+private val setupServer = lanServer.copy(startupWizardCompleted = false)
+
+private fun previewStartupConfiguration(withName: Boolean = true) =
+    StartupConfiguration(
+        buildJsonObject {
+            if (withName) put("ServerName", "Living room")
+            put("UICulture", "en-GB")
+            put("MetadataCountryCode", "GB")
+            put("PreferredMetadataLanguage", "en")
+        },
+    )
+
+private fun previewStartupStep(
+    withName: Boolean = true,
+    busy: Boolean = false,
+    error: SetupError? = null,
+) = StartupPhase.Configuring(
+    configuration = previewStartupConfiguration(withName),
+    uiLanguages = listOf(UiLanguage("English (United Kingdom)", "en-GB"), UiLanguage("Español", "es")),
+    cultures = listOf(Culture("English", "en", listOf("eng")), Culture("Spanish", "es", listOf("spa"))),
+    countries = listOf(Country("GB", "United Kingdom"), Country("ES", "Spain")),
+    busy = busy,
+    error = error,
+)
+
+val previewStartup = UiState.Startup(LAN, setupServer, previewStartupStep())
+
+val previewStartupNoName = previewStartup.copy(phase = previewStartupStep(withName = false))
+
+val previewStartupSaving = previewStartup.copy(phase = previewStartupStep(busy = true))
+
+val previewStartupRefused = previewStartup.copy(phase = previewStartupStep(error = SetupError.Generic))
+
+val previewStartupAccount = previewStartup.copy(phase = StartupPhase.Account(name = "root"))
+
+val previewStartupAccountFilled = previewStartup.copy(phase = StartupPhase.Account("sam", "hunter2", "hunter2"))
+
+val previewStartupAccountMismatch = previewStartup.copy(phase = StartupPhase.Account("sam", "hunter2", "hunter"))
+
+val previewStartupAccountSaving = previewStartup.copy(phase = StartupPhase.Account("sam", "hunter2", "hunter2", busy = true))
+
+val previewStartupAccountRefused =
+    previewStartup.copy(
+        phase = StartupPhase.Account("sam", "hunter2", "hunter2", error = SetupError.Generic),
+    )
+
+val previewStartupAccountReason =
+    previewStartup.copy(
+        phase = StartupPhase.Account("sam", "hunter2", "hunter2", error = SetupError.Generic, reason = "Password must not be empty"),
+    )
+
+val previewStartupLoading = previewStartup.copy(phase = StartupPhase.Loading)
+
+val previewStartupFailed = previewStartup.copy(phase = StartupPhase.Failed(ConsoleFailure.Unreachable))
+
+val previewStartupFinish = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2"))
+
+val previewStartupFinishPorts = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", portMapping = true))
+
+val previewStartupFinishOff = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", remoteAccess = false))
+
+val previewStartupFinishSaving = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", busy = true))
+
+val previewStartupFinishRefused = previewStartup.copy(phase = StartupPhase.Finish("sam", "hunter2", error = SetupError.Generic))
 
 val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 

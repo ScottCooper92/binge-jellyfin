@@ -64,6 +64,13 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** What `/Users/ForgotPassword` answers, and the PIN `/Users/ForgotPassword/Pin` accepts. */
+    var forgotAnswer = """{"Action":"ContactAdmin"}"""
+    var forgotPin = "1234"
+
+    /** What `/Users/Public` answers: the accounts the server lists on its login screen. */
+    var publicUsers = "[]"
+
     /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
     var failsTheMissingIdCount = false
 
@@ -155,6 +162,28 @@ class FakeJellyfin : Dispatcher() {
     fun push(message: String) = sockets.forEach { it.send(message) }
 
     var quickConnectEnabled = true
+
+    /** What `/System/Info/Public` says of the server's first-run setup. */
+    var startupWizardCompleted = true
+
+    /** What `/Startup/Configuration` holds; a save replaces it. A server that sends no `ServerName` models an older one. */
+    var startupConfiguration =
+        """{"ServerName":"truenas","UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}"""
+
+    /** What `/Startup/FirstUser` suggests as the first account's name. */
+    var startupFirstUser = """{"Name":"root","Password":""}"""
+
+    /** The body of the last `POST /Startup/RemoteAccess`, or null before one. */
+    var savedStartupRemoteAccess: String? = null
+
+    /** Whether `POST /Startup/Complete` has been made; from then the Startup routes answer only an administrator, so a bare request is refused. */
+    var startupCompleted = false
+
+    /** The body of the last `POST /Startup/User`, or null before one. */
+    var savedStartupUser: String? = null
+
+    /** The body of the last `POST /Startup/Configuration`, or null before one. */
+    var savedStartupConfiguration: String? = null
     var quickConnectApproved = false
 
     /** Whether `/Users/Me` answers with an administrator's policy. */
@@ -259,6 +288,11 @@ class FakeJellyfin : Dispatcher() {
             """"EnableDecodingColorDepth12HevcRext":false,"H264Crf":23,"H265Crf":28,"MaxMuxingQueueSize":2048,""" +
             """"FutureOption":{"keep":"me"}}"""
 
+    /** The NFO configuration, as `/System/Configuration/xbmcmetadata` answers it and a save replaces it. */
+    var nfoConfiguration =
+        """{"UserId":null,"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":false,"EnablePathSubstitution":true,""" +
+            """"EnableExtraThumbsDuplication":false,"FutureOption":{"keep":"me"}}"""
+
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
     var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""
 
@@ -329,6 +363,9 @@ class FakeJellyfin : Dispatcher() {
             """{"Id":${6 - n},"Name":"Entry ${6 - n}","Type":"SessionStarted","Severity":"Information",""" +
                 """"Date":"2026-10-31T1$n:00:00Z","ShortOverview":"IP address: 10.0.0.$n"}"""
         }
+
+    /** Whether the activity log filters by `severity`, as Jellyfin 12 does. Off, it ignores the parameter, as an older server does. */
+    var activityFiltersSeverity = false
 
     /** `/System/Logs`: the log files, as the server lists them. */
     var logFiles: List<String> =
@@ -423,6 +460,14 @@ class FakeJellyfin : Dispatcher() {
     var systemInfo =
         """{"ServerName":"truenas","Version":"10.11.6","LocalAddress":"http://192.168.1.10:8096","SystemArchitecture":"X64",""" +
             """"OperatingSystemDisplayName":"Linux","HasUpdateAvailable":false,"HasPendingRestart":true,"CanSelfRestart":true}"""
+
+    /** `/System/Info/Storage`: the disk space of the server's folders, and of each library's. */
+    var systemStorage =
+        """{"ProgramDataFolder":{"Path":"/config","FreeSpace":400,"UsedSpace":100,"StorageType":"ext4","DeviceId":"a"},""" +
+            """"CacheFolder":{"Path":"/cache","FreeSpace":5,"UsedSpace":95,"StorageType":"zfs","DeviceId":"b"},""" +
+            """"LogFolder":{"Path":"/config/log"},"Libraries":[{"Id":"lib-movies","Name":"Movies","Folders":[""" +
+            """{"Path":"/media/movies","FreeSpace":1000,"UsedSpace":3000,"StorageType":"ext4","DeviceId":"c"}]},""" +
+            """{"Name":"Empty","Folders":[]},{"Id":"x"}]}"""
 
     /** `/Items/Counts`, as the signed-in user's library answers it. */
     var itemCounts = """{"MovieCount":120,"SeriesCount":14,"EpisodeCount":900,"SongCount":0}"""
@@ -603,6 +648,7 @@ class FakeJellyfin : Dispatcher() {
                 down--
                 MockResponse(code = 503)
             }
+            path == "/System/Info/Storage" -> json(systemStorage)
             path == "/System/Info" -> json(systemInfo)
             path == "/UserImage" || OLD_USER_IMAGE.matches(path) -> userImage(request)
             path == "/Branding/Splashscreen" -> splashscreen(request)
@@ -622,6 +668,11 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Configuration/encoding" -> json(encodingConfiguration)
+            path == "/System/Configuration/xbmcmetadata" && request.method == "POST" -> {
+                nfoConfiguration = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/System/Configuration/xbmcmetadata" -> json(nfoConfiguration)
             path == "/System/Configuration/branding" && request.method == "POST" -> {
                 brandingConfiguration = savedBranding(request.body?.utf8().orEmpty())
                 MockResponse(code = 204)
@@ -680,10 +731,39 @@ class FakeJellyfin : Dispatcher() {
                 MockResponse(code = 204)
             }
             path == "/System/Info/Public" ->
-                json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":true}""")
+                json("""{"ServerName":"truenas","Version":"10.11.6","Id":"server-1","StartupWizardCompleted":$startupWizardCompleted}""")
+            path == "/Users/ForgotPassword" -> json(forgotAnswer)
+            path == "/Users/ForgotPassword/Pin" -> {
+                val pin = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject["Pin"].toString()
+                // The server answers a PIN that matches no request with a 404, not with Success false.
+                if (pin == "\"$forgotPin\"") json("""{"Success":true,"UsersReset":["Mum"]}""") else MockResponse(code = 404)
+            }
+            path == "/Users/Public" -> json(publicUsers)
+            path.startsWith("/Startup/") && startupCompleted -> MockResponse(code = 401)
+            path == "/Startup/RemoteAccess" -> {
+                savedStartupRemoteAccess = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/Startup/Complete" -> {
+                startupCompleted = true
+                startupWizardCompleted = true
+                MockResponse(code = 204)
+            }
+            path == "/Startup/Configuration" && request.method == "POST" -> {
+                savedStartupConfiguration = request.body?.utf8().orEmpty()
+                startupConfiguration = savedStartupConfiguration.orEmpty()
+                MockResponse(code = 204)
+            }
+            path == "/Startup/Configuration" -> json(startupConfiguration)
+            path == "/Startup/FirstUser" -> json(startupFirstUser)
+            path == "/Startup/User" && request.method == "POST" -> {
+                savedStartupUser = request.body?.utf8().orEmpty()
+                MockResponse(code = 204)
+            }
             path == "/Users/AuthenticateByName" -> {
                 val body = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
-                if (body["Pw"].toString() == "\"right\"") signedIn() else MockResponse(code = 401)
+                val passwordless = body["Username"].toString() == "\"Kid\"" && body["Pw"].toString() == "\"\""
+                if (body["Pw"].toString() == "\"right\"" || passwordless) signedIn() else MockResponse(code = 401)
             }
             path == "/QuickConnect/Enabled" -> json(quickConnectEnabled.toString())
             path == "/QuickConnect/Initiate" -> json("""{"Secret":"qc-secret","Code":"123456"}""")
@@ -959,8 +1039,10 @@ class FakeJellyfin : Dispatcher() {
     private fun activityPage(request: RecordedRequest): MockResponse {
         val start = request.url.queryParameter("startIndex")?.toInt() ?: 0
         val limit = request.url.queryParameter("limit")?.toInt() ?: activityEntries.size
-        val page = activityEntries.drop(start).take(limit)
-        return json("""{"Items":[${page.joinToString(",")}],"TotalRecordCount":${activityEntries.size},"StartIndex":$start}""")
+        val severity = request.url.queryParameter("severity")?.takeIf { activityFiltersSeverity }
+        val matching = if (severity == null) activityEntries else activityEntries.filter { """"Severity":"$severity"""" in it }
+        val page = matching.drop(start).take(limit)
+        return json("""{"Items":[${page.joinToString(",")}],"TotalRecordCount":${matching.size},"StartIndex":$start}""")
     }
 
     private fun renameDevice(request: RecordedRequest): MockResponse {

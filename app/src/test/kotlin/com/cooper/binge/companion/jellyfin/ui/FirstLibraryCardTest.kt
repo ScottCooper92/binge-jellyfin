@@ -42,6 +42,9 @@ class FirstLibraryCardTest {
         card = ServerCardState(libraries = libraries),
     )
 
+    /** The home is a lazy list, so a row below the fold is scrolled to before it is looked for or found missing. */
+    private fun scrollTo(text: String) = compose.onNode(hasScrollAction()).performScrollToNode(hasText(text))
+
     private fun show(
         state: UiState.SignedIn,
         actions: Actions = Actions(),
@@ -51,8 +54,9 @@ class FirstLibraryCardTest {
     fun `an administrator of a server with no libraries gets the hint, and its button opens Libraries`() {
         val opened = mutableListOf<ConsolePage>()
         show(state(admin = true, libraries = 0), Actions(onOpenPage = { opened += it }))
+        scrollTo("This server has no libraries yet")
         compose.onNodeWithText("This server has no libraries yet").assertExists()
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Add library"))
+        scrollTo("Add library")
         compose.onNodeWithText("Add library").assertHasClickAction().performClick()
         compose.waitForIdle()
         assertEquals(listOf(ConsolePage.Libraries), opened)
@@ -61,24 +65,28 @@ class FirstLibraryCardTest {
     @Test
     fun `no hint once a library exists`() {
         show(state(admin = true, libraries = 1))
+        scrollTo("Libraries")
         compose.onAllNodesWithText("This server has no libraries yet").assertCountEquals(0)
     }
 
     @Test
     fun `no hint while the count is unread or when its read failed`() {
         show(state(admin = true, libraries = null))
+        scrollTo("Libraries")
         compose.onAllNodesWithText("This server has no libraries yet").assertCountEquals(0)
     }
 
     @Test
     fun `no hint for a user who cannot add a library`() {
         show(state(admin = false, libraries = 0))
+        scrollTo("Sign out")
         compose.onAllNodesWithText("This server has no libraries yet").assertCountEquals(0)
     }
 
     @Test
     fun `the hint names no Binge`() {
         show(state(admin = true, libraries = 0))
+        scrollTo("This server has no libraries yet")
         compose.onAllNodesWithText("Binge", substring = true).assertCountEquals(0)
     }
 }

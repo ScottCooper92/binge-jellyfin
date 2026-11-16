@@ -1,17 +1,25 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
+import com.binge.designsystem.tv.component.TvButton
 import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvStressPreviews
 import com.cooper.binge.companion.jellyfin.server.Culture
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.ui.Actions
+import com.cooper.binge.companion.jellyfin.ui.ForgotPasswordStep
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
@@ -25,7 +33,10 @@ import com.cooper.binge.companion.jellyfin.ui.previewQuickConnect
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectExpired
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectOff
+import com.cooper.binge.companion.jellyfin.ui.previewSetupIncomplete
 import com.cooper.binge.companion.jellyfin.ui.previewSignIn
+import com.cooper.binge.companion.jellyfin.ui.previewSignInUsers
+import com.cooper.binge.companion.jellyfin.ui.previewSignInUsersPictures
 import com.cooper.binge.companion.jellyfin.ui.previewSignInWrongPassword
 import com.cooper.binge.companion.jellyfin.ui.previewSignedIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
@@ -36,6 +47,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewSignedInWaiting
 import com.cooper.binge.companion.jellyfin.ui.tv.ACCOUNT_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUDIO_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUTOPLAY_KEY
+import com.cooper.binge.companion.jellyfin.ui.tv.TvUserPicture
 
 /** The television's screens: each step's main state in Spanish and at large fonts too, every other state once. */
 class TvJellyfinScreenshotTest {
@@ -76,6 +88,12 @@ class TvJellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun setupIncomplete() = TvJellyfinRoot(previewSetupIncomplete, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
     @Composable
     fun quickConnectGetting() = TvJellyfinRoot(previewQuickConnectGetting, Actions())
 
@@ -104,8 +122,89 @@ class TvJellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun passwordWithUsers() = TvSignInPage(previewSignInUsers, Actions(), startWithPassword = true)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun passwordWithPictures() = TvSignInPage(previewSignInUsersPictures, Actions(), startWithPassword = true)
+
+    /**
+     * A listed account's button focused, which fills the pill: with a picture and with the initials inside it, the two things its
+     * leading slot holds, and at large fonts too.
+     */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun accountButtonFocused() =
+        Column(modifier = Modifier.padding(48.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            val picture = previewSignInUsersPictures.publicPictures.values.first()
+            TvButton(label = "Mum", onClick = {}, initiallyFocused = true, leadingContent = { TvUserPicture("Mum", picture) })
+            TvButton(label = "Dad", onClick = {}, initiallyFocused = true, leadingContent = { TvUserPicture("Dad", null) })
+            TvButton(label = "Kid", onClick = {}, leadingContent = { TvUserPicture("Kid", picture) })
+        }
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
     @Composable
     fun passwordWrong() = TvSignInPage(previewSignInWrongPassword, Actions(), startWithPassword = true)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun forgotContactAdmin() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin)),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotInNetworkRequired() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.Told(ForgotPasswordAction.InNetworkRequired)),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun forgotPin() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json")),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotPinWrong() =
+        TvSignInPage(
+            previewSignIn.copy(forgot = ForgotPasswordStep.EnterPin("/config/data/passwordreset.json", wrongPin = true)),
+            Actions(),
+            startWithPassword = true,
+        )
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotFailed() = TvSignInPage(previewSignIn.copy(forgot = ForgotPasswordStep.Failed), Actions(), startWithPassword = true)
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun forgotDone() =
+        TvSignInPage(previewSignIn.copy(forgot = ForgotPasswordStep.Done, password = "A1B2-C3D4"), Actions(), startWithPassword = true)
 
     @PreviewTest
     @JellyfinTvScreenPreviews

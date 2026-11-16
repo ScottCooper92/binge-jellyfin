@@ -52,7 +52,7 @@ class RecordingPaddingSliderTest {
         compose.onNodeWithText("150 min").assertExists()
         assertTrue(sent.isEmpty())
         compose.onNodeWithContentDescription("Decrease Start early").performClick()
-        assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(7140)), sent)
+        assertEquals(listOf(LIVE_TV_PRE_PADDING to JsonPrimitive(7200)), sent)
     }
 
     @Test

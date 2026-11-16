@@ -21,19 +21,13 @@ sealed interface ChannelMappingsUiState {
     ) : ChannelMappingsUiState
 
     /**
-     * The channels and how they are paired, the provider channel whose tuner channels are being chosen ([selected]), what the
-     * choice is narrowed to ([query]), and the last pairing the server refused ([refused]).
+     * The channels and how they are paired, the provider channel whose tuner channels are being chosen ([selected]), and the last pairing the server refused ([refused]).
      */
     data class Ready(
         val options: ChannelMappingOptions,
         val selected: String? = null,
-        val query: String = "",
         val refused: ConsoleFailure? = null,
-    ) : ChannelMappingsUiState {
-        /** The tuner channels whose name contains [query], in the order the server listed them. */
-        val matching: List<TunerChannel> get() =
-            options.tunerChannels.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }
-    }
+    ) : ChannelMappingsUiState
 }
 
 /**
@@ -64,10 +58,8 @@ class ChannelMappingsViewModel(
         }
     }
 
-    /** Opens the choice of tuner channels for the provider channel [providerChannelId], or closes it for null. The search starts empty. */
-    fun select(providerChannelId: String?) = update { copy(selected = providerChannelId, query = "") }
-
-    fun search(query: String) = update { copy(query = query) }
+    /** Opens the choice of tuner channels for the provider channel [providerChannelId], or closes it for null. */
+    fun select(providerChannelId: String?) = update { copy(selected = providerChannelId) }
 
     /** Pairs the tuner channel [tunerChannelId] with the selected provider channel and saves it. */
     fun pick(tunerChannelId: String) {

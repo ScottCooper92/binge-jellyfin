@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.server
 
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -16,7 +17,15 @@ data class PublicServerInfo(
      * a redirected POST into a GET and drops `Authorization` on a change of scheme or host.
      */
     val baseUrl: HttpUrl,
-)
+    /**
+     * Whether the server has finished its first-run setup, from `StartupWizardCompleted`. A server that does not say (an older one)
+     * counts as finished, so nothing here depends on a version number.
+     */
+    val startupWizardCompleted: Boolean = true,
+) {
+    /** A fresh server with no account yet: nothing can sign in to it until its setup is done. */
+    val setupIncomplete: Boolean get() = !startupWizardCompleted
+}
 
 /** A session the server minted: its token, and who it is for. */
 data class SignedIn(
@@ -24,6 +33,24 @@ data class SignedIn(
     val userId: String,
     val userName: String,
     val serverId: String,
+)
+
+/** What the server will do for a user who forgot their password. A value this app does not know is [ContactAdmin]. */
+enum class ForgotPasswordAction { ContactAdmin, PinCode, InNetworkRequired }
+
+/** The server's answer to a forgotten password: what happens next, and for [ForgotPasswordAction.PinCode] the file that holds the PIN. */
+data class ForgotPasswordAnswer(
+    val action: ForgotPasswordAction,
+    val pinFile: String?,
+)
+
+/** An account the server lists on its login screen, as `/Users/Public` gives it: no sign-in needed to read it. */
+data class PublicUser(
+    val id: String,
+    val name: String,
+    val hasPassword: Boolean,
+    /** The tag of the user's picture (`PrimaryImageTag`), or null when they have none. */
+    val imageTag: String? = null,
 )
 
 /** A Quick Connect request: the code the user approves, and the secret this app polls with. */
@@ -39,7 +66,43 @@ suspend fun JellyfinClient.publicInfo(): PublicServerInfo {
         version = json.string("Version").orEmpty(),
         serverId = json.string("Id").orEmpty(),
         baseUrl = baseOf(from) ?: baseUrl,
+        startupWizardCompleted = json.bool("StartupWizardCompleted") ?: true,
     )
+}
+
+/** Asks the server to start a password reset for [username]. Anonymous; only the name is sent. */
+suspend fun JellyfinClient.forgotPassword(username: String): ForgotPasswordAnswer {
+    val json = postObject("Users/ForgotPassword", JsonObject(mapOf("EnteredUsername" to JsonPrimitive(username))))
+    val action = ForgotPasswordAction.entries.firstOrNull { it.name == json.string("Action") } ?: ForgotPasswordAction.ContactAdmin
+    return ForgotPasswordAnswer(action, json.string("PinFile")?.takeIf { it.isNotBlank() })
+}
+
+/**
+ * Redeems the PIN from the file the server wrote. True when it was right: the server then sets the account's password to the PIN
+ * as sent. A PIN that matches no request, or one that has run out, is a 404 from the server, so that is false here too.
+ */
+suspend fun JellyfinClient.redeemPasswordPin(pin: String): Boolean =
+    try {
+        postObject("Users/ForgotPassword/Pin", JsonObject(mapOf("Pin" to JsonPrimitive(pin)))).bool("Success") == true
+    } catch (e: JellyfinHttpException) {
+        if (e.code == HTTP_NOT_FOUND) false else throw e
+    }
+
+private const val HTTP_NOT_FOUND = 404
+
+/** The accounts the server's owner has not hidden from the login screen; empty when there are none. */
+suspend fun JellyfinClient.publicUsers(): List<PublicUser> {
+    val answer = get(PUBLIC_USERS) as? JsonArray ?: throw JellyfinUnreadableAnswer(PUBLIC_USERS)
+    return answer.mapNotNull { element ->
+        val json = element as? JsonObject ?: return@mapNotNull null
+        val name = json.string("Name")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        PublicUser(
+            id = json.string("Id").orEmpty(),
+            name = name,
+            hasPassword = json.bool("HasPassword") != false,
+            imageTag = json.string("PrimaryImageTag")?.takeIf { it.isNotBlank() },
+        )
+    }
 }
 
 suspend fun JellyfinClient.authenticateByName(
@@ -99,6 +162,7 @@ private fun JsonObject.toSignedIn(): SignedIn {
     )
 }
 
+private const val PUBLIC_USERS = "Users/Public"
 private const val PUBLIC_INFO = "System/Info/Public"
 
 /** The base [answered] sits under, or null for a redirect to somewhere that is not this call's path. */

@@ -10,9 +10,13 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
+import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
+import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
+import com.cooper.binge.companion.jellyfin.ui.search.settingsIndex
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */
 class JellyfinScreenshotTest {
@@ -75,6 +79,121 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun signIn() = JellyfinRoot(previewSignIn, Actions())
+
+    /** A server that has not finished its first-run setup: the notice stands where the sign-in would. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun setupIncomplete() = JellyfinRoot(previewSetupIncomplete, Actions())
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signInUsers() = JellyfinRoot(previewSignInUsers, Actions())
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signInUsersPictures() = JellyfinRoot(previewSignInUsersPictures, Actions())
+
+    // The setup wizard of a server that has not finished its first-run setup.
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun startup() = JellyfinRoot(previewStartup, Actions())
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun startupAccount() = JellyfinRoot(previewStartupAccountFilled, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountEmpty() = JellyfinRoot(previewStartupAccount, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountMismatch() = JellyfinRoot(previewStartupAccountMismatch, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountSaving() = JellyfinRoot(previewStartupAccountSaving, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountRefused() = JellyfinRoot(previewStartupAccountRefused, Actions())
+
+    /** The server refused the account and said why: its own words stand in place of the generic sentence. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountReason() = JellyfinRoot(previewStartupAccountReason, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupNoName() = JellyfinRoot(previewStartupNoName, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupSaving() = JellyfinRoot(previewStartupSaving, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupRefused() = JellyfinRoot(previewStartupRefused, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupLoading() = JellyfinRoot(previewStartupLoading, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFailed() = JellyfinRoot(previewStartupFailed, Actions())
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun startupFinish() = JellyfinRoot(previewStartupFinish, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFinishPorts() = JellyfinRoot(previewStartupFinishPorts, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFinishOff() = JellyfinRoot(previewStartupFinishOff, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFinishSaving() = JellyfinRoot(previewStartupFinishSaving, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupFinishRefused() = JellyfinRoot(previewStartupFinishRefused, Actions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -280,6 +399,44 @@ class JellyfinScreenshotTest {
     fun notificationsInterval() =
         Surface { IntervalChoices(NotificationSettings(enabled = true, intervalMinutes = 120), Actions(), close = {}) }
 
+    /** The settings search before a query, with results (each with where it is) and with none. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchPrompt() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {})
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchResults() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "port")
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchNoMatch() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "zzz")
+
+    /** The search before a query, with what the user opened last and its Clear. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun searchRecent() =
+        SettingsSearchScreen(
+            previewSignedInAdmin.profile,
+            previewSignedInAdmin.account,
+            {},
+            {},
+            recent =
+                settingsIndex
+                    .filter { it.page in listOf(ConsolePage.Network, ConsolePage.Transcoding, ConsolePage.Playback) }
+                    .distinctBy { it.page },
+        )
+
     /** The This app page with the tip jar priced, so its row shows. */
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -315,4 +472,53 @@ class JellyfinScreenshotTest {
     @Composable
     fun signOutConfirmPromoted() =
         CompositionLocalProvider(LocalFlags provides Flags.AllOn) { Surface { SignOutConfirm(Actions(), inWindow = false) } }
+
+    // Forgot password: each step of the reset.
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun forgotContactAdmin() =
+        Surface { ForgotPasswordOverlay(ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin), null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun forgotInNetworkRequired() =
+        Surface { ForgotPasswordOverlay(ForgotPasswordStep.Told(ForgotPasswordAction.InNetworkRequired), null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinFontScalePreviews
+    @Composable
+    fun forgotPin() =
+        Surface { ForgotPasswordOverlay(ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"), null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun forgotPinWrong() =
+        Surface {
+            ForgotPasswordOverlay(
+                ForgotPasswordStep.EnterPin("/config/data/passwordreset.json", wrongPin = true),
+                null,
+                inWindow = false,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun forgotFailed() = Surface { ForgotPasswordOverlay(ForgotPasswordStep.Failed, null, inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun forgotDone() = Surface { ForgotPasswordOverlay(ForgotPasswordStep.Done, null, inWindow = false) }
 }

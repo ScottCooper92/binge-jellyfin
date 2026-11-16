@@ -63,7 +63,7 @@ class PageSkeletonGeometryTest {
                     listOf(TunerChannel("c1", "101 BBC One HD", "p1")),
                 )
             ChannelMappingsScreen(
-                state = if (resolved) ChannelMappingsUiState.Ready(options, null, "") else ChannelMappingsUiState.Loading,
+                state = if (resolved) ChannelMappingsUiState.Ready(options, null) else ChannelMappingsUiState.Loading,
                 actions = ChannelMappingsActions(),
             )
         }
@@ -79,6 +79,20 @@ class PageSkeletonGeometryTest {
             LiveTvRecordingScreen(
                 state = if (resolved) LiveTvRecordingUiState.Ready(config) else LiveTvRecordingUiState.Loading,
                 actions = LiveTvRecordingActions(),
+            )
+        }
+
+    @Test
+    fun `nfo`() =
+        compose.holdsFirstGroup { resolved ->
+            val config =
+                Json
+                    .parseToJsonElement(
+                        """{"UserId":null,"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":true}""",
+                    ).jsonObject
+            NfoScreen(
+                state = if (resolved) NfoUiState.Ready(config) else NfoUiState.Loading,
+                actions = NfoActions(),
             )
         }
 
