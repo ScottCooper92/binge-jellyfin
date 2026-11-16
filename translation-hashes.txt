@@ -949,6 +949,8 @@ app:profile_picture_unreadable  40d10762b304
 app:quick_connect_body  8c49a6f5ca88
 app:quick_connect_cancel  cd40fe2dcba7
 app:quick_connect_title  d0dbbcf762fa
+app:release_notes  1254829bd999
+app:release_notes_update_detail  4b718ee8b5f0
 app:repositories_add  2eda4d8210b2
 app:repositories_add_submit  9fd728c66c9a
 app:repositories_back  76900f1bfd16
