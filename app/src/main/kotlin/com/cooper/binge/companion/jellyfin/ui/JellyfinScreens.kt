@@ -472,7 +472,7 @@ internal fun ServerGroup(
                     selected = actions.isOpenBeside(ConsolePage.LiveTv),
                     onClick = { actions.onOpenPage(ConsolePage.LiveTv) },
                 ).takeIf { ConsolePage.LiveTv.available(state.profile, state.account) },
-            ),
+            ) + releaseNotesItems(state.session.serverVersion, state.card.updateAvailable),
     )
 }
 

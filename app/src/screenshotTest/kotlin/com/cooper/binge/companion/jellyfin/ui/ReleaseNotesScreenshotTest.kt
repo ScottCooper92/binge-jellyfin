@@ -1,0 +1,39 @@
+package com.cooper.binge.companion.jellyfin.ui
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.component.ItemGroup
+import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
+import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+
+/** The release notes rows as the home's server group shows them: a preview has no browser, so these are drawn with one assumed. */
+class ReleaseNotesScreenshotTest {
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun releaseNotes() = Rows(version = "10.11.6", update = false)
+
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun updateAvailable() = Rows(version = "10.11.6", update = true)
+}
+
+@Composable
+private fun Rows(
+    version: String,
+    update: Boolean,
+) = Surface {
+    Column(Modifier.padding(16.dp)) {
+        ItemGroup(title = null, rows = releaseNotesItems(version, update, canOpen = { true }, open = {}))
+    }
+}

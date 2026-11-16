@@ -59,6 +59,8 @@
 
     <string name="server_card_connected">Conectado</string>
     <string name="server_card_not_encrypted">Sin cifrar</string>
+    <string name="release_notes">Notas de la versión</string>
+    <string name="release_notes_update_detail">Ver las novedades</string>
     <string name="server_card_update">Actualización disponible</string>
     <string name="server_card_restart">Reinicio pendiente</string>
     <string name="server_card_shutting_down">Apagándose</string>
