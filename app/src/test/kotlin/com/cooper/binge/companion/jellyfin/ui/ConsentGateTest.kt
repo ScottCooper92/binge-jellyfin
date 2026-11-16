@@ -83,13 +83,13 @@ class ConsentGateTest {
     }
 
     @Test
-    fun `Report a bug opens the bug form on GitHub with the device filled in`() {
+    fun `Report a bug opens the app-feedback bug form with the device filled in`() {
         compose.setContent { JellyfinTheme { Column { AppGroup(AppSettings(), Actions()) } } }
         compose.onNodeWithText("Report a bug").performClick()
         val opened = shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity
         assertEquals(Intent.ACTION_VIEW, opened.action)
         val url = opened.data.toString()
-        assertTrue(url.startsWith("https://github.com/ScottCooper92/ephyra/issues/new?template=bug.yml"))
-        assertTrue(url.contains("app-version=") && url.contains("device="))
+        assertTrue(url.startsWith("https://github.com/ScottCooper92/app-feedback/issues/new?template=ephyra-bug.yml"))
+        assertTrue(url.contains("app-version=") && url.contains("device=") && url.contains("android-version="))
     }
 }

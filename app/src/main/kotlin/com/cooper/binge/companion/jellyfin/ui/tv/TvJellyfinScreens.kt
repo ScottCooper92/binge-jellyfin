@@ -63,6 +63,7 @@ import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
+import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ConnectionAutoRetry
 import com.cooper.binge.companion.jellyfin.ui.ConnectionHealth
@@ -549,7 +550,7 @@ private fun TvSignedInPage(
         listOfNotNull(
             TvPaneGroup(title = stringResource(R.string.settings_signed_in_as), rows = accountRows),
             playback?.takeIf { settled }?.let { playbackGroup(it) },
-            appGroup(actions),
+            appGroup(actions, JellyfinVersion.parse(state.session.serverVersion)),
         )
     TvListPaneBoard(
         title = stringResource(R.string.app_label),
@@ -665,7 +666,10 @@ private const val ADDRESS_LINES = 2
 
 /** The "This app" group on the board: usage data and crash reports, each one switch in the pane. */
 @Composable
-private fun appGroup(actions: Actions): TvPaneGroup {
+private fun appGroup(
+    actions: Actions,
+    serverVersion: JellyfinVersion?,
+): TvPaneGroup {
     val settings = actions.appSettings
 
     @Composable
@@ -689,7 +693,7 @@ private fun appGroup(actions: Actions): TvPaneGroup {
         title = stringResource(R.string.settings_group_app),
         rows =
             listOf(
-                bugReportRow(),
+                bugReportRow(serverVersion),
                 switch(
                     USAGE_DATA_KEY,
                     R.string.settings_share_usage_data,
@@ -712,11 +716,11 @@ private fun appGroup(actions: Actions): TvPaneGroup {
 
 /**
  * Report a bug on a television, which cannot open the form itself: a read-out whose pane shows a code the phone scans. The
- * link fills in this install's app version and device, and nothing about the server.
+ * link fills in this install's app version and device, and the server's release when it is known.
  */
 @Composable
-private fun bugReportRow(): TvPaneRow {
-    val url = remember { installBugReportUrl() }
+private fun bugReportRow(serverVersion: JellyfinVersion?): TvPaneRow {
+    val url = remember(serverVersion) { installBugReportUrl(serverVersion) }
     val codeSize = dimensionResource(R.dimen.tv_bug_report_code_size)
     val description = stringResource(R.string.tv_settings_report_bug_code_description)
     return TvPaneRow(

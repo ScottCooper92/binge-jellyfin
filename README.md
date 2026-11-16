@@ -36,6 +36,10 @@ plugin's browser flow. Sign in with Quick Connect from a Jellyfin client you are
 in, and playback has been checked against Binge's player on a phone. The console is being built
 (#71). Nothing is on Play.
 
+## Reporting a bug or suggesting an idea
+
+Use the [Ephyra forms on app-feedback](https://github.com/ScottCooper92/app-feedback/issues/new/choose), or **Report a bug** under This app in the app, which fills in the app version and device.
+
 ## Building
 
 ```sh
