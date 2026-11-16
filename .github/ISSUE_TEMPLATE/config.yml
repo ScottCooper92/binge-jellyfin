@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a bug or suggest an idea
+    url: https://github.com/ScottCooper92/app-feedback/issues/new/choose
+    about: Bug reports and feature requests for Ephyra go to the public app-feedback repository.

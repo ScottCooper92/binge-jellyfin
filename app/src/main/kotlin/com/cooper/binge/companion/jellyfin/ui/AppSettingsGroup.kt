@@ -35,6 +35,7 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.BuildConfig
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
+import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.tip.TipEvent
@@ -61,13 +62,14 @@ data class AppSettings(
     val sendCrashReports: Boolean = false,
 )
 
-/** The "This app" group: Report a bug, then two switches that save as they are flipped. */
+/** The "This app" group: Report a bug (with the connected server's [serverVersion], when known), then two switches that save as they are flipped. */
 @Composable
 internal fun AppGroup(
     settings: AppSettings,
     actions: Actions,
     titled: Boolean = true,
     onOpenTip: (() -> Unit)? = null,
+    serverVersion: JellyfinVersion? = null,
 ) {
     val context = LocalContext.current
     ItemGroup(
@@ -78,7 +80,7 @@ internal fun AppGroup(
                     icon = Icons.Outlined.BugReport,
                     label = stringResource(R.string.settings_report_bug),
                     detail = stringResource(R.string.settings_report_bug_caption),
-                    onClick = { context.openInBrowser(installBugReportUrl()) },
+                    onClick = { context.openInBrowser(installBugReportUrl(serverVersion)) },
                     key = SettingRows.THIS_APP_REPORT_BUG,
                 ),
                 ListItem(
@@ -161,6 +163,7 @@ internal fun ThisAppScreen(
     tip: TipUiState = TipUiState.Unavailable,
     tipEvents: Flow<TipEvent> = emptyFlow(),
     onGiveTip: (Int) -> Unit = {},
+    serverVersion: JellyfinVersion? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var failed by remember { mutableStateOf(false) }
@@ -196,7 +199,13 @@ internal fun ThisAppScreen(
                 // in a lazy item that is not composed yet is never found (the focus is not given this list's state).
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-                        AppGroup(actions.appSettings, actions, titled = false, onOpenTip = prices?.let { { tipOpen = true } })
+                        AppGroup(
+                            actions.appSettings,
+                            actions,
+                            titled = false,
+                            onOpenTip = prices?.let { { tipOpen = true } },
+                            serverVersion = serverVersion,
+                        )
                         actions.notifications?.let { notifications -> NotificationsGroup(notifications, actions) }
                         AboutGroup(actions)
                     }

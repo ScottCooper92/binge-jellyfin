@@ -17,6 +17,7 @@ import com.binge.companion.sdk.attempt
 import com.binge.designsystem.component.ProvideRowFocus
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.tip.TipViewModel
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
@@ -59,7 +60,7 @@ private fun ConsolePageContent(
         ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
-        ConsolePage.ThisApp -> ThisAppRoute(graph, actions, close)
+        ConsolePage.ThisApp -> ThisAppRoute(graph, actions, signedIn.profile.version, close)
         ConsolePage.Search ->
             SettingsSearchRoute(
                 graph,
@@ -445,6 +446,7 @@ private fun LogsRoute(
 private fun ThisAppRoute(
     graph: AppGraph,
     actions: Actions,
+    serverVersion: JellyfinVersion?,
     onBack: () -> Unit,
 ) {
     val tip: TipViewModel = viewModel(factory = viewModelFactory { initializer { TipViewModel(graph.tipBilling) } })
@@ -456,5 +458,6 @@ private fun ThisAppRoute(
         tip = state,
         tipEvents = tip.events,
         onGiveTip = { step -> activity?.let { tip.give(it, step) } },
+        serverVersion = serverVersion,
     )
 }
