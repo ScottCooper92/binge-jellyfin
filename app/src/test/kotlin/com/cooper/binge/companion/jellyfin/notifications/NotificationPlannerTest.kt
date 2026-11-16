@@ -1,9 +1,9 @@
 package com.cooper.binge.companion.jellyfin.notifications
 
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
-import com.cooper.binge.companion.jellyfin.InMemoryDataStore
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.homelab.core.testing.InMemoryDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

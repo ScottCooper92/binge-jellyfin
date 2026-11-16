@@ -2,11 +2,11 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cooper.binge.companion.jellyfin.review.NoReviewSignals
-import com.cooper.binge.companion.jellyfin.review.ReviewSignalSink
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.authorizeQuickConnect
+import com.cooper.homelab.core.review.NoReviewSignals
+import com.cooper.homelab.core.review.ReviewSignalSink
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

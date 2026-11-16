@@ -7,9 +7,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
-import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
 import com.cooper.binge.companion.jellyfin.tip.TipEvent
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
+import com.cooper.homelab.core.tip.TIP_STEPS
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule

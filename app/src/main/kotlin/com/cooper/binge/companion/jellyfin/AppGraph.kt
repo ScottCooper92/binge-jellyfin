@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin
 
+import android.app.Activity
 import android.content.Context
 import android.os.Build
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
@@ -24,9 +25,6 @@ import com.cooper.binge.companion.jellyfin.notifications.NotificationScheduler
 import com.cooper.binge.companion.jellyfin.notifications.PollReactor
 import com.cooper.binge.companion.jellyfin.notifications.PollRunner
 import com.cooper.binge.companion.jellyfin.notifications.WorkManagerNotificationScheduler
-import com.cooper.binge.companion.jellyfin.review.PlayReviewPromptLauncher
-import com.cooper.binge.companion.jellyfin.review.ReviewPrompt
-import com.cooper.binge.companion.jellyfin.review.ReviewSignalStore
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
@@ -40,18 +38,24 @@ import com.cooper.binge.companion.jellyfin.telemetry.PostHogAnalytics
 import com.cooper.binge.companion.jellyfin.telemetry.PostHogClient
 import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.telemetry.postHogConfig
-import com.cooper.binge.companion.jellyfin.tip.DebugTipBilling
-import com.cooper.binge.companion.jellyfin.tip.PlayTipBilling
-import com.cooper.binge.companion.jellyfin.tip.TipBilling
 import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
 import com.cooper.binge.companion.jellyfin.ui.search.RecentSearches
+import com.cooper.homelab.core.foundation.AppDispatchers
+import com.cooper.homelab.core.foundation.Clock
+import com.cooper.homelab.core.review.PlayReviewPromptLauncher
+import com.cooper.homelab.core.review.ReviewPrompt
+import com.cooper.homelab.core.review.ReviewSignalStore
+import com.cooper.homelab.core.tip.DebugTipBilling
+import com.cooper.homelab.core.tip.PlayTipBilling
+import com.cooper.homelab.core.tip.TipBilling
 import com.posthog.android.PostHogAndroid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.File
@@ -160,10 +164,16 @@ class AppGraph(
                         produceFile = { appContext.preferencesDataStoreFile("review") },
                     ),
                 ),
-            launcher = PlayReviewPromptLauncher(appContext),
-            featureFlags = flags,
+            launcher = PlayReviewPromptLauncher(appContext, AppDispatchers.platform()),
+            isEnabled = { flags.flags.value.reviewPrompt },
             scope = scope,
+            clock = Clock.system(),
         )
+    }
+
+    /** Asks for the review card in the app's scope, so the ask outlives the screen that made it. */
+    fun askForReview(activity: Activity) {
+        scope.launch { reviewPrompt.maybeAsk(activity) }
     }
 
     /** The tip jar's store: Google Play in a release build, a stand-in in a debug one, which is installed over adb where Play sells nothing. */

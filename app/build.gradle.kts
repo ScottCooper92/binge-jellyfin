@@ -210,6 +210,7 @@ dependencies {
     // The television surface in ui/tv. tv-material and the phone's Material 3 are never mixed in one file.
     implementation(libs.binge.designsystem.tv)
     implementation(libs.homelab.appservices)
+    testImplementation(libs.homelab.testing)
     implementation(libs.kotlinx.coroutines.android)
     // Play's in-app review card and the await for its Tasks; see review/PlayReviewPromptLauncher.
     implementation(libs.play.review)

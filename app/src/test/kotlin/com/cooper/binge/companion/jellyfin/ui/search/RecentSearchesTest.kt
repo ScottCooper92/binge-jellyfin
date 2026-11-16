@@ -1,6 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.search
 
-import com.cooper.binge.companion.jellyfin.InMemoryDataStore
+import com.cooper.homelab.core.testing.InMemoryDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

@@ -1,6 +1,9 @@
 package com.cooper.binge.companion.jellyfin.tip
 
 import android.app.Activity
+import com.cooper.homelab.core.testing.FakeTipBilling
+import com.cooper.homelab.core.tip.TIP_STEPS
+import com.cooper.homelab.core.tip.TipOutcome
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,24 +21,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-
-/** A store that prices what it is told to and ends each purchase as its [outcome] says. */
-private class FakeTipBilling(
-    private val prices: Map<Int, String>?,
-    var outcome: CompletableDeferred<TipOutcome> = CompletableDeferred(TipOutcome.Thanks),
-) : TipBilling {
-    val given = mutableListOf<Int>()
-
-    override suspend fun prices(): Map<Int, String>? = prices
-
-    override suspend fun give(
-        activity: Activity,
-        step: Int,
-    ): TipOutcome {
-        given += step
-        return outcome.await()
-    }
-}
 
 private val PRICED = TIP_STEPS.associateWith { "£$it" }
 

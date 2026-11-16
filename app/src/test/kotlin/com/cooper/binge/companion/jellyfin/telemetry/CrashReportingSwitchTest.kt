@@ -1,6 +1,6 @@
 package com.cooper.binge.companion.jellyfin.telemetry
 
-import com.cooper.binge.companion.jellyfin.InMemoryDataStore
+import com.cooper.homelab.core.testing.InMemoryDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
