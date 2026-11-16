@@ -114,6 +114,12 @@ class TvJellyfinScreenshotTest {
     @Composable
     fun quickConnectOff() = TvJellyfinRoot(previewQuickConnectOff, Actions())
 
+    /** Quick Connect is off on the server, so the step opens on the password with no code behind it. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun quickConnectNotOffered() = TvJellyfinRoot(previewQuickConnectNotOffered, Actions())
+
     @PreviewTest
     @JellyfinTvScreenPreviews
     @JellyfinTvStressPreviews

@@ -22,6 +22,7 @@ import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
@@ -112,7 +113,10 @@ class JellyfinViewModelTest {
         await<UiState.EnterServer>()
         onAddress(jellyfin.baseUrl)
         connect()
-        return await()
+        val step = await<UiState.SignIn>()
+        // The step reads whether Quick Connect is on as it opens; the tests that change the server's answer wait until it has been read.
+        runBlocking { withTimeout(10_000) { while (jellyfin.requests.none { it.url.encodedPath == "/QuickConnect/Enabled" }) delay(5) } }
+        return step
     }
 
     private fun demoViewModel(cipher: SecretCipher = PlainCipher): JellyfinViewModel {
@@ -683,6 +687,64 @@ class JellyfinViewModelTest {
         vm.startQuickConnect()
         vm.await<UiState.SignIn> { it.quickConnectError != null }
         assertEquals(listOf("sign_in_failed" to mapOf("method" to "quick_connect", "reason" to "quick_connect_off")), reported)
+    }
+
+    @Test
+    fun `the sign-in step offers Quick Connect while the server has it on`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        val step = vm.state.value as UiState.SignIn
+        assertTrue(step.quickConnectOn)
+        assertTrue(step.showsQuickConnectHint)
+    }
+
+    @Test
+    fun `the sign-in step stops offering Quick Connect, and its hint, when the server has it off`() {
+        jellyfin.quickConnectEnabled = false
+        val vm = viewModel()
+        vm.toSignIn()
+        val step = vm.await<UiState.SignIn> { !it.quickConnectOn }
+        assertFalse(step.showsQuickConnectHint)
+        assertNull(step.quickConnectError)
+    }
+
+    @Test
+    fun `a failed or unclear read of Quick Connect keeps it on offer`() {
+        jellyfin.quickConnectEnabled = false
+        jellyfin.status["/QuickConnect/Enabled"] = 500
+        val failed = viewModel().toSignIn()
+        assertTrue(failed.quickConnectOn)
+
+        jellyfin.status.clear()
+        jellyfin.notJson += "/QuickConnect/Enabled"
+        val unclear = viewModel().toSignIn()
+        assertTrue(unclear.quickConnectOn)
+        assertTrue(unclear.showsQuickConnectHint)
+    }
+
+    @Test
+    fun `a code already asked for is dropped quietly when the read then says Quick Connect is off`() {
+        val held = jellyfin.hold("/QuickConnect/Enabled")
+        val vm = viewModel()
+        vm.await<UiState.EnterServer>()
+        vm.onAddress(jellyfin.baseUrl)
+        vm.connect()
+        vm.await<UiState.SignIn>()
+        held.awaitArrival()
+        // The TV's code panel asks for a code as soon as it shows, before the step's own read has answered.
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectCode != null }
+        jellyfin.quickConnectEnabled = false
+        held.release()
+        val step = vm.await<UiState.SignIn> { !it.quickConnectOn }
+        assertNull(step.quickConnectCode)
+        assertNull(step.quickConnectError)
+        assertFalse(step.gettingCode)
+        // The request is cancelled: approving the code now signs nobody in.
+        jellyfin.quickConnectApproved = true
+        runBlocking { delay(200) }
+        assertTrue(vm.state.value is UiState.SignIn)
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/AuthenticateWithQuickConnect" })
     }
 
     @Test

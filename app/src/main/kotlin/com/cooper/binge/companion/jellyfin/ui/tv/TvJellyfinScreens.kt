@@ -206,10 +206,14 @@ internal fun TvSignInPage(
         TvSetupIncompletePage(actions, modifier)
         return
     }
-    var usePassword by rememberSaveable(state.baseUrl) { mutableStateOf(startWithPassword) }
-    // Back steps back, as the remote expects: from the password to the code, and from the code to the server step (which
-    // cancels the code). It does not leave the app from the middle of setting it up.
-    BackHandler { if (usePassword) usePassword = false else actions.onChangeServer() }
+    var chosenPassword by rememberSaveable(state.baseUrl) { mutableStateOf(startWithPassword) }
+    // A server that has Quick Connect off has no code to show: the password is the only way in, so the step opens on it.
+    val quickConnectOn = state.quickConnectOn
+    val usePassword = chosenPassword || !quickConnectOn
+    // Back steps back, as the remote expects: from the password to the code (where there is one), and from the code, or a
+    // password with no code behind it, to the server step (which cancels the code). It does not leave the app from the middle
+    // of setting it up.
+    BackHandler { if (chosenPassword && quickConnectOn) chosenPassword = false else actions.onChangeServer() }
     // A forgotten-password step replaces the password form in place; Back closes it, to the form.
     val forgot = state.forgot.takeUnless { it == null || it == ForgotPasswordStep.Asking }
     BackHandler(enabled = forgot != null) { actions.forgotPassword?.dismiss() }
@@ -244,7 +248,7 @@ internal fun TvSignInPage(
                     state = state,
                     actions = actions,
                     entry = entry,
-                    onUseQuickConnect = { usePassword = false },
+                    onUseQuickConnect = { chosenPassword = false }.takeIf { quickConnectOn },
                 )
             } else {
                 TvQuickConnectPanel(
@@ -253,7 +257,7 @@ internal fun TvSignInPage(
                     entry = entry,
                     onUsePassword = {
                         actions.onCancelQuickConnect()
-                        usePassword = true
+                        chosenPassword = true
                     },
                 )
             }
@@ -339,7 +343,7 @@ private fun ColumnScope.TvPasswordPanel(
     state: UiState.SignIn,
     actions: Actions,
     entry: FocusRequester,
-    onUseQuickConnect: () -> Unit,
+    onUseQuickConnect: (() -> Unit)?,
 ) {
     val passwordFocus = remember { FocusRequester() }
     // The server's listed accounts, one press each; a name fills the username and the remote moves on to the password.
@@ -395,7 +399,9 @@ private fun ColumnScope.TvPasswordPanel(
         style = TvButtonStyle.Text,
         loading = state.forgot == ForgotPasswordStep.Asking,
     )
-    TvButton(label = stringResource(R.string.setup_quick_connect), onClick = onUseQuickConnect, leadingIcon = Icons.Outlined.QrCode2)
+    if (onUseQuickConnect != null) {
+        TvButton(label = stringResource(R.string.setup_quick_connect), onClick = onUseQuickConnect, leadingIcon = Icons.Outlined.QrCode2)
+    }
 }
 
 /**

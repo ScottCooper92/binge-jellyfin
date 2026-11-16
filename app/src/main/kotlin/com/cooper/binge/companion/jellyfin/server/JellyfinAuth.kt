@@ -116,6 +116,9 @@ suspend fun JellyfinClient.authenticateByName(
 
 suspend fun JellyfinClient.quickConnectEnabled(): Boolean = (get("QuickConnect/Enabled") as? JsonPrimitive)?.booleanOrNull == true
 
+/** Whether Quick Connect is on, or null when the server did not say (an answer that is not a plain true or false). */
+suspend fun JellyfinClient.quickConnectEnabledOrNull(): Boolean? = (get("QuickConnect/Enabled") as? JsonPrimitive)?.booleanOrNull
+
 suspend fun JellyfinClient.quickConnectInitiate(): QuickConnectStart {
     val json = postObject("QuickConnect/Initiate", null)
     return QuickConnectStart(secret = json.string("Secret").orEmpty(), code = json.string("Code").orEmpty())
