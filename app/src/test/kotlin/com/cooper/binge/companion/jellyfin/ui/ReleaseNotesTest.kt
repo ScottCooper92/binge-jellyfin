@@ -55,12 +55,11 @@ class ReleaseNotesTest {
 
     private fun show(
         version: String,
-        update: Boolean = false,
         canOpen: (String) -> Boolean = { true },
         opened: MutableList<String> = mutableListOf(),
     ) = compose.setContent {
         JellyfinTheme {
-            ItemGroup(title = null, rows = releaseNotesItems(version, update, canOpen = canOpen, open = { opened += it }))
+            ItemGroup(title = null, rows = releaseNotesItems(version, canOpen = canOpen, open = { opened += it }))
         }
     }
 
@@ -82,27 +81,6 @@ class ReleaseNotesTest {
         assertEquals(listOf(releases), opened)
     }
 
-    @Test
-    fun `Update available shows only when the server says so, and opens the list of releases`() {
-        val opened = mutableListOf<String>()
-        show("10.11.6", update = true, opened = opened)
-        compose.onNodeWithText("Update available").performClick()
-        assertEquals(listOf(releases), opened)
-    }
-
-    @Test
-    fun `without an update there is no update row`() {
-        show("10.11.6", update = false)
-        compose.onNodeWithText("Update available").assertDoesNotExist()
-    }
-
-    @Test
-    fun `no version means no row to name it, though an update is still offered`() {
-        show("", update = true)
-        compose.onNodeWithText("Release notes").assertDoesNotExist()
-        compose.onNodeWithText("Update available").assertIsDisplayed()
-    }
-
     private val session = JellyfinSession("http://192.168.1.2:8096", "Living room", "a1", "10.11.6", "u1", "sam", "not-a-token")
 
     private fun showCard(
@@ -111,10 +89,8 @@ class ReleaseNotesTest {
         opened: MutableList<String> = mutableListOf(),
     ) = compose.setContent {
         JellyfinTheme {
-            ServerHomeCard(UiState.SignedIn(session, card = ServerCardState(updateAvailable = update)), canOpen = canOpen, open = {
-                opened +=
-                    it
-            })
+            val state = UiState.SignedIn(session, card = ServerCardState(updateAvailable = update))
+            ServerHomeCard(state, canOpen = canOpen, open = { opened += it })
         }
     }
 
@@ -144,8 +120,13 @@ class ReleaseNotesTest {
 
     @Test
     fun `where no browser can open it, no row is offered`() {
-        show("10.11.6", update = true, canOpen = { false })
+        show("10.11.6", canOpen = { false })
         compose.onNodeWithText("Release notes").assertDoesNotExist()
-        compose.onNodeWithText("Update available").assertDoesNotExist()
+    }
+
+    @Test
+    fun `no version means no row`() {
+        show("")
+        compose.onNodeWithText("Release notes").assertDoesNotExist()
     }
 }

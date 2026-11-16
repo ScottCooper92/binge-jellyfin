@@ -61,7 +61,6 @@
     <string name="server_card_connected">Connected</string>
     <string name="server_card_not_encrypted">Not encrypted</string>
     <string name="release_notes">Release notes</string>
-    <string name="release_notes_update_detail">See what’s new</string>
     <string name="server_card_update">Update available</string>
     <string name="server_card_restart">Restart pending</string>
     <string name="server_card_shutting_down">Shutting down</string>

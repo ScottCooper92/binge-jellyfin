@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.NewReleases
-import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -34,36 +33,28 @@ internal fun releaseNotesUrl(version: String?): String {
 internal fun Context.canOpen(url: String): Boolean = packageManager.resolveActivity(Intent(Intent.ACTION_VIEW, url.toUri()), 0) != null
 
 /**
- * The rows that open Jellyfin's release notes in the browser: **Update available** while the server says there is one, which opens the
- * list of releases (the API gives a flag, not the newer version's number), and **Release notes** for the version that is running,
- * which opens that version's page. Both are marked as leaving the app, so a screen reader says they open in the browser. No row is offered without a version to name, or where no browser can open it. [canOpen] says
- * whether one can, and [open] opens it.
+ * The row that opens Jellyfin's release notes for the version that is running, in the browser: its page, or the list of releases for a
+ * build with no release tag. It is marked as leaving the app, so a screen reader says it opens in the browser. No row is offered
+ * without a version to name, or where no browser can open it: [canOpen] says whether one can, and [open] opens it. The newer version's
+ * notes are one tap on the Update available pill of the server card.
  */
 @Composable
 internal fun releaseNotesItems(
     version: String,
-    updateAvailable: Boolean,
     canOpen: (String) -> Boolean = LocalContext.current::canOpen,
     open: (String) -> Unit = LocalContext.current::openInBrowser,
 ): List<ListItem> {
     val running = version.trim()
     val url = releaseNotesUrl(running)
     val openable = remember(url) { canOpen(url) }
-    if (!openable) return emptyList()
-    return listOfNotNull(
-        ListItem(
-            icon = Icons.Outlined.SystemUpdate,
-            label = stringResource(R.string.server_card_update),
-            detail = stringResource(R.string.release_notes_update_detail),
-            destination = ListItemDestination.External,
-            onClick = { open(JELLYFIN_RELEASES_URL) },
-        ).takeIf { updateAvailable },
+    if (!openable || running.isEmpty()) return emptyList()
+    return listOf(
         ListItem(
             icon = Icons.Outlined.NewReleases,
             label = stringResource(R.string.release_notes),
             detail = running,
             destination = ListItemDestination.External,
             onClick = { open(url) },
-        ).takeIf { running.isNotEmpty() },
+        ),
     )
 }
