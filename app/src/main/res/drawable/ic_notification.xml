@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The status-bar glyph: a plain jellyfish silhouette (a bell and three tentacles), one white fill and
+    nothing else, because the system tints it and keeps only its alpha. It is simpler than the in-app mark
+    (ic_companion) on purpose: no ring, no thin strokes, and gaps of 3 units between the tentacles so they
+    stay apart at 24 dp. Drawn on a 24 unit viewport so the edges land on whole units.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,12 C4,6.5 7.5,3 12,3 C16.5,3 20,6.5 20,12 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6,11 H8 V19 A1,1 0 0 1 6,19 Z M11,11 H13 V21 A1,1 0 0 1 11,21 Z M16,11 H18 V19 A1,1 0 0 1 16,19 Z" />
+</vector>

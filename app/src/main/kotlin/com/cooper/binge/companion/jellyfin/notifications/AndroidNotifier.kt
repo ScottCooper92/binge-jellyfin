@@ -76,7 +76,7 @@ class AndroidNotifier(
         val notification =
             NotificationCompat
                 .Builder(context, channel)
-                .setSmallIcon(R.drawable.ic_companion)
+                .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(body.lineSequence().first())
                 .setStyle(NotificationCompat.BigTextStyle().bigText(body))
