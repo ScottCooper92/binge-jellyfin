@@ -3,16 +3,15 @@ package com.cooper.binge.companion.jellyfin.ui
 import android.content.Context
 import android.content.Intent
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.SystemUpdate
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import com.binge.designsystem.component.ListItem
+import com.binge.designsystem.component.ListItemDestination
 import com.cooper.binge.companion.jellyfin.R
 
 /** Where Jellyfin's releases are listed, newest first. */
@@ -37,7 +36,7 @@ internal fun Context.canOpen(url: String): Boolean = packageManager.resolveActiv
 /**
  * The rows that open Jellyfin's release notes in the browser: **Update available** while the server says there is one, which opens the
  * list of releases (the API gives a flag, not the newer version's number), and **Release notes** for the version that is running,
- * which opens that version's page. No row is offered without a version to name, or where no browser can open it. [canOpen] says
+ * which opens that version's page. Both are marked as leaving the app, so a screen reader says they open in the browser. No row is offered without a version to name, or where no browser can open it. [canOpen] says
  * whether one can, and [open] opens it.
  */
 @Composable
@@ -51,20 +50,19 @@ internal fun releaseNotesItems(
     val url = releaseNotesUrl(running)
     val openable = remember(url) { canOpen(url) }
     if (!openable) return emptyList()
-    val trailing: @Composable () -> Unit = { Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null) }
     return listOfNotNull(
         ListItem(
             icon = Icons.Outlined.SystemUpdate,
             label = stringResource(R.string.server_card_update),
             detail = stringResource(R.string.release_notes_update_detail),
-            trailingContent = trailing,
+            destination = ListItemDestination.External,
             onClick = { open(JELLYFIN_RELEASES_URL) },
         ).takeIf { updateAvailable },
         ListItem(
             icon = Icons.Outlined.NewReleases,
             label = stringResource(R.string.release_notes),
             detail = running,
-            trailingContent = trailing,
+            destination = ListItemDestination.External,
             onClick = { open(url) },
         ).takeIf { running.isNotEmpty() },
     )
