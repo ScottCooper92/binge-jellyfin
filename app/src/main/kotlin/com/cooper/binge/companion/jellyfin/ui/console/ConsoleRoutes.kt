@@ -449,7 +449,7 @@ private fun ThisAppRoute(
     serverVersion: JellyfinVersion?,
     onBack: () -> Unit,
 ) {
-    val tip: TipViewModel = viewModel(factory = viewModelFactory { initializer { TipViewModel(graph.tipBilling) } })
+    val tip: TipViewModel = viewModel(factory = viewModelFactory { initializer { TipViewModel(graph.tipBilling, graph.reviewPrompt) } })
     val state by tip.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     ThisAppScreen(

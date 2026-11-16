@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.tip
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.tip.TipBilling
 import com.cooper.homelab.core.tip.TipOutcome
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -36,6 +37,7 @@ sealed interface TipEvent {
 /** Reads the tip prices once and runs one purchase at a time. */
 internal class TipViewModel(
     private val billing: TipBilling,
+    private val reviewPrompt: ReviewPrompt,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<TipUiState>(TipUiState.Loading)
     val uiState: StateFlow<TipUiState> = _uiState.asStateFlow()
@@ -60,8 +62,15 @@ internal class TipViewModel(
         viewModelScope.launch {
             try {
                 when (billing.give(activity, step)) {
-                    TipOutcome.Thanks -> _events.emit(TipEvent.Thanks)
-                    TipOutcome.Pending -> _events.emit(TipEvent.Pending)
+                    TipOutcome.Thanks -> {
+                        reviewPrompt.suppressForThisSession()
+                        _events.emit(TipEvent.Thanks)
+                    }
+                    TipOutcome.Pending -> {
+                        // The store may still complete it, and a rating must not follow a tip.
+                        reviewPrompt.suppressForThisSession()
+                        _events.emit(TipEvent.Pending)
+                    }
                     TipOutcome.Failed -> _events.emit(TipEvent.Failed)
                     TipOutcome.Cancelled -> Unit
                 }
