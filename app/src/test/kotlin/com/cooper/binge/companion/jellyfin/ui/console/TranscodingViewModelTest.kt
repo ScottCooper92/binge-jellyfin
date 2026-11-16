@@ -50,8 +50,8 @@ import org.robolectric.RobolectricTestRunner
 class TranscodingViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
     private val teardown = ViewModelTeardown()
+    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
 
     private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
 

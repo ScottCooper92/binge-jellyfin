@@ -35,8 +35,8 @@ import java.time.ZoneOffset
 class ActivityFiltersViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
     private val teardown = ViewModelTeardown()
+    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
     private val now = Instant.parse("2026-11-09T15:30:00Z")
 
     private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
