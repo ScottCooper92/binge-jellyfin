@@ -24,6 +24,12 @@ your phone, set your playback languages, see what's playing, and, as an admin, s
 tasks, read the activity log, and manage devices and users. It is not a client: browsing and
 playing stay in Binge, and in Jellyfin's own apps.
 
+## Signing in
+
+Sign in with your Jellyfin username and password, or with Quick Connect. An account that exists only
+through the SSO plugin (OpenID Connect or SAML) has no password, and this app does not support the
+plugin's browser flow. Sign in with Quick Connect from a Jellyfin client you are already signed in to.
+
 ## Status
 
 **Pre-alpha.** Sign-in, the library index, the exported Service and the phone settings screen are

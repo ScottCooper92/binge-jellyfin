@@ -291,6 +291,12 @@ private fun SignIn(
             loading = state.gettingCode,
             modifier = Modifier.fillMaxWidth(),
         )
+        // An account that exists only through single sign-on has no password here; this is how it gets in.
+        Text(
+            stringResource(R.string.setup_quick_connect_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         state.quickConnectError?.let { ErrorLine(it) }
     }
 }
