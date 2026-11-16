@@ -11,7 +11,7 @@ class BugReportTest {
     @Test
     fun `the link opens the bug form with each field filled by its own id`() {
         assertEquals(
-            "https://github.com/ScottCooper92/binge-jellyfin/issues/new" +
+            "https://github.com/ScottCooper92/ephyra/issues/new" +
                 "?template=bug.yml&app-version=0.1.0+%28101%29&device=Google+Pixel+10%2C+Android+17+%28API+37%29",
             bugReportUrl(report),
         )

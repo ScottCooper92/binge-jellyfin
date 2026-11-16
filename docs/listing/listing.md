@@ -48,7 +48,7 @@ If the maintainer prefers a descriptor, `Ephyra for Jellyfin` (20 characters) is
 >
 > Open source
 >
-> Ephyra is free software under the GPL 3.0 or later: github.com/ScottCooper92/binge-jellyfin
+> Ephyra is free software under the GPL 3.0 or later: github.com/ScottCooper92/ephyra
 >
 > Ephyra is an independent app. It is not made, endorsed or sponsored by the Jellyfin project. "Jellyfin" is used here only to say what Ephyra works with.
 
@@ -63,8 +63,8 @@ If the maintainer prefers a descriptor, `Ephyra for Jellyfin` (20 characters) is
 - Category: Tools
 - Tags: media server, self-hosted, remote control (pick from Play's list; "Jellyfin" is not a tag)
 - Contact email: the maintainer's
-- Website: https://github.com/ScottCooper92/binge-jellyfin
-- Privacy policy: https://scottcooper92.github.io/binge-jellyfin/privacy/
+- Website: https://github.com/ScottCooper92/ephyra
+- Privacy policy: https://scottcooper92.github.io/ephyra/privacy/
 
 ## Why the text reads the way it does
 

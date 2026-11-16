@@ -1,6 +1,6 @@
 # Privacy policy
 
-*Ephyra for Jellyfin* ("the app") is a companion for a Jellyfin server that you run or use. This policy describes what the app stores, where it sends it, and what it does not do. It is written to be checked against the source code, which is public at https://github.com/ScottCooper92/binge-jellyfin.
+*Ephyra for Jellyfin* ("the app") is a companion for a Jellyfin server that you run or use. This policy describes what the app stores, where it sends it, and what it does not do. It is written to be checked against the source code, which is public at https://github.com/ScottCooper92/ephyra.
 
 ## What the app stores on your device
 
@@ -57,4 +57,4 @@ This policy changes when the app's behaviour changes, in the same change, and it
 
 ## Contact
 
-Open an issue at https://github.com/ScottCooper92/binge-jellyfin/issues.
+Open an issue at https://github.com/ScottCooper92/ephyra/issues.

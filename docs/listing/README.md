@@ -12,7 +12,7 @@ What the store page says, in the repository so it is reviewed like code and stay
 
 ## What is not here
 
-- **The privacy policy's public URL.** `.github/workflows/privacy-policy.yml` publishes `privacy.md` to https://scottcooper92.github.io/binge-jellyfin/privacy/ when it changes on `main`. It needs Pages switched on with GitHub Actions as its source (Settings > Pages).
+- **The privacy policy's public URL.** `.github/workflows/privacy-policy.yml` publishes `privacy.md` to https://scottcooper92.github.io/ephyra/privacy/ when it changes on `main`. It needs Pages switched on with GitHub Actions as its source (Settings > Pages).
 - **Store graphics.** The 512 px icon, the 1024x500 feature graphic and phone and TV screenshots are design assets and device captures (use the demo, and check the status bar is clean). The icon and the artwork wait on the new mark (#170).
 - **The release upload.** `release.yml` uploads the signed bundle and the R8 mapping to Play's **internal** testing track on a `v*` tag, with `changesNotSentForReview` so the release is sent for review from the Play Console. It skips with a notice, and the release still succeeds, when the `PLAY_SERVICE_ACCOUNT_JSON` secret is not set. Once, in the Play Console, before the first upload can work:
   1. Create the app for `com.cooper.binge.companion.ephyra`.

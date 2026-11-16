@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 import com.binge.designsystem.R as DesR
 
 /** The hosted privacy policy page, built from `docs/listing/privacy.md` by `privacy-policy.yml`: the URL Play links to. */
-private const val PRIVACY_POLICY_URL = "https://scottcooper92.github.io/binge-jellyfin/privacy/"
+private const val PRIVACY_POLICY_URL = "https://scottcooper92.github.io/ephyra/privacy/"
 
 /**
  * The user's answers about what this app reports, as the home and the account show them: usage data (PostHog, only if the user

@@ -42,7 +42,7 @@
 >
 > Código abierto
 >
-> Ephyra es software libre con licencia GPL 3.0 o posterior: github.com/ScottCooper92/binge-jellyfin
+> Ephyra es software libre con licencia GPL 3.0 o posterior: github.com/ScottCooper92/ephyra
 >
 > Ephyra es una app independiente. No está hecha, respaldada ni patrocinada por el proyecto Jellyfin. «Jellyfin» se usa aquí solo para indicar con qué funciona Ephyra.
 

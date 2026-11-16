@@ -29,7 +29,7 @@ private const val SETTLE_MILLIS = 1_000L
 
 /**
  * What is typed in the real Add repository sheet comes back when the Activity is recreated, whether the rotation turns the sheet
- * from a bottom sheet into a side sheet or back (binge-jellyfin#298, #301, #280). The design system keeps a task sheet's content
+ * from a bottom sheet into a side sheet or back (ephyra#298, #301, #280). The design system keeps a task sheet's content
  * state itself (binge-design-system#1066), so the form's own `rememberSaveable`s need no key of their own.
  *
  * It drives an `ActivityController` and an empty compose rule, not a rule that owns the Activity: a rule's `setContent` wraps the
