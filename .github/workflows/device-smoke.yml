@@ -60,6 +60,7 @@ jobs:
       actions: write
     uses: ScottCooper92/binge-ci/.github/workflows/device-smoke.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
     with:
+      private_submodules: homelab-core,binge-design-system,binge-ci
       ref: ${{ github.event.inputs.ref }}
       submodules: recursive
       private_submodules: homelab-core

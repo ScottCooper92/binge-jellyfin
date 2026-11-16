@@ -64,6 +64,7 @@ jobs:
       (!github.event.workflow_run || github.event.workflow_run.head_repository.full_name == github.repository)
     uses: ScottCooper92/binge-ci/.github/workflows/bot-review.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
     with:
+      private_submodules: homelab-core,binge-design-system,binge-ci
       dispatch_pr: ${{ inputs.pr }}
       private_submodules: homelab-core
       auto_merge: true

@@ -62,7 +62,7 @@ jobs:
       pull-requests: read
     uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
     with:
-      private_submodules: homelab-core
+      private_submodules: homelab-core,binge-design-system,binge-ci
     secrets:
       REVIEWER_APP_ID: ${{ secrets.REVIEWER_APP_ID }}
       REVIEWER_APP_PRIVATE_KEY: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
@@ -175,19 +175,19 @@ jobs:
       # included build is an empty directory and Gradle fails at settings evaluation. Recursive,
       # because a submodule can carry its own: binge-companions includes binge-ci's Gradle gates
       # from a binge-ci submodule, and this build includes binge-companions.
-      # homelab-core is a private submodule: the default token reads this repository only. This one is read-only.
-      - name: Mint a read-only token for the private submodule
-        id: submodule_token
+      # A read-only token, so the submodules fetch even when they are private.
+      - id: submodule_token
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core
+          repositories: ephyra,homelab-core,binge-design-system,binge-ci
           permission-contents: read
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          submodules: recursive
           token: ${{ steps.submodule_token.outputs.token }}
+          submodules: recursive
 
       # JDK 21, matching binge-ci's ci-setup. The JDK runs the build and nothing else:
       # `jvmTarget` 17 in app/build.gradle.kts decides the bytecode, so this does not move what
@@ -233,19 +233,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      # homelab-core is a private submodule: the default token reads this repository only. This one is read-only.
-      - name: Mint a read-only token for the private submodule
-        id: submodule_token
+      # A read-only token, so the submodules fetch even when they are private.
+      - id: submodule_token
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core
+          repositories: ephyra,homelab-core,binge-design-system,binge-ci
           permission-contents: read
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          submodules: recursive
           token: ${{ steps.submodule_token.outputs.token }}
+          submodules: recursive
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
@@ -286,19 +286,19 @@ jobs:
       matrix:
         shard: [0, 1, 2]
     steps:
-      # homelab-core is a private submodule: the default token reads this repository only. This one is read-only.
-      - name: Mint a read-only token for the private submodule
-        id: submodule_token
+      # A read-only token, so the submodules fetch even when they are private.
+      - id: submodule_token
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core
+          repositories: ephyra,homelab-core,binge-design-system,binge-ci
           permission-contents: read
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          submodules: recursive
           token: ${{ steps.submodule_token.outputs.token }}
+          submodules: recursive
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
@@ -338,19 +338,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      # homelab-core is a private submodule: the default token reads this repository only. This one is read-only.
-      - name: Mint a read-only token for the private submodule
-        id: submodule_token
+      # A read-only token, so the submodules fetch even when they are private.
+      - id: submodule_token
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core
+          repositories: ephyra,homelab-core,binge-design-system,binge-ci
           permission-contents: read
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          submodules: recursive
           token: ${{ steps.submodule_token.outputs.token }}
+          submodules: recursive
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
