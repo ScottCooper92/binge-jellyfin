@@ -33,7 +33,7 @@ class StartupFinishStep internal constructor(
 
     fun onPortMapping(on: Boolean) = edit { copy(portMapping = on && remoteAccess, error = null) }
 
-    /** Saves remote access and completes the server, then signs in. Both calls can be made again if the first try stopped part way. */
+    /** Saves remote access and completes the server, then signs in. Both calls can be made again if the first try stopped part way; a 401 from either means the server is already complete. */
     fun finish() {
         val wizard = state.value as? UiState.Startup ?: return
         val step = wizard.phase as? StartupPhase.Finish ?: return
@@ -47,10 +47,12 @@ class StartupFinishStep internal constructor(
                     client.saveStartupRemoteAccess(step.remoteAccess, step.remoteAccess && step.portMapping)
                     client.completeStartup()
                 }
+            val failure = completed.exceptionOrNull()
             // Logged by type alone: nothing sent here belongs in a log.
-            completed.exceptionOrNull()?.let { Log.i(TAG, "Setup could not be completed: ${it.javaClass.simpleName}") }
-            if (completed.isFailure) {
-                val failure = completed.exceptionOrNull()
+            failure?.let { Log.i(TAG, "Setup could not be completed: ${it.javaClass.simpleName}") }
+            // These routes are anonymous until Complete, so a 401 means the server is already complete: an earlier Complete took
+            // effect and its reply was lost. Go on to the sign-in, as after a normal Complete.
+            if (failure != null && !failure.isAlreadyComplete()) {
                 val error = if (failure is JellyfinHttpException) SetupError.Generic else unreachableSetup(wizard.baseUrl, localNetwork)
                 edit { copy(busy = false, error = error) }
                 return@launch
@@ -77,6 +79,8 @@ class StartupFinishStep internal constructor(
         }
     }
 
+    private fun Throwable.isAlreadyComplete() = this is JellyfinHttpException && code == HTTP_UNAUTHORIZED
+
     private fun edit(change: StartupPhase.Finish.() -> StartupPhase.Finish) =
         state.update { current ->
             val s = current as? UiState.Startup ?: return@update current
@@ -85,5 +89,6 @@ class StartupFinishStep internal constructor(
 
     private companion object {
         const val TAG = "JellyfinStartup"
+        const val HTTP_UNAUTHORIZED = 401
     }
 }
