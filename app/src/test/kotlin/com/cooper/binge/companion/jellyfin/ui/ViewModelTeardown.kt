@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
+import com.cooper.binge.companion.jellyfin.server.Connection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -20,14 +21,20 @@ import kotlinx.coroutines.test.resetMain
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ViewModelTeardown {
     private val viewModels = mutableListOf<ViewModel>()
+    private val connections = mutableListOf<Connection>()
 
     fun <T : ViewModel> made(viewModel: T): T = viewModel.also { viewModels += it }
+
+    /** A connection a test builds: closed with the view models, so its session watcher and saves end with the test. */
+    fun made(connection: Connection): Connection = connection.also { connections += it }
 
     fun close(jellyfin: FakeJellyfin) {
         val jobs = viewModels.mapNotNull { it.viewModelScope.coroutineContext[Job] }
         jobs.forEach { it.cancel() }
         runBlocking { jobs.forEach { it.join() } }
         viewModels.clear()
+        connections.forEach { it.close() }
+        connections.clear()
         jellyfin.close()
         Dispatchers.resetMain()
     }
