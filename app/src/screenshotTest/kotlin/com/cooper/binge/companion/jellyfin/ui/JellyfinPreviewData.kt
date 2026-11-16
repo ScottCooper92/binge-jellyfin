@@ -140,6 +140,9 @@ val previewQuickConnect = previewSignIn.copy(quickConnectCode = "482913")
 
 val previewQuickConnectOff = previewSignIn.copy(quickConnectError = SetupError.QuickConnectOff)
 
+/** The server said Quick Connect is off before it was tried: no button and no hint. */
+val previewQuickConnectNotOffered = previewSignIn.copy(quickConnectOn = false)
+
 val previewQuickConnectExpired = previewSignIn.copy(quickConnectError = SetupError.QuickConnectExpired)
 
 private val session =

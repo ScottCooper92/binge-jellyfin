@@ -340,13 +340,15 @@ private fun SignIn(
         if (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied) {
             AllowLocalNetworkButton(actions)
         }
-        BingeOutlinedButton(
-            label = stringResource(R.string.setup_quick_connect),
-            onClick = actions.onQuickConnect,
-            leadingIcon = Icons.Outlined.QrCode2,
-            loading = state.gettingCode,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        if (state.quickConnectOn) {
+            BingeOutlinedButton(
+                label = stringResource(R.string.setup_quick_connect),
+                onClick = actions.onQuickConnect,
+                leadingIcon = Icons.Outlined.QrCode2,
+                loading = state.gettingCode,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         // An account that exists only through single sign-on has no password here; this is how it gets in. It is said before
         // Quick Connect is tried: once a code is being fetched, or the server has said it is off, or the code has expired, it
         // would only repeat the screen or point at something that isn't there.

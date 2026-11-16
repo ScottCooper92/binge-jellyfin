@@ -220,6 +220,11 @@ class JellyfinScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
+    fun quickConnectNotOffered() = JellyfinRoot(previewQuickConnectNotOffered, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
     fun quickConnectExpired() = JellyfinRoot(previewQuickConnectExpired, Actions())
 
     @PreviewTest

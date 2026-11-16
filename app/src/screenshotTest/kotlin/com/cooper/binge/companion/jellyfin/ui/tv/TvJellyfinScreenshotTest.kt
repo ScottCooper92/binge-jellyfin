@@ -32,6 +32,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewEnterServerSearching
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnect
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectExpired
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
+import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectNotOffered
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectOff
 import com.cooper.binge.companion.jellyfin.ui.previewSetupIncomplete
 import com.cooper.binge.companion.jellyfin.ui.previewSignIn
@@ -113,6 +114,12 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun quickConnectOff() = TvJellyfinRoot(previewQuickConnectOff, Actions())
+
+    /** Quick Connect is off on the server, so the step opens on the password with no code behind it. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun quickConnectNotOffered() = TvJellyfinRoot(previewQuickConnectNotOffered, Actions())
 
     @PreviewTest
     @JellyfinTvScreenPreviews

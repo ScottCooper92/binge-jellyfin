@@ -32,6 +32,7 @@ import com.cooper.binge.companion.jellyfin.server.publicInfo
 import com.cooper.binge.companion.jellyfin.server.publicUsers
 import com.cooper.binge.companion.jellyfin.server.quickConnectAuthenticated
 import com.cooper.binge.companion.jellyfin.server.quickConnectEnabled
+import com.cooper.binge.companion.jellyfin.server.quickConnectEnabledOrNull
 import com.cooper.binge.companion.jellyfin.server.quickConnectInitiate
 import com.cooper.binge.companion.jellyfin.server.userThumbnail
 import com.cooper.binge.companion.jellyfin.telemetry.Analytics
@@ -153,6 +154,38 @@ private fun CoroutineScope.loadPublicUsers(
 }
 
 /**
+ * Reads whether the server has Quick Connect on, for the sign-in step. The route is public, so it is the anonymous client. Only an
+ * answer of "off" changes the step: a failure or an unclear answer keeps Quick Connect offered. A code already asked for is
+ * dropped without an error, since the user did not ask to be told.
+ */
+private fun CoroutineScope.loadQuickConnectOn(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    url: HttpUrl,
+    base: String,
+    onOff: () -> Unit,
+) {
+    launch {
+        val on =
+            attempt { connection.anonymous(url).quickConnectEnabledOrNull() }
+                .onFailure { Log.i("JellyfinSetup", "Whether Quick Connect is on could not be read", it) }
+                .getOrNull()
+        // Only for the step it was asked for: the user may have moved to another server while it was in flight, and that server's
+        // code request is not this answer's to cancel.
+        if (on == false && (state.value as? UiState.SignIn)?.baseUrl == base) {
+            // A code request already in flight stops first, so it cannot land a code or an error after the step says it is off.
+            onOff()
+            state.update { s ->
+                (s as? UiState.SignIn)
+                    ?.takeIf { it.baseUrl == base }
+                    ?.copy(quickConnectOn = false, quickConnectCode = null, quickConnectError = null, gettingCode = false)
+                    ?: s
+            }
+        }
+    }
+}
+
+/**
  * Reads each listed account's picture for the sign-in step. There is no token yet, so the client is the anonymous one and the
  * route is the one the server answers to anyone; a picture that cannot be read stays the account's initials. A picture lands only
  * in the step whose list it was asked for, and is held in memory alone.
@@ -262,15 +295,20 @@ sealed interface UiState {
          * nothing is written to disk. An account missing from the map shows its initials.
          */
         val publicPictures: Map<String, Bitmap> = emptyMap(),
+        /**
+         * Whether Quick Connect is offered. True until the server has said it is off: a read that fails or answers nothing leaves it
+         * on, and the server's own refusal when a code is asked for stays the backstop.
+         */
+        val quickConnectOn: Boolean = true,
     ) : UiState {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
 
         /**
          * Whether the sign-in step says what Quick Connect is for. Only while Quick Connect is untried: the server's answer that it is
-         * off is read when a code is asked for, so that is the one time the hint can't be known right, and once it has failed, or a
-         * code is on its way, the screen already says what to do.
+         * off is read when the step opens, so the hint is never shown for a server that has it off, and once a code has failed or is
+         * on its way the screen already says what to do.
          */
-        val showsQuickConnectHint: Boolean get() = quickConnectError == null && !gettingCode
+        val showsQuickConnectHint: Boolean get() = quickConnectOn && quickConnectError == null && !gettingCode
     }
 
     /** The setup wizard of a server that has not finished its first-run setup, reached from the sign-in step's notice. */
@@ -410,6 +448,7 @@ class JellyfinViewModel(
                 val base = info.baseUrl.toString().trimEnd('/')
                 _state.value = UiState.SignIn(baseUrl = base, server = info)
                 viewModelScope.loadPublicUsers(connection, _state, info.baseUrl, base)
+                viewModelScope.loadQuickConnectOn(connection, _state, info.baseUrl, base) { quickConnect?.cancel() }
             }
         }
     }
