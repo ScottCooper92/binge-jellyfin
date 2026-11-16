@@ -33,6 +33,7 @@ class ServerEventsTest {
     @After
     fun close() {
         scope.cancel()
+        connection.close()
         jellyfin.close()
     }
 

@@ -28,7 +28,10 @@ class ActivityCheckerTest {
     private val checker = ActivityChecker(connection, prefs, notifier)
 
     @After
-    fun close() = jellyfin.close()
+    fun close() {
+        connection.close()
+        jellyfin.close()
+    }
 
     private fun signIn() = runBlocking { sessions.save(jellyfin.session()) }
 

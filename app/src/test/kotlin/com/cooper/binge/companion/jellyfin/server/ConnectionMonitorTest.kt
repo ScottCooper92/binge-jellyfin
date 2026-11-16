@@ -21,15 +21,22 @@ import org.junit.Test
 class ConnectionMonitorTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
+    private lateinit var connection: Connection
 
     @Before
     fun signedIn() {
         runBlocking { sessions.save(jellyfin.session()) }
+        // Built after the session is saved, and waited on until it is watching, so the watcher's baseline is the saved session and
+        // no later "change" resets the monitor in the middle of a test.
+        connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
+        runBlocking { withTimeout(WAIT_MILLIS) { connection.awaitWatching() } }
     }
 
     @After
-    fun close() = jellyfin.close()
+    fun close() {
+        connection.close()
+        jellyfin.close()
+    }
 
     /** One call to the saved server, which may fail: only what it tells the monitor is looked at. */
     private fun call() {

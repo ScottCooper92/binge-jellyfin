@@ -46,7 +46,10 @@ class UserPicturesTest {
     }
 
     @After
-    fun close() = jellyfin.close()
+    fun close() {
+        connection.close()
+        jellyfin.close()
+    }
 
     private fun picture(): ByteArray {
         val bitmap = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)

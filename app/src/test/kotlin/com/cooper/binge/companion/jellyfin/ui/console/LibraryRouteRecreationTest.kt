@@ -54,7 +54,10 @@ class LibraryRouteRecreationTest {
     }
 
     @After
-    fun stop() = jellyfin.close()
+    fun stop() {
+        connection.close()
+        jellyfin.close()
+    }
 
     private var item by mutableStateOf(libraryItem("lib-movies"))
 

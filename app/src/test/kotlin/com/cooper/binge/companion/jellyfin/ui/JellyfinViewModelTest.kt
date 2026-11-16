@@ -59,10 +59,15 @@ class JellyfinViewModelTest {
         jellyfin.items += FakeItem("m", "Companion", "Movie", tmdbId = 1084199)
     }
 
+    /** The connections a test builds beside the shared one (the demo's, a slow one): closed with it. */
+    private val extraConnections = mutableListOf<Connection>()
+
     @After
     fun close() {
         // Cancels what the view models still have in flight, so none resumes on Main while it is reset.
         stores.forEach { it.clear() }
+        connection.close()
+        extraConnections.forEach { it.close() }
         jellyfin.close()
         Dispatchers.resetMain()
     }
@@ -125,7 +130,7 @@ class JellyfinViewModelTest {
                 "Test",
                 "1.0",
                 Dispatchers.IO,
-            )
+            ).also { extraConnections += it }
         return track(JellyfinViewModel(demoSessions, demoConnection, index, discover = { found }, analytics = analytics))
     }
 
@@ -1000,7 +1005,7 @@ class JellyfinViewModelTest {
                 track(
                     JellyfinViewModel(
                         sessions,
-                        Connection(slow, sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO),
+                        Connection(slow, sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO).also { extraConnections += it },
                         index,
                         discover = {
                             gate.await()
