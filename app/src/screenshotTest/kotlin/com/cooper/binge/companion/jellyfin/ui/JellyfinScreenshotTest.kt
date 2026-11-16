@@ -137,6 +137,12 @@ class JellyfinScreenshotTest {
     @Composable
     fun startupAccountRefused() = JellyfinRoot(previewStartupAccountRefused, Actions())
 
+    /** The server refused the account and said why: its own words stand in place of the generic sentence. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun startupAccountReason() = JellyfinRoot(previewStartupAccountReason, Actions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
