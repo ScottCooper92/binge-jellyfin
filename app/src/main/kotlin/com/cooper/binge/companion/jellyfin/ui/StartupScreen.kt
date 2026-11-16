@@ -124,6 +124,8 @@ private fun StartupPickerSheet(
 ) {
     val configuration = step.configuration
     val filter = stringResource(R.string.startup_filter)
+    val noLanguages = stringResource(R.string.startup_no_match_languages)
+    val noCountries = stringResource(R.string.startup_no_match_countries)
     when (picker) {
         null -> Unit
         StartupPicker.UiLanguage ->
@@ -134,6 +136,7 @@ private fun StartupPickerSheet(
                 onSelect = startup.onUiLanguage,
                 onDismissRequest = onDismiss,
                 filterPlaceholder = filter,
+                noMatchLabel = noLanguages,
             )
         StartupPicker.MetadataLanguage ->
             BingeChoiceSheet(
@@ -151,6 +154,7 @@ private fun StartupPickerSheet(
                 onSelect = startup.onMetadataLanguage,
                 onDismissRequest = onDismiss,
                 filterPlaceholder = filter,
+                noMatchLabel = noLanguages,
             )
         StartupPicker.MetadataCountry ->
             BingeChoiceSheet(
@@ -160,6 +164,7 @@ private fun StartupPickerSheet(
                 onSelect = startup.onMetadataCountry,
                 onDismissRequest = onDismiss,
                 filterPlaceholder = filter,
+                noMatchLabel = noCountries,
             )
     }
 }

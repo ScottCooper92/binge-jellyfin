@@ -69,6 +69,37 @@ class ChannelMappingsScreenshotTest {
     fun tunerChannels() =
         Surface { TunerChannelPane(ready("p1"), options.providerChannels.first(), ChannelMappingsActions(), PaddingValues()) }
 
+    /** A filter that matches no tuner channel: the search-off line where the rows were. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun tunerChannelsNoMatch() =
+        Surface {
+            TunerChannelPane(
+                ready("p1"),
+                options.providerChannels.first(),
+                ChannelMappingsActions(),
+                PaddingValues(),
+                initialQuery = "zzz",
+            )
+        }
+
+    /** The same, beside the list from 600 dp wide. */
+    @PreviewTest
+    @JellyfinWidePreview
+    @Composable
+    fun twoPanesNoMatch() =
+        Surface {
+            TunerChannelPane(
+                ready("p1"),
+                options.providerChannels.first(),
+                ChannelMappingsActions(),
+                PaddingValues(),
+                initialQuery = "zzz",
+            )
+        }
+
     /** From 600 dp wide: the list and the tuner channels of the open channel, side by side. */
     @PreviewTest
     @JellyfinWidePreview

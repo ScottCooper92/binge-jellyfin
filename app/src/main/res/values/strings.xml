@@ -18,6 +18,8 @@
     <string name="startup_title">Set up your server</string>
     <string name="startup_body">Choose a name and the languages Jellyfin uses. You can change them later in the server settings.</string>
     <string name="startup_filter">Search</string>
+    <string name="startup_no_match_languages">No languages match</string>
+    <string name="startup_no_match_countries">No countries match</string>
     <string name="startup_save">Save</string>
     <string name="startup_finish_title">Remote access</string>
     <string name="startup_finish_body">Choose whether apps outside your home network can reach this server. You can change this later in the server settings.</string>
@@ -1331,6 +1333,7 @@
     <string name="channel_mappings_pick_title">Tuner channel for %1$s</string>
     <string name="channel_mappings_pick_placeholder">Choose a channel to pick its tuner channel.</string>
     <string name="channel_mappings_search">Search tuner channels</string>
+    <string name="channel_mappings_no_match">No tuner channels match</string>
     <string name="channel_mappings_no_channels">This guide data lists no channels</string>
     <string name="channel_mappings_no_tuner_channels">Your tuners offer no channels</string>
     <string name="channel_mappings_paired_with">Paired with %1$s</string>
