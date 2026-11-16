@@ -113,6 +113,11 @@ val previewStartupAccountRefused =
         phase = StartupPhase.Account("sam", "hunter2", "hunter2", error = SetupError.Generic),
     )
 
+val previewStartupAccountReason =
+    previewStartup.copy(
+        phase = StartupPhase.Account("sam", "hunter2", "hunter2", error = SetupError.Generic, reason = "Password must not be empty"),
+    )
+
 val previewStartupLoading = previewStartup.copy(phase = StartupPhase.Loading)
 
 val previewStartupFailed = previewStartup.copy(phase = StartupPhase.Failed(ConsoleFailure.Unreachable))

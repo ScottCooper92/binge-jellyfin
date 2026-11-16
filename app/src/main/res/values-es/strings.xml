@@ -24,7 +24,6 @@
     <string name="startup_finish">Terminar configuración</string>
     <string name="startup_account_title">Crea tu cuenta</string>
     <string name="startup_account_body">Esta es la cuenta de administrador del servidor. Guarda la contraseña en un lugar seguro.</string>
-    <string name="startup_password_optional">Opcional. Puedes poner una más tarde.</string>
     <string name="startup_password_again">Repite la contraseña</string>
     <string name="startup_password_mismatch">Las contraseñas no coinciden.</string>
     <string name="startup_account_save">Crear cuenta</string>

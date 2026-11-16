@@ -183,7 +183,6 @@ private fun AccountStep(
         value = step.password,
         onValueChange = startup.onPassword,
         label = stringResource(R.string.setup_password),
-        supporting = stringResource(R.string.startup_password_optional),
         secret = true,
         enabled = !step.busy,
         imeAction = ImeAction.Next,
@@ -199,7 +198,9 @@ private fun AccountStep(
         imeAction = ImeAction.Go,
         onDone = { if (step.canSave) startup.onSaveAccount() },
     )
-    step.error?.let { Text(errorText(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+    // The server's own words when it gave any ("Password must not be empty"), else the plain sentence.
+    val failure = step.reason ?: step.error?.let { errorText(it) }
+    failure?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
     BingeFilledButton(
         label = stringResource(R.string.startup_account_save),
         onClick = startup.onSaveAccount,
