@@ -130,13 +130,37 @@ class ServerCardTest {
     }
 
     @Test
+    fun `the hint's count is read again when the home returns, so adding the library takes the hint away`() {
+        jellyfin.administrator = true
+        jellyfin.libraries = JsonArray(emptyList())
+        val vm = viewModel()
+        assertTrue(vm.signedIn { it.card.libraries == 0 && it.isAdministrator }.needsFirstLibrary())
+        // The administrator adds the library on the Libraries page and goes back: the home refreshes its gates, inside the window.
+        jellyfin.libraries = JsonArray(listOf(kotlinx.serialization.json.JsonObject(emptyMap())))
+        vm.refresh(gatesOnly = true)
+        val after = vm.signedIn { it.card.libraries == 1 }
+        assertFalse(after.needsFirstLibrary())
+    }
+
+    @Test
+    fun `a card with libraries is not asked again just for returning to the home`() {
+        jellyfin.administrator = true
+        val vm = viewModel()
+        vm.read(administrator = true)
+        vm.signedIn { it.card.libraries != null }
+        val before = jellyfin.hits("/Library/VirtualFolders")
+        vm.refresh(gatesOnly = true)
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertEquals(before, jellyfin.hits("/Library/VirtualFolders"))
+    }
+
+    @Test
     fun `a library count that fails stays empty, so no hint, and the rest of the card stays`() {
         jellyfin.administrator = true
         jellyfin.status["/Library/VirtualFolders"] = 500
         val vm = viewModel()
         val card = vm.signedIn { it.card.playing != null && it.card.users != null }.card
         runBlocking { delay(SETTLE_MILLIS) }
-        assertNull(card.libraries)
         assertNull(vm.signedIn { true }.card.libraries)
         assertTrue(card.connected)
     }

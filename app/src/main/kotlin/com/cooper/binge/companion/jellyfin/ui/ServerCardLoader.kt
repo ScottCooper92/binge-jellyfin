@@ -105,8 +105,20 @@ internal fun ServerCardLoader.refresh(
     force: Boolean,
 ) {
     val key = "${session.baseUrl}|${session.userId}"
-    val shown = (state.value as? UiState.SignedIn)?.card?.connected == true
-    if (!force && shown && !due(key)) return
+    val current = (state.value as? UiState.SignedIn)?.card
+    val shown = current?.connected == true
+    if (!force && shown && !due(key)) {
+        // The first-library hint is up, so the administrator may have just added the library it asks for and come back. Its count
+        // is read again whatever the window says, and only that count: the other figures stand.
+        if (account.isAdministrator && current.libraries == 0) {
+            scope.launch {
+                attempt { client.libraries().size }.onSuccess { count ->
+                    state.update { (it as? UiState.SignedIn)?.copy(card = it.card.copy(libraries = count)) ?: it }
+                }
+            }
+        }
+        return
+    }
     scope.launch {
         load(key, client, session.userId, account.isAdministrator) { change ->
             state.update { (it as? UiState.SignedIn)?.copy(card = change(it.card)) ?: it }

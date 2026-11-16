@@ -105,14 +105,14 @@ internal fun TmdbCoverageNote(coverage: TmdbCoverage?) {
                             coverage.titles,
                         ),
                     detail = stringResource(detail),
-                    supportingMaxLines = TMDB_NOTE_LINES,
+                    supportingMaxLines = NOTE_LINES,
                     clickable = false,
                 ),
             ),
     )
 }
 
-private const val TMDB_NOTE_LINES = 10
+private const val NOTE_LINES = 10
 
 /**
  * Whether the home hints at adding a first library: an administrator whose server has answered that it has none. A count that
@@ -133,7 +133,7 @@ internal fun FirstLibraryCard(onAdd: () -> Unit) {
                         icon = Icons.Outlined.VideoLibrary,
                         label = stringResource(R.string.first_library_title),
                         detail = stringResource(R.string.first_library_detail),
-                        supportingMaxLines = TMDB_NOTE_LINES,
+                        supportingMaxLines = NOTE_LINES,
                         clickable = false,
                     ),
                 ),
