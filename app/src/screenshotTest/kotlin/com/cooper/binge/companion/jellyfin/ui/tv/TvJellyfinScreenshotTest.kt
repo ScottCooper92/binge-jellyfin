@@ -32,6 +32,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewEnterServerSearching
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnect
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectExpired
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectGetting
+import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectNotOffered
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnectOff
 import com.cooper.binge.companion.jellyfin.ui.previewSetupIncomplete
 import com.cooper.binge.companion.jellyfin.ui.previewSignIn
