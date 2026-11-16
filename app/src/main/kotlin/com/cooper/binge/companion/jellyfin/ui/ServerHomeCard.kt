@@ -8,6 +8,8 @@ import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -27,13 +29,25 @@ import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
  * count. A total that hasn't arrived is a placeholder, and one whose read failed stays one.
  */
 @Composable
-internal fun ServerHomeCard(state: UiState.SignedIn) {
+internal fun ServerHomeCard(
+    state: UiState.SignedIn,
+    canOpen: (String) -> Boolean = LocalContext.current::canOpen,
+    open: (String) -> Unit = LocalContext.current::openInBrowser,
+) {
     val session = state.session
     val card = state.card
+    // The Update available pill opens the list of releases, where something can: the API gives a flag, not the newer version's number.
+    val updateOpens = remember { canOpen(JELLYFIN_RELEASES_URL) }
+    val releaseNotes = stringResource(R.string.release_notes)
     val chips =
         listOfNotNull(
             ServerCardChip(stringResource(R.string.server_card_not_encrypted), BingeSentiment.Caution).takeIf { state.cleartext },
-            ServerCardChip(stringResource(R.string.server_card_update), BingeSentiment.Info).takeIf { card.updateAvailable },
+            ServerCardChip(
+                label = stringResource(R.string.server_card_update),
+                sentiment = BingeSentiment.Info,
+                onClick = { open(JELLYFIN_RELEASES_URL) }.takeIf { updateOpens },
+                contentDescription = releaseNotes.takeIf { updateOpens },
+            ).takeIf { card.updateAvailable },
             ServerCardChip(stringResource(R.string.server_card_restart), BingeSentiment.Caution).takeIf { card.restartPending },
             ServerCardChip(stringResource(R.string.server_card_shutting_down), BingeSentiment.Negative).takeIf { card.shuttingDown },
         )

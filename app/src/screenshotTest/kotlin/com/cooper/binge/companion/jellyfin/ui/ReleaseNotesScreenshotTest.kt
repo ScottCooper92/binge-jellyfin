@@ -19,21 +19,23 @@ class ReleaseNotesScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun releaseNotes() = Rows(version = "10.11.6", update = false)
+    fun releaseNotes() = Rows(version = "10.11.6")
 
+    /** The server card's Update available pill as a tappable one, the worst case of the card's top row: a preview has no browser, so one is assumed. */
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun updateAvailable() = Rows(version = "10.11.6", update = true)
+    fun updatePill() =
+        Surface {
+            Column(Modifier.padding(16.dp)) { ServerHomeCard(previewSignedInAdminAlerts, canOpen = { true }, open = {}) }
+        }
 }
 
 @Composable
-private fun Rows(
-    version: String,
-    update: Boolean,
-) = Surface {
-    Column(Modifier.padding(16.dp)) {
-        ItemGroup(title = null, rows = releaseNotesItems(version, update, canOpen = { true }, open = {}))
+private fun Rows(version: String) =
+    Surface {
+        Column(Modifier.padding(16.dp)) {
+            ItemGroup(title = null, rows = releaseNotesItems(version, canOpen = { true }, open = {}))
+        }
     }
-}
