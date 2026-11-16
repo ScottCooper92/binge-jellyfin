@@ -27,7 +27,7 @@ on Play.
 
 The contracts, the SDK and the design system are consumed as source. `binge-companions/` and
 `design-system/` are git submodules, included as composite builds in `settings.gradle.kts`.
-`binge-ci/` is a third, for the shared Gradle gates. `.gitmodules` is an agent-governed path, so
+`binge-ci/` is a third, for the shared Gradle gates. `homelab-core/` is a fourth, the author's private library; CI needs its token to check it out. `.gitmodules` is an agent-governed path, so
 an author bot's commit can revert a change to it: bump a submodule in a commit of its own, and check
 the pins after any bot push.
 

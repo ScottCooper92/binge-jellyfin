@@ -67,6 +67,7 @@ binge-companion-kit = { module = "io.github.scottcooper92:binge-companion-kit" }
 # Version-less for the same reason: these resolve to the included binge-design-system build.
 binge-designsystem = { module = "com.binge:designsystem" }
 binge-designsystem-tv = { module = "com.binge:designsystem-tv" }
+homelab-appservices = { module = "com.cooper.homelab:app-services" }
 play-billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "playBilling" }
 play-review = { module = "com.google.android.play:review", version.ref = "playReview" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }

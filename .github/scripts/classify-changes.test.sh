@@ -43,6 +43,7 @@ check "the release source set"     "true true true" false app/src/release/kotlin
 check "assets"                     "true true true" false app/src/main/assets/x.json
 check "the manifest"               "true true true"    false app/src/main/AndroidManifest.xml
 check "the design system pin"      "true true true"    false design-system
+check "the homelab-core pin"      "true true true"    false homelab-core
 check "the companions pin"         "true false true"   false binge-companions
 check "sensitive code"             "true true true"    true  "$K/notifications/NotificationPrefs.kt"
 check "sensitive but docs only"    "false false false" true  CLAUDE.md
