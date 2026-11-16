@@ -39,8 +39,8 @@ import org.robolectric.RobolectricTestRunner
 class UserPolicyViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
     private val teardown = ViewModelTeardown()
+    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
 
     /** Sam's policy as 10.11 sends it, with a key this app doesn't know. */
     private val full =

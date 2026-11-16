@@ -39,8 +39,8 @@ class TunerDiscoveryTest {
     @get:Rule val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
     private val server = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
     private val teardown = ViewModelTeardown()
+    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
 
     @Before fun before() {
         Dispatchers.setMain(Dispatchers.Unconfined)

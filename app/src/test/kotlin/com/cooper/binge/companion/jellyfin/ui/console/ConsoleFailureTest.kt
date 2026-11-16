@@ -102,7 +102,7 @@ class ConsoleFailureTest {
             Dispatchers.setMain(Dispatchers.Unconfined)
             val sessions = testSessionStore()
             runBlocking { sessions.save(jellyfin.session()) }
-            val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+            val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
             jellyfin.status["/System/Configuration"] = 500
             jellyfin.statusBody["/System/Configuration"] = """{"title":"The disk is full."}"""
             val vm = teardown.made(ServerSettingsViewModel(connection))
