@@ -347,12 +347,16 @@ private fun SignIn(
             loading = state.gettingCode,
             modifier = Modifier.fillMaxWidth(),
         )
-        // An account that exists only through single sign-on has no password here; this is how it gets in.
-        Text(
-            stringResource(R.string.setup_quick_connect_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        // An account that exists only through single sign-on has no password here; this is how it gets in. It is said before
+        // Quick Connect is tried: once a code is being fetched, or the server has said it is off, or the code has expired, it
+        // would only repeat the screen or point at something that isn't there.
+        if (state.showsQuickConnectHint) {
+            Text(
+                stringResource(R.string.setup_quick_connect_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         state.quickConnectError?.let { ErrorLine(it) }
         ForgotPasswordOverlay(state.forgot, actions.forgotPassword)
     }

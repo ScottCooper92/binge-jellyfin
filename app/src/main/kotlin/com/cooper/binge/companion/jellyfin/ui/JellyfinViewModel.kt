@@ -264,6 +264,13 @@ sealed interface UiState {
         val publicPictures: Map<String, Bitmap> = emptyMap(),
     ) : UiState {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
+
+        /**
+         * Whether the sign-in step says what Quick Connect is for. Only while Quick Connect is untried: the server's answer that it is
+         * off is read when a code is asked for, so that is the one time the hint can't be known right, and once it has failed, or a
+         * code is on its way, the screen already says what to do.
+         */
+        val showsQuickConnectHint: Boolean get() = quickConnectError == null && !gettingCode
     }
 
     /** The setup wizard of a server that has not finished its first-run setup, reached from the sign-in step's notice. */
