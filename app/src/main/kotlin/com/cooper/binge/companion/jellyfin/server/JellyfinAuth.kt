@@ -114,7 +114,7 @@ suspend fun JellyfinClient.authenticateByName(
         JsonObject(mapOf("Username" to JsonPrimitive(username), "Pw" to JsonPrimitive(password))),
     ).toSignedIn()
 
-suspend fun JellyfinClient.quickConnectEnabled(): Boolean = (get("QuickConnect/Enabled") as? JsonPrimitive)?.booleanOrNull == true
+suspend fun JellyfinClient.quickConnectEnabled(): Boolean = quickConnectEnabledOrNull() == true
 
 /** Whether Quick Connect is on, or null when the server did not say (an answer that is not a plain true or false). */
 suspend fun JellyfinClient.quickConnectEnabledOrNull(): Boolean? = (get("QuickConnect/Enabled") as? JsonPrimitive)?.booleanOrNull

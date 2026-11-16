@@ -170,7 +170,9 @@ private fun CoroutineScope.loadQuickConnectOn(
             attempt { connection.anonymous(url).quickConnectEnabledOrNull() }
                 .onFailure { Log.i("JellyfinSetup", "Whether Quick Connect is on could not be read", it) }
                 .getOrNull()
-        if (on == false) {
+        // Only for the step it was asked for: the user may have moved to another server while it was in flight, and that server's
+        // code request is not this answer's to cancel.
+        if (on == false && (state.value as? UiState.SignIn)?.baseUrl == base) {
             // A code request already in flight stops first, so it cannot land a code or an error after the step says it is off.
             onOff()
             state.update { s ->

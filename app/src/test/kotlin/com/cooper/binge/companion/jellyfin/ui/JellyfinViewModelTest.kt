@@ -748,6 +748,40 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a late answer that Quick Connect is off does not cancel the code of the server the user moved to`() {
+        val other = FakeJellyfin()
+        try {
+            jellyfin.quickConnectEnabled = false
+            val held = jellyfin.hold("/QuickConnect/Enabled")
+            val vm = viewModel()
+            vm.await<UiState.EnterServer>()
+            vm.onAddress(jellyfin.baseUrl)
+            vm.connect()
+            vm.await<UiState.SignIn>()
+            held.awaitArrival()
+            // The user moves on to a second server, whose Quick Connect is on, and asks it for a code.
+            vm.changeServer()
+            vm.await<UiState.EnterServer>()
+            vm.onAddress(other.baseUrl)
+            vm.connect()
+            vm.await<UiState.SignIn> { it.baseUrl == other.baseUrl.trimEnd('/') }
+            vm.startQuickConnect()
+            vm.await<UiState.SignIn> { it.quickConnectCode != null }
+            // The first server's answer arrives now: it is not this step's.
+            held.release()
+            runBlocking { delay(200) }
+            val step = vm.state.value as UiState.SignIn
+            assertTrue(step.quickConnectOn)
+            assertEquals("123456", step.quickConnectCode)
+            // The code is still polled: approving it signs in.
+            other.quickConnectApproved = true
+            vm.await<UiState.SignedIn>()
+        } finally {
+            other.close()
+        }
+    }
+
+    @Test
     fun `Quick Connect shows the code and signs in once approved`() {
         val vm = viewModel()
         vm.toSignIn()
