@@ -47,6 +47,7 @@ class TvPlaybackHostTest {
 
     @After
     fun close() {
+        connection.close()
         jellyfin.close()
         Dispatchers.resetMain()
     }

@@ -27,14 +27,18 @@ class NotificationWorkerTest {
     private val prefs = NotificationPrefs(InMemoryDataStore())
     private val notifier = FakeNotifier()
     private val scheduler = FakeScheduler()
+    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
     private val runner =
         PollRunner(
-            ActivityChecker(Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO), prefs, notifier),
+            ActivityChecker(connection, prefs, notifier),
             PollReactor(notifier, scheduler, prefs),
         )
 
     @After
-    fun close() = jellyfin.close()
+    fun close() {
+        connection.close()
+        jellyfin.close()
+    }
 
     private fun run(): ListenableWorker.Result =
         runBlocking {

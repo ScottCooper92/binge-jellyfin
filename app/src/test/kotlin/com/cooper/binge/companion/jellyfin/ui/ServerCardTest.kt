@@ -49,6 +49,7 @@ class ServerCardTest {
     @After
     fun close() {
         stores.forEach { it.clear() }
+        connection.close()
         jellyfin.close()
         Dispatchers.resetMain()
     }

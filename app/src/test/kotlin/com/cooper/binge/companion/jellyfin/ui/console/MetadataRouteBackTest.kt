@@ -54,7 +54,10 @@ class MetadataRouteBackTest {
     }
 
     @After
-    fun stop() = jellyfin.close()
+    fun stop() {
+        connection.close()
+        jellyfin.close()
+    }
 
     private fun show() =
         compose.setContent {

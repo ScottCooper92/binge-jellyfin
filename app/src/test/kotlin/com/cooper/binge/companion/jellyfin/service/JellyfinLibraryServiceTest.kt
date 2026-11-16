@@ -126,6 +126,7 @@ class JellyfinLibraryServiceTest {
     fun close() {
         channel.shutdownNow()
         server.shutdownNow()
+        connection.close()
         jellyfin.close()
     }
 

@@ -47,7 +47,10 @@ class LibraryRouteGoneTest {
     }
 
     @After
-    fun stop() = jellyfin.close()
+    fun stop() {
+        connection.close()
+        jellyfin.close()
+    }
 
     private fun show(id: String) =
         compose.setContent {
