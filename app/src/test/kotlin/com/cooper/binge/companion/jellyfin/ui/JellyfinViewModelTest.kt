@@ -338,6 +338,33 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a Complete whose reply was lost signs in on the retry, as the server is already complete`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        // The server applied Complete earlier and the reply never arrived: every Startup route now answers 401.
+        jellyfin.startupCompleted = true
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        assertEquals(1, jellyfin.requests.count { it.url.encodedPath == "/Users/AuthenticateByName" })
+        assertEquals(0, startupCalls().count { it == "/Startup/Complete" })
+    }
+
+    @Test
+    fun `a 401 followed by a sign-in that fails goes to the sign-in step with the name filled in and no password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        jellyfin.startupCompleted = true
+        jellyfin.status["/Users/AuthenticateByName"] = 500
+        vm.startup.finish.finish()
+        val signIn = vm.await<UiState.SignIn>()
+        assertEquals("sam", signIn.username)
+        assertEquals("", signIn.password)
+        assertTrue(!signIn.server.setupIncomplete)
+    }
+
+    @Test
     fun `a sign-in that fails after Complete goes to the sign-in step with the name filled in and no password`() {
         jellyfin.startupWizardCompleted = false
         val vm = viewModel()
