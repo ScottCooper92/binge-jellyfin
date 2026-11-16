@@ -131,6 +131,7 @@ class ConnectionMonitorTest {
 
     @Test
     fun `a new session starts the monitor again`() {
+        runBlocking { withTimeout(WAIT_MILLIS) { connection.awaitWatching() } }
         call()
         assertEquals(Reach.Reached, connection.monitor.reach.value)
         runBlocking {

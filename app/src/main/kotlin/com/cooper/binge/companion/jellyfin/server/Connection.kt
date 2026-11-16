@@ -99,6 +99,7 @@ class Connection(
                         watching.complete(Unit)
                     } else if (identity != baseline) {
                         baseline = identity
+                        monitor.reset()
                         pendingSaves.toList().forEach { it.cancel() }
                         backupJobs.toList().forEach { it.cancel() }
                         creations.value = BackupCreation.Idle
