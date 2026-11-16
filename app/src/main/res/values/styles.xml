@@ -6,4 +6,15 @@
         the theme each surface wears.
     -->
     <style name="Theme.Jellyfin" parent="@android:style/Theme.Material.Light.NoActionBar" />
+
+    <!--
+        The launch theme. Android draws a splash of its own only from API 31; core-splashscreen backports
+        it to every version this app runs on. The ground follows the window (light, dark in values-night,
+        black on a television), so the mark sits on the surface the content will occupy.
+    -->
+    <style name="Theme.Jellyfin.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_launcher_ring</item>
+        <item name="postSplashScreenTheme">@style/Theme.Jellyfin</item>
+    </style>
 </resources>

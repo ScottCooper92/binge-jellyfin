@@ -10,6 +10,7 @@
 agp = "9.5.1"
 kotlin = "2.4.21"
 coreKtx = "1.19.1"
+coreSplashscreen = "1.2.0"
 # Data only: the plugin writes the licence list of the shipped dependencies, the core library parses it.
 aboutLibraries = "15.3.0"
 # The in-app review card; the system draws it. kotlinx-coroutines-play-services awaits its Tasks.
@@ -57,6 +58,7 @@ markdownRenderer = "0.46.0"
 [libraries]
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutLibraries" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 junit = { module = "junit:junit", version.ref = "junit" }
 # Version-less on purpose: these resolve to projects of the included binge-companions build.
 binge-companion-contracts = { module = "io.github.scottcooper92:binge-companion-contracts" }

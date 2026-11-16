@@ -2,4 +2,6 @@
 <resources>
     <color name="companion_brand">#AA5CC3</color>
     <color name="companion_brand_dark">#CC9BDD</color>
+    <!-- The splash ground: the window Theme.Jellyfin draws in each mode (see styles.xml). -->
+    <color name="splash_background">#FFFAFAFA</color>
 </resources>

@@ -55,11 +55,12 @@
                 android:resource="@xml/log_share_paths" />
         </provider>
 
+        <!-- The launch theme is the splash one; installSplashScreen() swaps in Theme.Jellyfin as it hands over. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.Jellyfin">
+            android:theme="@style/Theme.Jellyfin.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
