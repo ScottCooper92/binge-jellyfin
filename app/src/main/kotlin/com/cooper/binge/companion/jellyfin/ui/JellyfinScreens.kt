@@ -25,9 +25,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +54,7 @@ import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.PublicUser
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleTextField
 import com.cooper.binge.companion.jellyfin.ui.console.UserAvatar
@@ -64,10 +68,17 @@ data class Actions(
     val onTryDemo: () -> Unit = {},
     val onUsername: (String) -> Unit = {},
     val onPassword: (String) -> Unit = {},
+    /** The forgotten-password steps; null where none is wired (a frame). */
+    val forgotPassword: ForgotPasswordFlow? = null,
+    val onPickUser: (PublicUser) -> Unit = {},
     val onSignIn: () -> Unit = {},
     val onQuickConnect: () -> Unit = {},
     val onCancelQuickConnect: () -> Unit = {},
     val onChangeServer: () -> Unit = {},
+    /** Asks the server again whether its setup is done, from the notice a server that is not set up gets. */
+    val onRecheckServer: () -> Unit = {},
+    /** The setup wizard of a server that has not finished its first-run setup. */
+    val startup: StartupActions = StartupActions(),
     val onRefresh: () -> Unit = {},
     val onAskSignOut: () -> Unit = {},
     val onCancelSignOut: () -> Unit = {},
@@ -75,6 +86,10 @@ data class Actions(
     val onDiscover: () -> Unit = {},
     val onChooseServer: (DiscoveredServer) -> Unit = {},
     val onOpenPage: (ConsolePage) -> Unit = {},
+    /** A page opened on one of its settings, by row key: a search result. */
+    val onOpenRow: (ConsolePage, String?) -> Unit = { page, _ -> },
+    /** A search result opened beside the home: the search closes and the page takes its place in the detail pane. */
+    val onOpenResult: (ConsolePage, String?) -> Unit = { page, _ -> },
     /** Asks for the local-network permission, or, once it has been asked for, opens the app's settings where it can be switched on. */
     val onAllowLocalNetwork: () -> Unit = {},
     /** The permission has been asked for, so the way to it is now the app's settings. */
@@ -122,6 +137,7 @@ fun JellyfinRoot(
                 UiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
                 is UiState.EnterServer -> EnterServer(state, actions, inner)
                 is UiState.SignIn -> SignIn(state, actions, inner)
+                is UiState.Startup -> StartupStep(state, actions, inner)
                 is UiState.SignedIn -> SignedIn(state, actions, inner, padding.calculateTopPadding())
             }
         }
@@ -129,7 +145,7 @@ fun JellyfinRoot(
 }
 
 @Composable
-private fun SetupColumn(
+internal fun SetupColumn(
     inner: PaddingValues,
     content: @Composable () -> Unit,
 ) {
@@ -218,6 +234,39 @@ private fun DiscoveredServers(
     }
 }
 
+/** The server being signed in to: its name, its address (marked when it is not encrypted), and the way to change it. */
+@Composable
+private fun SignInServerCard(
+    state: UiState.SignIn,
+    actions: Actions,
+) {
+    ItemGroup(
+        title = null,
+        rows =
+            listOf(
+                ListItem(
+                    icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
+                    label = state.server.serverName.ifBlank { state.baseUrl },
+                    detail =
+                        if (state.cleartext) {
+                            stringResource(R.string.server_detail_cleartext, state.baseUrl)
+                        } else {
+                            state.baseUrl
+                        },
+                    // Change sits beside it, so at large fonts the address wraps rather than shrinking to a few characters.
+                    supportingMaxLines = ADDRESS_LINES,
+                    trailingContent = {
+                        BingeTextButton(
+                            label = stringResource(R.string.setup_change),
+                            onClick = actions.onChangeServer,
+                        )
+                    },
+                    clickable = false,
+                ),
+            ),
+    )
+}
+
 @Composable
 private fun SignIn(
     state: UiState.SignIn,
@@ -225,37 +274,36 @@ private fun SignIn(
     inner: PaddingValues,
 ) {
     SetupColumn(inner) {
-        ItemGroup(
-            title = null,
-            rows =
-                listOf(
-                    ListItem(
-                        icon = if (state.cleartext) Icons.Outlined.LockOpen else Icons.Outlined.Dns,
-                        label = state.server.serverName.ifBlank { state.baseUrl },
-                        detail =
-                            if (state.cleartext) {
-                                stringResource(R.string.server_detail_cleartext, state.baseUrl)
-                            } else {
-                                state.baseUrl
-                            },
-                        // Change sits beside it, so at large fonts the address wraps rather than shrinking to a few characters.
-                        supportingMaxLines = ADDRESS_LINES,
-                        trailingContent = {
-                            BingeTextButton(
-                                label = stringResource(R.string.setup_change),
-                                onClick = actions.onChangeServer,
-                            )
-                        },
-                        clickable = false,
-                    ),
-                ),
-        )
+        SignInServerCard(state, actions)
+        if (state.server.setupIncomplete) {
+            SetupIncomplete(actions)
+            return@SetupColumn
+        }
         val code = state.quickConnectCode
         if (code != null) {
             QuickConnectCode(code, actions)
             return@SetupColumn
         }
         Text(stringResource(R.string.setup_sign_in_title), style = MaterialTheme.typography.headlineSmall)
+        val passwordFocus = remember { FocusRequester() }
+        if (state.publicUsers.isNotEmpty()) {
+            ItemGroup(
+                title = stringResource(R.string.setup_pick_user),
+                rows =
+                    state.publicUsers.map { user ->
+                        ListItem(
+                            icon = Icons.Outlined.Person,
+                            label = user.name,
+                            leadingContent = { UserAvatar(user.name, state.publicPictures[user.id]) },
+                            selected = user.name == state.username,
+                            onClick = {
+                                actions.onPickUser(user)
+                                if (user.hasPassword) passwordFocus.requestFocus()
+                            },
+                        )
+                    },
+            )
+        }
         ConsoleTextField(
             value = state.username,
             onValueChange = actions.onUsername,
@@ -266,6 +314,7 @@ private fun SignIn(
             value = state.password,
             onValueChange = actions.onPassword,
             label = stringResource(R.string.setup_password),
+            modifier = Modifier.focusRequester(passwordFocus),
             secret = true,
             // Only a wrong password is the field's fault; any other failure is said beside the button that failed.
             isError = state.passwordError == SetupError.WrongCredentials,
@@ -278,6 +327,13 @@ private fun SignIn(
             onClick = actions.onSignIn,
             loading = state.busy,
             enabled = state.username.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        BingeTextButton(
+            label = stringResource(R.string.forgot_password),
+            onClick = { actions.forgotPassword?.start() },
+            enabled = state.username.isNotBlank() && !state.busy,
+            loading = state.forgot == ForgotPasswordStep.Asking,
             modifier = Modifier.fillMaxWidth(),
         )
         state.passwordError?.takeUnless { it == SetupError.WrongCredentials }?.let { ErrorLine(it) }
@@ -298,6 +354,7 @@ private fun SignIn(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         state.quickConnectError?.let { ErrorLine(it) }
+        ForgotPasswordOverlay(state.forgot, actions.forgotPassword)
     }
 }
 
@@ -421,7 +478,7 @@ internal fun ServerGroup(
                     selected = actions.isOpenBeside(ConsolePage.LiveTv),
                     onClick = { actions.onOpenPage(ConsolePage.LiveTv) },
                 ).takeIf { ConsolePage.LiveTv.available(state.profile, state.account) },
-            ),
+            ) + releaseNotesItems(state.session.serverVersion),
     )
 }
 

@@ -41,9 +41,14 @@ class PasswordViewModelTest {
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
         runBlocking { sessions.save(jellyfin.session()) }
-        // After the session is saved, so the connection's session watcher starts on it: built first, it would see the save
-        // arrive late and cancel the save a test starts at once (#165).
-        connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+        connection = watching(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+    }
+
+    /** Closed with the test, and started watching before the test saves anything (#165, #502). */
+    private fun watching(built: Connection): Connection {
+        teardown.made(built)
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { built.awaitWatching() } }
+        return built
     }
 
     @After
@@ -112,8 +117,7 @@ class PasswordViewModelTest {
         jellyfin.status["/Users/Password"] = 500
         assertEquals(PasswordResult.Refused, made(PasswordViewModel(connection)).fill("old-secret", "n").resultOfChange().result)
         runBlocking { sessions.clear() }
-        // A connection built after the clear, so its session watcher can't see the clear late and cancel the save (#165).
-        val signedOut = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+        val signedOut = watching(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
         assertEquals(PasswordResult.Unreachable, made(PasswordViewModel(signedOut)).fill("old-secret", "n").resultOfChange().result)
     }
 

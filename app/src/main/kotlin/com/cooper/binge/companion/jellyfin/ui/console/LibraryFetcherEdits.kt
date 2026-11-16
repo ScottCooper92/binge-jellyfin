@@ -2,10 +2,12 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
 import com.cooper.binge.companion.jellyfin.server.FetcherType
+import com.cooper.binge.companion.jellyfin.server.ImageSlot
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_TYPE_OPTIONS
 import com.cooper.binge.companion.jellyfin.server.Provider
 import com.cooper.binge.companion.jellyfin.server.moved
 import com.cooper.binge.companion.jellyfin.server.withFetchers
+import com.cooper.binge.companion.jellyfin.server.withImageSlot
 
 /**
  * A library's per-type fetcher changes: switching a metadata downloader or an image fetcher on or off, and moving it in its type's
@@ -32,6 +34,15 @@ internal class LibraryFetcherEdits(
         by: Int,
     ) = change(kind, type) { fetchers ->
         fetchers.moved(name, by) { it.name }
+    }
+
+    /** Sets how many images [slot]'s type keeps for [type] and the narrowest it accepts, writing the type's whole entry. */
+    fun setImage(
+        type: String,
+        slot: ImageSlot,
+    ) {
+        val known = types().firstOrNull { it.type.equals(type, ignoreCase = true) } ?: return
+        saves.set(LIBRARY_TYPE_OPTIONS, saves.shown.withImageSlot(known, slot))
     }
 
     private fun change(

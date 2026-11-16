@@ -46,6 +46,7 @@ import com.cooper.binge.companion.jellyfin.tip.TipBilling
 import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
+import com.cooper.binge.companion.jellyfin.ui.search.RecentSearches
 import com.posthog.android.PostHogAndroid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -116,6 +117,16 @@ class AppGraph(
             PreferenceDataStoreFactory.create(
                 corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
                 produceFile = { appContext.preferencesDataStoreFile("notifications") },
+            ),
+        )
+    }
+
+    /** The settings search's last few results, kept on this device alone. */
+    val recentSearches: RecentSearches by lazy {
+        RecentSearches(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("recent_searches") },
             ),
         )
     }

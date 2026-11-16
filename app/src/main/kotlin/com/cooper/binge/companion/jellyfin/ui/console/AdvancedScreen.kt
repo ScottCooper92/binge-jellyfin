@@ -54,6 +54,7 @@ import com.cooper.binge.companion.jellyfin.server.LIBRARY_SCAN_CONCURRENCY
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_UPDATE_DURATION
 import com.cooper.binge.companion.jellyfin.server.PARALLEL_IMAGE_ENCODING_LIMIT
 import com.cooper.binge.companion.jellyfin.server.SLOW_RESPONSE_THRESHOLD_MS
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import com.binge.designsystem.R as DesR
 
 /** What the Advanced page can ask of its view model, and of the console. */
@@ -303,7 +304,11 @@ private fun numberRow(
         detail = numberValue(number, settings),
         supportingMaxLines = DETAIL_LINES,
         onClick = { actions.onEdit(number) },
+        key = number.rowKey(),
     ).takeIf { settings.has(key) }
+
+/** The key a number's row carries, so the search can open the page on it: the cache size has one named in [SettingRows]. */
+private fun AdvancedNumber.rowKey(): String? = if (this == AdvancedNumber.CacheSize) SettingRows.ADVANCED_CACHE else null
 
 internal fun AdvancedNumber.title(): Int =
     when (this) {

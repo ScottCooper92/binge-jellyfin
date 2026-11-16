@@ -13,7 +13,12 @@ data class PackageVersion(
     val targetAbi: String?,
     val repositoryName: String,
     val repositoryUrl: String,
+    /** When the repository published it, as it wrote it (an ISO 8601 time), or null. */
+    val timestamp: String? = null,
 ) {
+    /** Whether this is an older build than [other]: their numbers compared part by part, a missing part being 0. */
+    fun isOlderThan(other: String): Boolean = compareVersions(version, other) < 0
+
     /**
      * Whether this version was built for [server] or an older release, as the server itself checks. A version
      * with no target, or a server whose version can't be read, fits: the server's own answer stays the backstop.
@@ -36,7 +41,30 @@ data class CatalogPackage(
 ) {
     /** The newest version built for [server] or older: what Install offers. Null when none fits. */
     fun installable(server: JellyfinVersion?): PackageVersion? =
-        versions.filter { it.fits(server) }.maxWithOrNull(compareBy { JellyfinVersion.parse(it.version) ?: JellyfinVersion(0, 0, 0) })
+        versions.filter { it.fits(server) }.maxWithOrNull { a, b -> compareVersions(a.version, b.version) }
+
+    /** Every version the catalog lists, the newest first. */
+    fun history(): List<PackageVersion> = versions.sortedWith { a, b -> compareVersions(b.version, a.version) }
+}
+
+/** Plugin versions are `a.b.c.d`, so unlike [JellyfinVersion] every numeric part counts; a part that isn't a number reads as 0. */
+fun compareVersions(
+    a: String,
+    b: String,
+): Int {
+    fun parts(version: String) =
+        version
+            .trim()
+            .removePrefix("v")
+            .split('.')
+            .map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
+    val left = parts(a)
+    val right = parts(b)
+    for (i in 0 until maxOf(left.size, right.size)) {
+        val order = left.getOrElse(i) { 0 }.compareTo(right.getOrElse(i) { 0 })
+        if (order != 0) return order
+    }
+    return 0
 }
 
 /** The catalog, by name. Admin only. */
@@ -66,6 +94,7 @@ private fun JsonObject.versionOrNull(): PackageVersion? {
         targetAbi = string("targetAbi"),
         repositoryName = string("repositoryName").orEmpty(),
         repositoryUrl = string("repositoryUrl").orEmpty(),
+        timestamp = string("timestamp")?.takeIf { it.isNotBlank() },
     )
 }
 

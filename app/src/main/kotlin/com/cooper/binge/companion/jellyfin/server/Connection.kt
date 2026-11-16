@@ -2,11 +2,13 @@ package com.cooper.binge.companion.jellyfin.server
 
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -16,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -80,21 +81,38 @@ class Connection(
         creations.value = creation
     }
 
+    private val watching = CompletableDeferred<Unit>()
+
     init {
-        // A save is built from one account's configuration, so it dies with the session it was made under.
+        // A save is built from one account's configuration, so it dies with the session it was made under. The watcher starts
+        // asynchronously, so the session it first reads is its baseline, whenever that is, and only a later difference cancels.
         saveScope.launch {
+            var baseline: Triple<String, String, String>? = null
+            var started = false
             sessions.session
                 .map { session -> session?.let { Triple(it.baseUrl, it.userId, it.token) } }
                 .distinctUntilChanged()
-                .drop(1)
-                .collect {
-                    monitor.reset()
-                    pendingSaves.toList().forEach { it.cancel() }
-                    backupJobs.toList().forEach { it.cancel() }
-                    creations.value = BackupCreation.Idle
+                .collect { identity ->
+                    if (!started) {
+                        started = true
+                        baseline = identity
+                        watching.complete(Unit)
+                    } else if (identity != baseline) {
+                        baseline = identity
+                        monitor.reset()
+                        pendingSaves.toList().forEach { it.cancel() }
+                        backupJobs.toList().forEach { it.cancel() }
+                        creations.value = BackupCreation.Idle
+                    }
                 }
         }
     }
+
+    /** Returns once the session watcher has read the session it measures later changes against. */
+    internal suspend fun awaitWatching() = watching.await()
+
+    /** Stops the session watcher and every save and backup still running. The app's connection lives as long as the process. */
+    internal fun close() = saveScope.cancel()
 
     /**
      * Runs [block], a save the user made, to its end even if the page that made it closes first.

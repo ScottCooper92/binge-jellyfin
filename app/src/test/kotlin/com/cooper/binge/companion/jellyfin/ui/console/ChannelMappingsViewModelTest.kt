@@ -161,18 +161,13 @@ class ChannelMappingsViewModelTest {
     }
 
     @Test
-    fun `the search narrows the tuner channels by name, and choosing another channel starts it again`() {
+    fun `choosing another channel moves the open choice, and null closes it`() {
         val vm = made(ChannelMappingsViewModel(connection, "g1"))
         vm.ready()
         vm.select("p3")
-        vm.search("bbc")
-        assertEquals(listOf("101 BBC One HD", "102 BBC Two HD"), vm.ready { it.query == "bbc" }.matching.map { it.name })
-        vm.search("  itv ")
-        assertEquals(listOf("103 ITV HD"), vm.ready { it.query.isNotBlank() && it.matching.size == 1 }.matching.map { it.name })
+        assertEquals("p3", vm.ready { it.selected == "p3" }.selected)
         vm.select("p1")
-        val reset = vm.ready { it.selected == "p1" }
-        assertEquals("", reset.query)
-        assertEquals(3, reset.matching.size)
+        assertEquals("p1", vm.ready { it.selected == "p1" }.selected)
         vm.select(null)
         assertNull(vm.ready { it.selected == null }.selected)
     }

@@ -26,12 +26,14 @@ import com.binge.designsystem.component.ExpressiveIconButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListItemDestination
-import com.binge.designsystem.component.ListRowSkeletonColumn
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.FetcherKind
+import com.cooper.binge.companion.jellyfin.server.ImageSlot
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LIBRARY_ENABLED
 import com.cooper.binge.companion.jellyfin.server.ProviderGroup
@@ -55,6 +57,7 @@ data class LibraryActions(
     val onMove: (ProviderGroup, String, Int) -> Unit = { _, _, _ -> },
     val onFetcher: (FetcherKind, type: String, name: String, enabled: Boolean) -> Unit = { _, _, _, _ -> },
     val onMoveFetcher: (FetcherKind, type: String, name: String, by: Int) -> Unit = { _, _, _, _ -> },
+    val onImage: (type: String, ImageSlot) -> Unit = { _, _ -> },
     val onRetry: () -> Unit = {},
     val onRetrySave: () -> Unit = {},
     val onBack: () -> Unit = {},
@@ -96,7 +99,7 @@ fun LibraryScreen(
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
         notReady =
             when (state) {
-                LibraryUiState.Loading -> { padding -> ListRowSkeletonColumn(contentPadding = padding, count = LOADING_ROWS) }
+                LibraryUiState.Loading -> { padding -> ConsoleLoading(padding, LOADING_ROWS, formInset = true) }
                 is LibraryUiState.Failed -> { padding -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(padding)) }
                 is LibraryUiState.Ready -> null
             },
@@ -136,7 +139,11 @@ private fun LibraryBody(
 ) {
     var picker by rememberSaveable { mutableStateOf<LibraryPicker?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
-        ItemGroup(title = null, rows = libraryRows(state, actions, profile))
+        ItemGroup(
+            title = null,
+            rows = libraryRows(state, actions, profile),
+            modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+        )
         FoldersGroup(state, actions)
         MetadataGroup(state, actions, profile) { picker = it }
         VideoGroups(state, actions, profile) { picker = it }

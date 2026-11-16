@@ -40,6 +40,9 @@ import com.binge.designsystem.component.BingeTabRow
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ListRowSkeletonColumn
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
+import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenBar
@@ -221,8 +224,15 @@ private fun PluginsPage(
 
 /** The page's rows as they load: the shape of the list, not a spinner. */
 @Composable
-internal fun PluginsLoading(inner: PaddingValues) {
-    ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS, description = stringResource(R.string.plugins_loading))
+internal fun PluginsLoading(
+    inner: PaddingValues,
+    intro: String? = null,
+) {
+    if (intro == null) {
+        ListRowSkeletonColumn(contentPadding = inner, count = LOADING_ROWS, description = stringResource(R.string.plugins_loading))
+    } else {
+        ConsoleLoading(inner, LOADING_ROWS, intro = intro, formInset = false)
+    }
 }
 
 private const val LOADING_ROWS = 6
@@ -273,6 +283,7 @@ private fun InstalledList(
             item(key = "restart") {
                 ItemGroup(
                     title = null,
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
                     rows =
                         listOf(
                             ListItem(
@@ -286,7 +297,13 @@ private fun InstalledList(
                 )
             }
         }
-        item(key = "plugins") { ItemGroup(title = null, rows = state.plugins.map { it.row(state, actions, it.id == openPlugin) }) }
+        item(key = "plugins") {
+            ItemGroup(
+                title = null,
+                rows = state.plugins.map { it.row(state, actions, it.id == openPlugin) },
+                modifier = Modifier.layoutAnchorIf(!state.restartNeeded, LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+            )
+        }
     }
 }
 

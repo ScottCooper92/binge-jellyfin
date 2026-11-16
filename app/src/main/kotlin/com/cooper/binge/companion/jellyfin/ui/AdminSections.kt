@@ -64,6 +64,7 @@ private val adminSections =
                 ),
                 AdminPage(ConsolePage.LibraryDisplay, Icons.Outlined.ViewModule, R.string.display_title, R.string.console_display_detail),
                 AdminPage(ConsolePage.MetadataDefaults, Icons.Outlined.Category, R.string.metadata_title, R.string.console_metadata_detail),
+                AdminPage(ConsolePage.Nfo, Icons.Outlined.Description, R.string.nfo_title, R.string.console_nfo_detail),
                 AdminPage(ConsolePage.Trickplay, Icons.Outlined.Image, R.string.trickplay_title, R.string.console_trickplay_detail),
                 AdminPage(ConsolePage.Plugins, Icons.Outlined.Extension, R.string.plugins_title, R.string.console_plugins_detail),
             ),

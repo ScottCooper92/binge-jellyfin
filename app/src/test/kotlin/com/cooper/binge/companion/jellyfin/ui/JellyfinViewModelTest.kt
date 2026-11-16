@@ -14,6 +14,7 @@ import com.cooper.binge.companion.jellyfin.demo.DEMO_TOKEN
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
+import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.telemetry.Analytics
@@ -26,6 +27,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -169,6 +174,339 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a server that has not finished its setup says so, and checking again follows it once it has`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        val first = vm.toSignIn()
+        assertTrue(first.server.setupIncomplete)
+        jellyfin.startupWizardCompleted = true
+        vm.changeServer(recheck = true)
+        assertTrue(!vm.await<UiState.SignIn>().server.setupIncomplete)
+    }
+
+    private fun JellyfinViewModel.toStartup(): StartupPhase.Configuring {
+        toSignIn()
+        startup.open()
+        return await<UiState.Startup> { it.phase is StartupPhase.Configuring }.phase as StartupPhase.Configuring
+    }
+
+    @Test
+    fun `the wizard reads the setup configuration and the lists, and changes nothing until Save`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        val step = vm.toStartup()
+        assertEquals("truenas", step.configuration.serverName)
+        assertEquals("en-US", step.configuration.uiCulture)
+        assertTrue(step.uiLanguages.isNotEmpty() && step.cultures.isNotEmpty() && step.countries.isNotEmpty())
+        assertEquals(null, jellyfin.savedStartupConfiguration)
+        assertTrue(jellyfin.requests.none { it.method == "POST" && it.url.encodedPath.startsWith("/Startup") })
+    }
+
+    @Test
+    fun `Save sends what the server sent with the user's changes, and never a token`() {
+        jellyfin.startupWizardCompleted = false
+        jellyfin.startupConfiguration =
+            """{"ServerName":"truenas","UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en","Other":7}"""
+        val vm = viewModel()
+        vm.toStartup()
+        vm.startup.onName("Living room")
+        vm.startup.onUiLanguage("es")
+        vm.startup.onMetadataCountry("GB")
+        vm.startup.save()
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Account }
+        val sent = Json.parseToJsonElement(jellyfin.savedStartupConfiguration.orEmpty()).jsonObject
+        assertEquals("Living room", sent["ServerName"]?.jsonPrimitive?.content)
+        assertEquals("es", sent["UICulture"]?.jsonPrimitive?.content)
+        assertEquals("GB", sent["MetadataCountryCode"]?.jsonPrimitive?.content)
+        assertEquals("en", sent["PreferredMetadataLanguage"]?.jsonPrimitive?.content)
+        assertEquals(7, sent["Other"]?.jsonPrimitive?.int)
+        val startupCalls = jellyfin.requests.filter { it.url.encodedPath.startsWith("/Startup") }
+        assertTrue(startupCalls.isNotEmpty())
+        assertTrue(startupCalls.none { it.headers["Authorization"].orEmpty().contains("Token=") })
+    }
+
+    private fun JellyfinViewModel.toAccount(): StartupPhase.Account {
+        toStartup()
+        startup.save()
+        return await<UiState.Startup> { (it.phase as? StartupPhase.Account)?.name == "root" }.phase as StartupPhase.Account
+    }
+
+    @Test
+    fun `the account step opens with the name the server suggests`() {
+        jellyfin.startupWizardCompleted = false
+        assertEquals("root", viewModel().toAccount().name)
+    }
+
+    @Test
+    fun `the account is sent as typed, once, and the password is cleared with the step`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onName("sam")
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.account.onConfirmation("hunter2")
+        vm.startup.account.save()
+        val done = vm.await<UiState.Startup> { it.phase is StartupPhase.Finish }
+        val sent = Json.parseToJsonElement(jellyfin.savedStartupUser.orEmpty()).jsonObject
+        assertEquals("sam", sent["Name"]?.jsonPrimitive?.content)
+        assertEquals("hunter2", sent["Password"]?.jsonPrimitive?.content)
+        assertEquals(1, jellyfin.requests.count { it.url.encodedPath == "/Startup/User" && it.method == "POST" })
+        assertTrue(done.toString().contains("hunter2").not())
+        val startup = jellyfin.requests.filter { it.url.encodedPath.startsWith("/Startup") }
+        assertTrue(startup.none { it.headers["Authorization"].orEmpty().contains("Token=") })
+    }
+
+    /** The wizard at its last step, with an account the fake server will let in. */
+    private fun JellyfinViewModel.toFinish(): StartupPhase.Finish {
+        toAccount()
+        startup.account.onName("sam")
+        startup.account.onPassword("right")
+        startup.account.onConfirmation("right")
+        startup.account.save()
+        return await<UiState.Startup> { it.phase is StartupPhase.Finish }.phase as StartupPhase.Finish
+    }
+
+    private fun startupCalls() =
+        jellyfin.requests
+            .filter {
+                it.method == "POST" && it.url.encodedPath.startsWith("/Startup")
+            }.map { it.url.encodedPath }
+
+    @Test
+    fun `Finish setup saves remote access, completes the server, then signs in as the new account`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        vm.startup.finish.onPortMapping(true)
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        assertEquals(
+            listOf("/Startup/Configuration", "/Startup/User", "/Startup/RemoteAccess", "/Startup/Complete"),
+            startupCalls(),
+        )
+        val access = Json.parseToJsonElement(jellyfin.savedStartupRemoteAccess.orEmpty()).jsonObject
+        assertEquals("true", access["EnableRemoteAccess"]?.jsonPrimitive?.content)
+        assertEquals("true", access["EnableAutomaticPortMapping"]?.jsonPrimitive?.content)
+        // The account's password is sent to sign in once, and the token that comes back is not in any Startup request.
+        val signIns = jellyfin.requests.filter { it.url.encodedPath == "/Users/AuthenticateByName" }
+        assertEquals(1, signIns.size)
+        val sent =
+            signIns
+                .single()
+                .body
+                ?.utf8()
+                .orEmpty()
+        val body = Json.parseToJsonElement(sent).jsonObject
+        assertEquals("sam", body["Username"]?.jsonPrimitive?.content)
+        assertTrue(
+            jellyfin.requests
+                .filter {
+                    it.url.encodedPath.startsWith("/Startup")
+                }.none { it.headers["Authorization"].orEmpty().contains("Token=") },
+        )
+    }
+
+    @Test
+    fun `with remote access off, port mapping is off whatever it was`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        vm.startup.finish.onPortMapping(true)
+        vm.startup.finish.onRemoteAccess(false)
+        assertTrue(!(vm.state.value as UiState.Startup).phase.let { (it as StartupPhase.Finish).portMapping })
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        val access = Json.parseToJsonElement(jellyfin.savedStartupRemoteAccess.orEmpty()).jsonObject
+        assertEquals("false", access["EnableRemoteAccess"]?.jsonPrimitive?.content)
+        assertEquals("false", access["EnableAutomaticPortMapping"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `a Complete the server refuses keeps the last step, and Finish setup tries both calls again`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        jellyfin.status["/Startup/Complete"] = 500
+        vm.startup.finish.finish()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Finish)?.error != null }.phase as StartupPhase.Finish
+        assertEquals(SetupError.Generic, step.error)
+        assertTrue(!step.busy)
+        jellyfin.status.remove("/Startup/Complete")
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        assertEquals(2, startupCalls().count { it == "/Startup/RemoteAccess" })
+    }
+
+    @Test
+    fun `a Complete whose reply was lost signs in on the retry, as the server is already complete`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        // The server applied Complete earlier and the reply never arrived: every Startup route now answers 401.
+        jellyfin.startupCompleted = true
+        vm.startup.finish.finish()
+        vm.await<UiState.SignedIn>()
+        assertEquals(1, jellyfin.requests.count { it.url.encodedPath == "/Users/AuthenticateByName" })
+        assertEquals(0, startupCalls().count { it == "/Startup/Complete" })
+    }
+
+    @Test
+    fun `a 401 followed by a sign-in that fails goes to the sign-in step with the name filled in and no password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        jellyfin.startupCompleted = true
+        jellyfin.status["/Users/AuthenticateByName"] = 500
+        vm.startup.finish.finish()
+        val signIn = vm.await<UiState.SignIn>()
+        assertEquals("sam", signIn.username)
+        assertEquals("", signIn.password)
+        assertTrue(!signIn.server.setupIncomplete)
+    }
+
+    @Test
+    fun `a sign-in that fails after Complete goes to the sign-in step with the name filled in and no password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        jellyfin.status["/Users/AuthenticateByName"] = 500
+        vm.startup.finish.finish()
+        val signIn = vm.await<UiState.SignIn>()
+        assertEquals("sam", signIn.username)
+        assertEquals("", signIn.password)
+        assertTrue(!signIn.server.setupIncomplete)
+    }
+
+    @Test
+    fun `leaving the last step drops the account's password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        assertTrue(!(vm.state.value as UiState.Startup).phase.toString().contains("right"))
+        vm.startup.back()
+        assertTrue(vm.await<UiState.SignIn>().password.isEmpty())
+    }
+
+    @Test
+    fun `nothing is sent while the name is blank or the two passwords differ`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("a")
+        vm.startup.account.onConfirmation("b")
+        vm.startup.account.save()
+        vm.startup.account.onConfirmation("a")
+        vm.startup.account.onName("  ")
+        vm.startup.account.save()
+        assertNull(jellyfin.savedStartupUser)
+        assertTrue((vm.state.value as UiState.Startup).phase.let { it is StartupPhase.Account && !it.busy })
+    }
+
+    @Test
+    fun `an empty password is never sent, since the server refuses it`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onName("sam")
+        vm.startup.account.save()
+        assertNull(jellyfin.savedStartupUser)
+    }
+
+    @Test
+    fun `the server's own words for a refused account are kept, to show in place of the generic sentence`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.account.onConfirmation("hunter2")
+        jellyfin.status["/Startup/User"] = 400
+        jellyfin.statusBody["/Startup/User"] = "Password must not be empty"
+        vm.startup.account.save()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Account)?.error != null }.phase as StartupPhase.Account
+        assertEquals("Password must not be empty", step.reason)
+        vm.startup.account.onPassword("hunter3")
+        assertNull((vm.state.value as UiState.Startup).phase.let { (it as StartupPhase.Account).reason })
+    }
+
+    @Test
+    fun `a refused account keeps the step and what was typed, and the password out of the text of the step`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.account.onConfirmation("hunter2")
+        jellyfin.status["/Startup/User"] = 500
+        vm.startup.account.save()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Account)?.error != null }.phase as StartupPhase.Account
+        assertEquals(SetupError.Generic, step.error)
+        assertEquals("hunter2", step.password)
+        assertTrue(!step.toString().contains("hunter2"))
+    }
+
+    @Test
+    fun `leaving the wizard drops the password`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toAccount()
+        vm.startup.account.onPassword("hunter2")
+        vm.startup.back()
+        assertTrue(!vm.await<UiState.SignIn>().toString().contains("hunter2"))
+        assertTrue(vm.state.value !is UiState.Startup)
+    }
+
+    @Test
+    fun `a server that sends no name gets no name field, and is sent back without one`() {
+        jellyfin.startupWizardCompleted = false
+        jellyfin.startupConfiguration = """{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}"""
+        val vm = viewModel()
+        assertTrue(!vm.toStartup().configuration.hasServerName)
+        vm.startup.onMetadataCountry("GB")
+        vm.startup.save()
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Account }
+        assertTrue("ServerName" !in jellyfin.savedStartupConfiguration.orEmpty())
+    }
+
+    @Test
+    fun `a save the server refuses keeps the step and the choices, with the reason beside Save`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toStartup()
+        vm.startup.onName("Living room")
+        jellyfin.status["/Startup/Configuration"] = 500
+        vm.startup.save()
+        val step = vm.await<UiState.Startup> { (it.phase as? StartupPhase.Configuring)?.error != null }.phase as StartupPhase.Configuring
+        assertEquals(SetupError.Generic, step.error)
+        assertEquals("Living room", step.configuration.serverName)
+        assertTrue(!step.busy)
+    }
+
+    @Test
+    fun `a list the server refuses fails the read, and Try again reads it once the server allows it`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toSignIn()
+        jellyfin.status["/Localization/Countries"] = 401
+        vm.startup.open()
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Failed }
+        jellyfin.status.remove("/Localization/Countries")
+        vm.startup.load()
+        vm.await<UiState.Startup> { it.phase is StartupPhase.Configuring }
+    }
+
+    @Test
+    fun `the wizard opens only for a server that has not finished setup, and Back returns to the notice`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.startup.open()
+        assertTrue(vm.state.value is UiState.SignIn)
+        jellyfin.startupWizardCompleted = false
+        val other = viewModel()
+        other.toStartup()
+        other.startup.back()
+        assertTrue(other.await<UiState.SignIn>().server.setupIncomplete)
+    }
+
+    @Test
     fun `an address that is not a Jellyfin server, or not reachable, says which`() {
         val vm = viewModel()
         vm.await<UiState.EnterServer>()
@@ -181,6 +519,110 @@ class JellyfinViewModelTest {
         vm.onAddress(jellyfin.baseUrl)
         vm.connect()
         assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `forgot password needs a name, sends only the name, and tells what the server answered`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.forgotPassword.start()
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/ForgotPassword" })
+
+        vm.onUsername(" Mum ")
+        vm.forgotPassword.start()
+        assertEquals(
+            ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin),
+            vm.await<UiState.SignIn> { it.forgot is ForgotPasswordStep.Told }.forgot,
+        )
+        val sent = jellyfin.requests.last { it.url.encodedPath == "/Users/ForgotPassword" }
+        assertEquals("""{"EnteredUsername":"Mum"}""", sent.body?.utf8())
+        assertNull(sent.headers["Authorization"]?.takeIf { it.contains("Token=") })
+
+        vm.forgotPassword.dismiss()
+        assertNull(vm.await<UiState.SignIn> { it.forgot == null }.forgot)
+        jellyfin.forgotAnswer = """{"Action":"InNetworkRequired"}"""
+        vm.forgotPassword.start()
+        assertEquals(
+            ForgotPasswordStep.Told(ForgotPasswordAction.InNetworkRequired),
+            vm.await<UiState.SignIn> { it.forgot is ForgotPasswordStep.Told }.forgot,
+        )
+    }
+
+    @Test
+    fun `a PIN reset asks for the PIN, keeps the sheet on a wrong one (the server's 404), and sets the password to the right one`() {
+        jellyfin.forgotAnswer =
+            """{"Action":"PinCode","PinFile":"/config/data/passwordreset.json","PinExpirationDate":"2026-11-16T00:00:00Z"}"""
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("Mum")
+        vm.onPassword("typed")
+        vm.forgotPassword.start()
+        assertEquals(
+            ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"),
+            vm.await<UiState.SignIn> { it.forgot is ForgotPasswordStep.EnterPin }.forgot,
+        )
+
+        vm.forgotPassword.submitPin("0000")
+        assertTrue(
+            (
+                vm.await<UiState.SignIn> {
+                    (it.forgot as? ForgotPasswordStep.EnterPin)?.wrongPin == true
+                }
+            ).forgot is ForgotPasswordStep.EnterPin,
+        )
+
+        jellyfin.forgotPin = "AB-12"
+        vm.forgotPassword.submitPin(" ab-12 ")
+        val done = vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Done }
+        // The password is now the PIN as sent: upper case, as the server keeps it.
+        assertEquals("AB-12", done.password)
+        assertEquals("Mum", done.username)
+    }
+
+    @Test
+    fun `a server that does not answer a reset says so instead of closing silently`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("Mum")
+        jellyfin.status["/Users/ForgotPassword"] = 500
+        vm.forgotPassword.start()
+        vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Failed }
+    }
+
+    @Test
+    fun `the server's public users are listed on sign-in, and none or a failure leaves the step as it is`() {
+        jellyfin.publicUsers = PUBLIC_USERS
+        val users = viewModel().also { it.toSignIn() }.await<UiState.SignIn> { it.publicUsers.isNotEmpty() }.publicUsers
+        assertEquals(listOf("Kid", "Mum"), users.map { it.name })
+        assertEquals(listOf(false, true), users.map { it.hasPassword })
+
+        jellyfin.publicUsers = "[]"
+        val none = viewModel().toSignIn()
+        assertTrue(none.publicUsers.isEmpty())
+        assertNull(none.passwordError)
+
+        jellyfin.status["/Users/Public"] = 500
+        val failed = viewModel().toSignIn()
+        assertTrue(failed.publicUsers.isEmpty())
+        assertNull(failed.passwordError)
+    }
+
+    @Test
+    fun `picking a public user with a password fills the name and waits, one without signs in`() {
+        jellyfin.publicUsers = PUBLIC_USERS
+        val vm = viewModel()
+        vm.toSignIn()
+        val users = vm.await<UiState.SignIn> { it.publicUsers.isNotEmpty() }.publicUsers
+
+        vm.pickPublicUser(users.first { it.name == "Mum" })
+        val picked = vm.await<UiState.SignIn> { it.username == "Mum" }
+        assertFalse(picked.busy)
+        assertEquals("", picked.password)
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/AuthenticateByName" })
+
+        vm.pickPublicUser(users.first { it.name == "Kid" })
+        vm.await<UiState.SignedIn> { it.titles != null }
+        assertEquals("token-1", runBlocking { sessions.current() }?.token)
     }
 
     @Test
@@ -647,3 +1089,6 @@ class JellyfinViewModelTest {
         assertEquals(before, libraryReads())
     }
 }
+
+private const val PUBLIC_USERS =
+    """[{"Name":"Kid","Id":"u-kid","HasPassword":false},{"Name":"Mum","Id":"u-mum","HasPassword":true}]"""

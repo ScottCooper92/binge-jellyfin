@@ -65,6 +65,7 @@ import com.cooper.binge.companion.jellyfin.server.LOG_TAIL_BYTES
 import com.cooper.binge.companion.jellyfin.server.LogEntry
 import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.LogLevel
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -282,6 +283,7 @@ private fun RetentionRow(
                             pluralStringResource(R.plurals.logs_retention_days, days, days)
                         },
                     onClick = if (unsent) actions.onRetrySave else ({ actions.onEditRetention(true) }),
+                    key = SettingRows.LOGS_RETENTION,
                 ),
             ),
     )

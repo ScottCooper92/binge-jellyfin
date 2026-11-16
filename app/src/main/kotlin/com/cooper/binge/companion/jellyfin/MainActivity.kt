@@ -51,6 +51,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePageRoute
 import com.cooper.binge.companion.jellyfin.ui.console.LocalUserPictures
 import com.cooper.binge.companion.jellyfin.ui.localNetworkAnswered
+import com.cooper.binge.companion.jellyfin.ui.pickPublicUser
 import com.cooper.binge.companion.jellyfin.ui.rememberAppSettingsBinding
 import com.cooper.binge.companion.jellyfin.ui.rememberNotificationBinding
 import com.cooper.binge.companion.jellyfin.ui.tryDemo
@@ -92,24 +93,27 @@ class MainActivity : ComponentActivity() {
         attempt { startActivity(intent) }
     }
 
+    /** The view model's factory: the graph's objects, and the permission check the connection failures read. */
+    private fun jellyfinViewModelFactory(graph: AppGraph) =
+        viewModelFactory {
+            initializer {
+                JellyfinViewModel(
+                    graph.sessions,
+                    graph.connection,
+                    graph.index,
+                    discover = graph.discovery::find,
+                    localNetwork = AndroidLocalNetworkPermission(applicationContext),
+                    analytics = graph.analytics,
+                    onSessionEnded = graph::clearAccountCaches,
+                )
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val graph = (application as JellyfinApp).graph
-        val factory =
-            viewModelFactory {
-                initializer {
-                    JellyfinViewModel(
-                        graph.sessions,
-                        graph.connection,
-                        graph.index,
-                        discover = graph.discovery::find,
-                        localNetwork = AndroidLocalNetworkPermission(applicationContext),
-                        analytics = graph.analytics,
-                        onSessionEnded = graph::clearAccountCaches,
-                    )
-                }
-            }
+        val factory = jellyfinViewModelFactory(graph)
         // Fresh Remote Config values for the flags; until they land, the last ones activated are used.
         lifecycleScope.launch { graph.flags.refresh() }
         setContent {
@@ -118,10 +122,9 @@ class MainActivity : ComponentActivity() {
             // The console pages open over the home, the last on top. A page that opens another stays under it, so
             // Back returns to the opener, and to the home from the first. Leaving SignedIn closes them all.
             var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
-            val signedIn = state is UiState.SignedIn
             // The permission is asked for once; after that the way to it is the app's settings, as the prompt may not come back.
             var askedLocalNetwork by rememberSaveable { mutableStateOf(false) }
-            LaunchedEffect(signedIn) { if (!signedIn) stack = stack.clear() }
+            LaunchedEffect(state is UiState.SignedIn) { if (state !is UiState.SignedIn) stack = stack.clear() }
             // A page the server or the user lost (Quick Connect turned off, admin rights taken away) closes,
             // once the refresh has read what they now allow; Back skips it.
             (state as? UiState.SignedIn)?.let { gated ->
@@ -129,20 +132,17 @@ class MainActivity : ComponentActivity() {
                     if (gated.account.isRead) stack = stack.keeping { it.available(gated.profile, gated.account) }
                 }
             }
-            val openPage = stack.top.takeIf { signedIn }
+            val openPage = stack.top.takeIf { state is UiState.SignedIn }
             ReportScreen(state, openPage?.page, graph.analytics)
             RefreshGatesWhenHomeReturns(openPage?.opening, stack.openings) { viewModel.refresh(gatesOnly = true) }
             val actions =
-                Actions(
+                viewModel.signInActions().copy(
                     onAddress = viewModel::onAddress,
                     onConnect = viewModel::connect,
                     onTryDemo = viewModel::tryDemo,
-                    onUsername = viewModel::onUsername,
-                    onPassword = viewModel::onPassword,
-                    onSignIn = viewModel::signInWithPassword,
-                    onQuickConnect = viewModel::startQuickConnect,
-                    onCancelQuickConnect = viewModel::cancelQuickConnect,
                     onChangeServer = viewModel::changeServer,
+                    onRecheckServer = { viewModel.changeServer(recheck = true) },
+                    startup = viewModel.startup.actions(),
                     onRefresh = viewModel::refresh,
                     onAskSignOut = { viewModel.confirmSignOut(true) },
                     onCancelSignOut = { viewModel.confirmSignOut(false) },
@@ -150,6 +150,8 @@ class MainActivity : ComponentActivity() {
                     onDiscover = { withLocalNetwork(viewModel::discoverServers) },
                     onChooseServer = viewModel::chooseServer,
                     onOpenPage = { stack = stack.open(it) },
+                    onOpenRow = { page, row -> stack = stack.open(page, row) },
+                    onOpenResult = { page, row -> stack = stack.back().openFromHome(page, row) },
                     onAllowLocalNetwork = {
                         if (askedLocalNetwork) {
                             openAppSettings()
@@ -165,6 +167,7 @@ class MainActivity : ComponentActivity() {
             val homeActions =
                 actions.copy(
                     onOpenPage = { stack = stack.openFromHome(it) },
+                    onOpenRow = { page, row -> stack = stack.openFromHome(page, row) },
                     selectedPage = stack.entries.firstOrNull()?.page ?: ConsolePage.NowPlaying,
                 )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
@@ -247,6 +250,7 @@ private fun ConsoleHost(
                     actions,
                     { onStack(latest.openItem(it)) },
                     { page, item -> onStack(latest.openPageItem(page, item)) },
+                    row = entry.row,
                 )
             }
         },
@@ -281,3 +285,15 @@ private fun RefreshGatesWhenHomeReturns(
         onPauseOrDispose {}
     }
 }
+
+/** What the sign-in step asks of the view model: the account, its password, the picks and resets around it, and Quick Connect. */
+private fun JellyfinViewModel.signInActions() =
+    Actions(
+        onUsername = ::onUsername,
+        onPassword = ::onPassword,
+        onPickUser = ::pickPublicUser,
+        forgotPassword = forgotPassword,
+        onSignIn = ::signInWithPassword,
+        onQuickConnect = ::startQuickConnect,
+        onCancelQuickConnect = ::cancelQuickConnect,
+    )

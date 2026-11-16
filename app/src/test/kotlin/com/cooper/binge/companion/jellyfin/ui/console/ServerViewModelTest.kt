@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
+import com.cooper.binge.companion.jellyfin.server.StorageKind
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -58,6 +59,100 @@ class ServerViewModelTest {
             ServerInfo("truenas", "10.11.6", "http://192.168.1.10:8096", "X64", "Linux", false, true, true),
             viewModel().ready().info,
         )
+    }
+
+    private fun entry(
+        id: Int,
+        severity: String,
+        hour: Int,
+    ) = """{"Id":$id,"Name":"Entry $id","Type":"TaskFailed","Severity":"$severity","Date":"2026-11-1${hour / 10}T0${hour % 10}:00:00Z"}"""
+
+    @Test
+    fun `alerts are the newest warnings and errors, asked of a server that filters by severity once for each`() {
+        jellyfin.activityFiltersSeverity = true
+        jellyfin.activityEntries =
+            listOf(
+                entry(9, "Information", 9),
+                entry(8, "Error", 8),
+                entry(7, "Warning", 7),
+                entry(6, "Information", 6),
+                entry(5, "Warning", 5),
+            )
+        val alerts = made(ServerViewModel(connection, alertsFilteredByServer = true)).ready().alerts!!
+        assertEquals(listOf(8L, 7L, 5L), alerts.map { it.id })
+        val asked =
+            jellyfin.requests.filter { it.url.encodedPath == "/System/ActivityLog/Entries" }.map {
+                it.url.queryParameter(
+                    "severity",
+                )
+            }
+        assertEquals(setOf("Warning", "Error"), asked.toSet())
+    }
+
+    @Test
+    fun `a server that cannot filter is read whole, and the alerts are picked here, at most five`() {
+        jellyfin.activityEntries = (1..9).map { n -> entry(10 - n, if (n % 2 == 0) "Information" else "Error", 10 - n) }
+        val alerts = viewModel().ready().alerts!!
+        assertEquals(listOf(9L, 7L, 5L, 3L, 1L), alerts.map { it.id })
+        assertTrue(
+            jellyfin.requests.filter { it.url.encodedPath == "/System/ActivityLog/Entries" }.all {
+                it.url.queryParameter("severity") ==
+                    null
+            },
+        )
+    }
+
+    @Test
+    fun `no warnings or errors is an empty list, which the card says, and not a missing one`() {
+        assertEquals(emptyList<Any>(), viewModel().ready().alerts)
+    }
+
+    @Test
+    fun `reads the server's paths, and a path it does not send is empty`() {
+        jellyfin.systemInfo =
+            jellyfin.systemInfo.dropLast(1) +
+            ""","CachePath":"/cache","ProgramDataPath":"/config","LogPath":"/config/log","WebPath":"/web"}"""
+        val paths = viewModel().ready().info.paths
+        assertEquals("/cache", paths.cache)
+        assertEquals("/config", paths.programData)
+        assertEquals("/config/log", paths.logs)
+        assertEquals("/web", paths.web)
+        assertEquals("", paths.transcodes)
+        assertEquals("", paths.metadata)
+    }
+
+    @Test
+    fun `reads each folder's space where the server has the report, leaving out what it cannot read`() {
+        val storage = made(ServerViewModel(connection, storageAvailable = true)).ready().storage!!
+        assertEquals(listOf(StorageKind.ProgramData, StorageKind.Cache, StorageKind.Logs), storage.system.map { it.first })
+        // A folder with a path and no sizes is kept, with no bar to draw.
+        assertNull(
+            storage.system
+                .first { it.first == StorageKind.Logs }
+                .second.usedFraction,
+        )
+        val cache = storage.system.first { it.first == StorageKind.Cache }.second
+        assertEquals(100L, cache.totalBytes)
+        assertEquals(0.95f, cache.usedFraction!!, 0.001f)
+        assertEquals("zfs", cache.type)
+        assertEquals(listOf("Movies", "Empty"), storage.libraries.map { it.name })
+        assertEquals(
+            listOf("/media/movies"),
+            storage.libraries
+                .first()
+                .folders
+                .map { it.path },
+        )
+    }
+
+    @Test
+    fun `a server without the report is not asked for it, and one whose report fails still shows its info`() {
+        assertNull(viewModel().ready().storage)
+        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/System/Info/Storage" })
+        jellyfin.status["/System/Info/Storage"] = 500
+        val ready = made(ServerViewModel(connection, storageAvailable = true)).ready()
+        assertNull(ready.storage)
+        assertEquals("truenas", ready.info.name)
     }
 
     @Test

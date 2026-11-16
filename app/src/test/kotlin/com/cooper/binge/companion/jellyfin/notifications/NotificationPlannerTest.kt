@@ -57,6 +57,8 @@ class NotificationPlannerTest {
     @Test
     fun `signing out cancels the schedule and clears the notices`() =
         runBlocking {
+            // Let the planner take its first look at the (signed-out) session; the un-pause ignores that first value.
+            until { "cancel" in scheduler.calls }
             sessions.save(jellyfin.session())
             prefs.setEnabled(true)
             until { "schedule 60" in scheduler.calls }
@@ -67,6 +69,8 @@ class NotificationPlannerTest {
     @Test
     fun `a pause stops the poll, and signing in again lifts it`() =
         runBlocking {
+            // Let the planner take its first look at the (signed-out) session; the un-pause ignores that first value.
+            until { "cancel" in scheduler.calls }
             sessions.save(jellyfin.session())
             prefs.setEnabled(true)
             until { "schedule 60" in scheduler.calls }

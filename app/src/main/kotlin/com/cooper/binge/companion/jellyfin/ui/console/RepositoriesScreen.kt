@@ -29,6 +29,8 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.component.TextEntrySurface
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.EmptyScreen
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.PluginRepository
@@ -53,7 +55,7 @@ internal fun RepositoriesTab(
     listState: LazyListState,
 ) {
     when (state) {
-        RepositoriesUiState.Loading -> PluginsLoading(inner)
+        RepositoriesUiState.Loading -> PluginsLoading(inner, intro = stringResource(R.string.repositories_body))
         is RepositoriesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry)
         is RepositoriesUiState.Ready -> {
             if (state.repositories.isEmpty()) {
@@ -90,7 +92,13 @@ private fun RepositoryList(
         item(key = "intro") {
             PageIntro(stringResource(R.string.repositories_body))
         }
-        item(key = "repositories") { ItemGroup(title = null, rows = state.repositories.map { it.row(state, actions) }) }
+        item(key = "repositories") {
+            ItemGroup(
+                title = null,
+                rows = state.repositories.map { it.row(state, actions) },
+                modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+            )
+        }
     }
 }
 

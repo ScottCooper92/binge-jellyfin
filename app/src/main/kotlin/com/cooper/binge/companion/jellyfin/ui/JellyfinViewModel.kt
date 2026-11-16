@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,6 +20,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.LocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.PublicUser
 import com.cooper.binge.companion.jellyfin.server.Reach
 import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
@@ -27,22 +29,29 @@ import com.cooper.binge.companion.jellyfin.server.localNetworkHostOrNull
 import com.cooper.binge.companion.jellyfin.server.logout
 import com.cooper.binge.companion.jellyfin.server.me
 import com.cooper.binge.companion.jellyfin.server.publicInfo
+import com.cooper.binge.companion.jellyfin.server.publicUsers
 import com.cooper.binge.companion.jellyfin.server.quickConnectAuthenticated
 import com.cooper.binge.companion.jellyfin.server.quickConnectEnabled
 import com.cooper.binge.companion.jellyfin.server.quickConnectInitiate
+import com.cooper.binge.companion.jellyfin.server.userThumbnail
 import com.cooper.binge.companion.jellyfin.telemetry.Analytics
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsEvents
 import com.cooper.binge.companion.jellyfin.telemetry.NoOpAnalytics
 import com.cooper.binge.companion.jellyfin.telemetry.SignInReports
+import com.cooper.binge.companion.jellyfin.ui.console.decodeThumbnail
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import java.io.IOException
 
@@ -117,6 +126,66 @@ fun JellyfinViewModel.chooseServer(server: DiscoveredServer) {
     connect()
 }
 
+/** Picks a listed account: its name fills the username, and one with no password signs in straight away. */
+fun JellyfinViewModel.pickPublicUser(user: PublicUser) {
+    val current = state.value as? UiState.SignIn ?: return
+    if (current.busy) return
+    onUsername(user.name)
+    onPassword("")
+    if (!user.hasPassword) signInWithPassword()
+}
+
+/** Reads the server's public users once, for the sign-in step. A failure or an empty list leaves the step as it is. */
+private fun CoroutineScope.loadPublicUsers(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    url: HttpUrl,
+    base: String,
+) {
+    launch {
+        attempt { connection.anonymous(url).publicUsers() }
+            .onSuccess { users ->
+                // Only for the step it was asked for: the user may have changed server while it was in flight.
+                state.update { (it as? UiState.SignIn)?.takeIf { s -> s.baseUrl == base }?.copy(publicUsers = users) ?: it }
+                loadPublicPictures(connection, state, url, users)
+            }.onFailure { Log.i("JellyfinSetup", "The server's public users could not be read", it) }
+    }
+}
+
+/**
+ * Reads each listed account's picture for the sign-in step. There is no token yet, so the client is the anonymous one and the
+ * route is the one the server answers to anyone; a picture that cannot be read stays the account's initials. A picture lands only
+ * in the step whose list it was asked for, and is held in memory alone.
+ */
+private suspend fun loadPublicPictures(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    url: HttpUrl,
+    users: List<PublicUser>,
+) {
+    val client = connection.anonymous(url)
+    val permits = Semaphore(CONCURRENT_PICTURES)
+    coroutineScope {
+        users.forEach { user ->
+            val tag = user.imageTag ?: return@forEach
+            launch {
+                val picture =
+                    permits.withPermit {
+                        withContext(connection.io) {
+                            attempt { client.userThumbnail(user.id, tag)?.let(::decodeThumbnail) }.getOrNull()
+                        }
+                    } ?: return@launch
+                state.update { s ->
+                    val step = (s as? UiState.SignIn)?.takeIf { it.publicUsers === users }
+                    step?.copy(publicPictures = step.publicPictures + (user.id to picture)) ?: s
+                }
+            }
+        }
+    }
+}
+
+private const val CONCURRENT_PICTURES = 4
+
 /** Opens the demo server, which answers from memory and signs in as its own administrator. */
 fun JellyfinViewModel.tryDemo() {
     if ((state.value as? UiState.EnterServer)?.checking == true) return
@@ -184,9 +253,25 @@ sealed interface UiState {
         val quickConnectError: SetupError? = null,
         /** A Quick Connect code is being asked for, so a retry shows progress rather than the last failure. */
         val gettingCode: Boolean = false,
+        /** Where a forgotten-password reset is, or null when none is under way. */
+        val forgot: ForgotPasswordStep? = null,
+        /** The accounts the server lists on its login screen. Empty when it lists none or could not be asked: nothing is shown then. */
+        val publicUsers: List<PublicUser> = emptyList(),
+        /**
+         * The listed accounts' pictures, by user id, read without a token and held only here: leaving the step drops them, and
+         * nothing is written to disk. An account missing from the map shows its initials.
+         */
+        val publicPictures: Map<String, Bitmap> = emptyMap(),
     ) : UiState {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
     }
+
+    /** The setup wizard of a server that has not finished its first-run setup, reached from the sign-in step's notice. */
+    data class Startup(
+        val baseUrl: String,
+        val server: PublicServerInfo,
+        val phase: StartupPhase = StartupPhase.Loading,
+    ) : UiState
 
     data class SignedIn(
         val session: JellyfinSession,
@@ -227,9 +312,18 @@ class JellyfinViewModel(
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state.asStateFlow()
 
+    /** The setup wizard for a server that has not finished its first-run setup. */
+    val startup =
+        StartupWizard(connection, _state, viewModelScope, localNetwork) { url, server, signedIn ->
+            finish(url, server, signedIn, AnalyticsEvents.METHOD_PASSWORD)
+        }
+
     private val reports = SignInReports(analytics)
 
     private var quickConnect: Job? = null
+
+    /** The forgotten-password steps of the sign-in step. */
+    val forgotPassword = ForgotPasswordFlow(viewModelScope, connection, _state)
 
     init {
         viewModelScope.launch {
@@ -306,7 +400,9 @@ class JellyfinViewModel(
                     }
                 }
             } else {
-                _state.value = UiState.SignIn(baseUrl = info.baseUrl.toString().trimEnd('/'), server = info)
+                val base = info.baseUrl.toString().trimEnd('/')
+                _state.value = UiState.SignIn(baseUrl = base, server = info)
+                viewModelScope.loadPublicUsers(connection, _state, info.baseUrl, base)
             }
         }
     }
@@ -403,16 +499,20 @@ class JellyfinViewModel(
     /**
      * The server step again, with the address filled in: from the sign-in step, or from a saved server that cannot be
      * reached. A saved session stays saved until a new sign-in replaces it, so closing the app comes back to the gate.
+     * With [recheck], from the sign-in step, the address is read again at once: the notice for a server that was not set up
+     * says to finish that elsewhere, and this finds out whether it has been.
      */
-    fun changeServer() {
+    fun changeServer(recheck: Boolean = false) {
         quickConnect?.cancel()
         val address =
             when (val current = _state.value) {
                 is UiState.SignIn -> current.baseUrl
+                is UiState.Startup -> current.baseUrl
                 is UiState.SignedIn -> current.session.baseUrl
                 else -> ""
             }
         _state.value = UiState.EnterServer(address = address)
+        if (recheck && address.isNotBlank()) connect()
     }
 
     /**
@@ -532,6 +632,9 @@ class JellyfinViewModel(
                         }
                     // The demo signs in from the server step, so that is where its failure has to land.
                     is UiState.EnterServer -> it.copy(checking = false, error = SetupError.Generic)
+                    // Setup is complete but the session could not be kept: the last step stays, with the reason.
+                    is UiState.Startup ->
+                        it.copy(phase = (it.phase as? StartupPhase.Finish)?.copy(busy = false, error = SetupError.Generic) ?: it.phase)
                     else -> it
                 }
             }

@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.sdk.attempt
+import com.binge.designsystem.component.ProvideRowFocus
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.tip.TipViewModel
@@ -21,6 +22,7 @@ import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ThisAppScreen
 import com.cooper.binge.companion.jellyfin.ui.UiState
+import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchRoute
 import kotlinx.coroutines.launch
 
 /** The open console page, with its own view model from the page's store. */
@@ -34,6 +36,22 @@ internal fun ConsolePageRoute(
     actions: Actions = Actions(),
     openItem: (String) -> Unit = {},
     openPageItem: (ConsolePage, String) -> Unit = { _, _ -> },
+    row: String? = null,
+) {
+    // A page opened on one of its settings scrolls to its row and washes it once.
+    ProvideRowFocus(key = row) { ConsolePageContent(page, graph, signedIn, close, open, actions, openItem, openPageItem) }
+}
+
+@Composable
+private fun ConsolePageContent(
+    page: ConsolePage,
+    graph: AppGraph,
+    signedIn: UiState.SignedIn,
+    close: () -> Unit,
+    open: (ConsolePage) -> Unit,
+    actions: Actions,
+    openItem: (String) -> Unit,
+    openPageItem: (ConsolePage, String) -> Unit,
 ) {
     when (page) {
         ConsolePage.ApproveCode -> ApproveCodeRoute(graph, close)
@@ -42,6 +60,14 @@ internal fun ConsolePageRoute(
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
         ConsolePage.ThisApp -> ThisAppRoute(graph, actions, close)
+        ConsolePage.Search ->
+            SettingsSearchRoute(
+                graph,
+                signedIn.profile,
+                signedIn.account,
+                if (LocalHubBeside.current) actions.onOpenResult else actions.onOpenRow,
+                close,
+            )
         ConsolePage.ProfilePicture -> ProfilePictureRoute(graph, signedIn.profile.hasUserImageRoute, close)
         ConsolePage.Account -> AccountScreen(signedIn, actions, close)
         ConsolePage.NowPlaying -> NowPlayingRoute(graph, signedIn.account, openItem, close)
@@ -73,6 +99,7 @@ internal fun ConsolePageRoute(
         ConsolePage.Trickplay -> TrickplayRoute(graph, signedIn.profile.hasKeyFrameOnlyTrickplay, close)
         ConsolePage.LibraryDisplay -> LibraryDisplayRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.MetadataDefaults -> MetadataDefaultsRoute(graph, openItem, close)
+        ConsolePage.Nfo -> NfoRoute(graph, close)
         ConsolePage.Backups -> BackupsRoute(graph, signedIn.profile.version, close)
         ConsolePage.Transcoding -> TranscodingRoute(graph, signedIn.profile, close)
         ConsolePage.LiveTv ->
@@ -87,7 +114,7 @@ internal fun ConsolePageRoute(
                 close,
             )
         ConsolePage.LiveTvRecording -> LiveTvRecordingRoute(graph, close)
-        ConsolePage.Server -> ServerRoute(graph, close)
+        ConsolePage.Server -> ServerRoute(graph, signedIn.profile.hasStorageInfo, signedIn.profile.hasActivityFilters, close)
     }
 }
 
@@ -349,9 +376,23 @@ private fun ServerSettingsRoute(
 @Composable
 private fun ServerRoute(
     graph: AppGraph,
+    storageAvailable: Boolean,
+    alertsFilteredByServer: Boolean,
     onBack: () -> Unit,
 ) {
-    val server: ServerViewModel = viewModel(factory = viewModelFactory { initializer { ServerViewModel(graph.connection) } })
+    val server: ServerViewModel =
+        viewModel(
+            factory =
+                viewModelFactory {
+                    initializer {
+                        ServerViewModel(
+                            graph.connection,
+                            storageAvailable = storageAvailable,
+                            alertsFilteredByServer = alertsFilteredByServer,
+                        )
+                    }
+                },
+        )
     val state by server.state.collectAsStateWithLifecycle()
     ServerScreen(
         state,

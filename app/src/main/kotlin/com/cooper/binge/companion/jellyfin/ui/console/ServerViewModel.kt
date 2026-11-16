@@ -2,11 +2,19 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binge.companion.sdk.attempt
+import com.cooper.binge.companion.jellyfin.server.ActivityEntry
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.ServerInfo
+import com.cooper.binge.companion.jellyfin.server.ServerStorage
+import com.cooper.binge.companion.jellyfin.server.alerts
 import com.cooper.binge.companion.jellyfin.server.restartServer
 import com.cooper.binge.companion.jellyfin.server.serverInfo
+import com.cooper.binge.companion.jellyfin.server.serverStorage
 import com.cooper.binge.companion.jellyfin.server.shutdownServer
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +40,10 @@ sealed interface ServerUiState {
      */
     data class Ready(
         val info: ServerInfo,
+        /** The disk space of the server's folders; null where the server has none to give (an older release, or a read that failed). */
+        val storage: ServerStorage? = null,
+        /** The newest warnings and errors of the activity log; null where they could not be read, which leaves the card out, and empty when there are none. */
+        val alerts: List<ActivityEntry>? = null,
         val confirming: Boolean = false,
         val restart: Restart? = null,
         val confirmingShutdown: Boolean = false,
@@ -55,6 +67,10 @@ class ServerViewModel(
     pollMillis: Long = RestartTiming.POLL_MILLIS,
     downWaitMillis: Long = RestartTiming.DOWN_WAIT_MILLIS,
     backWaitMillis: Long = RestartTiming.BACK_WAIT_MILLIS,
+    /** Whether the server has the storage report (`hasStorageInfo`); a release without it is not asked. */
+    private val storageAvailable: Boolean = false,
+    /** Whether the server filters the activity log by severity (`hasActivityFilters`); an older one is read whole and filtered here. */
+    private val alertsFilteredByServer: Boolean = false,
 ) : ViewModel() {
     private val timing = RestartTiming(pollMillis, downWaitMillis, backWaitMillis)
 
@@ -70,8 +86,11 @@ class ServerViewModel(
         viewModelScope.launch {
             _state.value =
                 connection
-                    .consoleCall(TAG) { _, client -> client.serverInfo() }
-                    .fold(onSuccess = { ServerUiState.Ready(it) }, onFailure = { ServerUiState.Failed(it.consoleFailure()) })
+                    .consoleCall(TAG) { _, client -> client.infoAndStorage() }
+                    .fold(
+                        onSuccess = { read -> ServerUiState.Ready(read.info, read.storage, read.alerts) },
+                        onFailure = { ServerUiState.Failed(it.consoleFailure()) },
+                    )
         }
     }
 
@@ -123,16 +142,40 @@ class ServerViewModel(
         update { copy(refreshing = true, refreshFailed = null) }
         viewModelScope.launch {
             connection
-                .consoleCall(TAG) { _, client -> client.serverInfo() }
-                .onSuccess { fresh -> update { copy(info = fresh, refreshing = false) } }
+                .consoleCall(TAG) { _, client -> client.infoAndStorage() }
+                .onSuccess { read -> update { copy(info = read.info, storage = read.storage, alerts = read.alerts, refreshing = false) } }
                 .onFailure { error -> update { copy(refreshing = false, refreshFailed = error.consoleFailure()) } }
         }
     }
 
     private suspend fun reloaded() {
-        val info = connection.consoleCall(TAG) { _, client -> client.serverInfo() }.getOrNull()
-        update { copy(info = info ?: this.info, restart = Restart.Restarted) }
+        val read = connection.consoleCall(TAG) { _, client -> client.infoAndStorage() }.getOrNull()
+        update {
+            copy(
+                info = read?.info ?: info,
+                storage = read?.storage ?: storage,
+                alerts = read?.alerts ?: alerts,
+                restart = Restart.Restarted,
+            )
+        }
     }
+
+    private class ServerRead(
+        val info: ServerInfo,
+        val storage: ServerStorage?,
+        val alerts: List<ActivityEntry>?,
+    )
+
+    /**
+     * The server's info, with the disk space and the recent alerts beside it. They are niceties: a read that fails leaves its card out
+     * and never the page.
+     */
+    private suspend fun JellyfinClient.infoAndStorage(): ServerRead =
+        coroutineScope {
+            val storage = async { if (storageAvailable) attempt { serverStorage() }.getOrNull()?.takeUnless { it.isEmpty } else null }
+            val alerts = async { attempt { alerts(alertsFilteredByServer) }.getOrNull() }
+            ServerRead(serverInfo(), storage.await(), alerts.await())
+        }
 
     private fun update(change: ServerUiState.Ready.() -> ServerUiState.Ready) =
         _state.update { (it as? ServerUiState.Ready)?.change() ?: it }

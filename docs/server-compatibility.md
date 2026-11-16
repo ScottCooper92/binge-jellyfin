@@ -68,9 +68,11 @@ older server shows less rather than failing on a call it can't answer.
 | A library's media segment providers (the server lists them from 10.11, and 10.10 misspells the order option) | 10.11 | `hasLibrarySegmentProviders` |
 | A library's metadata downloaders and image fetchers for each item type (`TypeOptions`) | every release from 10.8 | none: the page lists what `Libraries/AvailableOptions` offers for the library, so a type it offers nothing for shows nothing |
 | Backups | 10.11 | `hasBackups` |
+| Disk space of the server's folders and its libraries' (the Server page's Storage groups, `GET /System/Info/Storage`). From the issue's audit (#526), which has it at 10.11.0; the release that added it, and the exact field names, are not re-read in the server source and are checked on a device. A report that fails to read leaves the groups out | 10.11 | `hasStorageInfo` |
 | Parental control by sub-rating | 10.11 | `hasParentalSubRating` |
 | Grouping movies and shows into collections separately | 10.11 | `hasSeparateCollectionGrouping` |
 | Activity filters by end time, user, severity and type (every server filters by start time and by whether an entry has a user; the others are ignored before 12.0, so the page does not offer them) | 12.0 | `hasActivityFilters` |
+| The Server page's Alerts card: the newest warnings and errors of the activity log (the web dashboard's Alerts). Every server has it. A server that filters by severity is asked once for each severity; an older one is read for its newest 100 entries and the rest dropped here, so a quiet stretch of the log can show fewer than there are | 12.0 for the server-side filter | `hasActivityFilters` chooses which |
 
 ## What each user has
 
@@ -79,6 +81,7 @@ older server shows less rather than failing on a call it can't answer.
 | The server's pages (libraries, tasks, activity, logs, API keys, plugins, devices, users, server) | administrators | `isAdministrator` |
 | Trickplay settings (its own page) | administrators, on a server that has trickplay | `isAdministrator` and `hasTrickplay` |
 | Metadata providers by type (its own page). `MetadataOptions` is in `/System/Configuration` at 10.8.13, 10.9.0, 10.10.0 and 10.11.0, so there is no version gate. A fetcher's on/off there applies to an item only when its library has no `TypeOptions` for the type; a library with its own takes the place of it (`BaseItemManager.IsMetadataFetcherEnabled`, read at 10.9.11 and 10.11.0). The names come from `GET /Libraries/AvailableOptions` per `libraryContentType` | administrators | `isAdministrator` |
+| NFO (Kodi) metadata options (its own page). `XbmcMetadataOptions` is `GET/POST /System/Configuration/xbmcmetadata`, with the same five keys at 10.8 to 10.11 per the audit behind #525, so there is no version gate. Each row also needs the server to send its key. The per-library NFO reader and saver switches stay in the library options | administrators | `isAdministrator` |
 | Networking (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasInternalPortNames` and `hasUpnpOption` |
 | Advanced options (its own page); each row also needs the server to send its option | administrators | `isAdministrator`, then `hasAdvancedPerformance` and `hasCacheAndLegacyAuth` per row |
 | Their own preferences (languages, playback, the home screen, their picture) | everyone, unless `EnableUserPreferenceAccess` is off | `canEditPreferences` |

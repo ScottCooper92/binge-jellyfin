@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -39,6 +40,22 @@ private val Instant = ContentTransform(EnterTransition.None, ExitTransition.None
 /** The metadata that puts a page in the detail pane beside the hub; on a narrow window it takes the whole window. */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 private val DetailPane: Map<String, Any> = ListDetailSceneStrategy.detailPane()
+
+/**
+ * A page's pane role: the detail pane beside the home, with its page for the three-pane layout. The search is not given one: it
+ * covers the whole window, as Android's own Settings search does, because without a pane role the strategy leaves the entry to
+ * the default, a single pane.
+ */
+private fun pageMetadata(page: ConsolePage): Map<String, Any> = if (page.coversWindow) emptyMap() else DetailPane + pageRole(page)
+
+/** Whether the home is on screen beside the pages: a window wide enough for two panes. The search reads it to open a result beside the home. */
+internal val LocalHubBeside = compositionLocalOf { false }
+
+/** Whether the page is the whole window, so it offers its own Back: a page that covers the window, or any page where the home is not beside. */
+private fun pageAlone(
+    page: ConsolePage,
+    hubBeside: Boolean,
+): Boolean = page.coversWindow || !hubBeside
 
 /**
  * The console's pages as Navigation 3 entries over [stack]: the home at the bottom, then each open page. Back
@@ -81,6 +98,8 @@ fun ConsoleNavHost(
     val stores: ConsolePageStores = viewModel()
     LaunchedEffect(stack.openings) { stores.retain(stack.openings) }
     val openItem by rememberUpdatedState(stack.topItem)
+    // The setting a page was opened on: read inside its content, as the entry is built once for its key.
+    val rows by rememberUpdatedState(stack.entries.filter { it.item == null }.associate { it.opening to it.row })
     NavDisplay(
         backStack = stack.keys(signedIn),
         onBack = onBack,
@@ -106,18 +125,19 @@ fun ConsoleNavHost(
                         }
                     }
                 is ConsoleKey.Page ->
-                    NavEntry(key, metadata = DetailPane + pageRole(key.page)) {
+                    NavEntry(key, metadata = pageMetadata(key.page)) {
                         // A page that opens its items as entries is a pane of its own beside them on a tablet; one
                         // that does not is given the two panes' width and draws its list and item itself.
                         val ownPane = threePaneNow && key.page.opensItems
                         CompositionLocalProvider(
                             LocalViewModelStoreOwner provides stores.owner(key.opening),
-                            LocalIsSinglePaneNav provides !hubBeside,
+                            LocalIsSinglePaneNav provides pageAlone(key.page, hubBeside),
+                            LocalHubBeside provides hubBeside,
                             LocalPaneDepth provides if (ownPane) 1 else depth,
                             LocalOpenItem provides openItem?.takeIf { it.opening == key.opening }?.item,
                         ) {
                             PaneContent(innerEdge = if (ownPane) PaneEdge.Both else PaneEdge.Start) {
-                                pageNow(ConsoleEntry(key.page, key.opening))
+                                pageNow(ConsoleEntry(key.page, key.opening, row = rows[key.opening]))
                             }
                         }
                     }

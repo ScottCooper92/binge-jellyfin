@@ -228,6 +228,8 @@ dependencies {
     implementation(libs.work.runtime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
+    // Plugin changelogs are Markdown; see ui/console/ChangelogMarkdown.
+    implementation(libs.markdown.renderer.m3)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.config)

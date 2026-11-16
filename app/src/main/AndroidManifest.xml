@@ -25,6 +25,14 @@
         Cleartext is allowed because most home Jellyfin servers are plain http on the LAN. The app's
         screens say so wherever an http server is shown.
     -->
+    <queries>
+        <!-- A browser that can open a web address, so the rows that open one are offered only where one exists. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <application
         android:name=".JellyfinApp"
         android:allowBackup="false"

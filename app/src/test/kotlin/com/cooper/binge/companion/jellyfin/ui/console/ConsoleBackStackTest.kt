@@ -176,4 +176,40 @@ class ConsoleBackStackTest {
             assertEquals(stack, restore(checkNotNull(saved)))
         }
     }
+
+    @Test
+    fun `a page opened on a row carries it, and a row on the page already open replaces it`() {
+        val opened = ConsoleBackStack().open(ConsolePage.Network, "network.EnableHttps")
+        assertEquals("network.EnableHttps", opened.top?.row)
+        // The same page again on another row: the page stays, with its view models, and shows the new row.
+        val again = opened.open(ConsolePage.Network, "network.BaseUrl")
+        assertEquals(1, again.entries.size)
+        assertEquals("network.BaseUrl", again.top?.row)
+        assertEquals(opened.top?.opening, again.top?.opening)
+        // The same page on the same row, or on none, changes nothing.
+        assertSame(again, again.open(ConsolePage.Network, "network.BaseUrl"))
+        assertSame(again, again.open(ConsolePage.Network))
+    }
+
+    @Test
+    fun `a page opened from the home on a row carries it, and reopening it on another shows that one`() {
+        val first = ConsoleBackStack().openFromHome(ConsolePage.Transcoding, "transcoding.acceleration")
+        assertEquals("transcoding.acceleration", first.top?.row)
+        val second = first.openFromHome(ConsolePage.Transcoding, "transcoding.AllowHevcEncoding")
+        assertEquals(1, second.entries.size)
+        assertEquals("transcoding.AllowHevcEncoding", second.top?.row)
+        assertEquals(first.top?.opening, second.top?.opening)
+        assertNull(second.openFromHome(ConsolePage.Transcoding).top?.row)
+    }
+
+    @Test
+    fun `a row survives the saved state, and a stack saved without one restores`() {
+        val stack = ConsoleBackStack().open(ConsolePage.Network, "network.HttpPort").open(ConsolePage.Server)
+        with(ConsoleBackStack.Saver) {
+            val restored = restore(checkNotNull(SaverScope { true }.save(stack)))
+            assertEquals(stack, restored)
+            assertEquals("network.HttpPort", restored?.entries?.first()?.row)
+            assertNull(restored?.entries?.last()?.row)
+        }
+    }
 }
