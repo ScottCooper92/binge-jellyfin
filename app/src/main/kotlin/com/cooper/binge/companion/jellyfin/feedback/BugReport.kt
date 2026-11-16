@@ -37,7 +37,7 @@ internal fun ephyraBugReport(
             ),
     )
 
-/** This install's [DeviceReport], with the connected server's release when [serverVersion] is known, and the link it makes. */
+/** This install's [ephyraBugReport], with the connected server's release when [serverVersion] is known, and the link it makes. */
 fun installBugReportUrl(serverVersion: JellyfinVersion? = null): String =
     bugReportUrl(
         BUG_REPORT_REPOSITORY,
