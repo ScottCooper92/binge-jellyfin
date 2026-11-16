@@ -1,10 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui
 
 import android.graphics.Bitmap
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
@@ -14,7 +10,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -37,8 +32,9 @@ import java.io.ByteArrayOutputStream
 class PublicUserPicturesTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
-    private val store = ViewModelStore()
+    private val teardown = ViewModelTeardown()
+    private val connection =
+        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
 
     @Before
     fun main() {
@@ -47,9 +43,7 @@ class PublicUserPicturesTest {
 
     @After
     fun close() {
-        store.clear()
-        jellyfin.close()
-        Dispatchers.resetMain()
+        teardown.close(jellyfin)
     }
 
     private fun picture(): ByteArray {
@@ -59,8 +53,7 @@ class PublicUserPicturesTest {
     }
 
     private fun signInStep(): Pair<JellyfinViewModel, UiState.SignIn> {
-        val vm = JellyfinViewModel(sessions, connection, LibraryIndex(), discover = { emptyList() })
-        val tracked = ViewModelProvider(store, viewModelFactory { initializer { vm } })[JellyfinViewModel::class.java]
+        val tracked = teardown.made(JellyfinViewModel(sessions, connection, LibraryIndex(), discover = { emptyList() }))
         runBlocking { withTimeout(10_000) { tracked.state.first { it is UiState.EnterServer } } }
         tracked.onAddress(jellyfin.baseUrl)
         tracked.connect()

@@ -1083,6 +1083,7 @@ app:setup_incomplete_title  f829cda965c4
 app:setup_password  e7cf3ef4f17c
 app:setup_pick_user  dbdbe08dd555
 app:setup_quick_connect  d52940712fbe
+app:setup_quick_connect_hint  471f6e3b2f15
 app:setup_searching  fad10c01b7c9
 app:setup_server_body  3219d0cc0f0a
 app:setup_server_field  8be89710b2f1

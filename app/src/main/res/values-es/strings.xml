@@ -51,6 +51,7 @@
     <string name="setup_password">Contraseña</string>
     <string name="setup_sign_in">Iniciar sesión</string>
     <string name="setup_quick_connect">Usar Quick Connect</string>
+    <string name="setup_quick_connect_hint">¿Sin contraseña aquí? Quick Connect inicia tu sesión desde una app de Jellyfin en la que ya has iniciado sesión.</string>
 
     <string name="quick_connect_title">Introduce este código</string>
     <string name="quick_connect_body">En una app de Jellyfin en la que hayas iniciado sesión, abre tu perfil, luego Quick Connect, e introduce el código.</string>
