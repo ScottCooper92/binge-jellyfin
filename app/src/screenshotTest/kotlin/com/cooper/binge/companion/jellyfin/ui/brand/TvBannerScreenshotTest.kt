@@ -17,5 +17,11 @@ class TvBannerScreenshotTest {
     @Preview(name = "banner-2x", widthDp = 640, heightDp = 360)
     @Preview(name = "banner-half", widthDp = 160, heightDp = 90)
     @Composable
-    fun banner() = Image(painterResource(R.drawable.tv_banner), contentDescription = null, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+    fun banner() =
+        Image(
+            painterResource(R.drawable.tv_banner),
+            contentDescription = null,
+            Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds,
+        )
 }
