@@ -221,7 +221,7 @@ private fun ConsoleHost(
     ReviewPromptOnReturnToRoot(
         signedIn = signedIn,
         atRoot = stack.entries.isEmpty(),
-        onReturnedToRoot = graph.reviewPrompt::maybeAsk,
+        onReturnedToRoot = graph::askForReview,
     )
     ConsoleNavHost(
         stack = if (signedIn) stack else ConsoleBackStack(),

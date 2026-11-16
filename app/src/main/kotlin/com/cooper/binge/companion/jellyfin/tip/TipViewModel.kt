@@ -3,6 +3,8 @@ package com.cooper.binge.companion.jellyfin.tip
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cooper.homelab.core.tip.TipBilling
+import com.cooper.homelab.core.tip.TipOutcome
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow

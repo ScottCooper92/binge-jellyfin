@@ -2,8 +2,6 @@ package com.cooper.binge.companion.jellyfin.ui.console
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.cooper.binge.companion.jellyfin.review.NoReviewSignals
-import com.cooper.binge.companion.jellyfin.review.ReviewSignalSink
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ServerTask
 import com.cooper.binge.companion.jellyfin.server.TaskTrigger
@@ -12,6 +10,8 @@ import com.cooper.binge.companion.jellyfin.server.saveTaskTriggers
 import com.cooper.binge.companion.jellyfin.server.stopTask
 import com.cooper.binge.companion.jellyfin.server.taskPushes
 import com.cooper.binge.companion.jellyfin.server.tasks
+import com.cooper.homelab.core.review.NoReviewSignals
+import com.cooper.homelab.core.review.ReviewSignalSink
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

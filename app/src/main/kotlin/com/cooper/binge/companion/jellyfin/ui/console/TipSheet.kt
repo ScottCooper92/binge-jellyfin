@@ -19,7 +19,7 @@ import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetKind
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.tip.TIP_STEPS
+import com.cooper.homelab.core.tip.TIP_STEPS
 import com.binge.designsystem.R as DesR
 
 private val DEFAULT_TIP_INDEX = TIP_STEPS.indexOf(5)
