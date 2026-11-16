@@ -21,6 +21,16 @@ class ReleaseNotesScreenshotTest {
     @Composable
     fun releaseNotes() = Rows(version = "10.11.6", update = false)
 
+    /** The server card's Update available pill as a tappable one, the worst case of the card's top row: a preview has no browser, so one is assumed. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun updatePill() =
+        Surface {
+            Column(Modifier.padding(16.dp)) { ServerHomeCard(previewSignedInAdminAlerts, canOpen = { true }, open = {}) }
+        }
+
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinSpanishPreviews

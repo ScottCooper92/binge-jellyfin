@@ -2,10 +2,15 @@ package com.cooper.binge.companion.jellyfin.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -96,6 +101,45 @@ class ReleaseNotesTest {
         show("", update = true)
         compose.onNodeWithText("Release notes").assertDoesNotExist()
         compose.onNodeWithText("Update available").assertIsDisplayed()
+    }
+
+    private val session = JellyfinSession("http://192.168.1.2:8096", "Living room", "a1", "10.11.6", "u1", "sam", "not-a-token")
+
+    private fun showCard(
+        update: Boolean,
+        canOpen: (String) -> Boolean = { true },
+        opened: MutableList<String> = mutableListOf(),
+    ) = compose.setContent {
+        JellyfinTheme {
+            ServerHomeCard(UiState.SignedIn(session, card = ServerCardState(updateAvailable = update)), canOpen = canOpen, open = {
+                opened +=
+                    it
+            })
+        }
+    }
+
+    @Test
+    fun `the Update available pill on the server card opens the list of releases`() {
+        val opened = mutableListOf<String>()
+        showCard(update = true, opened = opened)
+        // Read as a button that says where it goes; a pill with nothing to tap is read by its label.
+        compose.onNode(hasClickAction() and hasContentDescription("Release notes")).assertExists()
+        compose.onNodeWithContentDescription("Release notes").performClick()
+        assertEquals(listOf(releases), opened)
+    }
+
+    @Test
+    fun `where nothing can open it the pill is a label, with nothing to tap`() {
+        showCard(update = true, canOpen = { false })
+        compose.onNodeWithText("Update available").assertIsDisplayed()
+        compose.onNode(hasClickAction() and hasText("Update available")).assertDoesNotExist()
+        compose.onNodeWithContentDescription("Release notes").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a server with no update has no pill`() {
+        showCard(update = false)
+        compose.onNodeWithText("Update available").assertDoesNotExist()
     }
 
     @Test
