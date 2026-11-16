@@ -89,7 +89,7 @@ class ConsentGateTest {
         val opened = shadowOf(ApplicationProvider.getApplicationContext<Application>()).nextStartedActivity
         assertEquals(Intent.ACTION_VIEW, opened.action)
         val url = opened.data.toString()
-        assertTrue(url.startsWith("https://github.com/ScottCooper92/binge-jellyfin/issues/new?template=bug.yml"))
+        assertTrue(url.startsWith("https://github.com/ScottCooper92/ephyra/issues/new?template=bug.yml"))
         assertTrue(url.contains("app-version=") && url.contains("device="))
     }
 }

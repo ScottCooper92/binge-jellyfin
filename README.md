@@ -1,4 +1,4 @@
-# binge-jellyfin
+# ephyra
 
 Ephyra, a Jellyfin companion app for [Binge](https://github.com/ScottCooper92), on phones and Android TV.
 

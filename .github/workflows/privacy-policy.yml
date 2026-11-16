@@ -5,7 +5,7 @@ name: Privacy policy
 # file changes on main and a merged policy change goes live with no further step.
 #
 # Only the policy is published, not the docs tree: the artifact holds one rendered page, at
-# https://scottcooper92.github.io/binge-jellyfin/privacy/. The page is self-contained, with its styles
+# https://scottcooper92.github.io/ephyra/privacy/. The page is self-contained, with its styles
 # inline and no scripts, fonts or stylesheets from anywhere else, so opening a privacy policy does
 # not itself send a request to a third party.
 #

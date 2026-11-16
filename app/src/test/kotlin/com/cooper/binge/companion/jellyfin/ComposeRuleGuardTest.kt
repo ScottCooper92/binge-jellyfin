@@ -6,7 +6,7 @@ import java.io.File
 
 /**
  * A test that leaves work pending on Compose's shared UI dispatcher when its rule disposes breaks later tests in the same
- * JVM, depending on order (binge-design-system#1067, binge-jellyfin#308): Robolectric discards the pending work and the
+ * JVM, depending on order (binge-design-system#1067, ephyra#308): Robolectric discards the pending work and the
  * dispatcher never runs anything again, so an activity recreation, a state restoration or a paged list fails later, or reads
  * stale state, in a test that has nothing wrong with it. The take-down rules drain it. So a plain compose rule in these tests
  * is a hazard that CI cannot see until some other test falls over.
@@ -34,7 +34,7 @@ class ComposeRuleGuardTest {
 
         assertTrue(
             "Use createTakeDownAndroidComposeRule<ComponentActivity>() (its `scenario` recreates the Activity), not a plain " +
-                "compose rule (binge-jellyfin#308), in: $offenders",
+                "compose rule (ephyra#308), in: $offenders",
             offenders.isEmpty(),
         )
     }

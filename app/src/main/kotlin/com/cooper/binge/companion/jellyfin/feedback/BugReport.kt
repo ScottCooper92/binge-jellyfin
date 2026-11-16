@@ -8,7 +8,7 @@ import java.net.URLEncoder
  * Where a bug in this app is reported: a new issue on this repository, through the form in
  * `.github/ISSUE_TEMPLATE/bug.yml`. A fork points this at its own repository.
  */
-const val BUG_REPORT_REPOSITORY = "https://github.com/ScottCooper92/binge-jellyfin"
+const val BUG_REPORT_REPOSITORY = "https://github.com/ScottCooper92/ephyra"
 
 private const val BUG_TEMPLATE = "bug.yml"
 
