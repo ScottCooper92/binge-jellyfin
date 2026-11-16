@@ -58,4 +58,12 @@ includeBuild("design-system") {
     }
 }
 
+// The shared app library, as source the same way (a private submodule: the licence exception covers linking it). Gradle
+// substitutes `com.cooper.homelab:app-services` with the included build's project.
+includeBuild("homelab-core") {
+    dependencySubstitution {
+        substitute(module("com.cooper.homelab:app-services")).using(project(":app-services"))
+    }
+}
+
 include(":app")

@@ -47,6 +47,10 @@ git submodule update --init --recursive
 ./gradlew :app:assembleDebug
 ```
 
+The app also links a private library of the author's, `homelab-core`, through the same kind of submodule. Its source is not
+public, so **only the author's own CI and machines can build this app**. A fork can read the code and review a pull request,
+but cannot compile it, and a reproducible build from source is not possible. The licence exception below covers the link.
+
 `CLAUDE.md` has the conventions, the gates and the rules the review bots read.
 
 ## Licence
@@ -55,7 +59,7 @@ This app is free software. You can redistribute it and modify it under the terms
 Public License, version 3 or (at your option) any later version (GPL-3.0-or-later). See
 [LICENSE](LICENSE).
 
-    Copyright (C) 2026 Scott Cooper and the identities that author commits here
+    Copyright (C) 2026 Scott Cooper
 
     This program is free software: you can redistribute it and/or modify it under the terms of
     the GNU General Public License as published by the Free Software Foundation, either version 3
@@ -65,12 +69,10 @@ Public License, version 3 or (at your option) any later version (GPL-3.0-or-late
     without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
     See the GNU General Public License for more details.
 
-The copyright holders are the owner, Scott Cooper, and the Claude and bot identities that authored
-commits in this repository (`Claude`, `binge-pr-author[bot]` and `binge-pr-reviewer[bot]`), at the
-owner's direction.
+The copyright holder is the owner, Scott Cooper.
 
 - **An additional permission** under section 7 of the GPL, for Google's Play services, Play Billing, Play In-App Review
-  and Firebase libraries, is in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md). The app links Firebase Remote Config.
+  and Firebase libraries and for the `homelab-core` libraries by Scott Cooper, is in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md). The app links Firebase Remote Config.
 - **The name and artwork are not licensed by the GPL.** See [TRADEMARKS.md](TRADEMARKS.md) and
   [ASSETS.md](ASSETS.md). A fork has to use another name and other artwork.
 - **The contracts and SDK stay Apache 2.0.** They are in

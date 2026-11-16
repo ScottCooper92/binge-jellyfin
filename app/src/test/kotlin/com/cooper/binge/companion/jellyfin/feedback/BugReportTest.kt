@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.feedback
 
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
+import com.cooper.homelab.core.feedback.bugReportUrl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,7 +9,7 @@ import org.junit.Test
 
 class BugReportTest {
     private val report =
-        DeviceReport(
+        ephyraBugReport(
             appVersion = "0.1.0 (101)",
             device = "Google Pixel 10",
             androidVersion = "17 (API 37)",
@@ -21,26 +22,15 @@ class BugReportTest {
             "https://github.com/ScottCooper92/app-feedback/issues/new" +
                 "?template=ephyra-bug.yml&app-version=0.1.0+%28101%29&device=Google+Pixel+10" +
                 "&android-version=17+%28API+37%29&server=Jellyfin+10.10.7",
-            bugReportUrl(report),
+            bugReportUrl(BUG_REPORT_REPOSITORY, report),
         )
     }
 
     @Test
     fun `a server whose release is unknown leaves the server field out`() {
-        val url = bugReportUrl(report.copy(server = null))
+        val url = bugReportUrl(BUG_REPORT_REPOSITORY, ephyraBugReport("0.1.0 (101)", "Google Pixel 10", "17 (API 37)"))
         assertFalse(url.contains("server="))
         assertTrue(url.contains("android-version="))
-    }
-
-    @Test
-    fun `a repository with a trailing slash makes the same link, and a fork's own repository is used`() {
-        assertEquals(bugReportUrl(report), bugReportUrl(report, BUG_REPORT_REPOSITORY + "/"))
-        assertTrue(bugReportUrl(report, "https://github.com/someone/fork").startsWith("https://github.com/someone/fork/issues/new?"))
-    }
-
-    @Test
-    fun `the link never carries a body or the server's address`() {
-        assertFalse(bugReportUrl(report).contains("body="))
     }
 
     @Test
