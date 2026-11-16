@@ -40,6 +40,8 @@
     </plurals>
     <string name="tmdb_missing_detail_promoted">Binge cannot find these. Turn on TMDb as a metadata downloader for their library, then refresh its metadata.</string>
     <string name="tmdb_missing_detail_plain">They cannot be matched by TMDB id. Turn on TMDb as a metadata downloader for their library, then refresh its metadata.</string>
+    <string name="first_library_title">This server has no libraries yet</string>
+    <string name="first_library_detail">Ephyra has nothing to answer from until it has one. Add a library, then scan it.</string>
     <string name="settings_server">Server</string>
     <string name="settings_signed_in_as">Signed in</string>
     <string name="settings_library">Library</string>

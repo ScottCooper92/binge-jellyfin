@@ -40,6 +40,8 @@
     </plurals>
     <string name="tmdb_missing_detail_promoted">Binge no puede encontrarlos. Activa TMDb como proveedor de metadatos de su biblioteca y actualiza sus metadatos.</string>
     <string name="tmdb_missing_detail_plain">No se pueden identificar por ID de TMDB. Activa TMDb como proveedor de metadatos de su biblioteca y actualiza sus metadatos.</string>
+    <string name="first_library_title">Este servidor aún no tiene bibliotecas</string>
+    <string name="first_library_detail">Ephyra no tiene de dónde responder hasta que haya una. Añade una biblioteca y escanéala.</string>
     <string name="settings_server">Servidor</string>
     <string name="settings_signed_in_as">Sesión iniciada</string>
     <string name="settings_library">Biblioteca</string>

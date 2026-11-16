@@ -104,6 +104,9 @@ val previewSignedInAdmin =
         card = previewCard.copy(users = 5),
     )
 
+/** An administrator whose server has no libraries: the home hints at adding the first. */
+val previewSignedInNoLibraries = previewSignedInAdmin.copy(card = previewSignedInAdmin.card.copy(libraries = 0))
+
 /** A user who is not an administrator but may manage Live TV: their home gets the Live TV row. */
 val previewSignedInLiveTvManager =
     previewSignedIn.copy(

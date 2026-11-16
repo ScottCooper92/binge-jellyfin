@@ -129,6 +129,13 @@ class JellyfinScreenshotTest {
     @Composable
     fun signedIn() = JellyfinRoot(previewSignedIn, Actions())
 
+    /** An administrator of a server with no libraries: the card above the server group. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signedInNoLibraries() = JellyfinRoot(previewSignedInNoLibraries, Actions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable

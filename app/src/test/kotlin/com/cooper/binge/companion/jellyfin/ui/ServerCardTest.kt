@@ -19,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonArray
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -114,6 +115,39 @@ class ServerCardTest {
         assertEquals(0, jellyfin.hits("/System/Info"))
         assertEquals(0, jellyfin.hits("/Users"))
         assertEquals(120, card.movies)
+    }
+
+    @Test
+    fun `an administrator's card counts the libraries, zero and one`() {
+        jellyfin.administrator = true
+        jellyfin.libraries = JsonArray(emptyList())
+        val empty = viewModel().signedIn { it.card.libraries != null }.card
+        assertEquals(0, empty.libraries)
+        jellyfin.libraries = JsonArray(jellyfin.libraries + kotlinx.serialization.json.JsonObject(emptyMap()))
+        val vm = viewModel()
+        vm.refresh()
+        assertEquals(1, vm.signedIn { it.card.libraries != null }.card.libraries)
+    }
+
+    @Test
+    fun `a library count that fails stays empty, so no hint, and the rest of the card stays`() {
+        jellyfin.administrator = true
+        jellyfin.status["/Library/VirtualFolders"] = 500
+        val vm = viewModel()
+        val card = vm.signedIn { it.card.playing != null && it.card.users != null }.card
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertNull(card.libraries)
+        assertNull(vm.signedIn { true }.card.libraries)
+        assertTrue(card.connected)
+    }
+
+    @Test
+    fun `a user who is not an administrator never reads the libraries`() {
+        jellyfin.administrator = false
+        jellyfin.libraries = JsonArray(emptyList())
+        val card = viewModel().read(administrator = false)
+        assertNull(card.libraries)
+        assertEquals(0, jellyfin.hits("/Library/VirtualFolders"))
     }
 
     private fun JellyfinViewModel.coverage(): TmdbCoverage = signedIn { it.card.tmdb != null }.card.tmdb!!

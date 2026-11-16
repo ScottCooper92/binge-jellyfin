@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
 import com.cooper.binge.companion.jellyfin.server.itemCounts
+import com.cooper.binge.companion.jellyfin.server.libraries
 import com.cooper.binge.companion.jellyfin.server.nowPlaying
 import com.cooper.binge.companion.jellyfin.server.serverInfo
 import com.cooper.binge.companion.jellyfin.server.tmdbCoverage
@@ -18,8 +19,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * What the home's server card says about the server, as far as it has been read. [playing], [users], [movies] and
- * [series] are null until their read answers, and stay null if it fails: the card shows a placeholder, never an
+ * What the home's server card says about the server, as far as it has been read. [playing], [users], [movies], [series]
+ * and [libraries] are null until their read answers, and stay null if it fails: the card shows a placeholder, never an
  * error. A flag the server didn't send is false, so no chip. [connected] is true once any read has worked.
  */
 data class ServerCardState(
@@ -31,6 +32,8 @@ data class ServerCardState(
     val users: Int? = null,
     val movies: Int? = null,
     val series: Int? = null,
+    /** How many libraries the server has, read for an administrator only; null until it answers and if the read fails. */
+    val libraries: Int? = null,
     val tmdb: TmdbCoverage? = null,
 )
 
@@ -72,6 +75,7 @@ class ServerCardLoader(
                     )
                 }
                 launchRead({ client.users().size }, update) { copy(connected = true, users = it) }
+                launchRead({ client.libraries().size }, update) { copy(connected = true, libraries = it) }
             }
             launchRead({ client.nowPlaying().size }, update) { copy(connected = true, playing = it) }
             launchRead({ client.itemCounts(userId) }, update) { copy(connected = true, movies = it.movies, series = it.series) }
