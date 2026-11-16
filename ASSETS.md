@@ -6,7 +6,7 @@ These files are not covered by the GPL. They are the app's identity, and are kep
 
 - **The launcher icon, the TV banner and the companion icon:**
   `app/src/main/res/drawable/ic_launcher_background.xml`, `ic_launcher_foreground.xml`,
-  `ic_launcher_monochrome.xml`, `ic_companion.xml` and `tv_banner.xml`, and
+  `ic_launcher_monochrome.xml`, `ic_companion.xml`, `ic_notification.xml` and `tv_banner.xml`, and
   `app/src/main/res/mipmap-anydpi-v26/` (`ic_launcher.xml` and `ic_launcher_round.xml`).
 
 - **The wordmark on the TV banner:** the "Ephyra" paths in `tv_banner.xml` are outlines of the letters E, p, h, y, r and a from
