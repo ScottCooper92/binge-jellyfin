@@ -1,9 +1,15 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
+import com.binge.designsystem.tv.component.TvButton
 import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvScreenPreviews
@@ -41,6 +47,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewSignedInWaiting
 import com.cooper.binge.companion.jellyfin.ui.tv.ACCOUNT_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUDIO_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUTOPLAY_KEY
+import com.cooper.binge.companion.jellyfin.ui.tv.TvUserPicture
 
 /** The television's screens: each step's main state in Spanish and at large fonts too, every other state once. */
 class TvJellyfinScreenshotTest {
@@ -124,6 +131,22 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvStressPreviews
     @Composable
     fun passwordWithPictures() = TvSignInPage(previewSignInUsersPictures, Actions(), startWithPassword = true)
+
+    /**
+     * A listed account's button focused, which fills the pill: with a picture and with the initials inside it, the two things its
+     * leading slot holds, and at large fonts too.
+     */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun accountButtonFocused() =
+        Column(modifier = Modifier.padding(48.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            val picture = previewSignInUsersPictures.publicPictures.values.first()
+            TvButton(label = "Mum", onClick = {}, initiallyFocused = true, leadingContent = { TvUserPicture("Mum", picture) })
+            TvButton(label = "Dad", onClick = {}, initiallyFocused = true, leadingContent = { TvUserPicture("Dad", null) })
+            TvButton(label = "Kid", onClick = {}, leadingContent = { TvUserPicture("Kid", picture) })
+        }
 
     @PreviewTest
     @JellyfinTvScreenPreviews
