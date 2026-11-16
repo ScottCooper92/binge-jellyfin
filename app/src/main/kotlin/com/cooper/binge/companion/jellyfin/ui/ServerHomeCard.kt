@@ -25,11 +25,11 @@ import com.binge.designsystem.component.ServerCard
 import com.binge.designsystem.component.ServerCardChip
 import com.binge.designsystem.component.ServerCardStat
 import com.binge.designsystem.theme.BingeSentiment
-import com.binge.designsystem.R as DesR
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.binge.designsystem.R as DesR
 
 /**
  * The console home's server card: which server, whether it answered, and what is worth acting on (not encrypted,
