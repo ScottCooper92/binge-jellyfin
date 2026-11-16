@@ -200,6 +200,7 @@ tvMaterialSeparation {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     // The licences page reads the list the AboutLibraries plugin writes at build time.
     implementation(libs.aboutlibraries.core)
     implementation(libs.binge.companion.sdk)
