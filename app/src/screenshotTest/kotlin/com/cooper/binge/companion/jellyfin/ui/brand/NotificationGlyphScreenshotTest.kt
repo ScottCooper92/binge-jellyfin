@@ -26,14 +26,23 @@ class NotificationGlyphScreenshotTest {
         tint: Color,
         ground: Color,
     ) = Box(Modifier.background(ground).padding(8.dp), contentAlignment = Alignment.Center) {
-        Image(painterResource(R.drawable.ic_notification), contentDescription = null, Modifier.size(size.dp), colorFilter = ColorFilter.tint(tint))
+        Image(
+            painterResource(R.drawable.ic_notification),
+            contentDescription = null,
+            Modifier.size(size.dp),
+            colorFilter = ColorFilter.tint(tint),
+        )
     }
 
     @PreviewTest
     @Preview(name = "glyph", widthDp = 320, heightDp = 100)
     @Composable
     fun glyph() =
-        Row(Modifier.background(Color(0xFF000000)), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.background(Color(0xFF000000)),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Glyph(24, Color.White, Color(0xFF000000))
             Glyph(24, Color(0xFF202124), Color(0xFFF1F3F4))
             Glyph(72, Color.White, Color(0xFF000000))
