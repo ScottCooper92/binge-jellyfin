@@ -60,7 +60,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@4ea9f85339ca1f32747cfcbe89aaf1252e5bfdd5 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@41179b5c9b9a67d67c4e33d790ea8e44aa165ac9 # v1
 
   # Decides which of the jobs below a pull request can affect, so a docs-only diff, a test-only one or a
   # follow-up that moves no frame does not pay for the whole suite (#548). The jobs it gates are skipped
@@ -398,7 +398,7 @@ jobs:
 
       # binge-ci's shared step: a pinned release verified against its published checksum, with
       # shellcheck at warning severity.
-      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@4ea9f85339ca1f32747cfcbe89aaf1252e5bfdd5 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/actionlint@41179b5c9b9a67d67c4e33d790ea8e44aa165ac9 # v1
 
   # A red nightly has no PR or push to carry it, so without this it is a red mark in the
   # Actions tab that nothing points at. One issue stays open while the canary is red and
@@ -413,7 +413,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@4ea9f85339ca1f32747cfcbe89aaf1252e5bfdd5 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@41179b5c9b9a67d67c4e33d790ea8e44aa165ac9 # v1
         with:
           result: ${{ needs.build.result }}
           title: Nightly CI is failing on main
