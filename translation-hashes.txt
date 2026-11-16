@@ -324,6 +324,8 @@ app:error_quick_connect_off  045782322966
 app:error_signed_out  827096b0fbe6
 app:error_unreachable  8224327e4cec
 app:error_wrong_credentials  c16954ee58f2
+app:first_library_detail  028b77c75900
+app:first_library_title  fdf5113c630e
 app:forgot_admin_body  3c620625c184
 app:forgot_admin_title  9d73fcf8672f
 app:forgot_done_body  d1cafa1fde80

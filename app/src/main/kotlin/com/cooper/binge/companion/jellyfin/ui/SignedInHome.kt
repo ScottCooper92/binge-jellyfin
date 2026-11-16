@@ -48,6 +48,7 @@ internal fun SignedInHome(
             item { SettingsSearchEntry { actions.onOpenPage(ConsolePage.Search) } }
             item { ServerHomeCard(state) }
             if ((state.card.tmdb?.withoutTmdbId ?: 0) > 0) item { TmdbCoverageNote(state.card.tmdb) }
+            if (state.needsFirstLibrary()) item { FirstLibraryCard { actions.onOpenPage(ConsolePage.Libraries) } }
             item { ServerGroup(state, actions) }
             // An administrator's own settings are in the account, behind the avatar. Everyone else has nothing else to
             // show, so their home is their account: the same rows, inline, and Sign out last.

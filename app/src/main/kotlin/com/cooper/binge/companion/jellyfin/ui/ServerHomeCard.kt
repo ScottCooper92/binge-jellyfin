@@ -1,18 +1,26 @@
 package com.cooper.binge.companion.jellyfin.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Tv
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.ServerCard
@@ -22,6 +30,8 @@ import com.binge.designsystem.theme.BingeSentiment
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
+import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.binge.designsystem.R as DesR
 
 /**
  * The console home's server card: which server, whether it answered, and what is worth acting on (not encrypted,
@@ -95,11 +105,44 @@ internal fun TmdbCoverageNote(coverage: TmdbCoverage?) {
                             coverage.titles,
                         ),
                     detail = stringResource(detail),
-                    supportingMaxLines = TMDB_NOTE_LINES,
+                    supportingMaxLines = NOTE_LINES,
                     clickable = false,
                 ),
             ),
     )
 }
 
-private const val TMDB_NOTE_LINES = 10
+private const val NOTE_LINES = 10
+
+/**
+ * Whether the home hints at adding a first library: an administrator whose server has answered that it has none. A count that
+ * hasn't arrived or whose read failed is null and shows nothing, and the page it points at must be open to them.
+ */
+internal fun UiState.SignedIn.needsFirstLibrary(): Boolean =
+    isAdministrator && card.libraries == 0 && ConsolePage.Libraries.available(profile, account)
+
+/** Says a server with no libraries has nothing to answer from, and takes the administrator to the page that adds one. */
+@Composable
+internal fun FirstLibraryCard(onAdd: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
+        ItemGroup(
+            title = null,
+            rows =
+                listOf(
+                    ListItem(
+                        icon = Icons.Outlined.VideoLibrary,
+                        label = stringResource(R.string.first_library_title),
+                        detail = stringResource(R.string.first_library_detail),
+                        supportingMaxLines = NOTE_LINES,
+                        clickable = false,
+                    ),
+                ),
+        )
+        BingeFilledButton(
+            label = stringResource(R.string.libraries_add),
+            onClick = onAdd,
+            leadingIcon = Icons.Outlined.Add,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}

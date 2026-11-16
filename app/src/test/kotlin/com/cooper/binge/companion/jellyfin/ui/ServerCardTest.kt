@@ -19,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonArray
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -114,6 +115,63 @@ class ServerCardTest {
         assertEquals(0, jellyfin.hits("/System/Info"))
         assertEquals(0, jellyfin.hits("/Users"))
         assertEquals(120, card.movies)
+    }
+
+    @Test
+    fun `an administrator's card counts the libraries, zero and one`() {
+        jellyfin.administrator = true
+        jellyfin.libraries = JsonArray(emptyList())
+        val empty = viewModel().signedIn { it.card.libraries != null }.card
+        assertEquals(0, empty.libraries)
+        jellyfin.libraries = JsonArray(jellyfin.libraries + kotlinx.serialization.json.JsonObject(emptyMap()))
+        val vm = viewModel()
+        vm.refresh()
+        assertEquals(1, vm.signedIn { it.card.libraries != null }.card.libraries)
+    }
+
+    @Test
+    fun `the hint's count is read again when the home returns, so adding the library takes the hint away`() {
+        jellyfin.administrator = true
+        jellyfin.libraries = JsonArray(emptyList())
+        val vm = viewModel()
+        assertTrue(vm.signedIn { it.card.libraries == 0 && it.isAdministrator }.needsFirstLibrary())
+        // The administrator adds the library on the Libraries page and goes back: the home refreshes its gates, inside the window.
+        jellyfin.libraries = JsonArray(listOf(kotlinx.serialization.json.JsonObject(emptyMap())))
+        vm.refresh(gatesOnly = true)
+        val after = vm.signedIn { it.card.libraries == 1 }
+        assertFalse(after.needsFirstLibrary())
+    }
+
+    @Test
+    fun `a card with libraries is not asked again just for returning to the home`() {
+        jellyfin.administrator = true
+        val vm = viewModel()
+        vm.read(administrator = true)
+        vm.signedIn { it.card.libraries != null }
+        val before = jellyfin.hits("/Library/VirtualFolders")
+        vm.refresh(gatesOnly = true)
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertEquals(before, jellyfin.hits("/Library/VirtualFolders"))
+    }
+
+    @Test
+    fun `a library count that fails stays empty, so no hint, and the rest of the card stays`() {
+        jellyfin.administrator = true
+        jellyfin.status["/Library/VirtualFolders"] = 500
+        val vm = viewModel()
+        val card = vm.signedIn { it.card.playing != null && it.card.users != null }.card
+        runBlocking { delay(SETTLE_MILLIS) }
+        assertNull(vm.signedIn { true }.card.libraries)
+        assertTrue(card.connected)
+    }
+
+    @Test
+    fun `a user who is not an administrator never reads the libraries`() {
+        jellyfin.administrator = false
+        jellyfin.libraries = JsonArray(emptyList())
+        val card = viewModel().read(administrator = false)
+        assertNull(card.libraries)
+        assertEquals(0, jellyfin.hits("/Library/VirtualFolders"))
     }
 
     private fun JellyfinViewModel.coverage(): TmdbCoverage = signedIn { it.card.tmdb != null }.card.tmdb!!
