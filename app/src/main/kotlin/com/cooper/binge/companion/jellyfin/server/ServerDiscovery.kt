@@ -1,6 +1,6 @@
 package com.cooper.binge.companion.jellyfin.server
 
-import android.util.Log
+import com.cooper.homelab.core.foundation.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -38,6 +38,7 @@ class UdpDiscovery(
     private val io: CoroutineDispatcher,
     private val port: Int = PORT,
     private val windowMillis: Long = WINDOW_MILLIS,
+    private val logger: Logger = DiscardLogger,
 ) {
     /** Probes every target at once, so the whole search takes one window, not one per target. */
     suspend fun find(): List<DiscoveredServer> =
@@ -48,7 +49,7 @@ class UdpDiscovery(
                         try {
                             probe(target)
                         } catch (e: IOException) {
-                            Log.i(TAG, "Discovery to ${target.address} failed", e)
+                            logger.noted(TAG, "discovery to one address failed", e)
                             emptyList()
                         }
                     }
@@ -67,7 +68,7 @@ class UdpDiscovery(
             val deadline = System.currentTimeMillis() + windowMillis
             var answer = receive(socket, deadline)
             while (answer != null) {
-                parse(answer)?.let { found += it }
+                parse(answer, logger)?.let { found += it }
                 answer = receive(socket, deadline)
             }
             found
@@ -99,12 +100,15 @@ class UdpDiscovery(
         private val PARSER = Json { ignoreUnknownKeys = true }
 
         /** One server's answer, or null for one that is not JSON or names no usable address. */
-        fun parse(text: String): DiscoveredServer? {
+        fun parse(
+            text: String,
+            logger: Logger = DiscardLogger,
+        ): DiscoveredServer? {
             val json =
                 try {
                     PARSER.parseToJsonElement(text) as? JsonObject
                 } catch (e: SerializationException) {
-                    Log.i(TAG, "An answer that is not a Jellyfin server's", e)
+                    logger.noted(TAG, "an answer that is not a Jellyfin server's", e)
                     null
                 } ?: return null
             val address = json.string("Address")?.takeIf { it.toHttpUrlOrNull() != null } ?: return null

@@ -1,10 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui
 
-import android.util.Log
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
+import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.server.publicInfo
 import com.cooper.homelab.core.server.network.CleartextRefusedException
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
@@ -71,16 +71,16 @@ internal class AddressCheck(
         } catch (e: CancellationException) {
             throw e
         } catch (e: JellyfinHttpException) {
-            Log.i(TAG, "The address answered, but not as Jellyfin", e)
+            connection.logger.noted(TAG, "the address answered, but not as Jellyfin", e)
             Probe.Failed(Answer.NotJellyfin)
         } catch (e: JellyfinUnreadableAnswer) {
-            Log.i(TAG, "The address answered something that is not Jellyfin", e)
+            connection.logger.noted(TAG, "the address answered something that is not Jellyfin", e)
             Probe.Failed(Answer.NotJellyfin)
         } catch (e: CleartextRefusedException) {
-            Log.i(TAG, "Plain HTTP to a public host was refused", e)
+            connection.logger.noted(TAG, "plain HTTP to a public host was refused", e)
             Probe.Failed(Answer.Refused)
         } catch (e: IOException) {
-            Log.i(TAG, "Server check failed", e)
+            connection.logger.noted(TAG, "server check failed", e)
             Probe.Failed(Answer.Silent)
         }
 

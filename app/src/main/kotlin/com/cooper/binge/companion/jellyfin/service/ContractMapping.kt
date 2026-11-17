@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.service
 
-import android.util.Log
 import com.binge.companion.contracts.library.v1.Availability
 import com.binge.companion.contracts.library.v1.AvailabilityReason
 import com.binge.companion.contracts.library.v1.AvailabilityState
@@ -20,8 +19,6 @@ import java.time.format.DateTimeParseException
 
 /** Jellyfin counts time in ticks of 100 ns; the contract in milliseconds. */
 internal const val TICKS_PER_MILLI = 10_000L
-
-private const val TAG = "JellyfinContract"
 
 /** The reason the host reads on UNAUTHENTICATED to send the user to sign in. */
 internal const val REASON_SIGNED_OUT = "SIGNED_OUT"
@@ -90,8 +87,7 @@ internal fun JellyfinItem.toWatchState(): WatchState {
 internal fun String.toTimestamp(): Timestamp? =
     try {
         Instant.parse(this).toTimestamp()
-    } catch (e: DateTimeParseException) {
-        Log.w(TAG, "Unreadable date from the server", e)
+    } catch (_: DateTimeParseException) {
         null
     }
 

@@ -22,10 +22,11 @@ class JellyfinCompanionService : IntegrationService() {
         return listOf(
             JellyfinLibraryService(
                 reads = LibraryReads(graph.connection, graph.index, messages),
-                playback = PlaybackSources(now = Instant::now),
+                playback = PlaybackSources(now = Instant::now, logger = graph.logger),
                 versionName = BuildConfig.VERSION_NAME,
                 messages = messages,
                 events = graph.events.events,
+                logger = graph.logger,
             ),
         )
     }

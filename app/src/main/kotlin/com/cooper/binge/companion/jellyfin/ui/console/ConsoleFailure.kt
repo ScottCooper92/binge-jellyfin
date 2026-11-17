@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -13,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.me
+import com.cooper.binge.companion.jellyfin.server.noted
 import java.io.IOException
 
 /**
@@ -77,7 +77,7 @@ internal suspend fun <T> Connection.consoleCall(
 ): Result<T> {
     val (session, client) = signedIn() ?: return Result.failure(IOException("Not signed in"))
     return attempt { block(session, client) }.onFailure { error ->
-        Log.i(tag, "Console call failed", error)
+        logger.noted(tag, "console call failed", error)
         if (error.isUnauthorized() && attempt { client.me() }.exceptionOrNull()?.isUnauthorized() == true) reportRefused()
     }
 }

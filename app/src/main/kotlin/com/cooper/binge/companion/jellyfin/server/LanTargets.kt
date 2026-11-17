@@ -5,7 +5,7 @@ import android.net.ConnectivityManager
 import android.net.LinkAddress
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.util.Log
+import com.cooper.homelab.core.foundation.Logger
 import java.io.IOException
 import java.net.Inet4Address
 import java.net.InetAddress
@@ -20,11 +20,14 @@ private const val BYTE_MASK = 0xFF
  * it, which a LAN broadcast cannot cross, so each socket is bound to its network first. Binding can
  * be refused under a VPN that may not be bypassed; the probe then goes out unbound and may find nothing.
  */
-fun lanTargets(context: Context): List<DiscoveryTarget> {
+fun lanTargets(
+    context: Context,
+    logger: Logger,
+): List<DiscoveryTarget> {
     val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return emptyList()
     val networks = connectivity.allNetworks.filter { it.isLan(connectivity) }
     return networks.flatMap { network ->
-        val bind = { socket: java.net.DatagramSocket -> bindTo(network, socket) }
+        val bind = { socket: java.net.DatagramSocket -> bindTo(network, socket, logger) }
         val subnets =
             connectivity
                 .getLinkProperties(network)
@@ -45,11 +48,12 @@ private fun Network.isLan(connectivity: ConnectivityManager): Boolean {
 private fun bindTo(
     network: Network,
     socket: java.net.DatagramSocket,
+    logger: Logger,
 ) {
     try {
         network.bindSocket(socket)
     } catch (e: IOException) {
-        Log.i(TAG, "Could not bind discovery to the LAN; sending unbound", e)
+        logger.noted(TAG, "could not bind discovery to the LAN so it is sent unbound", e)
     }
 }
 

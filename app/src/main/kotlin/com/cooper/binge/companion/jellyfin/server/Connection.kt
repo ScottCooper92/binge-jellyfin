@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.server
 
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
+import com.cooper.homelab.core.foundation.Logger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +50,7 @@ class Connection(
     private val device: String,
     private val version: String,
     internal val io: CoroutineDispatcher,
+    val logger: Logger = DiscardLogger,
 ) {
     private val refusals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
@@ -155,17 +157,17 @@ class Connection(
 
     suspend fun identity(): ClientIdentity = ClientIdentity(client, device, sessions.deviceId(), version)
 
-    suspend fun anonymous(baseUrl: HttpUrl): JellyfinClient = JellyfinClient(http, baseUrl, identity(), io)
+    suspend fun anonymous(baseUrl: HttpUrl): JellyfinClient = JellyfinClient(http, baseUrl, identity(), io, logger = logger)
 
     /** The saved session and a client signed in as it, or null when signed out. */
     suspend fun signedIn(): Pair<JellyfinSession, JellyfinClient>? {
         val session = sessions.current() ?: return null
-        return session to JellyfinClient(signedInHttp, session.baseUrl.toHttpUrl(), identity(), io, session.token)
+        return session to JellyfinClient(signedInHttp, session.baseUrl.toHttpUrl(), identity(), io, session.token, logger)
     }
 
     /** The signed-in client, again each time the saved session changes; null while signed out. */
     fun clients(): Flow<JellyfinClient?> =
         sessions.session.map { session ->
-            session?.let { JellyfinClient(signedInHttp, it.baseUrl.toHttpUrl(), identity(), io, it.token) }
+            session?.let { JellyfinClient(signedInHttp, it.baseUrl.toHttpUrl(), identity(), io, it.token, logger) }
         }
 }

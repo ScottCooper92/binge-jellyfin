@@ -1,0 +1,118 @@
+package com.cooper.binge.companion.jellyfin
+
+import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
+import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
+import com.cooper.binge.companion.jellyfin.server.me
+import com.cooper.binge.companion.jellyfin.ui.console.consoleCall
+import com.cooper.homelab.core.diagnostics.Redactor
+import com.cooper.homelab.core.diagnostics.RingLog
+import com.cooper.homelab.core.foundation.Clock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Test
+import java.io.IOException
+import kotlin.time.Instant
+
+private const val ADDRESS = "https://jelly.home.example:8920"
+private const val HOST = "jelly.home.example:8920"
+private const val TOKEN = "t0ken-0123456789abcdef"
+private const val USER = "alice-the-watcher"
+
+/**
+ * The redaction canary: whatever the signed-in session holds is registered with the redactor, a failing call is driven, and none
+ * of it may be in the log or in the text shared. The failure's message quotes all of it, as a real one can.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class LoggingCanaryTest {
+    private val redactor = Redactor()
+    private val ring =
+        RingLog(
+            Clock { Instant.fromEpochMilliseconds(0) },
+            redactor,
+            serverOrder = { emptyList() },
+            ownPackages = listOf("com.cooper.binge."),
+        )
+    private val session =
+        JellyfinSession(
+            baseUrl = ADDRESS,
+            serverName = "truenas",
+            serverId = "server-1",
+            serverVersion = "10.11.6",
+            userId = "user-1",
+            userName = USER,
+            token = TOKEN,
+        )
+
+    private fun seedRedactor() {
+        redactor.followSession(MutableStateFlow(session), CoroutineScope(UnconfinedTestDispatcher()))
+    }
+
+    private fun assertClean() {
+        val shared = ring.render()
+        listOf(ADDRESS, HOST, TOKEN, USER).forEach { secret ->
+            assertFalse("$secret reached the log", shared.contains(secret, ignoreCase = true))
+        }
+    }
+
+    @Test
+    fun `a failing console call leaves no address, token or name in the log`() {
+        seedRedactor()
+        val failing =
+            OkHttpClient
+                .Builder()
+                .addInterceptor(Interceptor { throw IOException("unable to reach $ADDRESS/Users?api_key=$TOKEN for $USER") })
+                .build()
+        val sessions = testSessionStore()
+        runBlocking { sessions.save(session) }
+        val connection = Connection(failing, sessions, "Ephyra", "Test", "1.0", Dispatchers.IO, ring)
+
+        val result = runBlocking { connection.consoleCall("Canary") { _, client -> client.me() } }
+
+        assertFalse(result.isSuccess)
+        assertClean()
+        assertEquals(
+            "console call failed",
+            ring.entries.value
+                .single()
+                .event,
+        )
+    }
+
+    @Test
+    fun `an answer that is not Jellyfin's is logged without what it said`() {
+        seedRedactor()
+
+        UdpDiscovery.parse("""{"Address":"$ADDRESS" this is not json $TOKEN $USER""", ring)
+
+        assertClean()
+        assertEquals(
+            "an answer that is not a Jellyfin server's",
+            ring.entries.value
+                .single()
+                .event,
+        )
+    }
+
+    @Test
+    fun `the session's literals follow it when it changes and go when it is cleared`() {
+        val sessions = MutableStateFlow<JellyfinSession?>(session)
+        redactor.followSession(sessions, CoroutineScope(UnconfinedTestDispatcher()))
+        assertEquals("a [redacted] b [redacted] c", redactor.redact("a $HOST b $TOKEN c"))
+
+        sessions.value = session.copy(baseUrl = "https://other.example", token = "second-token-1", userName = "bob-the-reader")
+        assertEquals("a $HOST b $TOKEN c", redactor.redact("a $HOST b $TOKEN c"))
+        assertEquals("[redacted] [redacted] [redacted]", redactor.redact("https://other.example second-token-1 bob-the-reader"))
+
+        sessions.value = null
+        assertEquals("https://other.example", redactor.redact("https://other.example"))
+    }
+}

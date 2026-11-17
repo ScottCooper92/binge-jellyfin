@@ -1,6 +1,6 @@
 package com.cooper.binge.companion.jellyfin.server
 
-import android.util.Log
+import com.cooper.homelab.core.foundation.Logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -58,7 +58,7 @@ private fun JellyfinClient.oneSocket(
                         webSocket: WebSocket,
                         text: String,
                     ) {
-                        val message = parse(text) ?: return
+                        val message = logger.parse(text) ?: return
                         if (message.string("MessageType") == "ForceKeepAlive") {
                             val seconds = message.int("Data")?.takeIf { it > 0 } ?: DEFAULT_KEEP_ALIVE_SECONDS
                             keepAlive?.cancel()
@@ -97,7 +97,7 @@ private fun JellyfinClient.oneSocket(
                         t: Throwable,
                         response: Response?,
                     ) {
-                        Log.i(TAG, "Event socket failed; reconnecting", t)
+                        logger.noted(TAG, "event socket failed and will reconnect", t)
                         channel.close()
                     }
                 },
@@ -108,11 +108,11 @@ private fun JellyfinClient.oneSocket(
         }
     }
 
-private fun parse(text: String): JsonObject? =
+private fun Logger.parse(text: String): JsonObject? =
     try {
         PARSER.parseToJsonElement(text) as? JsonObject
     } catch (e: SerializationException) {
-        Log.w(TAG, "Unreadable event from the server", e)
+        noted(TAG, "unreadable event from the server", e)
         null
     }
 

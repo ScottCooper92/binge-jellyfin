@@ -1,7 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui
 
 import android.graphics.Bitmap
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.binge.companion.sdk.attempt
@@ -28,6 +27,7 @@ import com.cooper.binge.companion.jellyfin.server.authenticateWithQuickConnect
 import com.cooper.binge.companion.jellyfin.server.localNetworkHostOrNull
 import com.cooper.binge.companion.jellyfin.server.logout
 import com.cooper.binge.companion.jellyfin.server.me
+import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.server.publicInfo
 import com.cooper.binge.companion.jellyfin.server.publicUsers
 import com.cooper.binge.companion.jellyfin.server.quickConnectAuthenticated
@@ -150,7 +150,7 @@ private fun CoroutineScope.loadPublicUsers(
                 // Only for the step it was asked for: the user may have changed server while it was in flight.
                 state.update { (it as? UiState.SignIn)?.takeIf { s -> s.baseUrl == base }?.copy(publicUsers = users) ?: it }
                 loadPublicPictures(connection, state, url, users)
-            }.onFailure { Log.i("JellyfinSetup", "The server's public users could not be read", it) }
+            }.onFailure { connection.logger.noted("JellyfinSetup", "the server's public users could not be read", it) }
     }
 }
 
@@ -169,7 +169,7 @@ internal fun CoroutineScope.loadQuickConnectOn(
     launch {
         val on =
             attempt { connection.anonymous(url).quickConnectEnabledOrNull() }
-                .onFailure { Log.i("JellyfinSetup", "Whether Quick Connect is on could not be read", it) }
+                .onFailure { connection.logger.noted("JellyfinSetup", "whether Quick Connect is on could not be read", it) }
                 .getOrNull()
         // Only for the step it was asked for: the user may have moved to another server while it was in flight, and that server's
         // code request is not this answer's to cancel.
@@ -432,7 +432,7 @@ class JellyfinViewModel(
                 val demo = attempt { connection.anonymous(url).authenticateByName(DEMO_USER_NAME, "") }
                 demo.onSuccess { finish(url, info, it, AnalyticsEvents.METHOD_DEMO) }
                 demo.onFailure {
-                    Log.i(TAG, "The demo sign-in failed", it)
+                    connection.logger.noted(TAG, "the demo sign-in failed", it)
                     reports.failed(AnalyticsEvents.METHOD_DEMO, SetupError.Generic)
                     _state.update { s ->
                         (s as? UiState.EnterServer)?.copy(checking = false, error = SetupError.Generic) ?: s
@@ -463,16 +463,16 @@ class JellyfinViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: JellyfinHttpException) {
-                Log.i(TAG, "Password sign-in refused", e)
+                connection.logger.noted(TAG, "password sign-in refused", e)
                 val error = if (e.code == HTTP_UNAUTHORIZED) SetupError.WrongCredentials else SetupError.Generic
                 reports.failed(AnalyticsEvents.METHOD_PASSWORD, error)
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = error) ?: it }
             } catch (e: JellyfinUnreadableAnswer) {
-                Log.i(TAG, "Password sign-in answered something that is not Jellyfin", e)
+                connection.logger.noted(TAG, "password sign-in answered something that is not Jellyfin", e)
                 reports.failed(AnalyticsEvents.METHOD_PASSWORD, SetupError.Generic)
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = SetupError.Generic) ?: it }
             } catch (e: IOException) {
-                Log.i(TAG, "Password sign-in failed", e)
+                connection.logger.noted(TAG, "password sign-in failed", e)
                 reports.failed(AnalyticsEvents.METHOD_PASSWORD, unreachableSetup(current.baseUrl, localNetwork))
                 _state.update {
                     (it as? UiState.SignIn)?.copy(busy = false, passwordError = unreachableSetup(current.baseUrl, localNetwork))
@@ -496,13 +496,13 @@ class JellyfinViewModel(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: JellyfinHttpException) {
-                    Log.i(TAG, "Quick Connect refused", e)
+                    connection.logger.noted(TAG, "Quick Connect refused", e)
                     _state.failQuickConnect(SetupError.QuickConnectExpired, reports)
                 } catch (e: JellyfinUnreadableAnswer) {
-                    Log.i(TAG, "Quick Connect answered something that is not Jellyfin", e)
+                    connection.logger.noted(TAG, "Quick Connect answered something that is not Jellyfin", e)
                     _state.failQuickConnect(SetupError.Generic, reports)
                 } catch (e: IOException) {
-                    Log.i(TAG, "Quick Connect failed", e)
+                    connection.logger.noted(TAG, "Quick Connect failed", e)
                     _state.failQuickConnect(unreachableSetup(current.baseUrl, localNetwork), reports)
                 }
             }
@@ -594,17 +594,17 @@ class JellyfinViewModel(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: JellyfinHttpException) {
-                    Log.i(TAG, "Library refresh refused", e)
+                    connection.logger.noted(TAG, "library refresh refused", e)
                     if (e.code == HTTP_UNAUTHORIZED) {
                         sessionRefused(current.session)
                         return@launch
                     }
                     ConnectionHealth.CouldNotLoad
                 } catch (e: JellyfinUnreadableAnswer) {
-                    Log.i(TAG, "Library refresh answered something that is not Jellyfin", e)
+                    connection.logger.noted(TAG, "library refresh answered something that is not Jellyfin", e)
                     ConnectionHealth.CouldNotLoad
                 } catch (e: IOException) {
-                    Log.i(TAG, "Library refresh failed", e)
+                    connection.logger.noted(TAG, "library refresh failed", e)
                     unreachableHealth(current.session.baseUrl, localNetwork)
                 }
             _state.update {
