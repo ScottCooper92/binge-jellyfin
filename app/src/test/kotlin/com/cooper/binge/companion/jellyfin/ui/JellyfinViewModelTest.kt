@@ -12,12 +12,16 @@ import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.demo.DEMO_ORIGIN
 import com.cooper.binge.companion.jellyfin.demo.DEMO_TOKEN
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
+import com.cooper.binge.companion.jellyfin.server.AddressPolicy
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.homelab.core.server.network.CleartextConsent
+import com.cooper.homelab.core.server.network.CleartextGate
+import com.cooper.homelab.core.server.network.CleartextGuard
 import com.cooper.homelab.core.telemetry.Analytics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +36,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -93,18 +98,21 @@ class JellyfinViewModelTest {
 
     private var sessionsEnded = 0
 
-    private fun viewModel() =
-        track(
-            JellyfinViewModel(
-                sessions,
-                connection,
-                index,
-                discover = { found },
-                quickConnectPollMillis = 10L,
-                analytics = analytics,
-                onSessionEnded = { sessionsEnded++ },
-            ),
-        )
+    private fun viewModel(
+        policy: AddressPolicy = AddressPolicy.Legacy,
+        over: Connection = connection,
+    ) = track(
+        JellyfinViewModel(
+            sessions,
+            over,
+            index,
+            discover = { found },
+            quickConnectPollMillis = 10L,
+            analytics = analytics,
+            onSessionEnded = { sessionsEnded++ },
+            addressPolicy = policy,
+        ),
+    )
 
     private fun track(vm: JellyfinViewModel): JellyfinViewModel {
         val store = ViewModelStore().also { stores += it }
@@ -551,6 +559,65 @@ class JellyfinViewModelTest {
         vm.onAddress(jellyfin.baseUrl)
         vm.connect()
         assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `an address policy with several candidates takes the first that answers as Jellyfin`() {
+        val vm = viewModel(AddressPolicy { listOf(DEAD_PORT.toHttpUrl(), jellyfin.baseUrl.toHttpUrl()) })
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("typed-by-the-user")
+        vm.connect()
+
+        assertEquals(jellyfin.baseUrl, vm.await<UiState.SignIn>().baseUrl)
+    }
+
+    @Test
+    fun `when no candidate answers the error is the unreachable one, and an answer that is not Jellyfin beats silence`() {
+        val vm = viewModel(AddressPolicy { listOf(DEAD_PORT.toHttpUrl(), "http://127.0.0.1:2/".toHttpUrl()) })
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("x")
+        vm.connect()
+        assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
+
+        jellyfin.status["/System/Info/Public"] = 404
+        val mixed = viewModel(AddressPolicy { listOf(DEAD_PORT.toHttpUrl(), jellyfin.baseUrl.toHttpUrl()) })
+        mixed.await<UiState.EnterServer>()
+        mixed.onAddress("x")
+        mixed.connect()
+        assertEquals(SetupError.NotJellyfin, mixed.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `an address policy that yields nothing is an invalid address`() {
+        val vm = viewModel(AddressPolicy { emptyList() })
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("x")
+        vm.connect()
+
+        assertEquals(SetupError.InvalidAddress, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `plain HTTP to a public host the user has not agreed to is refused before any request`() {
+        val guarded =
+            Connection(
+                OkHttpClient
+                    .Builder()
+                    .addInterceptor(
+                        CleartextGuard(CleartextGate(CleartextConsent.None, publicCleartextAvailable = true)),
+                    ).build(),
+                sessions,
+                "Jellyfin Companion",
+                "Test",
+                "1.0",
+                Dispatchers.IO,
+            ).also { extraConnections += it }
+        val vm = viewModel(AddressPolicy.Shared, guarded)
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("http://jellyfin.example.com")
+        vm.connect()
+
+        assertEquals(SetupError.Generic, vm.await<UiState.EnterServer> { it.error != null }.error)
     }
 
     @Test
@@ -1216,3 +1283,6 @@ class JellyfinViewModelTest {
 
 private const val PUBLIC_USERS =
     """[{"Name":"Kid","Id":"u-kid","HasPassword":false},{"Name":"Mum","Id":"u-mum","HasPassword":true}]"""
+
+/** Nothing listens here, so a connection is refused at once. */
+private const val DEAD_PORT = "http://127.0.0.1:1/"

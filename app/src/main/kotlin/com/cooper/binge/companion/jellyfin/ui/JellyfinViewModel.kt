@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.demo.DEMO_ORIGIN
 import com.cooper.binge.companion.jellyfin.demo.DEMO_USER_NAME
 import com.cooper.binge.companion.jellyfin.demo.isDemoOrigin
+import com.cooper.binge.companion.jellyfin.server.AddressPolicy
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
@@ -353,6 +354,8 @@ class JellyfinViewModel(
     private val analytics: Analytics = NoOpAnalytics,
     /** Runs when the session ends, by sign-out or a refused token: what the app cached about the account goes with it. */
     private val onSessionEnded: suspend () -> Unit = {},
+    /** How a typed address becomes the addresses to try: the released behaviour unless the app passes the shared library's. */
+    private val addressPolicy: AddressPolicy = AddressPolicy.Legacy,
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -364,6 +367,8 @@ class JellyfinViewModel(
         }
 
     private val reports = SignInReports(analytics)
+
+    private val addressCheck = AddressCheck(connection, localNetwork)
 
     private var quickConnect: Job? = null
 
@@ -405,35 +410,24 @@ class JellyfinViewModel(
         val current = _state.value as? UiState.EnterServer ?: return
         // A check already in flight is the only one: a second would finish in either order and replace a later state.
         if (current.checking) return
-        val url = JellyfinClient.parseBaseUrl(current.address)
-        if (url == null) {
+        val candidates = addressPolicy.candidates(current.address)
+        if (candidates.isEmpty()) {
             _state.value = current.copy(error = SetupError.InvalidAddress)
             return
         }
         _state.value = current.copy(checking = true, error = null)
         viewModelScope.launch {
-            val info =
-                try {
-                    connection.anonymous(url).publicInfo().takeIf { it.serverId.isNotBlank() }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: JellyfinHttpException) {
-                    Log.i(TAG, "The address answered, but not as Jellyfin", e)
-                    null
-                } catch (e: JellyfinUnreadableAnswer) {
-                    Log.i(TAG, "The address answered something that is not Jellyfin", e)
-                    null
-                } catch (e: IOException) {
-                    Log.i(TAG, "Server check failed", e)
-                    _state.update {
-                        (it as? UiState.EnterServer)?.copy(checking = false, error = unreachableSetup(url.toString(), localNetwork))
-                            ?: it
+            val found =
+                when (val result = addressCheck.first(candidates)) {
+                    is AddressCheck.Result.Found -> result
+                    is AddressCheck.Result.Failed -> {
+                        _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = result.error) ?: it }
+                        return@launch
                     }
-                    return@launch
                 }
-            if (info == null) {
-                _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = SetupError.NotJellyfin) ?: it }
-            } else if (url.toString().isDemoOrigin() && info.baseUrl.toString().isDemoOrigin()) {
+            val url = found.url
+            val info = found.info
+            if (url.toString().isDemoOrigin() && info.baseUrl.toString().isDemoOrigin()) {
                 // The demo has no account to ask for: it signs in as its own administrator, through the same calls.
                 val demo = attempt { connection.anonymous(url).authenticateByName(DEMO_USER_NAME, "") }
                 demo.onSuccess { finish(url, info, it, AnalyticsEvents.METHOD_DEMO) }

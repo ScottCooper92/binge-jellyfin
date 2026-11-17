@@ -106,6 +106,7 @@ class MainActivity : ComponentActivity() {
                     localNetwork = AndroidLocalNetworkPermission(applicationContext),
                     analytics = graph.analytics,
                     onSessionEnded = graph::clearAccountCaches,
+                    addressPolicy = graph.addressPolicy,
                 )
             }
         }

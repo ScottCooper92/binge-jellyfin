@@ -30,6 +30,7 @@ import com.cooper.binge.companion.jellyfin.notifications.NotificationScheduler
 import com.cooper.binge.companion.jellyfin.notifications.PollReactor
 import com.cooper.binge.companion.jellyfin.notifications.PollRunner
 import com.cooper.binge.companion.jellyfin.notifications.WorkManagerNotificationScheduler
+import com.cooper.binge.companion.jellyfin.server.AddressPolicy
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
@@ -51,6 +52,11 @@ import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
 import com.cooper.homelab.core.server.connection.DeviceIdentity
 import com.cooper.homelab.core.server.connection.ServerRegistry
+import com.cooper.homelab.core.server.network.CleartextConsent
+import com.cooper.homelab.core.server.network.CleartextGate
+import com.cooper.homelab.core.server.network.CleartextGuard
+import com.cooper.homelab.core.server.network.DataStoreCleartextConsent
+import com.cooper.homelab.core.server.network.isLocalOrPrivateHost
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.AnalyticsConsentGate
 import com.cooper.homelab.core.telemetry.AnalyticsDecorator
@@ -72,6 +78,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.UUID
@@ -89,6 +96,12 @@ class AppGraph(
     /** The licences of the libraries this app ships, read once for the licences page. */
     val licences: LicenceSource by lazy { LicenceSource(appContext, io) }
 
+    /** Whether the app reads a typed address and guards plain HTTP the way the shared library does. See [serverRegistryEnabled]. */
+    private val addressPolicyEnabled: Boolean by lazy { debugSwitch(ADDRESS_POLICY_SWITCH) }
+
+    /** The addresses to try for a typed one: the released behaviour, unless the debug switch is on. */
+    val addressPolicy: AddressPolicy by lazy { if (addressPolicyEnabled) AddressPolicy.Shared else AddressPolicy.Legacy }
+
     val http: OkHttpClient by lazy {
         OkHttpClient
             .Builder()
@@ -96,7 +109,29 @@ class AppGraph(
             .addInterceptor(DemoTransport())
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .build()
+            .apply {
+                // A network interceptor, so it judges every hop, a redirect down to HTTP included. The demo never reaches it.
+                if (addressPolicyEnabled) {
+                    addNetworkInterceptor(
+                        CleartextGuard(CleartextGate(cleartextConsent, publicCleartextAvailable = true)),
+                    )
+                }
+            }.build()
+    }
+
+    /**
+     * The public hosts the user has agreed to reach over plain HTTP. A user already connected over plain HTTP to a public host
+     * is grandfathered in, as the library asks, so the guard does not cut off a connection they set up knowingly.
+     */
+    private val cleartextConsent: CleartextConsent by lazy {
+        DataStoreCleartextConsent(dataStore("cleartext_consent")) {
+            sessions
+                .current()
+                ?.baseUrl
+                ?.toHttpUrlOrNull()
+                ?.takeIf { !it.isHttps && !isLocalOrPrivateHost(it.host) }
+                ?.host
+        }
     }
 
     private fun dataStore(name: String): DataStore<Preferences> =
@@ -113,9 +148,11 @@ class AppGraph(
      * read once, so the choice is fixed for the life of the process and a flip takes effect on the next launch. It is not
      * remote-controlled. The read blocks the main thread once, which is why it stays behind `BuildConfig.DEBUG`.
      */
-    private val serverRegistryEnabled: Boolean by lazy {
-        BuildConfig.DEBUG && runBlocking { debugSwitches.data.first()[booleanPreferencesKey(SERVER_REGISTRY_SWITCH)] } == true
-    }
+    private val serverRegistryEnabled: Boolean by lazy { debugSwitch(SERVER_REGISTRY_SWITCH) }
+
+    /** A debug switch: off in a shipped build, which never opens the file, and otherwise what the switch file holds. */
+    private fun debugSwitch(name: String): Boolean =
+        BuildConfig.DEBUG && runBlocking { debugSwitches.data.first()[booleanPreferencesKey(name)] } == true
 
     /** This install's one server id, the same whichever store holds the session. Its own file, which a sign-out does not clear. */
     val serverIdentity: ServerIdentity by lazy { ServerIdentity(dataStore("server_identity")) }
@@ -281,3 +318,4 @@ internal const val CLIENT_NAME = "Ephyra"
 /** The debug switches' file and the key in it that turns the per-server stores on. A shipped build never reads either. */
 internal const val DEBUG_SWITCHES_FILE = "debug_switches"
 internal const val SERVER_REGISTRY_SWITCH = "server_registry"
+internal const val ADDRESS_POLICY_SWITCH = "address_policy"
