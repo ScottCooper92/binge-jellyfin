@@ -20,10 +20,13 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.AdvancedSettings
 import com.cooper.binge.companion.jellyfin.server.Branding
+import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.LogFile
+import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.ServerSettings
+import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.server.networkKeys
 import com.cooper.binge.companion.jellyfin.server.networkSettings
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -35,12 +38,18 @@ import com.cooper.binge.companion.jellyfin.ui.console.AdvancedActions
 import com.cooper.binge.companion.jellyfin.ui.console.AdvancedScreen
 import com.cooper.binge.companion.jellyfin.ui.console.AdvancedUiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutActions
+import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutScreen
+import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutUiState
 import com.cooper.binge.companion.jellyfin.ui.console.LogsActions
 import com.cooper.binge.companion.jellyfin.ui.console.LogsScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LogsUiState
 import com.cooper.binge.companion.jellyfin.ui.console.NetworkActions
 import com.cooper.binge.companion.jellyfin.ui.console.NetworkScreen
 import com.cooper.binge.companion.jellyfin.ui.console.NetworkUiState
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackScreen
+import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
 import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsActions
 import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsScreen
 import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsUiState
@@ -112,6 +121,16 @@ class SettingRowKeysTest {
                 LogsScreen(
                     LogsUiState.Ready(listOf(LogFile("log_20261031.log", 412_000, 1_793_534_400_000L)), retention = 30),
                     LogsActions(),
+                )
+            },
+            ConsolePage.Playback to {
+                PlaybackScreen(PlaybackUiState.Ready(PlaybackPreferences("en", "en", SubtitleMode.Default), emptyList()), PlaybackActions())
+            },
+            ConsolePage.HomeLayout to {
+                HomeLayoutScreen(
+                    HomeLayoutUiState.Ready(views = emptyList(), layout = HomeLayout()),
+                    HomeLayoutActions(),
+                    openLibrary = null,
                 )
             },
             ConsolePage.ThisApp to {

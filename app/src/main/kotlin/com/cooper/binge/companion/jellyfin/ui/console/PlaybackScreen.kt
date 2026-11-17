@@ -44,6 +44,7 @@ import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import java.util.Locale
 import com.binge.designsystem.R as DesR
 
@@ -139,6 +140,7 @@ private fun PlaybackBody(
                         supportingMaxLines = SWITCH_DETAIL_LINES,
                         toggled = preferences.playDefaultAudioTrack,
                         onClick = { actions.onPlayDefaultAudioTrack(!preferences.playDefaultAudioTrack) },
+                        key = SettingRows.PLAYBACK_DEFAULT_AUDIO,
                     ),
                     ListItem(
                         icon = Icons.Outlined.History,
@@ -147,6 +149,7 @@ private fun PlaybackBody(
                         supportingMaxLines = SWITCH_DETAIL_LINES,
                         toggled = preferences.rememberAudio,
                         onClick = { actions.onRememberAudio(!preferences.rememberAudio) },
+                        key = SettingRows.PLAYBACK_REMEMBER_AUDIO,
                     ),
                 ),
         )
@@ -173,6 +176,7 @@ private fun PlaybackBody(
                         supportingMaxLines = SWITCH_DETAIL_LINES,
                         toggled = preferences.rememberSubtitles,
                         onClick = { actions.onRememberSubtitles(!preferences.rememberSubtitles) },
+                        key = SettingRows.PLAYBACK_REMEMBER_SUBTITLES,
                     ),
                 ),
         )
@@ -185,6 +189,7 @@ private fun PlaybackBody(
                         label = stringResource(R.string.playback_autoplay),
                         toggled = preferences.autoplayNextEpisode,
                         onClick = { actions.onAutoplayNextEpisode(!preferences.autoplayNextEpisode) },
+                        key = SettingRows.PLAYBACK_AUTOPLAY,
                     ),
                 ),
         )

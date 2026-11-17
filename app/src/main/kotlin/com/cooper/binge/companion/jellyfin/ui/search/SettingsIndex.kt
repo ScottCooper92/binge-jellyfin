@@ -8,27 +8,33 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.CollectionsBookmark
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Extension
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Healing
+import androidx.compose.material.icons.outlined.HideSource
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QrCode2
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SettingsApplications
+import androidx.compose.material.icons.outlined.SkipNext
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Translate
@@ -92,7 +98,7 @@ private fun Resources.setting(
 /**
  * Everything the search knows. A page of the console, and each setting worth finding by name, is listed here: a new setting adds its
  * line, and a test holds that every page the home lists has one. An entry shows only where [ConsolePage.available] says the page does.
- * The list is in order and in five parts, only so that no one function is longer than detekt allows.
+ * The list is in order and in parts, only so that no one function is longer than detekt allows.
  */
 internal fun settingsIndex(resources: Resources): List<SettingEntry<SearchTarget>> =
     with(resources) {
@@ -100,7 +106,8 @@ internal fun settingsIndex(resources: Resources): List<SettingEntry<SearchTarget
             indexPart2() +
             indexPart3() +
             indexPart4() +
-            indexPart5()
+            indexPart5() +
+            indexSwitches()
     }
 
 private fun Resources.indexPart1(): List<SettingEntry<SearchTarget>> =
@@ -439,4 +446,65 @@ private fun Resources.indexPart5(): List<SettingEntry<SearchTarget>> =
             row = SettingRows.THIS_APP_NOTIFICATIONS,
         ),
         page(ConsolePage.Licences, R.string.licences_title, Icons.Outlined.Description, R.string.settings_group_app),
+    )
+
+/** The user's own on/off settings: a page's switch is found, and shown in the results, by its own name. */
+private fun Resources.indexSwitches(): List<SettingEntry<SearchTarget>> =
+    listOf(
+        setting(
+            ConsolePage.Playback,
+            R.string.playback_default_audio,
+            Icons.Outlined.GraphicEq,
+            R.string.console_account_title,
+            R.string.playback_title,
+            row = SettingRows.PLAYBACK_DEFAULT_AUDIO,
+        ),
+        setting(
+            ConsolePage.Playback,
+            R.string.playback_remember_audio,
+            Icons.Outlined.History,
+            R.string.console_account_title,
+            R.string.playback_title,
+            row = SettingRows.PLAYBACK_REMEMBER_AUDIO,
+        ),
+        setting(
+            ConsolePage.Playback,
+            R.string.playback_remember_subtitles,
+            Icons.Outlined.Restore,
+            R.string.console_account_title,
+            R.string.playback_title,
+            row = SettingRows.PLAYBACK_REMEMBER_SUBTITLES,
+        ),
+        setting(
+            ConsolePage.Playback,
+            R.string.playback_autoplay,
+            Icons.Outlined.SkipNext,
+            R.string.console_account_title,
+            R.string.playback_title,
+            row = SettingRows.PLAYBACK_AUTOPLAY,
+        ),
+        setting(
+            ConsolePage.HomeLayout,
+            R.string.home_layout_hide_played,
+            Icons.Outlined.NewReleases,
+            R.string.console_account_title,
+            R.string.home_layout_title,
+            row = SettingRows.HOME_HIDE_PLAYED,
+        ),
+        setting(
+            ConsolePage.HomeLayout,
+            R.string.home_layout_missing,
+            Icons.Outlined.HideSource,
+            R.string.console_account_title,
+            R.string.home_layout_title,
+            row = SettingRows.HOME_MISSING_EPISODES,
+        ),
+        setting(
+            ConsolePage.HomeLayout,
+            R.string.home_layout_collections,
+            Icons.Outlined.CollectionsBookmark,
+            R.string.console_account_title,
+            R.string.home_layout_title,
+            row = SettingRows.HOME_COLLECTIONS,
+        ),
     )

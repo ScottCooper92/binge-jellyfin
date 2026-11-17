@@ -43,6 +43,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.UserView
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import com.binge.designsystem.R as DesR
 
 /** What the home screen page can ask of its view model, and of the console. */
@@ -212,6 +213,7 @@ private fun HomeLayoutBody(
                         label = stringResource(R.string.home_layout_hide_played),
                         toggled = layout.hidePlayedInLatest,
                         onClick = { actions.onHidePlayedInLatest(!layout.hidePlayedInLatest) },
+                        key = SettingRows.HOME_HIDE_PLAYED,
                     ),
                     ListItem(
                         icon = Icons.Outlined.HideSource,
@@ -220,6 +222,7 @@ private fun HomeLayoutBody(
                         supportingMaxLines = HOME_DETAIL_LINES,
                         toggled = layout.displayMissingEpisodes,
                         onClick = { actions.onDisplayMissingEpisodes(!layout.displayMissingEpisodes) },
+                        key = SettingRows.HOME_MISSING_EPISODES,
                     ),
                     ListItem(
                         icon = Icons.Outlined.CollectionsBookmark,
@@ -228,6 +231,7 @@ private fun HomeLayoutBody(
                         supportingMaxLines = HOME_DETAIL_LINES,
                         toggled = layout.displayCollectionsView,
                         onClick = { actions.onDisplayCollectionsView(!layout.displayCollectionsView) },
+                        key = SettingRows.HOME_COLLECTIONS,
                     ),
                 ),
         )

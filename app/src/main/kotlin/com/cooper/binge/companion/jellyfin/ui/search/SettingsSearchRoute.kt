@@ -1,11 +1,20 @@
 package com.cooper.binge.companion.jellyfin.ui.search
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binge.designsystem.component.BingeSnackbarHost
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -47,17 +56,29 @@ internal fun SettingsSearchRoute(
             )
         }
     val state by search.state.collectAsStateWithLifecycle()
-    SettingsSearchScreen(
-        state = state,
-        entries = entries,
-        icon = { it.target.icon },
-        onOpen = { entry, _ ->
-            search.remember(entry)
-            open(entry.target.page, entry.row)
-        },
-        onBack = onBack,
-        onRetry = search::retry,
-        onClearRecent = search::clearRecent,
-        toggle = if (graph.searchTogglesEnabled) { entry, _ -> searchToggle(entry, actions) } else null,
-    )
+    val server = remember { SearchServerSwitches() }
+    val host = remember { SnackbarHostState() }
+    Box(Modifier.fillMaxSize()) {
+        SettingsSearchScreen(
+            state = state,
+            entries = entries,
+            icon = { it.target.icon },
+            onOpen = { entry, _ ->
+                search.remember(entry)
+                open(entry.target.page, entry.row)
+            },
+            onBack = onBack,
+            onRetry = search::retry,
+            onClearRecent = search::clearRecent,
+            toggle =
+                if (graph.searchTogglesEnabled) {
+                    { entry, _ -> serverSwitchToggle(entry.row, graph, profile, server) ?: searchToggle(entry, actions) }
+                } else {
+                    null
+                },
+        )
+        // What the pages say of a save, said here too, since the user does not leave the search to flip a switch.
+        SearchServerMessages(server, host)
+        BingeSnackbarHost(host, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing))
+    }
 }
