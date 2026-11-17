@@ -6,6 +6,9 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
+import com.cooper.homelab.core.presentation.appsettings.LicenceEntry
+import com.cooper.homelab.core.presentation.appsettings.LicencesState
+import com.cooper.homelab.core.uiandroid.appsettings.LicencesScreen
 
 private val previewLibraries =
     listOf(
@@ -35,22 +38,22 @@ class LicencesScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun list() = LicencesScreen(LicencesUiState.Ready(previewLibraries), onBack = {}, onOpenWebsite = {})
+    fun list() = LicencesScreen(LicencesState.Ready(previewLibraries), onBack = {}, onOpenWebsite = {})
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun loading() = LicencesScreen(LicencesUiState.Loading, onBack = {}, onOpenWebsite = {})
-
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @JellyfinSpanishPreviews
-    @Composable
-    fun empty() = LicencesScreen(LicencesUiState.Ready(emptyList()), onBack = {}, onOpenWebsite = {})
+    fun loading() = LicencesScreen(LicencesState.Loading, onBack = {}, onOpenWebsite = {})
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun unreadable() = LicencesScreen(LicencesUiState.Unreadable, onBack = {}, onOpenWebsite = {})
+    fun empty() = LicencesScreen(LicencesState.Empty, onBack = {}, onOpenWebsite = {})
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun unreadable() = LicencesScreen(LicencesState.Unreadable, onBack = {}, onOpenWebsite = {})
 }

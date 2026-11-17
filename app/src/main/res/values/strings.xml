@@ -1496,10 +1496,6 @@
     <string name="about_privacy_policy">Privacy policy</string>
     <string name="about_join_beta">Join the beta</string>
     <string name="licences_title">Open-source licences</string>
-    <string name="licences_detail_format" translatable="false">%1$s · %2$s</string>
-    <string name="licences_unspecified">Licence not specified</string>
-    <string name="licences_empty">There are no licences to list.</string>
-    <string name="licences_unreadable">The licence list couldn\'t be read.</string>
 
     <string name="settings_group_notifications">Notifications</string>
     <string name="notifications_switch">Server alerts</string>

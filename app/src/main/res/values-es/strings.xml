@@ -1492,9 +1492,6 @@
     <string name="about_privacy_policy">Política de privacidad</string>
     <string name="about_join_beta">Unirse a la beta</string>
     <string name="licences_title">Licencias de código abierto</string>
-    <string name="licences_unspecified">Licencia no especificada</string>
-    <string name="licences_empty">No hay licencias que mostrar.</string>
-    <string name="licences_unreadable">No se pudo leer la lista de licencias.</string>
 
     <string name="settings_group_notifications">Notificaciones</string>
     <string name="notifications_switch">Alertas del servidor</string>
