@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.binge.companion.kit.SecretCipher
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
+import com.cooper.binge.companion.jellyfin.auth.LegacySessionStore
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -1469,7 +1470,7 @@ fun testSessionStore(
     io: CoroutineDispatcher = Dispatchers.IO,
 ): SessionStore {
     val dir: File = Files.createTempDirectory("session").toFile().apply { deleteOnExit() }
-    return SessionStore(
+    return LegacySessionStore(
         PreferenceDataStoreFactory.create(
             scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
             produceFile = { File(dir, "session.preferences_pb") },
