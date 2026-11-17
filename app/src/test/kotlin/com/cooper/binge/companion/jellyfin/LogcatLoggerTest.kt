@@ -34,14 +34,14 @@ class LogcatLoggerTest {
                 LogField.Case("reason", LogLevel.Warn),
                 LogField.Case("failure", IOException("x")),
                 LogField.Server(ServerId("server-1")),
-                LogField.Path("https://nas.lan:8096/Users/abc?api_key=secret"),
+                LogField.Path("https://nas.lan:8096/Users/0123456789abcdef0123456789abcdef/Items/42?api_key=secret"),
                 LogField.Text("phase", "index"),
             ),
             null,
         )
         assertEquals(
             "synced items=3 status=502 cached=true reason=Warn failure=IOException server=server-1 " +
-                "path=Users/abc phase=index",
+                "path=Users/{id}/Items/{id} phase=index",
             written.single().third,
         )
     }
