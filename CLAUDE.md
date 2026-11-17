@@ -31,10 +31,10 @@ The contracts, the SDK and the design system are consumed as source. `binge-comp
 an author bot's commit can revert a change to it: bump a submodule in a commit of its own, and check
 the pins after any bot push.
 
-The licence is GPL-3.0-or-later (`LICENSE`), with the section 7 exception for Google's Play services, Play Billing, Play In-App Review and Firebase
-libraries in `LICENSE-EXCEPTION.md` (the app links Firebase Remote Config). The name and artwork are kept apart from the
-code, in `TRADEMARKS.md` and `ASSETS.md`. binge-companions stays Apache 2.0, and the design system's licence is decided
-separately. A new dependency must be under a licence the GPL is compatible with.
+The code is all rights reserved (`LICENSE`): no licence is granted to copy, modify or distribute it. Versions already released stay under the
+licence they shipped with. The name and artwork are reserved in the same way, in `TRADEMARKS.md` and `ASSETS.md`. binge-companions stays
+Apache 2.0, and the design system's licence is decided separately. A new dependency must be under a licence that lets a closed-source app
+link it (permissive, such as Apache 2.0, MIT or BSD, or the platform vendor's own terms), never a copyleft one.
 
 The app is called **Ephyra** (with "for Jellyfin" as a subtitle where a descriptor helps), and so is the client it signs in as. "Jellyfin" names the server it talks to, never the app; the application id is `com.cooper.binge.companion.ephyra`, and the Kotlin package keeps its old form. It names Binge only behind
 `FeatureFlags` (`flags/`): `Flags.bingePromotion`, off by default, as binge-seerr has. Every string or surface that
