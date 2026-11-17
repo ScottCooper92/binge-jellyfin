@@ -28,15 +28,15 @@ class FakeNotifier(
         summaries += summary
     }
 
-    override fun notifyConnectionProblem(server: ServerId) {
+    override suspend fun notifyConnectionProblem(server: ServerId) {
         connectionProblems++
     }
 
-    override fun cancelConnectionProblem(server: ServerId) {
+    override suspend fun cancelConnectionProblem(server: ServerId) {
         connectionCancels++
     }
 
-    override fun cancelNotices(server: ServerId) {
+    override suspend fun cancelNotices(server: ServerId) {
         activityCancels++
     }
 }
