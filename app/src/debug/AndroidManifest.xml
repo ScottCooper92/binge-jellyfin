@@ -13,6 +13,7 @@
             <intent-filter>
                 <action android:name="${applicationId}.SERVER_REGISTRY" />
                 <action android:name="${applicationId}.ADDRESS_POLICY" />
+                <action android:name="${applicationId}.SEARCH_TOGGLES" />
             </intent-filter>
         </receiver>
     </application>
