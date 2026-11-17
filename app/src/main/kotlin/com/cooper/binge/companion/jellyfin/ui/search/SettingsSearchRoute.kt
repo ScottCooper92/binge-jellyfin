@@ -10,6 +10,7 @@ import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.serverFailure
+import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.homelab.core.presentation.search.SearchAccess
 import com.cooper.homelab.core.presentation.search.SettingsSearchViewModel
@@ -18,13 +19,15 @@ import com.cooper.homelab.core.uiandroid.search.SettingsSearchScreen
 /**
  * The search route: the shared search page over the entries the user may open, with the ones they last opened from it kept on this
  * device ([LocalRecentSearches]). Opening a result remembers it before the page opens, and [open] gets the page and the row to scroll to.
- * The page has already read the profile and the account, so what the user may open is known at once.
+ * The page has already read the profile and the account, so what the user may open is known at once. Behind a debug switch
+ * ([AppGraph.searchTogglesEnabled]) a result for an on/off setting carries its switch, through [actions], the page's own.
  */
 @Composable
 internal fun SettingsSearchRoute(
     graph: AppGraph,
     profile: JellyfinServerProfile,
     account: JellyfinAccount,
+    actions: Actions,
     open: (ConsolePage, String?) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -55,5 +58,6 @@ internal fun SettingsSearchRoute(
         onBack = onBack,
         onRetry = search::retry,
         onClearRecent = search::clearRecent,
+        toggle = if (graph.searchTogglesEnabled) { entry, _ -> searchToggle(entry, actions) } else null,
     )
 }

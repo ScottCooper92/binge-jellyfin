@@ -65,6 +65,7 @@ private fun ConsolePageContent(
                 graph,
                 signedIn.profile,
                 signedIn.account,
+                actions,
                 if (LocalHubBeside.current) actions.onOpenResult else actions.onOpenRow,
                 close,
             )

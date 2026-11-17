@@ -108,6 +108,12 @@ class AppGraph(
     /** Whether the app reads a typed address and guards plain HTTP the way the shared library does. See [serverRegistryEnabled]. */
     private val addressPolicyEnabled: Boolean by lazy { debugSwitch(ADDRESS_POLICY_SWITCH) }
 
+    /**
+     * Whether a settings-search result for an on/off setting carries its switch. Off unless a debug build's switch file says so, and
+     * read once, so a flip takes effect on the next launch. It is not remote-controlled.
+     */
+    val searchTogglesEnabled: Boolean by lazy { debugSwitch(SEARCH_TOGGLES_SWITCH) }
+
     /** The addresses to try for a typed one: the released behaviour, unless the debug switch is on. */
     val addressPolicy: AddressPolicy by lazy { if (addressPolicyEnabled) AddressPolicy.Shared else AddressPolicy.Legacy }
 
@@ -361,4 +367,5 @@ internal const val CLIENT_NAME = "Ephyra"
 internal const val DEBUG_SWITCHES_FILE = "debug_switches"
 internal const val SERVER_REGISTRY_SWITCH = "server_registry"
 internal const val ADDRESS_POLICY_SWITCH = "address_policy"
+internal const val SEARCH_TOGGLES_SWITCH = "search_toggles"
 private const val REDACTOR_TAG = "Redactor"
