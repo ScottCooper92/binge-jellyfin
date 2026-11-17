@@ -196,7 +196,7 @@ class ApiKeysViewModelTest {
         held.awaitArrival()
         // The form is dismissed while the call is still running, then the call fails.
         vm.askCreate(false)
-        held.refuse(500)
+        held.refuse(409)
         val failed = vm.ready { it.actionFailed != null }
         assertEquals(ConsoleFailure.Refused, failed.actionFailed)
         assertNull(failed.formFailure)

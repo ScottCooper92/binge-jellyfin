@@ -218,7 +218,7 @@ class TrickplayViewModelTest {
     fun `a save the server refuses puts the option back and says so`() {
         val vm = made(TrickplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.setHwAcceleration(true)
         val failed = vm.ready { it.refused != null }
         assertFalse(failed.settings.hwAcceleration)
@@ -253,7 +253,7 @@ class TrickplayViewModelTest {
     fun `a number the server refuses stays in its sheet with the reason, and the page doesn't repeat it`() {
         val vm = made(TrickplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.edit(TrickplayField.JpegQuality)
         vm.save(TrickplayField.JpegQuality, "75")
         val failed = vm.ready { it.sheetFailed != null }
@@ -291,7 +291,7 @@ class TrickplayViewModelTest {
         held.awaitArrival()
         // The sheet is closed while the call is still running, then the call is refused.
         vm.edit(null)
-        held.refuse(500)
+        held.refuse(409)
         val failed = vm.ready { it.refused != null }
         assertEquals(ConsoleFailure.Refused, failed.refused)
         assertNull(failed.sheetFailed)

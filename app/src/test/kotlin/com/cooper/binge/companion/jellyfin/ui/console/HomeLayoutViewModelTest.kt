@@ -181,7 +181,7 @@ class HomeLayoutViewModelTest {
     fun `a save that fails puts the change back and says so`() {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
-        jellyfin.status["/Users/Configuration"] = 500
+        jellyfin.status["/Users/Configuration"] = 409
         vm.move("lib-shows", -1)
         val failed = vm.settled { (it as? HomeLayoutUiState.Ready)?.refused != null } as HomeLayoutUiState.Ready
         assertEquals(ConsoleFailure.Refused, failed.refused)
@@ -192,7 +192,7 @@ class HomeLayoutViewModelTest {
     fun `opening a library clears what the last screen reported`() {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
-        jellyfin.status["/Users/Configuration"] = 500
+        jellyfin.status["/Users/Configuration"] = 409
         vm.move("lib-shows", -1)
         val failed = vm.settled { (it as? HomeLayoutUiState.Ready)?.refused != null } as HomeLayoutUiState.Ready
         assertEquals(ConsoleFailure.Refused, failed.refused)
@@ -204,7 +204,7 @@ class HomeLayoutViewModelTest {
     fun `a refusal on a library's screen is cleared when the library closes`() {
         val vm = made(HomeLayoutViewModel(connection, current))
         vm.ready()
-        jellyfin.status["/Users/Configuration"] = 500
+        jellyfin.status["/Users/Configuration"] = 409
         vm.move("lib-shows", -1)
         vm.settled { (it as? HomeLayoutUiState.Ready)?.refused != null }
         vm.itemClosed()

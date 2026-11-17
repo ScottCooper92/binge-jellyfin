@@ -366,7 +366,7 @@ class TranscodingViewModelTest {
     fun `a refused save goes back and says so, and a page that can't read says why`() {
         val vm = made(TranscodingViewModel(connection))
         vm.ready()
-        jellyfin.status[ENCODING] = 500
+        jellyfin.status[ENCODING] = 409
         vm.setEncoding(ENCODING_ACCELERATION, JsonPrimitive("vaapi"))
         val back = vm.ready { it.refused != null }
         assertEquals(

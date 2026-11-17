@@ -152,7 +152,7 @@ class PlaybackViewModelTest {
     fun `a save that fails puts that choice back and says so`() {
         val vm = made(PlaybackViewModel(connection))
         vm.ready()
-        jellyfin.status["/Users/Configuration"] = 500
+        jellyfin.status["/Users/Configuration"] = 409
         vm.setAudio("spa")
         val failed = vm.settled { (it as? PlaybackUiState.Ready)?.refused != null } as PlaybackUiState.Ready
         assertEquals(ConsoleFailure.Refused, failed.refused)
@@ -190,7 +190,7 @@ class PlaybackViewModelTest {
     fun `a failed save leaves a newer pick of the same row alone`() {
         val vm = made(PlaybackViewModel(connection))
         vm.ready()
-        jellyfin.status["/Users/Configuration"] = 500
+        jellyfin.status["/Users/Configuration"] = 409
         vm.setAudio("spa")
         vm.settled { (it as? PlaybackUiState.Ready)?.refused != null }
         jellyfin.status.remove("/Users/Configuration")
@@ -255,7 +255,7 @@ class PlaybackViewModelTest {
     fun `a switch whose save fails goes back`() {
         val vm = made(PlaybackViewModel(connection))
         vm.ready()
-        jellyfin.status["/Users/Configuration"] = 500
+        jellyfin.status["/Users/Configuration"] = 409
         vm.setPlayDefaultAudioTrack(false)
         val failed = vm.settled { (it as? PlaybackUiState.Ready)?.refused != null } as PlaybackUiState.Ready
         assertTrue(failed.preferences.playDefaultAudioTrack)

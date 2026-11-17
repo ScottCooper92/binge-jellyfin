@@ -177,7 +177,7 @@ class ServerSettingsViewModelTest {
     fun `a save that fails puts the setting back and says so`() {
         val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
-        jellyfin.status["/System/Configuration"] = 500
+        jellyfin.status["/System/Configuration"] = 409
         vm.setMetadataLanguage("fr")
         val failed = vm.settled { (it as? ServerSettingsUiState.Ready)?.saveFailed != null } as ServerSettingsUiState.Ready
         assertEquals(ConsoleFailure.Refused, failed.saveFailed)
@@ -191,7 +191,7 @@ class ServerSettingsViewModelTest {
         val branding = jellyfin.hold("/System/Configuration/branding", method = "POST")
         vm.setSplashscreen(false)
         branding.awaitArrival()
-        jellyfin.status["/System/Configuration"] = 500
+        jellyfin.status["/System/Configuration"] = 409
         vm.setMetadataLanguage("fr")
         vm.sheet { it.refused == ConsoleFailure.Refused }
         branding.cut()
@@ -238,7 +238,7 @@ class ServerSettingsViewModelTest {
     fun `a text the server refuses stays in its sheet with the reason, and the setting goes back`() {
         val vm = made(ServerSettingsViewModel(connection))
         vm.ready()
-        jellyfin.status["/System/Configuration/branding"] = 500
+        jellyfin.status["/System/Configuration/branding"] = 409
         vm.edit(ServerText.CustomCss)
         vm.saveText(ServerText.CustomCss, "body { color: red }")
         val failed = vm.sheet { it.sheetFailed != null }
@@ -275,7 +275,7 @@ class ServerSettingsViewModelTest {
         held.awaitArrival()
         // The sheet is closed while the call is still running, then the call is refused.
         vm.edit(null)
-        held.refuse(500)
+        held.refuse(409)
         val failed = vm.sheet { it.saveFailed != null }
         assertEquals(ConsoleFailure.Refused, failed.saveFailed)
         assertNull(failed.sheetFailed)

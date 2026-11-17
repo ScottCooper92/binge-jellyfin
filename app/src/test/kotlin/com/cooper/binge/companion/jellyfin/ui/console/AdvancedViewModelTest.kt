@@ -274,7 +274,7 @@ class AdvancedViewModelTest {
     fun `a save the server refuses puts the value back and says so`() {
         val vm = made(AdvancedViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.setMetrics(true)
         val failed = vm.ready { it.refused != null }
         assertFalse(failed.settings.metrics)

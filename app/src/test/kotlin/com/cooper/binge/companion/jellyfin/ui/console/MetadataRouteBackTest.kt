@@ -82,7 +82,7 @@ class MetadataRouteBackTest {
         item = metadataFetcherItem("Movie", OpenFetcher(FetcherKind.Metadata, "TheMovieDb"))
         show()
         waitFor("Use this provider")
-        jellyfin.status["/System/Configuration"] = 500
+        jellyfin.status["/System/Configuration"] = 409
         compose.onNodeWithText("Use this provider").performSemanticsAction(SemanticsActions.OnClick)
         waitFor("Not saved")
         compose.onNode(hasContentDescription("Back")).performSemanticsAction(SemanticsActions.OnClick)

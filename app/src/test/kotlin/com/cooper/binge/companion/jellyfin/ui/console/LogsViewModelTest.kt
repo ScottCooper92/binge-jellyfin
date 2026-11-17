@@ -229,7 +229,7 @@ class LogsViewModelTest {
         jellyfin.serverConfiguration = """{"ServerName":"x","LogFileRetentionDays":3}"""
         val vm = made(LogsViewModel(connection))
         vm.ready()
-        jellyfin.status["/System/Configuration"] = 500
+        jellyfin.status["/System/Configuration"] = 409
         vm.saveRetention("7")
         val failed = vm.ready { it.refused != null }
         assertEquals(3, failed.retention)
