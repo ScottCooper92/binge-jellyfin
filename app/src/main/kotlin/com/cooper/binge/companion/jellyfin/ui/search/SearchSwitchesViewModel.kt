@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.server.AUTOPLAY_NEXT_EPISODE
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DISPLAY_COLLECTIONS_VIEW
@@ -44,6 +45,8 @@ sealed interface SearchSwitchesState {
         val configuration: JsonObject,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
+        /** The copy is being read again: it may be older than the server's, so no change is built on it until the read is in. */
+        val reading: Boolean = false,
     ) : SearchSwitchesState {
         val playback: PlaybackPreferences get() = configuration.playbackPreferences()
         val home: HomeLayout get() = configuration.homeLayout()
@@ -64,12 +67,19 @@ class SearchSwitchesViewModel(
     private val _state = MutableStateFlow<SearchSwitchesState>(SearchSwitchesState.Idle)
     val state: StateFlow<SearchSwitchesState> = _state.asStateFlow()
 
+    /** The changes the server has not accepted yet, by key, so a read can put them back on top of the copy it reads. */
+    private val unsent = mutableMapOf<String, JsonPrimitive>()
+
     private val saves =
         ConfigurationSaves(
             connection,
             viewModelScope,
             TAG,
-            onProgress = { progress -> _state.update { (it as? SearchSwitchesState.Ready)?.copy(save = progress) ?: it } },
+            onProgress = { progress ->
+                // What the server has accepted is no longer owed to it.
+                if (progress.status == SaveStatus.Saved && !progress.failed) unsent.clear()
+                _state.update { (it as? SearchSwitchesState.Ready)?.copy(save = progress) ?: it }
+            },
         ) { shown, failure ->
             _state.update {
                 (it as? SearchSwitchesState.Ready)?.copy(configuration = shown, refused = refusedAfter(it.refused, failure)) ?: it
@@ -79,39 +89,39 @@ class SearchSwitchesViewModel(
     /** A read is running, so another call to [refresh] has nothing to add: one read serves every switch that asked. */
     private var reading = false
 
-    /** How many changes have been made, so a read can tell that one was made while it ran and must not be read over. */
-    private var changes = 0
-
     /**
      * Reads the configuration and shows it. A change still waiting out its delay, or still being written, is sent first, so the
-     * read sees it. The first read shows [SearchSwitchesState.Loading]; a later one keeps what is shown until the new copy arrives.
-     * What is read never replaces a change made while it ran, nor one the server could not be reached for (that is kept, unsent,
-     * for Retry): reading over either would drop it without a word.
+     * read sees it. While it runs the copy shown may be older than the server's, so no change can be made on it
+     * ([SearchSwitchesState.Ready.reading]: the switches show the spinner), which is the only way a change is never built on a copy
+     * that lacks what a page saved. A change the server could not be reached for is not sent first (that would write the old copy
+     * over what a page saved); it is put back on top of what is read, and waits for Retry.
      */
     fun refresh() {
         val current = _state.value
-        if (reading || (current is SearchSwitchesState.Ready && current.save.failed)) return
+        if (reading) return
         reading = true
-        if (current !is SearchSwitchesState.Ready) _state.value = SearchSwitchesState.Loading
-        val seen = changes
+        val kept = current is SearchSwitchesState.Ready && current.save.failed
+        _state.value = (current as? SearchSwitchesState.Ready)?.copy(reading = true) ?: SearchSwitchesState.Loading
         viewModelScope.launch {
             try {
-                // Sent now and answered when the server has it; what comes back is a change that could not be sent.
-                if (saves.settle().await() != null) return@launch
+                // Sent now and answered when the server has it.
+                if (!kept) saves.settle().await()
                 connection.awaitSaves()
                 connection
                     .consoleCall(TAG) { _, client -> client.userConfiguration() }
                     .fold(
                         onSuccess = { configuration ->
-                            if (changes == seen) {
-                                saves.loaded(configuration)
-                                _state.value = SearchSwitchesState.Ready(configuration)
+                            saves.loaded(configuration)
+                            _state.update {
+                                (it as? SearchSwitchesState.Ready)?.copy(configuration = configuration, reading = false)
+                                    ?: SearchSwitchesState.Ready(configuration)
                             }
+                            unsent.toMap().forEach { (key, value) -> saves.set(key, value) }
                         },
                         onFailure = { error ->
-                            if (_state.value !is SearchSwitchesState.Ready) {
-                                _state.value =
-                                    SearchSwitchesState.Failed(error.consoleFailure())
+                            _state.update {
+                                (it as? SearchSwitchesState.Ready)?.copy(reading = false)
+                                    ?: SearchSwitchesState.Failed(error.consoleFailure())
                             }
                         },
                     )
@@ -143,9 +153,11 @@ class SearchSwitchesViewModel(
         key: String,
         on: Boolean,
     ) {
-        if (_state.value !is SearchSwitchesState.Ready) return
-        changes++
-        saves.set(key, JsonPrimitive(on))
+        val ready = _state.value as? SearchSwitchesState.Ready ?: return
+        if (ready.reading) return
+        val value = JsonPrimitive(on)
+        unsent[key] = value
+        saves.set(key, value)
     }
 
     private companion object {

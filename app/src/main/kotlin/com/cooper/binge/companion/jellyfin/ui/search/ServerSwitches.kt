@@ -103,8 +103,8 @@ internal fun serverToggle(
     return when {
         // The page opens on its failure and its Retry; a switch that cannot be read is not drawn.
         state is SearchSwitchesState.Failed -> null
-        // Not read yet: the same spinner as a write in flight, and no tap.
-        ready == null -> SearchToggle(checked = false, onCheckedChange = {}, enabled = false, loading = true)
+        // Not read yet, or being read again (the copy may be older than the server's): the spinner, and no tap.
+        ready == null || ready.reading -> SearchToggle(checked == true, onCheckedChange = {}, enabled = false, loading = true)
         else -> SearchToggle(checked == true, write, enabled = true, loading = ready.save.status == SaveStatus.Saving)
     }
 }

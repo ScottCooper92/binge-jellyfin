@@ -100,6 +100,15 @@ class ServerSwitchesTest {
     }
 
     @Test
+    fun `a switch shows a spinner and takes no tap while the configuration is read again`() {
+        rows.forEach { (row, _) ->
+            val toggle = serverToggle(row, ready().copy(reading = true), switches(Recorder()))!!
+            assertTrue(toggle.loading)
+            assertFalse(toggle.enabled)
+        }
+    }
+
+    @Test
     fun `a switch is not drawn when the configuration could not be read`() {
         rows.forEach { (row, _) ->
             assertNull(serverToggle(row, SearchSwitchesState.Failed(ConsoleFailure.Unreachable), switches(Recorder())))

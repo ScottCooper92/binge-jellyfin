@@ -141,19 +141,63 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
-    fun `a flip made while a read is running is not read over`() {
+    fun `a flip is not built on the old copy while the search reads again, so a page's change is not written back`() {
         val vm = started()
         vm.ready()
+        // The Playback page, opened over the search, saved a new audio language; the search is shown again and reads.
+        jellyfin.userConfiguration =
+            jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
         val held = jellyfin.hold("/Users/Me")
         vm.refresh()
         held.awaitArrival()
-        vm.setDisplayCollectionsView(true)
-        // The read began before the flip, so what it answers is older than the flip.
-        held.release()
-        awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
+        assertTrue((vm.state.value as SearchSwitchesState.Ready).reading)
 
-        assertTrue(vm.ready().home.displayCollectionsView)
-        assertTrue(server().on("DisplayCollectionsView"))
+        // The copy is older than the server's: a flip now would write the old language back, so it is not taken.
+        vm.setDisplayMissingEpisodes(true)
+        held.release()
+        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        assertFalse(vm.ready().home.displayMissingEpisodes)
+        assertEquals(
+            "fra",
+            vm
+                .ready()
+                .configuration
+                .getValue("AudioLanguagePreference")
+                .jsonPrimitive.content,
+        )
+
+        // Once the read is in the same flip is built on the new copy, and the page's change stays.
+        vm.setDisplayMissingEpisodes(true)
+        awaitServer { it.containsKey("DisplayMissingEpisodes") && it.on("DisplayMissingEpisodes") }
+        assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
+    }
+
+    @Test
+    fun `a change kept unsent is put back on the new copy, so Retry does not write the old one over a page's change`() {
+        val vm = started()
+        vm.ready()
+        jellyfin.dropped += "/Users/Configuration"
+        vm.setDisplayCollectionsView(true)
+        vm.settled { (it as? SearchSwitchesState.Ready)?.save?.failed == true }
+        // The server is back, and a page changed the audio language meanwhile.
+        jellyfin.dropped.clear()
+        jellyfin.userConfiguration =
+            jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
+
+        vm.refresh()
+        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        val ready = vm.ready()
+        assertEquals(
+            "fra",
+            ready.configuration
+                .getValue("AudioLanguagePreference")
+                .jsonPrimitive.content,
+        )
+        assertTrue(ready.home.displayCollectionsView)
+
+        vm.retrySave()
+        awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
+        assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
     }
 
     @Test
