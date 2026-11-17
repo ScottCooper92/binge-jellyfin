@@ -3,7 +3,6 @@ package com.cooper.binge.companion.jellyfin
 import android.app.Activity
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
@@ -38,7 +37,6 @@ import com.cooper.homelab.core.flags.RemoteFeatureFlags
 import com.cooper.homelab.core.flags.StaticFlagOverrides
 import com.cooper.homelab.core.foundation.AppDispatchers
 import com.cooper.homelab.core.foundation.Clock
-import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
@@ -190,7 +188,7 @@ class AppGraph(
 
     /** The one owner of "may analytics report"; every backend registers with it. */
     val consentGate: AnalyticsConsentGate by lazy {
-        AnalyticsConsentGate(telemetryPrefs, scope, Logger { tag, message, cause -> Log.e(tag, message, cause) })
+        AnalyticsConsentGate(telemetryPrefs, scope, LogcatLogger())
     }
 
     /** PostHog behind the consent gate. A build with no project key has no client, and then every call is a no-op. */
