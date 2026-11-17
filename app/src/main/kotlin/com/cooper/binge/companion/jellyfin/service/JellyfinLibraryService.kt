@@ -195,7 +195,7 @@ class JellyfinLibraryService(
         } catch (e: StatusException) {
             throw e
         } catch (e: JellyfinHttpException) {
-            logger.warn(TAG, "Jellyfin answered with an error", listOf(LogField.Status("status", e.code)), e)
+            logger.warn(TAG, "the server answered with an error", listOf(LogField.Status("status", e.code)), e)
             throw when (e.code) {
                 HTTP_UNAUTHORIZED ->
                     Status.UNAUTHENTICATED
@@ -212,10 +212,10 @@ class JellyfinLibraryService(
                     }
             }
         } catch (e: InterruptedIOException) {
-            logger.warn(TAG, "Jellyfin timed out", error = e)
+            logger.warn(TAG, "the server timed out", error = e)
             throw unreachable(timedOut = true)
         } catch (e: IOException) {
-            logger.warn(TAG, "Jellyfin unreachable", error = e)
+            logger.warn(TAG, "the server was unreachable", error = e)
             throw unreachable(timedOut = false)
         }
 

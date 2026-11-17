@@ -22,15 +22,16 @@ import com.cooper.binge.companion.jellyfin.auth.TOKEN_KEY_ALIAS
 import com.cooper.binge.companion.jellyfin.auth.forLibrary
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.notifications.ActivityChecker
+import com.cooper.binge.companion.jellyfin.notifications.ActivitySwitch
 import com.cooper.binge.companion.jellyfin.notifications.AndroidBackgroundAccess
 import com.cooper.binge.companion.jellyfin.notifications.AndroidNotifier
 import com.cooper.binge.companion.jellyfin.notifications.BackgroundAccess
+import com.cooper.binge.companion.jellyfin.notifications.LegacyActivityCursor
 import com.cooper.binge.companion.jellyfin.notifications.NotificationPlanner
 import com.cooper.binge.companion.jellyfin.notifications.NotificationPrefs
-import com.cooper.binge.companion.jellyfin.notifications.NotificationScheduler
-import com.cooper.binge.companion.jellyfin.notifications.PollReactor
 import com.cooper.binge.companion.jellyfin.notifications.PollRunner
-import com.cooper.binge.companion.jellyfin.notifications.WorkManagerNotificationScheduler
+import com.cooper.binge.companion.jellyfin.notifications.pollReactor
+import com.cooper.binge.companion.jellyfin.notifications.workManagerPollScheduler
 import com.cooper.binge.companion.jellyfin.server.AddressPolicy
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
@@ -51,6 +52,9 @@ import com.cooper.homelab.core.flags.StaticFlagOverrides
 import com.cooper.homelab.core.foundation.AppDispatchers
 import com.cooper.homelab.core.foundation.Clock
 import com.cooper.homelab.core.foundation.Logger
+import com.cooper.homelab.core.notifications.DataStoreFeedCursorStore
+import com.cooper.homelab.core.notifications.FeedCursorStore
+import com.cooper.homelab.core.notifications.PollScheduler
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
@@ -60,13 +64,13 @@ import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.CleartextGate
 import com.cooper.homelab.core.server.network.CleartextGuard
 import com.cooper.homelab.core.server.network.DataStoreCleartextConsent
-import com.cooper.homelab.core.server.network.isLocalOrPrivateHost
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.AnalyticsConsentGate
 import com.cooper.homelab.core.telemetry.AnalyticsDecorator
 import com.cooper.homelab.core.telemetry.CrashReportingSwitch
 import com.cooper.homelab.core.telemetry.FirebaseCrashCollection
 import com.cooper.homelab.core.telemetry.GatedAnalytics
+import com.cooper.homelab.core.telemetry.NoOpCrashBreadcrumbs
 import com.cooper.homelab.core.telemetry.PostHogClient
 import com.cooper.homelab.core.telemetry.TelemetryPrefs
 import com.cooper.homelab.core.telemetry.postHogConfig
@@ -79,10 +83,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.UUID
@@ -129,13 +133,13 @@ class AppGraph(
      */
     private val cleartextConsent: CleartextConsent by lazy {
         DataStoreCleartextConsent(dataStore("cleartext_consent")) {
-            sessions
-                .current()
-                ?.baseUrl
-                ?.toHttpUrlOrNull()
-                ?.takeIf { !it.isHttps && !isLocalOrPrivateHost(it.host) }
-                ?.host
+            insecurePublicHost(sessions.current()?.baseUrl)
         }
+    }
+
+    /** Drops the consent to a public plain-HTTP host once the user leaves that server. Only with the address policy on. */
+    fun startCleartextConsent() {
+        if (addressPolicyEnabled) cleartextConsent.followSession(sessions.session.map { it?.baseUrl }, scope)
     }
 
     private fun dataStore(name: String): DataStore<Preferences> =
@@ -203,15 +207,16 @@ class AppGraph(
         )
     }
 
+    private val notificationStore: DataStore<Preferences> by lazy { dataStore("notifications") }
+
     /** The administrator's background notifications: their own store, off until the switch is turned on. */
-    val notificationPrefs: NotificationPrefs by lazy {
-        NotificationPrefs(
-            PreferenceDataStoreFactory.create(
-                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
-                produceFile = { appContext.preferencesDataStoreFile("notifications") },
-            ),
-        )
-    }
+    val notificationPrefs: NotificationPrefs by lazy { NotificationPrefs(notificationStore) }
+
+    /** Where the poll has read up to, per server and user. It shares the notifications file, under keys of its own. */
+    private val feedCursors: FeedCursorStore by lazy { DataStoreFeedCursorStore(notificationStore, "feed_cursor") }
+
+    /** The notifications switch: turning it on makes the next poll seed again. */
+    val activitySwitch: ActivitySwitch by lazy { ActivitySwitch(notificationPrefs, feedCursors, serverIdentity) }
 
     /** The settings search's last few results, kept on this device alone. */
     val recentSearches: RecentSearches by lazy {
@@ -225,21 +230,24 @@ class AppGraph(
 
     val notifier: AndroidNotifier by lazy { AndroidNotifier(appContext) }
 
-    val notificationScheduler: NotificationScheduler by lazy { WorkManagerNotificationScheduler(appContext) }
+    val notificationScheduler: PollScheduler by lazy { workManagerPollScheduler(appContext) }
 
     val backgroundAccess: BackgroundAccess by lazy { AndroidBackgroundAccess(appContext) }
 
     /** What the periodic worker runs. */
     val pollRunner: PollRunner by lazy {
         PollRunner(
-            ActivityChecker(connection, notificationPrefs, notifier),
-            PollReactor(notifier, notificationScheduler, notificationPrefs),
+            ActivityChecker(connection, feedCursors, LegacyActivityCursor(notificationPrefs), serverIdentity, notifier, logger),
+            pollReactor(notifier, notificationScheduler, notificationPrefs) {
+                sessions.session.first() != null && notificationPrefs.enabled.first() && !notificationPrefs.pausedForAuthFailure.first()
+            },
+            serverIdentity,
         )
     }
 
     /** Keeps the poll scheduled while an administrator is signed in and has the switch on. */
     val notificationPlanner: NotificationPlanner by lazy {
-        NotificationPlanner(sessions, notificationPrefs, notificationScheduler, notifier, scope)
+        NotificationPlanner(sessions, notificationPrefs, serverIdentity, notificationScheduler, notifier, scope, NoOpCrashBreadcrumbs)
     }
 
     /** Asks Play for its review card once the user has done enough and waited long enough; off until the flag is on. */

@@ -1,14 +1,24 @@
 package com.cooper.binge.companion.jellyfin.notifications
 
-import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
+import com.binge.companion.sdk.attempt
+import com.cooper.binge.companion.jellyfin.auth.ServerIdentity
 import com.cooper.binge.companion.jellyfin.server.ActivityEntry
-import com.cooper.binge.companion.jellyfin.server.ActivityFilter
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.server.activity
 import com.cooper.binge.companion.jellyfin.server.me
-import java.io.IOException
+import com.cooper.homelab.core.foundation.Logger
+import com.cooper.homelab.core.notifications.CheckResult
+import com.cooper.homelab.core.notifications.Feed
+import com.cooper.homelab.core.notifications.FeedCursorStore
+import com.cooper.homelab.core.notifications.FeedRead
+import com.cooper.homelab.core.notifications.FeedRunner
+import com.cooper.homelab.core.notifications.LongCursorCodec
+
+/** The name the activity feed's cursor is kept under: a cursor's key is the server, the user on it, and this. */
+internal const val ACTIVITY_SIGNAL = "activity"
 
 /** What one check of the activity log found, as counts only: no name, address or id leaves the check. */
 data class ActivitySummary(
@@ -20,20 +30,6 @@ data class ActivitySummary(
     val isEmpty: Boolean get() = failedSignIns == 0 && lockouts == 0 && problems == 0
 }
 
-/** How a check ended, for [PollReactor]. */
-enum class CheckResult {
-    Ok,
-
-    /** The server could not be reached, or answered with an error: try again later. */
-    TransientFailure,
-
-    /** The server refused the saved sign-in. */
-    AuthFailure,
-
-    /** The user is not (or is no longer) an administrator: there is nothing for them to watch. */
-    NotAdministrator,
-}
-
 /** Jellyfin's `Type` for a failed sign-in and for a user the server locked out. */
 internal const val TYPE_AUTH_FAILED = "AuthenticationFailed"
 internal const val TYPE_LOCKED_OUT = "UserLockedOut"
@@ -42,37 +38,25 @@ internal const val TYPE_LOCKED_OUT = "UserLockedOut"
 internal const val PAGE = 100
 
 /**
- * One poll: asks the server for the activity log since the last check and tells the user what is in it. The first check of a
- * server and user only seeds the cursor. Only an administrator's check does anything: the log is theirs alone.
+ * The activity log as a shared-library [Feed]: the cursor is the newest entry's id, and what is announced is the entries past it.
+ * The log is read newest first, so a burst of more than [PAGE] entries in one interval counts as [PAGE].
  */
-class ActivityChecker(
-    private val connection: Connection,
-    private val prefs: NotificationPrefs,
+internal class ActivityFeed(
+    private val client: JellyfinClient,
     private val notifier: ActivityNotifier,
-) {
-    suspend fun check(): CheckResult {
-        // Nothing posted could be shown, so no request is made.
-        if (!notifier.canPost()) return CheckResult.Ok
-        val (session, client) = connection.signedIn() ?: return CheckResult.Ok
-        return try {
-            if (!client.me().isAdministrator) return CheckResult.NotAdministrator
-            val owner = session.owner()
-            val cursor = prefs.cursor(owner)
-            val page =
-                if (cursor == null) {
-                    client.activity(0, 1)
-                } else {
-                    client.activity(0, PAGE, ActivityFilter(fromMillis = cursor.dateMillis))
-                }
-            val fresh = if (cursor == null) emptyList() else page.entries.filter { it.id > cursor.id }
-            summarise(fresh).takeUnless { it.isEmpty }?.let { notifier.notifyActivity(it) }
-            page.entries.maxByOrNull { it.id }?.let { prefs.setCursor(owner, ActivityCursor(it.id, it.dateMillis)) }
-            CheckResult.Ok
-        } catch (e: JellyfinHttpException) {
-            if (e.code == HTTP_UNAUTHORIZED) CheckResult.AuthFailure else CheckResult.TransientFailure
-        } catch (_: IOException) {
-            CheckResult.TransientFailure
-        }
+) : Feed<ActivityEntry, Long> {
+    override val signal: String = ACTIVITY_SIGNAL
+
+    /** The newest id now, or 0 for an empty log, so the first entry to arrive is announced. */
+    override suspend fun seed(): Long = client.activity(0, 1).entries.maxOfOrNull { it.id } ?: 0L
+
+    override suspend fun fetchSince(cursor: Long): FeedRead<ActivityEntry, Long> {
+        val entries = client.activity(0, PAGE).entries
+        return FeedRead(entries.filter { it.id > cursor }, maxOf(cursor, entries.maxOfOrNull { it.id } ?: cursor))
+    }
+
+    override suspend fun announce(rows: List<ActivityEntry>) {
+        summarise(rows).takeUnless { it.isEmpty }?.let { notifier.notifyActivity(it) }
     }
 
     private fun summarise(entries: List<ActivityEntry>): ActivitySummary =
@@ -84,9 +68,35 @@ class ActivityChecker(
                     it.type != TYPE_AUTH_FAILED && it.type != TYPE_LOCKED_OUT && it.severity != Severity.Information
                 },
         )
+}
 
-    /** The server and user the cursor belongs to, so another account's log is never read from this one's place. */
-    private fun JellyfinSession.owner(): String = "$serverId/$userId"
+/**
+ * One poll: reads the activity log since the last check and tells the user what is in it, through the shared [FeedRunner]. The
+ * first check of a server and user only seeds the cursor. Only an administrator's check does anything: the log is theirs alone,
+ * and a user who is no longer one stops the poll.
+ */
+class ActivityChecker(
+    private val connection: Connection,
+    private val store: FeedCursorStore,
+    private val legacy: LegacyActivityCursor,
+    private val serverIdentity: ServerIdentity,
+    private val notifier: ActivityNotifier,
+    private val logger: Logger,
+) {
+    suspend fun check(): CheckResult {
+        // Nothing posted could be shown, so no request is made.
+        if (!notifier.canPost()) return CheckResult.Ok
+        val (session, client) = connection.signedIn() ?: return CheckResult.Ok
+        val administrator = attempt { client.me().isAdministrator }
+        administrator.exceptionOrNull()?.let { return classify(it) }
+        if (administrator.getOrNull() != true) return CheckResult.StopPolling
+        val server = serverIdentity.currentServerId()
+        legacy.importInto(store, server, session)
+        return FeedRunner(ActivityFeed(client, notifier), LongCursorCodec, store, server, session.userId, ::classify, logger).run()
+    }
+
+    private fun classify(failure: Throwable): CheckResult =
+        if (failure is JellyfinHttpException && failure.code == HTTP_UNAUTHORIZED) CheckResult.AuthFailure else CheckResult.TransientFailure
 
     private companion object {
         const val HTTP_UNAUTHORIZED = 401
