@@ -403,9 +403,6 @@ class JellyfinViewModel(
         viewModelScope.launch { connection.monitor.reach.collect { reach -> _state.update { it.afterReach(reach, localNetwork) } } }
     }
 
-    /** The server step with [address] in it, and the consent row it needs when the address names a public host over plain HTTP. */
-    private fun enterServer(address: String) = UiState.EnterServer(address = address, insecureHost = addressPolicy.insecureHost(address))
-
     fun onAddress(value: String) =
         _state.update { current ->
             if (current !is UiState.EnterServer) return@update current
@@ -572,7 +569,7 @@ class JellyfinViewModel(
                 is UiState.SignedIn -> current.session.baseUrl
                 else -> ""
             }
-        _state.value = enterServer(address)
+        _state.value = enterServer(addressPolicy, address)
         if (recheck && address.isNotBlank()) connect()
     }
 
@@ -644,7 +641,7 @@ class JellyfinViewModel(
         sessions.clear()
         index.clear()
         onSessionEnded()
-        _state.value = enterServer(session.baseUrl)
+        _state.value = enterServer(addressPolicy, session.baseUrl)
     }
 
     /** Shows or hides the sign-out confirm. */
@@ -660,7 +657,7 @@ class JellyfinViewModel(
             sessions.clear()
             index.clear()
             onSessionEnded()
-            _state.value = enterServer(signedIn?.first?.baseUrl.orEmpty())
+            _state.value = enterServer(addressPolicy, signedIn?.first?.baseUrl.orEmpty())
         }
     }
 
@@ -778,3 +775,9 @@ private suspend fun awaitQuickConnect(
     }
     state.failQuickConnect(SetupError.QuickConnectExpired, reports)
 }
+
+/** The server step with [address] in it, asking for the user's agreement when it reaches a public host over plain HTTP. */
+private fun enterServer(
+    policy: AddressPolicy,
+    address: String,
+) = UiState.EnterServer(address = address, insecureHost = policy.insecureHost(address))
