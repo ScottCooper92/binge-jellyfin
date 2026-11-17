@@ -513,7 +513,8 @@ class FakeJellyfin : Dispatcher() {
         val open =
             synchronized(socketLock) {
                 closing = true
-                sockets.toList()
+                // `toList()` reads the size and then the first element, and a socket that closes between the two leaves it reading an empty list.
+                ArrayList(sockets)
             }
         open.forEach { it.close(GOING_AWAY, null) }
     }
