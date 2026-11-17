@@ -58,7 +58,7 @@ jobs:
     permissions:
       contents: read
       actions: write
-    uses: ScottCooper92/binge-ci/.github/workflows/device-smoke.yml@3e2474893ae086da95307d7f19633c9b388c5007 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/device-smoke.yml@1b8bfc7cd36efacdcd204aa0808fdb8afad1c546 # v1
     with:
       private_submodules: homelab-core,binge-design-system,binge-ci
       ref: ${{ github.event.inputs.ref }}
@@ -88,7 +88,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@3e2474893ae086da95307d7f19633c9b388c5007 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@1b8bfc7cd36efacdcd204aa0808fdb8afad1c546 # v1
         with:
           result: ${{ needs.companion-smoke.result }}
           title: Weekly device smoke is failing on main
