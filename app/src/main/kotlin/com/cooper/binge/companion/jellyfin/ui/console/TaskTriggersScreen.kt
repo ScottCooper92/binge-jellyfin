@@ -1,12 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.text.format.DateFormat
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -40,15 +38,15 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeAdaptiveSheet
 import com.binge.designsystem.component.BingeFilledButton
-import com.binge.designsystem.component.BingeFilterChip
+import com.binge.designsystem.component.BingeFilterChipRow
 import com.binge.designsystem.component.BingeNumberSlider
 import com.binge.designsystem.component.BingeSheetHeader
 import com.binge.designsystem.component.BingeSheetKind
 import com.binge.designsystem.component.ClockTimeRow
 import com.binge.designsystem.component.ExpressiveIconButton
+import com.binge.designsystem.component.FilterChipItem
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
-import com.binge.designsystem.component.WrappingRow
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.EmptyScreen
@@ -260,11 +258,12 @@ internal fun AddTriggerForm(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
         ) {
+            // The chip rows inset themselves, so it sits outside the padded column.
+            KindChips(kind) { kindIndex = it.ordinal }
             Column(
                 modifier = Modifier.padding(horizontal = dimensionResource(DesR.dimen.padding_m)),
                 verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
             ) {
-                KindChips(kind) { kindIndex = it.ordinal }
                 if (kind == TriggerKind.Daily || kind == TriggerKind.Weekly) {
                     Box(modifier = Modifier.fillMaxWidth().testTag(TRIGGER_TIME_TAG)) {
                         ClockTimeRow(stringResource(R.string.trigger_time_label), minutes, { minutes = it }, is24Hour)
@@ -306,18 +305,24 @@ private fun KindChips(
     selected: TriggerKind,
     onSelect: (TriggerKind) -> Unit,
 ) {
-    WrappingRow {
-        TriggerKind.entries.forEach { kind ->
-            val label =
-                when (kind) {
-                    TriggerKind.Daily -> R.string.trigger_kind_daily
-                    TriggerKind.Weekly -> R.string.trigger_kind_weekly
-                    TriggerKind.Interval -> R.string.trigger_kind_interval
-                    TriggerKind.Startup -> R.string.trigger_startup
-                }
-            BingeFilterChip(label = stringResource(label), selected = kind == selected, onClick = { onSelect(kind) })
-        }
-    }
+    // One row that scrolls and follows the selection, so a larger font never wraps the chips onto a second line.
+    BingeFilterChipRow(
+        items =
+            TriggerKind.entries.map { kind ->
+                FilterChipItem(
+                    stringResource(
+                        when (kind) {
+                            TriggerKind.Daily -> R.string.trigger_kind_daily
+                            TriggerKind.Weekly -> R.string.trigger_kind_weekly
+                            TriggerKind.Interval -> R.string.trigger_kind_interval
+                            TriggerKind.Startup -> R.string.trigger_startup
+                        },
+                    ),
+                )
+            },
+        selectedIndex = selected.ordinal,
+        onSelect = { onSelect(TriggerKind.entries[it]) },
+    )
 }
 
 @Composable
@@ -325,14 +330,11 @@ private fun DayChips(
     selected: Int,
     onSelect: (Int) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
-    ) {
-        TRIGGER_DAYS.forEachIndexed { index, day ->
-            BingeFilterChip(label = dayName(day, TextStyle.SHORT), selected = index == selected, onClick = { onSelect(index) })
-        }
-    }
+    BingeFilterChipRow(
+        items = TRIGGER_DAYS.map { FilterChipItem(dayName(it, TextStyle.SHORT)) },
+        selectedIndex = selected,
+        onSelect = onSelect,
+    )
 }
 
 @Composable
