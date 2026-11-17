@@ -47,7 +47,7 @@ class AndroidNotifier(
         )
     }
 
-    override fun notifyConnectionProblem(server: ServerId) =
+    override suspend fun notifyConnectionProblem(server: ServerId) =
         post(
             id = CONNECTION_NOTIFICATION_ID,
             channel = CONNECTION_CHANNEL,
@@ -58,10 +58,11 @@ class AndroidNotifier(
             body = context.getString(R.string.notif_connection_body),
         )
 
-    override fun cancelConnectionProblem(server: ServerId) = NotificationManagerCompat.from(context).cancel(CONNECTION_NOTIFICATION_ID)
+    override suspend fun cancelConnectionProblem(server: ServerId) =
+        NotificationManagerCompat.from(context).cancel(CONNECTION_NOTIFICATION_ID)
 
     /** The app holds one server, so every activity notice is this server's. */
-    override fun cancelNotices(server: ServerId) = NotificationManagerCompat.from(context).cancel(ACTIVITY_NOTIFICATION_ID)
+    override suspend fun cancelNotices(server: ServerId) = NotificationManagerCompat.from(context).cancel(ACTIVITY_NOTIFICATION_ID)
 
     /** [mayPost] guards the permission, but lint follows only a check inlined in the same method. */
     @SuppressLint("MissingPermission")
