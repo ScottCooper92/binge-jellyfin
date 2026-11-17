@@ -41,9 +41,17 @@ class LogcatLoggerTest {
         )
         assertEquals(
             "synced items=3 status=502 cached=true reason=Warn failure=IOException server=server-1 " +
-                "path=Users/{id}/Items/{id} phase=index",
+                "path=/Users/{id}/Items/{id} phase=index",
             written.single().third,
         )
+    }
+
+    @Test
+    fun `a path is kept as the shared library keeps it`() {
+        // The library's rule, not a copy: a URL with no path is the root.
+        logger.log(LogLevel.Info, "T", "e", listOf(LogField.Path("https://nas.lan:8096")), null)
+
+        assertEquals("e path=/", written.single().third)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin
 
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
 import com.cooper.binge.companion.jellyfin.server.me
 import com.cooper.binge.companion.jellyfin.server.noted
@@ -119,6 +120,23 @@ class LoggingCanaryTest {
         assertTrue(shared, shared.contains("IOException"))
         assertEquals("a [redacted] b", redactor.redact("a jellyfin b"))
         assertEquals("a [redacted]/Users b", redactor.redact("a http://jellyfin/Users b"))
+    }
+
+    @Test
+    fun `a failure's class name keeps this app's own package when the host is named jellyfin`() {
+        redactor.followSession(
+            MutableStateFlow(session.copy(baseUrl = "http://jellyfin")),
+            CoroutineScope(UnconfinedTestDispatcher()),
+        )
+
+        // The package has `jellyfin` as a segment, and a dot is a word boundary: the class is a constant of this app, not the server's.
+        ring.noted("JellyfinSetup", "the server answered", JellyfinHttpException(502, "/System/Info/Public"))
+
+        val shared = ring.render()
+        assertTrue(shared, shared.contains("com.cooper.binge.companion.jellyfin.server.JellyfinHttpException"))
+        assertFalse(shared, shared.contains("companion.[redacted]"))
+        // The bare name is still redacted wherever it stands as a word, so nothing the server's name reached survives.
+        assertEquals("a [redacted] b", redactor.redact("a jellyfin b"))
     }
 
     @Test

@@ -1,25 +1,10 @@
 package com.cooper.binge.companion.jellyfin
 
 import android.util.Log
+import com.cooper.homelab.core.diagnostics.keepPath
 import com.cooper.homelab.core.foundation.LogField
 import com.cooper.homelab.core.foundation.LogLevel
 import com.cooper.homelab.core.foundation.Logger
-
-private val idSegment = Regex("^(\\d+|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}|[0-9a-fA-F]{16,})$")
-
-/**
- * A [LogField.Path] as the shared library keeps it: the path only, no host, port or query, and each id segment (a number, a GUID
- * or a long hex string) replaced by `{id}`. Jellyfin's paths carry user and item ids. This is the library's own rule, spelled out
- * here because the library keeps its copy internal.
- */
-private fun keptPath(url: String): String =
-    url
-        .substringAfter("://")
-        .substringAfter('/', "")
-        .substringBefore('?')
-        .substringBefore('#')
-        .split('/')
-        .joinToString("/") { segment -> if (idSegment.matches(segment)) "{id}" else segment }
 
 /**
  * The shared library's [Logger] on Logcat: the entry's priority, `tag`, and `event` followed by its fields as `name=value`.
@@ -57,7 +42,7 @@ internal class LogcatLogger(
             is LogField.Flag -> "${field.name}=${field.value}"
             is LogField.Case -> "${field.name}=${(field.value as? Enum<*>)?.name ?: field.value::class.java.simpleName}"
             is LogField.Server -> "server=${field.id.value}"
-            is LogField.Path -> "path=${keptPath(field.url)}"
+            is LogField.Path -> "path=${keepPath(field.url)}"
             is LogField.Version -> "${field.name}=${field.value}"
             is LogField.Text -> "${field.name}=${field.value}"
         }
