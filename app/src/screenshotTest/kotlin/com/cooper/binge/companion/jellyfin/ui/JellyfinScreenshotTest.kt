@@ -551,10 +551,11 @@ private fun SearchPage(
             SettingsSearchState.Ready(
                 available = { it.available(profile, account) },
                 recent = entries.filter { it.target.page in recentPages && it.pageLabel == null }.distinctBy { it.target.page },
+                viewer = Unit,
             ),
         entries = entries,
         icon = { it.target.icon },
-        onOpen = {},
+        onOpen = { _, _ -> },
         onBack = {},
         onRetry = {},
         onClearRecent = {},

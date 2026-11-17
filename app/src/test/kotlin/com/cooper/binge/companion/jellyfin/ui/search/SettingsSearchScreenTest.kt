@@ -49,10 +49,10 @@ class SettingsSearchScreenTest {
         JellyfinTheme {
             val entries = settingsIndex(LocalContext.current.resources)
             SettingsSearchScreen(
-                state = SettingsSearchState.Ready({ it.available(profile, account) }, recent(entries)),
+                state = SettingsSearchState.Ready({ it.available(profile, account) }, recent(entries), Unit),
                 entries = entries,
                 icon = { it.target.icon },
-                onOpen = { opened = it.target.page },
+                onOpen = { entry, _ -> opened = entry.target.page },
                 onBack = {},
                 onRetry = {},
                 onClearRecent = onClearRecent,
