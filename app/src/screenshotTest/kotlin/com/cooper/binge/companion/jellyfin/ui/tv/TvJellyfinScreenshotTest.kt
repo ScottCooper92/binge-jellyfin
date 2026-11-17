@@ -10,7 +10,6 @@ import androidx.compose.ui.unit.dp
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
 import com.binge.designsystem.tv.component.TvButton
-import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinTvStressPreviews
@@ -49,6 +48,7 @@ import com.cooper.binge.companion.jellyfin.ui.tv.ACCOUNT_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUDIO_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.AUTOPLAY_KEY
 import com.cooper.binge.companion.jellyfin.ui.tv.TvUserPicture
+import com.cooper.homelab.core.flags.Flags
 
 /** The television's screens: each step's main state in Spanish and at large fonts too, every other state once. */
 class TvJellyfinScreenshotTest {

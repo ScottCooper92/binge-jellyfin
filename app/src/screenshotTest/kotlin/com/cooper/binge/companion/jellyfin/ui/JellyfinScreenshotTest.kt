@@ -4,7 +4,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import com.android.tools.screenshot.PreviewTest
-import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
@@ -16,6 +15,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
 import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
 import com.cooper.binge.companion.jellyfin.ui.search.settingsIndex
+import com.cooper.homelab.core.flags.Flags
 import com.cooper.homelab.core.tip.TIP_STEPS
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */

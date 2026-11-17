@@ -9,9 +9,9 @@ import com.binge.designsystem.template.ScreenAction
 import com.binge.designsystem.tv.template.TvDecisionPage
 import com.binge.designsystem.tv.template.TvPageHosting
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
 import com.cooper.binge.companion.jellyfin.ui.consent.ConsentLoading
 import com.cooper.binge.companion.jellyfin.ui.consent.ConsentPoints
+import com.cooper.homelab.core.telemetry.AnalyticsConsent
 
 /** The phone's consent gate on a television: the same question, before sign-in and the home. */
 @Composable

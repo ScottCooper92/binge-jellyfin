@@ -17,8 +17,8 @@ import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.session
-import com.cooper.binge.companion.jellyfin.telemetry.Analytics
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.homelab.core.telemetry.Analytics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

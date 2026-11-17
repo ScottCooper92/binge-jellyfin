@@ -6,10 +6,10 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
-import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.TmdbCoverage
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import com.cooper.homelab.core.flags.Flags
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

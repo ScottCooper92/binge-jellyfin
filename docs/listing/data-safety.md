@@ -35,4 +35,4 @@ A tip is bought and consumed through Google Play under the user's own Google acc
 
 ## Check before submitting
 
-Re-derive this from the code on the release head: `app/build.gradle.kts` for the SDKs, the merged manifest for permissions and `allowBackup`, and `flags/RemoteFlagSource.kt` for what is fetched. If a release build ships without `google-services.json`, Remote Config makes no request and the first row above becomes "No".
+Re-derive this from the code on the release head: `app/build.gradle.kts` for the SDKs, the merged manifest for permissions and `allowBackup`, and `FirebaseRemoteFlagSource` (in the `homelab-core` submodule, `app-services-firebase`, wired in `AppGraph.flags`) for what is fetched. If a release build ships without `google-services.json`, Remote Config makes no request and the first row above becomes "No".

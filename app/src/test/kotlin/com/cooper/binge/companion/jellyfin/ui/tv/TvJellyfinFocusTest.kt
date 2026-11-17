@@ -26,7 +26,6 @@ import androidx.compose.ui.test.pressKey
 import com.binge.designsystem.testing.createTakeDownKeyboardAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
-import com.cooper.binge.companion.jellyfin.flags.Flags
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
@@ -45,6 +44,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
 import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
+import com.cooper.homelab.core.flags.Flags
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.assertEquals
 import org.junit.Rule

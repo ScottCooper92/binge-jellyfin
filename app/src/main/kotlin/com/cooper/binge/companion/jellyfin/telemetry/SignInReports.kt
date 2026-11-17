@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.telemetry
 
 import com.cooper.binge.companion.jellyfin.ui.SetupError
+import com.cooper.homelab.core.telemetry.Analytics
 
 /** The sign-in events, by [AnalyticsEvents]' fixed names, so the view model says what happened and not how it is reported. */
 class SignInReports(

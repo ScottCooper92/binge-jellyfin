@@ -14,7 +14,7 @@ import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.template.DecisionScreen
 import com.binge.designsystem.template.ScreenAction
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
+import com.cooper.homelab.core.telemetry.AnalyticsConsent
 
 /**
  * Shows [content] once usage data has an answer, and the question until then. [consent] is null while the stored answer is

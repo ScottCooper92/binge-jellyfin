@@ -14,8 +14,8 @@ plugins {
 
 // Remote Config and crash reporting need this app's own Firebase project, whose google-services.json is never
 // committed: a release writes it from a secret, as binge-seerr's does. Without it neither plugin is applied, so a
-// fork or a local build still builds, the flags keep their defaults (flags/FeatureFlags.kt) and crash reporting is
-// off (telemetry/CrashReporting.kt).
+// fork or a local build still builds, the flags keep their defaults (homelab-core's `Flags`) and crash reporting is
+// off (`CrashReportingSwitch`, wired in `AppGraph.crashReporting`).
 if (file("google-services.json").exists()) {
     apply(
         plugin =
@@ -210,13 +210,12 @@ dependencies {
     // The television surface in ui/tv. tv-material and the phone's Material 3 are never mixed in one file.
     implementation(libs.binge.designsystem.tv)
     implementation(libs.homelab.appservices)
+    // The vendor adapters behind it: Google Play (the review card and the tip jar), PostHog and Firebase.
+    implementation(libs.homelab.appservices.play)
+    implementation(libs.homelab.appservices.posthog)
+    implementation(libs.homelab.appservices.firebase)
     testImplementation(libs.homelab.testing)
     implementation(libs.kotlinx.coroutines.android)
-    // Play's in-app review card and the await for its Tasks; see review/PlayReviewPromptLauncher.
-    implementation(libs.play.review)
-    // Tips are sold through Google Play; see tip/PlayTipBilling.
-    implementation(libs.play.billing.ktx)
-    implementation(libs.kotlinx.coroutines.play.services)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
@@ -235,7 +234,6 @@ dependencies {
     implementation(libs.markdown.renderer.m3)
 
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.config)
     implementation(libs.firebase.crashlytics)
     implementation(libs.posthog.android)
     implementation(libs.androidx.fragment)

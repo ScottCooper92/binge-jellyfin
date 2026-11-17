@@ -36,8 +36,6 @@ import com.cooper.binge.companion.jellyfin.BuildConfig
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
-import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsent
-import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
 import com.cooper.binge.companion.jellyfin.tip.TipEvent
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleMessage
@@ -45,6 +43,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.TipResults
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheet
 import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
+import com.cooper.homelab.core.telemetry.AnalyticsConsent
+import com.cooper.homelab.core.telemetry.TelemetryPrefs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch

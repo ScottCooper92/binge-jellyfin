@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.homelab.core.telemetry.Analytics
 
 /** Reports the screen [state] is showing to [analytics] once each time it changes, by [ScreenNames]' fixed name. */
 @Composable
