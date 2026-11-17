@@ -5,9 +5,9 @@ import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
-import com.cooper.binge.companion.jellyfin.server.LocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.server.saveStartupUser
 import com.cooper.binge.companion.jellyfin.server.startupFirstUserName
+import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update

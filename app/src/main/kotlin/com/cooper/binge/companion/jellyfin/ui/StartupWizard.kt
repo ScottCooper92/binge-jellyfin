@@ -7,7 +7,6 @@ import com.cooper.binge.companion.jellyfin.server.Country
 import com.cooper.binge.companion.jellyfin.server.Culture
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
-import com.cooper.binge.companion.jellyfin.server.LocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.StartupConfiguration
@@ -19,6 +18,7 @@ import com.cooper.binge.companion.jellyfin.server.startupConfiguration
 import com.cooper.binge.companion.jellyfin.server.uiLanguages
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.consoleFailure
+import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope

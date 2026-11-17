@@ -34,7 +34,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.kit.isTelevision
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
-import com.cooper.binge.companion.jellyfin.server.AndroidLocalNetworkPermission
 import com.cooper.binge.companion.jellyfin.telemetry.ReportScreen
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
@@ -59,6 +58,7 @@ import com.cooper.binge.companion.jellyfin.ui.tryDemo
 import com.cooper.binge.companion.jellyfin.ui.tv.TvConsentGate
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
+import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
 import kotlinx.coroutines.launch
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
