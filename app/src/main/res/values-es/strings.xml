@@ -1487,6 +1487,8 @@
     <string name="tv_consent_reassurance">No se recoge nada a menos que elijas Compartir.</string>
     <string name="settings_report_bug">Informar de un error</string>
     <string name="settings_report_bug_caption">Abre GitHub con los datos de tu dispositivo ya rellenados</string>
+    <string name="overflow_menu">Más opciones</string>
+    <string name="report_problem">Informar de un problema</string>
     <string name="tv_settings_report_bug_scan">Escanéalo con la cámara del móvil. El informe se abre con la versión de esta aplicación y los datos de este televisor ya rellenados.</string>
     <string name="tv_settings_report_bug_code_description">Código QR que abre un informe de error de esta aplicación en GitHub</string>
     <string name="settings_group_about">Acerca de</string>
