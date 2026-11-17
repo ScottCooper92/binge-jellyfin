@@ -112,6 +112,25 @@ class RegistrySessionStoreTest {
         }
 
     @Test
+    fun `a failed save over a saved server leaves it as it was`() =
+        runBlocking {
+            var broken = false
+            val flaky =
+                object : SecretCipher by PlainCipher {
+                    override fun encrypt(plaintext: String): String =
+                        if (broken) throw IllegalStateException("keymaster") else PlainCipher.encrypt(plaintext)
+                }
+            val phone = Phone(folder.root, flaky)
+            phone.store.save(session)
+            broken = true
+
+            assertFalse(phone.store.save(session.copy(baseUrl = "http://other.example.com", userId = "user-2")))
+
+            assertEquals(session, phone.store.current())
+            phone.stop()
+        }
+
+    @Test
     fun `an address that is not one is not saved`() =
         runBlocking {
             val phone = Phone(folder.root)
