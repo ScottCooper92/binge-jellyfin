@@ -55,7 +55,7 @@ matching one off. Neither carries the access token or anything from the user's s
 
 Two Google Play features also talk to Google, through the Play Store app on the device rather than a host this app connects to:
 Play In-App Review (`PlayReviewPromptLauncher`, in the private `homelab-core` submodule, wired in `AppGraph`), which may ask the user for a rating, and Play Billing for the tip jar
-(`PlayTipBilling`, in the private `homelab-core` submodule, wired in `AppGraph`), which in a release build queries the four `donation_*` products each time the This app page opens and
+(`PlayTipBilling`, in the private `homelab-core` submodule, wired in `AppGraph`), which in a release build queries the four `donation_*` products each time the This app page opens, checks at each start for a tip paid for and not yet consumed and consumes it (`settleTipsAtStart`), and
 buys one only when the user confirms in Google's own screen. Neither carries the access token or anything from the user's server,
 and neither is a new host.
 
