@@ -27,7 +27,6 @@ import com.binge.companion.contracts.library.v1.SetPlayedResponse
 import com.binge.companion.sdk.requireDeclared
 import com.binge.companion.sdk.serverUnreachable
 import com.binge.companion.sdk.withUserMessage
-import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.ServerEvent
 import com.cooper.binge.companion.jellyfin.server.nextUp
@@ -70,7 +69,7 @@ class JellyfinLibraryService(
     private val messages: UserMessages,
     /** The server's pushes, from [com.cooper.binge.companion.jellyfin.server.ServerEvents]: what wakes the Observe streams. */
     private val events: Flow<ServerEvent>,
-    private val logger: Logger = DiscardLogger,
+    private val logger: Logger,
 ) : LibraryServiceGrpcKt.LibraryServiceCoroutineImplBase() {
     override suspend fun handshake(request: HandshakeRequest): HandshakeResponse =
         guard {

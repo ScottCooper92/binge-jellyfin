@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.demo
 
 import com.cooper.binge.companion.jellyfin.server.ClientIdentity
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
@@ -25,7 +26,13 @@ import org.junit.Test
 class DemoTransportTest {
     private val http = OkHttpClient.Builder().addInterceptor(DemoTransport()).build()
     private val client =
-        JellyfinClient(http, DEMO_ORIGIN.toHttpUrl(), ClientIdentity("Ephyra", "Test", "device-1", "1.0"), Dispatchers.Unconfined)
+        JellyfinClient(
+            http,
+            DEMO_ORIGIN.toHttpUrl(),
+            ClientIdentity("Ephyra", "Test", "device-1", "1.0"),
+            Dispatchers.Unconfined,
+            logger = DiscardLogger,
+        )
 
     @Test
     fun `the demo answers as a Jellyfin server and signs in with no password`() =

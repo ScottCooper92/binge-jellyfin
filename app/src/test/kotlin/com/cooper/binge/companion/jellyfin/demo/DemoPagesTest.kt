@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.demo
 
 import com.cooper.binge.companion.jellyfin.server.BackupOptions
 import com.cooper.binge.companion.jellyfin.server.ClientIdentity
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.TaskStatus
@@ -49,6 +50,7 @@ class DemoPagesTest {
             ClientIdentity("Ephyra", "Test", "device-1", "1.0"),
             Dispatchers.Unconfined,
             DEMO_TOKEN,
+            DiscardLogger,
         )
 
     @Test

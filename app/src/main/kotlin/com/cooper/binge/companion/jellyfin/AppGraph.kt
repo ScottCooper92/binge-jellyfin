@@ -166,6 +166,7 @@ class AppGraph(
         val legacyFile = dataStore("session")
         val legacy = LegacySessionStore(legacyFile, cipher, io)
         if (!serverRegistryEnabled) return@lazy legacy
+        // Logcat, not the ring: the ring redacts through `sessions`, so asking it for a logger here would be a cycle.
         val logger = LogcatLogger()
         val registryFile = dataStore("servers")
         val registry = ServerRegistry(registryFile, "registry", { UUID.randomUUID().toString() }, logger)

@@ -26,7 +26,7 @@ class ConnectionWatcherTest {
     @Before
     fun saved() {
         runBlocking { sessions.save(jellyfin.session()) }
-        connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+        connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
         runBlocking { withTimeout(TIMEOUT_MILLIS) { connection.awaitWatching() } }
     }
 

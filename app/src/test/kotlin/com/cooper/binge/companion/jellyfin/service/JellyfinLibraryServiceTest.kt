@@ -28,6 +28,7 @@ import com.cooper.binge.companion.jellyfin.FakeItem
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvent
 import com.cooper.binge.companion.jellyfin.session
@@ -72,6 +73,7 @@ class JellyfinLibraryServiceTest {
             "Test",
             "1.2.3",
             Dispatchers.IO,
+            DiscardLogger,
         )
     private val messages =
         object : UserMessages {
@@ -91,10 +93,11 @@ class JellyfinLibraryServiceTest {
             .addService(
                 JellyfinLibraryService(
                     reads = LibraryReads(connection, LibraryIndex(), messages),
-                    playback = PlaybackSources(now = { Instant.ofEpochSecond(1_000) }),
+                    playback = PlaybackSources(now = { Instant.ofEpochSecond(1_000) }, logger = DiscardLogger),
                     versionName = "1.2.3",
                     messages = messages,
                     events = events,
+                    logger = DiscardLogger,
                 ),
             ).build()
             .start()

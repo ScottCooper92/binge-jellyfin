@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import com.binge.designsystem.testing.createTakeDownKeyboardAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.UiState
@@ -33,7 +34,7 @@ class TvPlaybackHostTest {
 
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
 
     private var state by mutableStateOf<UiState>(UiState.SignedIn(session = jellyfin.session()))
     private var playback: TvPlayback? = null
