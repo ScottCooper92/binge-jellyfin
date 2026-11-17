@@ -1,16 +1,16 @@
 name: Privacy policy
 
-# Publishes docs/listing/privacy.md to GitHub Pages, which is the URL the Play listing links to
-# (#170). The file is the source and the page is a copy of it, so the page is rebuilt whenever the
-# file changes on main and a merged policy change goes live with no further step.
+# The policy's source is docs/listing/privacy.md. It is reviewed with the code, and the page people read lives
+# in the ScottCooper92/app-feedback repository (https://scottcooper92.github.io/app-feedback/ephyra/privacy/),
+# next to the other apps' policies. Whenever privacy.md changes on main, this opens a pull request on that
+# repository that replaces the body of docs/ephyra/privacy/index.md. The page's front matter and its
+# "Last updated / Change history" header stay as that repository has them, and the date is set to the day the
+# source last changed. A person merges that pull request, so nothing goes live unreviewed.
 #
-# Only the policy is published, not the docs tree: the artifact holds one rendered page, at
-# https://scottcooper92.github.io/ephyra/privacy/. The page is self-contained, with its styles
-# inline and no scripts, fonts or stylesheets from anywhere else, so opening a privacy policy does
-# not itself send a request to a third party.
-#
-# This needs Pages turned on with GitHub Actions as its source (Settings > Pages). Until then the
-# deploy job fails.
+# The pull request is opened with a short-lived token minted from the author bot's GitHub App, limited to
+# app-feedback. It needs the app installed on that repository with contents and pull requests write
+# access. No personal token is used. There is one branch, `ephyra-privacy-policy`, which is force-pushed each
+# run, so a second change before the first is merged updates the open pull request instead of opening another.
 on:
   push:
     branches: [main]
@@ -19,51 +19,41 @@ on:
       - .github/workflows/privacy-policy.yml
   workflow_dispatch:
 
-# One deployment at a time. A newer run waits rather than cancelling one already deploying, so a
-# deployment is never cut off halfway, and the last policy to merge is the one that ends up live.
+# One run at a time, and a newer run waits rather than cancelling one that is pushing.
 concurrency:
-  group: pages
+  group: privacy-policy
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  propose:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # No configure-pages step: it only tells a static-site generator the site's base path, and this
-    # page is rendered by pandoc with no links into the site. Its settings read answered 404 here with
-    # Pages on and `pages: read` granted, failing the build before anything was published.
-    permissions:
-      contents: read
     steps:
-      # Full history, so the last-updated date is that of the last commit to change the policy. A
-      # shallow clone would give the date of whatever commit triggered the run.
+      # Full history, so the last-updated date is that of the last commit to change the policy.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
-      # A pinned release verified against its published checksum, the same way ci.yml installs
-      # actionlint. The runner image's apt archive would give whatever version it carries that week.
-      - name: Install pandoc
-        env:
-          VERSION: '3.12'
-          SHA256: 67d7d011fed8c8543306022b985b9b2499ab9b74818df91d8727c7e9ebc5ba06
-        run: |
-          set -euo pipefail
-          curl -sSLo pandoc.tar.gz \
-            "https://github.com/jgm/pandoc/releases/download/${VERSION}/pandoc-${VERSION}-linux-amd64.tar.gz"
-          echo "${SHA256}  pandoc.tar.gz" | sha256sum -c -
-          tar xzf pandoc.tar.gz --strip-components=2 "pandoc-${VERSION}/bin/pandoc"
-          ./pandoc --version | head -n 1
+      - id: token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ secrets.AUTHOR_APP_ID }}
+          private-key: ${{ secrets.AUTHOR_APP_PRIVATE_KEY }}
+          repositories: app-feedback
+          permission-contents: write
+          permission-pull-requests: write
 
-      # The policy's first line is its heading. The last-updated line goes straight under it, so
-      # the date is the first thing a reader sees.
-      - name: Render the policy
+      - name: Open the pull request
         env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
           SOURCE: docs/listing/privacy.md
-          HISTORY_URL: ${{ github.server_url }}/${{ github.repository }}/commits/${{ github.ref_name }}/docs/listing/privacy.md
+          TARGET_REPO: ScottCooper92/app-feedback
+          PAGE: docs/ephyra/privacy/index.md
+          BRANCH: ephyra-privacy-policy
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
         run: |
           set -euo pipefail
           head -n 1 "$SOURCE" | grep -q '^# ' || {
@@ -71,40 +61,45 @@ jobs:
             exit 1
           }
           updated=$(git log -1 --format=%cs -- "$SOURCE")
-          mkdir -p _site/privacy
-          {
-            head -n 1 "$SOURCE"
-            printf '\n*Last updated %s. [Change history](%s).*\n' "$updated" "$HISTORY_URL"
-            tail -n +2 "$SOURCE"
-          } | ./pandoc \
-            --from=gfm \
-            --to=html5 \
-            --standalone \
-            --metadata pagetitle="Privacy policy - Ephyra for Jellyfin" \
-            --metadata lang=en \
-            --output=_site/privacy/index.html
-          # The point of rendering it here is that the page loads nothing from anywhere else. Fail
-          # rather than publish a page that does, if a pandoc upgrade or the policy itself adds a
-          # script, a stylesheet link or an embedded resource.
-          if grep -Eni '<script|<link|<iframe|<img|@import|url\(' _site/privacy/index.html; then
-            echo "::error::The rendered page loads an external resource"
+
+          git clone --quiet --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${TARGET_REPO}.git" feedback
+          page="feedback/${PAGE}"
+          test -f "$page" || {
+            echo "::error::${TARGET_REPO} has no ${PAGE} to update"
             exit 1
+          }
+          # The header is everything up to and including the "Last updated" line: front matter, heading, date.
+          line=$(grep -n '^\*Last updated ' "$page" | head -n 1 | cut -d: -f1)
+          test -n "$line" || {
+            echo "::error::${PAGE} has no 'Last updated' line to keep"
+            exit 1
+          }
+          # The source's heading and the blank line after it are the page's header already.
+          tail -n +3 "$SOURCE" > body.md
+          tail -n +"$((line + 1))" "$page" | sed '1{/^$/d}' > current.md
+          if cmp -s body.md current.md; then
+            echo "The page already has this policy."
+            exit 0
           fi
+          {
+            head -n "$line" "$page" | sed "s/^\*Last updated [0-9-]*\./*Last updated ${updated}./"
+            printf '\n'
+            cat body.md
+          } > new.md
+          mv new.md "$page"
 
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: _site
+          cd feedback
+          git config user.name "ephyra-privacy-bot"
+          git config user.email "ephyra-privacy-bot@users.noreply.github.com"
+          git checkout --quiet -B "$BRANCH"
+          git add "$PAGE"
+          git commit --quiet -m "docs: update the Ephyra privacy policy"
+          git push --quiet --force origin "$BRANCH"
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}privacy/
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+          if [ -n "$(gh pr list --repo "$TARGET_REPO" --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            echo "The open pull request now carries this policy."
+          else
+            gh pr create --repo "$TARGET_REPO" --base main --head "$BRANCH" \
+              --title "docs: update the Ephyra privacy policy" \
+              --body "The app's policy changed. The source is docs/listing/privacy.md in the app's repository, changed in ${COMMIT_URL}. This replaces the body of the page and sets its last-updated date; the front matter and header are as they were."
+          fi
