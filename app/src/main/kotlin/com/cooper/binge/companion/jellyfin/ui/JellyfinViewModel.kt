@@ -35,11 +35,11 @@ import com.cooper.binge.companion.jellyfin.server.quickConnectEnabled
 import com.cooper.binge.companion.jellyfin.server.quickConnectEnabledOrNull
 import com.cooper.binge.companion.jellyfin.server.quickConnectInitiate
 import com.cooper.binge.companion.jellyfin.server.userThumbnail
-import com.cooper.binge.companion.jellyfin.telemetry.Analytics
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsEvents
-import com.cooper.binge.companion.jellyfin.telemetry.NoOpAnalytics
 import com.cooper.binge.companion.jellyfin.telemetry.SignInReports
 import com.cooper.binge.companion.jellyfin.ui.console.decodeThumbnail
+import com.cooper.homelab.core.telemetry.Analytics
+import com.cooper.homelab.core.telemetry.NoOpAnalytics
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

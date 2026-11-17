@@ -1,6 +1,9 @@
 package com.cooper.binge.companion.jellyfin.flags
 
 import com.cooper.binge.companion.jellyfin.BuildConfig
+import com.cooper.homelab.core.flags.FixedFeatureFlags
+import com.cooper.homelab.core.flags.Flag
+import com.cooper.homelab.core.flags.Flags
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin
 import android.app.Activity
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
@@ -11,10 +12,6 @@ import com.binge.companion.kit.KeystoreSecretCipher
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.auth.TOKEN_KEY_ALIAS
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
-import com.cooper.binge.companion.jellyfin.flags.FeatureFlags
-import com.cooper.binge.companion.jellyfin.flags.FirebaseRemoteFlagSource
-import com.cooper.binge.companion.jellyfin.flags.Flag
-import com.cooper.binge.companion.jellyfin.flags.RemoteFeatureFlags
 import com.cooper.binge.companion.jellyfin.notifications.ActivityChecker
 import com.cooper.binge.companion.jellyfin.notifications.AndroidBackgroundAccess
 import com.cooper.binge.companion.jellyfin.notifications.AndroidNotifier
@@ -30,23 +27,30 @@ import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
 import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
 import com.cooper.binge.companion.jellyfin.server.lanTargets
-import com.cooper.binge.companion.jellyfin.telemetry.Analytics
-import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsConsentGate
-import com.cooper.binge.companion.jellyfin.telemetry.CrashReportingSwitch
-import com.cooper.binge.companion.jellyfin.telemetry.FirebaseCrashCollection
-import com.cooper.binge.companion.jellyfin.telemetry.PostHogAnalytics
-import com.cooper.binge.companion.jellyfin.telemetry.PostHogClient
-import com.cooper.binge.companion.jellyfin.telemetry.TelemetryPrefs
-import com.cooper.binge.companion.jellyfin.telemetry.postHogConfig
 import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
 import com.cooper.binge.companion.jellyfin.ui.search.RecentSearches
+import com.cooper.homelab.core.flags.FeatureFlags
+import com.cooper.homelab.core.flags.FirebaseRemoteFlagSource
+import com.cooper.homelab.core.flags.Flag
+import com.cooper.homelab.core.flags.RemoteFeatureFlags
+import com.cooper.homelab.core.flags.StaticFlagOverrides
 import com.cooper.homelab.core.foundation.AppDispatchers
 import com.cooper.homelab.core.foundation.Clock
+import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
+import com.cooper.homelab.core.telemetry.Analytics
+import com.cooper.homelab.core.telemetry.AnalyticsConsentGate
+import com.cooper.homelab.core.telemetry.AnalyticsDecorator
+import com.cooper.homelab.core.telemetry.CrashReportingSwitch
+import com.cooper.homelab.core.telemetry.FirebaseCrashCollection
+import com.cooper.homelab.core.telemetry.GatedAnalytics
+import com.cooper.homelab.core.telemetry.PostHogClient
+import com.cooper.homelab.core.telemetry.TelemetryPrefs
+import com.cooper.homelab.core.telemetry.postHogConfig
 import com.cooper.homelab.core.tip.DebugTipBilling
 import com.cooper.homelab.core.tip.PlayTipBilling
 import com.cooper.homelab.core.tip.TipBilling
@@ -98,10 +102,13 @@ class AppGraph(
      * made with -PbingePromotion=true turns it on locally, whatever the remote says.
      */
     val flags: FeatureFlags by lazy {
+        val fixed = if (BuildConfig.BINGE_PROMOTION) mapOf(Flag.BingePromotion to true) else emptyMap()
         RemoteFeatureFlags(
             source = FirebaseRemoteFlagSource(appContext),
-            overrides = if (BuildConfig.BINGE_PROMOTION) mapOf(Flag.BingePromotion to true) else emptyMap(),
+            overrides = StaticFlagOverrides(fixed),
+            scope = scope,
             io = io,
+            initialOverrides = fixed,
         )
     }
 
@@ -112,6 +119,8 @@ class AppGraph(
                 corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
                 produceFile = { appContext.preferencesDataStoreFile("telemetry") },
             ),
+            // Crash reporting is opt-in here: it is off until the user agrees on the first-run screen or in Settings.
+            crashReportingDefault = false,
         )
     }
 
@@ -180,7 +189,9 @@ class AppGraph(
     internal val tipBilling: TipBilling by lazy { if (BuildConfig.DEBUG) DebugTipBilling() else PlayTipBilling(appContext) }
 
     /** The one owner of "may analytics report"; every backend registers with it. */
-    val consentGate: AnalyticsConsentGate by lazy { AnalyticsConsentGate(telemetryPrefs, scope) }
+    val consentGate: AnalyticsConsentGate by lazy {
+        AnalyticsConsentGate(telemetryPrefs, scope, Logger { tag, message, cause -> Log.e(tag, message, cause) })
+    }
 
     /** PostHog behind the consent gate. A build with no project key has no client, and then every call is a no-op. */
     val analytics: Analytics by lazy {
@@ -188,12 +199,12 @@ class AppGraph(
             BuildConfig.POSTHOG_API_KEY
                 .takeIf { it.isNotBlank() }
                 ?.let { PostHogClient(PostHogAndroid.with(appContext, postHogConfig(it, BuildConfig.POSTHOG_HOST))) }
-        PostHogAnalytics(client, consentGate, scope)
+        GatedAnalytics(client, consentGate, AnalyticsDecorator.None, scope)
     }
 
     /** Holds Crashlytics' collection to the user's crash-reporting answer. */
     val crashReporting: CrashReportingSwitch by lazy {
-        CrashReportingSwitch(FirebaseCrashCollection(appContext), telemetryPrefs, scope)
+        CrashReportingSwitch(FirebaseCrashCollection(appContext), telemetryPrefs, scope, isDebugBuild = BuildConfig.DEBUG)
     }
 
     val connection: Connection by lazy {
