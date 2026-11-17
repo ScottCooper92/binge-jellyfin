@@ -4,6 +4,7 @@ import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
 import com.cooper.binge.companion.jellyfin.server.me
+import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.ui.console.consoleCall
 import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
@@ -18,6 +19,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 import kotlin.time.Instant
@@ -95,11 +97,28 @@ class LoggingCanaryTest {
 
         assertClean()
         assertEquals(
-            "an answer that is not a Jellyfin server's",
+            "an answer that is not a media server's",
             ring.entries.value
                 .single()
                 .event,
         )
+    }
+
+    @Test
+    fun `a server reached by a bare name leaves the app's own words readable and still redacts the name as a word`() {
+        redactor.followSession(
+            MutableStateFlow(session.copy(baseUrl = "http://jellyfin", userName = "alice-the-watcher")),
+            CoroutineScope(UnconfinedTestDispatcher()),
+        )
+
+        ring.noted("JellyfinSetup", "the server timed out", IOException("could not reach jellyfin"))
+
+        val shared = ring.render()
+        assertTrue(shared, shared.contains("JellyfinSetup"))
+        assertTrue(shared, shared.contains("the server timed out"))
+        assertTrue(shared, shared.contains("IOException"))
+        assertEquals("a [redacted] b", redactor.redact("a jellyfin b"))
+        assertEquals("a [redacted]/Users b", redactor.redact("a http://jellyfin/Users b"))
     }
 
     @Test

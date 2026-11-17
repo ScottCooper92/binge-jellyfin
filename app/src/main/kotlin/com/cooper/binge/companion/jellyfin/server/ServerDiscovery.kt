@@ -108,7 +108,7 @@ class UdpDiscovery(
                 try {
                     PARSER.parseToJsonElement(text) as? JsonObject
                 } catch (e: SerializationException) {
-                    logger.noted(TAG, "an answer that is not a Jellyfin server's", e)
+                    logger.noted(TAG, "an answer that is not a media server's", e)
                     null
                 } ?: return null
             val address = json.string("Address")?.takeIf { it.toHttpUrlOrNull() != null } ?: return null
