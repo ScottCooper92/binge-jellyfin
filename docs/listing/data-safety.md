@@ -31,7 +31,7 @@ None of it is linked to the user's identity, and none is used for advertising.
 
 ## Google Play Billing
 
-A tip is bought and consumed through Google Play under the user's own Google account (`tip/PlayTipBilling.kt`). Play takes the payment. The app receives no card or payment details and keeps no purchase history. It sends nothing about a purchase to the developer or anyone else. This is Google's platform feature, not collection by the developer, so the Financial info and Purchase history answers stay as they are. The library adds the `com.android.vending.BILLING` permission to the merged manifest. Whether the form should list it is a question for the maintainer and Play's review; record the answer here once it is known.
+A tip is bought and consumed through Google Play under the user's own Google account (`PlayTipBilling`, in the private `homelab-core` submodule, wired in `AppGraph`). Play takes the payment. The app receives no card or payment details and keeps no purchase history. It sends nothing about a purchase to the developer or anyone else. This is Google's platform feature, not collection by the developer, so the Financial info and Purchase history answers stay as they are. The library adds the `com.android.vending.BILLING` permission to the merged manifest. Whether the form should list it is a question for the maintainer and Play's review; record the answer here once it is known.
 
 ## Check before submitting
 

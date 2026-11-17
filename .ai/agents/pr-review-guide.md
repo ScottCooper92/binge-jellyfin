@@ -64,8 +64,8 @@ titles or anything else read from the user's server:
 Two Google Play features are a separate case, not a fourth carve-out. They are calls to the Play Store app on the device, not a host
 this app connects to, so neither is a "new host", and they carry Play product ids and purchase tokens rather than an installation ID:
 
-- Google Play's in-app review (`review/PlayReviewPromptLauncher`), which runs only when its flag is on.
-- Play Billing for the tip jar (`tip/PlayTipBilling.kt`). It queries the four `donation_*` products each time the This app page opens
+- Google Play's in-app review (`PlayReviewPromptLauncher`, in the private `homelab-core` submodule, wired in `AppGraph`), which runs only when its flag is on.
+- Play Billing for the tip jar (`PlayTipBilling`, in the private `homelab-core` submodule, wired in `AppGraph`). It queries the four `donation_*` products each time the This app page opens
   in a release build, consumes a tip left unconsumed, and buys one only when the user confirms in Google's own screen.
 
 Neither carries the token or anything from the user's server. A call that sends server data to either, or any other Play library
