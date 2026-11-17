@@ -129,6 +129,8 @@ fun JellyfinRoot(
             ) {
                 AccountAction(state, actions)
             }
+            // Before a server is connected Settings is out of reach, so a problem can still be reported from here.
+            if (state is UiState.EnterServer || state is UiState.SignIn) ReportProblemAction()
         },
     ) { padding ->
         ScreenBody(padding) { _ ->
