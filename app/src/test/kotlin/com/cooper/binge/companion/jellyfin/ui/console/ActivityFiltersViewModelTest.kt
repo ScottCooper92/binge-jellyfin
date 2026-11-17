@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.server.ActivityFilter
 import com.cooper.binge.companion.jellyfin.server.ActivityTimePreset
 import com.cooper.binge.companion.jellyfin.server.ActivityWho
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.Severity
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -36,7 +37,10 @@ class ActivityFiltersViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
     private val teardown = ViewModelTeardown()
-    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+    private val connection =
+        teardown.made(
+            Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger),
+        )
     private val now = Instant.parse("2026-11-09T15:30:00Z")
 
     private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)

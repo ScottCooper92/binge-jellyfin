@@ -50,7 +50,7 @@ class Connection(
     private val device: String,
     private val version: String,
     internal val io: CoroutineDispatcher,
-    val logger: Logger = DiscardLogger,
+    val logger: Logger,
 ) {
     private val refusals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 

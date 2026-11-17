@@ -38,7 +38,7 @@ class UdpDiscovery(
     private val io: CoroutineDispatcher,
     private val port: Int = PORT,
     private val windowMillis: Long = WINDOW_MILLIS,
-    private val logger: Logger = DiscardLogger,
+    private val logger: Logger,
 ) {
     /** Probes every target at once, so the whole search takes one window, not one per target. */
     suspend fun find(): List<DiscoveredServer> =
@@ -102,7 +102,7 @@ class UdpDiscovery(
         /** One server's answer, or null for one that is not JSON or names no usable address. */
         fun parse(
             text: String,
-            logger: Logger = DiscardLogger,
+            logger: Logger,
         ): DiscoveredServer? {
             val json =
                 try {

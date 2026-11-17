@@ -42,7 +42,7 @@ class UdpDiscoveryTest {
     fun close() = responder.close()
 
     private fun discovery(targets: List<DiscoveryTarget> = listOf(DiscoveryTarget(loopback))) =
-        UdpDiscovery(targets = { targets }, io = Dispatchers.IO, port = responder.localPort, windowMillis = WINDOW)
+        UdpDiscovery(targets = { targets }, io = Dispatchers.IO, port = responder.localPort, windowMillis = WINDOW, logger = DiscardLogger)
 
     @Test
     fun `every server that answers is found once, and the probe is Jellyfin's`() =
@@ -69,9 +69,9 @@ class UdpDiscoveryTest {
 
     @Test
     fun `an answer is read as Jellyfin writes it`() {
-        assertEquals("http://x:8096", UdpDiscovery.parse("""{"Address":"http://x:8096"}""")?.name)
-        assertNull(UdpDiscovery.parse("""{"Address":"not a url","Id":"a"}"""))
-        assertNull(UdpDiscovery.parse("[1]"))
+        assertEquals("http://x:8096", UdpDiscovery.parse("""{"Address":"http://x:8096"}""", DiscardLogger)?.name)
+        assertNull(UdpDiscovery.parse("""{"Address":"not a url","Id":"a"}""", DiscardLogger))
+        assertNull(UdpDiscovery.parse("[1]", DiscardLogger))
     }
 
     @Test

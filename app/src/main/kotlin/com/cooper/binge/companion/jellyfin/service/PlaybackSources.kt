@@ -12,7 +12,6 @@ import com.binge.companion.contracts.v1.HttpHeader
 import com.binge.companion.contracts.v1.PlaybackSource
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.DeviceProfiles
-import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinItem
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -45,7 +44,7 @@ import java.time.Instant
  */
 class PlaybackSources(
     private val now: () -> Instant,
-    private val logger: Logger = DiscardLogger,
+    private val logger: Logger,
 ) {
     suspend fun mint(
         session: JellyfinSession,

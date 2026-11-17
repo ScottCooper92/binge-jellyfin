@@ -30,7 +30,7 @@ class NotificationWorkerTest {
     private val serverIdentity = ServerIdentity(InMemoryDataStore())
     private val notifier = FakeNotifier()
     private val scheduler = FakeScheduler()
-    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO, DiscardLogger)
     private val runner =
         PollRunner(
             ActivityChecker(connection, testFeedCursors(), LegacyActivityCursor(prefs), serverIdentity, notifier, DiscardLogger),

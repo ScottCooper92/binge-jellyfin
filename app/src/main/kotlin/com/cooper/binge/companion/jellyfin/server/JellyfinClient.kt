@@ -71,7 +71,7 @@ class JellyfinClient(
     internal val identity: ClientIdentity,
     internal val io: CoroutineDispatcher,
     internal val token: String? = null,
-    internal val logger: Logger = DiscardLogger,
+    internal val logger: Logger,
 ) {
     fun withToken(token: String): JellyfinClient = JellyfinClient(http, baseUrl, identity, io, token, logger)
 

@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.LiveChannel
 import com.cooper.binge.companion.jellyfin.server.ParentalRating
 import com.cooper.binge.companion.jellyfin.session
@@ -29,7 +30,10 @@ class UserChoicesViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
     private val teardown = ViewModelTeardown()
-    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+    private val connection =
+        teardown.made(
+            Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger),
+        )
 
     private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
 
