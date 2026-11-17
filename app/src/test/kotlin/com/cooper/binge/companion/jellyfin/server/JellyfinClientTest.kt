@@ -20,7 +20,7 @@ import org.junit.Test
 class JellyfinClientTest {
     private val jellyfin = FakeJellyfin()
     private val identity = ClientIdentity("Jellyfin Companion", "Pixel \"10\"", "device-1", "1.0")
-    private val client = JellyfinClient(OkHttpClient(), jellyfin.baseUrl.toHttpUrl(), identity, Dispatchers.IO)
+    private val client = JellyfinClient(OkHttpClient(), jellyfin.baseUrl.toHttpUrl(), identity, Dispatchers.IO, logger = DiscardLogger)
 
     @After
     fun close() = jellyfin.close()
@@ -85,7 +85,14 @@ class JellyfinClientTest {
     @Test
     fun `a device model with non-ASCII characters or a comma is encoded, and the request is sent`() =
         runBlocking {
-            val odd = JellyfinClient(OkHttpClient(), jellyfin.baseUrl.toHttpUrl(), identity.copy(device = "Ünï Phone, Pro"), Dispatchers.IO)
+            val odd =
+                JellyfinClient(
+                    OkHttpClient(),
+                    jellyfin.baseUrl.toHttpUrl(),
+                    identity.copy(device = "Ünï Phone, Pro"),
+                    Dispatchers.IO,
+                    logger = DiscardLogger,
+                )
             assertTrue(odd.authorization().contains("Device=\"%C3%9Cn%C3%AF%20Phone%2C%20Pro\""))
             assertEquals("truenas", odd.publicInfo().serverName)
             val sent =

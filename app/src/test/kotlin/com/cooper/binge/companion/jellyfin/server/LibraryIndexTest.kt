@@ -15,7 +15,14 @@ import org.junit.Test
 class LibraryIndexTest {
     private val jellyfin = FakeJellyfin()
     private val client =
-        JellyfinClient(OkHttpClient(), jellyfin.baseUrl.toHttpUrl(), ClientIdentity("c", "d", "id", "1"), Dispatchers.IO, token = "token-1")
+        JellyfinClient(
+            OkHttpClient(),
+            jellyfin.baseUrl.toHttpUrl(),
+            ClientIdentity("c", "d", "id", "1"),
+            Dispatchers.IO,
+            token = "token-1",
+            logger = DiscardLogger,
+        )
     private var now = 0L
     private val index = LibraryIndex(now = { now })
 

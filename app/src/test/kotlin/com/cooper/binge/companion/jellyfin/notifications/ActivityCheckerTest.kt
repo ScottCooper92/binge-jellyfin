@@ -26,7 +26,7 @@ import org.robolectric.RobolectricTestRunner
 class ActivityCheckerTest {
     private val jellyfin = FakeJellyfin().apply { administrator = true }
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO, DiscardLogger)
     private val prefsStore = InMemoryDataStore()
     private val prefs = NotificationPrefs(prefsStore)
     private val cursors = testFeedCursors()

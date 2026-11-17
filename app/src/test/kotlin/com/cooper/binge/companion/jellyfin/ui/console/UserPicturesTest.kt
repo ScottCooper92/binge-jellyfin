@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui.console
 import android.graphics.Bitmap
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.ServerUser
 import com.cooper.binge.companion.jellyfin.server.users
 import com.cooper.binge.companion.jellyfin.session
@@ -37,7 +38,7 @@ class UserPicturesTest {
 
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
     private val user = ServerUser("user-1", "Ana", true, null, JsonObject(emptyMap()), imageTag = "picture-1")
 
     @Before

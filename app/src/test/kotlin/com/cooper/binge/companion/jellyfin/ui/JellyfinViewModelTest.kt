@@ -14,6 +14,7 @@ import com.cooper.binge.companion.jellyfin.demo.DEMO_TOKEN
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.server.AddressPolicy
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
@@ -57,7 +58,7 @@ class JellyfinViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions: SessionStore = testSessionStore()
     private val index = LibraryIndex()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
 
     @Before
     fun main() {
@@ -142,6 +143,7 @@ class JellyfinViewModelTest {
                 "Test",
                 "1.0",
                 Dispatchers.IO,
+                DiscardLogger,
             ).also { extraConnections += it }
         return track(JellyfinViewModel(demoSessions, demoConnection, index, discover = { found }, analytics = analytics))
     }
@@ -611,6 +613,7 @@ class JellyfinViewModelTest {
                 "Test",
                 "1.0",
                 Dispatchers.IO,
+                DiscardLogger,
             ).also { extraConnections += it }
         val vm = viewModel(AddressPolicy.Shared, guarded)
         vm.await<UiState.EnterServer>()
@@ -1191,7 +1194,10 @@ class JellyfinViewModelTest {
                 track(
                     JellyfinViewModel(
                         sessions,
-                        Connection(slow, sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO).also { extraConnections += it },
+                        Connection(slow, sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger).also {
+                            extraConnections +=
+                                it
+                        },
                         index,
                         discover = {
                             gate.await()

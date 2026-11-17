@@ -13,7 +13,8 @@ class ActivitySwitch(
     private val serverIdentity: ServerIdentity,
 ) {
     suspend fun set(on: Boolean) {
-        prefs.setEnabled(on)
+        // The cursor goes first, so a poll the switch starts cannot find the old one and announce the backlog.
         if (on) store.clear(serverIdentity.currentServerId())
+        prefs.setEnabled(on)
     }
 }

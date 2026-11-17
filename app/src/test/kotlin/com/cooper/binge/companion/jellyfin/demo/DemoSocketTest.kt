@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.demo
 
 import com.cooper.binge.companion.jellyfin.server.ClientIdentity
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.nowPlayingFeed
 import com.cooper.binge.companion.jellyfin.server.runTask
@@ -24,6 +25,7 @@ class DemoSocketTest {
             ClientIdentity("Ephyra", "Test", "device-1", "1.0"),
             Dispatchers.Unconfined,
             DEMO_TOKEN,
+            DiscardLogger,
         )
 
     @Test
