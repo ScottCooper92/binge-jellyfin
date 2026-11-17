@@ -69,6 +69,7 @@ homelab-appservices-posthog = { module = "com.cooper.homelab:app-services-postho
 homelab-appservices-firebase = { module = "com.cooper.homelab:app-services-firebase" }
 homelab-server = { module = "com.cooper.homelab:server" }
 homelab-presentation = { module = "com.cooper.homelab:presentation" }
+homelab-uiandroid = { module = "com.cooper.homelab:ui-android" }
 homelab-testing = { module = "com.cooper.homelab:testing" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }

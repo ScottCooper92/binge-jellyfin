@@ -21,7 +21,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The pages that load as the design system's bare skeleton column, and Licences, hold their first group where the settled page puts
+ * The pages that load as the design system's bare skeleton column hold their first group where the settled page puts
  * it, so nothing jumps when the content arrives (#514).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -39,21 +39,6 @@ class BareSkeletonGeometryTest {
             listOf(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             checkStartEdge = true,
         ) { resolved -> JellyfinTheme { page(resolved) } }
-
-    @Test
-    fun `licences`() =
-        compose.holdsFirstGroup { resolved ->
-            LicencesScreen(
-                state =
-                    if (resolved) {
-                        LicencesUiState.Ready(listOf(LicenceEntry("a", "Library", "1.0", listOf("Apache-2.0"), null)))
-                    } else {
-                        LicencesUiState.Loading
-                    },
-                onBack = {},
-                onOpenWebsite = {},
-            )
-        }
 
     @Test
     fun `libraries`() =
