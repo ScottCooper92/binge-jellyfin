@@ -38,7 +38,7 @@ import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.ServerEvents
 import com.cooper.binge.companion.jellyfin.server.UdpDiscovery
 import com.cooper.binge.companion.jellyfin.server.lanTargets
-import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
+import com.cooper.binge.companion.jellyfin.ui.console.AboutLibrariesLicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
 import com.cooper.binge.companion.jellyfin.ui.search.RecentSearches
@@ -55,6 +55,7 @@ import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.notifications.DataStoreFeedCursorStore
 import com.cooper.homelab.core.notifications.FeedCursorStore
 import com.cooper.homelab.core.notifications.PollScheduler
+import com.cooper.homelab.core.presentation.appsettings.LicenceSource
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
@@ -102,7 +103,7 @@ class AppGraph(
     private val appContext = context.applicationContext
 
     /** The licences of the libraries this app ships, read once for the licences page. */
-    val licences: LicenceSource by lazy { LicenceSource(appContext, io) }
+    val licences: LicenceSource by lazy { AboutLibrariesLicenceSource(appContext, io) }
 
     /** Whether the app reads a typed address and guards plain HTTP the way the shared library does. See [serverRegistryEnabled]. */
     private val addressPolicyEnabled: Boolean by lazy { debugSwitch(ADDRESS_POLICY_SWITCH) }

@@ -568,10 +568,7 @@ app:library_type_video  c9a9639463c2
 app:library_whitelist  ffa0299c7324
 app:library_whitelist_count  4fa7549fdcda
 app:library_whitelist_hint  8758e9d95e16
-app:licences_empty  dbfbd5cd500d
 app:licences_title  e33c2431b4dc
-app:licences_unreadable  a5adf1af2109
-app:licences_unspecified  344fcdefca87
 app:live_tv_add_body  f7c1f6fd17d8
 app:live_tv_add_by_address  fb56fe2c76fc
 app:live_tv_add_title  9c892e2f98d0
