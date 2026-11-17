@@ -6,13 +6,17 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.binge.companion.sdk.attempt
+import com.cooper.binge.companion.jellyfin.auth.ServerIdentity
+import com.cooper.homelab.core.notifications.PollOutcome
+import com.cooper.homelab.core.notifications.PollReactor
 
 /** One run of the poll: checks the log and maps the outcome to WorkManager's result. */
 class PollRunner(
     private val checker: ActivityChecker,
     private val reactor: PollReactor,
+    private val serverIdentity: ServerIdentity,
 ) {
-    suspend fun run(): PollOutcome = reactor.react(checker.check())
+    suspend fun run(): PollOutcome = reactor.react(serverIdentity.currentServerId(), checker.check())
 }
 
 /**

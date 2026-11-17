@@ -36,7 +36,7 @@ fun rememberNotificationBinding(
     val askPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { rechecks++ }
     val scope = rememberCoroutineScope()
     // Read on each composition that follows a recheck: the system's answers are not observable.
-    val blocked = rechecks >= 0 && !graph.notifier.canPost()
+    val blocked = rechecks >= 0 && !graph.notifier.mayPost()
     val unrestricted = rechecks >= 0 && graph.backgroundAccess.isUnrestricted()
     return { given ->
         val actions = base(given)
@@ -51,7 +51,7 @@ fun rememberNotificationBinding(
                     ) {
                         askPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
-                    scope.launch { prefs.setEnabled(on) }
+                    scope.launch { graph.activitySwitch.set(on) }
                 },
                 onNotificationInterval = { minutes -> scope.launch { prefs.setIntervalMinutes(minutes) } },
             )
