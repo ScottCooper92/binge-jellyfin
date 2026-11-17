@@ -36,15 +36,14 @@ import com.cooper.binge.companion.jellyfin.BuildConfig
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.feedback.installBugReportUrl
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
-import com.cooper.binge.companion.jellyfin.tip.TipEvent
-import com.cooper.binge.companion.jellyfin.tip.TipUiState
-import com.cooper.binge.companion.jellyfin.ui.console.ConsoleMessage
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
-import com.cooper.binge.companion.jellyfin.ui.console.TipResults
-import com.cooper.binge.companion.jellyfin.ui.console.TipSheet
 import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
+import com.cooper.homelab.core.presentation.tip.TipEvent
+import com.cooper.homelab.core.presentation.tip.TipState
 import com.cooper.homelab.core.telemetry.AnalyticsConsent
 import com.cooper.homelab.core.telemetry.TelemetryPrefs
+import com.cooper.homelab.core.uiandroid.tip.TipResults
+import com.cooper.homelab.core.uiandroid.tip.TipSheet
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -99,7 +98,7 @@ internal fun AppGroup(
                     onClick = { actions.onSendCrashReports(!settings.sendCrashReports) },
                     key = SettingRows.THIS_APP_CRASH_REPORTS,
                 ),
-                // The tip jar's row: only once Play has priced every step (see `TipUiState.Ready`).
+                // The tip jar's row: only once Play has priced every step (see `TipState.Ready`).
                 onOpenTip?.let {
                     ListItem(
                         icon = Icons.Outlined.Coffee,
@@ -153,32 +152,25 @@ internal fun AboutGroup(actions: Actions) {
 
 /**
  * The "This app" page: what the app reports and feedback, the tip jar, then About. Opened from the home's This app row, for
- * everyone. The tip jar's row shows only once Play has priced every step ([tip] is [TipUiState.Ready]); [tipEvents] says how a
+ * everyone. The tip jar's row shows only once Play has priced every step ([tip] is [TipState.Ready]); [tipEvents] says how a
  * tip ended.
  */
 @Composable
 internal fun ThisAppScreen(
     actions: Actions,
     onBack: () -> Unit,
-    tip: TipUiState = TipUiState.Unavailable,
+    tip: TipState = TipState.Unavailable,
     tipEvents: Flow<TipEvent> = emptyFlow(),
     onGiveTip: (Int) -> Unit = {},
     serverVersion: JellyfinVersion? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    var failed by remember { mutableStateOf(false) }
     var tipOpen by remember { mutableStateOf(false) }
-    TipResults(tipEvents, snackbarHostState, onFailed = { failed = true })
-    if (failed) {
-        ConsoleMessage(
-            title = stringResource(R.string.tip_failed_title),
-            message = stringResource(R.string.tip_failed_body),
-            onDismiss = { failed = false },
-        )
-    }
-    val prices = (tip as? TipUiState.Ready)?.prices
+    TipResults(tipEvents, snackbarHostState)
+    val prices = (tip as? TipState.Ready)?.prices
     if (tipOpen && prices != null) {
         TipSheet(
+            appName = stringResource(R.string.app_label),
             prices = prices,
             onGive = {
                 tipOpen = false

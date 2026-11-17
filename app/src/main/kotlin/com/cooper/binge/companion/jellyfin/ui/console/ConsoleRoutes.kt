@@ -18,7 +18,6 @@ import com.binge.designsystem.component.ProvideRowFocus
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
-import com.cooper.binge.companion.jellyfin.tip.TipViewModel
 import com.cooper.binge.companion.jellyfin.ui.AccountScreen
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.ThisAppScreen
@@ -449,8 +448,9 @@ private fun ThisAppRoute(
     serverVersion: JellyfinVersion?,
     onBack: () -> Unit,
 ) {
-    val tip: TipViewModel = viewModel(factory = viewModelFactory { initializer { TipViewModel(graph.tipBilling, graph.reviewPrompt) } })
-    val state by tip.uiState.collectAsStateWithLifecycle()
+    val holder: TipHolder = viewModel(factory = viewModelFactory { initializer { TipHolder(graph.tipBilling, graph.reviewPrompt) } })
+    val tip = holder.tip
+    val state by tip.state.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     ThisAppScreen(
         actions,

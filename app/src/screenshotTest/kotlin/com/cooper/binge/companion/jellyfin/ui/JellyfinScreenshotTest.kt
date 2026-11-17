@@ -12,13 +12,12 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenPreviews
 import com.cooper.binge.companion.jellyfin.preview.JellyfinScreenStatePreview
 import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
-import com.cooper.binge.companion.jellyfin.tip.TipUiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
-import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
 import com.cooper.binge.companion.jellyfin.ui.search.available
 import com.cooper.binge.companion.jellyfin.ui.search.settingsIndex
 import com.cooper.homelab.core.flags.Flags
 import com.cooper.homelab.core.presentation.search.SettingsSearchState
+import com.cooper.homelab.core.presentation.tip.TipState
 import com.cooper.homelab.core.tip.TIP_STEPS
 import com.cooper.homelab.core.uiandroid.search.SettingsSearchScreen
 
@@ -462,14 +461,7 @@ class JellyfinScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun thisAppWithTipJar() = ThisAppScreen(Actions(), onBack = {}, tip = TipUiState.Ready(TIP_STEPS.associateWith { "£$it" }))
-
-    /** The tip jar's sheet body: a slider over the four steps, at the default of 5. A frame can't capture the sheet's own window. */
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @JellyfinSpanishPreviews
-    @Composable
-    fun tipSheet() = Surface { TipSheetContent(prices = TIP_STEPS.associateWith { "£$it" }, onGive = {}) }
+    fun thisAppWithTipJar() = ThisAppScreen(Actions(), onBack = {}, tip = TipState.Ready(TIP_STEPS.associateWith { "£$it" }))
 
     /** The sign-out confirm's body: a screen frame can't capture the dialog's own window. */
     @PreviewTest
