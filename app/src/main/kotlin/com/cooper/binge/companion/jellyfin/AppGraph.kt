@@ -4,13 +4,22 @@ import android.app.Activity
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.binge.companion.kit.KeystoreSecretCipher
+import com.cooper.binge.companion.jellyfin.auth.JellyfinLoginCodec
+import com.cooper.binge.companion.jellyfin.auth.LegacySessionImport
+import com.cooper.binge.companion.jellyfin.auth.LegacySessionStore
+import com.cooper.binge.companion.jellyfin.auth.RegistrySessionStore
+import com.cooper.binge.companion.jellyfin.auth.ServerIdentity
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.binge.companion.jellyfin.auth.TOKEN_KEY_ALIAS
+import com.cooper.binge.companion.jellyfin.auth.forLibrary
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.notifications.ActivityChecker
 import com.cooper.binge.companion.jellyfin.notifications.AndroidBackgroundAccess
@@ -44,6 +53,8 @@ import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
+import com.cooper.homelab.core.server.connection.DeviceIdentity
+import com.cooper.homelab.core.server.connection.ServerRegistry
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.AnalyticsConsentGate
 import com.cooper.homelab.core.telemetry.AnalyticsDecorator
@@ -61,11 +72,15 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.TimeUnit
+import com.cooper.homelab.core.server.connection.CredentialStore as LoginStore
 
 /** The app's object graph, built by hand. One of each for the life of the process. */
 class AppGraph(
@@ -88,15 +103,39 @@ class AppGraph(
             .build()
     }
 
-    val sessions: SessionStore by lazy {
-        SessionStore(
-            PreferenceDataStoreFactory.create(
-                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
-                produceFile = { appContext.preferencesDataStoreFile("session") },
-            ),
-            KeystoreSecretCipher(TOKEN_KEY_ALIAS),
-            io,
+    private fun dataStore(name: String): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+            produceFile = { appContext.preferencesDataStoreFile(name) },
         )
+
+    /** Debug builds only: the answers a developer gives to switches a shipped build never reads. */
+    internal val debugSwitches: DataStore<Preferences> by lazy { dataStore(DEBUG_SWITCHES_FILE) }
+
+    /**
+     * Whether the saved session lives in the shared library's per-server stores. Off unless a debug build's switch file says so, and
+     * read once, so the choice is fixed for the life of the process and a flip takes effect on the next launch. It is not
+     * remote-controlled. The read blocks the main thread once, which is why it stays behind `BuildConfig.DEBUG`.
+     */
+    private val serverRegistryEnabled: Boolean by lazy {
+        BuildConfig.DEBUG && runBlocking { debugSwitches.data.first()[booleanPreferencesKey(SERVER_REGISTRY_SWITCH)] } == true
+    }
+
+    /** This install's one server id, the same whichever store holds the session. Its own file, which a sign-out does not clear. */
+    val serverIdentity: ServerIdentity by lazy { ServerIdentity(dataStore("server_identity")) }
+
+    val sessions: SessionStore by lazy {
+        val cipher = KeystoreSecretCipher(TOKEN_KEY_ALIAS)
+        val legacyFile = dataStore("session")
+        val legacy = LegacySessionStore(legacyFile, cipher, io)
+        if (!serverRegistryEnabled) return@lazy legacy
+        val logger = LogcatLogger()
+        val registryFile = dataStore("servers")
+        val registry = ServerRegistry(registryFile, "registry", { UUID.randomUUID().toString() }, logger)
+        val logins = LoginStore(dataStore("server_logins"), JellyfinLoginCodec, cipher.forLibrary(), logger)
+        val device = DeviceIdentity(registryFile, "device_id") { UUID.randomUUID().toString() }
+        val importer = LegacySessionImport(legacyFile, registry, logins, device, registryFile, serverIdentity, logger)
+        RegistrySessionStore(registry, logins, importer, serverIdentity, device, io)
     }
 
     /**
@@ -265,4 +304,7 @@ class AppGraph(
 /** The client name Jellyfin shows for this app, in its dashboard's devices, sessions and activity. */
 internal const val CLIENT_NAME = "Ephyra"
 
+/** The debug switches' file and the key in it that turns the per-server stores on. A shipped build never reads either. */
+internal const val DEBUG_SWITCHES_FILE = "debug_switches"
+internal const val SERVER_REGISTRY_SWITCH = "server_registry"
 private const val REDACTOR_TAG = "Redactor"
