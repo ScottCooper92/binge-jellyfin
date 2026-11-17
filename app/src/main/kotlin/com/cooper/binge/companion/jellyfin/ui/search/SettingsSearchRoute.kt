@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +60,9 @@ internal fun SettingsSearchRoute(
         }
     val state by search.state.collectAsStateWithLifecycle()
     var switches by remember { mutableStateOf<SearchSwitchesViewModel?>(null) }
+    // Once each time the search comes to the front (this composition is new), however many switches it shows: a page opened over the
+    // search and closed is read, not written back over.
+    LaunchedEffect(switches) { switches?.refresh() }
     val host = remember { SnackbarHostState() }
     Box(Modifier.fillMaxSize()) {
         SettingsSearchScreen(

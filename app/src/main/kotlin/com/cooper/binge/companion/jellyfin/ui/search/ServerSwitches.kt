@@ -35,11 +35,8 @@ internal fun searchSwitchesModel(
 ): SearchSwitchesViewModel {
     val model: SearchSwitchesViewModel =
         viewModel(factory = viewModelFactory { initializer { SearchSwitchesViewModel(graph.connection) } })
-    // Each time the search comes to the front, so a page opened over it and closed is read, not written back over.
-    LaunchedEffect(model) {
-        onModel(model)
-        model.refresh()
-    }
+    // The route reads it afresh, once, each time the search comes to the front: it is told which model there is.
+    LaunchedEffect(model) { onModel(model) }
     return model
 }
 

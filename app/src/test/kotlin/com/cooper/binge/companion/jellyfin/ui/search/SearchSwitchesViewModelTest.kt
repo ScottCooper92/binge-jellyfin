@@ -130,6 +130,46 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
+    fun `a flip still waiting out its delay is sent before the search is read again, not dropped by it`() {
+        val vm = started()
+        vm.ready()
+        vm.setAutoplayNextEpisode(false)
+        // Straight away, well inside the delay before a change is written: the state does not say a write is under way yet.
+        vm.refresh()
+        awaitServer { it.containsKey("EnableNextEpisodeAutoPlay") && !it.on("EnableNextEpisodeAutoPlay") }
+        assertFalse(vm.ready().playback.autoplayNextEpisode)
+    }
+
+    @Test
+    fun `a flip made while a read is running is not read over`() {
+        val vm = started()
+        vm.ready()
+        val held = jellyfin.hold("/Users/Me")
+        vm.refresh()
+        held.awaitArrival()
+        vm.setDisplayCollectionsView(true)
+        // The read began before the flip, so what it answers is older than the flip.
+        held.release()
+        awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
+
+        assertTrue(vm.ready().home.displayCollectionsView)
+        assertTrue(server().on("DisplayCollectionsView"))
+    }
+
+    @Test
+    fun `several switches asking at once make one read`() {
+        val vm = made(SearchSwitchesViewModel(connection))
+        val held = jellyfin.hold("/Users/Me")
+        vm.refresh()
+        held.awaitArrival()
+        vm.refresh()
+        vm.refresh()
+        held.release()
+        vm.ready()
+        assertEquals(1, jellyfin.hits("/Users/Me"))
+    }
+
+    @Test
     fun `reading again keeps what is shown, so the switches do not flash back to a spinner`() {
         val vm = started()
         vm.ready()

@@ -2,7 +2,6 @@ package com.cooper.binge.companion.jellyfin.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.binge.designsystem.SaveStatus
 import com.cooper.binge.companion.jellyfin.server.AUTOPLAY_NEXT_EPISODE
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DISPLAY_COLLECTIONS_VIEW
@@ -56,7 +55,8 @@ sealed interface SearchSwitchesState {
  * Jellyfin has no partial update: a save sends the whole configuration, so two copies of it, one per page, would each write back
  * what the other had saved before, silently. So the search keeps one, saved through the same [ConfigurationSaves] the pages use
  * (the same instant change, put-back on a refusal, and Retry for a change the server could not be reached for), and reads it
- * afresh each time the search comes to the front, so a change made on a page opened over it is not written back.
+ * afresh each time the search comes to the front (once, however many switches show), so a change made on a page opened over it
+ * is not written back.
  */
 class SearchSwitchesViewModel(
     private val connection: Connection,
@@ -76,32 +76,48 @@ class SearchSwitchesViewModel(
             }
         }
 
+    /** A read is running, so another call to [refresh] has nothing to add: one read serves every switch that asked. */
+    private var reading = false
+
+    /** How many changes have been made, so a read can tell that one was made while it ran and must not be read over. */
+    private var changes = 0
+
     /**
-     * Reads the configuration, after any save still on its way, and shows it. The first read shows [SearchSwitchesState.Loading]; a
-     * later one keeps what is shown until the new copy arrives. A change the server could not be reached for is kept, unsent, so
-     * it can be retried, and one still on its way is not dropped: nothing is read over either.
+     * Reads the configuration and shows it. A change still waiting out its delay, or still being written, is sent first, so the
+     * read sees it. The first read shows [SearchSwitchesState.Loading]; a later one keeps what is shown until the new copy arrives.
+     * What is read never replaces a change made while it ran, nor one the server could not be reached for (that is kept, unsent,
+     * for Retry): reading over either would drop it without a word.
      */
     fun refresh() {
         val current = _state.value
-        if (current is SearchSwitchesState.Ready && current.save.owesChange()) return
+        if (reading || (current is SearchSwitchesState.Ready && current.save.failed)) return
+        reading = true
         if (current !is SearchSwitchesState.Ready) _state.value = SearchSwitchesState.Loading
+        val seen = changes
         viewModelScope.launch {
-            connection.awaitSaves()
-            connection
-                .consoleCall(TAG) { _, client -> client.userConfiguration() }
-                .fold(
-                    onSuccess = { configuration ->
-                        // A change made while this was reading is kept: reading over it would drop it.
-                        val owed = (_state.value as? SearchSwitchesState.Ready)?.save?.owesChange() == true
-                        if (!owed) {
-                            saves.loaded(configuration)
-                            _state.value = SearchSwitchesState.Ready(configuration)
-                        }
-                    },
-                    onFailure = { error ->
-                        if (_state.value !is SearchSwitchesState.Ready) _state.value = SearchSwitchesState.Failed(error.consoleFailure())
-                    },
-                )
+            try {
+                // Sent now and answered when the server has it; what comes back is a change that could not be sent.
+                if (saves.settle().await() != null) return@launch
+                connection.awaitSaves()
+                connection
+                    .consoleCall(TAG) { _, client -> client.userConfiguration() }
+                    .fold(
+                        onSuccess = { configuration ->
+                            if (changes == seen) {
+                                saves.loaded(configuration)
+                                _state.value = SearchSwitchesState.Ready(configuration)
+                            }
+                        },
+                        onFailure = { error ->
+                            if (_state.value !is SearchSwitchesState.Ready) {
+                                _state.value =
+                                    SearchSwitchesState.Failed(error.consoleFailure())
+                            }
+                        },
+                    )
+            } finally {
+                reading = false
+            }
         }
     }
 
@@ -127,10 +143,10 @@ class SearchSwitchesViewModel(
         key: String,
         on: Boolean,
     ) {
-        if (_state.value is SearchSwitchesState.Ready) saves.set(key, JsonPrimitive(on))
+        if (_state.value !is SearchSwitchesState.Ready) return
+        changes++
+        saves.set(key, JsonPrimitive(on))
     }
-
-    private fun SaveProgress.owesChange() = failed || status == SaveStatus.Saving
 
     private companion object {
         const val TAG = "JellyfinSearchSwitches"
