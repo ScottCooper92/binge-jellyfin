@@ -61,6 +61,24 @@ class JellyfinScreenshotTest {
     @Composable
     fun serverNotJellyfin() = JellyfinRoot(previewEnterServerNotJellyfin, Actions())
 
+    /** A public plain-HTTP address: the warning and the agreement beside it, with Connect waiting. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun serverInsecure() = JellyfinRoot(previewEnterServerInsecure, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun serverInsecureAgreed() = JellyfinRoot(previewEnterServerInsecureAgreed, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun serverCleartextRefused() = JellyfinRoot(previewEnterServerCleartextRefused, Actions())
+
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable

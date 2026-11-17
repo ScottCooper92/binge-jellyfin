@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
                     analytics = graph.analytics,
                     onSessionEnded = graph::clearAccountCaches,
                     addressPolicy = graph.addressPolicy,
+                    cleartext = graph.cleartextConsent,
                 )
             }
         }
@@ -143,6 +144,7 @@ class MainActivity : ComponentActivity() {
                 viewModel.signInActions().copy(
                     onAddress = viewModel::onAddress,
                     onConnect = viewModel::connect,
+                    onAllowCleartext = viewModel::allowCleartext,
                     onTryDemo = viewModel::tryDemo,
                     onChangeServer = viewModel::changeServer,
                     onRecheckServer = { viewModel.changeServer(recheck = true) },

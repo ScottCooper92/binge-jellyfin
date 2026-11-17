@@ -46,6 +46,7 @@ import androidx.tv.material3.Text
 import com.binge.designsystem.theme.BingeShapes
 import com.binge.designsystem.tv.component.BingeTvInitialsAvatar
 import com.binge.designsystem.tv.component.TvButton
+import com.binge.designsystem.tv.component.TvCheckboxRow
 import com.binge.designsystem.tv.component.TvConfirmDialog
 import com.binge.designsystem.tv.component.TvOptionRow
 import com.binge.designsystem.tv.component.TvQrCode
@@ -137,6 +138,17 @@ private fun TvServerPage(
                 fillWidth = true,
                 modifier = Modifier.focusRequester(entry),
             )
+            if (state.insecureHost != null) {
+                // A checkbox under the field it qualifies, with the reason beside it. Connect goes on once it is ticked.
+                TvCheckboxRow(
+                    label = stringResource(R.string.setup_allow_cleartext),
+                    checked = state.cleartextAllowed,
+                    onCheckedChange = actions.onAllowCleartext,
+                    enabled = !state.checking,
+                )
+                // Its own line, so the reason is read in full: a row's supporting text would be cut at one line.
+                TvStatusLine(stringResource(R.string.setup_insecure_warning), isError = true, lines = 1, capped = false)
+            }
             TvStatusLine(state.error?.let { errorText(it) }, isError = true, lines = 1, capped = false)
             TvButton(
                 label = stringResource(R.string.setup_connect),
