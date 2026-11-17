@@ -274,13 +274,16 @@ class AppGraph(
         )
     }
 
+    /** Consumes a tip that completed while the app was closed, in the app's scope: a tip Play does not see acknowledged is refunded. */
+    fun settleTips() = settleTipsAtStart(tipBilling, scope)
+
     /** Asks for the review card in the app's scope, so the ask outlives the screen that made it. */
     fun askForReview(activity: Activity) {
         scope.launch { reviewPrompt.maybeAsk(activity) }
     }
 
     /** The tip jar's store: Google Play in a release build, a stand-in in a debug one, which is installed over adb where Play sells nothing. */
-    internal val tipBilling: TipBilling by lazy { if (BuildConfig.DEBUG) DebugTipBilling() else PlayTipBilling(appContext) }
+    internal val tipBilling: TipBilling by lazy { if (BuildConfig.DEBUG) DebugTipBilling() else PlayTipBilling(appContext, scope) }
 
     /** The one owner of "may analytics report"; every backend registers with it. */
     val consentGate: AnalyticsConsentGate by lazy {
