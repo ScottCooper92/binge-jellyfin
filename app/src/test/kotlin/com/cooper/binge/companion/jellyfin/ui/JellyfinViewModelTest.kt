@@ -685,6 +685,63 @@ class JellyfinViewModelTest {
         assertEquals(listOf("jellyfin.example.com"), consent.granted)
     }
 
+    @Test
+    fun `a guard that refuses after the user agreed is a refusal, not a connection`() {
+        val vm = viewModel(AddressPolicy.Shared, guardedConnection())
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("http://jellyfin.example.com")
+        vm.allowCleartext(true)
+        vm.connect()
+
+        assertEquals(SetupError.CleartextRefused, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `checking again after agreeing to a plain HTTP public host rechecks it`() {
+        jellyfin.startupWizardCompleted = false
+        val fake = jellyfin.baseUrl.toHttpUrl()
+        val reaching =
+            Connection(
+                OkHttpClient
+                    .Builder()
+                    .addInterceptor { chain ->
+                        val url =
+                            chain
+                                .request()
+                                .url
+                                .newBuilder()
+                                .scheme("http")
+                                .host(fake.host)
+                                .port(fake.port)
+                                .build()
+                        chain.proceed(
+                            chain
+                                .request()
+                                .newBuilder()
+                                .url(url)
+                                .build(),
+                        )
+                    }.build(),
+                sessions,
+                "Jellyfin Companion",
+                "Test",
+                "1.0",
+                Dispatchers.IO,
+                DiscardLogger,
+            ).also { extraConnections += it }
+        val vm = viewModel(AddressPolicy.Shared, reaching, RecordingConsent())
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("http://jellyfin.example.com")
+        vm.allowCleartext(true)
+        vm.connect()
+        assertTrue(vm.await<UiState.SignIn>().server.setupIncomplete)
+
+        jellyfin.startupWizardCompleted = true
+        vm.changeServer(recheck = true)
+
+        assertFalse(vm.await<UiState.SignIn>().server.setupIncomplete)
+    }
+
     private class RecordingConsent : CleartextConsent {
         val granted = mutableListOf<String>()
 

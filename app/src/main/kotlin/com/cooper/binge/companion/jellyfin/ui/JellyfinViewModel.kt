@@ -569,7 +569,9 @@ class JellyfinViewModel(
                 is UiState.SignedIn -> current.session.baseUrl
                 else -> ""
             }
-        _state.value = enterServer(addressPolicy, address)
+        // Reaching the sign-in step took a connect, which had the agreement, so a recheck from it keeps it.
+        val agreed = _state.value is UiState.SignIn
+        _state.value = enterServer(addressPolicy, address).let { it.copy(cleartextAllowed = agreed && it.insecureHost != null) }
         if (recheck && address.isNotBlank()) connect()
     }
 
