@@ -1,10 +1,10 @@
 package com.cooper.binge.companion.jellyfin.auth
 
+import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.server.address.ServerAddress
 import com.cooper.homelab.core.server.connection.DeviceIdentity
 import com.cooper.homelab.core.server.connection.SavedServer
 import com.cooper.homelab.core.server.connection.ServerRegistry
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -55,7 +55,6 @@ class RegistrySessionStore(
 
     override suspend fun current(): JellyfinSession? = session.first()
 
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun save(session: JellyfinSession): Boolean {
         ready()
         val address = ServerAddress.parse(session.baseUrl) ?: return false
@@ -63,13 +62,8 @@ class RegistrySessionStore(
         val existing = registry.current().activeServer
         val id = existing?.id ?: serverIdentity.currentServerId()
         // The login goes first. It encrypts before it writes, so a keymaster that throws leaves the registry exactly as it was.
-        try {
-            logins.save(id, JellyfinLogin(session.serverId, session.serverVersion, session.userId, session.userName, session.token))
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Exception) {
-            return false
-        }
+        val login = JellyfinLogin(session.serverId, session.serverVersion, session.userId, session.userName, session.token)
+        if (attempt { logins.save(id, login) }.isFailure) return false
         if (existing != null) {
             registry.update(existing.copy(address = address, name = name))
         } else {
