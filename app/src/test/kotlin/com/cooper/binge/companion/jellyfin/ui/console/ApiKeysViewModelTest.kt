@@ -8,6 +8,9 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
+import com.cooper.homelab.core.diagnostics.Redactor
+import com.cooper.homelab.core.diagnostics.RingLog
+import com.cooper.homelab.core.foundation.Clock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -24,7 +27,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.shadows.ShadowLog
+import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -32,7 +35,15 @@ class ApiKeysViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
     private val teardown = ViewModelTeardown()
-    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+    private val ring =
+        RingLog(
+            Clock { Instant.fromEpochMilliseconds(0) },
+            Redactor(),
+            serverOrder = { emptyList() },
+            ownPackages = listOf("com.cooper.binge."),
+        )
+    private val connection =
+        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, ring))
 
     private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
 
@@ -152,10 +163,9 @@ class ApiKeysViewModelTest {
         vm.remove()
         val failed = vm.ready { it.actionFailed != null }
         assertEquals(2, failed.keys.size)
-        val logged =
-            ShadowLog.getLogs().flatMap { listOfNotNull(it.msg, it.throwable?.message, it.throwable?.toString()) }
-        assertTrue(logged.any { "Console call failed" in it || "Jellyfin answered 500" in it })
-        assertTrue(logged.none { sonarr.key in it })
+        val logged = ring.render()
+        assertTrue("console call failed" in logged)
+        assertFalse(sonarr.key in logged)
     }
 
     @Test
