@@ -462,6 +462,7 @@ class JellyfinScreenshotTest {
     /** The This app page with the tip jar priced, so its row shows. */
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun thisAppWithTipJar() = ThisAppScreen(Actions(), onBack = {}, tip = TipState.Ready(TIP_STEPS.associateWith { "£$it" }))
