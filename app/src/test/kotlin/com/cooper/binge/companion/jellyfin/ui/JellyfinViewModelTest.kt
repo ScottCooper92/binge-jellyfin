@@ -635,6 +635,17 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `leaving a plain HTTP public host's session brings back the row asking for agreement`() {
+        runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
+        val vm = viewModel(AddressPolicy.Shared)
+        vm.signOut()
+
+        val asked = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
+        assertEquals("jellyfin.example.com", asked.insecureHost)
+        assertFalse(asked.canConnect)
+    }
+
+    @Test
     fun `an address that needs no agreement asks for none`() {
         val vm = viewModel(AddressPolicy.Shared)
         vm.await<UiState.EnterServer>()
