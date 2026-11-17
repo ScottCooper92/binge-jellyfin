@@ -215,7 +215,7 @@ class MetadataDefaultsViewModelTest {
     fun `opening a type's screen clears what the last screen reported`() {
         val vm = made(MetadataDefaultsViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
         vm.ready { it.refused != null }
         vm.itemOpened()
@@ -227,7 +227,7 @@ class MetadataDefaultsViewModelTest {
         val vm = made(MetadataDefaultsViewModel(connection))
         vm.ready()
         vm.itemOpened()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
         vm.ready { it.refused != null }
         vm.itemClosed()
@@ -240,7 +240,7 @@ class MetadataDefaultsViewModelTest {
         vm.ready()
         vm.itemOpened()
         vm.itemOpened()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.move("Movie", FetcherKind.Metadata, "TheMovieDb", 1)
         vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", false)
         vm.ready { it.refused != null }
@@ -279,7 +279,7 @@ class MetadataDefaultsViewModelTest {
     fun `a refused save puts the switch back and says so`() {
         val vm = made(MetadataDefaultsViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
 
         vm.set("Movie", FetcherKind.Metadata, "TheMovieDb", enabled = false)
 

@@ -1,14 +1,19 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import com.binge.designsystem.SaveStatus
-import com.binge.designsystem.save.SaveAsMade
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.saveUserConfiguration
+import com.cooper.binge.companion.jellyfin.server.serverFailure
+import com.cooper.homelab.core.presentation.editor.SaveAsMade
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import com.cooper.homelab.core.presentation.editor.SaveStatus as EngineStatus
 
 /** Where a page's saves stand, for [FormSaveStatus]: the last write's [status], and whether a change is [failed], unsent. */
 data class SaveProgress(
@@ -17,7 +22,7 @@ data class SaveProgress(
 )
 
 /**
- * Saves a configuration as a page's changes are made, through the design system's [SaveAsMade]: the user's own by
+ * Saves a configuration as a page's changes are made, through the shared library's [SaveAsMade]: the user's own by
  * default, or another that [save] sends (the server's, its branding). Jellyfin has no partial update, so each write
  * sends the whole configuration as the page shows it, with every key it was given kept, and writes take turns, each
  * built on the last. A burst of changes is one write.
@@ -31,7 +36,7 @@ data class SaveProgress(
  */
 internal class ConfigurationSaves(
     private val connection: Connection,
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
     private val tag: String,
     private val save: suspend (JellyfinSession, JellyfinClient, JsonObject) -> Unit = { session, client, configuration ->
         client.saveUserConfiguration(session.userId, configuration)
@@ -69,13 +74,16 @@ internal class ConfigurationSaves(
                 report(progress.copy(failed = failed))
                 if (failed) onShown(shown, ConsoleFailure.Unreachable)
             },
-            isTransient = { error -> error.consoleFailure() == ConsoleFailure.Unreachable },
-            status = { status -> report(progress.copy(status = status)) },
-            refused = { error ->
-                shown = saved
-                onShown(shown, error.consoleFailure())
-            },
+            // The shared rules: a 5xx is the server failing, so the change is kept unsent and offered again, not put back.
+            isTransient = { error -> error.serverFailure().isTransient },
+            status = { status -> report(progress.copy(status = status.shown())) },
+            refused = ::refuse,
         )
+
+    private fun refuse(error: Throwable) {
+        shown = saved
+        onShown(shown, error.consoleFailure())
+    }
 
     private fun report(next: SaveProgress) {
         progress = next
@@ -115,8 +123,18 @@ internal class ConfigurationSaves(
         engine.changed()
     }
 
-    /** Sends a change still waiting, after any write running; the answer completes when the server has it. */
-    fun settle() = engine.settle()
+    /**
+     * Sends a change still waiting, after any write running; the answer completes when the server has it. A write the server
+     * refuses meanwhile is told to the page, and answers nothing.
+     */
+    fun settle(): Deferred<JsonObject?> {
+        val settled = engine.settle()
+        return connection.saveScope.async(connection.io) {
+            val answer = settled.await()
+            answer.refusal?.let { scope.launch { refuse(it) } }
+            answer.kept
+        }
+    }
 
     /**
      * Sends the change a failed write left unsent. Nothing happens if the last write did not fail: Jellyfin has no
@@ -132,8 +150,8 @@ internal class ConfigurationSaves(
      * [Connection.awaitSaves] waits for, so a page opened next reads it.
      */
     fun cleared() {
-        val owed = engine.settle()
-        connection.launchSave { owed.await() }
+        val owed = engine.cleared()
+        connection.launchSave { owed.join() }
     }
 }
 
@@ -169,3 +187,11 @@ internal fun combined(
             ?: SaveStatus.Idle
     return SaveProgress(status, first.failed || second.failed)
 }
+
+/** The shared engine's status as the design system's, which the pages' status line reads. */
+private fun EngineStatus.shown(): SaveStatus =
+    when (this) {
+        EngineStatus.Idle -> SaveStatus.Idle
+        EngineStatus.Saving -> SaveStatus.Saving
+        EngineStatus.Saved -> SaveStatus.Saved
+    }

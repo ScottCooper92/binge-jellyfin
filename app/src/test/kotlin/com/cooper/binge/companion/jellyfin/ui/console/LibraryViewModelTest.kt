@@ -165,7 +165,7 @@ class LibraryViewModelTest {
     fun `a refused save puts the option back and says so`() {
         val vm = made(LibraryViewModel(connection, movies))
         vm.ready()
-        jellyfin.status["/Library/VirtualFolders/LibraryOptions"] = 500
+        jellyfin.status["/Library/VirtualFolders/LibraryOptions"] = 409
         vm.set(LIBRARY_REALTIME, JsonPrimitive(true))
         val failed = vm.ready { it.refused != null }
         assertEquals(JsonPrimitive(false), failed.options[LIBRARY_REALTIME])

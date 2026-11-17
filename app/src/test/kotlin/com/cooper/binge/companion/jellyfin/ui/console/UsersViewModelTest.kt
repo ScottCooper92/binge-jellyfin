@@ -422,7 +422,7 @@ class UsersViewModelTest {
         held.awaitArrival()
         // The form is dismissed while the call is still running, then the call fails.
         vm.show(null)
-        held.refuse(500)
+        held.refuse(409)
         val failed = vm.ready { it.actionFailed != null }
         assertEquals(ConsoleFailure.Refused, failed.actionFailed)
         assertNull(failed.formFailure)
@@ -452,7 +452,7 @@ class UsersViewModelTest {
         val other = vm.ready().users.first { it.id != sam.id && it.id != vm.ready().me }
         vm.select(other.id)
         vm.show(UserDialog.Password)
-        held.refuse(500)
+        held.refuse(409)
         val failed = vm.ready { it.actionFailed != null }
         assertEquals(ConsoleFailure.Refused, failed.actionFailed)
         assertNull(failed.formFailure)

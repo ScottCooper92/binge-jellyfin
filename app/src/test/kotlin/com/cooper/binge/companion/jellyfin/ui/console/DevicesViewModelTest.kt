@@ -191,7 +191,7 @@ class DevicesViewModelTest {
         held.awaitArrival()
         // The form is dismissed while the call is still running, then the call fails.
         vm.askRename(null)
-        held.refuse(500)
+        held.refuse(409)
         val failed = vm.ready { it.actionFailed != null }
         assertEquals(ConsoleFailure.Refused, failed.actionFailed)
         assertNull(failed.formFailure)

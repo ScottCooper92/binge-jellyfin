@@ -90,7 +90,7 @@ class LibraryRouteRecreationTest {
         show()
         waitFor("Name")
         compose.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(hasText("Enabled"))
-        jellyfin.status["/Library/VirtualFolders/LibraryOptions"] = 500
+        jellyfin.status["/Library/VirtualFolders/LibraryOptions"] = 409
         compose.onNodeWithText("Enabled").performClick()
         compose.waitUntil(TIMEOUT_MILLIS) { compose.onAllNodes(hasText("Not saved", substring = true)).fetchSemanticsNodes().isNotEmpty() }
         compose.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(hasText("Download languages"))

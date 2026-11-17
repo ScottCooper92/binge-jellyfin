@@ -126,7 +126,7 @@ class LibraryDisplayViewModelTest {
     fun `a refused save puts the setting back and says so`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
         val failed = vm.ready { it.refused != null }
         assertEquals(JsonPrimitive(false), failed.configuration[DISPLAY_FOLDER_VIEW])
@@ -164,7 +164,7 @@ class LibraryDisplayViewModelTest {
     fun `a refusal on a list's editor is cleared when the editor closes, and a page sheet stays`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
         vm.ready { it.refused != null }
         vm.sheet(DisplaySheet.NewEntry)
@@ -178,7 +178,7 @@ class LibraryDisplayViewModelTest {
     fun `opening a list's editor clears what the last screen reported`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
         vm.ready { it.refused != null }
         vm.sheet(DisplaySheet.NewEntry)
@@ -192,7 +192,7 @@ class LibraryDisplayViewModelTest {
     fun `a refused list save puts the list back and says so`() {
         val vm = made(LibraryDisplayViewModel(connection))
         vm.ready()
-        jellyfin.status[CONFIGURATION] = 500
+        jellyfin.status[CONFIGURATION] = 409
         vm.remove(DisplayList.RemoveWords, 0)
         val failed = vm.ready { it.refused != null }
         assertEquals(listOf(ListEntry("the"), ListEntry("a")), failed.configuration.entries(DisplayList.RemoveWords))

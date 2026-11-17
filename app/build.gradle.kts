@@ -211,6 +211,8 @@ dependencies {
     implementation(libs.binge.designsystem.tv)
     implementation(libs.homelab.appservices)
     implementation(libs.homelab.server)
+    // The save-as-made engine behind every settings page that saves as it is changed.
+    implementation(libs.homelab.presentation)
     // The vendor adapters behind it: Google Play (the review card and the tip jar), PostHog and Firebase.
     implementation(libs.homelab.appservices.play)
     implementation(libs.homelab.appservices.posthog)
