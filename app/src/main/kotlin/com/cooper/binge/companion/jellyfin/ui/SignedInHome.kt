@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.Dp
 import com.binge.designsystem.component.BingePullToRefresh
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
-import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchEntry
+import com.cooper.homelab.core.uiandroid.search.SettingsSearchEntry
 import com.binge.designsystem.R as DesR
 
 /**
@@ -45,7 +45,7 @@ internal fun SignedInHome(
             contentPadding = inner,
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
         ) {
-            item { SettingsSearchEntry { actions.onOpenPage(ConsolePage.Search) } }
+            item { SettingsSearchEntry(onClick = { actions.onOpenPage(ConsolePage.Search) }) }
             item { ServerHomeCard(state) }
             if ((state.card.tmdb?.withoutTmdbId ?: 0) > 0) item { TmdbCoverageNote(state.card.tmdb) }
             if (state.needsFirstLibrary()) item { FirstLibraryCard { actions.onOpenPage(ConsolePage.Libraries) } }

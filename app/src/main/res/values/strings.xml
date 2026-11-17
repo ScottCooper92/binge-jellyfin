@@ -1437,13 +1437,6 @@
     <string name="users_schedule_midnight">An until time of midnight means the end of this day.</string>
     <string name="users_schedule_order">Until must be later than From.</string>
 
-    <string name="search_title">Search settings</string>
-    <string name="search_prompt">Type the name of a setting, or what it does.</string>
-    <string name="search_no_match_title">No settings found</string>
-    <string name="search_no_match">Nothing matches that. Try another word.</string>
-    <string name="search_path">%1$s › %2$s</string>
-    <string name="search_recent">Recent search results</string>
-    <string name="search_recent_clear">Clear</string>
     <string name="kw_quick_connect">pair link code sign in device</string>
     <string name="kw_playback">audio language subtitles autoplay next episode</string>
     <string name="kw_picture">avatar photo image</string>

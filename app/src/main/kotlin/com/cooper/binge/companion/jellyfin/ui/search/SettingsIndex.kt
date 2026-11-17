@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.search
 
+import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Backup
@@ -44,43 +45,32 @@ import com.cooper.binge.companion.jellyfin.server.NETWORK_BASE_URL
 import com.cooper.binge.companion.jellyfin.server.NETWORK_ENABLE_HTTPS
 import com.cooper.binge.companion.jellyfin.server.NETWORK_REMOTE_ACCESS
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
-import java.text.Normalizer
+import com.cooper.homelab.core.presentation.search.SettingEntry
 
 /**
- * One thing the search can take the user to: a whole page, or one setting on it. [path] names where it is (the section, and for a setting
- * its page too), as Android's own Settings search shows "Device > Display and touch". [keywords] is one string of other words people
- * look for it by ("gpu" for hardware acceleration), translated with the rest. Opening an entry opens its [page]: scrolling to the setting
- * is a follow-up.
+ * An entry's stable name, to remember it by: its page and its label's resource name. A resource's number changes from build to build, its
+ * name does not. These are the ids the recents have always held, so nobody loses theirs.
  */
-internal class SettingEntry(
-    val page: ConsolePage,
-    @StringRes val label: Int,
-    val icon: ImageVector,
-    @StringRes val section: Int,
-    /** The page a setting is on, or null for an entry that is the page itself. */
-    @StringRes val pageLabel: Int? = null,
-    @StringRes val keywords: Int? = null,
-    /** A gate of the entry's own, for a setting its page hides on some servers or accounts; the page's own gate is applied besides. */
-    val shown: (JellyfinServerProfile, JellyfinAccount) -> Boolean = { _, _ -> true },
-    /** The row to scroll to and wash on the page, by the key the page gives its [com.binge.designsystem.component.ListItem]; null opens the page at the top. */
-    val row: String? = null,
-)
+private fun Resources.entryId(
+    page: ConsolePage,
+    @StringRes label: Int,
+) = "${page.name}:${getResourceEntryName(label)}"
 
-/** Whether the search may offer this entry: its page is open to the user, and its own gate, if it has one, passes. */
-internal fun SettingEntry.available(
-    profile: JellyfinServerProfile,
-    account: JellyfinAccount,
-): Boolean = page.available(profile, account) && shown(profile, account)
-
-private fun page(
+private fun Resources.page(
     page: ConsolePage,
     @StringRes label: Int,
     icon: ImageVector,
     @StringRes section: Int,
     @StringRes keywords: Int? = null,
-) = SettingEntry(page, label, icon, section, null, keywords)
+) = SettingEntry(
+    id = entryId(page, label),
+    label = text(label),
+    section = text(section),
+    target = SearchTarget(page, icon),
+    keywords = keywords?.let(::text),
+)
 
-private fun setting(
+private fun Resources.setting(
     page: ConsolePage,
     @StringRes label: Int,
     icon: ImageVector,
@@ -89,13 +79,31 @@ private fun setting(
     @StringRes keywords: Int? = null,
     shown: (JellyfinServerProfile, JellyfinAccount) -> Boolean = { _, _ -> true },
     row: String? = null,
-) = SettingEntry(page, label, icon, section, pageLabel, keywords, shown, row)
+) = SettingEntry(
+    id = entryId(page, label),
+    label = text(label),
+    section = text(section),
+    target = SearchTarget(page, icon, shown),
+    pageLabel = text(pageLabel),
+    keywords = keywords?.let(::text),
+    row = row,
+)
 
 /**
  * Everything the search knows. A page of the console, and each setting worth finding by name, is listed here: a new setting adds its
  * line, and a test holds that every page the home lists has one. An entry shows only where [ConsolePage.available] says the page does.
+ * The list is in order and in five parts, only so that no one function is longer than detekt allows.
  */
-internal val settingsIndex: List<SettingEntry> =
+internal fun settingsIndex(resources: Resources): List<SettingEntry<SearchTarget>> =
+    with(resources) {
+        indexPart1() +
+            indexPart2() +
+            indexPart3() +
+            indexPart4() +
+            indexPart5()
+    }
+
+private fun Resources.indexPart1(): List<SettingEntry<SearchTarget>> =
     listOf(
         // The user's own.
         page(
@@ -105,7 +113,13 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.console_account_title,
             R.string.kw_quick_connect,
         ),
-        page(ConsolePage.Playback, R.string.playback_title, Icons.Outlined.Translate, R.string.console_account_title, R.string.kw_playback),
+        page(
+            ConsolePage.Playback,
+            R.string.playback_title,
+            Icons.Outlined.Translate,
+            R.string.console_account_title,
+            R.string.kw_playback,
+        ),
         page(ConsolePage.HomeLayout, R.string.home_layout_title, Icons.Outlined.Dashboard, R.string.console_account_title),
         page(
             ConsolePage.ProfilePicture,
@@ -114,7 +128,13 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.console_account_title,
             R.string.kw_picture,
         ),
-        page(ConsolePage.Password, R.string.password_title, Icons.Outlined.Password, R.string.console_account_title, R.string.kw_password),
+        page(
+            ConsolePage.Password,
+            R.string.password_title,
+            Icons.Outlined.Password,
+            R.string.console_account_title,
+            R.string.kw_password,
+        ),
         setting(
             ConsolePage.Playback,
             R.string.playback_subtitles,
@@ -133,9 +153,21 @@ internal val settingsIndex: List<SettingEntry> =
         page(ConsolePage.LiveTv, R.string.live_tv_title, Icons.Outlined.LiveTv, R.string.settings_server, R.string.kw_live_tv),
         page(ConsolePage.Users, R.string.users_title, Icons.Outlined.Group, R.string.settings_server, R.string.kw_users),
         page(ConsolePage.Libraries, R.string.libraries_title, Icons.Outlined.Folder, R.string.settings_server, R.string.kw_libraries),
-        page(ConsolePage.Transcoding, R.string.transcoding_title, Icons.Outlined.Memory, R.string.settings_server, R.string.kw_transcoding),
+        page(
+            ConsolePage.Transcoding,
+            R.string.transcoding_title,
+            Icons.Outlined.Memory,
+            R.string.settings_server,
+            R.string.kw_transcoding,
+        ),
         page(ConsolePage.ServerSettings, R.string.server_settings_title, Icons.Outlined.Tune, R.string.settings_server),
-        page(ConsolePage.LibraryDisplay, R.string.display_title, Icons.Outlined.ViewModule, R.string.settings_server, R.string.kw_metadata),
+        page(
+            ConsolePage.LibraryDisplay,
+            R.string.display_title,
+            Icons.Outlined.ViewModule,
+            R.string.settings_server,
+            R.string.kw_metadata,
+        ),
         page(
             ConsolePage.MetadataDefaults,
             R.string.metadata_title,
@@ -143,6 +175,10 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.settings_server,
             R.string.kw_metadata,
         ),
+    )
+
+private fun Resources.indexPart2(): List<SettingEntry<SearchTarget>> =
+    listOf(
         page(ConsolePage.Nfo, R.string.nfo_title, Icons.Outlined.Description, R.string.settings_server, R.string.kw_nfo),
         setting(
             ConsolePage.Nfo,
@@ -194,7 +230,13 @@ internal val settingsIndex: List<SettingEntry> =
         page(ConsolePage.ApiKeys, R.string.api_keys_title, Icons.Outlined.Key, R.string.advanced_title),
         page(ConsolePage.Backups, R.string.backups_title, Icons.Outlined.Backup, R.string.advanced_title),
         page(ConsolePage.Advanced, R.string.advanced_title, Icons.Outlined.Build, R.string.advanced_title),
-        page(ConsolePage.Server, R.string.server_title, Icons.Outlined.SettingsApplications, R.string.advanced_title, R.string.kw_restart),
+        page(
+            ConsolePage.Server,
+            R.string.server_title,
+            Icons.Outlined.SettingsApplications,
+            R.string.advanced_title,
+            R.string.kw_restart,
+        ),
         setting(
             ConsolePage.Server,
             R.string.server_alerts,
@@ -203,6 +245,10 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.server_title,
             R.string.kw_alerts,
         ),
+    )
+
+private fun Resources.indexPart3(): List<SettingEntry<SearchTarget>> =
+    listOf(
         setting(
             ConsolePage.Server,
             R.string.server_storage,
@@ -272,6 +318,10 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.kw_codecs,
             row = SettingRows.transcoding(ENCODING_HEVC),
         ),
+    )
+
+private fun Resources.indexPart4(): List<SettingEntry<SearchTarget>> =
+    listOf(
         setting(
             ConsolePage.Transcoding,
             R.string.transcoding_av1,
@@ -335,6 +385,10 @@ internal val settingsIndex: List<SettingEntry> =
             R.string.advanced_title,
             row = SettingRows.ADVANCED_CACHE,
         ),
+    )
+
+private fun Resources.indexPart5(): List<SettingEntry<SearchTarget>> =
+    listOf(
         setting(
             ConsolePage.Logs,
             R.string.logs_retention_title,
@@ -386,59 +440,3 @@ internal val settingsIndex: List<SettingEntry> =
         ),
         page(ConsolePage.Licences, R.string.licences_title, Icons.Outlined.Description, R.string.settings_group_app),
     )
-
-/** Lower case, accents dropped: "Configuración" and "configuracion" are the same word to someone typing on a phone. */
-internal fun String.searchForm(): String =
-    Normalizer
-        .normalize(lowercase(), Normalizer.Form.NFD)
-        .filter { Character.getType(it) != Character.NON_SPACING_MARK.toInt() }
-
-/** What the user may be offered most at once: past this a longer query is the better help. */
-private const val MAX_RESULTS = 30
-
-private const val SCORE_LABEL_STARTS = 4
-private const val SCORE_WORD_STARTS = 3
-private const val SCORE_OTHER = 1
-
-/**
- * The entries [query] finds among those the user may open ([available]), best first. Every word of the query must match:
- * the label counts most (a word of it must start with the query's word, so "port" does not find "reports"), then the path and the keywords. [text] resolves a string resource in the current language, so the search
- * follows the app's locale with nothing of its own to translate.
- */
-internal fun searchSettings(
-    query: String,
-    entries: List<SettingEntry>,
-    available: (SettingEntry) -> Boolean,
-    text: (Int) -> String,
-): List<SettingEntry> {
-    val words = query.searchForm().split(' ').filter { it.isNotBlank() }
-    if (words.isEmpty()) return emptyList()
-    return entries
-        .filter(available)
-        .mapIndexedNotNull { index, entry ->
-            val label = text(entry.label).searchForm()
-            val other = listOfNotNull(entry.pageLabel, entry.section, entry.keywords).joinToString(" ") { text(it).searchForm() }
-            var total = 0
-            for (word in words) {
-                val score = wordScore(word, label, other)
-                if (score == 0) return@mapIndexedNotNull null
-                total += score
-            }
-            Triple(entry, total, index)
-        }.sortedWith(
-            compareByDescending<Triple<SettingEntry, Int, Int>> { it.second }.thenBy { it.first.pageLabel != null }.thenBy { it.third },
-        ).take(MAX_RESULTS)
-        .map { it.first }
-}
-
-private fun wordScore(
-    word: String,
-    label: String,
-    other: String,
-): Int =
-    when {
-        label.startsWith(word) -> SCORE_LABEL_STARTS
-        label.split(' ').any { it.startsWith(word) } -> SCORE_WORD_STARTS
-        other.split(' ').any { it.startsWith(word) } -> SCORE_OTHER
-        else -> 0
-    }
