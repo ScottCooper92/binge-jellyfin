@@ -59,7 +59,7 @@ If the maintainer prefers a descriptor, `Ephyra for Jellyfin` (20 characters) is
 - Category: Tools
 - Tags: media server, self-hosted, remote control (pick from Play's list; "Jellyfin" is not a tag)
 - Contact email: the maintainer's
-- Privacy policy: https://scottcooper92.github.io/ephyra/privacy/
+- Privacy policy: https://scottcooper92.github.io/app-feedback/ephyra/privacy/
 
 ## Why the text reads the way it does
 
