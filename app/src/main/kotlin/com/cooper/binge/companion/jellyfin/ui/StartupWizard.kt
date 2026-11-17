@@ -178,6 +178,8 @@ class StartupWizard internal constructor(
     fun back() {
         val wizard = state.value as? UiState.Startup ?: return
         state.value = UiState.SignIn(baseUrl = wizard.baseUrl, server = wizard.server)
+        // The step is built anew, so Quick Connect's state is read again, as on the step reached from the server step.
+        scope.loadQuickConnectOn(connection, state, wizard.server.baseUrl, wizard.baseUrl) {}
     }
 
     /** The wizard's calls, as the screens take them. */
