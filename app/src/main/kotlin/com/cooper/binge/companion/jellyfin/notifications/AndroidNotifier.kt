@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.homelab.core.foundation.ServerId
 
 private const val ACTIVITY_NOTIFICATION_ID = 4301
 private const val CONNECTION_NOTIFICATION_ID = 4302
@@ -25,9 +26,10 @@ class AndroidNotifier(
     private val context: Context,
 ) : ActivityNotifier {
     /** App-level notifications on, plus the runtime permission on 13+. A muted channel is not checked: the system drops its posts itself. */
-    override fun canPost(): Boolean = mayPost()
+    override suspend fun canPost(): Boolean = mayPost()
 
-    private fun mayPost(): Boolean =
+    /** The same answer as [canPost], for a screen that reads it as it draws. */
+    fun mayPost(): Boolean =
         NotificationManagerCompat.from(context).areNotificationsEnabled() &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
@@ -45,7 +47,7 @@ class AndroidNotifier(
         )
     }
 
-    override suspend fun notifyConnectionProblem() =
+    override fun notifyConnectionProblem(server: ServerId) =
         post(
             id = CONNECTION_NOTIFICATION_ID,
             channel = CONNECTION_CHANNEL,
@@ -56,9 +58,10 @@ class AndroidNotifier(
             body = context.getString(R.string.notif_connection_body),
         )
 
-    override suspend fun cancelConnectionProblem() = NotificationManagerCompat.from(context).cancel(CONNECTION_NOTIFICATION_ID)
+    override fun cancelConnectionProblem(server: ServerId) = NotificationManagerCompat.from(context).cancel(CONNECTION_NOTIFICATION_ID)
 
-    override fun cancelActivity() = NotificationManagerCompat.from(context).cancel(ACTIVITY_NOTIFICATION_ID)
+    /** The app holds one server, so every activity notice is this server's. */
+    override fun cancelNotices(server: ServerId) = NotificationManagerCompat.from(context).cancel(ACTIVITY_NOTIFICATION_ID)
 
     /** [mayPost] guards the permission, but lint follows only a check inlined in the same method. */
     @SuppressLint("MissingPermission")

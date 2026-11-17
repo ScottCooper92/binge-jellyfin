@@ -1,9 +1,13 @@
 package com.cooper.binge.companion.jellyfin.notifications
 
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
+import com.cooper.binge.companion.jellyfin.auth.ServerIdentity
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.homelab.core.notifications.CheckResult
+import com.cooper.homelab.core.notifications.FeedCursorKey
 import com.cooper.homelab.core.testing.InMemoryDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -23,9 +27,14 @@ class ActivityCheckerTest {
     private val jellyfin = FakeJellyfin().apply { administrator = true }
     private val sessions = testSessionStore()
     private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
-    private val prefs = NotificationPrefs(InMemoryDataStore())
+    private val prefsStore = InMemoryDataStore()
+    private val prefs = NotificationPrefs(prefsStore)
+    private val cursors = testFeedCursors()
+    private val serverIdentity = ServerIdentity(InMemoryDataStore())
     private val notifier = FakeNotifier()
-    private val checker = ActivityChecker(connection, prefs, notifier)
+    private val checker = ActivityChecker(connection, cursors, LegacyActivityCursor(prefs), serverIdentity, notifier, DiscardLogger)
+
+    private suspend fun cursor(userId: String) = cursors.get(FeedCursorKey(serverIdentity.currentServerId(), userId, "activity"))
 
     @After
     fun close() {
@@ -44,7 +53,7 @@ class ActivityCheckerTest {
             jellyfin.activityEntries = listOf(activityJson(3, "AuthenticationFailed"), activityJson(2, "UserLockedOut"))
             assertEquals(CheckResult.Ok, checker.check())
             assertTrue(notifier.summaries.isEmpty())
-            assertEquals(3L, prefs.cursor("server-1/user-1")?.id)
+            assertEquals("3", cursor("user-1"))
         }
 
     @Test
@@ -65,7 +74,7 @@ class ActivityCheckerTest {
                 )
             assertEquals(CheckResult.Ok, checker.check())
             assertEquals(listOf(ActivitySummary(failedSignIns = 2, lockouts = 1, problems = 2)), notifier.summaries)
-            assertEquals(9L, prefs.cursor("server-1/user-1")?.id)
+            assertEquals("9", cursor("user-1"))
             // Read again with nothing new: no second notification.
             checker.check()
             assertEquals(1, notifier.summaries.size)
@@ -92,7 +101,7 @@ class ActivityCheckerTest {
             jellyfin.activityEntries = listOf(activityJson(6, "AuthenticationFailed"), activityJson(5, "SessionStarted"))
             checker.check()
             assertTrue(notifier.summaries.isEmpty())
-            assertEquals(6L, prefs.cursor("server-1/user-2")?.id)
+            assertEquals("6", cursor("user-2"))
         }
 
     @Test
@@ -100,7 +109,7 @@ class ActivityCheckerTest {
         runBlocking {
             jellyfin.administrator = false
             signIn()
-            assertEquals(CheckResult.NotAdministrator, checker.check())
+            assertEquals(CheckResult.StopPolling, checker.check())
             assertEquals(0, logRequests())
         }
 
@@ -140,15 +149,58 @@ class ActivityCheckerTest {
         }
 
     @Test
-    fun `the log is asked for from the cursor's date, and the token stays in the header`() =
+    fun `the newest entries are read with no date, and the token stays in the header`() =
         runBlocking {
             signIn()
             jellyfin.activityEntries = listOf(activityJson(2, "SessionStarted", date = "2026-11-01T10:00:00Z"))
             checker.check()
             checker.check()
             val read = jellyfin.requests.last { it.url.encodedPath == "/System/ActivityLog/Entries" }
-            assertEquals("2026-11-01T10:00:00Z", read.url.queryParameter("minDate"))
+            assertEquals("100", read.url.queryParameter("limit"))
             assertFalse(read.url.toString().contains("token-1"))
             assertNotNull(read.headers["Authorization"])
+        }
+
+    @Test
+    fun `the cursor the released version kept carries over and nothing is announced twice`() =
+        runBlocking {
+            signIn()
+            prefsStore.writeReleasedCursor("server-1/user-1", id = 2, dateMillis = 1_000L)
+            jellyfin.activityEntries = listOf(activityJson(3, "AuthenticationFailed"), activityJson(2, "SessionStarted"))
+
+            assertEquals(CheckResult.Ok, checker.check())
+
+            // Entry 3 is past the old cursor, so it is announced rather than seeded away.
+            assertEquals(listOf(ActivitySummary(failedSignIns = 1)), notifier.summaries)
+            assertEquals("3", cursor("user-1"))
+            checker.check()
+            assertEquals(1, notifier.summaries.size)
+        }
+
+    @Test
+    fun `a released cursor of another account is not used`() =
+        runBlocking {
+            signIn()
+            prefsStore.writeReleasedCursor("server-1/someone-else", id = 1, dateMillis = null)
+            jellyfin.activityEntries = listOf(activityJson(3, "AuthenticationFailed"))
+
+            checker.check()
+
+            assertTrue(notifier.summaries.isEmpty())
+            assertEquals("3", cursor("user-1"))
+        }
+
+    @Test
+    fun `the released cursor never overwrites one the shared store already holds`() =
+        runBlocking {
+            signIn()
+            jellyfin.activityEntries = listOf(activityJson(5, "SessionStarted"))
+            checker.check()
+            prefsStore.writeReleasedCursor("server-1/user-1", id = 1, dateMillis = null)
+            jellyfin.activityEntries = listOf(activityJson(6, "VideoPlayback"), activityJson(5, "SessionStarted"))
+
+            checker.check()
+
+            assertEquals("6", cursor("user-1"))
         }
 }

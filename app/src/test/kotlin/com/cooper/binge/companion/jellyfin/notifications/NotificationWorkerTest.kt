@@ -5,7 +5,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
+import com.cooper.binge.companion.jellyfin.auth.ServerIdentity
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.homelab.core.testing.InMemoryDataStore
@@ -25,13 +27,15 @@ class NotificationWorkerTest {
     private val jellyfin = FakeJellyfin().apply { administrator = true }
     private val sessions = testSessionStore()
     private val prefs = NotificationPrefs(InMemoryDataStore())
+    private val serverIdentity = ServerIdentity(InMemoryDataStore())
     private val notifier = FakeNotifier()
     private val scheduler = FakeScheduler()
     private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
     private val runner =
         PollRunner(
-            ActivityChecker(connection, prefs, notifier),
-            PollReactor(notifier, scheduler, prefs),
+            ActivityChecker(connection, testFeedCursors(), LegacyActivityCursor(prefs), serverIdentity, notifier, DiscardLogger),
+            pollReactor(notifier, scheduler, prefs) { false },
+            serverIdentity,
         )
 
     @After

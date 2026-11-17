@@ -1,8 +1,10 @@
 package com.cooper.binge.companion.jellyfin.notifications
 
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
+import com.cooper.binge.companion.jellyfin.auth.ServerIdentity
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.homelab.core.telemetry.NoOpCrashBreadcrumbs
 import com.cooper.homelab.core.testing.InMemoryDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +31,7 @@ class NotificationPlannerTest {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        NotificationPlanner(sessions, prefs, scheduler, notifier, scope).start()
+        NotificationPlanner(sessions, prefs, ServerIdentity(InMemoryDataStore()), scheduler, notifier, scope, NoOpCrashBreadcrumbs).start()
     }
 
     @After

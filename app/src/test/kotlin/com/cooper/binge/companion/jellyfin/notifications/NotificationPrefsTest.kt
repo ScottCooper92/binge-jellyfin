@@ -10,7 +10,8 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class NotificationPrefsTest {
-    private val prefs = NotificationPrefs(InMemoryDataStore())
+    private val store = InMemoryDataStore()
+    private val prefs = NotificationPrefs(store)
 
     @Test
     fun `it is off, at the default interval, until the user says otherwise`() =
@@ -31,9 +32,9 @@ class NotificationPrefsTest {
     }
 
     @Test
-    fun `the cursor belongs to one account, and turning the switch on drops it`() =
+    fun `the released cursor belongs to one account, and turning the switch on drops it`() =
         runBlocking {
-            prefs.setCursor("a/b", ActivityCursor(4, 1000L))
+            store.writeReleasedCursor("a/b", id = 4, dateMillis = 1000L)
             assertEquals(ActivityCursor(4, 1000L), prefs.cursor("a/b"))
             assertNull(prefs.cursor("a/c"))
             prefs.setEnabled(false)
@@ -43,10 +44,9 @@ class NotificationPrefsTest {
         }
 
     @Test
-    fun `a cursor without a date reads back without one`() =
+    fun `a released cursor without a date reads back without one`() =
         runBlocking {
-            prefs.setCursor("a/b", ActivityCursor(4, 1000L))
-            prefs.setCursor("a/b", ActivityCursor(5, null))
+            store.writeReleasedCursor("a/b", id = 5, dateMillis = null)
             assertEquals(ActivityCursor(5, null), prefs.cursor("a/b"))
         }
 }
