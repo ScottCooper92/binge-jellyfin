@@ -11,6 +11,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.serverFailure
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.homelab.core.presentation.search.SearchAccess
 import com.cooper.homelab.core.presentation.search.SettingsSearchViewModel
 import com.cooper.homelab.core.uiandroid.search.SettingsSearchScreen
 
@@ -37,7 +38,7 @@ internal fun SettingsSearchRoute(
                 appScope = graph.appScope,
                 dispatcher = graph.ioDispatcher,
                 entries = entries,
-                loadAvailability = { { entry -> entry.available(profile, account) } },
+                loadAvailability = { SearchAccess({ entry -> entry.available(profile, account) }, Unit) },
                 recents = graph.recentSearches,
                 classify = { error -> error.serverFailure() },
             )
@@ -47,7 +48,7 @@ internal fun SettingsSearchRoute(
         state = state,
         entries = entries,
         icon = { it.target.icon },
-        onOpen = { entry ->
+        onOpen = { entry, _ ->
             search.remember(entry)
             open(entry.target.page, entry.row)
         },

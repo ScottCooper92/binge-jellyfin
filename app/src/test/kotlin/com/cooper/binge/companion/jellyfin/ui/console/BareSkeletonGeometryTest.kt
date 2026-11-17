@@ -13,6 +13,9 @@ import com.cooper.binge.companion.jellyfin.server.PluginStatus
 import com.cooper.binge.companion.jellyfin.server.ServerLibrary
 import com.cooper.binge.companion.jellyfin.server.ServerPlugin
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
+import com.cooper.homelab.core.presentation.appsettings.LicenceEntry
+import com.cooper.homelab.core.presentation.appsettings.LicencesState
+import com.cooper.homelab.core.uiandroid.appsettings.LicencesScreen
 import kotlinx.serialization.json.JsonObject
 import org.junit.Rule
 import org.junit.Test
@@ -21,7 +24,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The pages that load as the design system's bare skeleton column hold their first group where the settled page puts
+ * The pages that load as the design system's bare skeleton column, and Licences, hold their first group where the settled page puts
  * it, so nothing jumps when the content arrives (#514).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -39,6 +42,21 @@ class BareSkeletonGeometryTest {
             listOf(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             checkStartEdge = true,
         ) { resolved -> JellyfinTheme { page(resolved) } }
+
+    @Test
+    fun `licences`() =
+        compose.holdsFirstGroup { resolved ->
+            LicencesScreen(
+                state =
+                    if (resolved) {
+                        LicencesState.Ready(listOf(LicenceEntry("a", "Library", "1.0", listOf("Apache-2.0"), null)))
+                    } else {
+                        LicencesState.Loading
+                    },
+                onBack = {},
+                onOpenWebsite = {},
+            )
+        }
 
     @Test
     fun `libraries`() =
