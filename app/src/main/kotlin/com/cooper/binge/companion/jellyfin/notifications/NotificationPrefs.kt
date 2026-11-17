@@ -24,7 +24,7 @@ val POLL_INTERVAL_CHOICES: List<Int> = listOf(15, 30, 60, 120, 360)
 
 const val DEFAULT_POLL_INTERVAL_MINUTES: Int = 60
 
-/** How far into the activity log the poll has read: the newest entry's id and date, and whose log it was. */
+/** How far into the activity log an earlier version had read: the newest entry's id and date. The poll's own cursor is the shared library's now. */
 data class ActivityCursor(
     val id: Long,
     val dateMillis: Long?,
@@ -71,17 +71,6 @@ class NotificationPrefs(
         if (prefs[CURSOR_OWNER] != owner) return null
         val id = prefs[CURSOR_ID] ?: return null
         return ActivityCursor(id, prefs[CURSOR_DATE])
-    }
-
-    suspend fun setCursor(
-        owner: String,
-        cursor: ActivityCursor,
-    ) {
-        dataStore.edit { prefs ->
-            prefs[CURSOR_OWNER] = owner
-            prefs[CURSOR_ID] = cursor.id
-            cursor.dateMillis?.let { prefs[CURSOR_DATE] = it } ?: prefs.remove(CURSOR_DATE)
-        }
     }
 }
 

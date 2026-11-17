@@ -71,10 +71,10 @@ internal class AddressCheck(
         } catch (e: CancellationException) {
             throw e
         } catch (e: JellyfinHttpException) {
-            connection.logger.noted(TAG, "the address answered, but not as Jellyfin", e)
+            connection.logger.noted(TAG, "the address answered, but not as a media server", e)
             Probe.Failed(Answer.NotJellyfin)
         } catch (e: JellyfinUnreadableAnswer) {
-            connection.logger.noted(TAG, "the address answered something that is not Jellyfin", e)
+            connection.logger.noted(TAG, "the address answered something that is not a media server's", e)
             Probe.Failed(Answer.NotJellyfin)
         } catch (e: CleartextRefusedException) {
             connection.logger.noted(TAG, "plain HTTP to a public host was refused", e)

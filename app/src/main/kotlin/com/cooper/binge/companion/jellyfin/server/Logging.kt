@@ -1,7 +1,7 @@
 package com.cooper.binge.companion.jellyfin.server
 
-import com.cooper.homelab.core.foundation.LogLevel
 import com.cooper.homelab.core.foundation.Logger
+import com.cooper.homelab.core.foundation.warn
 
 /**
  * A warning that something went wrong and the app went on: [event] is a constant sentence and [error] names its class only. The
@@ -11,4 +11,4 @@ fun Logger.noted(
     tag: String,
     event: String,
     error: Throwable? = null,
-) = log(LogLevel.Warn, tag, event, emptyList(), error)
+) = warn(tag, event, error = error)

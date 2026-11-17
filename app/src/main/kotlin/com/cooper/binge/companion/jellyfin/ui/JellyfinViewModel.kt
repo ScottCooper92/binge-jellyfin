@@ -506,7 +506,7 @@ class JellyfinViewModel(
                 reports.failed(AnalyticsEvents.METHOD_PASSWORD, error)
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = error) ?: it }
             } catch (e: JellyfinUnreadableAnswer) {
-                connection.logger.noted(TAG, "password sign-in answered something that is not Jellyfin", e)
+                connection.logger.noted(TAG, "password sign-in answered something that is not a media server's", e)
                 reports.failed(AnalyticsEvents.METHOD_PASSWORD, SetupError.Generic)
                 _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = SetupError.Generic) ?: it }
             } catch (e: IOException) {
@@ -539,7 +539,7 @@ class JellyfinViewModel(
                     connection.logger.noted(TAG, "Quick Connect refused", e)
                     _state.failQuickConnect(SetupError.QuickConnectExpired, reports)
                 } catch (e: JellyfinUnreadableAnswer) {
-                    connection.logger.noted(TAG, "Quick Connect answered something that is not Jellyfin", e)
+                    connection.logger.noted(TAG, "Quick Connect answered something that is not a media server's", e)
                     _state.failQuickConnect(SetupError.Generic, reports)
                 } catch (e: IOException) {
                     connection.logger.noted(TAG, "Quick Connect failed", e)
@@ -619,7 +619,7 @@ class JellyfinViewModel(
                     }
                     ConnectionHealth.CouldNotLoad
                 } catch (e: JellyfinUnreadableAnswer) {
-                    connection.logger.noted(TAG, "library refresh answered something that is not Jellyfin", e)
+                    connection.logger.noted(TAG, "library refresh answered something that is not a media server's", e)
                     ConnectionHealth.CouldNotLoad
                 } catch (e: IOException) {
                     connection.logger.noted(TAG, "library refresh failed", e)

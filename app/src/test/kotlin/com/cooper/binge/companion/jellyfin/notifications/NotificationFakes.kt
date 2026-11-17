@@ -1,5 +1,18 @@
 package com.cooper.binge.companion.jellyfin.notifications
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.cooper.homelab.core.foundation.ServerId
+import com.cooper.homelab.core.notifications.DataStoreFeedCursorStore
+import com.cooper.homelab.core.notifications.FeedCursorStore
+import com.cooper.homelab.core.notifications.PollScheduler
+import com.cooper.homelab.core.testing.InMemoryDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+
 /** An [ActivityNotifier] that records what it was asked to post. */
 class FakeNotifier(
     var mayPost: Boolean = true,
@@ -9,35 +22,53 @@ class FakeNotifier(
     var connectionCancels = 0
     var activityCancels = 0
 
-    override fun canPost(): Boolean = mayPost
+    override suspend fun canPost(): Boolean = mayPost
 
     override suspend fun notifyActivity(summary: ActivitySummary) {
         summaries += summary
     }
 
-    override suspend fun notifyConnectionProblem() {
+    override fun notifyConnectionProblem(server: ServerId) {
         connectionProblems++
     }
 
-    override suspend fun cancelConnectionProblem() {
+    override fun cancelConnectionProblem(server: ServerId) {
         connectionCancels++
     }
 
-    override fun cancelActivity() {
+    override fun cancelNotices(server: ServerId) {
         activityCancels++
     }
 }
 
-/** A [NotificationScheduler] that records its calls. */
-class FakeScheduler : NotificationScheduler {
+/** A [PollScheduler] that records its calls. */
+class FakeScheduler : PollScheduler {
     val calls = mutableListOf<String>()
 
-    override fun schedule(intervalMinutes: Int) {
-        calls += "schedule $intervalMinutes"
+    override fun scheduleNoSoonerThan(minutes: Int) {
+        calls += "schedule $minutes"
     }
 
     override fun cancel() {
         calls += "cancel"
+    }
+
+    override fun nextRunMillis(): Flow<Long?> = flowOf(null)
+}
+
+/** The cursor store the app uses, over a DataStore that lives in memory. */
+fun testFeedCursors(): FeedCursorStore = DataStoreFeedCursorStore(InMemoryDataStore(), "feed_cursor")
+
+/** The activity cursor the released version wrote, in the layout it wrote it: three preferences, the owner, the id and the date. */
+suspend fun DataStore<Preferences>.writeReleasedCursor(
+    owner: String,
+    id: Long,
+    dateMillis: Long?,
+) {
+    edit { prefs ->
+        prefs[stringPreferencesKey("cursor_owner")] = owner
+        prefs[longPreferencesKey("cursor_id")] = id
+        dateMillis?.let { prefs[longPreferencesKey("cursor_date_millis")] = it }
     }
 }
 
