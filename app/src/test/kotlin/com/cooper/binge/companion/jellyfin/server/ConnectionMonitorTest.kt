@@ -28,7 +28,7 @@ class ConnectionMonitorTest {
         runBlocking { sessions.save(jellyfin.session()) }
         // Built after the session is saved, and waited on until it is watching, so the watcher's baseline is the saved session and
         // no later "change" resets the monitor in the middle of a test.
-        connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
+        connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO, DiscardLogger)
         runBlocking { withTimeout(WAIT_MILLIS) { connection.awaitWatching() } }
     }
 

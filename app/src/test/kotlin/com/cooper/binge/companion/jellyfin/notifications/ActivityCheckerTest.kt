@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.notifications
 
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.homelab.core.testing.InMemoryDataStore
@@ -22,7 +23,7 @@ import org.robolectric.RobolectricTestRunner
 class ActivityCheckerTest {
     private val jellyfin = FakeJellyfin().apply { administrator = true }
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Ephyra", "Test", "1.0", Dispatchers.IO, DiscardLogger)
     private val prefs = NotificationPrefs(InMemoryDataStore())
     private val notifier = FakeNotifier()
     private val checker = ActivityChecker(connection, prefs, notifier)

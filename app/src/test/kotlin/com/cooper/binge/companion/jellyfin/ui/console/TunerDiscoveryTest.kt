@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.TUNER_TYPE_HDHOMERUN
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -40,7 +41,10 @@ class TunerDiscoveryTest {
     private val server = FakeJellyfin()
     private val sessions = testSessionStore()
     private val teardown = ViewModelTeardown()
-    private val connection = teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+    private val connection =
+        teardown.made(
+            Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger),
+        )
 
     @Before fun before() {
         Dispatchers.setMain(Dispatchers.Unconfined)

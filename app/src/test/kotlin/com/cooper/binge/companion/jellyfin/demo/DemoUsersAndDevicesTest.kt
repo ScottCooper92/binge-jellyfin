@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.demo
 import com.cooper.binge.companion.jellyfin.server.ActivityFilter
 import com.cooper.binge.companion.jellyfin.server.ActivityWho
 import com.cooper.binge.companion.jellyfin.server.ClientIdentity
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
 import com.cooper.binge.companion.jellyfin.server.PlaystateCommand
@@ -46,6 +47,7 @@ class DemoUsersAndDevicesTest {
             ClientIdentity("Ephyra", "Test", "device-1", "1.0"),
             Dispatchers.Unconfined,
             DEMO_TOKEN,
+            DiscardLogger,
         )
 
     @Test

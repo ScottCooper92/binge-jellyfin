@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.JellyfinVersion
 import com.cooper.binge.companion.jellyfin.session
@@ -45,7 +46,7 @@ class LibraryRouteRecreationTest {
 
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO)
+    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
     private val profile = JellyfinServerProfile(JellyfinVersion(10, 11, 0))
 
     @Before

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -41,7 +42,7 @@ class PasswordViewModelTest {
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
         runBlocking { sessions.save(jellyfin.session()) }
-        connection = watching(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+        connection = watching(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
     }
 
     /** Closed with the test, and started watching before the test saves anything (#165, #502). */
@@ -117,7 +118,7 @@ class PasswordViewModelTest {
         jellyfin.status["/Users/Password"] = 500
         assertEquals(PasswordResult.Refused, made(PasswordViewModel(connection)).fill("old-secret", "n").resultOfChange().result)
         runBlocking { sessions.clear() }
-        val signedOut = watching(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+        val signedOut = watching(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
         assertEquals(PasswordResult.Unreachable, made(PasswordViewModel(signedOut)).fill("old-secret", "n").resultOfChange().result)
     }
 

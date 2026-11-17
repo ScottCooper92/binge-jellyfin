@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.ui
 import android.graphics.Bitmap
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +35,7 @@ class PublicUserPicturesTest {
     private val sessions = testSessionStore()
     private val teardown = ViewModelTeardown()
     private val connection =
-        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO))
+        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
 
     @Before
     fun main() {
