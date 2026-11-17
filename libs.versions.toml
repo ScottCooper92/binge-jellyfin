@@ -13,10 +13,6 @@ coreKtx = "1.19.1"
 coreSplashscreen = "1.2.0"
 # Data only: the plugin writes the licence list of the shipped dependencies, the core library parses it.
 aboutLibraries = "15.3.0"
-# The in-app review card; the system draws it. kotlinx-coroutines-play-services awaits its Tasks.
-playReview = "2.0.2"
-# Play Billing, for the tip jar; the same version binge-seerr ships.
-playBilling = "9.1.0"
 junit = "4.13.2"
 # The version binge-design-system pins.
 robolectric = "4.17"
@@ -72,8 +68,6 @@ homelab-appservices-play = { module = "com.cooper.homelab:app-services-play" }
 homelab-appservices-posthog = { module = "com.cooper.homelab:app-services-posthog" }
 homelab-appservices-firebase = { module = "com.cooper.homelab:app-services-firebase" }
 homelab-testing = { module = "com.cooper.homelab:testing" }
-play-billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "playBilling" }
-play-review = { module = "com.google.android.play:review", version.ref = "playReview" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }

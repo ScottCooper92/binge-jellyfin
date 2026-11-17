@@ -5,7 +5,7 @@ import com.cooper.binge.companion.jellyfin.ui.SetupError
 /**
  * The events this app reports, by fixed name, and the only property names and values they carry. Each is a category: never an
  * id, a title, an address, a user name or anything read from the server. Reported only after the user has agreed (see
- * [PostHogAnalytics]).
+ * [com.cooper.homelab.core.telemetry.GatedAnalytics]).
  */
 object AnalyticsEvents {
     /** A sign-in succeeded. Property: [METHOD]. */
