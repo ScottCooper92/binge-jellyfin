@@ -8,6 +8,8 @@
     <string name="setup_found_title">En tu red</string>
     <string name="setup_searching">Buscando servidores en tu red…</string>
     <string name="setup_connect">Conectar</string>
+    <string name="setup_insecure_warning">Esta dirección usa HTTP sin cifrar en un host público, así que tu contraseña cruzaría internet sin cifrar. Usa https:// si el servidor lo admite.</string>
+    <string name="setup_allow_cleartext">Conectar por HTTP sin cifrar igualmente</string>
     <string name="setup_try_demo">Probar la demo</string>
     <string name="setup_change">Cambiar</string>
     <string name="setup_incomplete_title">Este servidor aún no está configurado</string>
@@ -109,6 +111,7 @@
     <string name="error_wrong_credentials">Nombre de usuario o contraseña incorrectos</string>
     <string name="error_quick_connect_off">Quick Connect está desactivado en este servidor</string>
     <string name="error_quick_connect_expired">El código ha caducado. Inténtalo de nuevo.</string>
+    <string name="error_cleartext_refused">El HTTP sin cifrar a una dirección pública necesita tu acuerdo antes. Usa https:// si el servidor lo admite.</string>
     <string name="error_generic">Algo ha fallado. Inténtalo de nuevo.</string>
     <string name="error_signed_out">Inicia sesión en Jellyfin para ver tu biblioteca</string>
     <string name="tv_sign_in_to">Iniciar sesión en %1$s</string>

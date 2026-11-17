@@ -44,7 +44,7 @@ internal class AddressCheck(
         val error =
             when {
                 Answer.NotJellyfin in failures -> SetupError.NotJellyfin
-                Answer.Refused in failures -> SetupError.Generic
+                Answer.Refused in failures -> SetupError.CleartextRefused
                 else -> unreachableSetup(candidates.first().toString(), localNetwork)
             }
         return Result.Failed(error)

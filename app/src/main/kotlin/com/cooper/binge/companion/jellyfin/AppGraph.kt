@@ -131,7 +131,7 @@ class AppGraph(
      * The public hosts the user has agreed to reach over plain HTTP. A user already connected over plain HTTP to a public host
      * is grandfathered in, as the library asks, so the guard does not cut off a connection they set up knowingly.
      */
-    private val cleartextConsent: CleartextConsent by lazy {
+    internal val cleartextConsent: CleartextConsent by lazy {
         DataStoreCleartextConsent(dataStore("cleartext_consent")) {
             insecurePublicHost(sessions.current()?.baseUrl)
         }

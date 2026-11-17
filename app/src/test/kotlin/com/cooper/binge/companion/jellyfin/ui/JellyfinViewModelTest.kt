@@ -48,6 +48,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.IOException
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 
@@ -102,6 +103,7 @@ class JellyfinViewModelTest {
     private fun viewModel(
         policy: AddressPolicy = AddressPolicy.Legacy,
         over: Connection = connection,
+        cleartext: CleartextConsent = CleartextConsent.None,
     ) = track(
         JellyfinViewModel(
             sessions,
@@ -112,6 +114,7 @@ class JellyfinViewModelTest {
             analytics = analytics,
             onSessionEnded = { sessionsEnded++ },
             addressPolicy = policy,
+            cleartext = cleartext,
         ),
     )
 
@@ -601,13 +604,69 @@ class JellyfinViewModelTest {
 
     @Test
     fun `plain HTTP to a public host the user has not agreed to is refused before any request`() {
-        val guarded =
+        val guarded = guardedConnection()
+        val vm = viewModel(AddressPolicy.Shared, guarded)
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("http://jellyfin.example.com")
+        vm.connect()
+
+        assertEquals(SetupError.CleartextRefused, vm.await<UiState.EnterServer> { it.error != null }.error)
+        assertTrue(jellyfin.requests.isEmpty())
+    }
+
+    @Test
+    fun `an address that reaches a public host over plain HTTP waits for the user's agreement`() {
+        val vm = viewModel(AddressPolicy.Shared)
+        vm.await<UiState.EnterServer>()
+
+        vm.onAddress("http://jellyfin.example.com")
+        val asked = vm.await<UiState.EnterServer>()
+        assertEquals("jellyfin.example.com", asked.insecureHost)
+        assertFalse(asked.canConnect)
+
+        vm.allowCleartext(true)
+        assertTrue(vm.await<UiState.EnterServer> { it.cleartextAllowed }.canConnect)
+
+        // The agreement was for that host: another address has not been agreed to.
+        vm.onAddress("http://other.example.org")
+        val other = vm.await<UiState.EnterServer>()
+        assertEquals("other.example.org", other.insecureHost)
+        assertFalse(other.cleartextAllowed)
+    }
+
+    @Test
+    fun `leaving a plain HTTP public host's session brings back the row asking for agreement`() {
+        runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
+        val vm = viewModel(AddressPolicy.Shared)
+        vm.signOut()
+
+        val asked = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
+        assertEquals("jellyfin.example.com", asked.insecureHost)
+        assertFalse(asked.canConnect)
+    }
+
+    @Test
+    fun `an address that needs no agreement asks for none`() {
+        val vm = viewModel(AddressPolicy.Shared)
+        vm.await<UiState.EnterServer>()
+
+        listOf("https://jellyfin.example.com", "192.168.1.10:8096", "jellyfin.example.com", "http://jellyfin.local").forEach {
+            vm.onAddress(it)
+            assertNull(it, vm.await<UiState.EnterServer>().insecureHost)
+        }
+        // The released policy guards nothing, so it asks for nothing.
+        val released = viewModel(AddressPolicy.Legacy)
+        released.await<UiState.EnterServer>()
+        released.onAddress("http://jellyfin.example.com")
+        assertNull(released.await<UiState.EnterServer>().insecureHost)
+    }
+
+    @Test
+    fun `agreeing is kept before the first request is sent`() {
+        val consent = RecordingConsent()
+        val failing =
             Connection(
-                OkHttpClient
-                    .Builder()
-                    .addInterceptor(
-                        CleartextGuard(CleartextGate(CleartextConsent.None, publicCleartextAvailable = true)),
-                    ).build(),
+                OkHttpClient.Builder().addInterceptor { throw IOException("no route") }.build(),
                 sessions,
                 "Jellyfin Companion",
                 "Test",
@@ -615,13 +674,100 @@ class JellyfinViewModelTest {
                 Dispatchers.IO,
                 DiscardLogger,
             ).also { extraConnections += it }
-        val vm = viewModel(AddressPolicy.Shared, guarded)
+        val vm = viewModel(AddressPolicy.Shared, failing, consent)
         vm.await<UiState.EnterServer>()
         vm.onAddress("http://jellyfin.example.com")
+        vm.allowCleartext(true)
+
         vm.connect()
 
-        assertEquals(SetupError.Generic, vm.await<UiState.EnterServer> { it.error != null }.error)
+        assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
+        assertEquals(listOf("jellyfin.example.com"), consent.granted)
     }
+
+    @Test
+    fun `a guard that refuses after the user agreed is a refusal, not a connection`() {
+        val vm = viewModel(AddressPolicy.Shared, guardedConnection())
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("http://jellyfin.example.com")
+        vm.allowCleartext(true)
+        vm.connect()
+
+        assertEquals(SetupError.CleartextRefused, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `checking again after agreeing to a plain HTTP public host rechecks it`() {
+        jellyfin.startupWizardCompleted = false
+        val fake = jellyfin.baseUrl.toHttpUrl()
+        val reaching =
+            Connection(
+                OkHttpClient
+                    .Builder()
+                    .addInterceptor { chain ->
+                        val url =
+                            chain
+                                .request()
+                                .url
+                                .newBuilder()
+                                .scheme("http")
+                                .host(fake.host)
+                                .port(fake.port)
+                                .build()
+                        chain.proceed(
+                            chain
+                                .request()
+                                .newBuilder()
+                                .url(url)
+                                .build(),
+                        )
+                    }.build(),
+                sessions,
+                "Jellyfin Companion",
+                "Test",
+                "1.0",
+                Dispatchers.IO,
+                DiscardLogger,
+            ).also { extraConnections += it }
+        val vm = viewModel(AddressPolicy.Shared, reaching, RecordingConsent())
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("http://jellyfin.example.com")
+        vm.allowCleartext(true)
+        vm.connect()
+        assertTrue(vm.await<UiState.SignIn>().server.setupIncomplete)
+
+        jellyfin.startupWizardCompleted = true
+        vm.changeServer(recheck = true)
+
+        assertFalse(vm.await<UiState.SignIn>().server.setupIncomplete)
+    }
+
+    private class RecordingConsent : CleartextConsent {
+        val granted = mutableListOf<String>()
+
+        override suspend fun allows(host: String): Boolean = host in granted
+
+        override suspend fun grant(host: String) {
+            granted += host
+        }
+
+        override suspend fun retainOnly(host: String?) = Unit
+    }
+
+    private fun guardedConnection() =
+        Connection(
+            OkHttpClient
+                .Builder()
+                .addInterceptor(
+                    CleartextGuard(CleartextGate(CleartextConsent.None, publicCleartextAvailable = true)),
+                ).build(),
+            sessions,
+            "Jellyfin Companion",
+            "Test",
+            "1.0",
+            Dispatchers.IO,
+            DiscardLogger,
+        ).also { extraConnections += it }
 
     @Test
     fun `forgot password needs a name, sends only the name, and tells what the server answered`() {

@@ -1,6 +1,7 @@
 package com.cooper.binge.companion.jellyfin.server
 
 import com.cooper.homelab.core.server.address.ServerAddress
+import com.cooper.homelab.core.server.network.isLocalOrPrivateHost
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -25,3 +26,11 @@ fun interface AddressPolicy {
                 .mapNotNull { it.url.toHttpUrlOrNull() }
     }
 }
+
+/** The public host [raw] reaches over plain HTTP, when the app guards it (the shared library's policy; the released one guards nothing), else null. */
+fun AddressPolicy.insecureHost(raw: String): String? =
+    if (this === AddressPolicy.Legacy) {
+        null
+    } else {
+        candidates(raw).firstOrNull { !it.isHttps && !isLocalOrPrivateHost(it.host) }?.host
+    }
