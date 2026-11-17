@@ -2,6 +2,8 @@ package com.cooper.binge.companion.jellyfin.server
 
 import com.cooper.binge.companion.jellyfin.ui.ConnectionHealth
 import com.cooper.binge.companion.jellyfin.ui.unreachableHealth
+import com.cooper.homelab.core.server.network.LocalNetworkPermission
+import com.cooper.homelab.core.server.network.isLocalNetworkHost
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -28,7 +30,7 @@ class LocalNetworkTest {
             "router.home.arpa",
             "box.internal",
             "nas",
-        ).forEach { assertTrue("$it should need it", it.isLocalNetworkHost()) }
+        ).forEach { assertTrue("$it should need it", isLocalNetworkHost(it)) }
     }
 
     @Test
@@ -42,16 +44,16 @@ class LocalNetworkTest {
             "100.101.102.103",
             "fd7a:115c:a1e0::1",
             "nas.tail1234.ts.net",
-        ).forEach { assertFalse("$it should not need it", it.isLocalNetworkHost()) }
+        ).forEach { assertFalse("$it should not need it", isLocalNetworkHost(it)) }
     }
 
     @Test
     fun `a literal the kit reads strictly is a name, not an address, so a leading zero or a sign does not make a host local`() {
         // "010.0.0.1" and "+10.0.0.1" are not canonical literals: a resolver may read the zero as octal, so they are names, and a
         // name with a dot and no home suffix does not need the permission.
-        listOf("010.0.0.1", "+10.0.0.1", "192.168.01.1", "fe80::1%eth0").forEach { assertFalse("$it is a name", it.isLocalNetworkHost()) }
+        listOf("010.0.0.1", "+10.0.0.1", "192.168.01.1", "fe80::1%eth0").forEach { assertFalse("$it is a name", isLocalNetworkHost(it)) }
         // A trailing dot on a real literal is still the literal.
-        assertTrue("10.0.0.1.".isLocalNetworkHost())
+        assertTrue(isLocalNetworkHost("10.0.0.1."))
     }
 
     @Test
