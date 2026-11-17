@@ -79,6 +79,7 @@ internal fun AppGroup(
                     icon = Icons.Outlined.BugReport,
                     label = stringResource(R.string.settings_report_bug),
                     detail = stringResource(R.string.settings_report_bug_caption),
+                    supportingMaxLines = CAPTION_LINES,
                     onClick = { context.openInBrowser(installBugReportUrl(serverVersion)) },
                     key = SettingRows.THIS_APP_REPORT_BUG,
                 ),
@@ -263,5 +264,5 @@ fun rememberAppSettingsBinding(prefs: TelemetryPrefs): AppSettingsBinding {
     )
 }
 
-/** Lines a toggle's caption may take before it is cut: more than one, so a larger font wraps the words rather than hiding them. */
+/** Lines a caption on this page may take before it is cut: more than one, so a larger font wraps the words rather than hiding them. */
 private const val CAPTION_LINES = 3
