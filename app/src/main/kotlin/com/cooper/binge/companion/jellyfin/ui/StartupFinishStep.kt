@@ -77,6 +77,8 @@ class StartupFinishStep internal constructor(
             if (current !is UiState.Startup) return@update current
             UiState.SignIn(baseUrl = wizard.baseUrl, server = finished, username = step.name)
         }
+        // The step is built anew, so Quick Connect's state is read again, as on the step reached from the server step.
+        scope.loadQuickConnectOn(connection, state, url, wizard.baseUrl) {}
     }
 
     private fun Throwable.isAlreadyComplete() = this is JellyfinHttpException && code == HTTP_UNAUTHORIZED

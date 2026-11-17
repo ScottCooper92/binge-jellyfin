@@ -158,7 +158,7 @@ private fun CoroutineScope.loadPublicUsers(
  * answer of "off" changes the step: a failure or an unclear answer keeps Quick Connect offered. A code already asked for is
  * dropped without an error, since the user did not ask to be told.
  */
-private fun CoroutineScope.loadQuickConnectOn(
+internal fun CoroutineScope.loadQuickConnectOn(
     connection: Connection,
     state: MutableStateFlow<UiState>,
     url: HttpUrl,

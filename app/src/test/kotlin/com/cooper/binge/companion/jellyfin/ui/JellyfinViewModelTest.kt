@@ -387,6 +387,29 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `back from the wizard reads Quick Connect again for the sign-in step it returns to`() {
+        jellyfin.startupWizardCompleted = false
+        jellyfin.quickConnectEnabled = false
+        val vm = viewModel()
+        vm.toStartup()
+        vm.startup.back()
+        val step = vm.await<UiState.SignIn> { !it.quickConnectOn }
+        assertFalse(step.showsQuickConnectHint)
+    }
+
+    @Test
+    fun `a sign-in that fails after setup reads Quick Connect again for the step it falls back to`() {
+        jellyfin.startupWizardCompleted = false
+        val vm = viewModel()
+        vm.toFinish()
+        jellyfin.quickConnectEnabled = false
+        jellyfin.status["/Users/AuthenticateByName"] = 500
+        vm.startup.finish.finish()
+        val signIn = vm.await<UiState.SignIn> { !it.quickConnectOn }
+        assertEquals("sam", signIn.username)
+    }
+
+    @Test
     fun `leaving the last step drops the account's password`() {
         jellyfin.startupWizardCompleted = false
         val vm = viewModel()
