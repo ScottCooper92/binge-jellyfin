@@ -123,8 +123,8 @@ class AddTriggerFormTest {
                 )
             }
         }
-        // The horizontal row is the second scroll container after the whole form.
-        compose.onAllNodes(hasScrollAction())[1].performScrollToNode(hasText("Sun"))
+        // The days are the third scroll container: the whole form, the kind chips, then the days.
+        compose.onAllNodes(hasScrollAction())[2].performScrollToNode(hasText("Sun"))
         compose.onNodeWithText("Sun").assertIsDisplayed().performClick()
         compose.onNodeWithText("Add").performClick()
         assertEquals("Sunday", added.single().dayOfWeek)

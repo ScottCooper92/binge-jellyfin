@@ -1,11 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.console
 
 import android.text.format.Formatter
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -39,14 +38,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import com.binge.designsystem.component.BingeFilterChip
+import com.binge.designsystem.component.BingeFilterChipRow
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.BingeSearchField
 import com.binge.designsystem.component.ExpressiveIconButton
+import com.binge.designsystem.component.FilterChipItem
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.component.LogRow
@@ -330,19 +331,24 @@ private fun Reader(
     list: LazyListState,
 ) {
     val content = open.content
+    val layoutDirection = LocalLayoutDirection.current
+    // The chip row insets itself, so it is the one child that does not take the page's side padding.
+    val sidePadding = PaddingValues(start = inner.calculateStartPadding(layoutDirection), end = inner.calculateEndPadding(layoutDirection))
+    val sides = Modifier.padding(sidePadding)
     Column(
-        modifier = Modifier.fillMaxSize().padding(inner),
+        modifier = Modifier.fillMaxSize().padding(top = inner.calculateTopPadding(), bottom = inner.calculateBottomPadding()),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m)),
     ) {
         when (content) {
-            LogContent.Loading -> ConsoleLoading(PaddingValues(), LOG_ROWS)
-            is LogContent.Failed -> ConsoleFailureScreen(content.failure, actions.onRetryOpen)
+            LogContent.Loading -> ConsoleLoading(sidePadding, LOG_ROWS)
+            is LogContent.Failed -> ConsoleFailureScreen(content.failure, actions.onRetryOpen, sides)
             is LogContent.Ready -> {
                 BingeSearchField(
                     query = open.query,
                     onQueryChange = actions.onQuery,
                     onClear = { actions.onQuery("") },
                     placeholder = stringResource(R.string.logs_search),
+                    modifier = sides,
                 )
                 LevelChips(open.level, actions.onLevel)
                 if (content.truncated) {
@@ -350,9 +356,10 @@ private fun Reader(
                         stringResource(R.string.logs_truncated, LOG_KEPT_KB),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = sides,
                     )
                 }
-                Entries(open.visible, actions.onCopy, Modifier.weight(1f), list)
+                Entries(open.visible, actions.onCopy, sides.weight(1f), list)
             }
         }
     }
@@ -384,14 +391,11 @@ private fun LevelChips(
     selected: LogLevel,
     onLevel: (LogLevel) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
-    ) {
-        LogLevel.entries.forEach { level ->
-            BingeFilterChip(label = stringResource(level.labelRes()), selected = level == selected, onClick = { onLevel(level) })
-        }
-    }
+    BingeFilterChipRow(
+        items = LogLevel.entries.map { FilterChipItem(stringResource(it.labelRes())) },
+        selectedIndex = selected.ordinal,
+        onSelect = { onLevel(LogLevel.entries[it]) },
+    )
 }
 
 /** The entries, oldest first, opening on the newest: a log is read from its end. */

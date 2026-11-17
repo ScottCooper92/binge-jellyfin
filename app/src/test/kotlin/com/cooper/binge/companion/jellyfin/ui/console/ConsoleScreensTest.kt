@@ -1011,18 +1011,15 @@ class ConsoleScreensTest {
         assertEquals(listOf(1), removed)
         compose.onNodeWithText("Add trigger").performClick()
         compose.onNodeWithText("New trigger").assertExists()
-        compose.onNodeWithText("Every so often").performScrollTo().performClick()
+        // The kind chips are one row that scrolls, so the chip may be out of view: choose it by its click action, not by a tap.
+        compose.onNodeWithText("Every so often").performSemanticsAction(SemanticsActions.OnClick)
         compose
             .onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress) and hasContentDescription("Time limit"))
             .performScrollTo()
             .performSemanticsAction(SemanticsActions.SetProgress) { it(2f) }
         compose.onNodeWithText("Add").performClick()
         assertEquals(listOf(TaskTrigger.interval(6 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR)), added)
-        compose
-            .onAllNodesWithText("At startup")
-            .onLast()
-            .performScrollTo()
-            .performClick()
+        compose.onAllNodesWithText("At startup").onLast().performSemanticsAction(SemanticsActions.OnClick)
         compose.onNodeWithText("Add").performClick()
         // The time limit chosen a moment ago is still chosen: the form keeps what was picked.
         assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
