@@ -40,13 +40,9 @@
 >
 > Inicia sesión con tu usuario y contraseña de Jellyfin, o con Quick Connect. Tu token de acceso se cifra con una clave del Android Keystore y se queda en tu dispositivo, y no se hace copia de seguridad de nada. Ephyra habla con la dirección de servidor que indicas. Los datos de uso van a PostHog, y los informes de fallos a Firebase Crashlytics, solo si aceptas, y cada uno se puede desactivar en la app. Sin anuncios y sin cuenta propia.
 >
-> Código abierto
->
-> Ephyra es software libre con licencia GPL 3.0 o posterior: github.com/ScottCooper92/ephyra
->
 > Ephyra es una app independiente. No está hecha, respaldada ni patrocinada por el proyecto Jellyfin. «Jellyfin» se usa aquí solo para indicar con qué funciona Ephyra.
 
-(2526 caracteres)
+(2418 caracteres)
 
 ## Novedades (primera versión)
 
