@@ -1539,12 +1539,4 @@
         <item quantity="other">%d advertencias o errores en el registro de actividad</item>
     </plurals>
     <string name="tip_row">Invítame a un café</string>
-    <string name="tip_title">Invítame a un café</string>
-    <string name="tip_body">Ephyra es gratuita y de código abierto. Si te resulta útil, una propina ayuda a mantenerla. ¡Gracias!</string>
-    <string name="tip_amount">Importe de la propina</string>
-    <string name="tip_give">Dar %1$s</string>
-    <string name="tip_thanks">¡Gracias! Tu propina significa mucho.</string>
-    <string name="tip_pending">Tu propina está esperando a que Google Play la confirme.</string>
-    <string name="tip_failed_title">La propina no se completó</string>
-    <string name="tip_failed_body">Google Play no pudo completar el pago. Inténtalo de nuevo en un momento y revisa tu historial de pedidos de Google Play si ves algún cargo.</string>
 </resources>

@@ -213,6 +213,8 @@ dependencies {
     implementation(libs.homelab.server)
     // The save-as-made engine behind every settings page that saves as it is changed.
     implementation(libs.homelab.presentation)
+    // The screens the apps share (licences, the tip sheet, settings search), drawn with the design system.
+    implementation(libs.homelab.uiandroid)
     // The vendor adapters behind it: Google Play (the review card and the tip jar), PostHog and Firebase.
     implementation(libs.homelab.appservices.play)
     implementation(libs.homelab.appservices.posthog)

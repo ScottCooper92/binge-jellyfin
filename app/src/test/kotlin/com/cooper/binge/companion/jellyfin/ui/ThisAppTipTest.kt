@@ -7,8 +7,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
-import com.cooper.binge.companion.jellyfin.tip.TipEvent
-import com.cooper.binge.companion.jellyfin.tip.TipUiState
+import com.cooper.homelab.core.presentation.tip.TipEvent
+import com.cooper.homelab.core.presentation.tip.TipState
 import com.cooper.homelab.core.tip.TIP_STEPS
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
@@ -22,7 +22,7 @@ class ThisAppTipTest {
     @get:Rule
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
-    private val priced = TipUiState.Ready(TIP_STEPS.associateWith { "£$it" })
+    private val priced = TipState.Ready(TIP_STEPS.associateWith { "£$it" })
 
     @Test
     fun `there is no tip row until every step is priced`() {
