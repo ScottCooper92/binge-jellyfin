@@ -1064,7 +1064,7 @@ app:settings_refresh  046c434d323d
 app:settings_report_bug  f75e0bd8ff23
 app:settings_report_bug_caption  d91cdd5edb81
 app:settings_send_crash_reports  2b8f06d96293
-app:settings_send_crash_reports_caption  590713339d2e
+app:settings_send_crash_reports_caption  f4bcc14ec629
 app:settings_server  aef7de28d529
 app:settings_share_usage_data  30b4f3d19026
 app:settings_share_usage_data_caption  d9425f20de32
