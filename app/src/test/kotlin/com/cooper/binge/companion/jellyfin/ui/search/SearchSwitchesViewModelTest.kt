@@ -141,19 +141,37 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
-    fun `a flip made while a read is running is not read over`() {
+    fun `a flip made while the search is read again is not taken, so it cannot write the old copy over a page's change`() {
         val vm = started()
         vm.ready()
+        // A page opened over the search saved a new audio language; the search is shown again and reads it, slowly.
+        jellyfin.userConfiguration =
+            jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
         val held = jellyfin.hold("/Users/Me")
         vm.refresh()
         held.awaitArrival()
+        assertTrue((vm.state.value as SearchSwitchesState.Ready).refreshing)
         vm.setDisplayCollectionsView(true)
-        // The read began before the flip, so what it answers is older than the flip.
         held.release()
-        awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
+        val ready =
+            vm.settled {
+                (it as? SearchSwitchesState.Ready)?.let { r ->
+                    !r.refreshing &&
+                        r.configuration.containsKey("AudioLanguagePreference")
+                } ==
+                    true
+            }
+                as SearchSwitchesState.Ready
 
-        assertTrue(vm.ready().home.displayCollectionsView)
-        assertTrue(server().on("DisplayCollectionsView"))
+        // The flip was not built on the old copy, and the new one was read.
+        assertEquals(
+            "fra",
+            ready.configuration
+                .getValue("AudioLanguagePreference")
+                .jsonPrimitive.content,
+        )
+        assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
+        assertFalse(ready.home.displayCollectionsView)
     }
 
     @Test

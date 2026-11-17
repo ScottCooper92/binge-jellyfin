@@ -44,6 +44,8 @@ sealed interface SearchSwitchesState {
         val configuration: JsonObject,
         val save: SaveProgress = SaveProgress(),
         val refused: ConsoleFailure? = null,
+        /** The configuration is being read again: it is shown, but no flip may be built on it, since the read may differ. */
+        val refreshing: Boolean = false,
     ) : SearchSwitchesState {
         val playback: PlaybackPreferences get() = configuration.playbackPreferences()
         val home: HomeLayout get() = configuration.homeLayout()
@@ -84,7 +86,8 @@ class SearchSwitchesViewModel(
 
     /**
      * Reads the configuration and shows it. A change still waiting out its delay, or still being written, is sent first, so the
-     * read sees it. The first read shows [SearchSwitchesState.Loading]; a later one keeps what is shown until the new copy arrives.
+     * read sees it. The first read shows [SearchSwitchesState.Loading]; a later one keeps what is shown until the new copy arrives,
+     * but takes no flip meanwhile ([SearchSwitchesState.Ready.refreshing]), so none is built on a copy the read may replace.
      * What is read never replaces a change made while it ran, nor one the server could not be reached for (that is kept, unsent,
      * for Retry): reading over either would drop it without a word.
      */
@@ -92,7 +95,11 @@ class SearchSwitchesViewModel(
         val current = _state.value
         if (reading || (current is SearchSwitchesState.Ready && current.save.failed)) return
         reading = true
-        if (current !is SearchSwitchesState.Ready) _state.value = SearchSwitchesState.Loading
+        if (current is SearchSwitchesState.Ready) {
+            _state.value = current.copy(refreshing = true)
+        } else {
+            _state.value = SearchSwitchesState.Loading
+        }
         val seen = changes
         viewModelScope.launch {
             try {
@@ -117,6 +124,7 @@ class SearchSwitchesViewModel(
                     )
             } finally {
                 reading = false
+                _state.update { (it as? SearchSwitchesState.Ready)?.copy(refreshing = false) ?: it }
             }
         }
     }
@@ -143,7 +151,8 @@ class SearchSwitchesViewModel(
         key: String,
         on: Boolean,
     ) {
-        if (_state.value !is SearchSwitchesState.Ready) return
+        val ready = _state.value as? SearchSwitchesState.Ready
+        if (ready == null || ready.refreshing) return
         changes++
         saves.set(key, JsonPrimitive(on))
     }
