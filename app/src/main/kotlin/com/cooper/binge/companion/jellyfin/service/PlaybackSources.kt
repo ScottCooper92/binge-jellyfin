@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.service
 
-import android.util.Log
 import com.binge.companion.contracts.library.v1.GetPlaybackSourceRequest
 import com.binge.companion.contracts.library.v1.GetPlaybackSourceResponse
 import com.binge.companion.contracts.library.v1.PlaybackDeviceProfile
@@ -13,6 +12,7 @@ import com.binge.companion.contracts.v1.HttpHeader
 import com.binge.companion.contracts.v1.PlaybackSource
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.server.DeviceProfiles
+import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinItem
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -25,6 +25,9 @@ import com.cooper.binge.companion.jellyfin.server.reportProgress
 import com.cooper.binge.companion.jellyfin.server.reportStart
 import com.cooper.binge.companion.jellyfin.server.reportStopped
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.homelab.core.foundation.LogField
+import com.cooper.homelab.core.foundation.Logger
+import com.cooper.homelab.core.foundation.info
 import io.grpc.Status
 import io.grpc.StatusException
 import kotlinx.serialization.json.JsonObject
@@ -42,6 +45,7 @@ import java.time.Instant
  */
 class PlaybackSources(
     private val now: () -> Instant,
+    private val logger: Logger = DiscardLogger,
 ) {
     suspend fun mint(
         session: JellyfinSession,
@@ -68,7 +72,7 @@ class PlaybackSources(
         val fresh = freshItem(client, session, item, withTrickplay = wantsTrickplay)
         val resumeMillis = fresh.userData?.takeUnless { it.played }?.positionTicks ?: 0L
         val trickplay = trickplay(client, fresh, sitting, wantsTrickplay)
-        Log.i(TAG, "Minted ${item.id}: ${sitting.playMethod}")
+        logger.info(TAG, "playback source minted", listOf(LogField.Text("method", sitting.playMethod.toString())))
         return GetPlaybackSourceResponse
             .newBuilder()
             .setSource(
