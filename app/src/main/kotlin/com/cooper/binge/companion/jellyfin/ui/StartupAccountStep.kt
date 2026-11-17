@@ -1,10 +1,10 @@
 package com.cooper.binge.companion.jellyfin.ui
 
-import android.util.Log
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.JellyfinHttpException
+import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.server.saveStartupUser
 import com.cooper.binge.companion.jellyfin.server.startupFirstUserName
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
@@ -48,7 +48,7 @@ class StartupAccountStep internal constructor(
         scope.launch {
             val saved = attempt { connection.anonymous(url).saveStartupUser(step.name.trim(), step.password) }
             // The exception is logged by its type and status alone: a message could carry what was sent.
-            saved.exceptionOrNull()?.let { Log.i(TAG, "Setup account failed: ${it.javaClass.simpleName}") }
+            saved.exceptionOrNull()?.let { connection.logger.noted(TAG, "setup account failed", it) }
             state.update { current ->
                 val s = current as? UiState.Startup ?: return@update current
                 if (saved.isSuccess) {

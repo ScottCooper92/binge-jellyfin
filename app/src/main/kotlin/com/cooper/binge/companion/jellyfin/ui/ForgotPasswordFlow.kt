@@ -1,11 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui
 
-import android.util.Log
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.JellyfinClient
 import com.cooper.binge.companion.jellyfin.server.forgotPassword
+import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.server.redeemPasswordPin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,7 +54,7 @@ class ForgotPasswordFlow(
         state.value = current.copy(forgot = ForgotPasswordStep.Asking)
         scope.launch {
             val answer = attempt { anonymous(base).forgotPassword(name) }
-            answer.onFailure { Log.i(TAG, "Forgot password was not answered", it) }
+            answer.onFailure { connection.logger.noted(TAG, "forgot password was not answered", it) }
             move(
                 answer.fold(
                     onSuccess = {
@@ -82,7 +82,7 @@ class ForgotPasswordFlow(
             // The server keeps the PIN in upper case and compares it exactly; its dashes are optional.
             val sent = pin.trim().uppercase()
             val redeemed = attempt { anonymous(current.baseUrl).redeemPasswordPin(sent) }
-            redeemed.onFailure { Log.i(TAG, "The password PIN was not answered", it) }
+            redeemed.onFailure { connection.logger.noted(TAG, "the password PIN was not answered", it) }
             state.update {
                 val signIn = it as? UiState.SignIn ?: return@update it
                 // A Done answer always shows, since the password changed on the server; the rest only while the sheet is still open.

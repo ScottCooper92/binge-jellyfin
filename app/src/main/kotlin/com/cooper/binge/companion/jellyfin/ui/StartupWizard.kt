@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin.ui
 
-import android.util.Log
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.Country
@@ -13,6 +12,7 @@ import com.cooper.binge.companion.jellyfin.server.StartupConfiguration
 import com.cooper.binge.companion.jellyfin.server.UiLanguage
 import com.cooper.binge.companion.jellyfin.server.countries
 import com.cooper.binge.companion.jellyfin.server.cultures
+import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.server.saveStartupConfiguration
 import com.cooper.binge.companion.jellyfin.server.startupConfiguration
 import com.cooper.binge.companion.jellyfin.server.uiLanguages
@@ -137,7 +137,7 @@ class StartupWizard internal constructor(
         update { copy(phase = StartupPhase.Loading) }
         scope.launch {
             val read = attempt { connection.anonymous(url).readStartup() }
-            read.exceptionOrNull()?.let { Log.i(TAG, "Setup read failed", it) }
+            read.exceptionOrNull()?.let { connection.logger.noted(TAG, "setup read failed", it) }
             update {
                 copy(phase = read.fold(onSuccess = { it }, onFailure = { StartupPhase.Failed(it.consoleFailure()) }))
             }
@@ -161,7 +161,7 @@ class StartupWizard internal constructor(
         edit { copy(busy = true, error = null) }
         scope.launch {
             val saved = attempt { connection.anonymous(url).saveStartupConfiguration(step.configuration) }
-            saved.exceptionOrNull()?.let { Log.i(TAG, "Setup save failed", it) }
+            saved.exceptionOrNull()?.let { connection.logger.noted(TAG, "setup save failed", it) }
             if (saved.isSuccess) account.suggestName(url)
             update {
                 if (saved.isSuccess) {

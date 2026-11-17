@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin
 import android.app.Activity
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
@@ -30,6 +31,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
 import com.cooper.binge.companion.jellyfin.ui.search.RecentSearches
+import com.cooper.homelab.core.diagnostics.Redactor
+import com.cooper.homelab.core.diagnostics.RingLog
 import com.cooper.homelab.core.flags.FeatureFlags
 import com.cooper.homelab.core.flags.FirebaseRemoteFlagSource
 import com.cooper.homelab.core.flags.Flag
@@ -37,6 +40,7 @@ import com.cooper.homelab.core.flags.RemoteFeatureFlags
 import com.cooper.homelab.core.flags.StaticFlagOverrides
 import com.cooper.homelab.core.foundation.AppDispatchers
 import com.cooper.homelab.core.foundation.Clock
+import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
@@ -188,7 +192,7 @@ class AppGraph(
 
     /** The one owner of "may analytics report"; every backend registers with it. */
     val consentGate: AnalyticsConsentGate by lazy {
-        AnalyticsConsentGate(telemetryPrefs, scope, LogcatLogger())
+        AnalyticsConsentGate(telemetryPrefs, scope, logger)
     }
 
     /** PostHog behind the consent gate. A build with no project key has no client, and then every call is a no-op. */
@@ -213,6 +217,7 @@ class AppGraph(
             device = Build.MODEL ?: "Android",
             version = BuildConfig.VERSION_NAME,
             io = io,
+            logger = logger,
         )
     }
 
@@ -230,11 +235,34 @@ class AppGraph(
     /** Lives as long as the process: the event socket is shared by every Observe stream in it. */
     private val scope = CoroutineScope(SupervisorJob())
 
+    /** Told what the session holds, so an entry that names it is redacted. A debug build says so when one had to be. */
+    private val redactor: Redactor by lazy {
+        Redactor(onRedaction = { if (BuildConfig.DEBUG) Log.w(REDACTOR_TAG, "A log entry held a registered literal") })
+            .also { it.followSession(sessions.session, scope) }
+    }
+
+    /** The app's log: held in memory and never written to disk. A debug build also forwards each redacted entry to Logcat. */
+    private val ring: RingLog by lazy {
+        RingLog(
+            clock = Clock.system(),
+            redactor = redactor,
+            // One saved server: no entry carries a server field today, so there is no order to label.
+            serverOrder = { emptyList() },
+            forward = LogcatLogger().takeIf { BuildConfig.DEBUG },
+            // The frames kept from a logged throwable are this app's own, named here so the library holds no default.
+            ownPackages = listOf("com.cooper.binge."),
+        )
+    }
+
+    val logger: Logger get() = ring
+
     val events: ServerEvents by lazy { ServerEvents(connection, index, scope, io) }
 
     /** Jellyfin's UDP broadcast, on this device's LAN networks. */
-    val discovery: UdpDiscovery by lazy { UdpDiscovery(targets = { lanTargets(appContext) }, io = io) }
+    val discovery: UdpDiscovery by lazy { UdpDiscovery(targets = { lanTargets(appContext, logger) }, io = io, logger = logger) }
 }
 
 /** The client name Jellyfin shows for this app, in its dashboard's devices, sessions and activity. */
 internal const val CLIENT_NAME = "Ephyra"
+
+private const val REDACTOR_TAG = "Redactor"

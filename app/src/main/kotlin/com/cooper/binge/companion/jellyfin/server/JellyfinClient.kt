@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.server
 import com.binge.companion.sdk.attempt
 import com.cooper.binge.companion.jellyfin.demo.DemoTransport
 import com.cooper.binge.companion.jellyfin.demo.isDemo
+import com.cooper.homelab.core.foundation.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -70,8 +71,9 @@ class JellyfinClient(
     internal val identity: ClientIdentity,
     internal val io: CoroutineDispatcher,
     internal val token: String? = null,
+    internal val logger: Logger = DiscardLogger,
 ) {
-    fun withToken(token: String): JellyfinClient = JellyfinClient(http, baseUrl, identity, io, token)
+    fun withToken(token: String): JellyfinClient = JellyfinClient(http, baseUrl, identity, io, token, logger)
 
     /**
      * The header the server reads who we are from, with the token once signed in. Each field is
@@ -305,4 +307,4 @@ private fun JsonElement.asObject(path: String): JsonObject = this as? JsonObject
 
 /** This client with a longer wait for an answer, for the one call the server answers only when its work is done. */
 fun JellyfinClient.withReadTimeout(millis: Long): JellyfinClient =
-    JellyfinClient(http.newBuilder().readTimeout(millis, TimeUnit.MILLISECONDS).build(), baseUrl, identity, io, token)
+    JellyfinClient(http.newBuilder().readTimeout(millis, TimeUnit.MILLISECONDS).build(), baseUrl, identity, io, token, logger)
