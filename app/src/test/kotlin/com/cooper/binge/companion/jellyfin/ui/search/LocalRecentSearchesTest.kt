@@ -1,13 +1,14 @@
 package com.cooper.binge.companion.jellyfin.ui.search
 
+import com.cooper.homelab.core.presentation.search.MAX_RECENT
 import com.cooper.homelab.core.testing.InMemoryDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class RecentSearchesTest {
-    private val recent = RecentSearches(InMemoryDataStore())
+class LocalRecentSearchesTest {
+    private val recent = LocalRecentSearches(InMemoryDataStore())
 
     @Test
     fun `it starts empty`() = runBlocking { assertEquals(emptyList<String>(), recent.ids.first()) }

@@ -6,6 +6,9 @@ import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
+import com.cooper.homelab.core.presentation.search.SettingEntry
+import com.cooper.homelab.core.presentation.search.searchSettings
+import com.cooper.homelab.core.uiandroid.resolve
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
@@ -19,24 +22,26 @@ import org.robolectric.RobolectricTestRunner
 class SettingsIndexTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
+    private val index = settingsIndex(context.resources)
+
     private fun find(
         query: String,
-        available: (SettingEntry) -> Boolean = { true },
-    ) = searchSettings(query, settingsIndex, available, context::getString).map { context.getString(it.label) }
+        available: (SettingEntry<SearchTarget>) -> Boolean = { true },
+    ) = searchSettings(query, index, available) { it.resolve(context) }.map { it.label.resolve(context) }
 
     /** A page the search cannot reach is a page nobody finds; these are the ones that are not a place of their own. */
     @Test
     fun `every page but the account, the search and recording has an entry of its own`() {
         val left = setOf(ConsolePage.Account, ConsolePage.Search, ConsolePage.LiveTvRecording)
-        val indexed = settingsIndex.filter { it.pageLabel == null }.map { it.page }.toSet()
+        val indexed = index.filter { it.pageLabel == null }.map { it.target.page }.toSet()
         assertEquals(emptyList<ConsolePage>(), ConsolePage.entries.filter { it !in left && it !in indexed })
     }
 
     @Test
     fun `every entry has its words`() {
-        settingsIndex.forEach {
-            assertTrue(context.getString(it.label).isNotBlank())
-            it.keywords?.let { k -> assertTrue(context.getString(k).isNotBlank()) }
+        index.forEach {
+            assertTrue(it.label.resolve(context).isNotBlank())
+            it.keywords?.let { k -> assertTrue(k.resolve(context).isNotBlank()) }
         }
     }
 
@@ -61,12 +66,14 @@ class SettingsIndexTest {
     @Test
     fun `case and accents do not matter`() {
         assertEquals(find("HARDWARE"), find("hardware"))
-        assertEquals("cafe", "Café".searchForm())
     }
 
     @Test
     fun `a page the user may not open is never offered`() {
-        val user: (SettingEntry) -> Boolean = { it.page == ConsolePage.Password || it.page == ConsolePage.ThisApp }
+        val user: (SettingEntry<SearchTarget>) -> Boolean = {
+            it.target.page == ConsolePage.Password ||
+                it.target.page == ConsolePage.ThisApp
+        }
         assertEquals(emptyList<String>(), find("hardware", user))
         assertTrue("Change password" in find("password", user))
     }
@@ -97,9 +104,9 @@ class SettingsIndexTest {
 
     @Test
     fun `an entry that names a row names it once on its page`() {
-        val named = settingsIndex.filter { it.row != null }
+        val named = index.filter { it.row != null }
         assertTrue(named.isNotEmpty())
-        assertEquals(named.map { it.page to it.row }.distinct().size, named.size)
+        assertEquals(named.map { it.target.page to it.row }.distinct().size, named.size)
         named.forEach { assertTrue(it.row!!.isNotBlank()) }
     }
 

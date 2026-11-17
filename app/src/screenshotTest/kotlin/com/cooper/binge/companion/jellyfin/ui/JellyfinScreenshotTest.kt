@@ -3,6 +3,8 @@ package com.cooper.binge.companion.jellyfin.ui
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.preview.JellyfinFontScalePreviews
@@ -13,10 +15,12 @@ import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.tip.TipUiState
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.TipSheetContent
-import com.cooper.binge.companion.jellyfin.ui.search.SettingsSearchScreen
+import com.cooper.binge.companion.jellyfin.ui.search.available
 import com.cooper.binge.companion.jellyfin.ui.search.settingsIndex
 import com.cooper.homelab.core.flags.Flags
+import com.cooper.homelab.core.presentation.search.SettingsSearchState
 import com.cooper.homelab.core.tip.TIP_STEPS
+import com.cooper.homelab.core.uiandroid.search.SettingsSearchScreen
 
 /** The phone screens: each step's layout across the matrix, then every other state on the phone cell alone. */
 class JellyfinScreenshotTest {
@@ -428,19 +432,19 @@ class JellyfinScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun searchPrompt() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {})
+    fun searchPrompt() = SearchPage()
 
     @PreviewTest
     @JellyfinScreenPreviews
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun searchResults() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "port")
+    fun searchResults() = SearchPage(initialQuery = "port")
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun searchNoMatch() = SettingsSearchScreen(previewSignedInAdmin.profile, previewSignedInAdmin.account, {}, {}, initialQuery = "zzz")
+    fun searchNoMatch() = SearchPage(initialQuery = "zzz")
 
     /** The search before a query, with what the user opened last and its Clear. */
     @PreviewTest
@@ -449,15 +453,8 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun searchRecent() =
-        SettingsSearchScreen(
-            previewSignedInAdmin.profile,
-            previewSignedInAdmin.account,
-            {},
-            {},
-            recent =
-                settingsIndex
-                    .filter { it.page in listOf(ConsolePage.Network, ConsolePage.Transcoding, ConsolePage.Playback) }
-                    .distinctBy { it.page },
+        SearchPage(
+            recentPages = listOf(ConsolePage.Network, ConsolePage.Transcoding, ConsolePage.Playback),
         )
 
     /** The This app page with the tip jar priced, so its row shows. */
@@ -544,4 +541,30 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun forgotDone() = Surface { ForgotPasswordOverlay(ForgotPasswordStep.Done, null, inWindow = false) }
+}
+
+/** The shared search page over this app's real index, as an administrator on a current server sees it. */
+@Composable
+private fun SearchPage(
+    initialQuery: String = "",
+    recentPages: List<ConsolePage> = emptyList(),
+) {
+    val resources = LocalContext.current.resources
+    val entries = remember(resources) { settingsIndex(resources) }
+    val profile = previewSignedInAdmin.profile
+    val account = previewSignedInAdmin.account
+    SettingsSearchScreen(
+        state =
+            SettingsSearchState.Ready(
+                available = { it.available(profile, account) },
+                recent = entries.filter { it.target.page in recentPages && it.pageLabel == null }.distinctBy { it.target.page },
+            ),
+        entries = entries,
+        icon = { it.target.icon },
+        onOpen = {},
+        onBack = {},
+        onRetry = {},
+        onClearRecent = {},
+        initialQuery = initialQuery,
+    )
 }

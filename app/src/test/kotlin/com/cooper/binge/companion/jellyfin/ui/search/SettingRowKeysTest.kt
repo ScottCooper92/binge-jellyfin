@@ -47,6 +47,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsUiState
 import com.cooper.binge.companion.jellyfin.ui.console.TranscodingActions
 import com.cooper.binge.companion.jellyfin.ui.console.TranscodingScreen
 import com.cooper.binge.companion.jellyfin.ui.console.TranscodingUiState
+import com.cooper.homelab.core.presentation.search.SettingEntry
+import com.cooper.homelab.core.uiandroid.resolve
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -58,6 +60,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
@@ -119,7 +122,13 @@ class SettingRowKeysTest {
     /** The text of a row where it is not the entry's own words: the entry names the setting, the row may carry its own label. */
     private val rowLabels = mapOf(SettingRows.TRANSCODING_ACCELERATION to R.string.transcoding_acceleration)
 
-    private val keyed = settingsIndex.filter { it.row != null && it.available(profile, admin) }
+    private val keyed =
+        settingsIndex(
+            RuntimeEnvironment.getApplication().resources,
+        ).filter { it.row != null && it.available(profile, admin) }
+
+    private fun rowLabel(entry: SettingEntry<SearchTarget>) =
+        rowLabels[entry.row]?.let(compose.activity::getString) ?: entry.label.resolve(compose.activity)
 
     private var page by mutableStateOf<ConsolePage?>(null)
     private var focusRow by mutableStateOf<String?>(null)
@@ -177,7 +186,7 @@ class SettingRowKeysTest {
 
     @Test
     fun `every page that has a keyed entry is covered here`() {
-        assertEquals(emptySet<ConsolePage>(), keyed.map { it.page }.toSet() - pages.keys)
+        assertEquals(emptySet<ConsolePage>(), keyed.map { it.target.page }.toSet() - pages.keys)
     }
 
     @Test
@@ -185,12 +194,12 @@ class SettingRowKeysTest {
         show()
         val missed = mutableListOf<String>()
         keyed.forEach { entry ->
-            val label = compose.activity.getString(rowLabels[entry.row] ?: entry.label)
+            val label = rowLabel(entry)
             // The window is too short to show the row before the focus scrolls to it: a row that is there already proves nothing.
-            fresh(entry.page)
+            fresh(entry.target.page)
             if (isShown(label)) missed += "${entry.row}: '$label' is on screen without a scroll, so the window proves nothing"
             focusRow = entry.row
-            if (!waitFor(label)) missed += "${entry.row}: '$label' never came on screen on ${entry.page}"
+            if (!waitFor(label)) missed += "${entry.row}: '$label' never came on screen on ${entry.target.page}"
         }
         assertEquals(emptyList<String>(), missed)
     }
@@ -199,18 +208,18 @@ class SettingRowKeysTest {
     fun `a key no page carries is not found, so the check above can fail`() {
         show()
         val entry = keyed.first()
-        val label = compose.activity.getString(rowLabels[entry.row] ?: entry.label)
-        assertFalse(reached(entry.page, "no.such.row", label))
-        assertTrue(reached(entry.page, entry.row, label))
+        val label = rowLabel(entry)
+        assertFalse(reached(entry.target.page, "no.such.row", label))
+        assertTrue(reached(entry.target.page, entry.row, label))
     }
 
     @Test
     @Config(qualifiers = "w411dp-h2000dp", fontScale = 2f)
     fun `at twice the font the notifications row below a long page is still found`() {
         show()
-        val entry = keyed.first { it.label == R.string.notifications_switch }
-        val label = compose.activity.getString(rowLabels[entry.row] ?: entry.label)
-        assertTrue(reached(entry.page, entry.row, label))
+        val entry = keyed.first { it.id.endsWith(":notifications_switch") }
+        val label = rowLabel(entry)
+        assertTrue(reached(entry.target.page, entry.row, label))
     }
 
     private companion object {

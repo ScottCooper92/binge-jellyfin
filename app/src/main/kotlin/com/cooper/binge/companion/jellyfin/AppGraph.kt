@@ -41,7 +41,7 @@ import com.cooper.binge.companion.jellyfin.server.lanTargets
 import com.cooper.binge.companion.jellyfin.ui.console.LicenceSource
 import com.cooper.binge.companion.jellyfin.ui.console.UserPictures
 import com.cooper.binge.companion.jellyfin.ui.console.clearSharedLogs
-import com.cooper.binge.companion.jellyfin.ui.search.RecentSearches
+import com.cooper.binge.companion.jellyfin.ui.search.LocalRecentSearches
 import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
 import com.cooper.homelab.core.flags.FeatureFlags
@@ -219,8 +219,8 @@ class AppGraph(
     val activitySwitch: ActivitySwitch by lazy { ActivitySwitch(notificationPrefs, feedCursors, serverIdentity) }
 
     /** The settings search's last few results, kept on this device alone. */
-    val recentSearches: RecentSearches by lazy {
-        RecentSearches(
+    val recentSearches: LocalRecentSearches by lazy {
+        LocalRecentSearches(
             PreferenceDataStoreFactory.create(
                 corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
                 produceFile = { appContext.preferencesDataStoreFile("recent_searches") },
@@ -319,6 +319,12 @@ class AppGraph(
 
     /** Lives as long as the process: the event socket is shared by every Observe stream in it. */
     private val scope = CoroutineScope(SupervisorJob())
+
+    /** [scope] for what must outlive a page: the settings search remembers a result as it opens it, and leaves at once. */
+    val appScope: CoroutineScope get() = scope
+
+    /** The dispatcher this graph's reads and writes run on. */
+    val ioDispatcher: CoroutineDispatcher get() = io
 
     /** Told what the session holds, so an entry that names it is redacted. A debug build says so when one had to be. */
     private val redactor: Redactor by lazy {

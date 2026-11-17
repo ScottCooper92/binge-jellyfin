@@ -1434,13 +1434,6 @@
     <string name="users_schedule_midnight">La medianoche como hora final significa el final de este día.</string>
     <string name="users_schedule_order">La hora final debe ser posterior a la inicial.</string>
 
-    <string name="search_title">Buscar ajustes</string>
-    <string name="search_prompt">Escribe el nombre de un ajuste o lo que hace.</string>
-    <string name="search_no_match_title">No hay ajustes</string>
-    <string name="search_no_match">Nada coincide. Prueba con otra palabra.</string>
-    <string name="search_path">%1$s › %2$s</string>
-    <string name="search_recent">Resultados de búsqueda recientes</string>
-    <string name="search_recent_clear">Borrar</string>
     <string name="kw_quick_connect">emparejar vincular codigo código iniciar sesión dispositivo</string>
     <string name="kw_playback">audio idioma subtítulos subtitulos reproducción automática siguiente episodio</string>
     <string name="kw_picture">avatar foto imagen</string>
