@@ -44,6 +44,7 @@ import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
+import com.binge.designsystem.component.CheckboxRow
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.hasPaneBeside
@@ -65,6 +66,8 @@ import com.binge.designsystem.R as DesR
 data class Actions(
     val onAddress: (String) -> Unit = {},
     val onConnect: () -> Unit = {},
+    /** The user's agreement, or its withdrawal, to plain HTTP to the public host the typed address names. */
+    val onAllowCleartext: (Boolean) -> Unit = {},
     val onTryDemo: () -> Unit = {},
     val onUsername: (String) -> Unit = {},
     val onPassword: (String) -> Unit = {},
@@ -186,12 +189,25 @@ private fun EnterServer(
             imeAction = ImeAction.Go,
             onDone = actions.onConnect,
         )
+        if (state.insecureHost != null) {
+            Text(
+                stringResource(R.string.setup_insecure_warning),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            CheckboxRow(
+                label = stringResource(R.string.setup_allow_cleartext),
+                checked = state.cleartextAllowed,
+                onCheckedChange = actions.onAllowCleartext,
+                enabled = !state.checking,
+            )
+        }
         if (state.error == SetupError.LocalNetworkDenied) AllowLocalNetworkButton(actions)
         BingeFilledButton(
             label = stringResource(R.string.setup_connect),
             onClick = actions.onConnect,
             loading = state.checking,
-            enabled = state.address.isNotBlank(),
+            enabled = state.canConnect,
             modifier = Modifier.fillMaxWidth(),
         )
         BingeOutlinedButton(
@@ -533,6 +549,7 @@ internal fun errorText(error: SetupError): String =
             SetupError.WrongCredentials -> R.string.error_wrong_credentials
             SetupError.QuickConnectOff -> R.string.error_quick_connect_off
             SetupError.QuickConnectExpired -> R.string.error_quick_connect_expired
+            SetupError.CleartextRefused -> R.string.error_cleartext_refused
             SetupError.Generic -> R.string.error_generic
         },
     )

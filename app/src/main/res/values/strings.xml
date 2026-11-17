@@ -9,6 +9,8 @@
     <string name="setup_found_title">On your network</string>
     <string name="setup_searching">Looking for servers on your network…</string>
     <string name="setup_connect">Connect</string>
+    <string name="setup_insecure_warning">This address uses plain HTTP on a public host, so your password would cross the internet unencrypted. Use https:// if the server supports it.</string>
+    <string name="setup_allow_cleartext">Connect over plain HTTP anyway</string>
     <string name="setup_try_demo">Try the demo</string>
     <string name="setup_change">Change</string>
     <string name="setup_incomplete_title">This server isn’t set up yet</string>
@@ -109,6 +111,7 @@
     <string name="error_wrong_credentials">Wrong username or password</string>
     <string name="error_quick_connect_off">Quick Connect is turned off on this server</string>
     <string name="error_quick_connect_expired">The code expired. Try again.</string>
+    <string name="error_cleartext_refused">Plain HTTP to a public address needs your agreement first. Use https:// if the server supports it.</string>
     <string name="error_generic">Something went wrong. Try again.</string>
     <string name="error_signed_out">Sign in to Jellyfin to see your library</string>
     <string name="tv_sign_in_to">Sign in to %1$s</string>

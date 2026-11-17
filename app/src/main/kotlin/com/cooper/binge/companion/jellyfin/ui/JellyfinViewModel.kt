@@ -24,6 +24,7 @@ import com.cooper.binge.companion.jellyfin.server.Reach
 import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
 import com.cooper.binge.companion.jellyfin.server.authenticateWithQuickConnect
+import com.cooper.binge.companion.jellyfin.server.insecureHost
 import com.cooper.binge.companion.jellyfin.server.localNetworkHostOrNull
 import com.cooper.binge.companion.jellyfin.server.logout
 import com.cooper.binge.companion.jellyfin.server.me
@@ -38,6 +39,7 @@ import com.cooper.binge.companion.jellyfin.server.userThumbnail
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsEvents
 import com.cooper.binge.companion.jellyfin.telemetry.SignInReports
 import com.cooper.binge.companion.jellyfin.ui.console.decodeThumbnail
+import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.NoOpAnalytics
@@ -66,6 +68,9 @@ enum class SetupError {
     WrongCredentials,
     QuickConnectOff,
     QuickConnectExpired,
+
+    /** Plain HTTP to a public host, which the app refuses unless the user has agreed to it. */
+    CleartextRefused,
     Generic,
 }
 
@@ -271,7 +276,14 @@ sealed interface UiState {
         /** The servers that answered on the local network, and whether the search is still running. */
         val discovered: List<DiscoveredServer> = emptyList(),
         val discovering: Boolean = false,
-    ) : UiState
+        /** The public host the typed address would reach over plain HTTP, or null: the user must agree to it before anything is sent. */
+        val insecureHost: String? = null,
+        /** The user has agreed to plain HTTP to [insecureHost]. */
+        val cleartextAllowed: Boolean = false,
+    ) : UiState {
+        /** Whether Connect can go: an address is typed, and a plain-HTTP public host has been agreed to. */
+        val canConnect: Boolean get() = address.isNotBlank() && (insecureHost == null || cleartextAllowed)
+    }
 
     /** Step two: sign in to a server that answered. */
     data class SignIn(
@@ -356,6 +368,8 @@ class JellyfinViewModel(
     private val onSessionEnded: suspend () -> Unit = {},
     /** How a typed address becomes the addresses to try: the released behaviour unless the app passes the shared library's. */
     private val addressPolicy: AddressPolicy = AddressPolicy.Legacy,
+    /** Where the user's agreement to plain HTTP to a public host is kept. Nothing is agreed to by default. */
+    private val cleartext: CleartextConsent = CleartextConsent.None,
 ) : ViewModel() {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -389,7 +403,25 @@ class JellyfinViewModel(
         viewModelScope.launch { connection.monitor.reach.collect { reach -> _state.update { it.afterReach(reach, localNetwork) } } }
     }
 
-    fun onAddress(value: String) = _state.update { (it as? UiState.EnterServer)?.copy(address = value, error = null) ?: it }
+    fun onAddress(value: String) =
+        _state.update { current ->
+            if (current !is UiState.EnterServer) return@update current
+            val host = addressPolicy.insecureHost(value)
+            // The agreement is for one host: a typed address that names another has not been agreed to.
+            current.copy(
+                address = value,
+                error = null,
+                insecureHost = host,
+                cleartextAllowed = host != null && host == current.insecureHost && current.cleartextAllowed,
+            )
+        }
+
+    /** The user's agreement, or its withdrawal, to plain HTTP to the public host the typed address names. */
+    fun allowCleartext(allowed: Boolean) =
+        _state.update {
+            (it as? UiState.EnterServer)?.takeIf { s -> s.insecureHost != null }?.copy(cleartextAllowed = allowed, error = null)
+                ?: it
+        }
 
     fun onUsername(value: String) = _state.update { (it as? UiState.SignIn)?.copy(username = value, passwordError = null) ?: it }
 
@@ -415,8 +447,14 @@ class JellyfinViewModel(
             _state.value = current.copy(error = SetupError.InvalidAddress)
             return
         }
+        if (current.insecureHost != null && !current.cleartextAllowed) {
+            _state.value = current.copy(error = SetupError.CleartextRefused)
+            return
+        }
         _state.value = current.copy(checking = true, error = null)
         viewModelScope.launch {
+            // Agreed to by ticking the row, so it is kept before the first byte is sent.
+            current.insecureHost?.let { cleartext.grant(it) }
             val found =
                 when (val result = addressCheck.first(candidates)) {
                     is AddressCheck.Result.Found -> result
@@ -492,7 +530,9 @@ class JellyfinViewModel(
         quickConnect =
             viewModelScope.launch {
                 try {
-                    awaitQuickConnect(url, current.server)
+                    awaitQuickConnect(connection, _state, reports, quickConnectPollMillis, url) { signedIn ->
+                        finish(url, current.server, signedIn, AnalyticsEvents.METHOD_QUICK_CONNECT)
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: JellyfinHttpException) {
@@ -506,28 +546,6 @@ class JellyfinViewModel(
                     _state.failQuickConnect(unreachableSetup(current.baseUrl, localNetwork), reports)
                 }
             }
-    }
-
-    private suspend fun awaitQuickConnect(
-        url: HttpUrl,
-        server: PublicServerInfo,
-    ) {
-        val client = connection.anonymous(url)
-        if (!client.quickConnectEnabled()) {
-            _state.failQuickConnect(SetupError.QuickConnectOff, reports)
-            return
-        }
-        val start = client.quickConnectInitiate()
-        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = start.code, gettingCode = false) ?: it }
-        val deadline = System.currentTimeMillis() + QUICK_CONNECT_WINDOW_MILLIS
-        while (System.currentTimeMillis() < deadline) {
-            delay(quickConnectPollMillis)
-            if (client.quickConnectAuthenticated(start.secret)) {
-                finish(url, server, client.authenticateWithQuickConnect(start.secret), AnalyticsEvents.METHOD_QUICK_CONNECT)
-                return
-            }
-        }
-        _state.failQuickConnect(SetupError.QuickConnectExpired, reports)
     }
 
     /** Leaves Quick Connect for the password form, taking Quick Connect's code and failure with it. */
@@ -690,9 +708,11 @@ class JellyfinViewModel(
         const val TAG = "JellyfinSetup"
         const val HTTP_UNAUTHORIZED = 401
         const val QUICK_CONNECT_POLL_MILLIS = 3_000L
-        const val QUICK_CONNECT_WINDOW_MILLIS = 10 * 60_000L
     }
 }
+
+/** How long a Quick Connect code is waited on before it counts as expired. */
+private const val QUICK_CONNECT_WINDOW_MILLIS = 10 * 60_000L
 
 /** Quick Connect couldn't get or keep a code: the code goes, and the failure stays with Quick Connect. */
 private fun MutableStateFlow<UiState>.failQuickConnect(
@@ -727,4 +747,31 @@ private fun CoroutineScope.refreshGates(
             card.refresh(this@refreshGates, state, session, client, account, force = false)
         }
     }
+}
+
+/** Asks the server for a Quick Connect code, shows it, and polls until the user approves it or its window ends; [finish] takes the sign-in. */
+private suspend fun awaitQuickConnect(
+    connection: Connection,
+    state: MutableStateFlow<UiState>,
+    reports: SignInReports,
+    pollMillis: Long,
+    url: HttpUrl,
+    finish: suspend (SignedIn) -> Unit,
+) {
+    val client = connection.anonymous(url)
+    if (!client.quickConnectEnabled()) {
+        state.failQuickConnect(SetupError.QuickConnectOff, reports)
+        return
+    }
+    val start = client.quickConnectInitiate()
+    state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = start.code, gettingCode = false) ?: it }
+    val deadline = System.currentTimeMillis() + QUICK_CONNECT_WINDOW_MILLIS
+    while (System.currentTimeMillis() < deadline) {
+        delay(pollMillis)
+        if (client.quickConnectAuthenticated(start.secret)) {
+            finish(client.authenticateWithQuickConnect(start.secret))
+            return
+        }
+    }
+    state.failQuickConnect(SetupError.QuickConnectExpired, reports)
 }

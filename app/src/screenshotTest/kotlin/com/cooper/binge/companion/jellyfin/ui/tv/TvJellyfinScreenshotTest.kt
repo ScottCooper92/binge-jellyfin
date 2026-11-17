@@ -24,8 +24,10 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
 import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
+import com.cooper.binge.companion.jellyfin.ui.previewEnterServerCleartextRefused
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerError
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerFound
+import com.cooper.binge.companion.jellyfin.ui.previewEnterServerInsecure
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerNotJellyfin
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerSearching
 import com.cooper.binge.companion.jellyfin.ui.previewQuickConnect
@@ -70,6 +72,20 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvStressPreviews
     @Composable
     fun serverUnreachable() = TvJellyfinRoot(previewEnterServerError, Actions())
+
+    /** A public plain-HTTP address: the agreement under the field, with its reason beside it. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun serverInsecure() = TvJellyfinRoot(previewEnterServerInsecure, Actions())
+
+    /** The refusal's wording is the longest address error on TV, so it is checked in Spanish and at large fonts. */
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun serverCleartextRefused() = TvJellyfinRoot(previewEnterServerCleartextRefused, Actions())
 
     @PreviewTest
     @JellyfinTvScreenPreviews

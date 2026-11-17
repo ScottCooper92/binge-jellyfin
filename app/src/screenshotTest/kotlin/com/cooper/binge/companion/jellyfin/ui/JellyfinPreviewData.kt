@@ -44,6 +44,14 @@ val previewEnterServerNotJellyfin = UiState.EnterServer(address = "192.168.1.30:
 
 val previewEnterServerGeneric = UiState.EnterServer(address = "192.168.1.20:8096", error = SetupError.Generic)
 
+/** A typed `http://` address to a public host: Connect waits for the user to agree to plain HTTP. */
+val previewEnterServerInsecure = UiState.EnterServer(address = "http://media.example.com:8096", insecureHost = "media.example.com")
+
+val previewEnterServerInsecureAgreed = previewEnterServerInsecure.copy(cleartextAllowed = true)
+
+/** The app refused plain HTTP to a public host, and says why. */
+val previewEnterServerCleartextRefused = previewEnterServerInsecure.copy(error = SetupError.CleartextRefused)
+
 val previewSignIn = UiState.SignIn(baseUrl = LAN, server = lanServer, username = "sam")
 
 val previewSetupIncomplete = previewSignIn.copy(server = lanServer.copy(startupWizardCompleted = false))
