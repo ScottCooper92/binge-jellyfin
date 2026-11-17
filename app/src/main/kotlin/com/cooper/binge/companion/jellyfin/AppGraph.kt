@@ -64,7 +64,6 @@ import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.CleartextGate
 import com.cooper.homelab.core.server.network.CleartextGuard
 import com.cooper.homelab.core.server.network.DataStoreCleartextConsent
-import com.cooper.homelab.core.server.network.isLocalOrPrivateHost
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.AnalyticsConsentGate
 import com.cooper.homelab.core.telemetry.AnalyticsDecorator
@@ -84,10 +83,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.UUID
@@ -134,13 +133,13 @@ class AppGraph(
      */
     private val cleartextConsent: CleartextConsent by lazy {
         DataStoreCleartextConsent(dataStore("cleartext_consent")) {
-            sessions
-                .current()
-                ?.baseUrl
-                ?.toHttpUrlOrNull()
-                ?.takeIf { !it.isHttps && !isLocalOrPrivateHost(it.host) }
-                ?.host
+            insecurePublicHost(sessions.current()?.baseUrl)
         }
+    }
+
+    /** Drops the consent to a public plain-HTTP host once the user leaves that server. Only with the address policy on. */
+    fun startCleartextConsent() {
+        if (addressPolicyEnabled) cleartextConsent.followSession(sessions.session.map { it?.baseUrl }, scope)
     }
 
     private fun dataStore(name: String): DataStore<Preferences> =

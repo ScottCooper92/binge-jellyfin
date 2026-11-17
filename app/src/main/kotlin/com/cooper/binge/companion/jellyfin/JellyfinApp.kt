@@ -22,5 +22,6 @@ class JellyfinApp :
         graph.crashReporting.start()
         graph.reviewPrompt.start()
         graph.notificationPlanner.start()
+        graph.startCleartextConsent()
     }
 }
