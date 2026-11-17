@@ -1,13 +1,11 @@
 package com.cooper.binge.companion.jellyfin.ui.search
 
 import com.binge.designsystem.SaveStatus
-import com.cooper.binge.companion.jellyfin.server.HomeLayout
-import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
-import com.cooper.binge.companion.jellyfin.server.SubtitleMode
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
-import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutUiState
-import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
 import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -15,17 +13,18 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** What a search result's switch says of a server-backed page, from the page's own state and through the page's own setters. */
+/** What a search result's switch says of a server-backed page, from the one copy of the configuration and through its setters. */
 class ServerSwitchesTest {
-    private val playbackRows =
+    private val rows =
         listOf(
-            SettingRows.PLAYBACK_DEFAULT_AUDIO,
-            SettingRows.PLAYBACK_REMEMBER_AUDIO,
-            SettingRows.PLAYBACK_REMEMBER_SUBTITLES,
-            SettingRows.PLAYBACK_AUTOPLAY,
+            SettingRows.PLAYBACK_DEFAULT_AUDIO to "defaultAudio",
+            SettingRows.PLAYBACK_REMEMBER_AUDIO to "rememberAudio",
+            SettingRows.PLAYBACK_REMEMBER_SUBTITLES to "rememberSubtitles",
+            SettingRows.PLAYBACK_AUTOPLAY to "autoplay",
+            SettingRows.HOME_HIDE_PLAYED to "hidePlayed",
+            SettingRows.HOME_MISSING_EPISODES to "missingEpisodes",
+            SettingRows.HOME_COLLECTIONS to "collections",
         )
-
-    private val homeRows = listOf(SettingRows.HOME_HIDE_PLAYED, SettingRows.HOME_MISSING_EPISODES, SettingRows.HOME_COLLECTIONS)
 
     private class Recorder {
         val calls = mutableListOf<String>()
@@ -33,156 +32,96 @@ class ServerSwitchesTest {
         fun setter(name: String): (Boolean) -> Unit = { calls += "$name=$it" }
     }
 
-    private fun playbackSwitches(recorder: Recorder) =
-        PlaybackSwitches(
+    private fun switches(recorder: Recorder) =
+        ServerSwitches(
             recorder.setter("defaultAudio"),
             recorder.setter("rememberAudio"),
             recorder.setter("rememberSubtitles"),
             recorder.setter("autoplay"),
+            recorder.setter("hidePlayed"),
+            recorder.setter("missingEpisodes"),
+            recorder.setter("collections"),
         )
 
-    private fun homeSwitches(recorder: Recorder) =
-        HomeSwitches(recorder.setter("hidePlayed"), recorder.setter("missingEpisodes"), recorder.setter("collections"))
-
-    private fun playback(
-        preferences: PlaybackPreferences,
+    private fun ready(
+        configuration: JsonObject = JsonObject(emptyMap()),
         save: SaveProgress = SaveProgress(),
-    ) = PlaybackUiState.Ready(preferences, emptyList(), save)
-
-    private val prefs = PlaybackPreferences("en", "en", SubtitleMode.Default)
+    ) = SearchSwitchesState.Ready(configuration, save)
 
     @Test
-    fun `each playback switch carries the page's value and calls the page's own setter`() {
-        val expected =
-            mapOf(
-                SettingRows.PLAYBACK_DEFAULT_AUDIO to "defaultAudio",
-                SettingRows.PLAYBACK_REMEMBER_AUDIO to "rememberAudio",
-                SettingRows.PLAYBACK_REMEMBER_SUBTITLES to "rememberSubtitles",
-                SettingRows.PLAYBACK_AUTOPLAY to "autoplay",
-            )
-        playbackRows.forEach { row ->
+    fun `each switch carries its own value and calls its own setter`() {
+        rows.forEach { (row, name) ->
             val recorder = Recorder()
-            val on = playbackToggle(row, playback(prefs), playbackSwitches(recorder))!!
-            assertTrue("$row is on", on.checked)
-            assertTrue(on.enabled)
-            assertFalse(on.loading)
-            on.onCheckedChange(false)
-            assertEquals("$row calls its own setter", listOf("${expected.getValue(row)}=false"), recorder.calls)
+            val toggle = serverToggle(row, ready(), switches(recorder))
+            assertNotNull(row, toggle)
+            toggle!!.onCheckedChange(false)
+            assertEquals("$row calls its own setter", listOf("$name=false"), recorder.calls)
+            assertTrue(toggle.enabled)
+            assertFalse(toggle.loading)
         }
     }
 
     @Test
-    fun `a playback switch reads its own value, not a neighbour's`() {
-        val only = prefs.copy(playDefaultAudioTrack = false, rememberAudio = true, rememberSubtitles = false, autoplayNextEpisode = true)
-        val checked = playbackRows.associateWith { playbackToggle(it, playback(only), playbackSwitches(Recorder()))!!.checked }
+    fun `each switch reads its own key, not a neighbour's`() {
+        val configuration =
+            buildJsonObject {
+                put("PlayDefaultAudioTrack", false)
+                put("RememberAudioSelections", true)
+                put("RememberSubtitleSelections", false)
+                put("EnableNextEpisodeAutoPlay", true)
+                put("HidePlayedInLatest", false)
+                put("DisplayMissingEpisodes", true)
+                put("DisplayCollectionsView", false)
+            }
+        val checked = rows.associate { (row, _) -> row to serverToggle(row, ready(configuration), switches(Recorder()))!!.checked }
         assertEquals(
             mapOf(
                 SettingRows.PLAYBACK_DEFAULT_AUDIO to false,
                 SettingRows.PLAYBACK_REMEMBER_AUDIO to true,
                 SettingRows.PLAYBACK_REMEMBER_SUBTITLES to false,
                 SettingRows.PLAYBACK_AUTOPLAY to true,
+                SettingRows.HOME_HIDE_PLAYED to false,
+                SettingRows.HOME_MISSING_EPISODES to true,
+                SettingRows.HOME_COLLECTIONS to false,
             ),
             checked,
         )
     }
 
     @Test
-    fun `a playback switch shows a spinner and takes no tap until the page has loaded`() {
-        playbackRows.forEach { row ->
-            val toggle = playbackToggle(row, PlaybackUiState.Loading, playbackSwitches(Recorder()))!!
-            assertTrue(toggle.loading)
-            assertFalse(toggle.enabled)
+    fun `a switch shows a spinner and takes no tap until the configuration has been read`() {
+        listOf(SearchSwitchesState.Idle, SearchSwitchesState.Loading).forEach { state ->
+            rows.forEach { (row, _) ->
+                val toggle = serverToggle(row, state, switches(Recorder()))!!
+                assertTrue(toggle.loading)
+                assertFalse(toggle.enabled)
+            }
         }
     }
 
     @Test
-    fun `a playback switch is not drawn when the page failed to load`() {
-        playbackRows.forEach { row ->
-            assertNull(playbackToggle(row, PlaybackUiState.Failed(ConsoleFailure.Unreachable), playbackSwitches(Recorder())))
+    fun `a switch is not drawn when the configuration could not be read`() {
+        rows.forEach { (row, _) ->
+            assertNull(serverToggle(row, SearchSwitchesState.Failed(ConsoleFailure.Unreachable), switches(Recorder())))
         }
     }
 
     @Test
-    fun `a playback switch shows a spinner while its write is in flight and returns when it lands`() {
-        val saving = playback(prefs, SaveProgress(status = SaveStatus.Saving))
-        assertTrue(playbackToggle(SettingRows.PLAYBACK_AUTOPLAY, saving, playbackSwitches(Recorder()))!!.loading)
-        val saved = playback(prefs, SaveProgress(status = SaveStatus.Saved))
-        assertFalse(playbackToggle(SettingRows.PLAYBACK_AUTOPLAY, saved, playbackSwitches(Recorder()))!!.loading)
+    fun `a switch shows a spinner while its write is in flight and returns when it lands`() {
+        val saving = ready(save = SaveProgress(status = SaveStatus.Saving))
+        assertTrue(serverToggle(SettingRows.HOME_COLLECTIONS, saving, switches(Recorder()))!!.loading)
+        val saved = ready(save = SaveProgress(status = SaveStatus.Saved))
+        assertFalse(serverToggle(SettingRows.HOME_COLLECTIONS, saved, switches(Recorder()))!!.loading)
     }
 
     @Test
-    fun `a playback switch shows the value the page put back after a refusal`() {
-        val refused = playback(prefs.copy(autoplayNextEpisode = true)).copy(refused = ConsoleFailure.Refused)
-        assertTrue(playbackToggle(SettingRows.PLAYBACK_AUTOPLAY, refused, playbackSwitches(Recorder()))!!.checked)
+    fun `a row that is not one of the seven has none`() {
+        assertNull(serverToggle(SettingRows.THIS_APP_USAGE_DATA, ready(), switches(Recorder())))
+        assertNull(serverToggle(null, ready(), switches(Recorder())))
     }
 
     @Test
-    fun `a row that is not a playback switch has none`() {
-        assertNull(playbackToggle(SettingRows.HOME_COLLECTIONS, playback(prefs), playbackSwitches(Recorder())))
-        assertNull(playbackToggle(null, playback(prefs), playbackSwitches(Recorder())))
-    }
-
-    private fun home(
-        layout: HomeLayout,
-        save: SaveProgress = SaveProgress(),
-    ) = HomeLayoutUiState.Ready(views = emptyList(), layout = layout, save = save)
-
-    @Test
-    fun `each home screen switch carries the page's value and calls the page's own setter`() {
-        val expected =
-            mapOf(
-                SettingRows.HOME_HIDE_PLAYED to "hidePlayed",
-                SettingRows.HOME_MISSING_EPISODES to "missingEpisodes",
-                SettingRows.HOME_COLLECTIONS to "collections",
-            )
-        homeRows.forEach { row ->
-            val recorder = Recorder()
-            val toggle =
-                homeToggle(
-                    row,
-                    home(HomeLayout(hidePlayedInLatest = true, displayMissingEpisodes = true, displayCollectionsView = true)),
-                    homeSwitches(recorder),
-                )
-            assertNotNull(row, toggle)
-            toggle!!.onCheckedChange(false)
-            assertEquals(listOf("${expected.getValue(row)}=false"), recorder.calls)
-        }
-    }
-
-    @Test
-    fun `a home screen switch reads its own value`() {
-        val layout = HomeLayout(hidePlayedInLatest = true, displayMissingEpisodes = false, displayCollectionsView = true)
-        val checked = homeRows.associateWith { homeToggle(it, home(layout), homeSwitches(Recorder()))!!.checked }
-        assertEquals(
-            mapOf(
-                SettingRows.HOME_HIDE_PLAYED to true,
-                SettingRows.HOME_MISSING_EPISODES to false,
-                SettingRows.HOME_COLLECTIONS to true,
-            ),
-            checked,
-        )
-    }
-
-    @Test
-    fun `a home screen switch waits for the page, is not drawn when it failed, and spins while it saves`() {
-        homeRows.forEach { row ->
-            val loading = homeToggle(row, HomeLayoutUiState.Loading, homeSwitches(Recorder()))!!
-            assertTrue(loading.loading)
-            assertFalse(loading.enabled)
-            assertNull(homeToggle(row, HomeLayoutUiState.Failed(ConsoleFailure.Unreachable), homeSwitches(Recorder())))
-            val saving = homeToggle(row, home(HomeLayout(), SaveProgress(status = SaveStatus.Saving)), homeSwitches(Recorder()))!!
-            assertTrue(saving.loading)
-        }
-    }
-
-    @Test
-    fun `a row that is not a home screen switch has none`() {
-        assertNull(homeToggle(SettingRows.PLAYBACK_AUTOPLAY, home(HomeLayout()), homeSwitches(Recorder())))
-    }
-
-    @Test
-    fun `every server switch row is a keyed entry of the index, and only those`() {
-        val rows = (playbackRows + homeRows).toSet()
-        assertEquals(rows, PLAYBACK_SWITCH_ROWS + HOME_SWITCH_ROWS)
+    fun `the seven rows are the ones the view model's switches cover`() {
+        assertEquals(rows.map { it.first }.toSet(), PLAYBACK_SWITCH_ROWS + HOME_SWITCH_ROWS)
     }
 }

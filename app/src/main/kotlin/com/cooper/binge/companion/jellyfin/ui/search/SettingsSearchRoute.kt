@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -56,7 +58,7 @@ internal fun SettingsSearchRoute(
             )
         }
     val state by search.state.collectAsStateWithLifecycle()
-    val server = remember { SearchServerSwitches() }
+    var switches by remember { mutableStateOf<SearchSwitchesViewModel?>(null) }
     val host = remember { SnackbarHostState() }
     Box(Modifier.fillMaxSize()) {
         SettingsSearchScreen(
@@ -72,13 +74,13 @@ internal fun SettingsSearchRoute(
             onClearRecent = search::clearRecent,
             toggle =
                 if (graph.searchTogglesEnabled) {
-                    { entry, _ -> serverSwitchToggle(entry.row, graph, profile, server) ?: searchToggle(entry, actions) }
+                    { entry, _ -> serverSwitchToggle(entry.row, graph) { switches = it } ?: searchToggle(entry, actions) }
                 } else {
                     null
                 },
         )
         // What the pages say of a save, said here too, since the user does not leave the search to flip a switch.
-        SearchServerMessages(server, host)
+        SearchServerMessages(switches, host)
         BingeSnackbarHost(host, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing))
     }
 }
