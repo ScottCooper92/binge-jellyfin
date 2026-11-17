@@ -86,6 +86,7 @@ internal fun AppGroup(
                     icon = Icons.Outlined.BarChart,
                     label = stringResource(R.string.settings_share_usage_data),
                     detail = stringResource(R.string.settings_share_usage_data_caption),
+                    supportingMaxLines = CAPTION_LINES,
                     toggled = settings.shareUsageData,
                     onClick = { actions.onShareUsageData(!settings.shareUsageData) },
                     key = SettingRows.THIS_APP_USAGE_DATA,
@@ -94,6 +95,7 @@ internal fun AppGroup(
                     icon = Icons.Outlined.Healing,
                     label = stringResource(R.string.settings_send_crash_reports),
                     detail = stringResource(R.string.settings_send_crash_reports_caption),
+                    supportingMaxLines = CAPTION_LINES,
                     toggled = settings.sendCrashReports,
                     onClick = { actions.onSendCrashReports(!settings.sendCrashReports) },
                     key = SettingRows.THIS_APP_CRASH_REPORTS,
@@ -260,3 +262,6 @@ fun rememberAppSettingsBinding(prefs: TelemetryPrefs): AppSettingsBinding {
         setCrashReports = { enabled -> scope.launch { prefs.setCrashReportingEnabled(enabled) } },
     )
 }
+
+/** Lines a toggle's caption may take before it is cut: more than one, so a larger font wraps the words rather than hiding them. */
+private const val CAPTION_LINES = 3

@@ -1470,7 +1470,7 @@
     <string name="settings_share_usage_data">Share usage data</string>
     <string name="settings_share_usage_data_caption">Sends which screens and actions you use</string>
     <string name="settings_send_crash_reports">Send crash reports</string>
-    <string name="settings_send_crash_reports_caption">Sends what the app was doing when it crashed</string>
+    <string name="settings_send_crash_reports_caption">Sends a report if the app crashes</string>
     <string name="consent_kicker">Privacy</string>
     <string name="consent_title">Help make this app better</string>
     <string name="consent_subtitle">Share usage data and crash reports so we can see which parts of the app get used and what breaks.</string>

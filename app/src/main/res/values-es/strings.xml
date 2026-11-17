@@ -1467,7 +1467,7 @@
     <string name="settings_share_usage_data">Compartir datos de uso</string>
     <string name="settings_share_usage_data_caption">Envía qué pantallas y acciones usas</string>
     <string name="settings_send_crash_reports">Enviar informes de fallos</string>
-    <string name="settings_send_crash_reports_caption">Envía lo que hacía la aplicación cuando falló</string>
+    <string name="settings_send_crash_reports_caption">Envía un informe si la app falla</string>
     <string name="consent_kicker">Privacidad</string>
     <string name="consent_title">Ayuda a mejorar esta aplicación</string>
     <string name="consent_subtitle">Comparte datos de uso e informes de fallos para que veamos qué partes de la aplicación se usan y qué falla.</string>
