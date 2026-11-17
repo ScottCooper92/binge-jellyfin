@@ -3,7 +3,7 @@
     <application>
         <!--
             Debug builds only. Turns the shared library's per-server stores on or off for the next launch:
-            adb shell am broadcast -a APPLICATION_ID.SERVER_REGISTRY with the boolean extra enabled set to true (the ez flag)
+            adb shell am broadcast -a APPLICATION_ID.SERVER_REGISTRY, naming the package with -p, and the boolean extra enabled set to true
             The DUMP permission is held by the shell and by no ordinary app, so only adb can send it.
         -->
         <receiver

@@ -61,19 +61,21 @@ class RegistrySessionStore(
         val address = ServerAddress.parse(session.baseUrl) ?: return false
         val name = session.serverName.ifBlank { address.host }
         val existing = registry.current().activeServer
-        val server =
-            existing?.copy(address = address, name = name)?.also { registry.update(it) }
-                ?: SavedServer(serverIdentity.currentServerId(), address, name, JELLYFIN_KIND).also { registry.restore(it) }
-        return try {
-            logins.save(server.id, JellyfinLogin(session.serverId, session.serverVersion, session.userId, session.userName, session.token))
-            true
+        val id = existing?.id ?: serverIdentity.currentServerId()
+        // The login goes first. It encrypts before it writes, so a keymaster that throws leaves the registry exactly as it was.
+        try {
+            logins.save(id, JellyfinLogin(session.serverId, session.serverVersion, session.userId, session.userName, session.token))
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            // A keymaster that throws leaves nothing half-written: a server added for this attempt goes again.
-            if (existing == null) registry.remove(server.id)
-            false
+            return false
         }
+        if (existing != null) {
+            registry.update(existing.copy(address = address, name = name))
+        } else {
+            registry.restore(SavedServer(id, address, name, JELLYFIN_KIND))
+        }
+        return true
     }
 
     override suspend fun clear() {
