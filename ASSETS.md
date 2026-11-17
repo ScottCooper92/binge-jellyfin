@@ -1,6 +1,6 @@
 # Artwork
 
-These files are not covered by the GPL. They are the app's identity, and are kept apart from its code.
+These files are the app's identity, and are kept apart from its code. Like the code, they are all rights reserved.
 
 ## What this covers
 
@@ -17,8 +17,8 @@ These files are not covered by the GPL. They are the app's identity, and are kep
 
 ## What this does not cover
 
-Everything else in this repository is under the GPL, including the screenshot reference images under
-`app/src/screenshotTestDebug/`, which are test fixtures.
+Everything else in this repository is the code, which is all rights reserved too (see [LICENSE](LICENSE)), including the screenshot
+reference images under `app/src/screenshotTestDebug/`, which are test fixtures.
 
 ## Terms
 
@@ -28,5 +28,4 @@ The only permission is this: you may redistribute these files, unmodified, as pa
 copy of the app. A fork, or any modified build, must replace every file listed above with its own,
 and must not use the name (see [TRADEMARKS.md](TRADEMARKS.md)).
 
-A fork under the GPL keeps the code, and has to replace this artwork with its own. See also
-[TRADEMARKS.md](TRADEMARKS.md).
+See also [TRADEMARKS.md](TRADEMARKS.md).

@@ -48,37 +48,21 @@ git submodule update --init --recursive
 ```
 
 The app also links a private library of the author's, `homelab-core`, through the same kind of submodule. Its source is not
-public, so **only the author's own CI and machines can build this app**. A fork can read the code and review a pull request,
-but cannot compile it, and a reproducible build from source is not possible. The licence exception below covers the link.
+public, so **only the author's own CI and machines can build this app**.
 
 `CLAUDE.md` has the conventions, the gates and the rules the review bots read.
 
 ## Licence
 
-This app is free software. You can redistribute it and modify it under the terms of the GNU General
-Public License, version 3 or (at your option) any later version (GPL-3.0-or-later). See
+Copyright (c) 2025-2026 Scott Cooper. All rights reserved. No licence is granted to copy, modify or distribute this code. See
 [LICENSE](LICENSE).
 
-    Copyright (C) 2026 Scott Cooper
-
-    This program is free software: you can redistribute it and/or modify it under the terms of
-    the GNU General Public License as published by the Free Software Foundation, either version 3
-    of the License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the GNU General Public License for more details.
-
-The copyright holder is the owner, Scott Cooper.
-
-- **An additional permission** under section 7 of the GPL, for Google's Play services, Play Billing, Play In-App Review
-  and Firebase libraries and for the `homelab-core` libraries by Scott Cooper, is in [LICENSE-EXCEPTION.md](LICENSE-EXCEPTION.md). The app links Firebase Remote Config.
-- **The name and artwork are not licensed by the GPL.** See [TRADEMARKS.md](TRADEMARKS.md) and
-  [ASSETS.md](ASSETS.md). A fork has to use another name and other artwork.
+- **The name and artwork** are reserved in the same way. See [TRADEMARKS.md](TRADEMARKS.md) and [ASSETS.md](ASSETS.md).
+- **Versions already released** stay under the licence they shipped with.
 - **The contracts and SDK stay Apache 2.0.** They are in
   [binge-companions](https://github.com/ScottCooper92/binge-companions), so anyone can write a
-  companion without taking on the GPL. The design system's licence is decided separately.
-- **Dependencies** are all under licences the GPL is compatible with: Apache 2.0 for AndroidX, Compose,
-  Kotlin, kotlinx, OkHttp, Okio and gRPC; BSD 3-Clause for protobuf; and Google's own terms for
-  Firebase Remote Config, the Play services under it, Play Billing and Play In-App Review (Play Core), which the exception above covers. JUnit
-  (EPL 1.0), Robolectric (MIT) and the other test libraries are used for tests only and are not shipped.
+  companion. The design system's licence is decided separately.
+- **Third-party libraries** keep their own licences, which the app lists under Open-source licences: Apache 2.0 for AndroidX,
+  Compose, Kotlin, kotlinx, OkHttp, Okio and gRPC; BSD 3-Clause for protobuf; and Google's own terms for Firebase Remote Config,
+  Crashlytics, the Play services under them, Play Billing and Play In-App Review (Play Core). JUnit (EPL 1.0), Robolectric (MIT)
+  and the other test libraries are used for tests only and are not shipped.
