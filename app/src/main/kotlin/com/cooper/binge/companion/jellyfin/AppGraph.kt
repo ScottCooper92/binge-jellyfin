@@ -63,6 +63,7 @@ import com.cooper.homelab.core.server.connection.ServerRegistry
 import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.CleartextGate
 import com.cooper.homelab.core.server.network.CleartextGuard
+import com.cooper.homelab.core.server.network.ClientCertificateProbe
 import com.cooper.homelab.core.server.network.DataStoreCleartextConsent
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.AnalyticsConsentGate
@@ -90,6 +91,8 @@ import okhttp3.OkHttpClient
 import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.net.SocketFactory
+import javax.net.ssl.SSLSocketFactory
 import com.cooper.homelab.core.server.connection.CredentialStore as LoginStore
 
 /** The app's object graph, built by hand. One of each for the life of the process. */
@@ -123,6 +126,12 @@ class AppGraph(
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .apply {
+                // Throwaway, for a device check only: asks a server that dropped a call why, when the answer is a client certificate.
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(
+                        ClientCertificateProbe(SSLSocketFactory.getDefault() as SSLSocketFactory, SocketFactory.getDefault(), 500),
+                    )
+                }
                 // A network interceptor, so it judges every hop, a redirect down to HTTP included. The demo never reaches it.
                 if (addressPolicyEnabled) {
                     addNetworkInterceptor(
