@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.binge.designsystem.DecisionCopy
 import com.binge.designsystem.DecisionPoint
 import com.binge.designsystem.component.BingeLoadingIndicator
@@ -18,6 +20,7 @@ import com.binge.designsystem.tv.template.TvDecisionPage
 import com.binge.designsystem.tv.template.TvPageHosting
 import com.cooper.homelab.core.telemetry.AnalyticsConsent
 import com.cooper.homelab.ephyra.R
+import com.cooper.homelab.core.uiandroid.R as CoreR
 
 /** The phone's consent gate on a television: the same question, before sign-in and the home. */
 @Composable
@@ -27,9 +30,18 @@ internal fun TvConsentGate(
     content: @Composable () -> Unit,
 ) {
     when (consent) {
-        null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
+        null -> TvConsentLoading()
         AnalyticsConsent.UNDECIDED -> TvConsentScreen(onChoice = onAnswer)
         AnalyticsConsent.GRANTED, AnalyticsConsent.DENIED -> content()
+    }
+}
+
+/** What stands in for the question while the stored answer is read, described as the library's phone gate describes its own. */
+@Composable
+private fun TvConsentLoading() {
+    val description = stringResource(CoreR.string.consent_loading)
+    Box(Modifier.fillMaxSize().semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
+        BingeLoadingIndicator()
     }
 }
 
@@ -47,14 +59,14 @@ internal fun TvConsentScreen(
     TvDecisionPage(
         copy =
             DecisionCopy(
-                title = stringResource(R.string.tv_consent_title),
-                subtitle = stringResource(R.string.tv_consent_subtitle),
-                kicker = stringResource(R.string.tv_consent_kicker),
+                title = stringResource(CoreR.string.consent_title),
+                subtitle = stringResource(CoreR.string.consent_subtitle),
+                kicker = stringResource(CoreR.string.consent_kicker),
                 note = stringResource(R.string.tv_consent_reassurance),
             ),
         points = tvConsentPoints(),
-        accept = ScreenAction(stringResource(R.string.tv_consent_accept), onClick = { onChoice(true) }),
-        decline = ScreenAction(stringResource(R.string.tv_consent_decline), onClick = { onChoice(false) }),
+        accept = ScreenAction(stringResource(CoreR.string.consent_accept), onClick = { onChoice(true) }),
+        decline = ScreenAction(stringResource(CoreR.string.consent_decline), onClick = { onChoice(false) }),
         modifier = modifier,
         // A gate before sign-in and the home, so the page places its own first focus on Share.
         hosting = TvPageHosting.PreShell,
@@ -67,17 +79,17 @@ private fun tvConsentPoints(): List<DecisionPoint> =
     listOf(
         DecisionPoint(
             Icons.Filled.BarChart,
-            stringResource(R.string.tv_consent_point_shared_title),
-            stringResource(R.string.tv_consent_point_shared_detail),
+            stringResource(CoreR.string.consent_point_shared_title),
+            stringResource(CoreR.string.consent_point_shared_detail),
         ),
         DecisionPoint(
             Icons.Filled.VisibilityOff,
-            stringResource(R.string.tv_consent_point_never_title),
-            stringResource(R.string.tv_consent_point_never_detail),
+            stringResource(CoreR.string.consent_point_never_title),
+            stringResource(CoreR.string.consent_point_never_detail),
         ),
         DecisionPoint(
             Icons.Filled.ToggleOff,
             stringResource(R.string.tv_consent_point_change_title),
-            stringResource(R.string.tv_consent_point_change_detail),
+            stringResource(CoreR.string.consent_point_change_detail),
         ),
     )

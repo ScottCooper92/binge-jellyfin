@@ -1,52 +1,62 @@
 package com.cooper.homelab.ephyra.ui.tv
 
-import android.content.Context
-import android.content.res.Configuration
-import androidx.test.core.app.ApplicationProvider
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.onNodeWithText
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.ephyra.R
-import org.junit.Assert.assertEquals
+import com.cooper.homelab.ephyra.theme.JellyfinTvTheme
+import org.junit.Assert.assertNotEquals
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.util.Locale
+import org.robolectric.annotation.Config
 import com.cooper.homelab.core.uiandroid.R as CoreR
 
 /**
- * The television keeps its own consent screen, but the words it shares with the phone's question are the shared library's, so the
- * two cannot say different things. Only what is worded for a remote (the last point's title and the reassurance) is the TV's own.
+ * The television keeps its own consent screen, but the words it shares with the phone's question are the shared library's own
+ * strings, read from the library, so the two cannot say different things. Only what is worded for a remote (the last point's title
+ * and the reassurance) is the TV's. The screen is rendered and each library string is looked for on it.
  */
 @RunWith(RobolectricTestRunner::class)
 class TvConsentCopyTest {
-    private fun context(language: String): Context {
-        val base = ApplicationProvider.getApplicationContext<Context>()
-        val configuration = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(language)) }
-        return base.createConfigurationContext(configuration)
-    }
+    @get:Rule
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private val shared =
         listOf(
-            R.string.tv_consent_kicker to CoreR.string.consent_kicker,
-            R.string.tv_consent_title to CoreR.string.consent_title,
-            R.string.tv_consent_subtitle to CoreR.string.consent_subtitle,
-            R.string.tv_consent_point_shared_title to CoreR.string.consent_point_shared_title,
-            R.string.tv_consent_point_shared_detail to CoreR.string.consent_point_shared_detail,
-            R.string.tv_consent_point_never_title to CoreR.string.consent_point_never_title,
-            R.string.tv_consent_point_never_detail to CoreR.string.consent_point_never_detail,
-            R.string.tv_consent_point_change_detail to CoreR.string.consent_point_change_detail,
-            R.string.tv_consent_accept to CoreR.string.consent_accept,
-            R.string.tv_consent_decline to CoreR.string.consent_decline,
+            CoreR.string.consent_kicker,
+            CoreR.string.consent_title,
+            CoreR.string.consent_subtitle,
+            CoreR.string.consent_point_shared_title,
+            CoreR.string.consent_point_shared_detail,
+            CoreR.string.consent_point_never_title,
+            CoreR.string.consent_point_never_detail,
+            CoreR.string.consent_point_change_detail,
+            CoreR.string.consent_accept,
+            CoreR.string.consent_decline,
         )
 
-    private fun assertSame(language: String) {
-        val context = context(language)
-        shared.forEach { (tv, core) ->
-            assertEquals(context.resources.getResourceEntryName(tv), context.getString(core), context.getString(tv))
-        }
+    /** The page may set a word in capitals or fold a point into one node, so the text is matched whatever its case, in the unmerged tree. */
+    private fun shown(id: Int) {
+        compose.onNodeWithText(compose.activity.getString(id), ignoreCase = true, useUnmergedTree = true).assertExists()
+    }
+
+    private fun assertLibraryWordsShown() {
+        compose.setContent { JellyfinTvTheme { TvConsentScreen(onChoice = {}) } }
+        shared.forEach { shown(it) }
+        shown(R.string.tv_consent_reassurance)
+        // The last point's title is the TV's own, worded for a press and not a tap.
+        assertNotEquals(
+            compose.activity.getString(CoreR.string.consent_point_change_title),
+            compose.activity.getString(R.string.tv_consent_point_change_title),
+        )
     }
 
     @Test
-    fun `the words shared with the phone are the same in English`() = assertSame("en")
+    fun `the screen shows the library's words in English`() = assertLibraryWordsShown()
 
     @Test
-    fun `the words shared with the phone are the same in Spanish`() = assertSame("es")
+    @Config(qualifiers = "es")
+    fun `the screen shows the library's words in Spanish`() = assertLibraryWordsShown()
 }
