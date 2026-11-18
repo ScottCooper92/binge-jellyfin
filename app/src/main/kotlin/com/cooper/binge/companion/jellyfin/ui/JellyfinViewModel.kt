@@ -20,7 +20,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.PublicUser
-import com.cooper.binge.companion.jellyfin.server.Reach
+import com.cooper.binge.companion.jellyfin.server.SAVED_SERVER
 import com.cooper.binge.companion.jellyfin.server.SignedIn
 import com.cooper.binge.companion.jellyfin.server.authenticateByName
 import com.cooper.binge.companion.jellyfin.server.authenticateWithQuickConnect
@@ -60,6 +60,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import java.io.IOException
+import com.cooper.homelab.core.server.connection.ConnectionHealth as CoreConnectionHealth
 
 /** Why a step failed, as the screen words it. */
 enum class SetupError {
@@ -261,14 +262,14 @@ fun JellyfinViewModel.localNetworkAnswered() {
  * read is its own: [ConnectionHealth.Checking] is not touched here.
  */
 internal fun UiState.afterReach(
-    reach: Reach,
+    reach: CoreConnectionHealth,
     localNetwork: LocalNetworkPermission,
 ): UiState {
     val signedIn = this as? UiState.SignedIn ?: return this
     return when {
-        reach == Reach.Unreached && signedIn.health == ConnectionHealth.Healthy ->
+        reach == CoreConnectionHealth.Unreachable && signedIn.health == ConnectionHealth.Healthy ->
             signedIn.copy(health = unreachableHealth(signedIn.session.baseUrl, localNetwork), refreshFailed = true)
-        reach == Reach.Reached && signedIn.health == ConnectionHealth.Unreachable ->
+        reach == CoreConnectionHealth.Healthy && signedIn.health == ConnectionHealth.Unreachable ->
             signedIn.copy(health = ConnectionHealth.Healthy, refreshFailed = false)
         else -> signedIn
     }
@@ -417,7 +418,11 @@ class JellyfinViewModel(
             connection.refused.collect { (_state.value as? UiState.SignedIn)?.let { sessionRefused(it.session) } }
         }
         // The saved server stopped answering, or began again, while the app is open: the home follows it, as binge-seerr's does.
-        viewModelScope.launch { connection.monitor.reach.collect { reach -> _state.update { it.afterReach(reach, localNetwork) } } }
+        viewModelScope.launch {
+            connection.monitor.health(SAVED_SERVER).collect { reach ->
+                _state.update { it.afterReach(reach, localNetwork) }
+            }
+        }
     }
 
     fun onAddress(value: String) =
