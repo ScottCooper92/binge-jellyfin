@@ -206,13 +206,15 @@ jobs:
       # --continue surfaces every failure in one run rather than stopping at the first,
       # which matters most to author-ci-fix: it gets exactly one repair attempt per
       # commit, and a log showing only the first of three failures spends that attempt
-      # fixing a third of the problem. Each -x names a task another job runs; -x also drops
-      # whatever only that task needed, which is the point for assembleRelease's R8.
+      # fixing a third of the problem. Each -x names a task another job runs, with no project in front of it, so it
+      # drops that task in every module, :data's included; -x also drops whatever only that task needed, which is the
+      # point for assembleRelease's R8.
       # There is no release unit-test task to exclude: AGP 9 creates unit tests for the debug build
-      # type only, so testDebugUnitTest is the whole suite and it runs once, in `tests`.
+      # type only, so testDebugUnitTest is the whole suite of each module and it runs once, in `tests`. Only :app has
+      # frames, so the screenshots job is the one task still named with its project.
       - name: Build and lint, less what the other jobs run
         # --stacktrace until #24 names why :app:packageDebug sometimes fails with no cause in the log.
-        run: ./gradlew build --continue --stacktrace -x :app:testDebugUnitTest -x :app:koverVerify -x :app:validateDebugScreenshotTest -x :app:assembleRelease
+        run: ./gradlew build --continue --stacktrace -x testDebugUnitTest -x koverVerify -x validateDebugScreenshotTest -x assembleRelease
 
       - name: Upload reports
         if: ${{ failure() }}
@@ -255,7 +257,7 @@ jobs:
           cache-read-only: true
 
       - name: Unit tests and coverage
-        run: ./gradlew :app:testDebugUnitTest :app:koverVerify --continue
+        run: ./gradlew testDebugUnitTest koverVerify --continue
 
       - name: Upload reports
         if: ${{ failure() }}
@@ -360,7 +362,7 @@ jobs:
           cache-read-only: true
 
       - name: Assemble the release build
-        run: ./gradlew :app:assembleRelease --continue
+        run: ./gradlew assembleRelease --continue
 
       - name: Upload reports
         if: ${{ failure() }}

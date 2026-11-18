@@ -6,7 +6,7 @@
 
 <!-- Tick what you ran locally on the final head. If you couldn't run one, leave it unticked and say why. Don't tick a box you didn't run. -->
 - [ ] `./gradlew ktlintCheck detekt`
-- [ ] `./gradlew :app:lintDebug`
-- [ ] `./gradlew :app:testDebugUnitTest :app:koverVerify`
+- [ ] `./gradlew lintDebug`
+- [ ] `./gradlew testDebugUnitTest koverVerify` (every module)
 - [ ] Re-recorded screenshots viewed: all of them, or every one checked by script and a sample by eye (say which)
 - [ ] Left to CI, and why: <!-- e.g. the release build's R8 runs out of memory locally -->

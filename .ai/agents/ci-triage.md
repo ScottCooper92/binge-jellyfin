@@ -11,10 +11,10 @@ on a PR, lints the workflows in a sixth, then aggregates them in a last one. `.g
 | `submodule-pins` | On a PR only: binge-ci's check that every submodule pin is merged upstream, unless the PR carries `hold` |
 | `actionlint` | Lints the workflows, including the callers of reusable workflows. Skipped on the nightly schedule |
 | `changes` | On a PR: classifies the diff (`.github/scripts/classify-changes.sh`) and says which of the next four jobs run. A job it skipped is skipped on purpose, not a failure: `build` reads its answers. Push and the nightly run all of them |
-| `checks` | `./gradlew build` minus the tasks the next three jobs own: Kotlin compile, `ktlintCheck`, `detekt`, Android `lint`, `checkTvMaterialSeparation`, the debug assemble and `checkTranslationStaleness` |
-| `tests` | `:app:testDebugUnitTest` and `:app:koverVerify` |
+| `checks` | `./gradlew build` minus the tasks the next three jobs own (each `-x` names a task with no project, so it is dropped in `:app` and `:data` alike): Kotlin compile, `ktlintCheck`, `detekt`, Android `lint`, `checkTvMaterialSeparation`, the debug assemble and `checkTranslationStaleness` |
+| `tests` | `testDebugUnitTest` and `koverVerify` in every module (`:app` and `:data`), each module's tests once |
 | `screenshots (0..2)` | `:app:validateDebugScreenshotTest`, three matrix shards, each with its own `--tests` filter |
-| `release` | `:app:assembleRelease`: R8 and lint-vital |
+| `release` | `assembleRelease`: R8 and lint-vital |
 | `build` | Nothing of its own. Green only if the other six are. Merges the four Gradle jobs' reports into one `build-reports` artifact |
 
 `build` is the check branch protection requires, and the one `author-ci-fix.yml` reads. Its log only
@@ -47,7 +47,7 @@ table does not name.
 
 ## Verifying
 
-Run only what failed:
+Run only what failed, in the module the failure names (`:app` or `:data`):
 
 ```sh
 ./gradlew :app:ktlintCheck
@@ -55,6 +55,8 @@ Run only what failed:
 ./gradlew :app:lintDebug
 ./gradlew :app:testDebugUnitTest
 ```
+
+Replace `:app` with `:data` for a failure in `data/`.
 
 Do not run the full gate. CI does that on push.
 

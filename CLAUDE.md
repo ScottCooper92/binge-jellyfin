@@ -252,16 +252,16 @@ where to confirm the list.
 
 - Kotlin compilation, and the debug and release builds (R8 on release).
 - The unit tests (`:app:testDebugUnitTest` and `:data:testDebugUnitTest`). AGP 9 creates unit tests
-  for the debug build type alone, so each suite runs once. CI runs `:app`'s in the `tests` job and `:data`'s in `checks`.
+  for the debug build type alone, so each suite runs once. CI runs both in the `tests` job (`testDebugUnitTest koverVerify`, every module) and keeps them out of `checks`.
 - `ktlintCheck`.
 - `detekt`, with type resolution, against the root `detekt.yml`. There is no baseline: the gate is
   zero findings. Keep it that way rather than creating one.
-- Android lint (`:app:lint`). The translation checks (`MissingTranslation`, `ExtraTranslation` and the
+- Android lint (`:app:lint` and `:data:lint`, both in `checks`). The translation checks (`MissingTranslation`, `ExtraTranslation` and the
   format and quantity checks) and `UnusedResources` are pinned to error: a locale is complete or it
   does not exist, so an English string added without its Spanish is a red build.
 - `checkTranslationStaleness`: a reworded English string whose Spanish was not re-read. Re-read it,
   then `./gradlew updateTranslationHashes` and commit `translation-hashes.txt`.
-- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`, 85%, measured over `:app` and `:data` together (`kover(project(":data"))`). The floor was
+- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`, 85%, measured over `:app` and `:data` together (`kover(project(":data"))`). `:data` also holds itself to 74% on its own tests (`data/build.gradle.kts`). The floor was
   measured, not inherited: the suite sat at 87.8% when the first stack of the app landed. Excluded:
   `MainActivity`, the Application and `AppGraph` (wiring), `JellyfinCompanionService` (it only hands
   the SDK the graph's objects), `BuildConfig`, and composables with their `ComposableSingletons`.
