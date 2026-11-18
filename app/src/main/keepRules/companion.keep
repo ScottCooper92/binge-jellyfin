@@ -14,3 +14,10 @@
 # Line numbers and source file names, so a crash a user reports reads as a stack trace.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# The names of this app's and the shared library's classes (not their methods: those stay obfuscated, and the mapping
+# `release.yml` attaches retraces them). The ring log keeps only the frames of a logged error that
+# start with `OWN_LOG_PACKAGES` (`com.cooper.homelab.`), and R8 would otherwise rename them (`vm`, `s42`) and move them to the root
+# package, so a release user's Diagnostics page would keep none. `-keepnames` keeps a name only for what survives shrinking, so
+# unused code is still removed.
+-keepnames class com.cooper.homelab.**
