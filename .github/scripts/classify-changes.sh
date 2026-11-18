@@ -5,25 +5,26 @@
 # The design is Binge's change classifier, kept deliberately small. A job is skipped only when
 # EVERY changed path is in a closed, finite set that provably cannot affect it. For `product` and
 # `screens` a path in no set runs the job. `release` is the reverse, an allow-list: it runs only for a
-# listed input, so a new R8 input (a source set, assets, a .pro file outside keepRules/) must be added
-# to `release_input`. An empty list runs everything, and so does anything this script cannot read. The
+# listed input, so a new R8 input (a new build file, a keep rule directory) must be added to
+# `release_input`. An empty list runs everything, and so does anything this script cannot read. The
 # suite on main and the nightly never call this, so a wrong skip is found at the next merge.
 #
 #   product  the Gradle jobs: checks (lint, detekt, ktlint, assemble) and tests. False only when
 #            every path is documentation or tooling nothing compiles or packages.
 #   screens  the screenshot frames. False when no path can move a frame: tests, the exported
 #            Service, the review launcher, keep rules and the like.
-#   release  the R8 build. True only for what R8 reads: the version catalog, Gradle files, keep
-#            rules and .pro files, the release source set, assets, the manifest, XML and raw resources, a submodule pin, the workflows
-#            themselves, or (the $SENSITIVE env, set by the caller from the diff's content) code
-#            that R8 can break without a file above changing: serialization, reflection.
+#   release  the R8 build. True only for what decides whether R8 can build the app: a build file (any
+#            *.gradle.kts), the version catalog, `gradle/` and gradle.properties, a keep rule or any .pro
+#            file, or a submodule pin (design-system, binge-companions, binge-ci, homelab-core). Binge builds
+#            release only on a tag; here a PR builds it only for those paths, and every push to main builds it
+#            regardless, so a break the filter missed shows right after the merge. The workflow itself,
+#            the manifest, resources and assets are not inputs: ordinary app code and UI changes skip it.
 #
 # Never state a skip-set path here that a bot reads or that the build reads. `.github/workflows`
 # is in no set: a change to the pipeline is validated by running the pipeline.
 set -euo pipefail
 
 list="${1:?usage: classify-changes.sh <file listing the changed paths>}"
-sensitive="${SENSITIVE:-false}"
 
 # Paths no Gradle task reads.
 non_product() {
@@ -47,14 +48,12 @@ no_frames() {
   return 1
 }
 
-# Paths R8 reads.
+# Paths that decide whether R8 can build the app. Keep this list the same as binge-seerr's.
 release_input() {
   case "$1" in
-    libs.versions.toml | *.gradle.kts | gradle/* | gradle.properties | .gitmodules) return 0 ;;
-    app/src/main/keepRules/* | app/src/main/AndroidManifest.xml | app/src/main/res/xml/* | app/src/main/res/raw/*) return 0 ;;
-    app/*.pro | app/proguard* | app/src/release/* | app/src/main/assets/*) return 0 ;;
-    data/src/main/AndroidManifest.xml | data/src/main/res/* | data/src/main/assets/* | data/*.pro | data/proguard* | data/src/release/*) return 0 ;;
-    design-system | binge-companions | binge-ci | homelab-core | .github/workflows/*) return 0 ;;
+    *.pro | app/src/main/keepRules/*) return 0 ;;
+    *.gradle.kts | libs.versions.toml | gradle/* | gradle.properties) return 0 ;;
+    design-system | binge-companions | binge-ci | homelab-core) return 0 ;;
   esac
   return 1
 }
@@ -77,6 +76,5 @@ for path in "${paths[@]}"; do
   no_frames "$path" || screens=true
   release_input "$path" && release=true
 done
-[ "$product" = true ] && [ "$sensitive" = true ] && release=true
 
 printf 'product=%s\nscreens=%s\nrelease=%s\n' "$product" "$screens" "$release"

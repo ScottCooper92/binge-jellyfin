@@ -283,10 +283,10 @@ job, `build`, is green only if all of them are. It is the check branch protectio
 one the bots read. `ci.yml` explains the split.
 
 On a pull request a `changes` job runs first and `build` reads its answers: a docs-only diff skips every Gradle job, a diff
-that cannot move a frame skips `screenshots`, and `release` runs only when something R8 reads changed. The rules are the
+that cannot move a frame skips `screenshots`, and `release` runs on a PR only when a build file, the version catalog, `gradle/`, `gradle.properties`, a keep rule or `.pro` file, or a submodule pin changes (Binge builds release only on a tag). The rules are the
 lists in `.github/scripts/classify-changes.sh`, tested by `classify-changes.test.sh`. For the Gradle jobs and `screenshots` a
 path in no skip list runs the job. `release` is the reverse, an allow-list: a path runs it only if `release_input` names it, so a
-new R8 input (a source set, assets, a `.pro` file) is added there or the PR skips R8. Push and the nightly run everything.
+new R8 input (a new build file or keep-rule directory) is added there or the PR skips R8. A push to `main` and the nightly run everything, so a break the filter missed shows right after the merge. A skipped `release` counts as passed in `build`.
 
 ### Screenshot frames
 
