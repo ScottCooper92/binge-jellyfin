@@ -122,7 +122,7 @@ working around them:
 
 The server's own OpenAPI document is the source of truth for every endpoint and field:
 `http://<server>/api-docs/openapi.json`. Read it rather than inferring an endpoint from this app's
-code. The calls this app makes are extension functions on `JellyfinClient` in `server/`: sign-in in
+code. The calls this app makes are extension functions on `JellyfinClient` in `server/` (in `:data`): sign-in in
 `JellyfinAuth.kt`, the library and playback in `JellyfinLibraryApi.kt`. `JellyfinClient.kt` is the
 transport alone.
 
@@ -235,10 +235,11 @@ as binge-seerr's TV is.
   applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
 - The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
 - Application id `com.cooper.homelab.ephyra`; a debug build adds `.debug`. The Kotlin package and `namespace` are `com.cooper.homelab.ephyra` too, but a debug build's package name is not (it ends in `.debug`), so a component's class name is built from the package, never the application id. The debug broadcasts (`.ADDRESS_POLICY`, `.SERVER_REGISTRY`, `.SEARCH_TOGGLES`) are built from the application id, so a debug build answers `adb shell am broadcast -a com.cooper.homelab.ephyra.debug.ADDRESS_POLICY -p com.cooper.homelab.ephyra.debug --ez enabled true`.
-- One module, `:app`. Tests are JUnit 4.
+- Two modules. `:data` holds the Jellyfin client (`server/`), the session stores (`auth/`) and the demo (`demo/`): no Compose, no Activity types, no vendor SDK, nothing from `ui/`. `:app` holds everything else and depends on it. Packages keep their names across the split, so a package is not a module: `data/src/main/kotlin/…/server/` is where `server/` is. `internal` means inside `:data`, so what `:app` calls is public. Tests are JUnit 4; `:data`'s tests, and the helpers both modules' tests share (the fake Jellyfin server, `PlainCipher`, `testSessionStore`, `DiscardLogger`), live in `:data`, as `testFixtures`.
 - No DI framework: `AppGraph` builds the handful of objects by hand, and `JellyfinApp` holds it.
 - A Robolectric test needs no `@Config` for the SDK: `app/src/test/resources/robolectric.properties`
-  pins `sdk=34`.
+  pins `sdk=34` and a plain `Application` for the whole module. `:data` carries its own copy of the file, and its own
+  `RobolectricDefaultsTest` asserts it, so each module has its own pin.
 - `runCatching` is banned in `src/main` by detekt. Use the SDK's `attempt`
   (`com.binge.companion.sdk`): `runCatching` also catches the cancellation a cancelled scope sends.
 - Every user-visible string comes from `strings.xml`, with its Spanish in `values-es`. The default
@@ -250,8 +251,8 @@ as binge-seerr's TV is.
 where to confirm the list.
 
 - Kotlin compilation, and the debug and release builds (R8 on release).
-- The unit tests (`:app:testDebugUnitTest`). It is the only unit-test task: AGP 9 creates unit tests
-  for the debug build type alone, so CI runs the suite once, in the `tests` job.
+- The unit tests (`:app:testDebugUnitTest` and `:data:testDebugUnitTest`). AGP 9 creates unit tests
+  for the debug build type alone, so each suite runs once. CI runs `:app`'s in the `tests` job and `:data`'s in `checks`.
 - `ktlintCheck`.
 - `detekt`, with type resolution, against the root `detekt.yml`. There is no baseline: the gate is
   zero findings. Keep it that way rather than creating one.
@@ -260,7 +261,7 @@ where to confirm the list.
   does not exist, so an English string added without its Spanish is a red build.
 - `checkTranslationStaleness`: a reworded English string whose Spanish was not re-read. Re-read it,
   then `./gradlew updateTranslationHashes` and commit `translation-hashes.txt`.
-- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`, 85%. The floor was
+- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`, 85%, measured over `:app` and `:data` together (`kover(project(":data"))`). The floor was
   measured, not inherited: the suite sat at 87.8% when the first stack of the app landed. Excluded:
   `MainActivity`, the Application and `AppGraph` (wiring), `JellyfinCompanionService` (it only hands
   the SDK the graph's objects), `BuildConfig`, and composables with their `ComposableSingletons`.

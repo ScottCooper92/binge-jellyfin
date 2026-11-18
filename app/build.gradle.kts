@@ -198,6 +198,9 @@ tvMaterialSeparation {
 }
 
 dependencies {
+    implementation(project(":data"))
+    // Its classes count towards this module's coverage: the floor below is measured over both, as it was when they were one.
+    kover(project(":data"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     // The licences page reads the list the AboutLibraries plugin writes at build time.
@@ -219,6 +222,8 @@ dependencies {
     implementation(libs.homelab.appservices.posthog)
     implementation(libs.homelab.appservices.firebase)
     testImplementation(libs.homelab.testing)
+    // The fake Jellyfin server and the other helpers the tests of :data share.
+    testImplementation(testFixtures(project(":data")))
     implementation(libs.kotlinx.coroutines.android)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
