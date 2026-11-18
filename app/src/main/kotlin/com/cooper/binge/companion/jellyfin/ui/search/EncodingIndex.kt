@@ -54,9 +54,9 @@ private fun Resources.transcodingSwitch(
 )
 
 /**
- * The Transcoding page's other switches, for an administrator. The page shows many of them only for some acceleration types, which
- * an entry cannot see, so a search for one can list it where the page, set to another type, has no such row. The result's switch
- * is then drawn for no one, and the page opens at the top. (The HEVC and AV1 entries are in the main list, with the same limit.)
+ * The Transcoding page's other switches, for an administrator. The page draws many of them for some acceleration types only, which an
+ * entry cannot see: the route reads the configuration when the search opens and hides the entries the page would not draw
+ * ([drawnFor]). Where it cannot be read, they are all offered.
  */
 internal fun Resources.indexEncodingSwitches(): List<SettingEntry<SearchTarget>> =
     listOf(

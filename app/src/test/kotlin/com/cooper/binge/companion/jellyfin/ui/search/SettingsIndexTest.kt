@@ -3,6 +3,12 @@ package com.cooper.binge.companion.jellyfin.ui.search
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.cooper.binge.companion.jellyfin.R
+import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
+import com.cooper.binge.companion.jellyfin.server.ENCODING_ENHANCED_NVDEC
+import com.cooper.binge.companion.jellyfin.server.ENCODING_HEVC
+import com.cooper.binge.companion.jellyfin.server.ENCODING_SYSTEM_NATIVE
+import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLING
+import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
@@ -10,7 +16,10 @@ import com.cooper.homelab.core.presentation.search.SettingEntry
 import com.cooper.homelab.core.presentation.search.searchSettings
 import com.cooper.homelab.core.uiandroid.resolve
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -110,6 +119,55 @@ class SettingsIndexTest {
             assertTrue(it in offered(it, "10.11.6"))
             assertFalse(it in offered(it, "10.10.7"))
         }
+    }
+
+    private fun encoding(
+        type: String,
+        vararg keys: String,
+    ) = buildJsonObject {
+        put(ENCODING_ACCELERATION, type)
+        keys.forEach { put(it, true) }
+    }
+
+    private fun drawn(
+        key: String,
+        encoding: JsonObject?,
+    ) = index.first { it.row == SettingRows.transcoding(key) }.drawnFor(encoding, JellyfinServerProfile.from("10.11.6"))
+
+    @Test
+    fun `a transcoding entry is offered only for the acceleration types whose page draws its row`() {
+        val every =
+            arrayOf(ENCODING_ENHANCED_NVDEC, ENCODING_SYSTEM_NATIVE, ENCODING_VPP_TONEMAPPING, ENCODING_HEVC, ENCODING_THROTTLING)
+        val qsv = encoding("qsv", *every)
+        assertTrue(drawn(ENCODING_SYSTEM_NATIVE, qsv) && drawn(ENCODING_VPP_TONEMAPPING, qsv) && drawn(ENCODING_HEVC, qsv))
+        assertFalse(drawn(ENCODING_ENHANCED_NVDEC, qsv))
+        val nvenc = encoding("nvenc", *every)
+        assertTrue(drawn(ENCODING_ENHANCED_NVDEC, nvenc))
+        assertFalse(drawn(ENCODING_SYSTEM_NATIVE, nvenc) || drawn(ENCODING_VPP_TONEMAPPING, nvenc))
+        // With no acceleration the page draws no hardware rows, and still draws the ones that are for every type.
+        val none = encoding("none", *every)
+        assertFalse(drawn(ENCODING_HEVC, none))
+        assertTrue(drawn(ENCODING_THROTTLING, none))
+    }
+
+    @Test
+    fun `a transcoding entry is not offered where the server did not send its key`() {
+        assertFalse(drawn(ENCODING_THROTTLING, encoding("qsv")))
+        assertTrue(drawn(ENCODING_THROTTLING, encoding("qsv", ENCODING_THROTTLING)))
+    }
+
+    @Test
+    fun `every entry is offered when the encoding configuration could not be read`() {
+        val profile = JellyfinServerProfile.from("10.11.6")
+        assertEquals(emptyList<String>(), index.filterNot { it.drawnFor(null, profile) }.map { it.id })
+    }
+
+    @Test
+    fun `an entry that is no transcoding switch is not changed by the configuration`() {
+        val profile = JellyfinServerProfile.from("10.11.6")
+        val nothing = encoding("none")
+        val others = index.filter { it.row == null || it.row !in ENCODING_SPECS }
+        assertEquals(emptyList<String>(), others.filterNot { it.drawnFor(nothing, profile) }.map { it.id })
     }
 
     @Test

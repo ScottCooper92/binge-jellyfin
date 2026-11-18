@@ -53,7 +53,11 @@ internal fun SettingsSearchRoute(
                 appScope = graph.appScope,
                 dispatcher = graph.ioDispatcher,
                 entries = entries,
-                loadAvailability = { SearchAccess({ entry -> entry.available(profile, account) }, Unit) },
+                loadAvailability = {
+                    // The Transcoding page draws many rows for some acceleration types only: for an administrator, read which, once.
+                    val encoding = if (ConsolePage.Transcoding.available(profile, account)) graph.connection.encodingForSearch() else null
+                    SearchAccess({ entry -> entry.available(profile, account) && entry.drawnFor(encoding, profile) }, Unit)
+                },
                 recents = graph.recentSearches,
                 classify = { error -> error.serverFailure() },
             )
