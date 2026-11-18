@@ -65,3 +65,16 @@ tasks.withType<Test>().configureEach {
     systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2/")
     systemProperty("robolectric.dependency.repo.id", "MavenCentralMirror")
 }
+
+// 74, measured: this module's own tests cover 74.96% of its lines. :app's tests exercise more of it through the screens and view
+// models, and :app's floor is measured over both modules together, as it was when they were one. Raise it as the client gains
+// tests of its own; never lower it.
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(74)
+            }
+        }
+    }
+}
