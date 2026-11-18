@@ -4,7 +4,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.ServerFolder
@@ -29,7 +28,7 @@ private fun ready(shown: JsonObject = config) = LiveTvRecordingUiState.Ready(sho
 /** Live TV recording: the page across the matrix, a release without two switches, and the sheets' content. */
 class LiveTvRecordingScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

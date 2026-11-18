@@ -4,7 +4,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.LIBRARY_SCAN_TASK
@@ -48,7 +47,7 @@ private fun open(
 /** One task's triggers across the matrix, with none, saving and failed, then the new trigger form for each kind. */
 class TaskTriggersScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

@@ -4,7 +4,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
@@ -44,7 +43,7 @@ private val previewReady = LibrariesUiState.Ready(previewLibraries, TaskBoard(li
 /** Libraries: idle across the matrix, then one scanning beside one done, everything scanning, a failed start, and the read states. */
 class LibrariesScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

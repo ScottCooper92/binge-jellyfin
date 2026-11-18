@@ -3,7 +3,6 @@ package com.cooper.homelab.ephyra.ui.console
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 
@@ -12,7 +11,7 @@ private val previewFilled = PasswordUiState(current = "old-secret", new = "new-s
 /** Changing the password: the filled form across the matrix, then each result on the phone cell. */
 class PasswordScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

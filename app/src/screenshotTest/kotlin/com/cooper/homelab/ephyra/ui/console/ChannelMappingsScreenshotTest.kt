@@ -5,7 +5,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
@@ -38,7 +37,7 @@ private fun ready(selected: String? = null) = ChannelMappingsUiState.Ready(optio
 /** Channel mappings: the list across the matrix, the tuner channels in the phone's sheet and beside the list on a wide window. */
 class ChannelMappingsScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

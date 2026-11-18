@@ -14,7 +14,7 @@ import com.cooper.homelab.core.tip.TIP_STEPS
 import com.cooper.homelab.core.uiandroid.search.SettingsSearchScreen
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
+import com.cooper.homelab.ephyra.preview.JellyfinHomeLayoutPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.ForgotPasswordAction
@@ -27,7 +27,7 @@ class JellyfinScreenshotTest {
     // The server step.
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -67,7 +67,7 @@ class JellyfinScreenshotTest {
 
     /** A public plain-HTTP address: the warning and the agreement beside it, with Connect waiting. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun serverInsecure() = JellyfinRoot(previewEnterServerInsecure, Actions())
@@ -102,7 +102,7 @@ class JellyfinScreenshotTest {
     // Sign-in.
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -110,20 +110,20 @@ class JellyfinScreenshotTest {
 
     /** A server that has not finished its first-run setup: the notice stands where the sign-in would. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun setupIncomplete() = JellyfinRoot(previewSetupIncomplete, Actions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun signInUsers() = JellyfinRoot(previewSignInUsers, Actions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -132,14 +132,14 @@ class JellyfinScreenshotTest {
     // The setup wizard of a server that has not finished its first-run setup.
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun startup() = JellyfinRoot(previewStartup, Actions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -197,7 +197,7 @@ class JellyfinScreenshotTest {
     fun startupFailed() = JellyfinRoot(previewStartupFailed, Actions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -275,7 +275,7 @@ class JellyfinScreenshotTest {
     // Signed in.
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinHomeLayoutPreviews
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -283,7 +283,7 @@ class JellyfinScreenshotTest {
 
     /** An administrator of a server with no libraries: the card above the server group. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun signedInNoLibraries() = JellyfinRoot(previewSignedInNoLibraries, Actions())
@@ -349,7 +349,7 @@ class JellyfinScreenshotTest {
     fun signedInHttps() = JellyfinRoot(previewSignedInHttps, Actions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -368,7 +368,7 @@ class JellyfinScreenshotTest {
 
     /** The server card with three pills at once, on an unencrypted address: an administrator's, at every size and in Spanish. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -376,7 +376,7 @@ class JellyfinScreenshotTest {
 
     /** The note under the server card for the titles with no TMDB id: plain, at every size and in Spanish. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -400,7 +400,7 @@ class JellyfinScreenshotTest {
 
     /** An administrator's account, behind the avatar: the rows everyone else has inline on their home. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -408,7 +408,7 @@ class JellyfinScreenshotTest {
 
     /** The This app page, behind the home's This app row: what the app reports, feedback, and About. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -416,14 +416,14 @@ class JellyfinScreenshotTest {
 
     /** An administrator's This app page with the notifications switch off: only the switch. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun thisAppNotificationsOff() = ThisAppScreen(Actions(notifications = NotificationSettings()), onBack = {})
 
     /** With the switch on: the cadence, and the system warnings that apply, both here. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -435,13 +435,13 @@ class JellyfinScreenshotTest {
 
     /** On, with nothing in Android's way: the switch and the cadence alone. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @Composable
     fun thisAppNotificationsClear() = ThisAppScreen(Actions(notifications = NotificationSettings(enabled = true)), onBack = {})
 
     /** The Check every choices, drawn in place because a frame can't capture the sheet's own window. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun notificationsInterval() =
@@ -449,14 +449,14 @@ class JellyfinScreenshotTest {
 
     /** The settings search before a query, with results (each with where it is) and with none. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun searchPrompt() = SearchPage()
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -469,7 +469,7 @@ class JellyfinScreenshotTest {
 
     /** The search before a query, with what the user opened last and its Clear. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

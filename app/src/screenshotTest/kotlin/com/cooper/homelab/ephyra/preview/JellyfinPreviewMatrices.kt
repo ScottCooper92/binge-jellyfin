@@ -28,17 +28,21 @@ class JellyfinScreenshotThemeWrapper : ScreenshotThemeWrapper() {
     override val brand: BingeBrand = JellyfinBrand
 }
 
-/** A screen's layout: phone dark and light, phone on its side, and the unfolded foldable. */
+/**
+ * The home's layout frame: the phone, the phone on its side and the unfolded foldable. Ephyra's own code reads no window width,
+ * height or posture, so a screen's layout changes by window only through the design system's templates and the console's two panes.
+ * The home shows both, so it alone has these cells. Every other screen takes [JellyfinScreenStatePreview], and the wide console
+ * is [JellyfinWidePreview].
+ */
 @PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
 @Preview(name = "phone", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
-@Preview(name = "phone-light", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_NO, locale = SOURCE_LOCALE)
 @Preview(name = "phone-land", device = PHONE_LANDSCAPE_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 @Preview(name = "foldable", device = FOLDABLE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
-annotation class JellyfinScreenPreviews
+annotation class JellyfinHomeLayoutPreviews
 
-/** A phone window at font scales 1.5 and 2.0; the 1.0 cell is the screen's own frame. */
+/** A phone window at font scales 1.3 and 2.0, the two the clipping rule holds a screen to; the 1.0 cell is the screen's own frame. */
 @PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
-@Preview(name = "font15", device = PHONE_PORTRAIT_SPEC, fontScale = 1.5f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+@Preview(name = "font13", device = PHONE_PORTRAIT_SPEC, fontScale = 1.3f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 @Preview(name = "font20", device = PHONE_PORTRAIT_SPEC, fontScale = 2f, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class JellyfinFontScalePreviews
 
@@ -47,7 +51,7 @@ annotation class JellyfinFontScalePreviews
 @Preview(name = "es", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = "es")
 annotation class JellyfinSpanishPreviews
 
-/** The phone cell alone, for a state of a screen whose layout frame has the matrix. */
+/** The phone cell alone: a screen's own frame, and each state of it. */
 @PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
 @Preview(name = "phone", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class JellyfinScreenStatePreview

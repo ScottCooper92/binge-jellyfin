@@ -3,7 +3,6 @@ package com.cooper.homelab.ephyra.ui.console
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStateLightPreview
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
@@ -39,7 +38,7 @@ private val previewReady = TasksUiState.Ready(TaskBoard(previewTasks))
 /** Scheduled tasks: idle across the matrix, then one running beside outcomes, a failed run, and the read states. */
 class TasksScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

@@ -6,7 +6,6 @@ import com.cooper.homelab.core.presentation.appsettings.LicenceEntry
 import com.cooper.homelab.core.presentation.appsettings.LicencesState
 import com.cooper.homelab.core.uiandroid.appsettings.LicencesScreen
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 
@@ -34,7 +33,7 @@ private val previewLibraries =
 /** The licences page: the list across the matrix, then loading, an empty list and one that could not be read. */
 class LicencesScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
@@ -31,27 +30,27 @@ private val previewHome =
 /** The home screen page: the libraries and switches across the matrix, a library's page, then each other state. */
 class HomeLayoutScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun libraries() = HomeLayoutScreen(previewHome, HomeLayoutActions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun library() = HomeLayoutLibraryScreen(previewHome, "home", HomeLayoutActions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @Composable
     fun middleLibrary() = HomeLayoutLibraryScreen(previewHome, "movies", HomeLayoutActions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @Composable
     fun onlyLibrary() = HomeLayoutLibraryScreen(HomeLayoutUiState.Ready(previewViews.take(1), HomeLayout()), "movies", HomeLayoutActions())
