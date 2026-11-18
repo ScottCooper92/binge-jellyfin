@@ -1,6 +1,9 @@
 package com.cooper.binge.companion.jellyfin.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -23,7 +26,10 @@ class TakeBackChipTest {
     @get:Rule
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
-    private val description = "Stop using plain HTTP for this server"
+    // What a screen reader says: the chip's status first, then what tapping it does.
+    private val description = "Not encrypted. Stop trusting this address"
+
+    private val isButton = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
 
     private fun show(
         baseUrl: String,
@@ -40,7 +46,8 @@ class TakeBackChipTest {
     fun `where the user agreed to plain HTTP the mark is a button that asks to take it back`() {
         val taken = mutableListOf<Unit>()
         show("http://media.example.com:8096", "media.example.com", taken)
-        compose.onNode(hasClickAction() and hasContentDescription(description)).assertExists()
+        // A button that says its status and its action, not a bare tap target.
+        compose.onNode(hasClickAction() and hasContentDescription(description) and isButton).assertExists()
         compose.onNodeWithContentDescription(description).performClick()
         assertEquals(1, taken.size)
     }
