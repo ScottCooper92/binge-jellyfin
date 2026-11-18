@@ -57,9 +57,11 @@ titles or anything else read from the user's server:
   the first-run screen, and stops when they turn it off. It sends the app's own fixed screen and action
   names, never an id, a title or an address.
 - Crash reports through Firebase Crashlytics (the same project), which are on only after the user agrees on
-  the first-run screen, and stop when they turn it off. A debug build never sends one. No user id, custom
-  key or log line is set, and the app's own code never puts the server's address or the token in an
-  exception message.
+  the first-run screen, and stop when they turn it off. A debug build never sends one. One non-crash report is
+  added: a failure to schedule the notification poll that points at this app (`notifications/PollFailures.kt`),
+  sent as a stack trace with the failing class's name and never the exception's message. A device that refuses
+  the work sends nothing. No user id or custom key is set, the fixed text of that report is the only log line,
+  and the app's own code never puts the server's address or the token in an exception message.
 
 Two Google Play features are a separate case, not a fourth carve-out. They are calls to the Play Store app on the device, not a host
 this app connects to, so neither is a "new host", and they carry Play product ids and purchase tokens rather than an installation ID:
