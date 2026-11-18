@@ -81,6 +81,8 @@ class SearchSwitchesViewModel(
                 _state.update { (it as? SearchSwitchesState.Ready)?.copy(save = progress) ?: it }
             },
         ) { shown, failure ->
+            // A refused change was put back: it is not owed to the server, and a read must not send it again.
+            if (failure == ConsoleFailure.Refused) unsent.clear()
             _state.update {
                 (it as? SearchSwitchesState.Ready)?.copy(configuration = shown, refused = refusedAfter(it.refused, failure)) ?: it
             }
@@ -94,7 +96,7 @@ class SearchSwitchesViewModel(
      * read sees it. While it runs the copy shown may be older than the server's, so no change can be made on it
      * ([SearchSwitchesState.Ready.reading]: the switches show the spinner), which is the only way a change is never built on a copy
      * that lacks what a page saved. A change the server could not be reached for is not sent first (that would write the old copy
-     * over what a page saved); it is put back on top of what is read, and waits for Retry.
+     * over what a page saved); it is put back on top of what is read, and sent again after the usual delay (or at once, with Retry).
      */
     fun refresh() {
         val current = _state.value
@@ -145,7 +147,11 @@ class SearchSwitchesViewModel(
 
     fun setDisplayCollectionsView(on: Boolean) = save(DISPLAY_COLLECTIONS_VIEW, on)
 
-    fun retrySave() = saves.retry()
+    fun retrySave() {
+        // A read is running: Retry would send a copy the read is about to replace. The read puts the change back and sends it.
+        if ((_state.value as? SearchSwitchesState.Ready)?.reading == true) return
+        saves.retry()
+    }
 
     override fun onCleared() = saves.cleared()
 

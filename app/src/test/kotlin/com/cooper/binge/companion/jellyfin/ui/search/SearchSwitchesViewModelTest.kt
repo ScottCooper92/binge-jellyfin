@@ -233,6 +233,47 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
+    fun `a refused change is not sent again when the search is read again`() {
+        val vm = started()
+        vm.ready()
+        jellyfin.status["/Users/Configuration"] = 409
+        vm.setHidePlayedInLatest(false)
+        vm.settled { (it as? SearchSwitchesState.Ready)?.refused != null }
+        val writes = jellyfin.hits("/Users/Configuration")
+
+        jellyfin.status.clear()
+        vm.refresh()
+        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        // Well past the delay before a change is written.
+        runBlocking { delay(SETTLE_MILLIS) }
+
+        assertTrue(vm.ready().home.hidePlayedInLatest)
+        assertEquals(writes, jellyfin.hits("/Users/Configuration"))
+    }
+
+    @Test
+    fun `Retry while the search reads again sends nothing, so a page's change is not written back`() {
+        val vm = started()
+        vm.ready()
+        jellyfin.dropped += "/Users/Configuration"
+        vm.setDisplayCollectionsView(true)
+        vm.settled { (it as? SearchSwitchesState.Ready)?.save?.failed == true }
+        jellyfin.dropped.clear()
+        jellyfin.userConfiguration =
+            jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
+
+        val held = jellyfin.hold("/Users/Me")
+        vm.refresh()
+        held.awaitArrival()
+        vm.retrySave()
+        held.release()
+        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+
+        awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
+        assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
+    }
+
+    @Test
     fun `a write that cannot reach the server keeps the change, says so, and Retry sends it`() {
         val vm = started()
         vm.ready()
@@ -252,5 +293,6 @@ class SearchSwitchesViewModelTest {
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
         const val POLL_MILLIS = 20L
+        const val SETTLE_MILLIS = 1_500L
     }
 }
