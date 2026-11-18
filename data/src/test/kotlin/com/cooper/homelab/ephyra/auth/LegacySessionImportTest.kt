@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra.auth
 
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.binge.companion.kit.SecretCipher
+import com.cooper.homelab.core.foundation.LogField
 import com.cooper.homelab.ephyra.FakeJellyfin
 import com.cooper.homelab.ephyra.PlainCipher
 import com.cooper.homelab.ephyra.session
@@ -40,6 +41,19 @@ class LegacySessionImportTest {
                     .current()
                     .servers.size,
             )
+            phone.stop()
+        }
+
+    @Test
+    fun `the import entry says whether the user is signed in and carries no server field`() =
+        runBlocking {
+            val phone = Phone(folder.root)
+            phone.released.save(session)
+
+            phone.store.current()
+
+            val fields = phone.logged.single { it.first == "legacy-session-imported" }.second
+            assertEquals(listOf(LogField.Flag("signedIn", true)), fields)
             phone.stop()
         }
 

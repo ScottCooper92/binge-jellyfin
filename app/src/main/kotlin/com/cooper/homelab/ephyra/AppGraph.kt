@@ -340,11 +340,11 @@ class AppGraph(
         RingLog(
             clock = Clock.system(),
             redactor = redactor,
-            // One saved server: no entry carries a server field today, so there is no order to label.
+            // No entry carries a server field, so there is no order to label. Logging one means giving the ring the saved servers here.
             serverOrder = { emptyList() },
             forward = LogcatLogger().takeIf { BuildConfig.DEBUG },
-            // The frames kept from a logged throwable are this app's own, named here so the library holds no default.
-            ownPackages = listOf("com.cooper.binge."),
+            // The frames kept from a logged throwable are the app's own and the library's, named here so the library holds no default.
+            ownPackages = OWN_LOG_PACKAGES,
         )
     }
 

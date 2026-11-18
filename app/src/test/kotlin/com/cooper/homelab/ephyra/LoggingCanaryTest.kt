@@ -42,7 +42,7 @@ class LoggingCanaryTest {
             Clock { Instant.fromEpochMilliseconds(0) },
             redactor,
             serverOrder = { emptyList() },
-            ownPackages = listOf("com.cooper.binge."),
+            ownPackages = OWN_LOG_PACKAGES,
         )
     private val session =
         JellyfinSession(
