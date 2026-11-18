@@ -38,6 +38,12 @@ class SettingsIndexTest {
     }
 
     @Test
+    fun `every switch the search can carry has an entry that names its row`() {
+        val rows = index.mapNotNull { it.row }.toSet()
+        assertEquals(emptySet<String>(), SWITCH_SPECS.keys - rows)
+    }
+
+    @Test
     fun `every entry has its words`() {
         index.forEach {
             assertTrue(it.label.resolve(context).isNotBlank())

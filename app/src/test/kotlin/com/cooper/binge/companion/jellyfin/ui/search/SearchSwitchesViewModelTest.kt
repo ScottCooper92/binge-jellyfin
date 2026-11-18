@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscardLogger
+import com.cooper.binge.companion.jellyfin.server.homeLayout
+import com.cooper.binge.companion.jellyfin.server.playbackPreferences
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -55,12 +57,25 @@ class SearchSwitchesViewModelTest {
     @After
     fun close() = teardown.close(jellyfin)
 
-    private fun SearchSwitchesViewModel.settled(check: (SearchSwitchesState) -> Boolean = { it is SearchSwitchesState.Ready }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+    /** Makes the change a switch makes, as a result's switch does: through the copy its row lives in. */
+    private fun SearchSwitchesViewModel.flip(
+        row: String,
+        on: Boolean,
+    ) {
+        val spec = SWITCH_SPECS.getValue(row)
+        copy(spec.kind).change(spec.change(on))
+    }
 
-    private fun SearchSwitchesViewModel.ready() = settled() as SearchSwitchesState.Ready
+    private val SearchConfigState.Ready.playback get() = configuration.playbackPreferences()
 
-    private fun started() = made(SearchSwitchesViewModel(connection)).also { it.refresh() }
+    private val SearchConfigState.Ready.home get() = configuration.homeLayout()
+
+    private fun SearchSwitchesViewModel.settled(check: (SearchConfigState) -> Boolean = { it is SearchConfigState.Ready }) =
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { user.state.first(check) } }
+
+    private fun SearchSwitchesViewModel.ready() = settled() as SearchConfigState.Ready
+
+    private fun started() = made(SearchSwitchesViewModel(connection)).also { it.user.start() }
 
     /** What the fake server holds, which is what any other device or page would read. */
     private fun server(): JsonObject = Json.parseToJsonElement(jellyfin.userConfiguration).jsonObject
@@ -78,7 +93,7 @@ class SearchSwitchesViewModelTest {
     @Test
     fun `nothing is read until a switch asks`() {
         val vm = made(SearchSwitchesViewModel(connection))
-        assertEquals(SearchSwitchesState.Idle, vm.state.value)
+        assertEquals(SearchConfigState.Idle, vm.user.state.value)
         assertTrue(jellyfin.requests.isEmpty())
     }
 
@@ -93,9 +108,9 @@ class SearchSwitchesViewModelTest {
     fun `flipping a playback switch and then a home switch keeps both on the server`() {
         val vm = started()
         vm.ready()
-        vm.setAutoplayNextEpisode(false)
+        vm.flip(SettingRows.PLAYBACK_AUTOPLAY, false)
         awaitServer { it.containsKey("EnableNextEpisodeAutoPlay") && !it.on("EnableNextEpisodeAutoPlay") }
-        vm.setDisplayMissingEpisodes(true)
+        vm.flip(SettingRows.HOME_MISSING_EPISODES, true)
         awaitServer { it.containsKey("DisplayMissingEpisodes") && it.on("DisplayMissingEpisodes") }
 
         // The second write carried the first change, not the configuration as it was read: that was the loss with two copies.
@@ -116,14 +131,14 @@ class SearchSwitchesViewModelTest {
         assertTrue(server().getValue("AudioLanguagePreference").jsonPrimitive.content == "fra")
         vm.refresh()
         vm.settled {
-            (it as? SearchSwitchesState.Ready)
+            (it as? SearchConfigState.Ready)
                 ?.configuration
                 ?.get("AudioLanguagePreference")
                 ?.jsonPrimitive
                 ?.content == "fra"
         }
 
-        vm.setRememberSubtitles(false)
+        vm.flip(SettingRows.PLAYBACK_REMEMBER_SUBTITLES, false)
         awaitServer { it.containsKey("RememberSubtitleSelections") && !it.on("RememberSubtitleSelections") }
 
         assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
@@ -133,7 +148,7 @@ class SearchSwitchesViewModelTest {
     fun `a flip still waiting out its delay is sent before the search is read again, not dropped by it`() {
         val vm = started()
         vm.ready()
-        vm.setAutoplayNextEpisode(false)
+        vm.flip(SettingRows.PLAYBACK_AUTOPLAY, false)
         // Straight away, well inside the delay before a change is written: the state does not say a write is under way yet.
         vm.refresh()
         awaitServer { it.containsKey("EnableNextEpisodeAutoPlay") && !it.on("EnableNextEpisodeAutoPlay") }
@@ -150,12 +165,12 @@ class SearchSwitchesViewModelTest {
         val held = jellyfin.hold("/Users/Me")
         vm.refresh()
         held.awaitArrival()
-        assertTrue((vm.state.value as SearchSwitchesState.Ready).reading)
+        assertTrue((vm.user.state.value as SearchConfigState.Ready).reading)
 
         // The copy is older than the server's: a flip now would write the old language back, so it is not taken.
-        vm.setDisplayMissingEpisodes(true)
+        vm.flip(SettingRows.HOME_MISSING_EPISODES, true)
         held.release()
-        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
         assertFalse(vm.ready().home.displayMissingEpisodes)
         assertEquals(
             "fra",
@@ -167,7 +182,7 @@ class SearchSwitchesViewModelTest {
         )
 
         // Once the read is in the same flip is built on the new copy, and the page's change stays.
-        vm.setDisplayMissingEpisodes(true)
+        vm.flip(SettingRows.HOME_MISSING_EPISODES, true)
         awaitServer { it.containsKey("DisplayMissingEpisodes") && it.on("DisplayMissingEpisodes") }
         assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
     }
@@ -177,15 +192,15 @@ class SearchSwitchesViewModelTest {
         val vm = started()
         vm.ready()
         jellyfin.dropped += "/Users/Configuration"
-        vm.setDisplayCollectionsView(true)
-        vm.settled { (it as? SearchSwitchesState.Ready)?.save?.failed == true }
+        vm.flip(SettingRows.HOME_COLLECTIONS, true)
+        vm.settled { (it as? SearchConfigState.Ready)?.save?.failed == true }
         // The server is back, and a page changed the audio language meanwhile.
         jellyfin.dropped.clear()
         jellyfin.userConfiguration =
             jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
 
         vm.refresh()
-        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
         val ready = vm.ready()
         assertEquals(
             "fra",
@@ -195,7 +210,7 @@ class SearchSwitchesViewModelTest {
         )
         assertTrue(ready.home.displayCollectionsView)
 
-        vm.retrySave()
+        vm.user.retry()
         awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
         assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
     }
@@ -204,7 +219,7 @@ class SearchSwitchesViewModelTest {
     fun `a flip still inside its delay is sent before a page opened over the search reads the configuration`() {
         val vm = started()
         vm.ready()
-        vm.setAutoplayNextEpisode(false)
+        vm.flip(SettingRows.PLAYBACK_AUTOPLAY, false)
         // The page opens at once: it waits for the saves, as every page does as it loads, then reads.
         vm.leaving()
         runBlocking { connection.awaitSaves() }
@@ -213,7 +228,7 @@ class SearchSwitchesViewModelTest {
         assertTrue(Json.parseToJsonElement(read).jsonObject.containsKey("EnableNextEpisodeAutoPlay"))
         assertFalse(server().on("EnableNextEpisodeAutoPlay"))
         // The search stays usable for when it is shown again.
-        vm.setDisplayMissingEpisodes(true)
+        vm.flip(SettingRows.HOME_MISSING_EPISODES, true)
         awaitServer { it.containsKey("DisplayMissingEpisodes") && it.on("DisplayMissingEpisodes") }
         assertFalse(server().on("EnableNextEpisodeAutoPlay"))
     }
@@ -222,7 +237,7 @@ class SearchSwitchesViewModelTest {
     fun `a flip sent as a page opens is not put back over what the page then saved`() {
         val vm = started()
         vm.ready()
-        vm.setAutoplayNextEpisode(false)
+        vm.flip(SettingRows.PLAYBACK_AUTOPLAY, false)
         vm.leaving()
         runBlocking { connection.awaitSaves() }
         assertFalse(server().on("EnableNextEpisodeAutoPlay"))
@@ -232,7 +247,7 @@ class SearchSwitchesViewModelTest {
             jellyfin.userConfiguration.replace("\"EnableNextEpisodeAutoPlay\":false", "\"EnableNextEpisodeAutoPlay\":true")
         assertTrue(server().on("EnableNextEpisodeAutoPlay"))
         vm.refresh()
-        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
         Thread.sleep(SEND_WAIT_MILLIS)
 
         assertTrue(vm.ready().playback.autoplayNextEpisode)
@@ -243,10 +258,10 @@ class SearchSwitchesViewModelTest {
     fun `several switches asking at once make one read`() {
         val vm = made(SearchSwitchesViewModel(connection))
         val held = jellyfin.hold("/Users/Me")
-        vm.refresh()
+        vm.user.refresh()
         held.awaitArrival()
-        vm.refresh()
-        vm.refresh()
+        vm.user.refresh()
+        vm.user.refresh()
         held.release()
         vm.ready()
         assertEquals(1, jellyfin.hits("/Users/Me"))
@@ -257,7 +272,7 @@ class SearchSwitchesViewModelTest {
         val vm = started()
         vm.ready()
         vm.refresh()
-        assertTrue(vm.state.value is SearchSwitchesState.Ready)
+        assertTrue(vm.user.state.value is SearchConfigState.Ready)
     }
 
     @Test
@@ -265,8 +280,8 @@ class SearchSwitchesViewModelTest {
         val vm = started()
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 409
-        vm.setHidePlayedInLatest(false)
-        val refused = vm.settled { (it as? SearchSwitchesState.Ready)?.refused != null } as SearchSwitchesState.Ready
+        vm.flip(SettingRows.HOME_HIDE_PLAYED, false)
+        val refused = vm.settled { (it as? SearchConfigState.Ready)?.refused != null } as SearchConfigState.Ready
         assertEquals(ConsoleFailure.Refused, refused.refused)
         assertTrue(refused.home.hidePlayedInLatest)
     }
@@ -276,14 +291,14 @@ class SearchSwitchesViewModelTest {
         val vm = started()
         vm.ready()
         jellyfin.status["/Users/Configuration"] = 409
-        vm.setHidePlayedInLatest(false)
-        vm.settled { (it as? SearchSwitchesState.Ready)?.refused != null }
+        vm.flip(SettingRows.HOME_HIDE_PLAYED, false)
+        vm.settled { (it as? SearchConfigState.Ready)?.refused != null }
         val writes = jellyfin.hits("/Users/Configuration")
 
         // The server would take it now, but nobody asked again: reading must not.
         jellyfin.status.remove("/Users/Configuration")
         vm.refresh()
-        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
         Thread.sleep(SEND_WAIT_MILLIS)
 
         assertTrue(vm.ready().home.hidePlayedInLatest)
@@ -295,8 +310,8 @@ class SearchSwitchesViewModelTest {
         val vm = started()
         vm.ready()
         jellyfin.dropped += "/Users/Configuration"
-        vm.setDisplayCollectionsView(true)
-        vm.settled { (it as? SearchSwitchesState.Ready)?.save?.failed == true }
+        vm.flip(SettingRows.HOME_COLLECTIONS, true)
+        vm.settled { (it as? SearchConfigState.Ready)?.save?.failed == true }
         jellyfin.dropped.clear()
         jellyfin.userConfiguration =
             jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
@@ -304,9 +319,9 @@ class SearchSwitchesViewModelTest {
         val held = jellyfin.hold("/Users/Me")
         vm.refresh()
         held.awaitArrival()
-        vm.retrySave()
+        vm.user.retry()
         held.release()
-        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
         awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
 
         assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
@@ -317,15 +332,15 @@ class SearchSwitchesViewModelTest {
         val vm = started()
         vm.ready()
         jellyfin.dropped += "/Users/Configuration"
-        vm.setDisplayCollectionsView(true)
-        val failed = vm.settled { (it as? SearchSwitchesState.Ready)?.save?.failed == true } as SearchSwitchesState.Ready
+        vm.flip(SettingRows.HOME_COLLECTIONS, true)
+        val failed = vm.settled { (it as? SearchConfigState.Ready)?.save?.failed == true } as SearchConfigState.Ready
         assertTrue(failed.home.displayCollectionsView)
         assertEquals(null, failed.refused)
         // Reading again does not put the old value over the change that is waiting to be sent.
         vm.refresh()
         assertTrue(vm.ready().home.displayCollectionsView)
         jellyfin.dropped.clear()
-        vm.retrySave()
+        vm.user.retry()
         awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
     }
 

@@ -3,8 +3,11 @@ package com.cooper.binge.companion.jellyfin.ui.search
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Category
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LiveTv
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.Notifications
@@ -39,7 +43,9 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.ViewModule
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.cooper.binge.companion.jellyfin.R
@@ -107,7 +113,8 @@ internal fun settingsIndex(resources: Resources): List<SettingEntry<SearchTarget
             indexPart3() +
             indexPart4() +
             indexPart5() +
-            indexSwitches()
+            indexSwitches() +
+            indexServerSwitches()
     }
 
 private fun Resources.indexPart1(): List<SettingEntry<SearchTarget>> =
@@ -506,5 +513,71 @@ private fun Resources.indexSwitches(): List<SettingEntry<SearchTarget>> =
             R.string.console_account_title,
             R.string.home_layout_title,
             row = SettingRows.HOME_COLLECTIONS,
+        ),
+    )
+
+/** The server's own on/off settings, for an administrator: Trickplay and Advanced (Quick Connect has its entry above). */
+private fun Resources.indexServerSwitches(): List<SettingEntry<SearchTarget>> =
+    listOf(
+        setting(
+            ConsolePage.Trickplay,
+            R.string.trickplay_hw_acceleration,
+            Icons.Outlined.Memory,
+            R.string.settings_server,
+            R.string.trickplay_title,
+            R.string.kw_trickplay,
+            row = SettingRows.TRICKPLAY_HW_ACCELERATION,
+        ),
+        setting(
+            ConsolePage.Trickplay,
+            R.string.trickplay_hw_encoding,
+            Icons.Outlined.Videocam,
+            R.string.settings_server,
+            R.string.trickplay_title,
+            R.string.kw_trickplay,
+            row = SettingRows.TRICKPLAY_HW_ENCODING,
+        ),
+        setting(
+            ConsolePage.Trickplay,
+            R.string.trickplay_key_frames,
+            Icons.Outlined.Bolt,
+            R.string.settings_server,
+            R.string.trickplay_title,
+            R.string.kw_trickplay,
+            shown = { profile, _ -> profile.hasKeyFrameOnlyTrickplay },
+            row = SettingRows.TRICKPLAY_KEY_FRAMES,
+        ),
+        setting(
+            ConsolePage.Advanced,
+            R.string.advanced_slow_warning,
+            Icons.Outlined.Warning,
+            R.string.advanced_title,
+            R.string.advanced_title,
+            row = SettingRows.ADVANCED_SLOW_WARNING,
+        ),
+        setting(
+            ConsolePage.Advanced,
+            R.string.advanced_client_logs,
+            Icons.Outlined.BugReport,
+            R.string.advanced_title,
+            R.string.advanced_title,
+            row = SettingRows.ADVANCED_CLIENT_LOGS,
+        ),
+        setting(
+            ConsolePage.Advanced,
+            R.string.advanced_metrics,
+            Icons.Outlined.Analytics,
+            R.string.advanced_title,
+            R.string.advanced_title,
+            row = SettingRows.ADVANCED_METRICS,
+        ),
+        setting(
+            ConsolePage.Advanced,
+            R.string.advanced_legacy_auth,
+            Icons.Outlined.Lock,
+            R.string.advanced_title,
+            R.string.advanced_title,
+            shown = { profile, _ -> profile.hasCacheAndLegacyAuth },
+            row = SettingRows.ADVANCED_LEGACY_AUTH,
         ),
     )

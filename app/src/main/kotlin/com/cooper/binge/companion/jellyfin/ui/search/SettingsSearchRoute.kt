@@ -80,7 +80,7 @@ internal fun SettingsSearchRoute(
             onClearRecent = search::clearRecent,
             toggle =
                 if (graph.searchTogglesEnabled) {
-                    { entry, _ -> serverSwitchToggle(entry.row, graph) { switches = it } ?: searchToggle(entry, actions) }
+                    { entry, _ -> configSwitchToggle(entry.row, graph, profile, account) { switches = it } ?: searchToggle(entry, actions) }
                 } else {
                     null
                 },
