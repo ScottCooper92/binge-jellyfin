@@ -99,6 +99,20 @@ class SettingsIndexTest {
     }
 
     @Test
+    fun `the cache size and legacy authorization are offered only where the server has them`() {
+        val admin = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":true}""").jsonObject)
+
+        fun offered(
+            query: String,
+            version: String,
+        ) = find(query) { it.available(JellyfinServerProfile.from(version), admin) }
+        listOf("Cache size", "Legacy authorization").forEach {
+            assertTrue(it in offered(it, "10.11.6"))
+            assertFalse(it in offered(it, "10.10.7"))
+        }
+    }
+
+    @Test
     fun `the alerts row is offered to an administrator only`() {
         val profile = JellyfinServerProfile.from("10.11.6")
 
