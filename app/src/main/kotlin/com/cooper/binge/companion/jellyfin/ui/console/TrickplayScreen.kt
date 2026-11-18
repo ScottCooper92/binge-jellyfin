@@ -47,6 +47,7 @@ import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_PRIORITIES
 import com.cooper.binge.companion.jellyfin.server.TRICKPLAY_SCAN_BEHAVIORS
 import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import com.binge.designsystem.R as DesR
 
 /** What the trickplay page can ask of its view model, and of the console. */
@@ -149,6 +150,7 @@ private fun ProcessingGroup(
                     supportingMaxLines = DETAIL_LINES,
                     toggled = settings.hwAcceleration,
                     onClick = { actions.onHwAcceleration(!settings.hwAcceleration) },
+                    key = SettingRows.TRICKPLAY_HW_ACCELERATION,
                 ),
                 ListItem(
                     icon = Icons.Outlined.Videocam,
@@ -157,6 +159,7 @@ private fun ProcessingGroup(
                     supportingMaxLines = DETAIL_LINES,
                     toggled = settings.hwEncoding,
                     onClick = { actions.onHwEncoding(!settings.hwEncoding) },
+                    key = SettingRows.TRICKPLAY_HW_ENCODING,
                 ),
                 ListItem(
                     icon = Icons.Outlined.Bolt,
@@ -165,6 +168,7 @@ private fun ProcessingGroup(
                     supportingMaxLines = DETAIL_LINES,
                     toggled = settings.keyFrameOnly,
                     onClick = { actions.onKeyFrameOnly(!settings.keyFrameOnly) },
+                    key = SettingRows.TRICKPLAY_KEY_FRAMES,
                 ).takeIf { keyFrameOnlyAvailable },
                 ListItem(
                     icon = Icons.Outlined.Sync,

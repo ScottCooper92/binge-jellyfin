@@ -215,6 +215,7 @@ private fun sessionRows(
             R.string.advanced_slow_warning,
             R.string.advanced_slow_warning_detail,
             settings.slowResponseWarning,
+            SettingRows.ADVANCED_SLOW_WARNING,
             actions.onSlowResponseWarning,
         ),
         numberRow(settings, AdvancedNumber.SlowThreshold, SLOW_RESPONSE_THRESHOLD_MS, Icons.Outlined.Speed, actions),
@@ -224,6 +225,7 @@ private fun sessionRows(
             R.string.advanced_client_logs,
             R.string.advanced_client_logs_detail,
             settings.allowClientLogUpload,
+            SettingRows.ADVANCED_CLIENT_LOGS,
             actions.onAllowClientLogUpload,
         ),
         switchRow(
@@ -232,6 +234,7 @@ private fun sessionRows(
             R.string.advanced_metrics,
             R.string.advanced_metrics_detail,
             settings.metrics,
+            SettingRows.ADVANCED_METRICS,
             actions.onMetrics,
         ),
     )
@@ -260,6 +263,7 @@ private fun clientRows(
             R.string.advanced_legacy_auth,
             R.string.advanced_legacy_auth_detail,
             settings.legacyAuthorization,
+            SettingRows.ADVANCED_LEGACY_AUTH,
             actions.onLegacyAuthorization,
         ),
     )
@@ -279,6 +283,7 @@ private fun switchRow(
     label: Int,
     detail: Int,
     value: Boolean,
+    key: String,
     onChange: (Boolean) -> Unit,
 ): ListItem? =
     ListItem(
@@ -288,6 +293,7 @@ private fun switchRow(
         supportingMaxLines = DETAIL_LINES,
         toggled = value,
         onClick = { onChange(!value) },
+        key = key,
     ).takeIf { present }
 
 @Composable

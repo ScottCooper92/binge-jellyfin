@@ -27,6 +27,7 @@ import com.cooper.binge.companion.jellyfin.server.LogFile
 import com.cooper.binge.companion.jellyfin.server.PlaybackPreferences
 import com.cooper.binge.companion.jellyfin.server.ServerSettings
 import com.cooper.binge.companion.jellyfin.server.SubtitleMode
+import com.cooper.binge.companion.jellyfin.server.TrickplaySettings
 import com.cooper.binge.companion.jellyfin.server.networkKeys
 import com.cooper.binge.companion.jellyfin.server.networkSettings
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
@@ -56,6 +57,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ServerSettingsUiState
 import com.cooper.binge.companion.jellyfin.ui.console.TranscodingActions
 import com.cooper.binge.companion.jellyfin.ui.console.TranscodingScreen
 import com.cooper.binge.companion.jellyfin.ui.console.TranscodingUiState
+import com.cooper.binge.companion.jellyfin.ui.console.TrickplayActions
+import com.cooper.binge.companion.jellyfin.ui.console.TrickplayScreen
+import com.cooper.binge.companion.jellyfin.ui.console.TrickplayUiState
 import com.cooper.homelab.core.presentation.search.SettingEntry
 import com.cooper.homelab.core.uiandroid.resolve
 import kotlinx.serialization.json.Json
@@ -115,7 +119,25 @@ class SettingRowKeysTest {
                 NetworkScreen(NetworkUiState.Ready(settings, keys, emptySet()), NetworkActions(), appUrl = "http://nas:8096")
             },
             ConsolePage.Advanced to {
-                AdvancedScreen(AdvancedUiState.Ready(AdvancedSettings(present = setOf("CacheSize"), cacheSize = 800)), AdvancedActions())
+                AdvancedScreen(
+                    AdvancedUiState.Ready(
+                        AdvancedSettings(
+                            present =
+                                setOf(
+                                    "CacheSize",
+                                    "EnableSlowResponseWarning",
+                                    "AllowClientLogUpload",
+                                    "EnableMetrics",
+                                    "EnableLegacyAuthorization",
+                                ),
+                            cacheSize = 800,
+                        ),
+                    ),
+                    AdvancedActions(),
+                )
+            },
+            ConsolePage.Trickplay to {
+                TrickplayScreen(TrickplayUiState.Ready(TrickplaySettings()), TrickplayActions())
             },
             ConsolePage.Logs to {
                 LogsScreen(

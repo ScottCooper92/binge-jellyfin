@@ -29,6 +29,13 @@ internal object SettingRows {
     const val HOME_HIDE_PLAYED = "home.hide-played"
     const val HOME_MISSING_EPISODES = "home.missing-episodes"
     const val HOME_COLLECTIONS = "home.collections"
+    const val TRICKPLAY_HW_ACCELERATION = "trickplay.hw-acceleration"
+    const val TRICKPLAY_HW_ENCODING = "trickplay.hw-encoding"
+    const val TRICKPLAY_KEY_FRAMES = "trickplay.key-frames"
+    const val ADVANCED_SLOW_WARNING = "advanced.slow-warning"
+    const val ADVANCED_CLIENT_LOGS = "advanced.client-logs"
+    const val ADVANCED_METRICS = "advanced.metrics"
+    const val ADVANCED_LEGACY_AUTH = "advanced.legacy-auth"
     const val SERVER_NAME = "server.name"
     const val SERVER_QUICK_CONNECT = "server.quick-connect"
 }
