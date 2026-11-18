@@ -339,6 +339,14 @@ sealed interface UiState {
         /** What the last full read said of the server; a problem takes the place of the home. */
         val health: ConnectionHealth = ConnectionHealth.Checking,
         val confirmingSignOut: Boolean = false,
+        /**
+         * The public host this session reaches over plain HTTP, which the user agreed to on the server step and may take back (the
+         * server card's "Not encrypted" mark). Null for an HTTPS, local or private host, and where the address policy is off: there
+         * is no agreement to take back.
+         */
+        val consentHost: String? = null,
+        /** The take-back confirm is showing. */
+        val confirmingTakeBack: Boolean = false,
         /** What the server is and has turned on: the version gate. Read again with each refresh. */
         val profile: JellyfinServerProfile = JellyfinServerProfile.from(session.serverVersion),
         /** What the signed-in user may do, from their own policy: the account gate. Read with each refresh. */
@@ -392,7 +400,7 @@ class JellyfinViewModel(
     init {
         viewModelScope.launch {
             val session = sessions.current()
-            _state.value = if (session == null) UiState.EnterServer() else UiState.SignedIn(session)
+            _state.value = if (session == null) UiState.EnterServer() else signedInState(addressPolicy, session)
             if (session != null) refresh()
         }
         // A console page found the token refused: sign-in again, as a refused library refresh does.
@@ -646,12 +654,16 @@ class JellyfinViewModel(
         _state.value = enterServer(addressPolicy, session.baseUrl)
     }
 
-    /** Shows or hides the sign-out confirm. */
-    fun confirmSignOut(showing: Boolean) = _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = showing) ?: it }
+    /** Changes the signed-in state, and leaves any other step as it is. */
+    internal fun updateSignedIn(change: (UiState.SignedIn) -> UiState.SignedIn) =
+        _state.update {
+            (it as? UiState.SignedIn)?.let(change)
+                ?: it
+        }
 
     /** Ends the session on the server too, so the device leaves the user's Jellyfin devices list. A failure there still signs out here. */
     fun signOut() {
-        _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = false) ?: it }
+        _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = false, confirmingTakeBack = false) ?: it }
         viewModelScope.launch {
             val signedIn = connection.signedIn()
             attempt { signedIn?.second?.logout() }
@@ -702,9 +714,11 @@ class JellyfinViewModel(
         }
         index.clear()
         reports.signedIn(method)
-        _state.value = UiState.SignedIn(session)
+        _state.value = signedInState(addressPolicy, session)
         refresh()
     }
+
+    /** The signed-in state for [session], with the plain-HTTP agreement it holds, if any. */
 
     private companion object {
         const val TAG = "JellyfinSetup"

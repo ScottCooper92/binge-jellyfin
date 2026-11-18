@@ -43,6 +43,8 @@ import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
 import com.cooper.binge.companion.jellyfin.ui.ReviewPromptOnReturnToRoot
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.chooseServer
+import com.cooper.binge.companion.jellyfin.ui.confirmSignOut
+import com.cooper.binge.companion.jellyfin.ui.confirmTakeBack
 import com.cooper.binge.companion.jellyfin.ui.consent.ConsentGate
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
@@ -152,6 +154,8 @@ class MainActivity : ComponentActivity() {
                     onRefresh = viewModel::refresh,
                     onAskSignOut = { viewModel.confirmSignOut(true) },
                     onCancelSignOut = { viewModel.confirmSignOut(false) },
+                    onAskTakeBack = { viewModel.confirmTakeBack(true) },
+                    onCancelTakeBack = { viewModel.confirmTakeBack(false) },
                     onSignOut = viewModel::signOut,
                     onDiscover = { withLocalNetwork(viewModel::discoverServers) },
                     onChooseServer = viewModel::chooseServer,
