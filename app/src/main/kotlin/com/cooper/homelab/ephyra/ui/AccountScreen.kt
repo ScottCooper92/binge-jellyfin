@@ -23,7 +23,6 @@ import com.binge.designsystem.component.BingeTextButton
 import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.template.BingeScreenScaffold
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.homelab.ephyra.R
@@ -43,7 +42,7 @@ fun AccountScreen(
     actions: Actions,
     onBack: () -> Unit,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.console_account_title), bar = ScreenBar.Small, onBack = onBack) { padding ->
+    BingeScreenScaffold(title = stringResource(R.string.console_account_title), onBack = onBack) { padding ->
         ScreenBody(padding) { _ ->
             LazyColumn(
                 contentPadding = padding.screenListPadding(),

@@ -18,7 +18,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.template.BingeScreenScaffold
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.homelab.ephyra.R
@@ -43,7 +42,7 @@ fun ApproveCodeScreen(
     state: ApproveUiState,
     actions: ApproveActions,
 ) {
-    BingeScreenScaffold(title = stringResource(R.string.approve_title), bar = ScreenBar.Small, onBack = actions.onBack) { padding ->
+    BingeScreenScaffold(title = stringResource(R.string.approve_title), onBack = actions.onBack) { padding ->
         ScreenBody(padding) { _ ->
             Column(
                 modifier =

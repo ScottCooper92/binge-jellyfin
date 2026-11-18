@@ -29,7 +29,6 @@ import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.server.FetcherKind
@@ -89,7 +88,6 @@ fun LibraryScreen(
     val host = remember { SnackbarHostState() }
     FormScreen(
         title = page.title(ready),
-        bar = ScreenBar.Small,
         onBack = back,
         snackbarHostState = host,
         // The languages are a long list, so that page lays itself out as a lazy list under the bar instead of in a scrolling form.

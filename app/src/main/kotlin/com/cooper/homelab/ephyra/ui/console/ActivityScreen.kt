@@ -58,7 +58,6 @@ import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.ScreenAction
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.binge.designsystem.theme.BingeSentiment
@@ -108,7 +107,6 @@ fun ActivityScreen(
     val listState = key(filters.applied) { rememberLazyListState() }
     BingeScreenScaffold(
         title = stringResource(R.string.activity_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         actions = {
             if (state is ActivityUiState.Ready || !filters.applied.isEmpty) {

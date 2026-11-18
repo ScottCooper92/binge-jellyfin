@@ -34,7 +34,6 @@ import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.homelab.ephyra.R
@@ -72,7 +71,6 @@ fun ChannelMappingsScreen(
     BingeScreenScaffold(
         title = stringResource(R.string.channel_mappings_title),
         subtitle = title,
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
     ) { padding ->

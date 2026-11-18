@@ -33,7 +33,6 @@ import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
-import com.binge.designsystem.template.ScreenBar
 import com.cooper.homelab.ephyra.R
 import com.binge.designsystem.R as DesR
 
@@ -64,7 +63,6 @@ fun ProfilePictureScreen(
     val ready = state as? ProfilePictureUiState.Ready
     FormScreen(
         title = stringResource(R.string.profile_picture_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
         notReady =

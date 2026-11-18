@@ -35,7 +35,6 @@ import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.FormScreen
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.server.ACTIVITY_LOG_RETENTION_DAYS
@@ -103,7 +102,6 @@ fun AdvancedScreen(
     val ready = state as? AdvancedUiState.Ready
     FormScreen(
         title = stringResource(R.string.advanced_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },

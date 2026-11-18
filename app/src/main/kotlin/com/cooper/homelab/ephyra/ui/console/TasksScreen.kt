@@ -36,7 +36,6 @@ import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.EmptyScreen
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.homelab.ephyra.R
@@ -78,7 +77,6 @@ fun TasksScreen(
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = stringResource(R.string.tasks_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
     ) { padding ->
@@ -126,7 +124,6 @@ fun TaskScreen(
     val host = remember { SnackbarHostState() }
     BingeScreenScaffold(
         title = task?.name ?: stringResource(R.string.tasks_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
         bottomBar = {
