@@ -49,7 +49,7 @@ and aren't flagged.
 Two more things leave the device, both only after the user agrees on the first-run screen (`ui/consent/`) and until they
 turn them off under This app. Usage data goes to PostHog (`telemetry/`): the app's own fixed screen and action names, never an
 id, a title, an address or a name. Crash reports go to Firebase Crashlytics in the same Firebase project: a stack trace and
-the device and app version, never a debug build's. No user id, custom key or log line is set, and no exception message in this
+the device and app version, never a debug build's. One non-crash report is added: a failure to schedule the notification poll that points at this app (an invalid work request or constraint, a misused API, an exception of its own code, `notifications/PollFailures.kt`), as a stack trace with the failing class's name and never the exception's message; a device that refuses the work sends nothing. No user id or custom key is set, the only log line is the fixed text of that report, and no exception message in this
 app's code may contain the server's address or the token. A build without `POSTHOG_API_KEY` or `google-services.json` has the
 matching one off. Neither carries the access token or anything from the user's server.
 

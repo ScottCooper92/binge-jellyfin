@@ -38,9 +38,9 @@ import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.AnalyticsConsentGate
 import com.cooper.homelab.core.telemetry.AnalyticsDecorator
 import com.cooper.homelab.core.telemetry.CrashReportingSwitch
+import com.cooper.homelab.core.telemetry.FirebaseCrashBreadcrumbs
 import com.cooper.homelab.core.telemetry.FirebaseCrashCollection
 import com.cooper.homelab.core.telemetry.GatedAnalytics
-import com.cooper.homelab.core.telemetry.NoOpCrashBreadcrumbs
 import com.cooper.homelab.core.telemetry.PostHogClient
 import com.cooper.homelab.core.telemetry.TelemetryPrefs
 import com.cooper.homelab.core.telemetry.postHogConfig
@@ -64,6 +64,7 @@ import com.cooper.homelab.ephyra.notifications.BackgroundAccess
 import com.cooper.homelab.ephyra.notifications.LegacyActivityCursor
 import com.cooper.homelab.ephyra.notifications.NotificationPlanner
 import com.cooper.homelab.ephyra.notifications.NotificationPrefs
+import com.cooper.homelab.ephyra.notifications.PollBreadcrumbs
 import com.cooper.homelab.ephyra.notifications.PollRunner
 import com.cooper.homelab.ephyra.notifications.pollReactor
 import com.cooper.homelab.ephyra.notifications.workManagerPollScheduler
@@ -252,7 +253,16 @@ class AppGraph(
 
     /** Keeps the poll scheduled while an administrator is signed in and has the switch on. */
     val notificationPlanner: NotificationPlanner by lazy {
-        NotificationPlanner(sessions, notificationPrefs, serverIdentity, notificationScheduler, notifier, scope, NoOpCrashBreadcrumbs)
+        NotificationPlanner(
+            sessions,
+            notificationPrefs,
+            serverIdentity,
+            notificationScheduler,
+            notifier,
+            scope,
+            // A scheduling failure is reported only when it points at this app, and only with the user's consent.
+            PollBreadcrumbs(FirebaseCrashBreadcrumbs(appContext)),
+        )
     }
 
     /** Asks Play for its review card once the user has done enough and waited long enough; off until the flag is on. */
