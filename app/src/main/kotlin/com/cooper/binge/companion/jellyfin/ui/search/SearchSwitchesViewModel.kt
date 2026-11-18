@@ -113,6 +113,8 @@ class SearchSwitchesViewModel(
                     .consoleCall(TAG) { _, client -> client.userConfiguration() }
                     .fold(
                         onSuccess = { configuration ->
+                            // Before the state says it is done, so whoever sees it done may ask again.
+                            reading = false
                             saves.loaded(configuration)
                             _state.update {
                                 (it as? SearchSwitchesState.Ready)?.copy(configuration = configuration, reading = false)
@@ -121,6 +123,7 @@ class SearchSwitchesViewModel(
                             unsent.toMap().forEach { (key, value) -> saves.set(key, value) }
                         },
                         onFailure = { error ->
+                            reading = false
                             _state.update {
                                 (it as? SearchSwitchesState.Ready)?.copy(reading = false)
                                     ?: SearchSwitchesState.Failed(error.consoleFailure())
