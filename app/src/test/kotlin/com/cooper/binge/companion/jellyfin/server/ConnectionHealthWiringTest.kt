@@ -3,6 +3,7 @@ package com.cooper.binge.companion.jellyfin.server
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.homelab.core.server.connection.ConnectionHealth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -17,8 +18,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-/** What the saved server's calls say about whether it is answering, the way binge-seerr's connection health reads them. */
-class ConnectionMonitorTest {
+/** What the saved server's calls say about whether it is answering, as the shared health monitor reads them through this app's client. */
+class ConnectionHealthWiringTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
     private lateinit var connection: Connection
@@ -51,60 +52,35 @@ class ConnectionMonitorTest {
     }
 
     @Test
-    fun `a single call without an answer is a blip, and a run of them is an unreached server`() {
-        val monitor = ConnectionMonitor()
-        assertEquals(Reach.Unchecked, monitor.reach.value)
-        monitor.reportSilent()
-        assertEquals(Reach.Unchecked, monitor.reach.value)
-        monitor.reportSilent()
-        assertEquals(Reach.Unreached, monitor.reach.value)
-    }
-
-    @Test
-    fun `any answer reads as reached again, and a blip after it needs its streak from the start`() {
-        val monitor = ConnectionMonitor()
-        monitor.reportSilent()
-        monitor.reportSilent()
-        monitor.reportAnswered()
-        assertEquals(Reach.Reached, monitor.reach.value)
-        monitor.reportSilent()
-        assertEquals(Reach.Reached, monitor.reach.value)
-        monitor.reportSilent()
-        assertEquals(Reach.Unreached, monitor.reach.value)
-        monitor.reset()
-        assertEquals(Reach.Unchecked, monitor.reach.value)
-    }
-
-    @Test
     fun `calls to the saved server feed the monitor, and a dropped one is no answer`() {
         call()
-        assertEquals(Reach.Reached, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Healthy, connection.monitor.current(SAVED_SERVER))
         jellyfin.dropped += "/Users/Me"
         call()
-        assertEquals(Reach.Reached, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Healthy, connection.monitor.current(SAVED_SERVER))
         call()
-        assertEquals(Reach.Unreached, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Unreachable, connection.monitor.current(SAVED_SERVER))
         jellyfin.dropped -= "/Users/Me"
         call()
-        assertEquals(Reach.Reached, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Healthy, connection.monitor.current(SAVED_SERVER))
     }
 
     @Test
     fun `a gateway that says the server behind it is down is no answer, and any other error is one`() {
         for (code in listOf(502, 503, 504)) {
             val monitor = connection.monitor
-            monitor.reset()
+            monitor.reset(SAVED_SERVER)
             jellyfin.status["/Users/Me"] = code
             call()
             call()
-            assertEquals("$code", Reach.Unreached, monitor.reach.value)
+            assertEquals("$code", ConnectionHealth.Unreachable, monitor.current(SAVED_SERVER))
         }
         for (code in listOf(400, 403, 404, 429, 500)) {
-            connection.monitor.reset()
+            connection.monitor.reset(SAVED_SERVER)
             jellyfin.status["/Users/Me"] = code
             call()
             call()
-            assertEquals("$code", Reach.Reached, connection.monitor.reach.value)
+            assertEquals("$code", ConnectionHealth.Healthy, connection.monitor.current(SAVED_SERVER))
         }
     }
 
@@ -115,7 +91,7 @@ class ConnectionMonitorTest {
             val anonymous = connection.anonymous(jellyfin.baseUrl.toHttpUrl())
             repeat(2) { runCatching { anonymous.me() } }
         }
-        assertEquals(Reach.Unchecked, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Unchecked, connection.monitor.current(SAVED_SERVER))
     }
 
     @Test
@@ -133,19 +109,19 @@ class ConnectionMonitorTest {
         }
         first.release()
         second.release()
-        assertEquals(Reach.Unchecked, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Unchecked, connection.monitor.current(SAVED_SERVER))
     }
 
     @Test
     fun `a new session starts the monitor again`() {
         runBlocking { withTimeout(WAIT_MILLIS) { connection.awaitWatching() } }
         call()
-        assertEquals(Reach.Reached, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Healthy, connection.monitor.current(SAVED_SERVER))
         runBlocking {
             sessions.save(jellyfin.session().copy(token = "another-token"))
-            withTimeout(WAIT_MILLIS) { while (connection.monitor.reach.value != Reach.Unchecked) delay(POLL_MILLIS) }
+            withTimeout(WAIT_MILLIS) { while (connection.monitor.current(SAVED_SERVER) != ConnectionHealth.Unchecked) delay(POLL_MILLIS) }
         }
-        assertEquals(Reach.Unchecked, connection.monitor.reach.value)
+        assertEquals(ConnectionHealth.Unchecked, connection.monitor.current(SAVED_SERVER))
     }
 
     private companion object {

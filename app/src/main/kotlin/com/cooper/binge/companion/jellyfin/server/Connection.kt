@@ -3,6 +3,10 @@ package com.cooper.binge.companion.jellyfin.server
 import com.cooper.binge.companion.jellyfin.auth.JellyfinSession
 import com.cooper.binge.companion.jellyfin.auth.SessionStore
 import com.cooper.homelab.core.foundation.Logger
+import com.cooper.homelab.core.foundation.ServerId
+import com.cooper.homelab.core.server.connection.ConnectionHealthInterceptor
+import com.cooper.homelab.core.server.connection.ConnectionHealthMonitor
+import com.cooper.homelab.core.server.connection.GatewayClassifier
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -42,6 +46,12 @@ sealed interface BackupCreation {
     ) : BackupCreation
 }
 
+/** The one server this app holds, as far as the health monitor is concerned. It is replaced by the server's own id when the app adopts the registry. */
+internal val SAVED_SERVER = ServerId("saved")
+
+/** A single call without an answer can be a blip; only a run of them with no answer between reads as unreached. */
+private const val UNREACHED_STREAK = 2
+
 /** Makes [JellyfinClient]s: an anonymous one for a typed address, and one for the saved session. */
 class Connection(
     private val http: OkHttpClient,
@@ -54,11 +64,16 @@ class Connection(
 ) {
     private val refusals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    /** Whether the saved server has been answering, from every call a signed-in client makes (not a typed address's probes). */
-    val monitor = ConnectionMonitor()
+    /**
+     * Whether the saved server has been answering, from every call a signed-in client makes (not a typed address's probes): a
+     * transport failure or a gateway's 502, 503 or 504 is no answer, and two in a row read as unreachable. Read it for [SAVED_SERVER].
+     */
+    val monitor = ConnectionHealthMonitor(GatewayClassifier, unreachableAfter = UNREACHED_STREAK)
 
     /** [http] with the monitor listening: the clients signed in to the saved server use it, and an address being tried does not. */
-    private val signedInHttp: OkHttpClient by lazy { http.newBuilder().addInterceptor(ReachInterceptor(monitor)).build() }
+    private val signedInHttp: OkHttpClient by lazy {
+        http.newBuilder().addInterceptor(ConnectionHealthInterceptor(monitor, SAVED_SERVER)).build()
+    }
 
     /**
      * The saved session's token stopped working: the server refused it outright (revoked, the device
@@ -101,7 +116,7 @@ class Connection(
                         watching.complete(Unit)
                     } else if (identity != baseline) {
                         baseline = identity
-                        monitor.reset()
+                        monitor.reset(SAVED_SERVER)
                         pendingSaves.toList().forEach { it.cancel() }
                         backupJobs.toList().forEach { it.cancel() }
                         creations.value = BackupCreation.Idle
