@@ -22,6 +22,13 @@ internal object SettingRows {
     const val THIS_APP_CRASH_REPORTS = "this-app.crash-reports"
     const val THIS_APP_REPORT_BUG = "this-app.report-bug"
     const val THIS_APP_NOTIFICATIONS = "this-app.notifications"
+    const val PLAYBACK_DEFAULT_AUDIO = "playback.default-audio"
+    const val PLAYBACK_REMEMBER_AUDIO = "playback.remember-audio"
+    const val PLAYBACK_REMEMBER_SUBTITLES = "playback.remember-subtitles"
+    const val PLAYBACK_AUTOPLAY = "playback.autoplay"
+    const val HOME_HIDE_PLAYED = "home.hide-played"
+    const val HOME_MISSING_EPISODES = "home.missing-episodes"
+    const val HOME_COLLECTIONS = "home.collections"
     const val SERVER_NAME = "server.name"
     const val SERVER_QUICK_CONNECT = "server.quick-connect"
 }
