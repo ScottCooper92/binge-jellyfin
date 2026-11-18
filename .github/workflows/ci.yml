@@ -143,7 +143,9 @@ jobs:
           fi
           [ -n "$base" ] || all "No baseline to diff against"
 
-          git diff --name-only "$base" "$head" > "$RUNNER_TEMP/changed.txt" || all "The diff could not be read"
+          # --no-renames: git's default rename detection prints only the NEW path of a moved file, so a source file moved
+          # into docs/ would read as documentation and skip every Gradle job. This lists both the old and the new path.
+          git diff --name-only --no-renames "$base" "$head" > "$RUNNER_TEMP/changed.txt" || all "The diff could not be read"
           .github/scripts/classify-changes.sh "$RUNNER_TEMP/changed.txt" | tee -a "$GITHUB_OUTPUT"
           {
             echo "Diff against $label:"

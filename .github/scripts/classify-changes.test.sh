@@ -48,6 +48,9 @@ check "the data module's build file" "true true true"   data/build.gradle.kts
 check "the design system pin"      "true true true"    design-system
 check "the homelab-core pin"      "true true true"    homelab-core
 check "the companions pin"         "true false true"   binge-companions
+# A rename shows as both paths (the diff runs with --no-renames), so a source file moved into docs is not docs-only.
+check "a source file renamed into docs" "true true false" "$K/ui/SignedInHome.kt" docs/SignedInHome.md
+check "a keep rule renamed into docs"   "true false true" app/src/main/keepRules/companion.keep docs/companion.md
 check "docs with a screen"         "true true false"   CLAUDE.md "$K/ui/SignedInHome.kt"
 
 check "a UI-only change skips R8" "true true false" "$K/ui/SignedInHome.kt" app/src/main/res/values/strings.xml
