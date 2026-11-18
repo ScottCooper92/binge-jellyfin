@@ -38,8 +38,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import com.binge.designsystem.component.BingeConfirmDialog
-import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
@@ -53,7 +51,6 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.flags.LocalFlags
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.PublicUser
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
@@ -450,45 +447,6 @@ private fun SignedIn(
     }
     if (state.confirmingSignOut) SignOutConfirm(actions)
     if (state.confirmingTakeBack) state.consentHost?.let { TakeBackConfirm(it, actions) }
-}
-
-/**
- * The confirm for taking back the agreement to plain HTTP to [host]. Taking it back is a sign-out, since the app can no longer reach the
- * server, so it says so and confirms with the sign-out. [inWindow] false draws its body alone, as [SignOutConfirm] does.
- */
-@Composable
-internal fun TakeBackConfirm(
-    host: String,
-    actions: Actions,
-    inWindow: Boolean = true,
-) {
-    val title = stringResource(R.string.take_back_title)
-    val message = stringResource(R.string.take_back_body, host)
-    val confirm = stringResource(R.string.take_back_confirm)
-    if (inWindow) {
-        BingeConfirmDialog(title, message, confirm, actions.onSignOut, actions.onCancelTakeBack, destructive = true)
-    } else {
-        BingeConfirmDialogContent(title, message, confirm, actions.onSignOut, actions.onCancelTakeBack, destructive = true)
-    }
-}
-
-/**
- * The sign-out confirm. [inWindow] false draws its body alone, without the dialog window a screen
- * frame can't capture, so a `@PreviewTest` can show it.
- */
-@Composable
-internal fun SignOutConfirm(
-    actions: Actions,
-    inWindow: Boolean = true,
-) {
-    val title = stringResource(R.string.sign_out_title)
-    val message = stringResource(if (LocalFlags.current.bingePromotion) R.string.sign_out_body else R.string.sign_out_body_plain)
-    val confirm = stringResource(R.string.settings_sign_out)
-    if (inWindow) {
-        BingeConfirmDialog(title, message, confirm, actions.onSignOut, actions.onCancelSignOut, destructive = true)
-    } else {
-        BingeConfirmDialogContent(title, message, confirm, actions.onSignOut, actions.onCancelSignOut, destructive = true)
-    }
 }
 
 /** Who is signed in, and what's playing on the server, under the server card. */

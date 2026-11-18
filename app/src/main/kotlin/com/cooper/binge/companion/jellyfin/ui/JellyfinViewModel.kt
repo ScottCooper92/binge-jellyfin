@@ -400,7 +400,7 @@ class JellyfinViewModel(
     init {
         viewModelScope.launch {
             val session = sessions.current()
-            _state.value = if (session == null) UiState.EnterServer() else signedIn(session)
+            _state.value = if (session == null) UiState.EnterServer() else signedInState(addressPolicy, session)
             if (session != null) refresh()
         }
         // A console page found the token refused: sign-in again, as a refused library refresh does.
@@ -654,16 +654,10 @@ class JellyfinViewModel(
         _state.value = enterServer(addressPolicy, session.baseUrl)
     }
 
-    /** Shows or hides the sign-out confirm. */
-    fun confirmSignOut(showing: Boolean) = _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = showing) ?: it }
-
-    /**
-     * Shows or hides the confirm for taking back the plain-HTTP agreement, which the session's server card offers. Only a session
-     * that holds one has it: nothing shows for any other.
-     */
-    fun confirmTakeBack(showing: Boolean) =
+    /** Changes the signed-in state, and leaves any other step as it is. */
+    internal fun updateSignedIn(change: (UiState.SignedIn) -> UiState.SignedIn) =
         _state.update {
-            (it as? UiState.SignedIn)?.takeIf { s -> !showing || s.consentHost != null }?.copy(confirmingTakeBack = showing)
+            (it as? UiState.SignedIn)?.let(change)
                 ?: it
         }
 
@@ -720,12 +714,11 @@ class JellyfinViewModel(
         }
         index.clear()
         reports.signedIn(method)
-        _state.value = signedIn(session)
+        _state.value = signedInState(addressPolicy, session)
         refresh()
     }
 
     /** The signed-in state for [session], with the plain-HTTP agreement it holds, if any. */
-    private fun signedIn(session: JellyfinSession) = UiState.SignedIn(session, consentHost = addressPolicy.insecureHost(session.baseUrl))
 
     private companion object {
         const val TAG = "JellyfinSetup"
