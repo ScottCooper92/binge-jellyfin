@@ -22,6 +22,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
 import com.cooper.binge.companion.jellyfin.ui.console.consoleCall
 import com.cooper.binge.companion.jellyfin.ui.console.consoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.refusedAfter
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -107,7 +109,7 @@ class SearchSwitchesViewModel(
         viewModelScope.launch {
             try {
                 // Sent now and answered when the server has it.
-                if (!kept) saves.settle().await()
+                if (!kept) forgetWhenSent(saves.settle(), unsent.toMap()).join()
                 connection.awaitSaves()
                 connection
                     .consoleCall(TAG) { _, client -> client.userConfiguration() }
@@ -159,7 +161,21 @@ class SearchSwitchesViewModel(
     fun leaving() {
         val owed = saves.settle()
         connection.launchSave { owed.await() }
+        // settle() reports no status, so the progress callback never sees this write land: forget it here.
+        forgetWhenSent(owed, unsent.toMap())
     }
+
+    /**
+     * When [owed] answers that nothing was kept, the server has accepted what [sent] held, or refused it and put the copy back, so
+     * it is no longer owed and a later read must not put it over what a page saves. Only those entries go: a flip made since stays.
+     */
+    private fun forgetWhenSent(
+        owed: Deferred<JsonObject?>,
+        sent: Map<String, JsonPrimitive>,
+    ): Job =
+        viewModelScope.launch {
+            if (owed.await() == null) sent.forEach { (key, value) -> if (unsent[key] == value) unsent.remove(key) }
+        }
 
     /** Not while the copy is being read again: Retry would send the old copy over what a page saved, and the read puts the change back anyway. */
     fun retrySave() {

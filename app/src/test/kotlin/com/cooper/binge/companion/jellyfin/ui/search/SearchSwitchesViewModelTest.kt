@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -216,6 +217,22 @@ class SearchSwitchesViewModelTest {
         vm.setDisplayMissingEpisodes(true)
         awaitServer { it.containsKey("DisplayMissingEpisodes") && it.on("DisplayMissingEpisodes") }
         assertFalse(server().on("EnableNextEpisodeAutoPlay"))
+    }
+
+    @Test
+    fun `a change leaving sent is not put back over what the page then saved`() {
+        val vm = started()
+        vm.ready()
+        vm.setAutoplayNextEpisode(false)
+        vm.leaving()
+        runBlocking { connection.awaitSaves() }
+        // The page turns it back on and saves.
+        jellyfin.userConfiguration =
+            JsonObject(server() + ("EnableNextEpisodeAutoPlay" to JsonPrimitive(true))).toString()
+        vm.refresh()
+        vm.ready()
+        Thread.sleep(SEND_WAIT_MILLIS)
+        assertTrue(server().on("EnableNextEpisodeAutoPlay"))
     }
 
     @Test
