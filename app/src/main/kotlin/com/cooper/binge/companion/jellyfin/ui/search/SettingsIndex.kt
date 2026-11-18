@@ -82,7 +82,7 @@ private fun Resources.page(
     keywords = keywords?.let(::text),
 )
 
-private fun Resources.setting(
+internal fun Resources.setting(
     page: ConsolePage,
     @StringRes label: Int,
     icon: ImageVector,
@@ -114,7 +114,8 @@ internal fun settingsIndex(resources: Resources): List<SettingEntry<SearchTarget
             indexPart4() +
             indexPart5() +
             indexSwitches() +
-            indexServerSwitches()
+            indexServerSwitches() +
+            indexEncodingSwitches()
     }
 
 private fun Resources.indexPart1(): List<SettingEntry<SearchTarget>> =

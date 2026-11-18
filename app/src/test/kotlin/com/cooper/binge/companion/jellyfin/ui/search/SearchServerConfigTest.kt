@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscardLogger
+import com.cooper.binge.companion.jellyfin.server.ENCODING_AUDIO_VBR
+import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLING
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -148,6 +150,49 @@ class SearchServerConfigTest {
         )
         assertFalse(ready.reading)
         assertEquals(original, held().getValue("EnableMetrics").jsonPrimitive.boolean)
+    }
+
+    private fun encodingHeld(): JsonObject = Json.parseToJsonElement(jellyfin.encodingConfiguration).jsonObject
+
+    private fun SearchSwitchesViewModel.encodingReady() =
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { encoding.state.first { it is SearchConfigState.Ready } } } as SearchConfigState.Ready
+
+    @Test
+    fun `a Transcoding flip lands in the encoding configuration and keeps the rest`() {
+        val before = encodingHeld()
+        val key = ENCODING_THROTTLING
+        val original = before.getValue(key).jsonPrimitive.boolean
+        val vm = made(SearchSwitchesViewModel(connection)).also { it.encoding.start() }
+        vm.encodingReady()
+        vm.flip(SettingRows.transcoding(key), !original)
+        awaitEncoding { it.getValue(key).jsonPrimitive.boolean != original }
+        val after = encodingHeld()
+        assertEquals(before.keys, after.keys)
+        assertEquals(before.filterKeys { it != key }, after.filterKeys { it != key })
+        // Only the encoding configuration was read and written: the server's own was not touched.
+        assertEquals(0, jellyfin.hits("/System/Configuration"))
+    }
+
+    @Test
+    fun `two Transcoding flips in a row keep both`() {
+        val vm = made(SearchSwitchesViewModel(connection)).also { it.encoding.start() }
+        vm.encodingReady()
+        val throttle = encodingHeld().getValue(ENCODING_THROTTLING).jsonPrimitive.boolean
+        val vbr = encodingHeld().getValue(ENCODING_AUDIO_VBR).jsonPrimitive.boolean
+        vm.flip(SettingRows.transcoding(ENCODING_THROTTLING), !throttle)
+        vm.flip(SettingRows.transcoding(ENCODING_AUDIO_VBR), !vbr)
+        awaitEncoding {
+            it.getValue(ENCODING_THROTTLING).jsonPrimitive.boolean != throttle &&
+                it.getValue(ENCODING_AUDIO_VBR).jsonPrimitive.boolean != vbr
+        }
+    }
+
+    private fun awaitEncoding(check: (JsonObject) -> Boolean) {
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (!check(encodingHeld())) delay(POLL_MILLIS)
+            }
+        }
     }
 
     private companion object {

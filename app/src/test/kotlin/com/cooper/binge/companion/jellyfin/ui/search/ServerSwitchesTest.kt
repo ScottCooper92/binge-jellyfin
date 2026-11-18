@@ -1,6 +1,27 @@
 package com.cooper.binge.companion.jellyfin.ui.search
 
 import com.binge.designsystem.SaveStatus
+import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
+import com.cooper.binge.companion.jellyfin.server.ENCODING_AUDIO_VBR
+import com.cooper.binge.companion.jellyfin.server.ENCODING_AV1
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_10
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_REXT_10
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_HEVC_REXT_12
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DECODE_VP9_10
+import com.cooper.binge.companion.jellyfin.server.ENCODING_DEINTERLACE_DOUBLE_RATE
+import com.cooper.binge.companion.jellyfin.server.ENCODING_ENHANCED_NVDEC
+import com.cooper.binge.companion.jellyfin.server.ENCODING_FALLBACK_FONT
+import com.cooper.binge.companion.jellyfin.server.ENCODING_HARDWARE_ENCODING
+import com.cooper.binge.companion.jellyfin.server.ENCODING_HEVC
+import com.cooper.binge.companion.jellyfin.server.ENCODING_INTEL_LOW_POWER_H264
+import com.cooper.binge.companion.jellyfin.server.ENCODING_INTEL_LOW_POWER_HEVC
+import com.cooper.binge.companion.jellyfin.server.ENCODING_SEGMENT_DELETION
+import com.cooper.binge.companion.jellyfin.server.ENCODING_SUBTITLE_EXTRACTION
+import com.cooper.binge.companion.jellyfin.server.ENCODING_SYSTEM_NATIVE
+import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLING
+import com.cooper.binge.companion.jellyfin.server.ENCODING_TONEMAPPING
+import com.cooper.binge.companion.jellyfin.server.ENCODING_VIDEO_TOOLBOX_TONEMAPPING
+import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
@@ -44,6 +65,47 @@ class ServerSwitchesTest {
             SettingRows.ADVANCED_LEGACY_AUTH,
         )
 
+    private val encodingRows =
+        listOf(
+            ENCODING_DECODE_HEVC_10,
+            ENCODING_DECODE_VP9_10,
+            ENCODING_DECODE_HEVC_REXT_10,
+            ENCODING_DECODE_HEVC_REXT_12,
+            ENCODING_HARDWARE_ENCODING,
+            ENCODING_HEVC,
+            ENCODING_AV1,
+            ENCODING_INTEL_LOW_POWER_HEVC,
+            ENCODING_INTEL_LOW_POWER_H264,
+            ENCODING_ENHANCED_NVDEC,
+            ENCODING_SYSTEM_NATIVE,
+            ENCODING_TONEMAPPING,
+            ENCODING_VPP_TONEMAPPING,
+            ENCODING_VIDEO_TOOLBOX_TONEMAPPING,
+            ENCODING_DEINTERLACE_DOUBLE_RATE,
+            ENCODING_AUDIO_VBR,
+            ENCODING_THROTTLING,
+            ENCODING_SEGMENT_DELETION,
+            ENCODING_SUBTITLE_EXTRACTION,
+            ENCODING_FALLBACK_FONT,
+        ).map { SettingRows.transcoding(it) }
+
+    /** An encoding configuration that has every switch key, set to hardware acceleration [type]. */
+    private fun encoding(type: String): JsonObject =
+        buildJsonObject {
+            put(ENCODING_ACCELERATION, type)
+            encodingRows.forEach { put(it.removePrefix("transcoding."), true) }
+        }
+
+    private fun encodingShown(
+        row: String,
+        type: String,
+        version: String = "10.11.6",
+    ): Boolean {
+        val spec = spec(row)
+        val profile = JellyfinServerProfile.from(version)
+        return spec.gate(profile) && spec.applies(encoding(type), profile) && spec.read(encoding(type)) != null
+    }
+
     /** A server configuration that has every key the Advanced page offers, so each of its rows is there to read. */
     private val server =
         Json
@@ -68,9 +130,70 @@ class ServerSwitchesTest {
 
     @Test
     fun `every switch row has a spec, in the configuration its page saves to`() {
-        assertEquals((userRows + serverRows).toSet(), SWITCH_SPECS.keys)
+        assertEquals((userRows + serverRows + encodingRows).toSet(), SWITCH_SPECS.keys)
         assertTrue(userRows.all { spec(it).kind == ConfigKind.User })
         assertTrue(serverRows.all { spec(it).kind == ConfigKind.Server })
+        assertTrue(encodingRows.all { spec(it).kind == ConfigKind.Encoding })
+    }
+
+    @Test
+    fun `an encoding switch reads its own key and a key the server did not send reads as none`() {
+        val configuration = encoding("qsv")
+        encodingRows.forEach { assertTrue(it, spec(it).read(configuration)!!) }
+        val without = buildJsonObject { put(ENCODING_ACCELERATION, "qsv") }
+        encodingRows.forEach { assertNull(it, spec(it).read(without)) }
+        val off = buildJsonObject { put(ENCODING_THROTTLING, false) }
+        assertFalse(spec(SettingRows.transcoding(ENCODING_THROTTLING)).read(off)!!)
+    }
+
+    @Test
+    fun `an encoding switch makes a change to its own key`() {
+        val change = spec(SettingRows.transcoding(ENCODING_THROTTLING)).change(true)
+        assertEquals(ENCODING_THROTTLING, change.id)
+        assertEquals(ENCODING_THROTTLING to JsonPrimitive(true), change.apply(encoding("none")))
+    }
+
+    @Test
+    fun `the switches the page draws for each acceleration type are the ones the search draws`() {
+        fun shown(type: String) = encodingRows.filter { encodingShown(it, type) }.map { it.removePrefix("transcoding.") }.toSet()
+
+        val none = shown("none")
+        assertEquals(
+            setOf(
+                ENCODING_TONEMAPPING,
+                ENCODING_DEINTERLACE_DOUBLE_RATE,
+                ENCODING_AUDIO_VBR,
+                ENCODING_THROTTLING,
+                ENCODING_SEGMENT_DELETION,
+                ENCODING_SUBTITLE_EXTRACTION,
+                ENCODING_FALLBACK_FONT,
+            ),
+            none,
+        )
+        val qsv = shown("qsv")
+        assertTrue(ENCODING_INTEL_LOW_POWER_HEVC in qsv && ENCODING_SYSTEM_NATIVE in qsv && ENCODING_VPP_TONEMAPPING in qsv)
+        assertFalse(ENCODING_ENHANCED_NVDEC in qsv || ENCODING_VIDEO_TOOLBOX_TONEMAPPING in qsv)
+        val nvenc = shown("nvenc")
+        assertTrue(ENCODING_ENHANCED_NVDEC in nvenc && ENCODING_DECODE_HEVC_REXT_10 in nvenc)
+        assertFalse(ENCODING_INTEL_LOW_POWER_HEVC in nvenc || ENCODING_SYSTEM_NATIVE in nvenc)
+        val toolbox = shown("videotoolbox")
+        assertTrue(ENCODING_VIDEO_TOOLBOX_TONEMAPPING in toolbox && ENCODING_HARDWARE_ENCODING in toolbox)
+        assertFalse(ENCODING_DECODE_HEVC_10 in toolbox || ENCODING_DECODE_HEVC_REXT_10 in toolbox)
+        // A blank type is how 10.8 stores none.
+        assertEquals(none - ENCODING_TONEMAPPING, shown("").minus(ENCODING_TONEMAPPING))
+    }
+
+    @Test
+    fun `the switches of a later release are not offered on an earlier one`() {
+        listOf(ENCODING_AV1, ENCODING_AUDIO_VBR, ENCODING_SEGMENT_DELETION).forEach {
+            assertTrue(it, encodingShown(SettingRows.transcoding(it), "qsv", "10.11.6"))
+            assertFalse(it, encodingShown(SettingRows.transcoding(it), "qsv", "10.8.13"))
+        }
+        assertTrue(encodingShown(SettingRows.transcoding(ENCODING_DECODE_HEVC_REXT_10), "qsv", "10.10.7"))
+        assertFalse(encodingShown(SettingRows.transcoding(ENCODING_DECODE_HEVC_REXT_10), "qsv", "10.9.11"))
+        // Tone mapping in software is 10.10's.
+        assertTrue(encodingShown(SettingRows.transcoding(ENCODING_TONEMAPPING), "none", "10.10.7"))
+        assertFalse(encodingShown(SettingRows.transcoding(ENCODING_TONEMAPPING), "none", "10.9.11"))
     }
 
     @Test

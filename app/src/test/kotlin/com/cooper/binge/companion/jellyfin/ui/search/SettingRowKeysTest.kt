@@ -20,6 +20,9 @@ import com.cooper.binge.companion.jellyfin.FakeJellyfin
 import com.cooper.binge.companion.jellyfin.R
 import com.cooper.binge.companion.jellyfin.server.AdvancedSettings
 import com.cooper.binge.companion.jellyfin.server.Branding
+import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
+import com.cooper.binge.companion.jellyfin.server.ENCODING_ENHANCED_NVDEC
+import com.cooper.binge.companion.jellyfin.server.ENCODING_VIDEO_TOOLBOX_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.HomeLayout
 import com.cooper.binge.companion.jellyfin.server.JellyfinAccount
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
@@ -63,6 +66,8 @@ import com.cooper.binge.companion.jellyfin.ui.console.TrickplayUiState
 import com.cooper.homelab.core.presentation.search.SettingEntry
 import com.cooper.homelab.core.uiandroid.resolve
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
@@ -109,7 +114,12 @@ class SettingRowKeysTest {
                 )
             },
             ConsolePage.Transcoding to {
-                val encoding = Json.parseToJsonElement(fixtures.encodingConfiguration).jsonObject
+                val encoding =
+                    JsonObject(
+                        mapOf(ENCODING_VIDEO_TOOLBOX_TONEMAPPING to JsonPrimitive(false)) +
+                            Json.parseToJsonElement(fixtures.encodingConfiguration).jsonObject +
+                            (ENCODING_ACCELERATION to JsonPrimitive(accelerationType)),
+                    )
                 val server = Json.parseToJsonElement("""{"MinResumePct":5,"RemoteClientBitrateLimit":8000000}""").jsonObject
                 TranscodingScreen(TranscodingUiState.Ready(encoding, server), TranscodingActions(), profile)
             },
@@ -170,6 +180,16 @@ class SettingRowKeysTest {
 
     private fun rowLabel(entry: SettingEntry<SearchTarget>) =
         rowLabels[entry.row]?.let(compose.activity::getString) ?: entry.label.resolve(compose.activity)
+
+    /** The Transcoding page draws some rows for some acceleration types only: the fixture is set to the one an entry's row is drawn for. */
+    private var accelerationType by mutableStateOf("qsv")
+
+    private fun typeFor(row: String?) =
+        when (row) {
+            SettingRows.transcoding(ENCODING_ENHANCED_NVDEC) -> "nvenc"
+            SettingRows.transcoding(ENCODING_VIDEO_TOOLBOX_TONEMAPPING) -> "videotoolbox"
+            else -> "qsv"
+        }
 
     private var page by mutableStateOf<ConsolePage?>(null)
     private var focusRow by mutableStateOf<String?>(null)
@@ -237,6 +257,7 @@ class SettingRowKeysTest {
         keyed.forEach { entry ->
             val label = rowLabel(entry)
             // The window is too short to show the row before the focus scrolls to it: a row that is there already proves nothing.
+            accelerationType = typeFor(entry.row)
             fresh(entry.target.page)
             if (isShown(label)) missed += "${entry.row}: '$label' is on screen without a scroll, so the window proves nothing"
             focusRow = entry.row

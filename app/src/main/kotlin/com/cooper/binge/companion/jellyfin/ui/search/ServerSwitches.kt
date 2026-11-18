@@ -14,6 +14,7 @@ import com.binge.designsystem.template.formSaveStatus
 import com.cooper.binge.companion.jellyfin.AppGraph
 import com.cooper.binge.companion.jellyfin.server.ALLOW_CLIENT_LOG_UPLOAD
 import com.cooper.binge.companion.jellyfin.server.AUTOPLAY_NEXT_EPISODE
+import com.cooper.binge.companion.jellyfin.server.AdvancedSettings
 import com.cooper.binge.companion.jellyfin.server.DISPLAY_COLLECTIONS_VIEW
 import com.cooper.binge.companion.jellyfin.server.DISPLAY_MISSING_EPISODES
 import com.cooper.binge.companion.jellyfin.server.ENABLE_LEGACY_AUTHORIZATION
@@ -48,11 +49,13 @@ import kotlinx.serialization.json.JsonPrimitive
 internal class SwitchSpec(
     val kind: ConfigKind,
     val gate: (JellyfinServerProfile) -> Boolean = { true },
+    /** Whether the page shows the row for this configuration on this server, where that depends on the configuration (the acceleration type). */
+    val applies: (JsonObject, JellyfinServerProfile) -> Boolean = { _, _ -> true },
     val read: (JsonObject) -> Boolean?,
     val change: (Boolean) -> ConfigChange,
 )
 
-private fun topLevel(key: String): (Boolean) -> ConfigChange = { on -> ConfigChange(key) { key to JsonPrimitive(on) } }
+internal fun topLevel(key: String): (Boolean) -> ConfigChange = { on -> ConfigChange(key) { key to JsonPrimitive(on) } }
 
 /** A trickplay option lives inside the options object, so the change is that object, made from the copy as it is. */
 private fun trickplay(key: String): (Boolean) -> ConfigChange =
@@ -65,10 +68,10 @@ private fun trickplay(key: String): (Boolean) -> ConfigChange =
 /** A switch of the Advanced page, offered only where the server sent its key, as the page does. */
 private fun JsonObject.advanced(
     key: String,
-    value: (kotlinx.serialization.json.JsonObject) -> Boolean,
-): Boolean? = if (key in advancedSettings().present) value(this) else null
+    value: (AdvancedSettings) -> Boolean,
+): Boolean? = advancedSettings().let { if (key in it.present) value(it) else null }
 
-internal val SWITCH_SPECS: Map<String, SwitchSpec> =
+private val SERVER_AND_USER_SPECS: Map<String, SwitchSpec> =
     mapOf(
         SettingRows.PLAYBACK_DEFAULT_AUDIO to
             SwitchSpec(
@@ -109,29 +112,32 @@ internal val SWITCH_SPECS: Map<String, SwitchSpec> =
         SettingRows.ADVANCED_SLOW_WARNING to
             SwitchSpec(
                 ConfigKind.Server,
-                read = { it.advanced(ENABLE_SLOW_RESPONSE_WARNING) { c -> c.advancedSettings().slowResponseWarning } },
+                read = { it.advanced(ENABLE_SLOW_RESPONSE_WARNING) { c -> c.slowResponseWarning } },
                 change = topLevel(ENABLE_SLOW_RESPONSE_WARNING),
             ),
         SettingRows.ADVANCED_CLIENT_LOGS to
             SwitchSpec(
                 ConfigKind.Server,
-                read = { it.advanced(ALLOW_CLIENT_LOG_UPLOAD) { c -> c.advancedSettings().allowClientLogUpload } },
+                read = { it.advanced(ALLOW_CLIENT_LOG_UPLOAD) { c -> c.allowClientLogUpload } },
                 change = topLevel(ALLOW_CLIENT_LOG_UPLOAD),
             ),
         SettingRows.ADVANCED_METRICS to
             SwitchSpec(
                 ConfigKind.Server,
-                read = { it.advanced(ENABLE_METRICS) { c -> c.advancedSettings().metrics } },
+                read = { it.advanced(ENABLE_METRICS) { c -> c.metrics } },
                 change = topLevel(ENABLE_METRICS),
             ),
         SettingRows.ADVANCED_LEGACY_AUTH to
             SwitchSpec(
                 ConfigKind.Server,
                 gate = { it.hasCacheAndLegacyAuth },
-                read = { it.advanced(ENABLE_LEGACY_AUTHORIZATION) { c -> c.advancedSettings().legacyAuthorization } },
+                read = { it.advanced(ENABLE_LEGACY_AUTHORIZATION) { c -> c.legacyAuthorization } },
                 change = topLevel(ENABLE_LEGACY_AUTHORIZATION),
             ),
     )
+
+/** Every switch a result can carry, by the row of its setting. */
+internal val SWITCH_SPECS: Map<String, SwitchSpec> = SERVER_AND_USER_SPECS + ENCODING_SPECS
 
 /** The search's switches over one view model, made when the first one is shown. [onModel] tells the route which one there is. */
 @Composable
@@ -159,12 +165,12 @@ internal fun configSwitchToggle(
     onModel: (SearchSwitchesViewModel) -> Unit,
 ): SearchToggle? {
     val spec = SWITCH_SPECS[row] ?: return null
-    if (!spec.gate(profile) || (spec.kind == ConfigKind.Server && !account.isAdministrator)) return null
+    if (!spec.gate(profile) || (spec.kind != ConfigKind.User && !account.isAdministrator)) return null
     val model = searchSwitchesModel(graph, onModel)
     val copy = model.copy(spec.kind)
     LaunchedEffect(copy) { copy.start() }
     val state by copy.state.collectAsStateWithLifecycle()
-    return configToggle(spec.read, state) { on -> copy.change(spec.change(on)) }
+    return configToggle({ spec.read(it).takeIf { _ -> spec.applies(it, profile) } }, state) { on -> copy.change(spec.change(on)) }
 }
 
 /**
@@ -200,6 +206,7 @@ internal fun SearchServerMessages(
     model ?: return
     CopyMessages(model.user, host)
     CopyMessages(model.server, host)
+    CopyMessages(model.encoding, host)
 }
 
 @Composable
