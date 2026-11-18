@@ -233,6 +233,47 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
+    fun `a refused change is not sent again each time the search is read again`() {
+        val vm = started()
+        vm.ready()
+        jellyfin.status["/Users/Configuration"] = 409
+        vm.setHidePlayedInLatest(false)
+        vm.settled { (it as? SearchSwitchesState.Ready)?.refused != null }
+        val writes = jellyfin.hits("/Users/Configuration")
+
+        // The server would take it now, but nobody asked again: reading must not.
+        jellyfin.status.remove("/Users/Configuration")
+        vm.refresh()
+        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        Thread.sleep(SEND_WAIT_MILLIS)
+
+        assertTrue(vm.ready().home.hidePlayedInLatest)
+        assertEquals(writes, jellyfin.hits("/Users/Configuration"))
+    }
+
+    @Test
+    fun `Retry while the search is being read does not send the old copy over a page's change`() {
+        val vm = started()
+        vm.ready()
+        jellyfin.dropped += "/Users/Configuration"
+        vm.setDisplayCollectionsView(true)
+        vm.settled { (it as? SearchSwitchesState.Ready)?.save?.failed == true }
+        jellyfin.dropped.clear()
+        jellyfin.userConfiguration =
+            jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
+
+        val held = jellyfin.hold("/Users/Me")
+        vm.refresh()
+        held.awaitArrival()
+        vm.retrySave()
+        held.release()
+        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        awaitServer { it.containsKey("DisplayCollectionsView") && it.on("DisplayCollectionsView") }
+
+        assertEquals("fra", server().getValue("AudioLanguagePreference").jsonPrimitive.content)
+    }
+
+    @Test
     fun `a write that cannot reach the server keeps the change, says so, and Retry sends it`() {
         val vm = started()
         vm.ready()
@@ -252,5 +293,6 @@ class SearchSwitchesViewModelTest {
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
         const val POLL_MILLIS = 20L
+        const val SEND_WAIT_MILLIS = 900L
     }
 }
