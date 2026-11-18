@@ -19,8 +19,10 @@ import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.DiscoveredServer
 import com.cooper.binge.companion.jellyfin.server.ForgotPasswordAction
 import com.cooper.binge.companion.jellyfin.server.LibraryIndex
+import com.cooper.binge.companion.jellyfin.server.SAVED_SERVER
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
+import com.cooper.homelab.core.server.connection.CallResult
 import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.CleartextGate
 import com.cooper.homelab.core.server.network.CleartextGuard
@@ -1183,12 +1185,12 @@ class JellyfinViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
         assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { it.titles != null }.health)
-        connection.monitor.reportSilent()
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         // One call without an answer is a blip, as binge-seerr counts it.
         assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn>().health)
-        connection.monitor.reportSilent()
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         assertEquals(ConnectionHealth.Unreachable, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
-        connection.monitor.reportAnswered()
+        connection.monitor.report(SAVED_SERVER, CallResult.Answered(200))
         assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { !it.health.isProblem }.health)
     }
 
@@ -1201,10 +1203,10 @@ class JellyfinViewModelTest {
         vm.refresh()
         assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
         // An answered call elsewhere does not clear "couldn't load", and calls without an answer do not rename it.
-        connection.monitor.reportAnswered()
+        connection.monitor.report(SAVED_SERVER, CallResult.Answered(200))
         assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { !it.refreshing }.health)
-        connection.monitor.reportSilent()
-        connection.monitor.reportSilent()
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         assertEquals(ConnectionHealth.CouldNotLoad, vm.await<UiState.SignedIn> { !it.refreshing }.health)
     }
 
