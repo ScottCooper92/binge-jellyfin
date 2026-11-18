@@ -61,6 +61,7 @@ import com.cooper.binge.companion.jellyfin.server.NFO_PATH_SUBSTITUTION
 import com.cooper.binge.companion.jellyfin.server.NFO_SAVE_IMAGE_PATHS
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.homelab.core.presentation.search.SettingEntry
+import com.cooper.homelab.core.uiandroid.R as CoreR
 
 /**
  * An entry's stable name, to remember it by: its page and its label's resource name. A resource's number changes from build to build, its
@@ -464,6 +465,13 @@ private fun Resources.indexPart5(): List<SettingEntry<SearchTarget>> =
             row = SettingRows.THIS_APP_NOTIFICATIONS,
         ),
         page(ConsolePage.Licences, R.string.licences_title, Icons.Outlined.Description, R.string.settings_group_app),
+        page(
+            ConsolePage.Diagnostics,
+            CoreR.string.diagnostics_title,
+            Icons.Outlined.BugReport,
+            R.string.settings_group_app,
+            R.string.kw_diagnostics,
+        ),
     )
 
 /** The user's own on/off settings: a page's switch is found, and shown in the results, by its own name. */

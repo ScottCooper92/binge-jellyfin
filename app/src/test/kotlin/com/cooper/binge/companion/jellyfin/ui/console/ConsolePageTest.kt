@@ -62,6 +62,7 @@ class ConsolePageTest {
                 ConsolePage.ProfilePicture,
                 ConsolePage.NowPlaying,
                 ConsolePage.Licences,
+                ConsolePage.Diagnostics,
                 ConsolePage.ThisApp,
                 ConsolePage.Search,
             ),

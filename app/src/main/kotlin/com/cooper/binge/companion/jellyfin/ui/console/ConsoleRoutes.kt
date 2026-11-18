@@ -59,6 +59,7 @@ private fun ConsolePageContent(
         ConsolePage.HomeLayout -> HomeLayoutRoute(graph, signedIn.profile, openItem, close)
         ConsolePage.Password -> PasswordRoute(graph, close)
         ConsolePage.Licences -> LicencesRoute(graph, close)
+        ConsolePage.Diagnostics -> DiagnosticsRoute(graph, close)
         ConsolePage.ThisApp -> ThisAppRoute(graph, actions, signedIn.profile.version, close)
         ConsolePage.Search ->
             SettingsSearchRoute(

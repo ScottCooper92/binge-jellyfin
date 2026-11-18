@@ -383,6 +383,7 @@ app:job_stop  cae7d57bc067
 app:kw_activity  8b07081ada66
 app:kw_alerts  508f1a919580
 app:kw_codecs  6f170406ddf3
+app:kw_diagnostics  6ef75878ceab
 app:kw_feedback  aaef9bf07c61
 app:kw_hardware  bff64e0cd58b
 app:kw_https  47135d9b0123
