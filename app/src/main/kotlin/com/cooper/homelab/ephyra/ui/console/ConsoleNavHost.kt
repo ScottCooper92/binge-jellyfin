@@ -1,8 +1,6 @@
 package com.cooper.homelab.ephyra.ui.console
 
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
@@ -33,9 +31,8 @@ import com.binge.designsystem.LocalPaneDepth
 import com.binge.designsystem.PaneBackNavigationBehavior
 import com.binge.designsystem.PaneContent
 import com.binge.designsystem.PaneEdge
-
-/** A page changes with no animation, as it did before Navigation 3: the new page is simply there. */
-private val Instant = ContentTransform(EnterTransition.None, ExitTransition.None)
+import com.binge.designsystem.motion.BingeNavMotion
+import com.binge.designsystem.motion.rememberBingeNavMotion
 
 /** The metadata that puts a page in the detail pane beside the hub; on a narrow window it takes the whole window. */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
@@ -56,6 +53,16 @@ private fun pageAlone(
     page: ConsolePage,
     hubBeside: Boolean,
 ): Boolean = page.coversWindow || !hubBeside
+
+/**
+ * The drag of a predictive back for the screen being popped. A page that shares the window with the home is a drill-down inside it, so
+ * the screen under is the same one and the drag is the lighter. A page that covers the window (the search) or fills it alone is a whole
+ * screen.
+ */
+private fun BingeNavMotion.predictivePopFor(
+    popped: Any?,
+    hubBeside: Boolean,
+): ContentTransform = if (hubBeside && (popped as? ConsoleKey.Page)?.page?.coversWindow != true) tabPredictivePop else detailPredictivePop
 
 /**
  * The console's pages as Navigation 3 entries over [stack]: the home at the bottom, then each open page. Back
@@ -100,6 +107,7 @@ fun ConsoleNavHost(
     val openItem by rememberUpdatedState(stack.topItem)
     // The setting a page was opened on: read inside its content, as the entry is built once for its key.
     val rows by rememberUpdatedState(stack.entries.filter { it.item == null }.associate { it.opening to it.row })
+    val motion = rememberBingeNavMotion()
     NavDisplay(
         backStack = stack.keys(signedIn),
         onBack = onBack,
@@ -109,9 +117,9 @@ fun ConsoleNavHost(
                 rememberConsolePaneStrategy(directive),
             ),
         entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
-        transitionSpec = { Instant },
-        popTransitionSpec = { Instant },
-        predictivePopTransitionSpec = { Instant },
+        transitionSpec = { motion.detailForward },
+        popTransitionSpec = { motion.detailPop },
+        predictivePopTransitionSpec = { motion.predictivePopFor(initialState.entries.lastOrNull()?.contentKey, hubBeside) },
         entryProvider = { key ->
             when (key) {
                 ConsoleKey.Home -> NavEntry(key) { homeNow() }
