@@ -3,6 +3,8 @@ package com.cooper.binge.companion.jellyfin.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
+import com.cooper.binge.companion.jellyfin.server.encodingConfiguration
+import com.cooper.binge.companion.jellyfin.server.saveEncodingConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
 import com.cooper.binge.companion.jellyfin.server.serverConfiguration
 import com.cooper.binge.companion.jellyfin.server.userConfiguration
@@ -14,6 +16,9 @@ enum class ConfigKind {
 
     /** The server's configuration: Quick Connect, Trickplay, Advanced. For an administrator. */
     Server,
+
+    /** The server's encoding configuration: the Transcoding switches. For an administrator. */
+    Encoding,
 }
 
 /**
@@ -35,12 +40,22 @@ class SearchSwitchesViewModel(
             { _, client, json -> client.saveServerConfiguration(json) },
         )
 
-    private val copies = listOf(user, server)
+    val encoding =
+        SearchConfigCopy(
+            connection,
+            viewModelScope,
+            "JellyfinSearchEncodingConfig",
+            { it.encodingConfiguration() },
+            { _, client, json -> client.saveEncodingConfiguration(json) },
+        )
+
+    private val copies = listOf(user, server, encoding)
 
     fun copy(kind: ConfigKind): SearchConfigCopy =
         when (kind) {
             ConfigKind.User -> user
             ConfigKind.Server -> server
+            ConfigKind.Encoding -> encoding
         }
 
     /** Reads again each copy that has been read before, once, as the search comes to the front. A copy nothing has asked for stays unread. */
