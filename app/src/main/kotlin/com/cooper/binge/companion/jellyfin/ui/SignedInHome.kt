@@ -46,7 +46,7 @@ internal fun SignedInHome(
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
         ) {
             item { SettingsSearchEntry(onClick = { actions.onOpenPage(ConsolePage.Search) }) }
-            item { ServerHomeCard(state) }
+            item { ServerHomeCard(state, onTakeBack = actions.onAskTakeBack) }
             if ((state.card.tmdb?.withoutTmdbId ?: 0) > 0) item { TmdbCoverageNote(state.card.tmdb) }
             if (state.needsFirstLibrary()) item { FirstLibraryCard { actions.onOpenPage(ConsolePage.Libraries) } }
             item { ServerGroup(state, actions) }

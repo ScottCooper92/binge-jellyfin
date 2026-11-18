@@ -715,6 +715,10 @@
         <item quantity="one">%1$d line</item>
         <item quantity="other">%1$d lines</item>
     </plurals>
+    <string name="take_back_description">Not encrypted. Stop trusting this address</string>
+    <string name="take_back_title">Stop trusting this address?</string>
+    <string name="take_back_body">This signs you out of this server. Its address, %1$s, isn\'t encrypted, so anyone on the network between this device and the server can read what is sent, including your sign-in. To use it again, you agree to it again on the server step.</string>
+    <string name="take_back_confirm">Stop trusting and sign out</string>
     <string name="sign_out_body_plain">You\'ll need to sign in again to manage your server from this app.</string>
     <string name="languages_body_plain">Jellyfin uses these to choose the audio and subtitles when you play something.</string>
     <string name="api_keys_title">API keys</string>

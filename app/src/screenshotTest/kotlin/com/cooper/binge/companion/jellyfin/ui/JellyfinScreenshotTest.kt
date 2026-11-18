@@ -472,6 +472,14 @@ class JellyfinScreenshotTest {
     @Composable
     fun signOutConfirm() = Surface { SignOutConfirm(Actions(), inWindow = false) }
 
+    /** The confirm for taking back the agreement to plain HTTP, whose server is named in its body. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun takeBackConfirm() = Surface { TakeBackConfirm("media.example.com", Actions(), inWindow = false) }
+
     /** With the Binge flag on: the Library group shows what Binge can see. */
     @PreviewTest
     @JellyfinScreenStatePreview
