@@ -89,6 +89,8 @@
     <string name="settings_titles_checking">Checking your library…</string>
     <string name="connection_unreachable_headline">Can\'t reach your server</string>
     <string name="connection_unreachable_body">It did not answer. It may be offline or its address may have changed. Check the server, then try again.</string>
+    <string name="connection_client_certificate_headline">This server asks for a client certificate</string>
+    <string name="connection_client_certificate_body">This app can\'t send one yet. Connect through an address that doesn\'t ask for one, such as on your home network, or ask whoever runs the server.</string>
     <string name="connection_couldnt_load_headline">Couldn\'t load your server</string>
     <string name="connection_couldnt_load_body">It answered with something this app couldn\'t use. Try again, or check the server.</string>
     <string name="connection_local_network_headline">Local network access is off</string>
@@ -105,6 +107,7 @@
     <string name="sign_out_body">Binge will stop showing what\'s in your library and won\'t play from it until you sign in again.</string>
 
     <string name="error_invalid_address">That isn\'t a server address</string>
+    <string name="error_client_certificate">This server asks for a client certificate, and this app can\'t send one yet. Connect through an address that doesn\'t ask for one, such as on your home network, or ask whoever runs the server.</string>
     <string name="error_unreachable">Couldn\'t reach your Jellyfin server</string>
     <string name="error_local_network">Local network access is off. Allow it, then try again.</string>
     <string name="error_not_jellyfin">That address didn\'t answer as a Jellyfin server</string>

@@ -53,6 +53,7 @@ import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLProtocolException
 
 /** Setup and settings against a fake server. The server calls run on a real IO thread, so each step waits for its state. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -738,6 +739,42 @@ class JellyfinViewModelTest {
 
         assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
         assertEquals(listOf("jellyfin.example.com"), consent.granted)
+    }
+
+    private fun askingForCertificate() =
+        Connection(
+            OkHttpClient
+                .Builder()
+                .addInterceptor { throw SSLProtocolException(CERTIFICATE_REQUIRED_ALERT) }
+                .build(),
+            sessions,
+            "Jellyfin Companion",
+            "Test",
+            "1.0",
+            Dispatchers.IO,
+            DiscardLogger,
+        ).also { extraConnections += it }
+
+    @Test
+    fun `a server that asks for a client certificate is named in the connect step, not called unreachable`() {
+        val vm = viewModel(AddressPolicy.Shared, askingForCertificate())
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("https://jellyfin.example.com")
+
+        vm.connect()
+
+        assertEquals(SetupError.ClientCertificateNeeded, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `a saved server that asks for a client certificate says so on reconnect`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel(AddressPolicy.Shared, askingForCertificate())
+        vm.refresh()
+        assertEquals(
+            ConnectionHealth.ClientCertificateNeeded,
+            vm.await<UiState.SignedIn> { it.health.isProblem && !it.refreshing }.health,
+        )
     }
 
     @Test
@@ -1493,6 +1530,10 @@ private const val PUBLIC_USERS =
 
 /** Nothing listens here, so a connection is refused at once. */
 private const val DEAD_PORT = "http://127.0.0.1:1/"
+
+/** What Android's TLS stack throws when the server asks for a client certificate and none is sent. */
+private const val CERTIFICATE_REQUIRED_ALERT =
+    "Read error: ssl=0x0: error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED"
 
 /** How long teardown waits for a view model's cancelled work to end: a call on the fake server returns at once. */
 private const val TEARDOWN_MILLIS = 10_000L

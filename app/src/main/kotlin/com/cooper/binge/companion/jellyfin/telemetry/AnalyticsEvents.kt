@@ -35,5 +35,5 @@ internal val SetupError.analyticsReason: String
             SetupError.NotJellyfin -> "not_jellyfin"
             SetupError.QuickConnectOff -> "quick_connect_off"
             SetupError.QuickConnectExpired -> "quick_connect_expired"
-            SetupError.InvalidAddress, SetupError.CleartextRefused, SetupError.Generic -> "other"
+            SetupError.InvalidAddress, SetupError.CleartextRefused, SetupError.ClientCertificateNeeded, SetupError.Generic -> "other"
         }

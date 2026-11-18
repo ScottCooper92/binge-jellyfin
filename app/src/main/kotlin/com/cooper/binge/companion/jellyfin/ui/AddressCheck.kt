@@ -6,7 +6,9 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.server.publicInfo
+import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.core.server.network.CleartextRefusedException
+import com.cooper.homelab.core.server.network.JvmTransportFailures
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import kotlinx.coroutines.CancellationException
 import okhttp3.HttpUrl
@@ -14,7 +16,7 @@ import java.io.IOException
 
 /**
  * Asks each address the user's typing could mean who it is, in order, and takes the first that answers as Jellyfin. When none does,
- * the error is the most telling one: an answer that was not Jellyfin beats a refusal to send, and a refusal beats silence.
+ * the error is the most telling one: an answer that was not Jellyfin beats a refusal to send, a refusal beats a request for a client certificate, and that beats silence.
  */
 internal class AddressCheck(
     private val connection: Connection,
@@ -31,7 +33,7 @@ internal class AddressCheck(
         ) : Result
     }
 
-    private enum class Answer { NotJellyfin, Refused, Silent }
+    private enum class Answer { NotJellyfin, Refused, ClientCertificateNeeded, Silent }
 
     suspend fun first(candidates: List<HttpUrl>): Result {
         val failures = mutableListOf<Answer>()
@@ -45,6 +47,7 @@ internal class AddressCheck(
             when {
                 Answer.NotJellyfin in failures -> SetupError.NotJellyfin
                 Answer.Refused in failures -> SetupError.CleartextRefused
+                Answer.ClientCertificateNeeded in failures -> SetupError.ClientCertificateNeeded
                 else -> unreachableSetup(candidates.first().toString(), localNetwork)
             }
         return Result.Failed(error)
@@ -81,8 +84,10 @@ internal class AddressCheck(
             Probe.Failed(Answer.Refused)
         } catch (e: IOException) {
             connection.logger.noted(TAG, "server check failed", e)
-            Probe.Failed(Answer.Silent)
+            Probe.Failed(if (asksForCertificate(e)) Answer.ClientCertificateNeeded else Answer.Silent)
         }
+
+    private fun asksForCertificate(failure: IOException) = JvmTransportFailures.read(failure) == ServerFailure.ClientCertificateNeeded
 
     private companion object {
         const val TAG = "AddressCheck"

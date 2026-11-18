@@ -532,6 +532,7 @@ internal fun errorText(error: SetupError): String =
             SetupError.QuickConnectOff -> R.string.error_quick_connect_off
             SetupError.QuickConnectExpired -> R.string.error_quick_connect_expired
             SetupError.CleartextRefused -> R.string.error_cleartext_refused
+            SetupError.ClientCertificateNeeded -> R.string.error_client_certificate
             SetupError.Generic -> R.string.error_generic
         },
     )

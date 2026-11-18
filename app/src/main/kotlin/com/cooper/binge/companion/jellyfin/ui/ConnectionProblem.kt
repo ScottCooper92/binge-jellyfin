@@ -70,6 +70,7 @@ internal fun connectionHeadline(health: ConnectionHealth): Int =
     when (health) {
         ConnectionHealth.CouldNotLoad -> R.string.connection_couldnt_load_headline
         ConnectionHealth.LocalNetworkDenied -> R.string.connection_local_network_headline
+        ConnectionHealth.ClientCertificateNeeded -> R.string.connection_client_certificate_headline
         else -> R.string.connection_unreachable_headline
     }
 
@@ -79,5 +80,6 @@ internal fun connectionBody(health: ConnectionHealth): Int =
     when (health) {
         ConnectionHealth.CouldNotLoad -> R.string.connection_couldnt_load_body
         ConnectionHealth.LocalNetworkDenied -> R.string.connection_local_network_body
+        ConnectionHealth.ClientCertificateNeeded -> R.string.connection_client_certificate_body
         else -> R.string.connection_unreachable_body
     }

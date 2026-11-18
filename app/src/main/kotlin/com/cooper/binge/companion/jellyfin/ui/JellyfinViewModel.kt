@@ -39,7 +39,9 @@ import com.cooper.binge.companion.jellyfin.server.userThumbnail
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsEvents
 import com.cooper.binge.companion.jellyfin.telemetry.SignInReports
 import com.cooper.binge.companion.jellyfin.ui.console.decodeThumbnail
+import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.core.server.network.CleartextConsent
+import com.cooper.homelab.core.server.network.JvmTransportFailures
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.NoOpAnalytics
@@ -71,6 +73,9 @@ enum class SetupError {
 
     /** Plain HTTP to a public host, which the app refuses unless the user has agreed to it. */
     CleartextRefused,
+
+    /** The server asks for a client certificate, which this app cannot send yet. */
+    ClientCertificateNeeded,
     Generic,
 }
 
@@ -94,6 +99,9 @@ enum class ConnectionHealth {
 
     /** The server is on the local network and Android has not let the app reach it: a retry cannot fix it, only the permission can. */
     LocalNetworkDenied,
+
+    /** The server asks for a client certificate, which this app cannot send yet: a retry on the same address cannot fix it. */
+    ClientCertificateNeeded,
     ;
 
     val isProblem: Boolean get() = this != Checking && this != Healthy
@@ -106,11 +114,12 @@ enum class ConnectionHealth {
 internal fun unreachableHealth(
     baseUrl: String,
     localNetwork: LocalNetworkPermission,
+    cause: IOException? = null,
 ): ConnectionHealth =
-    if (baseUrl.localNetworkHostOrNull() != null && !localNetwork.isGranted()) {
-        ConnectionHealth.LocalNetworkDenied
-    } else {
-        ConnectionHealth.Unreachable
+    when {
+        cause?.let(JvmTransportFailures::read) == ServerFailure.ClientCertificateNeeded -> ConnectionHealth.ClientCertificateNeeded
+        baseUrl.localNetworkHostOrNull() != null && !localNetwork.isGranted() -> ConnectionHealth.LocalNetworkDenied
+        else -> ConnectionHealth.Unreachable
     }
 
 /** Why a connection to [baseUrl] failed while setting up: the permission for the local network, or the server itself. */
@@ -633,7 +642,7 @@ class JellyfinViewModel(
                     ConnectionHealth.CouldNotLoad
                 } catch (e: IOException) {
                     connection.logger.noted(TAG, "library refresh failed", e)
-                    unreachableHealth(current.session.baseUrl, localNetwork)
+                    unreachableHealth(current.session.baseUrl, localNetwork, e)
                 }
             _state.update {
                 (it as? UiState.SignedIn)?.copy(

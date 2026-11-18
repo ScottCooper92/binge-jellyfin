@@ -51,6 +51,11 @@ val previewEnterServerInsecureAgreed = previewEnterServerInsecure.copy(cleartext
 
 /** The app refused plain HTTP to a public host, and says why. */
 val previewEnterServerCleartextRefused = previewEnterServerInsecure.copy(error = SetupError.CleartextRefused)
+val previewEnterServerClientCertificate =
+    UiState.EnterServer(
+        address = "https://media.example.com",
+        error = SetupError.ClientCertificateNeeded,
+    )
 
 val previewSignIn = UiState.SignIn(baseUrl = LAN, server = lanServer, username = "sam")
 
@@ -188,6 +193,7 @@ val previewSignedInFailed = previewSignedIn.copy(titles = null, refreshFailed = 
 val previewSignedInCouldNotLoad = previewSignedInFailed.copy(health = ConnectionHealth.CouldNotLoad)
 
 /** The server is on the local network and Android has not let the app reach it. */
+val previewSignedInClientCertificate = previewSignedInFailed.copy(health = ConnectionHealth.ClientCertificateNeeded)
 val previewSignedInLocalNetworkDenied = previewSignedInFailed.copy(health = ConnectionHealth.LocalNetworkDenied)
 
 /** A retry in flight on the connection problem: Try again says so and cannot be pressed again. */
