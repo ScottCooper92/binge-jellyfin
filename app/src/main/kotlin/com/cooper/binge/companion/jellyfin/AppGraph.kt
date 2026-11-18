@@ -357,6 +357,9 @@ class AppGraph(
 
     val logger: Logger get() = ring
 
+    /** The app's kept log, which the Diagnostics page reads. Held in memory only. */
+    val diagnosticsLog: RingLog get() = ring
+
     val events: ServerEvents by lazy { ServerEvents(connection, index, scope, io) }
 
     /** Jellyfin's UDP broadcast, on this device's LAN networks. */

@@ -93,6 +93,9 @@ enum class ConsolePage {
     /** The open-source licences of the libraries this app ships. For everyone. */
     Licences,
 
+    /** The app's own recent log, with Copy and Share. For everyone; it holds nothing about the server. */
+    Diagnostics,
+
     /** This app's own preferences: what it reports, feedback, and About. For everyone. */
     ThisApp,
 
@@ -112,7 +115,7 @@ enum class ConsolePage {
             ApproveCode -> profile.quickConnect
             Playback, HomeLayout, ProfilePicture -> account.canEditPreferences
             Password -> account.hasLocalPassword
-            NowPlaying, Licences, ThisApp, Search -> true
+            NowPlaying, Licences, Diagnostics, ThisApp, Search -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
             LiveTv -> account.canManageLiveTv

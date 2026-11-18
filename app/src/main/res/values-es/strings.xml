@@ -1462,6 +1462,7 @@
     <string name="kw_now_playing">viendo sesiones transmisiones detener</string>
     <string name="kw_live_tv">sintonizador guía guia grabaciones canales</string>
     <string name="kw_notifications">alertas notificaciones avisos advertencias errores inicio de sesión fallido batería bateria doze segundo plano optimización optimizacion ahorro de batería intervalo comprobar</string>
+    <string name="kw_diagnostics">registro registros soporte copiar compartir informe error problema depurar</string>
     <string name="this_app_detail">Preferencias, comentarios y más</string>
     <string name="settings_group_app">Esta aplicación</string>
     <string name="settings_share_usage_data">Compartir datos de uso</string>
