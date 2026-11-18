@@ -1,6 +1,5 @@
 package com.cooper.binge.companion.jellyfin
 
-import android.app.Activity
 import android.content.Context
 import android.os.Build
 import android.util.Log
@@ -85,7 +84,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -276,11 +274,6 @@ class AppGraph(
 
     /** Consumes a tip that completed while the app was closed, in the app's scope: a tip Play does not see acknowledged is refunded. */
     fun settleTips() = settleTipsAtStart(tipBilling, scope)
-
-    /** Asks for the review card in the app's scope, so the ask outlives the screen that made it. */
-    fun askForReview(activity: Activity) {
-        scope.launch { reviewPrompt.maybeAsk(activity) }
-    }
 
     /** The tip jar's store: Google Play in a release build, a stand-in in a debug one, which is installed over adb where Play sells nothing. */
     internal val tipBilling: TipBilling by lazy { if (BuildConfig.DEBUG) DebugTipBilling() else PlayTipBilling(appContext, scope) }

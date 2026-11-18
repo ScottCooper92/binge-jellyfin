@@ -40,11 +40,11 @@ import com.cooper.binge.companion.jellyfin.theme.JellyfinTvTheme
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.JellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.JellyfinViewModel
-import com.cooper.binge.companion.jellyfin.ui.ReviewPromptOnReturnToRoot
 import com.cooper.binge.companion.jellyfin.ui.UiState
 import com.cooper.binge.companion.jellyfin.ui.chooseServer
 import com.cooper.binge.companion.jellyfin.ui.confirmSignOut
 import com.cooper.binge.companion.jellyfin.ui.confirmTakeBack
+import com.cooper.binge.companion.jellyfin.ui.connected
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
@@ -61,6 +61,7 @@ import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
 import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
 import com.cooper.homelab.core.uiandroid.consent.ConsentGate
+import com.cooper.homelab.core.uiandroid.review.ReviewPromptOnReturnToRoot
 import kotlinx.coroutines.launch
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
@@ -226,9 +227,9 @@ private fun ConsoleHost(
     // A tap acts on the stack as it is then, not as it was when the screen under it was composed.
     val latest by rememberUpdatedState(stack)
     ReviewPromptOnReturnToRoot(
-        signedIn = signedIn,
+        connected = state.connected(),
         atRoot = stack.entries.isEmpty(),
-        onReturnedToRoot = graph::askForReview,
+        reviewPrompt = graph.reviewPrompt,
     )
     ConsoleNavHost(
         stack = if (signedIn) stack else ConsoleBackStack(),
