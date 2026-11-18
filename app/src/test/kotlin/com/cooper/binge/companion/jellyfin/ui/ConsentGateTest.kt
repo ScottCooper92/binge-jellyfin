@@ -12,8 +12,8 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.binge.companion.jellyfin.theme.JellyfinTheme
-import com.cooper.binge.companion.jellyfin.ui.consent.ConsentGate
 import com.cooper.homelab.core.telemetry.AnalyticsConsent
+import com.cooper.homelab.core.uiandroid.consent.ConsentGate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule

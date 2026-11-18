@@ -1,16 +1,22 @@
 package com.cooper.binge.companion.jellyfin.ui.tv
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.ToggleOff
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.DecisionCopy
 import com.binge.designsystem.DecisionPoint
+import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.template.ScreenAction
 import com.binge.designsystem.tv.template.TvDecisionPage
 import com.binge.designsystem.tv.template.TvPageHosting
 import com.cooper.binge.companion.jellyfin.R
-import com.cooper.binge.companion.jellyfin.ui.consent.ConsentLoading
-import com.cooper.binge.companion.jellyfin.ui.consent.ConsentPoints
 import com.cooper.homelab.core.telemetry.AnalyticsConsent
 
 /** The phone's consent gate on a television: the same question, before sign-in and the home. */
@@ -21,7 +27,7 @@ internal fun TvConsentGate(
     content: @Composable () -> Unit,
 ) {
     when (consent) {
-        null -> ConsentLoading()
+        null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { BingeLoadingIndicator() }
         AnalyticsConsent.UNDECIDED -> TvConsentScreen(onChoice = onAnswer)
         AnalyticsConsent.GRANTED, AnalyticsConsent.DENIED -> content()
     }
@@ -41,24 +47,37 @@ internal fun TvConsentScreen(
     TvDecisionPage(
         copy =
             DecisionCopy(
-                title = stringResource(R.string.consent_title),
-                subtitle = stringResource(R.string.consent_subtitle),
-                kicker = stringResource(R.string.consent_kicker),
+                title = stringResource(R.string.tv_consent_title),
+                subtitle = stringResource(R.string.tv_consent_subtitle),
+                kicker = stringResource(R.string.tv_consent_kicker),
                 note = stringResource(R.string.tv_consent_reassurance),
             ),
         points = tvConsentPoints(),
-        accept = ScreenAction(stringResource(R.string.consent_accept), onClick = { onChoice(true) }),
-        decline = ScreenAction(stringResource(R.string.consent_decline), onClick = { onChoice(false) }),
+        accept = ScreenAction(stringResource(R.string.tv_consent_accept), onClick = { onChoice(true) }),
+        decline = ScreenAction(stringResource(R.string.tv_consent_decline), onClick = { onChoice(false) }),
         modifier = modifier,
         // A gate before sign-in and the home, so the page places its own first focus on Share.
         hosting = TvPageHosting.PreShell,
     )
 }
 
-/** The phone's three points, the last reworded because a remote is a press, not a tap. */
+/** The three points, the last worded for a remote, which is a press and not a tap. */
 @Composable
 private fun tvConsentPoints(): List<DecisionPoint> =
-    ConsentPoints.mapIndexed { index, point ->
-        val title = if (index == ConsentPoints.lastIndex) R.string.tv_consent_point_change_title else point.titleRes
-        DecisionPoint(icon = point.icon, title = stringResource(title), detail = stringResource(point.detailRes))
-    }
+    listOf(
+        DecisionPoint(
+            Icons.Filled.BarChart,
+            stringResource(R.string.tv_consent_point_shared_title),
+            stringResource(R.string.tv_consent_point_shared_detail),
+        ),
+        DecisionPoint(
+            Icons.Filled.VisibilityOff,
+            stringResource(R.string.tv_consent_point_never_title),
+            stringResource(R.string.tv_consent_point_never_detail),
+        ),
+        DecisionPoint(
+            Icons.Filled.ToggleOff,
+            stringResource(R.string.tv_consent_point_change_title),
+            stringResource(R.string.tv_consent_point_change_detail),
+        ),
+    )
