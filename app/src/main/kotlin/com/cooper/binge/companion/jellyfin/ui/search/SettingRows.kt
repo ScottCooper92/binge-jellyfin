@@ -8,6 +8,9 @@ internal object SettingRows {
     /** A Networking row, by the name of its field in the server's network configuration. */
     fun network(field: String) = "network.$field"
 
+    /** A Live TV recording row, by the name of its field in the server's Live TV configuration. */
+    fun liveTv(field: String) = "livetv.$field"
+
     /** A Playback and transcoding row, by the name of its field in the server's encoding configuration. */
     fun transcoding(field: String) = "transcoding.$field"
 

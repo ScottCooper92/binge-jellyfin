@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.encodingConfiguration
+import com.cooper.binge.companion.jellyfin.server.liveTvConfiguration
 import com.cooper.binge.companion.jellyfin.server.networkConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveEncodingConfiguration
+import com.cooper.binge.companion.jellyfin.server.saveLiveTvConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveNetworkConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
 import com.cooper.binge.companion.jellyfin.server.serverConfiguration
@@ -24,6 +26,9 @@ enum class ConfigKind {
 
     /** The server's network configuration: the switches that save as made. For an administrator. */
     Network,
+
+    /** The server's Live TV configuration: the recording switches. For an administrator who manages Live TV. */
+    LiveTv,
 }
 
 /**
@@ -63,7 +68,16 @@ class SearchSwitchesViewModel(
             { _, client, json -> client.saveNetworkConfiguration(json) },
         )
 
-    private val copies = listOf(user, server, encoding, network)
+    val liveTv =
+        SearchConfigCopy(
+            connection,
+            viewModelScope,
+            "JellyfinSearchLiveTvConfig",
+            { it.liveTvConfiguration() },
+            { _, client, json -> client.saveLiveTvConfiguration(json) },
+        )
+
+    private val copies = listOf(user, server, encoding, network, liveTv)
 
     fun copy(kind: ConfigKind): SearchConfigCopy =
         when (kind) {
@@ -71,6 +85,7 @@ class SearchSwitchesViewModel(
             ConfigKind.Server -> server
             ConfigKind.Encoding -> encoding
             ConfigKind.Network -> network
+            ConfigKind.LiveTv -> liveTv
         }
 
     /** Reads again each copy that has been read before, once, as the search comes to the front. A copy nothing has asked for stays unread. */
