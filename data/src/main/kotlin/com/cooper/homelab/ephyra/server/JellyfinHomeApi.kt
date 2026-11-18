@@ -27,13 +27,13 @@ data class HomeLayout(
     val displayCollectionsView: Boolean = false,
 )
 
-internal const val ORDERED_VIEWS = "OrderedViews"
-internal const val MY_MEDIA_EXCLUDES = "MyMediaExcludes"
-internal const val LATEST_EXCLUDES = "LatestItemsExcludes"
-internal const val GROUPED_FOLDERS = "GroupedFolders"
-internal const val HIDE_PLAYED_IN_LATEST = "HidePlayedInLatest"
-internal const val DISPLAY_MISSING_EPISODES = "DisplayMissingEpisodes"
-internal const val DISPLAY_COLLECTIONS_VIEW = "DisplayCollectionsView"
+const val ORDERED_VIEWS = "OrderedViews"
+const val MY_MEDIA_EXCLUDES = "MyMediaExcludes"
+const val LATEST_EXCLUDES = "LatestItemsExcludes"
+const val GROUPED_FOLDERS = "GroupedFolders"
+const val HIDE_PLAYED_IN_LATEST = "HidePlayedInLatest"
+const val DISPLAY_MISSING_EPISODES = "DisplayMissingEpisodes"
+const val DISPLAY_COLLECTIONS_VIEW = "DisplayCollectionsView"
 
 fun JsonObject.homeLayout(): HomeLayout =
     HomeLayout(

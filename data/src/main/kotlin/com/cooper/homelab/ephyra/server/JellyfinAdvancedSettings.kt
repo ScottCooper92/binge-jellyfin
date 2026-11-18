@@ -6,21 +6,21 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /** The keys of the server's configuration (`/System/Configuration`) that the Advanced page edits, as the server names them. */
-internal const val ACTIVITY_LOG_RETENTION_DAYS = "ActivityLogRetentionDays"
-internal const val LIBRARY_MONITOR_DELAY = "LibraryMonitorDelay"
-internal const val LIBRARY_UPDATE_DURATION = "LibraryUpdateDuration"
-internal const val LIBRARY_SCAN_CONCURRENCY = "LibraryScanFanoutConcurrency"
-internal const val PARALLEL_IMAGE_ENCODING_LIMIT = "ParallelImageEncodingLimit"
-internal const val IMAGE_EXTRACTION_TIMEOUT_MS = "ImageExtractionTimeoutMs"
-internal const val ENABLE_SLOW_RESPONSE_WARNING = "EnableSlowResponseWarning"
-internal const val SLOW_RESPONSE_THRESHOLD_MS = "SlowResponseThresholdMs"
-internal const val ENABLE_METRICS = "EnableMetrics"
-internal const val ALLOW_CLIENT_LOG_UPLOAD = "AllowClientLogUpload"
-internal const val CORS_HOSTS = "CorsHosts"
-internal const val INACTIVE_SESSION_THRESHOLD = "InactiveSessionThreshold"
-internal const val CAST_RECEIVER_APPLICATIONS = "CastReceiverApplications"
-internal const val CACHE_SIZE = "CacheSize"
-internal const val ENABLE_LEGACY_AUTHORIZATION = "EnableLegacyAuthorization"
+const val ACTIVITY_LOG_RETENTION_DAYS = "ActivityLogRetentionDays"
+const val LIBRARY_MONITOR_DELAY = "LibraryMonitorDelay"
+const val LIBRARY_UPDATE_DURATION = "LibraryUpdateDuration"
+const val LIBRARY_SCAN_CONCURRENCY = "LibraryScanFanoutConcurrency"
+const val PARALLEL_IMAGE_ENCODING_LIMIT = "ParallelImageEncodingLimit"
+const val IMAGE_EXTRACTION_TIMEOUT_MS = "ImageExtractionTimeoutMs"
+const val ENABLE_SLOW_RESPONSE_WARNING = "EnableSlowResponseWarning"
+const val SLOW_RESPONSE_THRESHOLD_MS = "SlowResponseThresholdMs"
+const val ENABLE_METRICS = "EnableMetrics"
+const val ALLOW_CLIENT_LOG_UPLOAD = "AllowClientLogUpload"
+const val CORS_HOSTS = "CorsHosts"
+const val INACTIVE_SESSION_THRESHOLD = "InactiveSessionThreshold"
+const val CAST_RECEIVER_APPLICATIONS = "CastReceiverApplications"
+const val CACHE_SIZE = "CacheSize"
+const val ENABLE_LEGACY_AUTHORIZATION = "EnableLegacyAuthorization"
 
 /** A Google Cast receiver application the server offers to clients: its id and the name it shows. */
 data class CastReceiver(
@@ -82,10 +82,10 @@ private fun JsonElement.castReceiver(): CastReceiver? {
 }
 
 /** [list] as the JSON the server reads for [CORS_HOSTS]. */
-internal fun corsHostsJson(list: List<String>): JsonArray = JsonArray(list.map(::JsonPrimitive))
+fun corsHostsJson(list: List<String>): JsonArray = JsonArray(list.map(::JsonPrimitive))
 
 /** [list] as the JSON the server reads for [CAST_RECEIVER_APPLICATIONS]: both `Id` and `Name` are required there. */
-internal fun castReceiversJson(list: List<CastReceiver>): JsonArray =
+fun castReceiversJson(list: List<CastReceiver>): JsonArray =
     JsonArray(list.map { JsonObject(mapOf("Id" to JsonPrimitive(it.id), "Name" to JsonPrimitive(it.name))) })
 
 private val ADVANCED_KEYS =

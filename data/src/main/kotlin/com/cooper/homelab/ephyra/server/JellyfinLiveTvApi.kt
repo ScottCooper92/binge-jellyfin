@@ -109,7 +109,7 @@ private fun JsonObject.guideProvider(): GuideProviderSummary? {
 }
 
 /** [this] as a web address shortened to scheme, host and port, or as it is when it is a file path or not an address at all. */
-internal fun String.withoutSecrets(): String {
+fun String.withoutSecrets(): String {
     val url = toHttpUrlOrNull() ?: return this
     val port = if (url.port == defaultPort(url.scheme)) "" else ":${url.port}"
     return "${url.scheme}://${url.host}$port"

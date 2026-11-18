@@ -28,9 +28,10 @@ check "workflows run everything"   "true true true"    false .github/workflows/c
 check "empty diff runs everything" "true true true"    false
 check "a screen"                   "true true false"   false "$K/ui/SignedInHome.kt"
 check "a frame"                    "true true false"   false app/src/screenshotTestDebug/reference/x.png
-check "server code can reach UI"   "true true false"   false "$K/server/JellyfinClient.kt"
+check "server code can reach UI"   "true true false"   false data/src/main/kotlin/com/cooper/homelab/ephyra/server/JellyfinClient.kt
 check "a resource string"          "true true false"   false app/src/main/res/values/strings.xml
 check "tests only"                 "true false false"  false app/src/test/kotlin/x/YTest.kt
+check "the data module's tests"     "true false false"  false data/src/test/kotlin/x/YTest.kt data/src/testFixtures/kotlin/x/Fake.kt
 check "the exported Service"       "true false false"  false "$K/service/JellyfinCompanionService.kt"
 check "notifications"              "true true false"   false "$K/notifications/NotificationPrefs.kt"
 check "the bug report URL"         "true true false"   false "$K/feedback/BugReport.kt"
@@ -42,6 +43,8 @@ check "a pro file outside keepRules" "true true true" false app/proguard-rules.p
 check "the release source set"     "true true true" false app/src/release/kotlin/X.kt
 check "assets"                     "true true true" false app/src/main/assets/x.json
 check "the manifest"               "true true true"    false app/src/main/AndroidManifest.xml
+check "the data module's manifest"  "true true true"    false data/src/main/AndroidManifest.xml
+check "the data module's build file" "true true true"   false data/build.gradle.kts
 check "the design system pin"      "true true true"    false design-system
 check "the homelab-core pin"      "true true true"    false homelab-core
 check "the companions pin"         "true false true"   false binge-companions

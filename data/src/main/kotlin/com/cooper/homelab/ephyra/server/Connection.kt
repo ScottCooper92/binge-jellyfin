@@ -48,7 +48,7 @@ sealed interface BackupCreation {
 }
 
 /** The one server this app holds, as far as the health monitor is concerned. It is replaced by the server's own id when the app adopts the registry. */
-internal val SAVED_SERVER = ServerId("saved")
+val SAVED_SERVER = ServerId("saved")
 
 /** A single call without an answer can be a blip; only a run of them with no answer between reads as unreached. */
 private const val UNREACHED_STREAK = 2
@@ -60,7 +60,7 @@ class Connection(
     private val client: String,
     private val device: String,
     private val version: String,
-    internal val io: CoroutineDispatcher,
+    val io: CoroutineDispatcher,
     val logger: Logger,
 ) {
     private val refusals = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -87,7 +87,7 @@ class Connection(
     }
 
     /** Lives as long as the connection, so a save outlives the page that started it. */
-    internal val saveScope = CoroutineScope(SupervisorJob() + io)
+    val saveScope = CoroutineScope(SupervisorJob() + io)
     private val pendingSaves: MutableSet<Job> = ConcurrentHashMap.newKeySet()
     private val backupJobs: MutableSet<Job> = ConcurrentHashMap.newKeySet()
     private val creations = MutableStateFlow<BackupCreation>(BackupCreation.Idle)
@@ -127,10 +127,10 @@ class Connection(
     }
 
     /** Returns once the session watcher has read the session it measures later changes against. */
-    internal suspend fun awaitWatching() = watching.await()
+    suspend fun awaitWatching() = watching.await()
 
     /** Stops the session watcher and every save and backup still running. The app's connection lives as long as the process. */
-    internal fun close() = saveScope.cancel()
+    fun close() = saveScope.cancel()
 
     /**
      * Runs [block], a save the user made, to its end even if the page that made it closes first.

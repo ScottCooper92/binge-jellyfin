@@ -16,26 +16,30 @@ import java.time.format.FormatStyle
 import java.util.Locale
 
 @Composable
-internal fun timeSummary(filter: ActivityFilter): String =
-    when {
+internal fun timeSummary(filter: ActivityFilter): String {
+    val from = filter.fromMillis
+    val to = filter.toMillis
+    return when {
         filter.preset == ActivityTimePreset.Today -> stringResource(R.string.activity_time_today)
         filter.preset == ActivityTimePreset.Last7Days -> stringResource(R.string.activity_time_7)
         filter.preset == ActivityTimePreset.Last30Days -> stringResource(R.string.activity_time_30)
-        filter.fromMillis != null && filter.toMillis != null ->
-            stringResource(R.string.activity_time_range, shortDate(filter.fromMillis), shortDate(filter.toMillis))
-        filter.fromMillis != null -> stringResource(R.string.activity_time_from, shortDate(filter.fromMillis))
-        filter.toMillis != null -> stringResource(R.string.activity_time_range, "…", shortDate(filter.toMillis))
+        from != null && to != null -> stringResource(R.string.activity_time_range, shortDate(from), shortDate(to))
+        from != null -> stringResource(R.string.activity_time_from, shortDate(from))
+        to != null -> stringResource(R.string.activity_time_range, "…", shortDate(to))
         else -> stringResource(R.string.activity_time_any)
     }
+}
 
 @Composable
-internal fun whoSummary(filter: ActivityFilter): String =
-    when {
-        filter.username != null -> filter.username
+internal fun whoSummary(filter: ActivityFilter): String {
+    val username = filter.username
+    return when {
+        username != null -> username
         filter.who == ActivityWho.System -> stringResource(R.string.activity_who_system)
         filter.who == ActivityWho.Users -> stringResource(R.string.activity_who_users)
         else -> stringResource(R.string.activity_who_any)
     }
+}
 
 @Composable
 internal fun severitySummary(severity: Severity?): String =

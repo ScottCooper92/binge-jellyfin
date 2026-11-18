@@ -18,9 +18,11 @@ private const val HTTP_ERROR_MIN = 400
  * It is the whole demo: the screens and the exported Service call the same API functions as against a real server,
  * and read what this answers.
  */
-internal class DemoTransport(
-    val model: DemoModel = DemoModel(),
+class DemoTransport internal constructor(
+    internal val model: DemoModel,
 ) : Interceptor {
+    constructor() : this(DemoModel())
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         if (!request.url.isDemo()) return chain.proceed(request)

@@ -24,10 +24,10 @@ data class ServerUser(
     val libraries: Set<String> get() = policy.array(ENABLED_FOLDERS).mapNotNull { (it as? JsonPrimitive)?.content }.toSet()
 }
 
-internal const val IS_ADMINISTRATOR = "IsAdministrator"
-internal const val IS_DISABLED = "IsDisabled"
-internal const val ENABLE_ALL_FOLDERS = "EnableAllFolders"
-internal const val ENABLED_FOLDERS = "EnabledFolders"
+const val IS_ADMINISTRATOR = "IsAdministrator"
+const val IS_DISABLED = "IsDisabled"
+const val ENABLE_ALL_FOLDERS = "EnableAllFolders"
+const val ENABLED_FOLDERS = "EnabledFolders"
 
 suspend fun JellyfinClient.users(): List<ServerUser> {
     val answer = get(USERS) as? JsonArray ?: throw JellyfinUnreadableAnswer(USERS)

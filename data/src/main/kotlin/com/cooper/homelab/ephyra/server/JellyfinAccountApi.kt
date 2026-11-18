@@ -54,13 +54,13 @@ data class Culture(
     val code: String get() = codes.first()
 }
 
-internal const val AUDIO_LANGUAGE = "AudioLanguagePreference"
-internal const val SUBTITLE_LANGUAGE = "SubtitleLanguagePreference"
-internal const val SUBTITLE_MODE = "SubtitleMode"
-internal const val PLAY_DEFAULT_AUDIO_TRACK = "PlayDefaultAudioTrack"
-internal const val REMEMBER_AUDIO = "RememberAudioSelections"
-internal const val REMEMBER_SUBTITLES = "RememberSubtitleSelections"
-internal const val AUTOPLAY_NEXT_EPISODE = "EnableNextEpisodeAutoPlay"
+const val AUDIO_LANGUAGE = "AudioLanguagePreference"
+const val SUBTITLE_LANGUAGE = "SubtitleLanguagePreference"
+const val SUBTITLE_MODE = "SubtitleMode"
+const val PLAY_DEFAULT_AUDIO_TRACK = "PlayDefaultAudioTrack"
+const val REMEMBER_AUDIO = "RememberAudioSelections"
+const val REMEMBER_SUBTITLES = "RememberSubtitleSelections"
+const val AUTOPLAY_NEXT_EPISODE = "EnableNextEpisodeAutoPlay"
 
 /** The signed-in user's whole configuration, kept whole so a save sends back what it didn't change. */
 suspend fun JellyfinClient.userConfiguration(): JsonObject = getObject("Users/Me").obj("Configuration") ?: JsonObject(emptyMap())

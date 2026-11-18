@@ -11,22 +11,22 @@ import kotlinx.serialization.json.put
 // the three `docs/server-compatibility.md` gates: collections (split in 10.11) and the two chapter image
 // settings (10.9).
 
-internal const val DISPLAY_FOLDER_VIEW = "EnableFolderView"
-internal const val DISPLAY_SPECIALS_IN_SEASONS = "DisplaySpecialsWithinSeasons"
-internal const val DISPLAY_EXTERNAL_SUGGESTIONS = "EnableExternalContentInSuggestions"
-internal const val DISPLAY_COLLECTIONS = "EnableGroupingIntoCollections"
-internal const val DISPLAY_COLLECTIONS_MOVIES = "EnableGroupingMoviesIntoCollections"
-internal const val DISPLAY_COLLECTIONS_SHOWS = "EnableGroupingShowsIntoCollections"
-internal const val DISPLAY_UI_CULTURE = "UICulture"
-internal const val METADATA_HIDDEN = "SaveMetadataHidden"
-internal const val METADATA_CONVENTION = "ImageSavingConvention"
-internal const val METADATA_PATH = "MetadataPath"
-internal const val METADATA_CHAPTER_RESOLUTION = "ChapterImageResolution"
-internal const val METADATA_DUMMY_CHAPTER = "DummyChapterDuration"
-internal const val SORT_REMOVE_WORDS = "SortRemoveWords"
+const val DISPLAY_FOLDER_VIEW = "EnableFolderView"
+const val DISPLAY_SPECIALS_IN_SEASONS = "DisplaySpecialsWithinSeasons"
+const val DISPLAY_EXTERNAL_SUGGESTIONS = "EnableExternalContentInSuggestions"
+const val DISPLAY_COLLECTIONS = "EnableGroupingIntoCollections"
+const val DISPLAY_COLLECTIONS_MOVIES = "EnableGroupingMoviesIntoCollections"
+const val DISPLAY_COLLECTIONS_SHOWS = "EnableGroupingShowsIntoCollections"
+const val DISPLAY_UI_CULTURE = "UICulture"
+const val METADATA_HIDDEN = "SaveMetadataHidden"
+const val METADATA_CONVENTION = "ImageSavingConvention"
+const val METADATA_PATH = "MetadataPath"
+const val METADATA_CHAPTER_RESOLUTION = "ChapterImageResolution"
+const val METADATA_DUMMY_CHAPTER = "DummyChapterDuration"
+const val SORT_REMOVE_WORDS = "SortRemoveWords"
 internal const val SORT_REMOVE_CHARACTERS = "SortRemoveCharacters"
 internal const val SORT_REPLACE_CHARACTERS = "SortReplaceCharacters"
-internal const val PATH_SUBSTITUTIONS = "PathSubstitutions"
+const val PATH_SUBSTITUTIONS = "PathSubstitutions"
 
 /** The two ways the server names the images it saves beside media; the default first. */
 val IMAGE_SAVING_CONVENTIONS = listOf("Legacy", "Compatible")

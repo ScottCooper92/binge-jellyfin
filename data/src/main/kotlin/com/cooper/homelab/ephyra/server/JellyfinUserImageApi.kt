@@ -15,7 +15,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /** The most of a picture this app will read back from the server: far over a 512-pixel JPEG, well under memory. */
-internal const val MAX_PICTURE_BYTES = 8L * 1024 * 1024
+const val MAX_PICTURE_BYTES = 8L * 1024 * 1024
 
 /** The file type the picture is sent as: the app always sends a JPEG, whatever the user picked. */
 internal const val PICTURE_TYPE = "image/jpeg"
@@ -43,7 +43,7 @@ suspend fun JellyfinClient.userImage(
  * A tagged list thumbnail. The legacy route remains supported on 10.11 and is the user-image route that accepts sizing;
  * `/UserImage` accepts only userId, tag and format. Both routes use the same authenticated image handler.
  */
-internal suspend fun JellyfinClient.userThumbnail(
+suspend fun JellyfinClient.userThumbnail(
     userId: String,
     tag: String,
 ): ByteArray? =
@@ -53,7 +53,7 @@ internal suspend fun JellyfinClient.userThumbnail(
         MAX_PICTURE_BYTES,
     )
 
-internal const val USER_THUMBNAIL_SIZE = 128
+const val USER_THUMBNAIL_SIZE = 128
 
 /**
  * Sets [userId]'s picture to [jpeg]. Jellyfin reads the body as base64 text, not as the file's bytes, and takes the file

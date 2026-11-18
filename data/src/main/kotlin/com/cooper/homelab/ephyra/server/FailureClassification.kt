@@ -21,7 +21,7 @@ private val mapper = FailureMapper(transport)
  * 403 is not permitted, a 404 is gone, any other answer is a refusal, and anything that is not an answer is unreachable. The
  * server's own words stay in [JellyfinHttpException.reason]; this keeps no text. A cancellation is rethrown.
  */
-internal suspend fun Throwable.serverFailure(): ServerFailure =
+suspend fun Throwable.serverFailure(): ServerFailure =
     if (this is JellyfinHttpException) {
         mapper.fromStatus(code, NoBody, RequestFacts(method = "PUT", path = ""))
     } else {

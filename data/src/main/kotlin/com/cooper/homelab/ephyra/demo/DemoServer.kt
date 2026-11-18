@@ -12,7 +12,7 @@ internal const val DEMO_HOST = "demo.ephyra.invalid"
 const val DEMO_ORIGIN = "https://$DEMO_HOST"
 
 /** What the demo's sign-in answers with. Neither is a secret: the demo is the same sample data everywhere. */
-internal const val DEMO_TOKEN = "demo-token"
+const val DEMO_TOKEN = "demo-token"
 internal const val DEMO_SERVER_ID = "demo0000000000000000000000000001"
 internal const val DEMO_SERVER_NAME = "Ephyra demo server"
 internal const val DEMO_VERSION = "10.11.4"

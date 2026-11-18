@@ -37,19 +37,19 @@ private const val DEFAULT_QSCALE = 4
 private const val DEFAULT_JPEG_QUALITY = 90
 
 /** The keys of `TrickplayOptions`, as the server names them. */
-internal const val TRICKPLAY_OPTIONS = "TrickplayOptions"
-internal const val TRICKPLAY_HW_ACCELERATION = "EnableHwAcceleration"
-internal const val TRICKPLAY_HW_ENCODING = "EnableHwEncoding"
-internal const val TRICKPLAY_KEY_FRAME_ONLY = "EnableKeyFrameOnlyExtraction"
-internal const val TRICKPLAY_SCAN_BEHAVIOR = "ScanBehavior"
-internal const val TRICKPLAY_PROCESS_PRIORITY = "ProcessPriority"
-internal const val TRICKPLAY_INTERVAL = "Interval"
-internal const val TRICKPLAY_WIDTHS = "WidthResolutions"
-internal const val TRICKPLAY_TILE_WIDTH = "TileWidth"
-internal const val TRICKPLAY_TILE_HEIGHT = "TileHeight"
-internal const val TRICKPLAY_QSCALE = "Qscale"
-internal const val TRICKPLAY_JPEG_QUALITY = "JpegQuality"
-internal const val TRICKPLAY_THREADS = "ProcessThreads"
+const val TRICKPLAY_OPTIONS = "TrickplayOptions"
+const val TRICKPLAY_HW_ACCELERATION = "EnableHwAcceleration"
+const val TRICKPLAY_HW_ENCODING = "EnableHwEncoding"
+const val TRICKPLAY_KEY_FRAME_ONLY = "EnableKeyFrameOnlyExtraction"
+const val TRICKPLAY_SCAN_BEHAVIOR = "ScanBehavior"
+const val TRICKPLAY_PROCESS_PRIORITY = "ProcessPriority"
+const val TRICKPLAY_INTERVAL = "Interval"
+const val TRICKPLAY_WIDTHS = "WidthResolutions"
+const val TRICKPLAY_TILE_WIDTH = "TileWidth"
+const val TRICKPLAY_TILE_HEIGHT = "TileHeight"
+const val TRICKPLAY_QSCALE = "Qscale"
+const val TRICKPLAY_JPEG_QUALITY = "JpegQuality"
+const val TRICKPLAY_THREADS = "ProcessThreads"
 
 /** The scan behaviours the server has, as it names them: the default first. */
 val TRICKPLAY_SCAN_BEHAVIORS = listOf("NonBlocking", "Blocking")
@@ -58,7 +58,7 @@ val TRICKPLAY_SCAN_BEHAVIORS = listOf("NonBlocking", "Blocking")
 val TRICKPLAY_PRIORITIES = listOf("High", "AboveNormal", "Normal", "BelowNormal", "Idle")
 
 /** The options object of a configuration, empty if the server sent none. */
-internal fun JsonObject.trickplayOptions(): JsonObject = obj(TRICKPLAY_OPTIONS) ?: JsonObject(emptyMap())
+fun JsonObject.trickplayOptions(): JsonObject = obj(TRICKPLAY_OPTIONS) ?: JsonObject(emptyMap())
 
 fun JsonObject.trickplaySettings(): TrickplaySettings {
     val options = trickplayOptions()
@@ -83,7 +83,7 @@ fun JsonObject.trickplaySettings(): TrickplaySettings {
  * [this] configuration's options with [key] set to [value], the rest as the server sent them, so a
  * save puts back every option (and any this app doesn't know) it did not change.
  */
-internal fun JsonObject.withTrickplayOption(
+fun JsonObject.withTrickplayOption(
     key: String,
     value: kotlinx.serialization.json.JsonElement,
 ): JsonObject = JsonObject(trickplayOptions() + (key to value))

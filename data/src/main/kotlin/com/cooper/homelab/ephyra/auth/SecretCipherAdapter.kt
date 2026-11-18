@@ -7,7 +7,7 @@ import com.cooper.homelab.core.server.connection.SecretCipher as LibrarySecretCi
  * This app's Keystore cipher as the shared library's. Both write the same blob (the library's is the kit's, moved), so a secret one
  * wrote the other reads, and the Keystore alias does not change.
  */
-internal fun SecretCipher.forLibrary(): LibrarySecretCipher =
+fun SecretCipher.forLibrary(): LibrarySecretCipher =
     object : LibrarySecretCipher {
         override fun encrypt(plaintext: String): String = this@forLibrary.encrypt(plaintext)
 

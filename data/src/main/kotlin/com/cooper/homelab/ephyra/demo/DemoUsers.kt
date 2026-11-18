@@ -9,7 +9,7 @@ import java.time.Instant
 import java.util.UUID
 
 internal const val DEMO_USER_ID = "d3m00000000000000000000000000001"
-internal const val DEMO_USER_NAME = "Alex"
+const val DEMO_USER_NAME = "Alex"
 internal const val DEMO_SAM_ID = "d3m00000000000000000000000000002"
 internal const val DEMO_KIDS_ID = "d3m00000000000000000000000000003"
 
@@ -161,9 +161,9 @@ internal class DemoUsers : DemoState {
     }
 }
 
-internal fun JsonObject.string(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
+fun JsonObject.string(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-internal fun JsonObject.bool(key: String): Boolean? = (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()
+fun JsonObject.bool(key: String): Boolean? = (get(key) as? JsonPrimitive)?.content?.toBooleanStrictOrNull()
 
 internal fun JsonObject.policy(): JsonObject = get("Policy") as? JsonObject ?: JsonObject(emptyMap())
 

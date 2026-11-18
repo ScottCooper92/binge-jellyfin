@@ -30,7 +30,7 @@ data class JellyfinSession(
  * The Android Keystore alias the access token's key is made under. It is part of the on-disk format: change it and every
  * saved session reads as signed out. It is the alias this app's own cipher used before it moved to the kit.
  */
-internal const val TOKEN_KEY_ALIAS = "binge_jellyfin_secret"
+const val TOKEN_KEY_ALIAS = "binge_jellyfin_secret"
 
 /**
  * The saved session as the first releases kept it: one un-keyed file. Everything but the token is stored in the clear; the token goes through

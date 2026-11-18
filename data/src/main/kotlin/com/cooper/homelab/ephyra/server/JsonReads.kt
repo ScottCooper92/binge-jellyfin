@@ -12,14 +12,14 @@ import kotlinx.serialization.json.longOrNull
 // Jellyfin's answers are read as JsonElement trees, never through @Serializable classes: a field the
 // server adds or drops reads as absent rather than failing the whole answer.
 
-internal fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.takeUnless { it is JsonNull }?.contentOrNull
+fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.takeUnless { it is JsonNull }?.contentOrNull
 
-internal fun JsonObject.int(key: String): Int? = (this[key] as? JsonPrimitive)?.intOrNull
+fun JsonObject.int(key: String): Int? = (this[key] as? JsonPrimitive)?.intOrNull
 
-internal fun JsonObject.long(key: String): Long? = (this[key] as? JsonPrimitive)?.longOrNull
+fun JsonObject.long(key: String): Long? = (this[key] as? JsonPrimitive)?.longOrNull
 
-internal fun JsonObject.bool(key: String): Boolean? = (this[key] as? JsonPrimitive)?.booleanOrNull
+fun JsonObject.bool(key: String): Boolean? = (this[key] as? JsonPrimitive)?.booleanOrNull
 
-internal fun JsonObject.array(key: String): JsonArray = (this[key] as? JsonArray) ?: JsonArray(emptyList())
+fun JsonObject.array(key: String): JsonArray = (this[key] as? JsonArray) ?: JsonArray(emptyList())
 
 internal fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject

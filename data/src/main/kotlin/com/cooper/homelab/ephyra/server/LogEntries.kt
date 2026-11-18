@@ -100,7 +100,7 @@ private val LOGGER = Regex("""^([\w.+`<>-]+): (.*)$""", RegexOption.DOT_MATCHES_
 private fun String.withoutToken(token: String?): String = token?.takeIf { it.isNotBlank() }?.let { replace(it, REDACTED) } ?: this
 
 /** The configuration key of how long the server keeps log files that are not its own daily `log_` files. */
-internal const val LOG_FILE_RETENTION_DAYS = "LogFileRetentionDays"
+const val LOG_FILE_RETENTION_DAYS = "LogFileRetentionDays"
 
 /** Days, as the configuration has it, or null if it sent none. The key is in every release's common configuration (10.6 on). */
 fun JsonObject.logRetentionDays(): Int? = int(LOG_FILE_RETENTION_DAYS)

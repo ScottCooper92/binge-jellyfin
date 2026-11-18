@@ -29,14 +29,14 @@ data class Country(
     val displayName: String,
 )
 
-internal const val SERVER_NAME = "ServerName"
-internal const val METADATA_LANGUAGE = "PreferredMetadataLanguage"
-internal const val METADATA_COUNTRY = "MetadataCountryCode"
-internal const val QUICK_CONNECT_AVAILABLE = "QuickConnectAvailable"
-internal const val LOGIN_DISCLAIMER = "LoginDisclaimer"
-internal const val CUSTOM_CSS = "CustomCss"
-internal const val SPLASHSCREEN_ENABLED = "SplashscreenEnabled"
-internal const val SPLASHSCREEN_LOCATION = "SplashscreenLocation"
+const val SERVER_NAME = "ServerName"
+const val METADATA_LANGUAGE = "PreferredMetadataLanguage"
+const val METADATA_COUNTRY = "MetadataCountryCode"
+const val QUICK_CONNECT_AVAILABLE = "QuickConnectAvailable"
+const val LOGIN_DISCLAIMER = "LoginDisclaimer"
+const val CUSTOM_CSS = "CustomCss"
+const val SPLASHSCREEN_ENABLED = "SplashscreenEnabled"
+const val SPLASHSCREEN_LOCATION = "SplashscreenLocation"
 
 fun JsonObject.serverSettings(): ServerSettings =
     ServerSettings(

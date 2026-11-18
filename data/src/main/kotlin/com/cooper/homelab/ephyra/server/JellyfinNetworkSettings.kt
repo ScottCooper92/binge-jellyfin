@@ -37,25 +37,25 @@ fun networkKeys(profile: JellyfinServerProfile): NetworkKeys =
     }
 
 /** The keys the two releases share. */
-internal const val NETWORK_ENABLE_HTTPS = "EnableHttps"
-internal const val NETWORK_REQUIRE_HTTPS = "RequireHttps"
-internal const val NETWORK_CERTIFICATE_PATH = "CertificatePath"
+const val NETWORK_ENABLE_HTTPS = "EnableHttps"
+const val NETWORK_REQUIRE_HTTPS = "RequireHttps"
+const val NETWORK_CERTIFICATE_PATH = "CertificatePath"
 
 /** The certificate's password: a secret. It is never read into [NetworkSettings] or shown; it goes back to the server as it came, or as the person typed a new one. */
-internal const val NETWORK_CERTIFICATE_PASSWORD = "CertificatePassword"
-internal const val NETWORK_BASE_URL = "BaseUrl"
-internal const val NETWORK_BIND_ADDRESSES = "LocalNetworkAddresses"
-internal const val NETWORK_REMOTE_ACCESS = "EnableRemoteAccess"
-internal const val NETWORK_REMOTE_IP_FILTER = "RemoteIPFilter"
-internal const val NETWORK_IP_FILTER_BLACKLIST = "IsRemoteIPFilterBlacklist"
-internal const val NETWORK_KNOWN_PROXIES = "KnownProxies"
-internal const val NETWORK_LOCAL_SUBNETS = "LocalNetworkSubnets"
-internal const val NETWORK_AUTO_DISCOVERY = "AutoDiscovery"
-internal const val NETWORK_UPNP = "EnableUPnP"
-internal const val NETWORK_PUBLISHED_BY_REQUEST = "EnablePublishedServerUriByRequest"
-internal const val NETWORK_PUBLISHED_BY_SUBNET = "PublishedServerUriBySubnet"
-internal const val NETWORK_IGNORE_VIRTUAL = "IgnoreVirtualInterfaces"
-internal const val NETWORK_VIRTUAL_NAMES = "VirtualInterfaceNames"
+const val NETWORK_CERTIFICATE_PASSWORD = "CertificatePassword"
+const val NETWORK_BASE_URL = "BaseUrl"
+const val NETWORK_BIND_ADDRESSES = "LocalNetworkAddresses"
+const val NETWORK_REMOTE_ACCESS = "EnableRemoteAccess"
+const val NETWORK_REMOTE_IP_FILTER = "RemoteIPFilter"
+const val NETWORK_IP_FILTER_BLACKLIST = "IsRemoteIPFilterBlacklist"
+const val NETWORK_KNOWN_PROXIES = "KnownProxies"
+const val NETWORK_LOCAL_SUBNETS = "LocalNetworkSubnets"
+const val NETWORK_AUTO_DISCOVERY = "AutoDiscovery"
+const val NETWORK_UPNP = "EnableUPnP"
+const val NETWORK_PUBLISHED_BY_REQUEST = "EnablePublishedServerUriByRequest"
+const val NETWORK_PUBLISHED_BY_SUBNET = "PublishedServerUriBySubnet"
+const val NETWORK_IGNORE_VIRTUAL = "IgnoreVirtualInterfaces"
+const val NETWORK_VIRTUAL_NAMES = "VirtualInterfaceNames"
 
 /**
  * The server's network options as the page shows them. A server leaves out an option its release doesn't have, so [has] says

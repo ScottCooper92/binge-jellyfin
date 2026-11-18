@@ -1,7 +1,7 @@
 package com.cooper.homelab.ephyra.server
 
 /** Moves the entry named [name] [by] places, leaving an unknown name or an out-of-bounds move unchanged. */
-internal fun <T> List<T>.moved(
+fun <T> List<T>.moved(
     name: String,
     by: Int,
     nameOf: (T) -> String,

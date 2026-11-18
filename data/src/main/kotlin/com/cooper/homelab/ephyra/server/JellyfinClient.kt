@@ -69,7 +69,7 @@ class JellyfinClient(
     internal val http: OkHttpClient,
     val baseUrl: HttpUrl,
     internal val identity: ClientIdentity,
-    internal val io: CoroutineDispatcher,
+    val io: CoroutineDispatcher,
     internal val token: String? = null,
     internal val logger: Logger,
 ) {
