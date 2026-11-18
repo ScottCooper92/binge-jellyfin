@@ -1,9 +1,5 @@
 package com.cooper.homelab.ephyra.ui
 
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.homelab.ephyra.FakeItem
 import com.cooper.homelab.ephyra.FakeJellyfin
 import com.cooper.homelab.ephyra.server.Connection
@@ -17,7 +13,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
@@ -38,8 +33,9 @@ import org.robolectric.RobolectricTestRunner
 class ServerCardTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
-    private val stores = mutableListOf<ViewModelStore>()
+    private val teardown = ViewModelTeardown()
+    private val connection =
+        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
 
     @Before
     fun main() {
@@ -49,17 +45,11 @@ class ServerCardTest {
 
     @After
     fun close() {
-        stores.forEach { it.clear() }
-        connection.close()
-        jellyfin.close()
-        Dispatchers.resetMain()
+        teardown.close(jellyfin)
     }
 
-    private fun viewModel(): JellyfinViewModel {
-        val vm = JellyfinViewModel(sessions, connection, LibraryIndex(), discover = { emptyList() })
-        val store = ViewModelStore().also { stores += it }
-        return ViewModelProvider(store, viewModelFactory { initializer { vm } })[JellyfinViewModel::class.java]
-    }
+    private fun viewModel(): JellyfinViewModel =
+        teardown.made(JellyfinViewModel(sessions, connection, LibraryIndex(), discover = { emptyList() }))
 
     private fun JellyfinViewModel.signedIn(matches: (UiState.SignedIn) -> Boolean): UiState.SignedIn =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is UiState.SignedIn && matches(it) } as UiState.SignedIn } }
