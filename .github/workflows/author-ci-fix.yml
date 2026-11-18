@@ -53,7 +53,7 @@ jobs:
       java_version: '21'
       verify_guidance: >
         Scope Gradle to the module rather than running the whole tree when you
-        are checking one thing — `./gradlew :app:test`, or `:app:ktlintCheck`.
+        are checking one thing, in `:app` or `:data` — `./gradlew :app:test`, or `:data:ktlintCheck`.
         Do not run `./gradlew build`; CI will do that when you push.
       gate_rules: |
         NEVER silence a gate instead of fixing it. Do not add a ktlint
