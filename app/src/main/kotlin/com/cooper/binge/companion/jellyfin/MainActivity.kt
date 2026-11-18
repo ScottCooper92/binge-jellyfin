@@ -45,7 +45,6 @@ import com.cooper.binge.companion.jellyfin.ui.chooseServer
 import com.cooper.binge.companion.jellyfin.ui.confirmSignOut
 import com.cooper.binge.companion.jellyfin.ui.confirmTakeBack
 import com.cooper.binge.companion.jellyfin.ui.connected
-import com.cooper.binge.companion.jellyfin.ui.consent.ConsentGate
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleBackStack
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleItemRoute
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleNavHost
@@ -61,6 +60,7 @@ import com.cooper.binge.companion.jellyfin.ui.tv.TvConsentGate
 import com.cooper.binge.companion.jellyfin.ui.tv.TvJellyfinRoot
 import com.cooper.binge.companion.jellyfin.ui.tv.rememberTvPlayback
 import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
+import com.cooper.homelab.core.uiandroid.consent.ConsentGate
 import com.cooper.homelab.core.uiandroid.review.ReviewPromptOnReturnToRoot
 import kotlinx.coroutines.launch
 

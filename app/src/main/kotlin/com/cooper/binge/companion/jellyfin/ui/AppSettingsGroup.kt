@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import com.binge.designsystem.R as DesR
+import com.cooper.homelab.core.uiandroid.R as CoreR
 
 /** The hosted privacy policy page, kept in the app-feedback repository from `docs/listing/privacy.md` by `privacy-policy.yml`: the URL Play links to. */
 private const val PRIVACY_POLICY_URL = "https://scottcooper92.github.io/app-feedback/ephyra/privacy/"
@@ -142,6 +143,12 @@ internal fun AboutGroup(actions: Actions) {
                     label = stringResource(R.string.licences_title),
                     selected = actions.isOpenBeside(ConsolePage.Licences),
                     onClick = { actions.onOpenPage(ConsolePage.Licences) },
+                ),
+                ListItem(
+                    icon = Icons.Outlined.BugReport,
+                    label = stringResource(CoreR.string.diagnostics_title),
+                    selected = actions.isOpenBeside(ConsolePage.Diagnostics),
+                    onClick = { actions.onOpenPage(ConsolePage.Diagnostics) },
                 ),
                 ListItem(
                     icon = Icons.Outlined.Science,

@@ -9,6 +9,7 @@ import com.cooper.binge.companion.jellyfin.preview.JellyfinSpanishPreviews
 import com.cooper.binge.companion.jellyfin.ui.Actions
 import com.cooper.binge.companion.jellyfin.ui.AppGroup
 import com.cooper.binge.companion.jellyfin.ui.AppSettings
+import com.cooper.homelab.core.uiandroid.consent.ConsentScreen
 
 /** The question asked before sign-in and the home: what is shared, what never is, and the two answers. */
 class ConsentScreenshotTest {
