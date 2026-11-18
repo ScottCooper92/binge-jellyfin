@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
 /** Where the backup being made stands. The server writes it in its own time, so this outlives the page that asked. */
@@ -173,6 +174,22 @@ class Connection(
     suspend fun identity(): ClientIdentity = ClientIdentity(client, device, sessions.deviceId(), version)
 
     suspend fun anonymous(baseUrl: HttpUrl): JellyfinClient = JellyfinClient(http, baseUrl, identity(), io, logger = logger)
+
+    /**
+     * [anonymous], told of every attempt that fails on the way to the answer. One call can make several attempts, and the exception it
+     * ends with is the last one's, so a more telling earlier failure would otherwise be lost.
+     */
+    suspend fun anonymous(
+        baseUrl: HttpUrl,
+        onAttemptFailed: (IOException) -> Unit,
+    ): JellyfinClient =
+        JellyfinClient(
+            http.newBuilder().eventListener(FailedAttempts(onAttemptFailed)).build(),
+            baseUrl,
+            identity(),
+            io,
+            logger = logger,
+        )
 
     /** The saved session and a client signed in as it, or null when signed out. */
     suspend fun signedIn(): Pair<JellyfinSession, JellyfinClient>? {

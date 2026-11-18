@@ -84,6 +84,12 @@ class JellyfinScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun serverClientCertificate() = JellyfinRoot(previewEnterServerClientCertificate, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @Composable
     fun serverGenericError() = JellyfinRoot(previewEnterServerGeneric, Actions())
 
@@ -302,6 +308,12 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun signedInCouldNotLoad() = JellyfinRoot(previewSignedInCouldNotLoad, Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun signedInClientCertificate() = JellyfinRoot(previewSignedInClientCertificate, Actions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

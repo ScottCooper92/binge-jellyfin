@@ -56,6 +56,14 @@ class ConnectionProblemTest {
     }
 
     @Test
+    fun `a server that asks for a client certificate says so`() {
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(ConnectionHealth.ClientCertificateNeeded), Actions()) } }
+        compose.onNodeWithText("This server asks for a client certificate").assertExists()
+        compose.onNodeWithText("Edit server details").assertExists()
+        compose.onNodeWithText("Sign out").assertExists()
+    }
+
+    @Test
     fun `a server that answered something unusable says so`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(ConnectionHealth.CouldNotLoad), Actions()) } }
         compose.onNodeWithText("Couldn't load your server").assertExists()

@@ -41,6 +41,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
@@ -55,6 +56,8 @@ import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLHandshakeException
+import javax.net.ssl.SSLProtocolException
 
 /** Setup and settings against a fake server. The server calls run on a real IO thread, so each step waits for its state. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -740,6 +743,102 @@ class JellyfinViewModelTest {
 
         assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
         assertEquals(listOf("jellyfin.example.com"), consent.granted)
+    }
+
+    private fun failingWith(fail: (HttpUrl) -> IOException) =
+        Connection(
+            OkHttpClient
+                .Builder()
+                .addInterceptor { chain -> throw fail(chain.request().url) }
+                .build(),
+            sessions,
+            "Jellyfin Companion",
+            "Test",
+            "1.0",
+            Dispatchers.IO,
+            DiscardLogger,
+        ).also { extraConnections += it }
+
+    private fun askingForCertificate() = failingWith { SSLProtocolException(CERTIFICATE_REQUIRED_ALERT) }
+
+    /** A call whose last attempt failed on the certificate, with the attempt before it that was the server asking for one. */
+    private fun askedThenRejected() =
+        failingWith {
+            SSLHandshakeException("Trust anchor for certification path not found").apply {
+                addSuppressed(SSLProtocolException(CERTIFICATE_REQUIRED_ALERT))
+            }
+        }
+
+    @Test
+    fun `a server that asks for a client certificate is named in the connect step, not called unreachable`() {
+        val vm = viewModel(AddressPolicy.Shared, askingForCertificate())
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("https://jellyfin.example.com")
+
+        vm.connect()
+
+        assertEquals(SetupError.ClientCertificateNeeded, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `a saved server that asks for a client certificate says so on reconnect`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel(AddressPolicy.Shared, askingForCertificate())
+        vm.refresh()
+        assertEquals(
+            ConnectionHealth.ClientCertificateNeeded,
+            vm.await<UiState.SignedIn> { it.health.isProblem && !it.refreshing }.health,
+        )
+    }
+
+    @Test
+    fun `a client certificate request an earlier attempt met is not lost behind the last attempt's failure`() {
+        val vm = viewModel(AddressPolicy.Shared, askedThenRejected())
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("https://jellyfin.example.com")
+
+        vm.connect()
+
+        assertEquals(SetupError.ClientCertificateNeeded, vm.await<UiState.EnterServer> { it.error != null }.error)
+    }
+
+    @Test
+    fun `a saved server whose earlier attempt met a client certificate request says so on reconnect`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel(AddressPolicy.Shared, askedThenRejected())
+        vm.refresh()
+        assertEquals(
+            ConnectionHealth.ClientCertificateNeeded,
+            vm.await<UiState.SignedIn> { it.health.isProblem && !it.refreshing }.health,
+        )
+    }
+
+    @Test
+    fun `of several addresses one asking for a client certificate and another failing the handshake is named for the certificate`() {
+        val asking = "https://asks.example.com/".toHttpUrl()
+        val plain = "https://plain.example.com/".toHttpUrl()
+        val connection =
+            failingWith {
+                if (it.host == asking.host) SSLProtocolException(CERTIFICATE_REQUIRED_ALERT) else SSLHandshakeException("handshake failed")
+            }
+        listOf(listOf(asking, plain), listOf(plain, asking)).forEach { order ->
+            val vm = viewModel(AddressPolicy { order }, connection)
+            vm.await<UiState.EnterServer>()
+            vm.onAddress("x")
+            vm.connect()
+            assertEquals(SetupError.ClientCertificateNeeded, vm.await<UiState.EnterServer> { it.error != null }.error)
+        }
+    }
+
+    @Test
+    fun `a handshake that fails on its own is still called unreachable`() {
+        val vm = viewModel(AddressPolicy.Shared, failingWith { SSLHandshakeException("handshake failed") })
+        vm.await<UiState.EnterServer>()
+        vm.onAddress("https://jellyfin.example.com")
+
+        vm.connect()
+
+        assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
     }
 
     @Test
@@ -1495,6 +1594,10 @@ private const val PUBLIC_USERS =
 
 /** Nothing listens here, so a connection is refused at once. */
 private const val DEAD_PORT = "http://127.0.0.1:1/"
+
+/** What Android's TLS stack throws when the server asks for a client certificate and none is sent. */
+private const val CERTIFICATE_REQUIRED_ALERT =
+    "Read error: ssl=0x0: error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED"
 
 /** How long teardown waits for a view model's cancelled work to end: a call on the fake server returns at once. */
 private const val TEARDOWN_MILLIS = 10_000L

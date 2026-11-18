@@ -25,6 +25,7 @@ import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
 import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerCleartextRefused
+import com.cooper.binge.companion.jellyfin.ui.previewEnterServerClientCertificate
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerError
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerFound
 import com.cooper.binge.companion.jellyfin.ui.previewEnterServerInsecure
@@ -42,6 +43,7 @@ import com.cooper.binge.companion.jellyfin.ui.previewSignInUsersPictures
 import com.cooper.binge.companion.jellyfin.ui.previewSignInWrongPassword
 import com.cooper.binge.companion.jellyfin.ui.previewSignedIn
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInChecking
+import com.cooper.binge.companion.jellyfin.ui.previewSignedInClientCertificate
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInCouldNotLoad
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInFailed
 import com.cooper.binge.companion.jellyfin.ui.previewSignedInLocalNetworkDenied
@@ -86,6 +88,12 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvStressPreviews
     @Composable
     fun serverCleartextRefused() = TvJellyfinRoot(previewEnterServerCleartextRefused, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @JellyfinTvStressPreviews
+    @Composable
+    fun serverClientCertificate() = TvJellyfinRoot(previewEnterServerClientCertificate, Actions())
 
     @PreviewTest
     @JellyfinTvScreenPreviews
@@ -256,6 +264,11 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun signedInCouldNotLoad() = TvJellyfinRoot(previewSignedInCouldNotLoad, Actions())
+
+    @PreviewTest
+    @JellyfinTvScreenPreviews
+    @Composable
+    fun signedInClientCertificate() = TvJellyfinRoot(previewSignedInClientCertificate, Actions())
 
     @PreviewTest
     @JellyfinTvScreenPreviews
