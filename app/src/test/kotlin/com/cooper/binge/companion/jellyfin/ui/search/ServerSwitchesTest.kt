@@ -23,6 +23,10 @@ import com.cooper.binge.companion.jellyfin.server.ENCODING_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.ENCODING_VIDEO_TOOLBOX_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.LIVE_TV_ORIGINAL_AUDIO
+import com.cooper.binge.companion.jellyfin.server.LIVE_TV_SAVE_IMAGES
+import com.cooper.binge.companion.jellyfin.server.LIVE_TV_SAVE_NFO
+import com.cooper.binge.companion.jellyfin.server.LIVE_TV_SUBFOLDERS
 import com.cooper.binge.companion.jellyfin.server.NETWORK_AUTO_DISCOVERY
 import com.cooper.binge.companion.jellyfin.server.NETWORK_IGNORE_VIRTUAL
 import com.cooper.binge.companion.jellyfin.server.NETWORK_PUBLISHED_BY_REQUEST
@@ -71,6 +75,9 @@ class ServerSwitchesTest {
 
     private val networkRows =
         listOf(NETWORK_AUTO_DISCOVERY, NETWORK_UPNP, NETWORK_PUBLISHED_BY_REQUEST, NETWORK_IGNORE_VIRTUAL).map { SettingRows.network(it) }
+
+    private val liveTvRows =
+        listOf(LIVE_TV_SUBFOLDERS, LIVE_TV_ORIGINAL_AUDIO, LIVE_TV_SAVE_NFO, LIVE_TV_SAVE_IMAGES).map { SettingRows.liveTv(it) }
 
     private val encodingRows =
         listOf(
@@ -137,11 +144,28 @@ class ServerSwitchesTest {
 
     @Test
     fun `every switch row has a spec, in the configuration its page saves to`() {
-        assertEquals((userRows + serverRows + encodingRows + networkRows).toSet(), SWITCH_SPECS.keys)
+        assertEquals((userRows + serverRows + encodingRows + networkRows + liveTvRows).toSet(), SWITCH_SPECS.keys)
         assertTrue(userRows.all { spec(it).kind == ConfigKind.User })
         assertTrue(serverRows.all { spec(it).kind == ConfigKind.Server })
         assertTrue(encodingRows.all { spec(it).kind == ConfigKind.Encoding })
         assertTrue(networkRows.all { spec(it).kind == ConfigKind.Network })
+        assertTrue(liveTvRows.all { spec(it).kind == ConfigKind.LiveTv })
+    }
+
+    @Test
+    fun `a Live TV recording switch reads its own key and none where the server did not send it`() {
+        val on = buildJsonObject { liveTvRows.forEach { put(it.removePrefix("livetv."), true) } }
+        liveTvRows.forEach { assertTrue(it, spec(it).read(on)!!) }
+        val off = buildJsonObject { liveTvRows.forEach { put(it.removePrefix("livetv."), false) } }
+        liveTvRows.forEach { assertFalse(it, spec(it).read(off)!!) }
+        liveTvRows.forEach { assertNull(it, spec(it).read(buildJsonObject { put("GuideDays", 7) })) }
+    }
+
+    @Test
+    fun `a Live TV recording switch makes a change to its own key`() {
+        val change = spec(SettingRows.liveTv(LIVE_TV_SAVE_NFO)).change(false)
+        assertEquals(LIVE_TV_SAVE_NFO, change.id)
+        assertEquals(LIVE_TV_SAVE_NFO to JsonPrimitive(false), change.apply(buildJsonObject { }))
     }
 
     @Test

@@ -38,6 +38,7 @@ import com.cooper.binge.companion.jellyfin.server.LIVE_TV_SAVE_NFO
 import com.cooper.binge.companion.jellyfin.server.LIVE_TV_SUBFOLDERS
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -243,6 +244,7 @@ private fun switchRow(
         detail = detail?.let { stringResource(it) },
         supportingMaxLines = DETAIL_LINES,
         toggled = on,
+        key = SettingRows.liveTv(key),
         onClick = { actions.onSet(key, JsonPrimitive(!on)) },
     )
 }

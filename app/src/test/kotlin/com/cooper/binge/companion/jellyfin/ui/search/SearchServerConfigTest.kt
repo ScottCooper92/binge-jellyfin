@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.ENCODING_AUDIO_VBR
 import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLING
+import com.cooper.binge.companion.jellyfin.server.LIVE_TV_SAVE_NFO
 import com.cooper.binge.companion.jellyfin.server.NETWORK_IGNORE_VIRTUAL
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
@@ -217,6 +218,26 @@ class SearchServerConfigTest {
         val after = networkHeld()
         // Nothing else moved: the certificate password and an option this app does not know go back as they were read.
         assertEquals(before.filterKeys { it != NETWORK_IGNORE_VIRTUAL }, after.filterKeys { it != NETWORK_IGNORE_VIRTUAL })
+        assertEquals(0, jellyfin.hits("/System/Configuration"))
+    }
+
+    private fun liveTvHeld(): JsonObject = Json.parseToJsonElement(jellyfin.liveTvConfiguration).jsonObject
+
+    @Test
+    fun `a Live TV flip lands in the Live TV configuration and keeps the tuners and guide providers`() {
+        val before = liveTvHeld()
+        val original = before.getValue(LIVE_TV_SAVE_NFO).jsonPrimitive.boolean
+        val vm = made(SearchSwitchesViewModel(connection)).also { it.liveTv.start() }
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.liveTv.state.first { it is SearchConfigState.Ready } } }
+        vm.flip(SettingRows.liveTv(LIVE_TV_SAVE_NFO), !original)
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (liveTvHeld().getValue(LIVE_TV_SAVE_NFO).jsonPrimitive.boolean == original) delay(POLL_MILLIS)
+            }
+        }
+        val after = liveTvHeld()
+        // The tuner hosts, the guide providers with their password and a key this app does not know go back as they were read.
+        assertEquals(before.filterKeys { it != LIVE_TV_SAVE_NFO }, after.filterKeys { it != LIVE_TV_SAVE_NFO })
         assertEquals(0, jellyfin.hits("/System/Configuration"))
     }
 

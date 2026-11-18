@@ -45,6 +45,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutActions
 import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutScreen
 import com.cooper.binge.companion.jellyfin.ui.console.HomeLayoutUiState
+import com.cooper.binge.companion.jellyfin.ui.console.LiveTvRecordingActions
+import com.cooper.binge.companion.jellyfin.ui.console.LiveTvRecordingScreen
+import com.cooper.binge.companion.jellyfin.ui.console.LiveTvRecordingUiState
 import com.cooper.binge.companion.jellyfin.ui.console.LogsActions
 import com.cooper.binge.companion.jellyfin.ui.console.LogsScreen
 import com.cooper.binge.companion.jellyfin.ui.console.LogsUiState
@@ -95,7 +98,14 @@ class SettingRowKeysTest {
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private val profile = JellyfinServerProfile.from("10.11.6")
-    private val admin = JellyfinAccount("sam", buildJsonObject { put("IsAdministrator", true) })
+    private val admin =
+        JellyfinAccount(
+            "sam",
+            buildJsonObject {
+                put("IsAdministrator", true)
+                put("EnableLiveTvManagement", true)
+            },
+        )
 
     private val fixtures = FakeJellyfin().also { it.close() }
 
@@ -145,6 +155,22 @@ class SettingRowKeysTest {
                     ),
                     AdvancedActions(),
                 )
+            },
+            ConsolePage.LiveTvRecording to {
+                val config =
+                    Json
+                        .parseToJsonElement(fixtures.liveTvConfiguration)
+                        .jsonObject
+                        .let {
+                            JsonObject(
+                                it +
+                                    mapOf(
+                                        "EnableOriginalAudioWithEncodedRecordings" to JsonPrimitive(false),
+                                        "SaveRecordingImages" to JsonPrimitive(false),
+                                    ),
+                            )
+                        }
+                LiveTvRecordingScreen(LiveTvRecordingUiState.Ready(config), LiveTvRecordingActions())
             },
             ConsolePage.Trickplay to {
                 TrickplayScreen(TrickplayUiState.Ready(TrickplaySettings()), TrickplayActions())
