@@ -13,7 +13,7 @@ name: Release
 # binge-seerr did.
 #
 # Once, in the Play Console, before the first upload can work: create the app for
-# `com.cooper.binge.companion.ephyra`; upload the first bundle by hand if Play asks for it; invite the
+# `com.cooper.homelab.ephyra`; upload the first bundle by hand if Play asks for it; invite the
 # service account (the email in PLAY_SERVICE_ACCOUNT_JSON) under Users and permissions with permission
 # to release to testing tracks. docs/listing/README.md ("The release upload") has the steps.
 #
@@ -170,7 +170,7 @@ jobs:
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.cooper.binge.companion.ephyra
+          packageName: com.cooper.homelab.ephyra
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           mappingFile: app/build/outputs/mapping/release/mapping.txt
           tracks: internal

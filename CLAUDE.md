@@ -36,7 +36,7 @@ licence they shipped with. The name and artwork are reserved in the same way, in
 Apache 2.0, and the design system's licence is decided separately. A new dependency must be under a licence that lets a closed-source app
 link it (permissive, such as Apache 2.0, MIT or BSD, or the platform vendor's own terms), never a copyleft one.
 
-The app is called **Ephyra** (with "for Jellyfin" as a subtitle where a descriptor helps), and so is the client it signs in as. "Jellyfin" names the server it talks to, never the app; the application id is `com.cooper.binge.companion.ephyra`, and the Kotlin package keeps its old form. It names Binge only behind
+The app is called **Ephyra** (with "for Jellyfin" as a subtitle where a descriptor helps), and so is the client it signs in as. "Jellyfin" names the server it talks to, never the app; the application id is `com.cooper.homelab.ephyra`, the form every server app uses (`com.cooper.homelab.<app>`), and the Kotlin package keeps its old form for now. It names Binge only behind
 `FeatureFlags` (`flags/`): `Flags.bingePromotion`, off by default, as binge-seerr has. Every string or surface that
 names Binge reads `LocalFlags` and has a plain alternative. The value comes from Firebase Remote Config, in the `binge-jellyfin-companion` project, key
 `binge_promotion_enabled`. A build with `-PbingePromotion=true` turns it on whatever the remote says. A build
@@ -234,7 +234,7 @@ as binge-seerr's TV is.
 - The `org.jetbrains.kotlin.android` plugin is declared `apply false` in the root build and never
   applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
 - The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
-- Application id `com.cooper.binge.companion.ephyra`; a debug build adds `.debug`. The Kotlin package and `namespace` stay `com.cooper.binge.companion.jellyfin`, so a component's class name is built from the package, never the application id.
+- Application id `com.cooper.homelab.ephyra`; a debug build adds `.debug`. The Kotlin package and `namespace` are still `com.cooper.binge.companion.jellyfin`, so a component's class name is built from the package, never the application id. The debug broadcasts (`.ADDRESS_POLICY`, `.SERVER_REGISTRY`, `.SEARCH_TOGGLES`) are built from the application id, so a debug build answers `adb shell am broadcast -a com.cooper.homelab.ephyra.debug.ADDRESS_POLICY -p com.cooper.homelab.ephyra.debug --ez enabled true`.
 - One module, `:app`. Tests are JUnit 4.
 - No DI framework: `AppGraph` builds the handful of objects by hand, and `JellyfinApp` holds it.
 - A Robolectric test needs no `@Config` for the SDK: `app/src/test/resources/robolectric.properties`
