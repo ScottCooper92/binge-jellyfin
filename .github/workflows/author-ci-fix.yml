@@ -50,6 +50,9 @@ jobs:
       # jvm: this repo's ci.yml is setup-java and setup-gradle and nothing else. The Android
       # SDK is preinstalled on the hosted runner image.
       toolchain: jvm
+      # Lets the agent re-record the frames of screens the PR itself changed, under the gate this caller's gate_rules and
+      # .ai/agents/ci-triage.md describe. binge-ci's workflow states the gate again in the prompt.
+      rerecord_screenshots: true
       java_version: '21'
       verify_guidance: >
         Scope Gradle to the module rather than running the whole tree when you
@@ -61,8 +64,7 @@ jobs:
         do not add a lint-baseline.xml, do not set `abortOnError = false`,
         and do not exclude a source set from `check`. Do not add a
         detekt-baseline.xml or a `@Suppress` to make detekt pass, and do not
-        lower the kover floor. Do not touch any screenshot baseline PNG, and
-        never run updateDebugScreenshotTest.
+        lower the kover floor.
 
         Never move the user's Jellyfin access token somewhere new to make a
         test pass: not into a log, not into a URL beyond the two places
@@ -73,17 +75,17 @@ jobs:
         properly. A lint baseline is worse than it looks: it silences the
         finding permanently and silently.
 
-        A failing screenshot test means the rendering changed. Re-recording
-        the baseline makes CI green while accepting whatever was rendered,
-        which is how a real visual regression gets merged. A baseline entry
-        is a deliberate human decision, not a repair.
-
-        This is deliberately stricter than the review-feedback bot, which may
-        re-record a baseline its own requested change moved. Do not
-        "harmonise" the two. That bot knows why the pixels changed because
-        it just changed them; you arrive at a red build you did not cause
-        and cannot tell an intended shift from a regression. Stopping is
-        the right answer for you and the wrong one for it.
+        Screenshot diffs have one case where you may re-record, and it is the gate in
+        the SCREENSHOT DIFFS section of this prompt: every failing frame renders a
+        screen this PR's own diff (or a submodule bump in it) changed, there are at most
+        40 of them, nothing else is red, and you re-record only those classes with a
+        scoped `updateDebugScreenshotTest --tests <Class>`, after looking at the old and
+        the new PNG of each. Everything else is a stop: a frame of a screen this PR did
+        not change, a render error or an out-of-memory failure, a frame that is missing
+        or new, and a red build the PR did not cause (a base-branch, font or runner
+        change). Never run the update over the whole suite, and never edit a test or a
+        suppression to get a frame to pass. The re-record posts a before and after of
+        each frame for the review bot to judge against the PR's stated intent.
 
         If the only way to green is through one of those, that is a stop:
         make no changes and say so.
