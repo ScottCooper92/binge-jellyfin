@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.AvailableFetcher
@@ -157,7 +156,7 @@ class LibraryScreenshotTest {
     fun removeAction() = Surface { LibraryRemoveAction(ready(), LibraryActions()) }
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -165,7 +164,7 @@ class LibraryScreenshotTest {
 
     /** The metadata group: embedded titles for extras, and a switch for each metadata saver. They sit below the page frame's first screen. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -179,7 +178,7 @@ class LibraryScreenshotTest {
     fun subtitles() = Surface { Column { VideoGroups(ready(), LibraryActions(), newest) {} } }
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -236,7 +235,7 @@ class LibraryScreenshotTest {
 
     /** The audio tag options of a music library. They sit below the page frame's first screen. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

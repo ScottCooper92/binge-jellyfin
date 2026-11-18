@@ -4,7 +4,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
@@ -116,7 +115,7 @@ private fun Plugins(
 /** The plugins page: the installed list across the matrix, then a plugin's page, the catalog, the repositories and each sheet and confirm. */
 class PluginsScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -167,7 +166,7 @@ class PluginsScreenshotTest {
     fun loading() = Plugins(installed = PluginsUiState.Loading)
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun catalog() = CatalogTabPreview(CatalogUiState.Ready(catalogPackages, installed = setOf("AniDB"), server = server))
@@ -266,7 +265,7 @@ class PluginsScreenshotTest {
     fun catalogEmpty() = CatalogTabPreview(CatalogUiState.Ready(emptyList(), server = server))
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun repositories() = RepositoriesTabPreview(RepositoriesUiState.Ready(repositories))

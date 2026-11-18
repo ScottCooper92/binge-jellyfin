@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.preview.PreviewSystemBarInsets
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.ActivityEntry
@@ -34,7 +33,7 @@ private val users = ActivityUsers.Ready(listOf("alice", "bob", "Claude", "sam"))
 /** The activity filters: the page with its chips and nothing matching, and each page of the sheet. */
 class ActivityFiltersScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -82,7 +81,7 @@ class ActivityFiltersScreenshotTest {
 
     /** The search field above the list, with its text as a chip and the list narrowed. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

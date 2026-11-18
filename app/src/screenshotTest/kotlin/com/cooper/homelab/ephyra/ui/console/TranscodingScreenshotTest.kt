@@ -7,7 +7,6 @@ import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.component.ItemGroup
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
@@ -50,7 +49,7 @@ private fun ready(type: String = "nvenc") = TranscodingUiState.Ready(encoding(ty
 /** Playback and transcoding: the page across the matrix, each acceleration type's options, the older releases, the sheets and the other states. */
 class TranscodingScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
@@ -87,7 +86,7 @@ class TranscodingScreenshotTest {
 
     /** The quality group with its CRFs and the muxing queue, which sit below the page frame's first screen. */
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

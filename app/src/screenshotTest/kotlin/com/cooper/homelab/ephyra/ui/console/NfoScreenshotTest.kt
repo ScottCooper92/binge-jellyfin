@@ -3,7 +3,6 @@ package com.cooper.homelab.ephyra.ui.console
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.ServerUser
@@ -26,7 +25,7 @@ private fun ready(shown: JsonObject = config) = NfoUiState.Ready(shown, users)
 /** The NFO page across the matrix, with a user chosen, with the users unreadable, and while it loads or fails. */
 class NfoScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable

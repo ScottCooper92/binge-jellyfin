@@ -6,7 +6,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 
@@ -29,14 +28,14 @@ private const val DISC = 80
 /** The profile picture page: none and one across the matrix, then each other state, and the remove confirm. */
 class ProfilePictureScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
     fun none() = ProfilePictureScreen(ProfilePictureUiState.Ready(), ProfilePictureActions())
 
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @Composable
     fun picture() = ProfilePictureScreen(ProfilePictureUiState.Ready(picture = profilePictureFixture), ProfilePictureActions())

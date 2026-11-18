@@ -4,7 +4,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
-import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
@@ -34,7 +33,7 @@ private val ready = MetadataDefaultsUiState.Ready(configuration, fetchers)
 /** The metadata providers by type: the list across the matrix, a type's page, a type the server named no providers for, then the other states. */
 class MetadataDefaultsScreenshotTest {
     @PreviewTest
-    @JellyfinScreenPreviews
+    @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
     fun list() = MetadataDefaultsScreen(ready, MetadataDefaultsActions())
