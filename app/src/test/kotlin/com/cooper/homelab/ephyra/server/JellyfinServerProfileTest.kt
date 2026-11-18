@@ -1,0 +1,89 @@
+package com.cooper.homelab.ephyra.server
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class JellyfinServerProfileTest {
+    @Test
+    fun `versions parse from what servers report`() {
+        assertEquals(JellyfinVersion(10, 11, 2), JellyfinVersion.parse("10.11.2"))
+        assertEquals(JellyfinVersion(10, 10, 0), JellyfinVersion.parse("10.10"))
+        assertEquals(JellyfinVersion(10, 9, 11), JellyfinVersion.parse("10.9.11-unstable"))
+        assertNull(JellyfinVersion.parse("unknown"))
+        assertNull(JellyfinVersion.parse(""))
+        assertNull(JellyfinVersion.parse(null))
+    }
+
+    @Test
+    fun `versions order by their numbers, not their text`() {
+        assertTrue(JellyfinVersion(10, 10, 0) > JellyfinVersion(10, 9, 11))
+        assertTrue(JellyfinVersion(10, 11, 0) > JellyfinVersion(10, 10, 7))
+    }
+
+    @Test
+    fun `each feature turns on at the release that added it`() {
+        val v108 = JellyfinServerProfile.from("10.8.13")
+        assertFalse(v108.hasTrickplay)
+        assertFalse(v108.hasLyrics)
+        assertFalse(v108.canDisableLibraries)
+        assertFalse(v108.hasAdvancedEncoding)
+        assertFalse(v108.hasEmbeddedExtrasTitles)
+        assertFalse(v108.hasAllowedTags)
+        assertFalse(v108.hasChapterImageSettings)
+        assertFalse(v108.hasUserViewsRoute)
+        val v109 = JellyfinServerProfile.from("10.9.0")
+        assertTrue(v109.hasTrickplay)
+        assertTrue(v109.hasContentManagementPermissions)
+        assertTrue(v109.hasAdvancedEncoding)
+        assertTrue(v109.hasEmbeddedExtrasTitles)
+        assertFalse(v109.hasQsvDeviceAndDownmix)
+        assertFalse(v109.hasHevcRext)
+        assertFalse(v109.hasMusicTagOptions)
+        assertTrue(v109.hasAllowedTags)
+        assertTrue(v109.hasChapterImageSettings)
+        assertTrue(v109.hasUserViewsRoute)
+        assertTrue(v109.hasTrickplay)
+        assertFalse(v109.hasKeyFrameOnlyTrickplay)
+        assertFalse(v109.hasMediaSegments)
+        assertFalse(v109.hasLibraryLyricFetchers)
+        assertFalse(v109.hasLibraryTrickplayWithMedia)
+        val v1010 = JellyfinServerProfile.from("10.10.7")
+        assertFalse(v1010.servesSplashscreenLocation)
+        assertTrue(v1010.hasMediaSegments)
+        assertTrue(v1010.hasQsvDeviceAndDownmix)
+        assertTrue(v1010.hasHevcRext)
+        assertTrue(v1010.hasMusicTagOptions)
+        assertTrue(v1010.hasKeyFrameOnlyTrickplay)
+        assertTrue(v1010.hasLibraryLyricFetchers)
+        assertTrue(v1010.hasLibraryTrickplayWithMedia)
+        assertFalse(v1010.hasLibrarySegmentProviders)
+        assertFalse(v1010.hasBackups)
+        val v1011 = JellyfinServerProfile.from("10.11.0")
+        assertTrue(v1011.hasBackups)
+        assertFalse(v1010.hasStorageInfo)
+        assertTrue(v1011.hasStorageInfo)
+        assertTrue(v1011.hasCacheAndLegacyAuth)
+        assertTrue(v1010.hasAdvancedPerformance)
+        assertFalse(v1010.hasCacheAndLegacyAuth)
+        assertFalse(JellyfinServerProfile.from("10.8.13").hasAdvancedPerformance)
+        assertTrue(v1011.hasLibrarySegmentProviders)
+        assertTrue(v1011.hasParentalSubRating)
+        assertTrue(v1011.hasSeparateCollectionGrouping)
+    }
+
+    @Test
+    fun `a version that can't be read hides nothing`() {
+        val unknown = JellyfinServerProfile.from("nightly")
+        assertNull(unknown.version)
+        assertTrue(unknown.hasBackups)
+        assertTrue(unknown.hasStorageInfo)
+        assertTrue(unknown.hasLibrarySegmentProviders)
+        assertTrue(unknown.hasTrickplay)
+        assertTrue(unknown.hasAdvancedPerformance)
+        assertTrue(unknown.hasCacheAndLegacyAuth)
+        assertTrue(unknown.hasKeyFrameOnlyTrickplay)
+    }
+}

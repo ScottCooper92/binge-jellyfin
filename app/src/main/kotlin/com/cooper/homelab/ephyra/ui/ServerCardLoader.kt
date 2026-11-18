@@ -1,0 +1,127 @@
+package com.cooper.homelab.ephyra.ui
+
+import com.binge.companion.sdk.attempt
+import com.cooper.homelab.ephyra.auth.JellyfinSession
+import com.cooper.homelab.ephyra.server.JellyfinAccount
+import com.cooper.homelab.ephyra.server.JellyfinClient
+import com.cooper.homelab.ephyra.server.TmdbCoverage
+import com.cooper.homelab.ephyra.server.itemCounts
+import com.cooper.homelab.ephyra.server.libraries
+import com.cooper.homelab.ephyra.server.nowPlaying
+import com.cooper.homelab.ephyra.server.serverInfo
+import com.cooper.homelab.ephyra.server.tmdbCoverage
+import com.cooper.homelab.ephyra.server.users
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/**
+ * What the home's server card says about the server, as far as it has been read. [playing], [users], [movies], [series]
+ * and [libraries] are null until their read answers, and stay null if it fails: the card shows a placeholder, never an
+ * error. A flag the server didn't send is false, so no chip. [connected] is true once any read has worked.
+ */
+data class ServerCardState(
+    val connected: Boolean = false,
+    val updateAvailable: Boolean = false,
+    val restartPending: Boolean = false,
+    val shuttingDown: Boolean = false,
+    val playing: Int? = null,
+    val users: Int? = null,
+    val movies: Int? = null,
+    val series: Int? = null,
+    /** How many libraries the server has, read for an administrator only; null until it answers and if the read fails. */
+    val libraries: Int? = null,
+    val tmdb: TmdbCoverage? = null,
+)
+
+/** How long the figures stand before the home asks again, so reopening it doesn't re-ask. */
+private const val CARD_FRESH_MILLIS = 5 * 60 * 1000L
+
+/**
+ * Reads the server card's figures, each by itself so a slow or refused one never holds up another, and remembers when
+ * it last did. `/System/Info` (the flags) and the user count are an administrator's; the rest are anyone's, and the
+ * server answers with what that user may see: their own sessions, and the library their access allows.
+ */
+class ServerCardLoader(
+    private val clock: () -> Long = System::currentTimeMillis,
+) {
+    private var loadedFor: String? = null
+    private var loadedAt = 0L
+
+    /** Whether [key] (the server and user) has no figures from the last few minutes. */
+    fun due(key: String): Boolean = loadedFor != key || clock() - loadedAt >= CARD_FRESH_MILLIS
+
+    /** Reads every figure [key] may see, handing each to [update] as it arrives. */
+    suspend fun load(
+        key: String,
+        client: JellyfinClient,
+        userId: String,
+        administrator: Boolean,
+        update: ((ServerCardState) -> ServerCardState) -> Unit,
+    ) {
+        loadedFor = key
+        loadedAt = clock()
+        coroutineScope {
+            if (administrator) {
+                launchRead({ client.serverInfo() }, update) { info ->
+                    copy(
+                        connected = true,
+                        updateAvailable = info.updateAvailable,
+                        restartPending = info.restartPending,
+                        shuttingDown = info.shuttingDown,
+                    )
+                }
+                launchRead({ client.users().size }, update) { copy(connected = true, users = it) }
+                launchRead({ client.libraries().size }, update) { copy(connected = true, libraries = it) }
+            }
+            launchRead({ client.nowPlaying().size }, update) { copy(connected = true, playing = it) }
+            launchRead({ client.itemCounts(userId) }, update) { copy(connected = true, movies = it.movies, series = it.series) }
+            launchRead({ client.tmdbCoverage(userId) }, update) { copy(connected = true, tmdb = it) }
+        }
+    }
+
+    private fun <T> kotlinx.coroutines.CoroutineScope.launchRead(
+        read: suspend () -> T,
+        update: ((ServerCardState) -> ServerCardState) -> Unit,
+        apply: ServerCardState.(T) -> ServerCardState,
+    ) {
+        async { attempt { read() }.onSuccess { value -> update { it.apply(value) } } }
+    }
+}
+
+/**
+ * Reads the server card's figures in the background, so the home never waits on them. Figures read in the last few
+ * minutes stand, unless [force]d or the card has none yet.
+ */
+internal fun ServerCardLoader.refresh(
+    scope: CoroutineScope,
+    state: MutableStateFlow<UiState>,
+    session: JellyfinSession,
+    client: JellyfinClient,
+    account: JellyfinAccount,
+    force: Boolean,
+) {
+    val key = "${session.baseUrl}|${session.userId}"
+    val current = (state.value as? UiState.SignedIn)?.card
+    val shown = current?.connected == true
+    if (!force && shown && !due(key)) {
+        // The first-library hint is up, so the administrator may have just added the library it asks for and come back. Its count
+        // is read again whatever the window says, and only that count: the other figures stand.
+        if (account.isAdministrator && current.libraries == 0) {
+            scope.launch {
+                attempt { client.libraries().size }.onSuccess { count ->
+                    state.update { (it as? UiState.SignedIn)?.copy(card = it.card.copy(libraries = count)) ?: it }
+                }
+            }
+        }
+        return
+    }
+    scope.launch {
+        load(key, client, session.userId, account.isAdministrator) { change ->
+            state.update { (it as? UiState.SignedIn)?.copy(card = change(it.card)) ?: it }
+        }
+    }
+}

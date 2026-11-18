@@ -49,7 +49,7 @@ fun telemetryValue(
         ?: default
 
 android {
-    namespace = "com.cooper.binge.companion.jellyfin"
+    namespace = "com.cooper.homelab.ephyra"
     compileSdk = 37
 
     // What makes AGP create the screenshotTest source set. The matching flag is in gradle.properties;
@@ -57,8 +57,7 @@ android {
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
-        // What Play and the device know the app by, and permanent once published. The Kotlin package and `namespace` above keep
-        // their old form: they are invisible to users, and moving 449 files is a diff with no reader.
+        // What Play and the device know the app by, and permanent once published. The Kotlin package and `namespace` above are the same.
         applicationId = "com.cooper.homelab.ephyra"
         minSdk = 26
         targetSdk = 36
@@ -194,7 +193,7 @@ translationStaleness {
 // everything else off it. JellyfinTheme.kt is the one crossing.
 tvMaterialSeparation {
     sources.from(fileTree("src") { include("**/*.kt") })
-    allowlist.add("app/src/main/kotlin/com/cooper/binge/companion/jellyfin/theme/JellyfinTheme.kt")
+    allowlist.add("app/src/main/kotlin/com/cooper/homelab/ephyra/theme/JellyfinTheme.kt")
     themeTypeNames.addAll("JellyfinDarkColorScheme", "JellyfinLightColorScheme")
 }
 
@@ -309,16 +308,16 @@ kover {
                 classes(
                     "*ComposableSingletons*",
                     "*PreviewData*",
-                    "com.cooper.binge.companion.jellyfin.MainActivity*",
+                    "com.cooper.homelab.ephyra.MainActivity*",
                     // The Application: wiring.
-                    "com.cooper.binge.companion.jellyfin.JellyfinApp",
+                    "com.cooper.homelab.ephyra.JellyfinApp",
                     // The hand-built graph: wiring, every member a constructed object.
-                    "com.cooper.binge.companion.jellyfin.AppGraph*",
+                    "com.cooper.homelab.ephyra.AppGraph*",
                     // The exported Service: services() and hostPolicy() hand the SDK objects from the graph.
                     // What they choose is tested through JellyfinLibraryService and selectHostPolicy.
-                    "com.cooper.binge.companion.jellyfin.service.JellyfinCompanionService",
+                    "com.cooper.homelab.ephyra.service.JellyfinCompanionService",
                     // Generated.
-                    "com.cooper.binge.companion.jellyfin.BuildConfig",
+                    "com.cooper.homelab.ephyra.BuildConfig",
                 )
                 annotatedBy("androidx.compose.runtime.Composable")
             }

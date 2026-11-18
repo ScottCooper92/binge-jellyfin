@@ -1,0 +1,237 @@
+package com.cooper.homelab.ephyra.ui.console
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.Photo
+import androidx.compose.material.icons.outlined.Tv
+import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.component.BingePullToRefresh
+import com.binge.designsystem.component.ItemGroup
+import com.binge.designsystem.component.PageIntro
+import com.binge.designsystem.formatRelativeOrAbsolute
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
+import com.binge.designsystem.layout.layoutAnchorIf
+import com.binge.designsystem.template.BingeScreenScaffold
+import com.binge.designsystem.template.EmptyScreen
+import com.binge.designsystem.template.ScreenBar
+import com.binge.designsystem.template.ScreenBody
+import com.binge.designsystem.template.screenListPadding
+import com.cooper.homelab.ephyra.R
+import com.cooper.homelab.ephyra.server.LIBRARY_SCAN_TASK
+import com.cooper.homelab.ephyra.server.ServerLibrary
+import com.binge.designsystem.R as DesR
+
+/** What the libraries page can ask of its view model, and of the console. */
+data class LibrariesActions(
+    val onScan: (ServerLibrary) -> Unit = {},
+    val onScanEverything: () -> Unit = {},
+    val onStopEverything: () -> Unit = {},
+    val onOpen: (ServerLibrary) -> Unit = {},
+    val onAskAdd: (Boolean) -> Unit = {},
+    val onAdd: (name: String, kind: String, path: String) -> Unit = { _, _, _ -> },
+    val onRetry: () -> Unit = {},
+    val onRefresh: () -> Unit = {},
+    val onBack: () -> Unit = {},
+)
+
+/** Rows in the page's skeleton while it loads. */
+private const val LOADING_ROWS = 6
+
+/**
+ * The server's libraries as job rows, after binge-seerr's jobs: the scan of everything (the "Scan
+ * Media Library" task, which can be stopped), then each library with its own scan. A scan in
+ * progress says how far it has got, and its outcome shows for a moment when it ends.
+ */
+@Composable
+fun LibrariesScreen(
+    state: LibrariesUiState,
+    actions: LibrariesActions,
+    now: Long = System.currentTimeMillis(),
+    folders: FolderBrowseState = FolderBrowseState.Loading,
+    folderActions: FolderActions = FolderActions(),
+    openLibrary: String? = LocalOpenItem.current?.let(::libraryItemId),
+) {
+    // Held above the loading, failed and ready branches, so a reload does not drop where the user was.
+    val listState = rememberLazyListState()
+    val host = remember { SnackbarHostState() }
+    BingeScreenScaffold(
+        title = stringResource(R.string.libraries_title),
+        bar = ScreenBar.Small,
+        onBack = actions.onBack,
+        snackbarHostState = host,
+        bottomBar = {
+            CreateFooter(
+                label = stringResource(R.string.libraries_add),
+                icon = Icons.Outlined.Add,
+                onClick = { actions.onAskAdd(true) },
+                visible = state !is LibrariesUiState.Failed,
+                enabled = state is LibrariesUiState.Ready,
+            )
+        },
+    ) { padding ->
+        ScreenBody(padding) { _ ->
+            val inner = padding.screenListPadding()
+            when (state) {
+                LibrariesUiState.Loading ->
+                    ConsoleLoading(inner, LOADING_ROWS, intro = stringResource(R.string.libraries_body), formInset = false)
+                is LibrariesUiState.Failed -> ConsoleFailureScreen(state.failure, actions.onRetry, Modifier.padding(inner))
+                is LibrariesUiState.Ready -> {
+                    RefusedMessage(
+                        state.actionFailed,
+                        host,
+                        if (state.stopFailed) R.string.libraries_not_stopped else R.string.libraries_not_started,
+                    )
+                    RefusedMessage(state.refreshFailed, host, R.string.console_not_refreshed)
+                    if (state.libraries.isEmpty()) {
+                        EmptyScreen(
+                            message = stringResource(R.string.libraries_empty),
+                            title = stringResource(R.string.libraries_empty_title),
+                        )
+                    } else {
+                        BingePullToRefresh(
+                            isRefreshing = state.refreshing,
+                            onRefresh = actions.onRefresh,
+                            indicatorTopInset = padding.calculateTopPadding(),
+                        ) { Libraries(state, actions, inner, now, openLibrary, listState) }
+                    }
+                    if (state.adding) {
+                        AddLibrarySheet(
+                            names = state.libraries.map { it.name },
+                            saving = state.saving,
+                            failed = state.addFailed,
+                            folders = folders,
+                            folderActions = folderActions,
+                            onAdd = actions.onAdd,
+                            onDismiss = { actions.onAskAdd(false) },
+                            folderMissing = state.folderMissing,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Libraries(
+    state: LibrariesUiState.Ready,
+    actions: LibrariesActions,
+    inner: PaddingValues,
+    now: Long,
+    openLibrary: String?,
+    listState: LazyListState,
+) {
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = inner,
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
+    ) {
+        item {
+            PageIntro(stringResource(R.string.libraries_body))
+        }
+        state.board.task(LIBRARY_SCAN_TASK)?.let { task ->
+            item {
+                val row =
+                    JobRow(
+                        icon = Icons.Outlined.VideoLibrary,
+                        label = stringResource(R.string.libraries_scan_all),
+                        idleDetail = lastRun(task.lastRun?.endedMillis, now),
+                        running = state.board.running(task),
+                        percent = task.percent,
+                        busy = task.id in state.board.busy,
+                        outcome = state.board.outcomes[task.id],
+                        runLabel = R.string.libraries_scan,
+                        onRun = actions.onScanEverything,
+                        onStop = actions.onStopEverything,
+                    )
+                ItemGroup(
+                    title = null,
+                    rows = listOf(row.item()),
+                    modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
+                )
+            }
+        }
+        item {
+            ItemGroup(
+                title = stringResource(R.string.libraries_group),
+                rows = state.libraries.map { library -> library.row(state, actions, library.id == openLibrary).item() },
+                modifier =
+                    Modifier.layoutAnchorIf(
+                        state.board.task(LIBRARY_SCAN_TASK) == null,
+                        LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM),
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ServerLibrary.row(
+    state: LibrariesUiState.Ready,
+    actions: LibrariesActions,
+    selected: Boolean,
+): JobRow {
+    val scan = state.scanning[id]
+    return JobRow(
+        selected = selected,
+        icon = typeIcon(type),
+        label = name.ifBlank { stringResource(R.string.libraries_unnamed) },
+        idleDetail = folders.joinToString(", "),
+        running = scan != null,
+        percent = scan?.percent?.takeIf { it > 0 },
+        outcome = state.outcomes[id],
+        runLabel = R.string.libraries_scan,
+        onRun = { actions.onScan(this) },
+        onOpen = { actions.onOpen(this) },
+    )
+}
+
+/** When a task last ran, or that it hasn't. */
+@Composable
+internal fun lastRun(
+    endedMillis: Long?,
+    now: Long,
+): String =
+    formatRelativeOrAbsolute(endedMillis, now)?.let { stringResource(R.string.job_last_run, it) }
+        ?: stringResource(R.string.job_never_run)
+
+/** A library's icon, from its `CollectionType`; a folder for mixed content or a type this app doesn't know. */
+internal fun typeIcon(type: String): ImageVector =
+    when (type) {
+        "movies" -> Icons.Outlined.Movie
+        "tvshows" -> Icons.Outlined.Tv
+        "music" -> Icons.Outlined.LibraryMusic
+        "books" -> Icons.Outlined.Book
+        "homevideos", "photos" -> Icons.Outlined.Photo
+        else -> Icons.Outlined.Folder
+    }
+
+/** The empty right-hand pane when no library is open. */
+@Composable
+internal fun LibrariesPlaceholder() {
+    EmptyScreen(
+        message = stringResource(R.string.libraries_select),
+        title = stringResource(R.string.libraries_select_title),
+        icon = Icons.Outlined.VideoLibrary,
+    )
+}
