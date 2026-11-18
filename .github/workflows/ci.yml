@@ -147,7 +147,7 @@ jobs:
           # Code that R8 can break with no keep rule or build file changing: serialization and reflection.
           # Written to a file and grepped there: `grep -q` exits on its first match, and under pipefail a
           # large diff would then die of SIGPIPE (141) and read as "no match".
-          git diff -U0 "$base" "$head" -- 'app/src/main/*.kt' > "$RUNNER_TEMP/main-kt.diff" || all "The diff could not be read"
+          git diff -U0 "$base" "$head" -- 'app/src/main/*.kt' 'data/src/main/*.kt' > "$RUNNER_TEMP/main-kt.diff" || all "The diff could not be read"
           if grep -qE '^\+.*(@Serializable|@Keep|Class\.forName|ServiceLoader|\.javaClass\.)' "$RUNNER_TEMP/main-kt.diff"; then
             export SENSITIVE=true
           fi
