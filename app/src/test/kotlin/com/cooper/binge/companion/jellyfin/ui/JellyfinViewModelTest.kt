@@ -647,6 +647,8 @@ class JellyfinViewModelTest {
     fun `leaving a plain HTTP public host's session brings back the row asking for agreement`() {
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
         val vm = viewModel(AddressPolicy.Shared)
+        // The saved session is read in the background: signing out before it has been read lets the read land after the sign-out.
+        vm.await<UiState.SignedIn>()
         vm.signOut()
 
         val asked = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
