@@ -42,6 +42,7 @@ import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.flags.LocalFlags
+import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.server.Culture
 import com.cooper.homelab.ephyra.server.SubtitleMode
 import com.cooper.homelab.ephyra.ui.search.SettingRows

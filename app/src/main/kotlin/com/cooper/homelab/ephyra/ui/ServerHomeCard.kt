@@ -29,6 +29,7 @@ import com.binge.designsystem.component.ServerCardStat
 import com.binge.designsystem.theme.BingeSentiment
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.flags.LocalFlags
+import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.server.TmdbCoverage
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.binge.designsystem.R as DesR

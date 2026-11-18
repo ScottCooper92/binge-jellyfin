@@ -7,6 +7,7 @@ import com.binge.designsystem.component.BingeConfirmDialogContent
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.flags.LocalFlags
+import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.server.AddressPolicy
 import com.cooper.homelab.ephyra.server.insecureHost
 

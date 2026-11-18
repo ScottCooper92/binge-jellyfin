@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.core.flags.Flags
+import com.cooper.homelab.core.flags.SharedFlags
 import com.cooper.homelab.core.presentation.search.SettingsSearchState
 import com.cooper.homelab.core.presentation.tip.TipState
 import com.cooper.homelab.core.tip.TIP_STEPS
@@ -290,7 +291,10 @@ class JellyfinScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun signedInChecking() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInChecking, Actions()) }
+    fun signedInChecking() =
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            JellyfinRoot(previewSignedInChecking, Actions())
+        }
 
     /** The saved server has not answered yet: nothing of the home, only the wait, until it does or its problem replaces it. */
     @PreviewTest
@@ -301,7 +305,10 @@ class JellyfinScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun signedInFailed() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInFailed, Actions()) }
+    fun signedInFailed() =
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            JellyfinRoot(previewSignedInFailed, Actions())
+        }
 
     @PreviewTest
     @JellyfinScreenStatePreview
@@ -380,7 +387,10 @@ class JellyfinScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun noTmdbIdsPromoted() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedInNoTmdb, Actions()) }
+    fun noTmdbIdsPromoted() =
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            JellyfinRoot(previewSignedInNoTmdb, Actions())
+        }
 
     /** The card before its figures arrive: a placeholder in each, and no Connected. */
     @PreviewTest
@@ -497,14 +507,19 @@ class JellyfinScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinSpanishPreviews
     @Composable
-    fun signedInPromoted() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { JellyfinRoot(previewSignedIn, Actions()) }
+    fun signedInPromoted() =
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            JellyfinRoot(previewSignedIn, Actions())
+        }
 
     /** With the Binge flag on, signing out says what Binge stops doing. */
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun signOutConfirmPromoted() =
-        CompositionLocalProvider(LocalFlags provides Flags.AllOn) { Surface { SignOutConfirm(Actions(), inWindow = false) } }
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            Surface { SignOutConfirm(Actions(), inWindow = false) }
+        }
 
     // Forgot password: each step of the reset.
 

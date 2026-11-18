@@ -63,6 +63,7 @@ import com.binge.designsystem.tv.theme.TvButtonStyle
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.feedback.installBugReportUrl
 import com.cooper.homelab.ephyra.flags.LocalFlags
+import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.server.ForgotPasswordAction
 import com.cooper.homelab.ephyra.server.JellyfinVersion
 import com.cooper.homelab.ephyra.ui.Actions
