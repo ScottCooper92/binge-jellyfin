@@ -2,6 +2,7 @@ package com.cooper.binge.companion.jellyfin.ui
 
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.kit.SecretCipher
@@ -27,6 +28,7 @@ import com.cooper.homelab.core.telemetry.Analytics
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -72,8 +74,11 @@ class JellyfinViewModelTest {
 
     @After
     fun close() {
-        // Cancels what the view models still have in flight, so none resumes on Main while it is reset.
+        // Cancels what the view models still have in flight and waits for it to end, so none resumes on Main while it is reset: a
+        // server call on the real IO thread can still be running when the stores are cleared, and clearing alone does not wait for it.
+        val jobs = viewModels.mapNotNull { it.viewModelScope.coroutineContext[Job] }
         stores.forEach { it.clear() }
+        runBlocking { withTimeout(TEARDOWN_MILLIS) { jobs.forEach { it.join() } } }
         connection.close()
         extraConnections.forEach { it.close() }
         jellyfin.close()
@@ -83,6 +88,9 @@ class JellyfinViewModelTest {
     private var found: List<DiscoveredServer> = emptyList()
 
     private val stores = mutableListOf<ViewModelStore>()
+
+    /** The view models a test made, so teardown can wait for the work each still has in flight. */
+    private val viewModels = mutableListOf<JellyfinViewModel>()
 
     private val reported = mutableListOf<Pair<String, Map<String, Any>>>()
 
@@ -119,6 +127,7 @@ class JellyfinViewModelTest {
     )
 
     private fun track(vm: JellyfinViewModel): JellyfinViewModel {
+        viewModels += vm
         val store = ViewModelStore().also { stores += it }
         return ViewModelProvider(store, viewModelFactory { initializer { vm } })[JellyfinViewModel::class.java]
     }
@@ -1438,3 +1447,6 @@ private const val PUBLIC_USERS =
 
 /** Nothing listens here, so a connection is refused at once. */
 private const val DEAD_PORT = "http://127.0.0.1:1/"
+
+/** How long teardown waits for a view model's cancelled work to end: a call on the fake server returns at once. */
+private const val TEARDOWN_MILLIS = 10_000L
