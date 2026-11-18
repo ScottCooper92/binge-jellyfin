@@ -28,6 +28,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -258,6 +259,33 @@ class SearchServerConfigTest {
         }
         // The user, the date format and a key this app does not know go back as they were read.
         assertEquals(before.filterKeys { it != NFO_PATH_SUBSTITUTION }, nfoHeld().filterKeys { it != NFO_PATH_SUBSTITUTION })
+        assertEquals(0, jellyfin.hits("/System/Configuration"))
+    }
+
+    private fun brandingHeld(): JsonObject = Json.parseToJsonElement(jellyfin.brandingConfiguration).jsonObject
+
+    @Test
+    fun `a splash screen flip lands in the branding and sends the splash image's location back`() {
+        jellyfin.brandingConfiguration =
+            """{"LoginDisclaimer":"hello","CustomCss":"a{}","SplashscreenEnabled":false,"SplashscreenLocation":"/config/splash.png"}"""
+        val before = brandingHeld()
+        val vm = made(SearchSwitchesViewModel(connection)).also { it.branding.start() }
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.branding.state.first { it is SearchConfigState.Ready } } }
+        vm.flip(SettingRows.SERVER_SPLASHSCREEN, true)
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (!brandingHeld().getValue("SplashscreenEnabled").jsonPrimitive.boolean) delay(POLL_MILLIS)
+            }
+        }
+        assertEquals(before.filterKeys { it != "SplashscreenEnabled" }, brandingHeld().filterKeys { it != "SplashscreenEnabled" })
+        // What the server kept is not proof the search sent it: the body it posted carries the location itself.
+        val posted = jellyfin.requests.last { it.method == "POST" && it.url.encodedPath == "/System/Configuration/branding" }
+        assertTrue(
+            posted.body
+                ?.utf8()
+                .orEmpty()
+                .contains("\"SplashscreenLocation\":\"/config/splash.png\""),
+        )
         assertEquals(0, jellyfin.hits("/System/Configuration"))
     }
 

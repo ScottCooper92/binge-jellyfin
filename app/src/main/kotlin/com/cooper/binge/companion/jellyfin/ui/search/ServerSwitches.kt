@@ -141,8 +141,7 @@ private val SERVER_AND_USER_SPECS: Map<String, SwitchSpec> =
  * each file may be the first one touched, and neither may read the other's value while it is still being made.
  */
 internal val SWITCH_SPECS: Map<String, SwitchSpec> by lazy {
-    SERVER_AND_USER_SPECS + ENCODING_SPECS + NETWORK_SPECS + LIVE_TV_SPECS +
-        NFO_SPECS
+    SERVER_AND_USER_SPECS + ENCODING_SPECS + NETWORK_SPECS + LIVE_TV_SPECS + NFO_SPECS + BRANDING_SPECS
 }
 
 /** The search's switches over one view model, made when the first one is shown. [onModel] tells the route which one there is. */
@@ -216,6 +215,7 @@ internal fun SearchServerMessages(
     CopyMessages(model.network, host)
     CopyMessages(model.liveTv, host)
     CopyMessages(model.nfo, host)
+    CopyMessages(model.branding, host)
 }
 
 @Composable

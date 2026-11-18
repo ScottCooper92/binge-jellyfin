@@ -84,6 +84,8 @@ class ServerSwitchesTest {
 
     private val nfoRows = listOf(NFO_SAVE_IMAGE_PATHS, NFO_PATH_SUBSTITUTION, NFO_EXTRA_THUMBS).map { SettingRows.nfo(it) }
 
+    private val brandingRows = listOf(SettingRows.SERVER_SPLASHSCREEN)
+
     private val encodingRows =
         listOf(
             ENCODING_DECODE_HEVC_10,
@@ -149,13 +151,37 @@ class ServerSwitchesTest {
 
     @Test
     fun `every switch row has a spec, in the configuration its page saves to`() {
-        assertEquals((userRows + serverRows + encodingRows + networkRows + liveTvRows + nfoRows).toSet(), SWITCH_SPECS.keys)
+        assertEquals((userRows + serverRows + encodingRows + networkRows + liveTvRows + nfoRows + brandingRows).toSet(), SWITCH_SPECS.keys)
         assertTrue(userRows.all { spec(it).kind == ConfigKind.User })
         assertTrue(serverRows.all { spec(it).kind == ConfigKind.Server })
         assertTrue(encodingRows.all { spec(it).kind == ConfigKind.Encoding })
         assertTrue(networkRows.all { spec(it).kind == ConfigKind.Network })
         assertTrue(liveTvRows.all { spec(it).kind == ConfigKind.LiveTv })
         assertTrue(nfoRows.all { spec(it).kind == ConfigKind.Nfo })
+        assertTrue(brandingRows.all { spec(it).kind == ConfigKind.Branding })
+    }
+
+    @Test
+    fun `the splash screen switch reads as the page does, which draws it whether or not the key was sent`() {
+        val splash = spec(SettingRows.SERVER_SPLASHSCREEN)
+        assertFalse(splash.read(buildJsonObject { })!!)
+        assertTrue(splash.read(buildJsonObject { put("SplashscreenEnabled", true) })!!)
+        assertFalse(splash.read(buildJsonObject { put("SplashscreenEnabled", false) })!!)
+    }
+
+    @Test
+    fun `the splash screen switch is offered only where the server serves the splash image's location`() {
+        // Before 10.11 any branding save drops the image an administrator set elsewhere, so a flip from the search would lose it unsaid.
+        val splash = spec(SettingRows.SERVER_SPLASHSCREEN)
+        assertTrue(splash.gate(JellyfinServerProfile.from("10.11.6")))
+        listOf("10.10.7", "10.9.11", "10.8.13").forEach { assertFalse(it, splash.gate(JellyfinServerProfile.from(it))) }
+    }
+
+    @Test
+    fun `the splash screen switch makes a change to its own key`() {
+        val change = spec(SettingRows.SERVER_SPLASHSCREEN).change(true)
+        assertEquals("SplashscreenEnabled", change.id)
+        assertEquals("SplashscreenEnabled" to JsonPrimitive(true), change.apply(buildJsonObject { }))
     }
 
     @Test
