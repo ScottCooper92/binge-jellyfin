@@ -724,6 +724,10 @@
         <item quantity="many">%1$d líneas</item>
         <item quantity="other">%1$d líneas</item>
     </plurals>
+    <string name="take_back_description">Sin cifrar. Dejar de confiar en esta dirección</string>
+    <string name="take_back_title">¿Dejar de confiar en esta dirección?</string>
+    <string name="take_back_body">Esto cierra tu sesión en este servidor. Su dirección, %1$s, no está cifrada, así que cualquiera que esté en la red entre este dispositivo y el servidor puede leer lo que se envía, incluido tu inicio de sesión. Para volver a usarlo, tendrás que aceptarlo de nuevo en el paso del servidor.</string>
+    <string name="take_back_confirm">Dejar de confiar y cerrar sesión</string>
     <string name="sign_out_body_plain">Tendrás que volver a iniciar sesión para gestionar tu servidor desde esta app.</string>
     <string name="languages_body_plain">Jellyfin los usa para elegir el audio y los subtítulos cuando reproduces algo.</string>
     <string name="api_keys_title">Claves de API</string>

@@ -1105,6 +1105,10 @@ app:subtitle_mode_none  ca7981b46ecf
 app:subtitle_mode_none_detail  1547386ff931
 app:subtitle_mode_smart  9e6ad6db21db
 app:subtitle_mode_smart_detail  319b67f1f5af
+app:take_back_body  cfd651daa350
+app:take_back_confirm  77d27e0dd2c7
+app:take_back_description  a7d6f682ccd5
+app:take_back_title  722fa36b9799
 app:tasks_empty  cbb850a0f5d7
 app:tasks_intro  7f3ac68bb5de
 app:tasks_not_sent  ca0afa8ce6b6
