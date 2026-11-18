@@ -54,6 +54,9 @@ import com.cooper.binge.companion.jellyfin.ui.console.LogsUiState
 import com.cooper.binge.companion.jellyfin.ui.console.NetworkActions
 import com.cooper.binge.companion.jellyfin.ui.console.NetworkScreen
 import com.cooper.binge.companion.jellyfin.ui.console.NetworkUiState
+import com.cooper.binge.companion.jellyfin.ui.console.NfoActions
+import com.cooper.binge.companion.jellyfin.ui.console.NfoScreen
+import com.cooper.binge.companion.jellyfin.ui.console.NfoUiState
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackActions
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackScreen
 import com.cooper.binge.companion.jellyfin.ui.console.PlaybackUiState
@@ -171,6 +174,9 @@ class SettingRowKeysTest {
                             )
                         }
                 LiveTvRecordingScreen(LiveTvRecordingUiState.Ready(config), LiveTvRecordingActions())
+            },
+            ConsolePage.Nfo to {
+                NfoScreen(NfoUiState.Ready(Json.parseToJsonElement(fixtures.nfoConfiguration).jsonObject), NfoActions())
             },
             ConsolePage.Trickplay to {
                 TrickplayScreen(TrickplayUiState.Ready(TrickplaySettings()), TrickplayActions())

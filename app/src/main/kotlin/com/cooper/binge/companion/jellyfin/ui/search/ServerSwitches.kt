@@ -140,7 +140,10 @@ private val SERVER_AND_USER_SPECS: Map<String, SwitchSpec> =
  * Every switch a result can carry, by the row of its setting. Made on first use: the encoding file calls [topLevel] from here, so
  * each file may be the first one touched, and neither may read the other's value while it is still being made.
  */
-internal val SWITCH_SPECS: Map<String, SwitchSpec> by lazy { SERVER_AND_USER_SPECS + ENCODING_SPECS + NETWORK_SPECS + LIVE_TV_SPECS }
+internal val SWITCH_SPECS: Map<String, SwitchSpec> by lazy {
+    SERVER_AND_USER_SPECS + ENCODING_SPECS + NETWORK_SPECS + LIVE_TV_SPECS +
+        NFO_SPECS
+}
 
 /** The search's switches over one view model, made when the first one is shown. [onModel] tells the route which one there is. */
 @Composable
@@ -212,6 +215,7 @@ internal fun SearchServerMessages(
     CopyMessages(model.encoding, host)
     CopyMessages(model.network, host)
     CopyMessages(model.liveTv, host)
+    CopyMessages(model.nfo, host)
 }
 
 @Composable

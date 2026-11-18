@@ -31,6 +31,9 @@ import com.cooper.binge.companion.jellyfin.server.NETWORK_AUTO_DISCOVERY
 import com.cooper.binge.companion.jellyfin.server.NETWORK_IGNORE_VIRTUAL
 import com.cooper.binge.companion.jellyfin.server.NETWORK_PUBLISHED_BY_REQUEST
 import com.cooper.binge.companion.jellyfin.server.NETWORK_UPNP
+import com.cooper.binge.companion.jellyfin.server.NFO_EXTRA_THUMBS
+import com.cooper.binge.companion.jellyfin.server.NFO_PATH_SUBSTITUTION
+import com.cooper.binge.companion.jellyfin.server.NFO_SAVE_IMAGE_PATHS
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
 import kotlinx.serialization.json.Json
@@ -78,6 +81,8 @@ class ServerSwitchesTest {
 
     private val liveTvRows =
         listOf(LIVE_TV_SUBFOLDERS, LIVE_TV_ORIGINAL_AUDIO, LIVE_TV_SAVE_NFO, LIVE_TV_SAVE_IMAGES).map { SettingRows.liveTv(it) }
+
+    private val nfoRows = listOf(NFO_SAVE_IMAGE_PATHS, NFO_PATH_SUBSTITUTION, NFO_EXTRA_THUMBS).map { SettingRows.nfo(it) }
 
     private val encodingRows =
         listOf(
@@ -144,12 +149,29 @@ class ServerSwitchesTest {
 
     @Test
     fun `every switch row has a spec, in the configuration its page saves to`() {
-        assertEquals((userRows + serverRows + encodingRows + networkRows + liveTvRows).toSet(), SWITCH_SPECS.keys)
+        assertEquals((userRows + serverRows + encodingRows + networkRows + liveTvRows + nfoRows).toSet(), SWITCH_SPECS.keys)
         assertTrue(userRows.all { spec(it).kind == ConfigKind.User })
         assertTrue(serverRows.all { spec(it).kind == ConfigKind.Server })
         assertTrue(encodingRows.all { spec(it).kind == ConfigKind.Encoding })
         assertTrue(networkRows.all { spec(it).kind == ConfigKind.Network })
         assertTrue(liveTvRows.all { spec(it).kind == ConfigKind.LiveTv })
+        assertTrue(nfoRows.all { spec(it).kind == ConfigKind.Nfo })
+    }
+
+    @Test
+    fun `an NFO switch reads its own key and none where the server did not send it`() {
+        val on = buildJsonObject { nfoRows.forEach { put(it.removePrefix("nfo."), true) } }
+        nfoRows.forEach { assertTrue(it, spec(it).read(on)!!) }
+        val off = buildJsonObject { nfoRows.forEach { put(it.removePrefix("nfo."), false) } }
+        nfoRows.forEach { assertFalse(it, spec(it).read(off)!!) }
+        nfoRows.forEach { assertNull(it, spec(it).read(buildJsonObject { put("ReleaseDateFormat", "yyyy-MM-dd") })) }
+    }
+
+    @Test
+    fun `an NFO switch makes a change to its own key`() {
+        val change = spec(SettingRows.nfo(NFO_PATH_SUBSTITUTION)).change(false)
+        assertEquals(NFO_PATH_SUBSTITUTION, change.id)
+        assertEquals(NFO_PATH_SUBSTITUTION to JsonPrimitive(false), change.apply(buildJsonObject { }))
     }
 
     @Test

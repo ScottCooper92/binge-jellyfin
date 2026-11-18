@@ -6,9 +6,11 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.encodingConfiguration
 import com.cooper.binge.companion.jellyfin.server.liveTvConfiguration
 import com.cooper.binge.companion.jellyfin.server.networkConfiguration
+import com.cooper.binge.companion.jellyfin.server.nfoConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveEncodingConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveLiveTvConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveNetworkConfiguration
+import com.cooper.binge.companion.jellyfin.server.saveNfoConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
 import com.cooper.binge.companion.jellyfin.server.serverConfiguration
 import com.cooper.binge.companion.jellyfin.server.userConfiguration
@@ -29,6 +31,9 @@ enum class ConfigKind {
 
     /** The server's Live TV configuration: the recording switches. For an administrator who manages Live TV. */
     LiveTv,
+
+    /** The server's NFO configuration: the switches that save as made. For an administrator. */
+    Nfo,
 }
 
 /**
@@ -77,7 +82,16 @@ class SearchSwitchesViewModel(
             { _, client, json -> client.saveLiveTvConfiguration(json) },
         )
 
-    private val copies = listOf(user, server, encoding, network, liveTv)
+    val nfo =
+        SearchConfigCopy(
+            connection,
+            viewModelScope,
+            "JellyfinSearchNfoConfig",
+            { it.nfoConfiguration() },
+            { _, client, json -> client.saveNfoConfiguration(json) },
+        )
+
+    private val copies = listOf(user, server, encoding, network, liveTv, nfo)
 
     fun copy(kind: ConfigKind): SearchConfigCopy =
         when (kind) {
@@ -86,6 +100,7 @@ class SearchSwitchesViewModel(
             ConfigKind.Encoding -> encoding
             ConfigKind.Network -> network
             ConfigKind.LiveTv -> liveTv
+            ConfigKind.Nfo -> nfo
         }
 
     /** Reads again each copy that has been read before, once, as the search comes to the front. A copy nothing has asked for stays unread. */
