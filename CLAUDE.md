@@ -238,7 +238,8 @@ as binge-seerr's TV is.
 - Two modules. `:data` holds the Jellyfin client (`server/`), the session stores (`auth/`) and the demo (`demo/`): no Compose, no Activity types, no vendor SDK, nothing from `ui/`. `:app` holds everything else and depends on it. Packages keep their names across the split, so a package is not a module: `data/src/main/kotlin/…/server/` is where `server/` is. `internal` means inside `:data`, so what `:app` calls is public. Tests are JUnit 4; `:data`'s tests, and the helpers both modules' tests share (the fake Jellyfin server, `PlainCipher`, `testSessionStore`, `DiscardLogger`), live in `:data`, as `testFixtures`.
 - No DI framework: `AppGraph` builds the handful of objects by hand, and `JellyfinApp` holds it.
 - A Robolectric test needs no `@Config` for the SDK: `app/src/test/resources/robolectric.properties`
-  pins `sdk=34`, and `:data` carries the same file.
+  pins `sdk=34` and a plain `Application` for the whole module. `:data` carries its own copy of the file, and its own
+  `RobolectricDefaultsTest` asserts it, so each module has its own pin.
 - `runCatching` is banned in `src/main` by detekt. Use the SDK's `attempt`
   (`com.binge.companion.sdk`): `runCatching` also catches the cancellation a cancelled scope sends.
 - Every user-visible string comes from `strings.xml`, with its Spanish in `values-es`. The default
