@@ -1,0 +1,224 @@
+package com.cooper.homelab.ephyra.ui.console
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.LiveTv
+import androidx.compose.material.icons.outlined.PlaylistAdd
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import com.binge.designsystem.component.BingeAdaptiveSheet
+import com.binge.designsystem.component.BingeSheetKind
+import com.binge.designsystem.component.ItemGroup
+import com.binge.designsystem.component.ListItem
+import com.cooper.homelab.ephyra.R
+import com.cooper.homelab.ephyra.server.GUIDE_TYPE_SCHEDULES_DIRECT
+import com.binge.designsystem.R as DesR
+
+/** The guide form, or the choice of what to add, over the Live TV page, in a window. */
+@Composable
+internal fun GuideSheet(
+    state: GuideUiState,
+    actions: LiveTvGuideActions,
+    canFinishSetup: Boolean = true,
+) {
+    if (!state.choosing && state.form == null) return
+    // A new guide's form is a page over the choice it came from, so Back returns to the choice; a form opened from the page's own
+    // row has none under it. A scrim tap or a drag closes the whole sheet.
+    val fromChoice = rememberSaveable { state.choosing }
+    BingeAdaptiveSheet(
+        kind = BingeSheetKind.Task,
+        onDismissRequest = {
+            actions.onDismissChoice()
+            actions.onDismissForm()
+        },
+        root = if (fromChoice) CHOICE_PAGE else FORM_PAGE,
+        onPageBack = { actions.onBackToChoice() },
+        stackPagesWhenCompact = true,
+    ) { nav ->
+        if (nav.page == CHOICE_PAGE) {
+            ChooseGuideContent(
+                actions.copy(
+                    onAddXmlTv = {
+                        actions.onAddXmlTv()
+                        nav.push(FORM_PAGE)
+                    },
+                ),
+            )
+        } else {
+            state.form?.let { GuideFormContent(it, state.saving, actions, canFinishSetup) }
+        }
+    }
+}
+
+private const val CHOICE_PAGE = "choice"
+private const val FORM_PAGE = "form"
+
+/** What to add: an XMLTV guide, or a Schedules Direct account. Only offered where the user may read lineups. */
+@Composable
+internal fun ChooseGuideContent(actions: LiveTvGuideActions) {
+    Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s))) {
+        Column(Modifier.padding(dimensionResource(DesR.dimen.padding_m))) {
+            Text(
+                text = stringResource(R.string.live_tv_guide_add),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.live_tv_guide_choose_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        ConsoleSheetGroup(
+            title = null,
+            rows =
+                listOf(
+                    ListItem(
+                        icon = Icons.Outlined.Description,
+                        label = stringResource(R.string.live_tv_type_xmltv),
+                        detail = stringResource(R.string.live_tv_guide_add_detail),
+                        supportingMaxLines = CHOICE_LINES,
+                        onClick = actions.onAddXmlTv,
+                    ),
+                    ListItem(
+                        icon = Icons.Outlined.Dns,
+                        label = stringResource(R.string.live_tv_type_schedules_direct),
+                        detail = stringResource(R.string.live_tv_guide_sd_detail),
+                        supportingMaxLines = CHOICE_LINES,
+                        onClick = actions.onAddSchedulesDirect,
+                    ),
+                ),
+        )
+    }
+}
+
+private const val CHOICE_LINES = 3
+
+/** The guide form's body, which draws without a window for a frame. */
+@Composable
+internal fun GuideFormContent(
+    form: GuideForm,
+    saving: Boolean,
+    actions: LiveTvGuideActions,
+    canFinishSetup: Boolean = true,
+) {
+    val finishable = form.lineupPending && canFinishSetup
+    // A finished Schedules Direct account can have its lineup chosen again: the same location and lineup steps.
+    val isSchedulesDirect = form.type.equals(GUIDE_TYPE_SCHEDULES_DIRECT, ignoreCase = true)
+    val changeable = isSchedulesDirect && !form.lineupPending && canFinishSetup
+    var path by rememberSaveable(form) { mutableStateOf(form.path) }
+    ConsoleFieldsForm(
+        title = stringResource(if (form.id == null) R.string.live_tv_guide_form_add else R.string.live_tv_guide_form_edit),
+        body =
+            stringResource(
+                when {
+                    form.isXmlTv -> R.string.live_tv_guide_path_detail
+                    finishable -> R.string.live_tv_guide_pending_detail
+                    changeable -> R.string.live_tv_guide_sd_set_detail
+                    form.lineupPending -> R.string.live_tv_guide_pending_locked_detail
+                    else -> R.string.live_tv_guide_other_detail
+                },
+            ),
+        submitLabel =
+            stringResource(
+                when {
+                    !form.isXmlTv -> R.string.live_tv_guide_close
+                    form.id == null -> R.string.live_tv_guide_add_submit
+                    else -> R.string.library_save
+                },
+            ),
+        onSubmit = { if (form.isXmlTv) actions.onSave(form.copy(path = path)) else actions.onDismissForm() },
+        onCancel = actions.onDismissForm,
+        submitting = saving,
+    ) {
+        if (form.isXmlTv) {
+            ConsoleTextField(
+                value = path,
+                onValueChange = { path = it },
+                label = stringResource(R.string.live_tv_guide_path),
+                enabled = !saving,
+                keyboardType = KeyboardType.Uri,
+            )
+        }
+        if (form.id != null) {
+            ItemGroup(
+                title = null,
+                rows =
+                    listOfNotNull(
+                        ListItem(
+                            icon = Icons.Outlined.PlaylistAdd,
+                            label = stringResource(R.string.live_tv_guide_finish),
+                            onClick = { actions.onFinishSetup(form.id) },
+                        ).takeIf { finishable },
+                        ListItem(
+                            icon = Icons.Outlined.Key,
+                            label = stringResource(R.string.live_tv_guide_change_login),
+                            onClick = { actions.onChangeLogin(form.id, form.name) },
+                        ).takeIf { isSchedulesDirect },
+                        ListItem(
+                            icon = Icons.Outlined.Dns,
+                            label = stringResource(R.string.live_tv_guide_change_lineup),
+                            onClick = { actions.onChangeLineup(form.id) },
+                        ).takeIf { changeable },
+                        actions.onChannelMappings?.let { open ->
+                            ListItem(
+                                icon = Icons.Outlined.LiveTv,
+                                label = stringResource(R.string.live_tv_guide_channel_mappings),
+                                onClick = { open(form.id) },
+                            ).takeIf { !form.lineupPending }
+                        },
+                        ListItem(
+                            icon = Icons.Outlined.Delete,
+                            iconTint = MaterialTheme.colorScheme.error,
+                            label = stringResource(R.string.live_tv_guide_remove),
+                            onClick = { actions.onAskRemove(form) },
+                        ),
+                    ),
+            )
+        }
+    }
+}
+
+/** What a guide change says: the remove confirm, a dialog for a provider the server would not keep, and the queued refresh. */
+@Composable
+internal fun GuideMessages(
+    state: GuideUiState,
+    actions: LiveTvGuideActions,
+    host: SnackbarHostState,
+) {
+    RefusedMessage(state.failed, host, R.string.live_tv_guide_not_changed)
+    SnackbarMessage(if (state.queued) stringResource(R.string.live_tv_guide_queued) else null, host)
+    if (state.problem == GuideProblem.NotSaved) {
+        ConsoleMessage(
+            title = stringResource(R.string.live_tv_guide_not_saved_title),
+            message = stringResource(R.string.live_tv_guide_not_saved_body),
+            onDismiss = actions.onDismissProblem,
+        )
+    }
+    state.removing?.let { guide ->
+        ConsoleConfirm(
+            title = stringResource(R.string.live_tv_guide_remove_title),
+            message = stringResource(R.string.live_tv_guide_remove_message, guide.name),
+            confirmLabel = stringResource(R.string.live_tv_guide_remove_confirm),
+            onConfirm = actions.onRemove,
+            onDismissRequest = actions.onCancelRemove,
+            destructive = true,
+        )
+    }
+}

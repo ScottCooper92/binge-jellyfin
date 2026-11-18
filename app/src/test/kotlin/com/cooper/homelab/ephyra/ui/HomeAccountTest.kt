@@ -1,0 +1,180 @@
+package com.cooper.homelab.ephyra.ui
+
+import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelected
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import com.binge.designsystem.LocalIsSinglePaneNav
+import com.binge.designsystem.PaneContent
+import com.binge.designsystem.PaneEdge
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.homelab.ephyra.auth.JellyfinSession
+import com.cooper.homelab.ephyra.server.JellyfinAccount
+import com.cooper.homelab.ephyra.theme.JellyfinTheme
+import com.cooper.homelab.ephyra.ui.console.ConsolePage
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+/** Where a user's own settings live: behind the avatar for an administrator, inline on the home for everyone else. */
+@RunWith(RobolectricTestRunner::class)
+class HomeAccountTest {
+    @get:Rule
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
+
+    private val session =
+        JellyfinSession("http://192.168.1.2:8096", "Living room", "a1", "10.11.6", "u1", "sam", "not-a-token")
+
+    private fun state(admin: Boolean) =
+        UiState.SignedIn(
+            session,
+            titles = null,
+            health = ConnectionHealth.Healthy,
+            account = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":$admin}""").jsonObject),
+        )
+
+    /** The home is a lazy list under the server card, so a row below the fold is scrolled to before it is looked for. */
+    private fun scrollTo(text: String) = compose.onNode(hasScrollAction()).performScrollToNode(hasText(text))
+
+    @Test
+    fun `an administrator's home has the avatar and the server's own sections, and none of the account's rows`() {
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions()) } }
+        compose.onNodeWithContentDescription("Your account").assertExists()
+        scrollTo("Libraries")
+        compose.onNodeWithText("Libraries").assertExists()
+        compose.onAllNodesWithText("Approve a sign-in code").assertCountEquals(0)
+        compose.onAllNodesWithText("Change password").assertCountEquals(0)
+        compose.onAllNodesWithText("Sign out").assertCountEquals(0)
+    }
+
+    private fun thisAppRowOpensItsPage(admin: Boolean) {
+        var opened: ConsolePage? = null
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin), Actions(onOpenPage = { opened = it })) } }
+        scrollTo("This app")
+        compose.onNodeWithText("Preferences, feedback and more").performClick()
+        assertEquals(ConsolePage.ThisApp, opened)
+    }
+
+    @Test
+    fun `an administrator's home has a This app row that opens the page`() = thisAppRowOpensItsPage(admin = true)
+
+    @Test
+    fun `a user's home has a This app row that opens the page`() = thisAppRowOpensItsPage(admin = false)
+
+    @Test
+    fun `the home starts with a search that opens the search page`() {
+        var opened: ConsolePage? = null
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions(onOpenPage = { opened = it })) } }
+        compose.onNodeWithText("Search settings").performClick()
+        assertEquals(ConsolePage.Search, opened)
+    }
+
+    @Test
+    fun `an administrator's home lists every section's pages, reached by scrolling`() {
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions()) } }
+        val pages =
+            listOf(
+                "Users",
+                "Libraries",
+                "Playback and transcoding",
+                "Activity",
+                "Scheduled tasks",
+                "Logs",
+                "Networking",
+                "API keys",
+            )
+        pages.forEach { name ->
+            scrollTo(name)
+            compose.onNodeWithText(name).assertExists()
+        }
+    }
+
+    @Test
+    fun `the avatar opens the account`() {
+        val opened = mutableListOf<ConsolePage>()
+        compose.setContent { JellyfinTheme { JellyfinRoot(state(admin = true), Actions(onOpenPage = { opened += it })) } }
+        compose.onNodeWithContentDescription("Your account").performClick()
+        assertEquals(listOf(ConsolePage.Account), opened)
+    }
+
+    @Test
+    fun `anyone else has the account's rows inline, Sign out last, and no avatar`() {
+        val asked = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme { JellyfinRoot(state(admin = false), Actions(onAskSignOut = { asked += "ask" })) }
+        }
+        compose.onAllNodesWithContentDescription("Your account").assertCountEquals(0)
+        scrollTo("Approve a sign-in code")
+        compose.onNodeWithText("Approve a sign-in code").assertExists()
+        scrollTo("Playback")
+        compose.onNodeWithText("Playback").assertExists()
+        scrollTo("Home screen")
+        compose.onNodeWithText("Home screen").assertExists()
+        compose.onAllNodesWithText("Libraries").assertCountEquals(0)
+        // The list is lazy: Sign out is its last item, so it is scrolled to, not just found.
+        scrollTo("Sign out")
+        compose.onNodeWithText("Sign out").performClick()
+        assertEquals(listOf("ask"), asked)
+    }
+
+    @Test
+    fun `the account page has the same rows, and Sign out asks first`() {
+        val calls = mutableListOf<String>()
+        val signedIn = state(admin = true)
+        compose.setContent {
+            JellyfinTheme {
+                AccountScreen(signedIn, Actions(onAskSignOut = { calls += "ask" }, onOpenPage = { calls += it.name }), onBack = {})
+            }
+        }
+        compose.onNodeWithText("Your account").assertExists()
+        compose.onNodeWithText("Playback").performClick()
+        // The list is lazy and the page is taller than the window, so Sign out is scrolled to, not looked for where it is not yet.
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Sign out"))
+        compose.onNodeWithText("Sign out").performClick()
+        assertEquals(listOf("Playback", "ask"), calls)
+    }
+
+    @Test
+    fun `the account page shows the sign-out confirm when it is asked`() {
+        compose.setContent { JellyfinTheme { AccountScreen(state(admin = true).copy(confirmingSignOut = true), Actions(), onBack = {}) } }
+        compose.onNodeWithText("Sign out of Jellyfin?").assertExists()
+    }
+
+    private fun homeBeside(
+        beside: Boolean,
+        selected: ConsolePage,
+    ) = compose.setContent {
+        JellyfinTheme {
+            CompositionLocalProvider(LocalIsSinglePaneNav provides !beside) {
+                PaneContent(innerEdge = PaneEdge.End) { JellyfinRoot(state(admin = true), Actions(selectedPage = selected)) }
+            }
+        }
+    }
+
+    @Test
+    fun `beside a page the home marks the page that is open`() {
+        homeBeside(beside = true, selected = ConsolePage.Logs)
+        scrollTo("Logs")
+        compose.onNode(hasText("Logs") and isSelected()).assertExists()
+        compose.onAllNodes(hasText("Tasks") and isSelected()).assertCountEquals(0)
+    }
+
+    @Test
+    fun `on its own the home marks nothing, whatever page is named`() {
+        homeBeside(beside = false, selected = ConsolePage.Logs)
+        scrollTo("Logs")
+        compose.onAllNodes(isSelected()).assertCountEquals(0)
+    }
+}

@@ -1,0 +1,1358 @@
+package com.cooper.homelab.ephyra.ui.console
+
+import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasProgressBarRangeInfo
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
+import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.homelab.ephyra.server.ActivityEntry
+import com.cooper.homelab.ephyra.server.ApiKey
+import com.cooper.homelab.ephyra.server.Branding
+import com.cooper.homelab.ephyra.server.CatalogPackage
+import com.cooper.homelab.ephyra.server.Culture
+import com.cooper.homelab.ephyra.server.DisplayList
+import com.cooper.homelab.ephyra.server.FetcherKind
+import com.cooper.homelab.ephyra.server.HomeLayout
+import com.cooper.homelab.ephyra.server.JellyfinServerProfile
+import com.cooper.homelab.ephyra.server.JellyfinVersion
+import com.cooper.homelab.ephyra.server.LIBRARY_SCAN_TASK
+import com.cooper.homelab.ephyra.server.LogFile
+import com.cooper.homelab.ephyra.server.NowPlaying
+import com.cooper.homelab.ephyra.server.PackageVersion
+import com.cooper.homelab.ephyra.server.PlayMethod
+import com.cooper.homelab.ephyra.server.PlaybackPreferences
+import com.cooper.homelab.ephyra.server.PluginRepository
+import com.cooper.homelab.ephyra.server.PluginStatus
+import com.cooper.homelab.ephyra.server.ServerDevice
+import com.cooper.homelab.ephyra.server.ServerInfo
+import com.cooper.homelab.ephyra.server.ServerLibrary
+import com.cooper.homelab.ephyra.server.ServerPlugin
+import com.cooper.homelab.ephyra.server.ServerSettings
+import com.cooper.homelab.ephyra.server.ServerTask
+import com.cooper.homelab.ephyra.server.ServerUser
+import com.cooper.homelab.ephyra.server.SessionControls
+import com.cooper.homelab.ephyra.server.Severity
+import com.cooper.homelab.ephyra.server.SubtitleMode
+import com.cooper.homelab.ephyra.server.TICKS_PER_HOUR
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
+import com.cooper.homelab.ephyra.server.TaskRun
+import com.cooper.homelab.ephyra.server.TaskStatus
+import com.cooper.homelab.ephyra.server.TaskTrigger
+import com.cooper.homelab.ephyra.server.TrickplaySettings
+import com.cooper.homelab.ephyra.server.TypeFetchers
+import com.cooper.homelab.ephyra.server.UserView
+import com.cooper.homelab.ephyra.server.parseLogEntries
+import com.cooper.homelab.ephyra.server.redactLog
+import com.cooper.homelab.ephyra.theme.JellyfinTheme
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowDialog
+
+/** The console's pages, driven as a user would: each tap reaches the action it should. */
+@RunWith(RobolectricTestRunner::class)
+class ConsoleScreensTest {
+    @get:Rule
+    val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
+
+    private val stream =
+        NowPlaying("tv", "Ana", "Living room", "Web", "Sintel", null, 1, 4, paused = true, PlayMethod.Transcode, listOf("AudioIsExternal"))
+
+    private val cultures = listOf(Culture("English", "en", listOf("eng")), Culture("French", "fr", listOf("fre", "fra")))
+
+    @Test
+    fun `now playing shows each stream, opens its page, and Stop asks before it stops`() {
+        val asked = mutableListOf<NowPlaying>()
+        val opened = mutableListOf<NowPlaying>()
+        var confirmed = false
+        val actions =
+            NowPlayingActions(onSelect = { opened += it }, onStop = { asked += it }, onConfirmStop = { confirmed = true })
+        val full = SessionControls(playPause = true, seek = true, skip = true, stop = true)
+        var state by mutableStateOf<NowPlayingUiState>(NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to full)))
+        var session by mutableStateOf(false)
+        compose.setContent {
+            JellyfinTheme {
+                if (session) {
+                    NowPlayingSessionScreen(
+                        state,
+                        stream.sessionId,
+                        actions,
+                    )
+                } else {
+                    NowPlayingScreen(state, administrator = false, actions, open = null)
+                }
+            }
+        }
+        compose.onNodeWithText("Sintel").assertExists()
+        compose.onNodeWithText("Transcoding: the device can't play the audio").assertExists()
+        compose.onNodeWithText("Sintel").performClick()
+        assertEquals(listOf(stream), opened)
+        session = true
+        compose.onNodeWithContentDescription("Play").assertExists()
+        compose.onNodeWithContentDescription("Back 10 seconds").assertExists()
+        compose.onNodeWithContentDescription("Next").assertExists()
+        compose.onNodeWithText("Stop").performClick()
+        assertEquals(listOf(stream), asked)
+        state =
+            NowPlayingUiState.Ready(
+                listOf(stream),
+                controls = mapOf(stream.sessionId to full),
+                confirming = stream,
+            )
+        compose.onNodeWithText("Stop Sintel?").assertExists()
+        compose.onAllNodesWithText("Stop")[1].performClick()
+        assertEquals(true, confirmed)
+    }
+
+    @Test
+    fun `a session page draws only the controls the user has`() {
+        val some = SessionControls(playPause = true, seek = false, skip = false, stop = false)
+        val state =
+            NowPlayingUiState.Ready(listOf(stream), controls = mapOf(stream.sessionId to some))
+        compose.setContent { JellyfinTheme { NowPlayingSessionScreen(state, stream.sessionId, NowPlayingActions()) } }
+        compose.onNodeWithContentDescription("Play").assertExists()
+        compose.onNodeWithContentDescription("Back 10 seconds").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Next").assertDoesNotExist()
+        compose.onNodeWithText("Stop").assertDoesNotExist()
+    }
+
+    @Test
+    fun `now playing with nothing playing says so, and a failed read offers Try again`() {
+        var retried = false
+        var state by mutableStateOf<NowPlayingUiState>(NowPlayingUiState.Ready(emptyList()))
+        compose.setContent {
+            JellyfinTheme {
+                NowPlayingScreen(
+                    state,
+                    administrator = true,
+                    NowPlayingActions(onRetry = { retried = true }),
+                )
+            }
+        }
+        compose.onNodeWithText("Nothing's playing right now.").assertExists()
+        compose.onNodeWithText("Everyone streaming from this server, as it happens.").assertExists()
+        state = NowPlayingUiState.Failed(ConsoleFailure.Unreachable)
+        compose.onNodeWithText("Try again").performClick()
+        assertEquals(true, retried)
+    }
+
+    @Test
+    fun `each direct method reads as itself`() {
+        val streams =
+            listOf(
+                stream.copy(sessionId = "a", method = PlayMethod.DirectPlay),
+                stream.copy(sessionId = "b", method = PlayMethod.DirectStream),
+            )
+        compose.setContent {
+            JellyfinTheme {
+                NowPlayingScreen(
+                    NowPlayingUiState.Ready(streams),
+                    administrator = true,
+                    NowPlayingActions(),
+                )
+            }
+        }
+        compose.onNodeWithText("Direct play: the file as it is").assertExists()
+        compose.onNodeWithText("Direct stream: repackaged, not re-encoded").assertExists()
+    }
+
+    @Test
+    fun `a language row opens its sheet, and a pick reaches the action`() {
+        val audio = mutableListOf<String>()
+        val modes = mutableListOf<SubtitleMode>()
+        val state = PlaybackUiState.Ready(PlaybackPreferences("eng", "", SubtitleMode.Default), cultures)
+        compose.setContent {
+            JellyfinTheme { PlaybackScreen(state, PlaybackActions(onAudio = { audio += it }, onSubtitleMode = { modes += it })) }
+        }
+        compose.onNodeWithText("Any language").assertExists()
+        compose.onNodeWithText("Audio language").performClick()
+        compose.onNodeWithText("French").performClick()
+        assertEquals(listOf("fre"), audio)
+        compose.onNodeWithText("Subtitle mode").performScrollTo().performClick()
+        compose.onNodeWithText("Always").performClick()
+        assertEquals(listOf(SubtitleMode.Always), modes)
+    }
+
+    @Test
+    fun `a playback switch hands its new value to the action`() {
+        val switched = mutableListOf<String>()
+        val state = PlaybackUiState.Ready(PlaybackPreferences("eng", "", SubtitleMode.Default, autoplayNextEpisode = false), cultures)
+        val actions =
+            PlaybackActions(
+                onPlayDefaultAudioTrack = { switched += "default:$it" },
+                onRememberAudio = { switched += "audio:$it" },
+                onRememberSubtitles = { switched += "subtitles:$it" },
+                onAutoplayNextEpisode = { switched += "next:$it" },
+            )
+        compose.setContent { JellyfinTheme { PlaybackScreen(state, actions) } }
+        compose.onNodeWithText("Play the default track").performClick()
+        compose.onNodeWithText("Remember my audio choice").performClick()
+        compose.onNodeWithText("Remember my subtitle choice").performScrollTo().performClick()
+        compose.onNodeWithText("Play the next episode automatically").performScrollTo().performClick()
+        assertEquals(listOf("default:false", "audio:false", "subtitles:false", "next:true"), switched)
+    }
+
+    private val homeViews = listOf(UserView("a", "Movies", "movies"), UserView("b", "Shows", "tvshows"))
+    private val homeList = HomeLayoutUiState.Ready(homeViews, HomeLayout(latestExcludes = setOf("b")))
+
+    @Test
+    fun `the home screen page lists the libraries and opens one on a tap`() {
+        val calls = mutableListOf<String>()
+        compose.setContent { JellyfinTheme { HomeLayoutScreen(homeList, HomeLayoutActions(onOpen = { calls += "open:$it" })) } }
+        compose.onNodeWithText("In My Media and Latest").assertExists()
+        compose.onNodeWithText("In My Media").assertExists()
+        compose.onNodeWithText("Shows").performClick()
+        assertEquals(listOf("open:b"), calls)
+    }
+
+    @Test
+    fun `a library's screen hands its changes on`() {
+        val calls = mutableListOf<String>()
+        val actions =
+            HomeLayoutActions(
+                onInMyMedia = { id, on -> calls += "media:$id:$on" },
+                onInLatest = { id, on -> calls += "latest:$id:$on" },
+                onMove = { id, by -> calls += "move:$id:$by" },
+                onBack = { calls += "back" },
+            )
+        compose.setContent { JellyfinTheme { HomeLayoutLibraryScreen(homeList, "b", actions) } }
+        compose.onNodeWithText("Show in Latest").performClick()
+        compose.onNodeWithText("Show in My Media").performClick()
+        compose.onNodeWithText("Group with other libraries").assertDoesNotExist()
+        compose.onNodeWithText("Move down").assertIsNotEnabled()
+        compose.onNodeWithText("Move up").performClick()
+        assertEquals(listOf("latest:b:true", "media:b:false", "move:b:-1"), calls)
+    }
+
+    @Test
+    fun `a library the server no longer lists closes its screen`() {
+        var closed = 0
+        compose.setContent { JellyfinTheme { HomeLayoutLibraryScreen(homeList, "gone", HomeLayoutActions(onBack = { closed++ })) } }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    private val displayReady =
+        LibraryDisplayUiState.Ready(
+            JsonObject(mapOf("SortRemoveWords" to JsonArray(listOf(JsonPrimitive("the"), JsonPrimitive("a"))))),
+        )
+
+    @Test
+    fun `the library display page opens a list's editor on a tap`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                LibraryDisplayScreen(
+                    displayReady,
+                    LibraryDisplayActions(onEdit = { calls += "edit:${it.name}" }),
+                    JellyfinServerProfile.from("10.11.6"),
+                    openList = null,
+                )
+            }
+        }
+        compose.onNodeWithText("Words ignored when sorting").performScrollTo().performClick()
+        assertEquals(listOf("edit:RemoveWords"), calls)
+    }
+
+    @Test
+    fun `a list's editor removes the entry it is asked to, from its own list`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                LibraryDisplayListScreen(
+                    displayReady,
+                    DisplayList.RemoveWords,
+                    LibraryDisplayActions(onRemove = { list, index -> calls += "remove:${list.name}:$index" }),
+                )
+            }
+        }
+        compose.onNodeWithText("the").assertExists()
+        compose.onAllNodesWithContentDescription("Remove")[1].performClick()
+        assertEquals(listOf("remove:RemoveWords:1"), calls)
+    }
+
+    private val metadataReady =
+        MetadataDefaultsUiState.Ready(
+            JsonObject(emptyMap()),
+            listOf(TypeFetchers("Series", listOf("TheTVDB", "TheMovieDb"), listOf("TheTVDB"))),
+        )
+
+    @Test
+    fun `the metadata page opens a type on a tap, and a type's screen opens a provider`() {
+        val calls = mutableListOf<String>()
+        val actions =
+            MetadataDefaultsActions(
+                onOpen = { calls += "type:$it" },
+                onOpenFetcher = { type, fetcher -> calls += "fetcher:$type:${fetcher.kind}:${fetcher.name}" },
+            )
+        compose.setContent { JellyfinTheme { MetadataDefaultsScreen(metadataReady, actions, open = null) } }
+        compose.onNodeWithText("Series").performClick()
+        assertEquals(listOf("type:Series"), calls)
+    }
+
+    @Test
+    fun `a type's screen opens a provider`() {
+        val calls = mutableListOf<String>()
+        val actions = MetadataDefaultsActions(onOpenFetcher = { type, fetcher -> calls += "fetcher:$type:${fetcher.kind}:${fetcher.name}" })
+        compose.setContent { JellyfinTheme { MetadataTypeScreen(metadataReady, "Series", actions) } }
+        compose.onAllNodesWithText("TheTVDB")[0].performClick()
+        assertEquals(listOf("fetcher:Series:Metadata:TheTVDB"), calls)
+    }
+
+    @Test
+    fun `a provider the server no longer offers closes its screen`() {
+        var closed = 0
+        compose.setContent {
+            JellyfinTheme {
+                MetadataFetcherScreen(
+                    metadataReady,
+                    "Series",
+                    OpenFetcher(FetcherKind.Metadata, "Gone"),
+                    MetadataDefaultsActions(onBack = { closed++ }),
+                )
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `a grouped library keeps its switch on the main page, though it has left the list`() {
+        val calls = mutableListOf<String>()
+        val state =
+            HomeLayoutUiState.Ready(
+                listOf(UserView("a", "Movies", "movies")),
+                HomeLayout(grouped = setOf("b")),
+                groupable = listOf(UserView("b", "Mixed")),
+            )
+        compose.setContent { JellyfinTheme { HomeLayoutScreen(state, HomeLayoutActions(onGrouped = { id, on -> calls += "$id:$on" })) } }
+        compose.onNodeWithText("Mixed").performScrollTo().performClick()
+        assertEquals(listOf("b:false"), calls)
+    }
+
+    @Test
+    fun `the server settings page hands its switches and dialogs on, and hides the splash screen before 10_9`() {
+        val calls = mutableListOf<String>()
+        val state = ServerSettingsUiState.Ready(ServerSettings("truenas", "en", "GB"), Branding())
+        val actions =
+            ServerSettingsActions(
+                onEdit = { calls += "edit:$it" },
+                onQuickConnect = { calls += "qc:$it" },
+                onSplashscreen = { calls += "splash:$it" },
+            )
+        var splash by mutableStateOf(true)
+        compose.setContent { JellyfinTheme { ServerSettingsScreen(state, actions, splashscreenAvailable = splash) } }
+        compose.onNodeWithText("Server name").performClick()
+        compose.onNodeWithText("Quick Connect").performScrollTo().performClick()
+        compose.onNodeWithText("Login disclaimer").performScrollTo().performClick()
+        compose.onNodeWithText("Splash screen").performScrollTo().performClick()
+        assertEquals(listOf("edit:Name", "qc:false", "edit:LoginDisclaimer", "splash:true"), calls)
+        splash = false
+        compose.onNodeWithText("Splash screen").assertDoesNotExist()
+    }
+
+    @Test
+    fun `before 10_11 the splash image row is left out and a note says a branding save resets an image from another app`() {
+        val state = ServerSettingsUiState.Ready(ServerSettings("truenas", "en", "GB"), Branding(splashscreen = true))
+        var known by mutableStateOf(false)
+        compose.setContent { JellyfinTheme { ServerSettingsScreen(state, ServerSettingsActions(), splashImageKnown = known) } }
+        compose.onNodeWithText("Splash screen").performScrollTo().assertExists()
+        compose.onNodeWithText("Splash image").assertDoesNotExist()
+        compose.onNodeWithText("Saving here resets a custom splash image", substring = true).performScrollTo().assertExists()
+        known = true
+        compose.onNodeWithText("Splash image").performScrollTo().assertExists()
+        compose.onNodeWithText("Saving here resets a custom splash image", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a server with no splash screen at all shows neither the image row nor the note`() {
+        val state = ServerSettingsUiState.Ready(ServerSettings("truenas", "en", "GB"), Branding())
+        compose.setContent {
+            JellyfinTheme { ServerSettingsScreen(state, ServerSettingsActions(), splashscreenAvailable = false, splashImageKnown = false) }
+        }
+        compose.onNodeWithText("Login disclaimer").performScrollTo().assertExists()
+        compose.onNodeWithText("Splash image").assertDoesNotExist()
+        compose.onNodeWithText("Saving here resets a custom splash image", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `every subtitle mode is offered, with what it does`() {
+        val state = PlaybackUiState.Ready(PlaybackPreferences("", "", SubtitleMode.None), cultures)
+        compose.setContent { JellyfinTheme { PlaybackScreen(state, PlaybackActions()) } }
+        compose.onNodeWithText("Subtitle mode").performScrollTo().performClick()
+        listOf("Follow the file", "Smart", "Only forced", "Always").forEach { compose.onNodeWithText(it).assertExists() }
+        compose.onNodeWithText("You can still turn them on while watching").assertExists()
+    }
+
+    @Test
+    fun `the password form hands each field and the submit to its view model`() {
+        val typed = mutableListOf<String>()
+        var changed = false
+        val actions =
+            PasswordActions(onCurrent = { typed += "c:$it" }, onNew = { typed += "n:$it" }, onConfirm = { typed += "r:$it" }, onChange = {
+                changed =
+                    true
+            })
+        compose.setContent { JellyfinTheme { PasswordScreen(PasswordUiState(new = "a", confirm = "a"), actions) } }
+        compose.onNodeWithText("Current password").performTextInput("x")
+        compose.onNodeWithText("New password again").performTextInput("y")
+        compose.onNode(hasText("Change password") and hasClickAction()).performScrollTo().performClick()
+        // The fields are the view model's: each keystroke goes to it, against the value it holds.
+        assertTrue("c:x" in typed)
+        assertTrue(typed.any { it.startsWith("r:") && 'y' in it })
+        assertEquals(true, changed)
+    }
+
+    @Test
+    fun `each password result reads as it should`() {
+        var state by mutableStateOf(PasswordUiState(result = PasswordResult.Changed))
+        compose.setContent { JellyfinTheme { PasswordScreen(state, PasswordActions()) } }
+        mapOf(
+            PasswordResult.Changed to "Changed. Your other devices will ask for the new password.",
+            PasswordResult.WrongCurrent to "That isn't your current password.",
+            PasswordResult.Mismatch to "The new passwords don't match.",
+            PasswordResult.Refused to "Something went wrong. Try again.",
+            PasswordResult.Unreachable to "Couldn't reach your Jellyfin server",
+        ).forEach { (result, text) ->
+            state = PasswordUiState(result = result)
+            compose.onNodeWithText(text).assertExists()
+        }
+    }
+
+    @Test
+    fun `libraries scan one or all as job rows, stop the scan of everything, and show how a run went`() {
+        val scanned = mutableListOf<String>()
+        var everything = 0
+        var stopped = false
+        val libraries =
+            listOf(
+                ServerLibrary("m", "Movies", "movies", listOf("/media/movies")),
+                ServerLibrary("s", "Shows", "tvshows", listOf("/media/tv")),
+            )
+        val scanTask = ServerTask("t", LIBRARY_SCAN_TASK, "Scan Media Library", "", "Library", false, false, null, null)
+        var state by mutableStateOf(LibrariesUiState.Ready(libraries, TaskBoard(listOf(scanTask))))
+        val actions =
+            LibrariesActions(onScan = { scanned += it.id }, onScanEverything = { everything++ }, onStopEverything = { stopped = true })
+        compose.setContent { JellyfinTheme { LibrariesScreen(state, actions) } }
+        compose.onNodeWithText("Hasn't run yet").assertExists()
+        compose.onAllNodesWithContentDescription("Scan")[0].performClick()
+        assertEquals(1, everything)
+        compose.onAllNodesWithContentDescription("Scan")[1].performClick()
+        assertEquals(listOf("m"), scanned)
+        state =
+            state.copy(
+                board = TaskBoard(listOf(scanTask.copy(running = true, percent = 12))),
+                scanning = mapOf("m" to LibraryScan(40, started = true)),
+                outcomes = mapOf("s" to JobOutcome.Failed),
+                actionFailed = ConsoleFailure.Unreachable,
+            )
+        compose.onNodeWithText("Running… 12%").assertExists()
+        compose.onNodeWithText("Running… 40%").assertExists()
+        compose.onNodeWithText("Failed").assertExists()
+        compose.onNodeWithContentDescription("Stop").performClick()
+        assertTrue(stopped)
+        val notStarted = "The scan didn't start. Couldn't reach your Jellyfin server"
+        compose.onNodeWithText(notStarted).assertExists()
+        state = state.copy(board = TaskBoard(listOf(scanTask)), scanning = emptyMap(), outcomes = mapOf("m" to JobOutcome.Succeeded))
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Done"))
+        compose.onNodeWithText("Done").assertExists()
+    }
+
+    @Test
+    fun `each kind of library has its icon, and a mixed one a folder`() {
+        val icons = listOf("movies", "tvshows", "music", "books", "photos", "homevideos", "", "boxsets").map(::typeIcon)
+        assertEquals(6, icons.distinct().size)
+        assertEquals(typeIcon(""), typeIcon("boxsets"))
+    }
+
+    @Test
+    fun `tasks group by category, run and stop in place, and say how each last ran`() {
+        val ran = mutableListOf<String>()
+        val stopped = mutableListOf<String>()
+        val scan = ServerTask("a", LIBRARY_SCAN_TASK, "Scan Media Library", "", "Library", false, false, null, null)
+        val clean =
+            ServerTask("b", "CleanCache", "Clean Cache Directory", "", "Maintenance", true, false, 30, TaskRun(TaskStatus.Failed, 0, null))
+        val failed = ServerTask("c", "OptimizeDatabaseTask", "Optimise database", "", "Maintenance", false, false, null, clean.lastRun)
+        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(scan, clean, failed))))
+        compose.setContent {
+            JellyfinTheme { TasksScreen(state, TasksActions(onRun = { ran += it.id }, onStop = { stopped += it.id }), now = 0) }
+        }
+        compose.onNodeWithText("LIBRARY").assertExists()
+        compose.onNodeWithText("MAINTENANCE").assertExists()
+        compose.onNodeWithText("Running… 30%").assertExists()
+        compose.onNodeWithText("Hasn't run yet").assertExists()
+        compose.onAllNodesWithContentDescription("Run")[0].performClick()
+        compose.onNodeWithContentDescription("Stop").performClick()
+        assertEquals(listOf("a"), ran)
+        assertEquals(listOf("b"), stopped)
+        state = state.copy(actionFailed = ConsoleFailure.Refused)
+        // Said in a message over the list, not in a space the list keeps for it.
+        compose.onNodeWithText("That didn't reach the server. Something went wrong. Try again.").assertExists()
+    }
+
+    @Test
+    fun `each kind of task has its icon, and one this app doesn't know a clock`() {
+        val keys =
+            listOf(
+                LIBRARY_SCAN_TASK,
+                "AudioNormalization",
+                "DownloadSubtitles",
+                "DownloadLyrics",
+                "RefreshPeople",
+                "RefreshChapterImages",
+                "DeleteCacheFiles",
+                "PluginUpdates",
+                "RefreshGuide",
+                "OptimizeDatabaseTask",
+                "Something",
+            )
+        assertEquals(keys.size, keys.map(::taskIcon).distinct().size)
+    }
+
+    @Test
+    fun `an activity entry opens its detail with the whole of what the server wrote, and Close closes it`() {
+        val entry =
+            ActivityEntry(
+                4,
+                "Plugin updated",
+                "AudioDB 10.0",
+                "PluginUpdated",
+                1_700_000_000_000L,
+                Severity.Information,
+                longOverview = "AudioDB 10.0 was updated from 9.0, a version that the server's own changelog describes at length.",
+            )
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), total = 1))
+        var closed = 0
+        compose.setContent {
+            JellyfinTheme {
+                ActivityScreen(
+                    state,
+                    ActivityActions(
+                        onOpen = { id ->
+                            if (id == null) closed++
+                            state = (state as ActivityUiState.Ready).copy(open = id)
+                        },
+                    ),
+                    zone = java.time.ZoneOffset.UTC,
+                )
+            }
+        }
+        compose.onNodeWithText("Details").assertDoesNotExist()
+        compose.onNodeWithText("Plugin updated").performClick()
+        compose.onNodeWithText("a version that the server's own changelog", substring = true).assertExists()
+        compose.onNodeWithText("PluginUpdated").assertExists()
+        compose.onNodeWithText("Close").performClick()
+        assertEquals(1, closed)
+        compose.onNodeWithText("Details").assertDoesNotExist()
+    }
+
+    @Test
+    fun `an entry about a user offers Open user only where the page can be opened, and it closes the sheet first`() {
+        val entry = ActivityEntry(4, "sam signed in", null, "SessionStarted", 1_700_000_000_000L, Severity.Information, userId = "u7")
+        val order = mutableListOf<String>()
+        var withAction by mutableStateOf(true)
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(listOf(entry), total = 1, open = 4))
+        compose.setContent {
+            JellyfinTheme {
+                ActivityScreen(
+                    state,
+                    ActivityActions(
+                        onOpen = { order += "close" },
+                        onOpenUser = { id: String -> order += "open $id" }.takeIf { withAction },
+                    ),
+                    zone = java.time.ZoneOffset.UTC,
+                )
+            }
+        }
+        compose.onNodeWithText("Open user").performClick()
+        assertEquals(listOf("close", "open u7"), order)
+        withAction = false
+        compose.waitForIdle()
+        compose.onNodeWithText("Open user").assertDoesNotExist()
+        withAction = true
+        state = ActivityUiState.Ready(listOf(entry.copy(userId = null)), total = 1, open = 4)
+        compose.waitForIdle()
+        compose.onNodeWithText("Open user").assertDoesNotExist()
+    }
+
+    @Test
+    fun `activity groups by day, marks errors, and asks for more at the end`() {
+        var more = 0
+        val now = 1_793_570_400_000L
+        val entries =
+            listOf(
+                ActivityEntry(
+                    2,
+                    "Failed login attempt from sam",
+                    "IP address: 10.0.0.9",
+                    "AuthenticationFailed",
+                    now - 60_000,
+                    Severity.Error,
+                ),
+                ActivityEntry(1, "sam is online from TV", null, "SessionStarted", now - 2 * 86_400_000L, Severity.Information),
+            )
+        var state by mutableStateOf<ActivityUiState>(ActivityUiState.Ready(entries, total = 3))
+        compose.setContent {
+            JellyfinTheme { ActivityScreen(state, ActivityActions(onLoadMore = { more++ }), now = now, zone = java.time.ZoneOffset.UTC) }
+        }
+        compose.onNodeWithText("Failed login attempt from sam").assertExists()
+        compose.onNodeWithText("sam is online from TV").assertExists()
+        compose.waitUntil { more == 1 }
+        state = ActivityUiState.Ready(entries, total = 3, moreFailed = ConsoleFailure.Unreachable)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Try again"))
+        compose.onNodeWithText("Try again").performClick()
+        assertEquals(2, more)
+        state = ActivityUiState.Ready(emptyList(), total = 0)
+        compose.onNodeWithText("Nothing has happened on this server yet.").assertExists()
+    }
+
+    @Test
+    fun `logs list the files and open one on a tap`() {
+        var opened: String? = null
+        val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L), LogFile("log_20261030.log", 2048, null))
+        var state by mutableStateOf<LogsUiState>(LogsUiState.Ready(files))
+        compose.setContent { JellyfinTheme { LogsScreen(state, LogsActions(onOpen = { opened = it }), zone = java.time.ZoneOffset.UTC) } }
+        compose.onNodeWithText("log_20261030.log").assertExists()
+        compose.onNodeWithText("log_20261031.log").performClick()
+        assertEquals("log_20261031.log", opened)
+        state = LogsUiState.Ready(emptyList())
+        compose.onNodeWithText("The server has no log files.").assertExists()
+        state = LogsUiState.Failed(ConsoleFailure.Unreachable)
+        compose.onNodeWithText("Try again").assertExists()
+    }
+
+    @Test
+    fun `a log's screen reads it, searches it and shares it`() {
+        var query = ""
+        var shared: Pair<String, String>? = null
+        var copied: String? = null
+        val read = mutableListOf<String>()
+        val files = listOf(LogFile("log_20261031.log", 4096, 1_793_570_400_000L))
+        var state by mutableStateOf<LogsUiState>(LogsUiState.Ready(files))
+        compose.setContent {
+            JellyfinTheme {
+                LogScreen(
+                    state,
+                    "log_20261031.log",
+                    LogsActions(
+                        onRead = { read += it },
+                        onQuery = { query = it },
+                        onCopy = { copied = it },
+                        onShare = { name, text -> shared = name to text },
+                    ),
+                )
+            }
+        }
+        // The files are known but the log isn't being read yet: the screen asks the view model to read it.
+        compose.waitForIdle()
+        assertEquals(listOf("log_20261031.log"), read)
+        val lines = listOf("$STAMP [INF] [1] Main: Server started", "$STAMP [ERR] [2] Main: Boom")
+        val entries = parseLogEntries(redactLog(lines.joinToString("\n")))
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(entries, truncated = true)))
+        compose.onNodeWithText("Boom").assertExists()
+        compose.onNodeWithText("Boom").performTouchInput { longClick() }
+        assertEquals(lines[1], copied)
+        compose.onNodeWithText("Showing the last 512 KB of this log.").assertExists()
+        compose.onNodeWithContentDescription("Share this log").performClick()
+        assertEquals("log_20261031.log" to lines.joinToString("\n"), shared)
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Ready(entries, truncated = false), query = "zzz"))
+        compose.onNodeWithText("No lines match.").assertExists()
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Loading))
+        compose.onNodeWithContentDescription("Share this log").assertIsNotEnabled()
+        state = LogsUiState.Ready(files, OpenLog("log_20261031.log", LogContent.Failed(ConsoleFailure.Unreachable)))
+        compose.onNodeWithContentDescription("Share this log").assertIsNotEnabled()
+        state = LogsUiState.Failed(ConsoleFailure.Unreachable)
+        compose.onNodeWithText("Try again").assertExists()
+    }
+
+    @Test
+    fun `a log the view model is reading under another name is not shown, and is asked for`() {
+        val read = mutableListOf<String>()
+        val other = OpenLog("older.log", LogContent.Ready(emptyList(), truncated = false))
+        compose.setContent {
+            JellyfinTheme {
+                LogScreen(
+                    LogsUiState.Ready(listOf(LogFile("log_20261031.log", 1, null)), other),
+                    "log_20261031.log",
+                    LogsActions(onRead = { read += it }),
+                )
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(listOf("log_20261031.log"), read)
+        compose.onAllNodesWithContentDescription("Share this log").assertCountEquals(0)
+    }
+
+    private val aniDb =
+        ServerPlugin("a1b2", "AniDB", "1.2.3.4", "Anime metadata.", PluginStatus.Active, canUninstall = true, hasSettings = true)
+
+    private fun pluginsScreen(
+        installed: PluginsUiState = PluginsUiState.Ready(listOf(aniDb)),
+        catalog: CatalogUiState = CatalogUiState.Ready(emptyList()),
+        repositories: RepositoriesUiState = RepositoriesUiState.Ready(emptyList()),
+        actions: PluginsActions = PluginsActions(),
+        catalogActions: CatalogActions = CatalogActions(),
+        repositoryActions: RepositoriesActions = RepositoriesActions(),
+        onBack: () -> Unit = {},
+    ) = compose.setContent {
+        JellyfinTheme { PluginsScreen(installed, catalog, repositories, actions, catalogActions, repositoryActions, onBack) }
+    }
+
+    @Test
+    fun `installed plugins list, point at a restart, and open on a tap`() {
+        val calls = mutableListOf<String>()
+        val waiting = aniDb.copy(id = "c3", name = "Waiting", status = PluginStatus.Restart, hasSettings = false)
+        val state = PluginsUiState.Ready(listOf(aniDb, waiting))
+        val actions =
+            PluginsActions(
+                onOpen = { calls += "open ${it.name}" },
+                onRestart = { calls += "restart" },
+            )
+        pluginsScreen(installed = state, actions = actions)
+        compose.onAllNodesWithText("Restart needed", substring = true).assertCountEquals(2)
+        compose.onNodeWithText("AniDB").assertExists()
+        compose.onNodeWithText("A change to a plugin takes effect when the server restarts.", substring = true).performClick()
+        assertEquals(listOf("restart"), calls)
+        calls.clear()
+        compose.onNodeWithText("AniDB").performClick()
+        assertEquals(listOf("open AniDB"), calls)
+    }
+
+    @Test
+    fun `a plugin's screen has its switch, settings and Uninstall, last and red, behind a confirm`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(PluginsUiState.Ready(listOf(aniDb)))
+        val actions =
+            PluginsActions(
+                onToggle = { plugin, on -> calls += "toggle ${plugin.name} $on" },
+                onAskUninstall = { state = state.copy(confirming = it) },
+                onUninstall = { calls += "uninstall" },
+                onOpenSettings = { calls += "settings ${it.name}" },
+            )
+        compose.setContent { JellyfinTheme { PluginScreen(state, "a1b2", actions, onBack = { calls += "back" }) } }
+        compose.onNodeWithText("Anime metadata.").assertExists()
+        compose.onNodeWithText("Settings").performClick()
+        compose.onNodeWithText("Enabled").performClick()
+        assertEquals(listOf("settings AniDB", "toggle AniDB false"), calls)
+        compose.onNodeWithText("Uninstall").performScrollTo().performClick()
+        compose.onNodeWithText("Uninstall AniDB?").assertExists()
+        compose.onAllNodesWithText("Uninstall")[1].performClick()
+        assertTrue("uninstall" in calls)
+    }
+
+    @Test
+    fun `a plugin that was uninstalled closes its screen, once`() {
+        val calls = mutableListOf<String>()
+        compose.setContent {
+            JellyfinTheme {
+                PluginScreen(
+                    PluginsUiState.Ready(listOf(aniDb), uninstalled = "a1b2"),
+                    "a1b2",
+                    PluginsActions(onUninstallSeen = { calls += "seen" }),
+                    onBack = { calls += "back" },
+                )
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(listOf("back", "seen"), calls)
+    }
+
+    @Test
+    fun `a plugin the server no longer lists closes its screen`() {
+        var closed = 0
+        compose.setContent {
+            JellyfinTheme {
+                PluginScreen(
+                    PluginsUiState.Ready(listOf(aniDb)),
+                    "gone",
+                    PluginsActions(),
+                    onBack = { closed++ },
+                )
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `a plugin that can't run has no switch, and one that can't be uninstalled has no Uninstall`() {
+        val stuck = aniDb.copy(status = PluginStatus.NotSupported, canUninstall = false, hasSettings = false)
+        compose.setContent { JellyfinTheme { PluginScreen(PluginsUiState.Ready(listOf(stuck)), "a1b2", PluginsActions(), onBack = {}) } }
+        compose.onNodeWithText("Not supported by this server", substring = true).assertExists()
+        compose.onNodeWithText("Enabled").assertDoesNotExist()
+        compose.onNodeWithText("Settings").assertDoesNotExist()
+        compose.onNodeWithText("Uninstall").assertDoesNotExist()
+    }
+
+    private val catalogVersion = PackageVersion("13.0.0.0", "Fixes a thing.", "10.10.0.0", "Jellyfin Stable", "https://r.example/m.json")
+    private val reporting =
+        CatalogPackage(
+            "g1",
+            "Playback Reporting",
+            "Reports playback.",
+            "Shows who watched what.",
+            "jellyfin",
+            "General",
+            listOf(catalogVersion),
+        )
+    private val future =
+        CatalogPackage(
+            "g2",
+            "Future Plugin",
+            "Needs a newer server.",
+            "",
+            "someone",
+            "Metadata",
+            listOf(catalogVersion.copy(targetAbi = "10.12.0.0")),
+        )
+
+    @Test
+    fun `the catalog lists packages by category and opens one on a tap`() {
+        val calls = mutableListOf<String>()
+        val state = CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7"))
+        pluginsScreen(catalog = state, catalogActions = CatalogActions(onOpen = { calls += "open $it" }))
+        compose.onNodeWithText("Catalog").performClick()
+        compose.onNodeWithText("GENERAL").assertExists()
+        compose.onNodeWithText("Reports playback.").assertExists()
+        compose.onNodeWithText("Playback Reporting").performClick()
+        assertEquals(listOf("open Playback Reporting"), calls)
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h891dp")
+    fun `a package's screen installs the version for this server, or says there is none`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(CatalogUiState.Ready(listOf(reporting, future), server = JellyfinVersion.parse("10.10.7")))
+        var shown by mutableStateOf("Playback Reporting")
+        val actions = CatalogActions(onInstall = { pkg, _ -> calls += "install ${pkg.name}" }, onCancel = { calls += "cancel ${it.name}" })
+        compose.setContent { JellyfinTheme { PackageScreen(state, shown, actions, onBack = {}) } }
+        compose.onNodeWithText("Shows who watched what.").assertExists()
+        compose.onNodeWithText("13.0.0.0 · Jellyfin Stable").assertExists()
+        // The changelog is Markdown, parsed off the main thread, so it appears a moment after the page.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Fixes a thing.").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Install").performClick()
+        assertEquals(listOf("install Playback Reporting"), calls)
+        state = state.copy(installing = mapOf("Playback Reporting" to null))
+        compose.onNodeWithText("Cancel install").assertIsNotEnabled()
+        // The footer stays where it was, as a spinner that swallows taps, so the page doesn't move under a tap.
+        compose.onNodeWithText("Install").assertDoesNotExist()
+        compose.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertExists()
+        state = state.copy(installing = mapOf("Playback Reporting" to "install-1"))
+        compose.onNodeWithText("Cancel install").performClick()
+        assertEquals("cancel Playback Reporting", calls.last())
+        state =
+            state.copy(
+                installing = emptyMap(),
+                installed = setOf("Playback Reporting"),
+                outcomes = mapOf("Playback Reporting" to InstallOutcome.Done),
+            )
+        compose.onNodeWithText("Installed. Restart the server to start using it.").assertExists()
+        compose.onNodeWithText("Install").assertDoesNotExist()
+        compose.onNodeWithText("Installed").assertIsNotEnabled()
+        state = state.copy(outcomes = emptyMap())
+        shown = "Future Plugin"
+        compose.onNodeWithText("None built for this server's release").assertExists()
+        compose.onNodeWithText("Install").assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h891dp")
+    fun `a package lists its versions, installs a chosen one, and asks before putting an older one over a newer`() {
+        val calls = mutableListOf<String>()
+        val newer = catalogVersion.copy(version = "14.0.0.0", targetAbi = "10.11.0.0", changelog = "For a newer server.")
+        val older = catalogVersion.copy(version = "12.0.0.0", changelog = "* Older fix", timestamp = "2026-01-02T10:00:00Z")
+        val pkg = reporting.copy(versions = listOf(older, catalogVersion, newer))
+        val state = CatalogUiState.Ready(listOf(pkg), installed = setOf(pkg.name), installedVersions = mapOf(pkg.name to "13.0.0.0"))
+        val actions = CatalogActions(onInstall = { p, v -> calls += "install ${p.name} ${v?.version}" })
+        compose.setContent {
+            JellyfinTheme { PackageScreen(state.copy(server = JellyfinVersion.parse("10.10.7")), pkg.name, actions, onBack = {}) }
+        }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Versions", ignoreCase = true))
+        compose.onNodeWithText("Built for Jellyfin 10.11.0.0, newer than this server").assertIsNotEnabled()
+        compose.onNodeWithText("2026-01-02").assertExists()
+        // The older version asks first, and Cancel installs nothing.
+        compose.onNodeWithText("12.0.0.0", substring = true).performScrollTo()
+        compose.onNodeWithText("12.0.0.0", substring = true).performClick()
+        // The Markdown is parsed off the main thread, so it appears a moment after the sheet.
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText("Older fix").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Install").performClick()
+        compose.onNodeWithText("Install version 12.0.0.0?").assertExists()
+        compose.onNodeWithText("Cancel").performClick()
+        assertEquals(emptyList<String>(), calls)
+        compose.onAllNodesWithText("Install").onLast().performClick()
+        compose.onAllNodesWithText("Install").onLast().performClick()
+        assertEquals(listOf("install Playback Reporting 12.0.0.0"), calls)
+    }
+
+    @Test
+    fun `repositories add in two steps, with the warning, and remove after a confirm`() {
+        val calls = mutableListOf<String>()
+        val stable = PluginRepository("Jellyfin Stable", "https://repo.example/stable.json", true)
+        var state by mutableStateOf(RepositoriesUiState.Ready(listOf(stable)))
+        val actions =
+            RepositoriesActions(
+                onAskAdd = { state = state.copy(adding = it) },
+                onAdd = { name, url -> calls += "add $name $url" },
+                onAskRemove = { state = state.copy(removing = it) },
+                onRemove = { calls += "remove" },
+            )
+        compose.setContent {
+            JellyfinTheme {
+                PluginsScreen(
+                    PluginsUiState.Ready(emptyList()),
+                    CatalogUiState.Ready(emptyList()),
+                    state,
+                    PluginsActions(),
+                    CatalogActions(),
+                    actions,
+                    {},
+                )
+            }
+        }
+        compose.onNodeWithText("Repositories").performClick()
+        compose.onNodeWithText("Jellyfin Stable").assertExists()
+        compose.onNodeWithText("https://repo.example/stable.json").assertExists()
+        compose.onNodeWithText("Add repository").performClick()
+        compose.onNodeWithText("Repository name").assertExists()
+        compose.onNode(hasSetTextAction()).performTextInput("Mine")
+        compose.onNodeWithText("Next").performClick()
+        compose.onNodeWithText("Repository address").assertExists()
+        compose.onNodeWithText("A repository can offer code that runs on your server. Only add one you trust.").assertExists()
+        compose.onNode(hasSetTextAction()).performTextInput("not a url")
+        compose.onNodeWithText("Enter a web address starting with http:// or https://.").assertExists()
+        compose.onNodeWithText("Add").assertIsNotEnabled()
+        compose.onNode(hasSetTextAction()).performTextReplacement("https://mine.example/m.json")
+        compose.onNodeWithText("Add").performClick()
+        assertEquals(listOf("add Mine https://mine.example/m.json"), calls)
+        state = state.copy(adding = false)
+        compose.onNodeWithContentDescription("Remove").performClick()
+        compose.onNodeWithText("Remove Jellyfin Stable?").assertExists()
+        compose.onAllNodesWithText("Remove")[0].performClick()
+        assertEquals("remove", calls.last())
+        state = RepositoriesUiState.Ready(emptyList())
+        compose.onNodeWithText("No repositories").assertExists()
+    }
+
+    @Test
+    fun `a task in the list opens its own screen`() {
+        val opened = mutableListOf<String>()
+        val scan = ServerTask("t", LIBRARY_SCAN_TASK, "Scan Media Library", "Scans for new files.", "Library", false, false, null, null)
+        compose.setContent {
+            JellyfinTheme { TasksScreen(TasksUiState.Ready(TaskBoard(listOf(scan))), TasksActions(onOpen = { opened += it.id })) }
+        }
+        compose.onNodeWithText("Scan Media Library").performClick()
+        assertEquals(listOf("t"), opened)
+    }
+
+    @Test
+    fun `a task's screen describes each trigger, removes one in place, and adds one from a form`() {
+        val removed = mutableListOf<Int>()
+        val added = mutableListOf<TaskTrigger>()
+        val triggers =
+            listOf(
+                TaskTrigger.daily(3 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR),
+                TaskTrigger.interval(6 * TICKS_PER_HOUR),
+                TaskTrigger.interval(45 * TICKS_PER_MINUTE),
+                TaskTrigger.startup(),
+                TaskTrigger.weekly("Monday", TICKS_PER_HOUR),
+                TaskTrigger("SystemEventTrigger"),
+            )
+        val scan =
+            ServerTask("t", LIBRARY_SCAN_TASK, "Scan Media Library", "Scans for new files.", "Library", false, false, null, null, triggers)
+        var state by mutableStateOf(TasksUiState.Ready(TaskBoard(listOf(scan))))
+        val actions =
+            TasksActions(
+                onAskAdd = { state = state.copy(adding = it) },
+                onAddTrigger = { added += it },
+                onRemoveTrigger = { removed += it },
+            )
+        compose.setContent { JellyfinTheme { TaskScreen(state, "t", actions) } }
+        compose.onNodeWithText("Scans for new files.").assertExists()
+        compose.onNodeWithText("Every day at", substring = true).assertExists()
+        compose.onNodeWithText("Stops after 2 hours").assertExists()
+        compose.onNodeWithText("Every 6 hours").assertExists()
+        compose.onNodeWithText("Every 45 minutes").assertExists()
+        compose.onNodeWithText("At startup").assertExists()
+        compose.onNodeWithText("Every Monday at", substring = true).assertExists()
+        compose.onNodeWithText("SystemEventTrigger").assertExists()
+        compose.onAllNodesWithContentDescription("Remove")[1].performClick()
+        assertEquals(listOf(1), removed)
+        compose.onNodeWithText("Add trigger").performClick()
+        compose.onNodeWithText("New trigger").assertExists()
+        // The kind chips are one row that scrolls, so the chip may be out of view: choose it by its click action, not by a tap.
+        compose.onNodeWithText("Every so often").performSemanticsAction(SemanticsActions.OnClick)
+        compose
+            .onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress) and hasContentDescription("Time limit"))
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(2f) }
+        compose.onNodeWithText("Add").performClick()
+        assertEquals(listOf(TaskTrigger.interval(6 * TICKS_PER_HOUR, maxRuntimeTicks = 2 * TICKS_PER_HOUR)), added)
+        compose.onAllNodesWithText("At startup").onLast().performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Add").performClick()
+        // The time limit chosen a moment ago is still chosen: the form keeps what was picked.
+        assertEquals(TaskTrigger.startup(maxRuntimeTicks = 2 * TICKS_PER_HOUR), added.last())
+        state = state.copy(saving = true, triggerFailed = ConsoleFailure.Refused, adding = false)
+        compose.onAllNodesWithContentDescription("Remove").assertCountEquals(0)
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
+        // A task with none says so, with Add trigger as its one action; a failed change says so in a message, and the screen stays.
+        state = TasksUiState.Ready(TaskBoard(listOf(scan.copy(triggers = emptyList()))))
+        compose.onNodeWithText("No triggers").assertExists()
+        compose.onNodeWithText("This task only runs when you start it.").assertExists()
+        state = state.copy(triggerFailed = ConsoleFailure.Refused)
+        compose.onNodeWithText("This task only runs when you start it.").assertExists()
+        compose.onNodeWithText("Triggers not changed. Something went wrong. Try again.").assertExists()
+        compose.onNodeWithText("Add trigger").performClick()
+        assertTrue(state.adding)
+    }
+
+    @Test
+    fun `a task the server no longer lists closes its screen`() {
+        var closed = 0
+        val scan = ServerTask("t", LIBRARY_SCAN_TASK, "Scan", "", "Library", false, false, null, null)
+        compose.setContent {
+            JellyfinTheme { TaskScreen(TasksUiState.Ready(TaskBoard(listOf(scan))), "gone", TasksActions(onBack = { closed++ })) }
+        }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `each kind of activity has its icon, and one this app doesn't know an information mark`() {
+        val types =
+            listOf(
+                "SessionStarted",
+                "SessionEnded",
+                "AuthenticationFailed",
+                "AuthenticationSucceeded",
+                "VideoPlaybackStopped",
+                "VideoPlayback",
+                "UserCreated",
+                "PluginInstalled",
+                "ScheduledTaskFailed",
+                "SubtitleDownloadFailure",
+                "Something",
+            )
+        assertEquals(types.size, types.map(::activityIcon).distinct().size)
+    }
+
+    @Test
+    fun `devices rename on a tap, remove after a confirm, and this one has no Remove`() {
+        val renamed = mutableListOf<String>()
+        val asked = mutableListOf<ServerDevice?>()
+        var removed = false
+        val tv = ServerDevice("tv", "SHIELD", null, "Jellyfin Android TV", "sam", null)
+        val mine = ServerDevice("me", "Pixel", null, "Jellyfin Companion", "Claude", null)
+        var state by mutableStateOf(DevicesUiState.Ready(listOf(tv, mine), thisDevice = "me"))
+        val actions =
+            DevicesActions(
+                onAskRename = { state = state.copy(renaming = it) },
+                onRename = { renamed += it },
+                onAskRemove = { asked += it },
+                onRemove = { removed = true },
+            )
+        compose.setContent { JellyfinTheme { DevicesScreen(state, actions) } }
+        compose.onNodeWithText("This device. Sign out here instead.").assertExists()
+        compose.onAllNodesWithContentDescription("Remove").assertCountEquals(1)
+        compose.onNodeWithContentDescription("Remove").performClick()
+        assertEquals(listOf<ServerDevice?>(tv), asked)
+        compose.onNodeWithText("SHIELD").performClick()
+        compose.onNode(hasSetTextAction()).performTextInput("Den")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("Den"), renamed)
+        state = state.copy(renaming = null, removing = tv, actionFailed = ConsoleFailure.Refused)
+        compose.onNodeWithText("Remove SHIELD?").assertExists()
+        compose.onAllNodesWithText("Remove")[0].performClick()
+        assertTrue(removed)
+    }
+
+    @Test
+    fun `api keys show only the last four, make one by name, copy it once, and revoke after a confirm`() {
+        val created = mutableListOf<String>()
+        val copied = mutableListOf<String>()
+        val asked = mutableListOf<ApiKey?>()
+        var revoked = false
+        var dismissed = false
+        val sonarr = ApiKey("aaaabbbbccccdddd1111", "Sonarr", null)
+        var state by mutableStateOf(ApiKeysUiState.Ready(listOf(sonarr)))
+        val actions =
+            ApiKeysActions(
+                onAskCreate = { state = state.copy(naming = it) },
+                onCreate = { created += it },
+                onCopy = { copied += it },
+                onDismissCreated = { dismissed = true },
+                onAskRemove = { asked += it },
+                onRemove = { revoked = true },
+            )
+        compose.setContent { JellyfinTheme { ApiKeysScreen(state, actions) } }
+        compose.onNodeWithText("Sonarr").assertExists()
+        compose.onNodeWithText("****1111", substring = true).assertExists()
+        compose.onNodeWithText("aaaabbbbccccdddd1111", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("New key").performClick()
+        compose.onNodeWithText("App name").performTextInput("Radarr")
+        compose.onNodeWithText("Create key").performClick()
+        assertEquals(listOf("Radarr"), created)
+        state = state.copy(naming = false, created = ApiKey("zzzzyyyyxxxxwwww9999", "Radarr", null))
+        compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertExists()
+        compose.onNodeWithText("Copy").performClick()
+        assertEquals(listOf("zzzzyyyyxxxxwwww9999"), copied)
+        // Back does not close it: the key is shown once, and a stray press would lose it.
+        compose.runOnUiThread { ShadowDialog.getLatestDialog().onBackPressed() }
+        compose.waitForIdle()
+        assertFalse(dismissed)
+        compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertExists()
+        compose.onNodeWithText("I have copied it").performClick()
+        assertTrue(dismissed)
+        state = state.copy(created = null)
+        compose.onNodeWithText("zzzzyyyyxxxxwwww9999").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Revoke").performClick()
+        assertEquals(listOf<ApiKey?>(sonarr), asked)
+        state = state.copy(removing = sonarr, actionFailed = ConsoleFailure.Refused)
+        compose.onNodeWithText("Revoke Sonarr?").assertExists()
+        compose.onAllNodesWithText("Revoke")[0].performClick()
+        assertTrue(revoked)
+        state = ApiKeysUiState.Ready(emptyList())
+        compose.onNodeWithText("This server has no API keys.").assertExists()
+    }
+
+    @Test
+    fun `trickplay switches, pickers and numbers reach their actions, and a number out of range is refused in place`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(TrickplayUiState.Ready(TrickplaySettings()))
+        val actions =
+            TrickplayActions(
+                onEdit = { state = state.copy(editing = it) },
+                onSave = { field, text -> calls += "save ${field.name} $text" },
+                onHwAcceleration = { calls += "hwAcceleration $it" },
+                onKeyFrameOnly = { calls += "keyFrameOnly $it" },
+                onScanBehavior = { calls += "scan $it" },
+                onProcessPriority = { calls += "priority $it" },
+                onInterval = { calls += "interval $it" },
+            )
+        var keyFrames by mutableStateOf(true)
+        compose.setContent { JellyfinTheme { TrickplayScreen(state, actions, keyFrameOnlyAvailable = keyFrames) } }
+        compose.onNodeWithText("Hardware decoding").performClick()
+        compose.onNodeWithText("Key frames only").performClick()
+        keyFrames = false
+        compose.onNodeWithText("Key frames only").assertDoesNotExist()
+        compose.onNodeWithText("Every 10 s").performScrollTo().performClick()
+        compose.onNodeWithContentDescription("Increase Interval").performClick()
+        compose.onNodeWithText("Don\'t wait for the images").performScrollTo().performClick()
+        compose.onNodeWithText("Wait for the images").performClick()
+        compose.onNodeWithText("Below normal").performClick()
+        compose.onNodeWithText("Idle").performClick()
+        assertEquals(
+            listOf("hwAcceleration true", "keyFrameOnly true", "interval 11000", "scan Blocking", "priority Idle"),
+            calls,
+        )
+        calls.clear()
+        state = state.copy(editing = TrickplayField.JpegQuality)
+        compose.onNode(hasSetTextAction()).performTextReplacement("500")
+        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithText("Enter a whole number from 1 to 100.").assertExists()
+        assertEquals(emptyList<String>(), calls)
+        compose.onNode(hasSetTextAction()).performTextReplacement("70")
+        compose.onNodeWithText("Save").performClick()
+        assertEquals(listOf("save JpegQuality 70"), calls)
+        state = state.copy(editing = TrickplayField.Widths)
+        compose.onNode(hasSetTextAction()).performTextReplacement("wide")
+        compose.onNodeWithText("Save").performClick()
+        compose.onNodeWithText("Enter widths from 1 to 7680, separated by commas.").assertExists()
+        state = TrickplayUiState.Ready(TrickplaySettings(threads = 0, widths = listOf(320, 640), intervalMillis = 2500))
+        compose.onNodeWithText("Automatic").assertExists()
+        compose.onNodeWithText("320 px, 640 px").assertExists()
+        compose.onNodeWithText("Every 2500 ms").assertExists()
+        state = TrickplayUiState.Ready(TrickplaySettings(tileWidth = 1, tileHeight = 10))
+        compose.onNodeWithText("1 image").assertExists()
+        compose.onNodeWithText("10 images").assertExists()
+    }
+
+    @Test
+    fun `each kind of device has its icon`() {
+        val icons =
+            listOf(
+                deviceIcon("Jellyfin Android TV", "SHIELD"),
+                deviceIcon("Jellyfin Web", "Firefox"),
+                deviceIcon("Jellyfin Companion", "Pixel 10"),
+                deviceIcon("Kodi", "Den box"),
+            )
+        assertEquals(4, icons.distinct().size)
+    }
+
+    private val usersPolicy = { admin: Boolean, all: Boolean ->
+        kotlinx.serialization.json.Json.parseToJsonElement(
+            """{"IsAdministrator":$admin,"IsDisabled":false,"EnableAllFolders":$all,"EnabledFolders":["m"]}""",
+        ) as kotlinx.serialization.json.JsonObject
+    }
+    private val usersMe = ServerUser("me", "Claude", true, null, usersPolicy(true, true))
+    private val usersSam = ServerUser("sam", "Sam", false, null, usersPolicy(false, false))
+    private val usersLibraries =
+        listOf(ServerLibrary("m", "Movies", "movies", emptyList()), ServerLibrary("s", "Shows", "tvshows", emptyList()))
+
+    @Test
+    fun `users list the people, open one on a tap, and add one from a sheet`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me"))
+        val actions =
+            UsersActions(
+                onOpen = { calls += "open ${it.name}" },
+                onShow = { state = state.copy(dialog = it) },
+                onCreate = { name, _ -> calls += "create $name" },
+            )
+        compose.setContent { JellyfinTheme { UsersScreen(state, actions) } }
+        compose.onNodeWithText("Claude (you)").assertExists()
+        compose.onNodeWithText("Add a user").performClick()
+        compose.onNodeWithText("Username").performTextInput("Ana")
+        compose.onNodeWithText("Add").performClick()
+        state = state.copy(dialog = null)
+        compose.onNodeWithText("Sam").performClick()
+        assertEquals(listOf("create Ana", "open Sam"), calls)
+    }
+
+    @Test
+    fun `a user's screen has switches, password and delete that reach their actions`() {
+        val calls = mutableListOf<String>()
+        var state by mutableStateOf(UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "sam"))
+        val actions =
+            UsersActions(
+                onShow = { state = state.copy(dialog = it) },
+                onAdministrator = { calls += "admin $it" },
+                onCanSignIn = { calls += "signin $it" },
+                onPolicy = { key, value ->
+                    if (key == "EnableAllFolders") calls += "all ${(value as kotlinx.serialization.json.JsonPrimitive).content}"
+                },
+                onList = { key, change ->
+                    // The change takes an id in or out of the list; the shows library is what it was asked about.
+                    val after = change(emptyList()).map { (it as kotlinx.serialization.json.JsonPrimitive).content }
+                    if (key == "EnabledFolders") calls += "lib ${after.single()} true"
+                },
+                onSetPassword = { calls += "password $it" },
+                onDelete = { calls += "delete" },
+            )
+        compose.setContent { JellyfinTheme { UserScreen(state, "sam", actions) } }
+        compose.onNodeWithText("Can sign in").performClick()
+        compose.onNodeWithText("Administrator").performClick()
+        compose.onNodeWithText("All libraries").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Shows"))
+        compose.onNodeWithText("Shows").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Delete user"))
+        compose.onNodeWithText("Delete user").performClick()
+        compose.onNodeWithText("Delete Sam?").assertExists()
+        compose.onAllNodesWithText("Delete user")[1].performClick()
+        state = state.copy(dialog = null, done = UserDone.Deleted)
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Set a new password"))
+        compose.onNodeWithText("Set a new password").performClick()
+        compose.onNodeWithText("New password").performTextInput("pw")
+        compose.onNodeWithText("Set").performClick()
+        assertEquals(listOf("signin false", "admin true", "all true", "lib s true", "delete", "password pw"), calls)
+    }
+
+    @Test
+    fun `the signed-in user's own screen has none of the risky switches, and says why`() {
+        val state =
+            UsersUiState.Ready(
+                listOf(usersMe, usersSam),
+                usersLibraries,
+                me = "me",
+                open = "me",
+                actionFailed = ConsoleFailure.Refused,
+            )
+        compose.setContent { JellyfinTheme { UserScreen(state, "me", UsersActions()) } }
+        compose.onNodeWithText("This is you. Another admin can change these.").assertExists()
+        compose.onNodeWithText("Can sign in").assertDoesNotExist()
+        compose.onNodeWithText("Delete user").assertDoesNotExist()
+    }
+
+    @Test
+    fun `another user's page offers their picture`() {
+        val state = UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "sam")
+        var opened = 0
+        compose.setContent { JellyfinTheme { UserScreen(state, "sam", UsersActions(onPicture = { opened++ })) } }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Profile picture"))
+        compose.onNodeWithText("Profile picture").performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun `your own user page has no picture row, as it is in your account`() {
+        val state = UsersUiState.Ready(listOf(usersMe, usersSam), usersLibraries, me = "me", open = "me")
+        compose.setContent { JellyfinTheme { UserScreen(state, "me", UsersActions()) } }
+        compose.onNodeWithText("Profile picture").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a user the server no longer lists closes their screen`() {
+        var closed = 0
+        val state = UsersUiState.Ready(listOf(usersSam), usersLibraries, me = "me")
+        compose.setContent { JellyfinTheme { UserScreen(state, "gone", UsersActions(onBack = { closed++ })) } }
+        compose.waitForIdle()
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun `a user's screen says which user the screens show, so the changes made on it are to them`() {
+        val selected = mutableListOf<String?>()
+        val state = UsersUiState.Ready(listOf(usersSam), usersLibraries, me = "me")
+        compose.setContent { JellyfinTheme { UserScreen(state, "sam", UsersActions(onSelect = { selected += it })) } }
+        compose.waitForIdle()
+        assertEquals(listOf<String?>("sam"), selected)
+    }
+
+    @Test
+    fun `the server page restarts after a confirm, reports how it went, and says when it can't`() {
+        val asked = mutableListOf<Boolean>()
+        var restarted = false
+        val info =
+            ServerInfo("truenas", "10.11.6", "http://nas:8096", "X64", "", updateAvailable = true, restartPending = true, canRestart = true)
+        var state by mutableStateOf(ServerUiState.Ready(info))
+        compose.setContent {
+            JellyfinTheme { ServerScreen(state, ServerActions(onConfirm = { asked += it }, onRestart = { restarted = true })) }
+        }
+        compose.onNodeWithText("Jellyfin 10.11.6").assertExists()
+        compose.onNodeWithText("An update is available. Install it where the server runs.").assertExists()
+        compose.onNodeWithText("A restart is waiting").assertExists()
+        compose.onNodeWithText("Restart server").performScrollTo().performClick()
+        assertEquals(listOf(true), asked)
+        state = state.copy(confirming = true)
+        compose.onNodeWithText("Restart truenas?").assertExists()
+        compose.onAllNodesWithText("Restart server")[1].performClick()
+        assertTrue(restarted)
+        Restart.entries.forEach { restart -> state = state.copy(confirming = false, restart = restart) }
+        compose.onNodeWithText("The server didn't take the restart. Try again.").assertExists()
+        state = state.copy(info = info.copy(canRestart = false), restart = null)
+        compose.onNodeWithText("This server can't restart itself. Restart it where it runs.").assertExists()
+    }
+}
+
+private const val STAMP = "[2026-10-31 10:00:00.000 +00:00]"

@@ -39,8 +39,8 @@ non_product() {
 no_frames() {
   case "$1" in
     app/src/test/* | app/src/androidTest/* | app/src/debug/keepRules/* | app/src/main/keepRules/*) return 0 ;;
-    app/src/main/kotlin/com/cooper/binge/companion/jellyfin/service/*) return 0 ;;
-    app/src/main/kotlin/com/cooper/binge/companion/jellyfin/review/*) return 0 ;;
+    app/src/main/kotlin/com/cooper/homelab/ephyra/service/*) return 0 ;;
+    app/src/main/kotlin/com/cooper/homelab/ephyra/review/*) return 0 ;;
     translation-hashes.txt | detekt.yml | .editorconfig | binge-companions | binge-ci) return 0 ;;
   esac
   return 1

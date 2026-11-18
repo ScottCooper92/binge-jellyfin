@@ -1,0 +1,249 @@
+package com.cooper.homelab.ephyra.ui.console
+
+import androidx.lifecycle.ViewModel
+import com.binge.designsystem.SaveStatus
+import com.cooper.homelab.ephyra.FakeJellyfin
+import com.cooper.homelab.ephyra.server.Connection
+import com.cooper.homelab.ephyra.server.DISPLAY_FOLDER_VIEW
+import com.cooper.homelab.ephyra.server.DiscardLogger
+import com.cooper.homelab.ephyra.server.DisplayList
+import com.cooper.homelab.ephyra.server.ListEntry
+import com.cooper.homelab.ephyra.server.PATH_SUBSTITUTIONS
+import com.cooper.homelab.ephyra.server.SORT_REMOVE_WORDS
+import com.cooper.homelab.ephyra.server.UiLanguage
+import com.cooper.homelab.ephyra.server.entries
+import com.cooper.homelab.ephyra.session
+import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.OkHttpClient
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+class LibraryDisplayViewModelTest {
+    private val jellyfin = FakeJellyfin()
+    private val sessions = testSessionStore()
+    private val teardown = ViewModelTeardown()
+    private val connection =
+        teardown.made(
+            Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger),
+        )
+
+    private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
+
+    @Before
+    fun main() {
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        runBlocking { sessions.save(jellyfin.session()) }
+        jellyfin.serverConfiguration =
+            """{"ServerName":"truenas","EnableFolderView":false,"SortRemoveWords":["the","a"],"FutureSetting":{"keep":"me"},""" +
+            """"PathSubstitutions":[{"From":"/media","To":"/mnt/media"}]}"""
+    }
+
+    @After
+    fun close() = teardown.close(jellyfin)
+
+    private fun LibraryDisplayViewModel.ready(check: (LibraryDisplayUiState.Ready) -> Boolean = { true }) =
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) { state.first { it is LibraryDisplayUiState.Ready && check(it) } }
+        } as LibraryDisplayUiState.Ready
+
+    private fun saves(count: Int) =
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" } < count) delay(POLL_MILLIS)
+            }
+        }
+
+    @Test
+    fun `reads the configuration and the languages the server can be shown in`() {
+        val ready = made(LibraryDisplayViewModel(connection)).ready()
+        assertEquals(
+            "truenas",
+            ready.configuration
+                .getValue("ServerName")
+                .jsonPrimitive.content,
+        )
+        assertEquals(listOf(UiLanguage("English (United States)", "en-US"), UiLanguage("Español", "es")), ready.languages)
+    }
+
+    @Test
+    fun `a setting saves as it is made, with the whole configuration and what this app doesn't know untouched`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        vm.ready { it.configuration[DISPLAY_FOLDER_VIEW] == JsonPrimitive(true) }
+        saves(1)
+        val sent = jellyfin.lastBody(CONFIGURATION)
+        assertTrue(sent.getValue(DISPLAY_FOLDER_VIEW).jsonPrimitive.boolean)
+        assertEquals("truenas", sent.getValue("ServerName").jsonPrimitive.content)
+        assertEquals(
+            "me",
+            sent
+                .getValue("FutureSetting")
+                .jsonObject
+                .getValue("keep")
+                .jsonPrimitive.content,
+        )
+    }
+
+    @Test
+    fun `a save that can't reach the server keeps the setting, says so, and Retry sends it`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        jellyfin.dropped += CONFIGURATION
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        val failed = vm.ready { it.save.failed }
+        assertEquals(JsonPrimitive(true), failed.configuration[DISPLAY_FOLDER_VIEW])
+        assertEquals(null, failed.refused)
+        jellyfin.dropped.clear()
+        vm.retrySave()
+        val saved = vm.ready { it.save.status == SaveStatus.Saved }
+        assertEquals(false, saved.save.failed)
+        assertEquals(JsonPrimitive(true), saved.configuration[DISPLAY_FOLDER_VIEW])
+    }
+
+    @Test
+    fun `a refused save puts the setting back and says so`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        jellyfin.status[CONFIGURATION] = 409
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        val failed = vm.ready { it.refused != null }
+        assertEquals(JsonPrimitive(false), failed.configuration[DISPLAY_FOLDER_VIEW])
+    }
+
+    @Test
+    fun `each add and remove in a list saves the whole list as it is made`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        assertEquals(listOf(ListEntry("the"), ListEntry("a")), vm.ready().configuration.entries(DisplayList.RemoveWords))
+        vm.sheet(DisplaySheet.NewEntry)
+        vm.add(DisplayList.RemoveWords, ListEntry("  an "))
+        saves(1)
+        vm.add(DisplayList.RemoveWords, ListEntry("an"))
+        vm.add(DisplayList.RemoveWords, ListEntry("   "))
+        vm.remove(DisplayList.RemoveWords, 0)
+        // The write that carries the removal, not a count of writes: a repeat of the earlier write reaches the count too.
+        jellyfin.awaitBody(CONFIGURATION) { body ->
+            body[SORT_REMOVE_WORDS]?.jsonArray?.map { it.jsonPrimitive.content } == listOf("a", "an")
+        }
+        val ready = vm.ready { it.configuration.entries(DisplayList.RemoveWords).size == 2 }
+        assertNull(ready.sheet)
+        assertEquals(listOf(ListEntry("a"), ListEntry("an")), ready.configuration.entries(DisplayList.RemoveWords))
+        assertEquals(
+            listOf("a", "an"),
+            jellyfin
+                .lastBody(CONFIGURATION)
+                .getValue(SORT_REMOVE_WORDS)
+                .jsonArray
+                .map { it.jsonPrimitive.content },
+        )
+    }
+
+    @Test
+    fun `a refusal on a list's editor is cleared when the editor closes, and a page sheet stays`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        jellyfin.status[CONFIGURATION] = 409
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        vm.ready { it.refused != null }
+        vm.sheet(DisplaySheet.NewEntry)
+        vm.itemClosed()
+        val ready = vm.ready()
+        assertNull(ready.refused)
+        assertEquals(DisplaySheet.NewEntry, ready.sheet)
+    }
+
+    @Test
+    fun `opening a list's editor clears what the last screen reported`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        jellyfin.status[CONFIGURATION] = 409
+        vm.set(DISPLAY_FOLDER_VIEW, JsonPrimitive(true))
+        vm.ready { it.refused != null }
+        vm.sheet(DisplaySheet.NewEntry)
+        vm.itemOpened()
+        val ready = vm.ready()
+        assertNull(ready.refused)
+        assertNull(ready.sheet)
+    }
+
+    @Test
+    fun `a refused list save puts the list back and says so`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        jellyfin.status[CONFIGURATION] = 409
+        vm.remove(DisplayList.RemoveWords, 0)
+        val failed = vm.ready { it.refused != null }
+        assertEquals(listOf(ListEntry("the"), ListEntry("a")), failed.configuration.entries(DisplayList.RemoveWords))
+    }
+
+    @Test
+    fun `path substitutions are pairs, and a half-filled pair is not added`() {
+        val vm = made(LibraryDisplayViewModel(connection))
+        vm.ready()
+        vm.add(DisplayList.Substitutions, ListEntry("/data", " "))
+        vm.add(DisplayList.Substitutions, ListEntry(" /data ", " /mnt/data "))
+        saves(1)
+        assertEquals(
+            listOf(ListEntry("/media", "/mnt/media"), ListEntry("/data", "/mnt/data")),
+            vm.ready { it.configuration.entries(DisplayList.Substitutions).size == 2 }.configuration.entries(DisplayList.Substitutions),
+        )
+        val saved =
+            jellyfin
+                .lastBody(CONFIGURATION)
+                .getValue(PATH_SUBSTITUTIONS)
+                .jsonArray
+                .map { it.jsonObject }
+        assertEquals(listOf("/media", "/data"), saved.map { it.getValue("From").jsonPrimitive.content })
+        assertEquals(listOf("/mnt/media", "/mnt/data"), saved.map { it.getValue("To").jsonPrimitive.content })
+    }
+
+    @Test
+    fun `the dummy chapter duration is a whole number of seconds in range`() {
+        assertEquals(30, parseChapterSeconds(" 30 "))
+        assertEquals(0, parseChapterSeconds("0"))
+        assertNull(parseChapterSeconds("-1"))
+        assertNull(parseChapterSeconds("1.5"))
+        assertNull(parseChapterSeconds((MAX_DUMMY_CHAPTER_SECONDS + 1).toString()))
+        assertNull(parseChapterSeconds(""))
+    }
+
+    @Test
+    fun `a page that can't read says why, works without the languages, and Try again reads again`() {
+        jellyfin.status["/Localization/Options"] = 500
+        assertEquals(emptyList<UiLanguage>(), made(LibraryDisplayViewModel(connection)).ready().languages)
+        jellyfin.status[CONFIGURATION] = 403
+        val vm = made(LibraryDisplayViewModel(connection))
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is LibraryDisplayUiState.Failed } } }
+        jellyfin.status.remove(CONFIGURATION)
+        vm.load()
+        vm.ready()
+    }
+
+    private companion object {
+        const val CONFIGURATION = "/System/Configuration"
+        const val TIMEOUT_MILLIS = 10_000L
+        const val POLL_MILLIS = 20L
+    }
+}

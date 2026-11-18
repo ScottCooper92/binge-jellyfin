@@ -1,0 +1,194 @@
+package com.cooper.homelab.ephyra.ui.console
+
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import com.android.tools.screenshot.PreviewTest
+import com.binge.designsystem.preview.PreviewSystemBarInsets
+import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
+import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
+import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
+import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
+import com.cooper.homelab.ephyra.server.ActivityEntry
+import com.cooper.homelab.ephyra.server.ActivityFilter
+import com.cooper.homelab.ephyra.server.ActivityTimePreset
+import com.cooper.homelab.ephyra.server.ActivityWho
+import com.cooper.homelab.ephyra.server.Severity
+
+private const val NOW = 1_762_700_000_000L
+private val entry = ActivityEntry(1, "alice signed in", "192.168.1.5", "SessionStarted", NOW - 3_600_000L, Severity.Information)
+private val warning = ActivityEntry(2, "Playback failed", "Living room TV", "VideoPlaybackStopped", NOW - 7_200_000L, Severity.Warning)
+
+private val applied =
+    ActivityFilter(
+        fromMillis = NOW - 604_800_000L,
+        preset = ActivityTimePreset.Last7Days,
+        who = ActivityWho.Users,
+        username = "alice",
+        severity = Severity.Warning,
+        type = "PlaybackStopped",
+    )
+
+private val draft = ActivityFilter(fromMillis = NOW - 604_800_000L, preset = ActivityTimePreset.Last7Days, severity = Severity.Error)
+private val users = ActivityUsers.Ready(listOf("alice", "bob", "Claude", "sam"))
+
+/** The activity filters: the page with its chips and nothing matching, and each page of the sheet. */
+class ActivityFiltersScreenshotTest {
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun chips() =
+        ActivityScreen(
+            ActivityUiState.Ready(listOf(warning), 1),
+            ActivityActions(),
+            now = NOW,
+            filters = ActivityFilters(applied = applied, draft = applied),
+            extendedFilters = true,
+        )
+
+    /** With a status bar, as on a device: the chips sit below the bar, not under it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun chipsUnderSystemBars() =
+        PreviewSystemBarInsets {
+            ActivityScreen(
+                ActivityUiState.Ready(listOf(warning), 1),
+                ActivityActions(),
+                now = NOW,
+                filters = ActivityFilters(applied = applied, draft = applied),
+                extendedFilters = true,
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun nothingMatches() =
+        ActivityScreen(
+            ActivityUiState.Ready(emptyList(), 0),
+            ActivityActions(),
+            now = NOW,
+            filters = ActivityFilters(applied = applied, draft = applied),
+            extendedFilters = true,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun filteredLoading() =
+        ActivityScreen(ActivityUiState.Loading, ActivityActions(), now = NOW, filters = ActivityFilters(applied = applied, draft = applied))
+
+    /** The search field above the list, with its text as a chip and the list narrowed. */
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun search() =
+        ActivityScreen(
+            ActivityUiState.Ready(listOf(entry), 1),
+            ActivityActions(),
+            now = NOW,
+            filters =
+                ActivityFilters(
+                    applied = ActivityFilter(query = "signed"),
+                    draft = ActivityFilter(query = "signed"),
+                    query = "signed",
+                ),
+            extendedFilters = true,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchNothingMatches() =
+        ActivityScreen(
+            ActivityUiState.Ready(emptyList(), 0),
+            ActivityActions(),
+            now = NOW,
+            filters = ActivityFilters(applied = ActivityFilter(query = "zzz"), draft = ActivityFilter(query = "zzz"), query = "zzz"),
+            extendedFilters = true,
+        )
+
+    /** The field stays while the narrowed list loads. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchLoading() =
+        ActivityScreen(
+            ActivityUiState.Loading,
+            ActivityActions(),
+            now = NOW,
+            filters =
+                ActivityFilters(
+                    applied = ActivityFilter(query = "signed"),
+                    draft = ActivityFilter(query = "signed"),
+                    query = "signed",
+                ),
+            extendedFilters = true,
+        )
+
+    /** No filter and no text, on a server that searches: the field above the whole log. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun searchEmptyField() =
+        ActivityScreen(ActivityUiState.Ready(listOf(entry, warning), 2), ActivityActions(), now = NOW, extendedFilters = true)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun noFilter() = ActivityScreen(ActivityUiState.Ready(listOf(entry, warning), 2), ActivityActions(), now = NOW)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun sheet() = Surface { MainPage(draft, extended = true, push = {}, actions = ActivityFilterActions()) }
+
+    /** An older server: only the time and the system or user split. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun sheetOlderServer() = Surface { MainPage(draft, extended = false, push = {}, actions = ActivityFilterActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun time() = Surface { TimePage(draft, extended = true, push = {}, pop = {}, actions = ActivityFilterActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun who() =
+        Surface {
+            WhoPage(ActivityFilters(draft = applied, users = users), extended = true, pop = {}, actions = ActivityFilterActions())
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun whoLoading() =
+        Surface {
+            WhoPage(
+                ActivityFilters(draft = applied, users = ActivityUsers.Loading),
+                extended = true,
+                pop = {},
+                actions = ActivityFilterActions(),
+            )
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun severity() = Surface { SeverityPage(draft, pop = {}, actions = ActivityFilterActions()) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun type() = Surface { TypePage(applied, pop = {}, actions = ActivityFilterActions()) }
+}

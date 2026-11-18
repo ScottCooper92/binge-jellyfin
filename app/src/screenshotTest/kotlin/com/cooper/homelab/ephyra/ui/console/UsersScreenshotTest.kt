@@ -1,0 +1,150 @@
+package com.cooper.homelab.ephyra.ui.console
+
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import com.android.tools.screenshot.PreviewTest
+import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
+import com.cooper.homelab.ephyra.preview.JellyfinScreenPreviews
+import com.cooper.homelab.ephyra.preview.JellyfinScreenStateLightPreview
+import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
+import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
+import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
+import com.cooper.homelab.ephyra.preview.JellyfinWideSpanishPreview
+import com.cooper.homelab.ephyra.server.ServerLibrary
+import com.cooper.homelab.ephyra.server.ServerUser
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+
+private const val NOW = 1_793_534_400_000L // 31 Oct 2026, 12:00 UTC
+private const val HOUR = 60 * 60 * 1000L
+
+private fun policy(
+    admin: Boolean = false,
+    disabled: Boolean = false,
+    all: Boolean = true,
+    folders: String = "",
+) = Json.parseToJsonElement(
+    """{"IsAdministrator":$admin,"IsDisabled":$disabled,"EnableAllFolders":$all,"EnabledFolders":[$folders]}""",
+) as JsonObject
+
+private val previewUsers =
+    listOf(
+        ServerUser("ana", "Ana", true, NOW - HOUR / 2, policy()),
+        ServerUser("me", "Claude", true, NOW - HOUR / 60, policy(admin = true)),
+        ServerUser("kids", "Kids", false, NOW - 26 * HOUR, policy(all = false, folders = "\"m\"")),
+        ServerUser("old", "Lodger", true, NOW - 900 * HOUR, policy(disabled = true)),
+    )
+
+private val previewLibraries =
+    listOf(
+        ServerLibrary("m", "Movies", "movies", emptyList()),
+        ServerLibrary("s", "Shows", "tvshows", emptyList()),
+        ServerLibrary("h", "Family videos", "homevideos", emptyList()),
+    )
+
+private val previewReady = UsersUiState.Ready(previewUsers, previewLibraries, me = "me")
+
+/** Users: the list across the matrix, a user's page and mine, the dialogs, and the read states. */
+class UsersScreenshotTest {
+    @PreviewTest
+    @JellyfinScreenPreviews
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun users() =
+        UsersScreen(
+            previewReady,
+            UsersActions(),
+            now = NOW,
+            avatar = { UserAvatar(it.name, profilePictureFixture.takeIf { _ -> it.id == "ana" }) },
+        )
+
+    /** A pull in progress: the list stays, with the pull spinner over it. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun refreshing() = UsersScreen(previewReady.copy(refreshing = true), UsersActions(), now = NOW)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun userPage() = UserScreen(previewReady.copy(open = "kids", done = UserDone.PasswordSet), "kids", UsersActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun myPage() = UserScreen(previewReady.copy(open = "me"), "me", UsersActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun adding() = Surface { CreateSheet(UsersActions(), inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun addingSubmitting() = Surface { CreateSheet(UsersActions(), submitting = true, inWindow = false) }
+
+    /** The form stays open with what was typed, and says why in its own error slot. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun addingFailed() = Surface { CreateSheet(UsersActions(), error = "Not changed. Something went wrong. Try again.", inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun settingPasswordSubmitting() = Surface { PasswordSheet(previewUsers.first(), UsersActions(), submitting = true, inWindow = false) }
+
+    /** The form stays open with what was typed, and says why in its own error slot. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun settingPasswordFailed() =
+        Surface {
+            PasswordSheet(previewUsers.first(), UsersActions(), error = "Not changed. Something went wrong. Try again.", inWindow = false)
+        }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinScreenStateLightPreview
+    @JellyfinFontScalePreviews
+    @Composable
+    fun settingPassword() = Surface { PasswordSheet(previewUsers.first(), UsersActions(), inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun deleting() = Surface { DeleteDialog(previewUsers.last(), UsersActions(), inWindow = false) }
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun loading() = UsersScreen(UsersUiState.Loading, UsersActions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun failed() = UsersScreen(UsersUiState.Failed(ConsoleFailure.Refused), UsersActions())
+}
+
+/** The users page on a landscape tablet, where a user opens in a third pane: the invitation to pick one while none is. */
+class UsersPaneScreenshotTest {
+    @PreviewTest
+    @JellyfinWidePreview
+    @JellyfinWideSpanishPreview
+    @Composable
+    fun placeholder() = Surface { UserPlaceholder() }
+}

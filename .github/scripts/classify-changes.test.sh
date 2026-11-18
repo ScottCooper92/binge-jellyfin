@@ -20,7 +20,7 @@ check() {
   fi
 }
 
-K=app/src/main/kotlin/com/cooper/binge/companion/jellyfin
+K=app/src/main/kotlin/com/cooper/homelab/ephyra
 check "docs only"                  "false false false" false CLAUDE.md docs/listing/privacy.md .ai/agents/pr-review-guide.md
 check "scripts and tooling only"   "false false false" false .github/scripts/classify-changes.sh tools/x.sh
 check "the shard script runs screenshots" "true true false" false .github/scripts/shard-screenshots.sh

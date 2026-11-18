@@ -1,0 +1,136 @@
+package com.cooper.homelab.ephyra.service
+
+import com.binge.companion.contracts.library.v1.Availability
+import com.binge.companion.contracts.library.v1.AvailabilityReason
+import com.binge.companion.contracts.library.v1.AvailabilityState
+import com.binge.companion.contracts.library.v1.EpisodeRef
+import com.binge.companion.contracts.library.v1.WatchState
+import com.binge.companion.contracts.v1.MediaId
+import com.binge.companion.contracts.v1.MediaType
+import com.cooper.homelab.ephyra.server.IndexKey
+import com.cooper.homelab.ephyra.server.IndexType
+import com.cooper.homelab.ephyra.server.ItemPage
+import com.cooper.homelab.ephyra.server.JellyfinItem
+import com.google.protobuf.Timestamp
+import io.grpc.Status
+import io.grpc.StatusException
+import java.time.Instant
+import java.time.format.DateTimeParseException
+
+/** Jellyfin counts time in ticks of 100 ns; the contract in milliseconds. */
+internal const val TICKS_PER_MILLI = 10_000L
+
+/** The reason the host reads on UNAUTHENTICATED to send the user to sign in. */
+internal const val REASON_SIGNED_OUT = "SIGNED_OUT"
+
+/** NOT_IN_LIBRARY, saying so when the server holds titles with no TMDB id, one of which this may be. */
+internal fun notInLibrary(serverLacksIds: Boolean = false): Availability {
+    val reason =
+        if (serverLacksIds) AvailabilityReason.AVAILABILITY_REASON_SERVER_LACKS_IDS else AvailabilityReason.AVAILABILITY_REASON_UNSPECIFIED
+    return Availability
+        .newBuilder()
+        .setState(AvailabilityState.AVAILABILITY_STATE_NOT_IN_LIBRARY)
+        .setReason(reason)
+        .build()
+}
+
+internal fun notFound(): StatusException = StatusException(Status.NOT_FOUND.withDescription("not on this Jellyfin server"))
+
+internal fun invalid(description: String): StatusException = StatusException(Status.INVALID_ARGUMENT.withDescription(description))
+
+/** The index key for [this]; INVALID_ARGUMENT for an id no title can have. */
+internal fun MediaId.toKey(): IndexKey {
+    if (tmdbId <= 0) throw invalid("tmdb_id must be positive")
+    return when (mediaType) {
+        MediaType.MEDIA_TYPE_MOVIE -> IndexKey(IndexType.MOVIE, tmdbId)
+        MediaType.MEDIA_TYPE_TV -> IndexKey(IndexType.SERIES, tmdbId)
+        else -> throw invalid("media_type is unspecified")
+    }
+}
+
+internal fun IndexKey.toMediaId(): MediaId =
+    MediaId
+        .newBuilder()
+        .setMediaType(if (type == IndexType.MOVIE) MediaType.MEDIA_TYPE_MOVIE else MediaType.MEDIA_TYPE_TV)
+        .setTmdbId(tmdbId)
+        .build()
+
+internal fun episodeRef(
+    season: Int,
+    episode: Int,
+): EpisodeRef =
+    EpisodeRef
+        .newBuilder()
+        .setSeasonNumber(season)
+        .setEpisodeNumber(episode)
+        .build()
+
+/** The episode's position in its series, or null for an item that is not numbered as one. */
+internal fun JellyfinItem.episodeRefOrNull(): EpisodeRef? {
+    val season = seasonNumber ?: return null
+    val number = episodeNumber ?: return null
+    return episodeRef(season, number)
+}
+
+internal fun JellyfinItem.toWatchState(): WatchState {
+    val builder =
+        WatchState
+            .newBuilder()
+            .setPlayed(userData?.played == true)
+            .setPositionMillis((userData?.positionTicks ?: 0L) / TICKS_PER_MILLI)
+            .setRuntimeMillis((runTimeTicks ?: 0L) / TICKS_PER_MILLI)
+    userData?.lastPlayedDate?.toTimestamp()?.let { builder.setLastPlayed(it) }
+    return builder.build()
+}
+
+/** Jellyfin's ISO-8601 instant, or null for one it wrote some other way. */
+internal fun String.toTimestamp(): Timestamp? =
+    try {
+        Instant.parse(this).toTimestamp()
+    } catch (_: DateTimeParseException) {
+        null
+    }
+
+internal fun Instant.toTimestamp(): Timestamp =
+    Timestamp
+        .newBuilder()
+        .setSeconds(epochSecond)
+        .setNanos(nano)
+        .build()
+
+/** The checks `library.proto` puts on a media id with an episode beside it, for the rpcs that take both. */
+internal fun requireEpisodeFits(
+    media: MediaId,
+    episode: EpisodeRef?,
+) {
+    if (media.mediaType == MediaType.MEDIA_TYPE_TV && episode == null) throw invalid("a series needs an episode")
+    if (media.mediaType == MediaType.MEDIA_TYPE_MOVIE && episode != null) throw invalid("a movie takes no episode")
+}
+
+private val PAGE_TOKEN = Regex("p(0|[1-9][0-9]*)s(0|-?[1-9][0-9]*)")
+
+/**
+ * The start index [token] names: empty is the first page, and this app's own tokens are `p<start>s<size>`,
+ * valid only with the [pageSize] they were issued under. Anything else is INVALID_ARGUMENT.
+ */
+internal fun startOf(
+    token: String,
+    pageSize: Int,
+): Int {
+    if (token.isEmpty()) return 0
+    val match = PAGE_TOKEN.matchEntire(token) ?: throw invalid("unknown page_token")
+    val (start, size) = match.destructured
+    return start.toIntOrNull()?.takeIf { size == pageSize.toString() } ?: throw invalid("unknown page_token")
+}
+
+/**
+ * The token for the page after [page], which started at [start] under [pageSize]; empty when [page] was the last.
+ */
+internal fun nextTokenAfter(
+    start: Int,
+    pageSize: Int,
+    page: ItemPage,
+): String {
+    val next = start + page.items.size
+    return if (page.items.isNotEmpty() && next < page.total) "p${next}s$pageSize" else ""
+}
