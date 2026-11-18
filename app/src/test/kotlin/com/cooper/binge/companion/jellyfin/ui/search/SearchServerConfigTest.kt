@@ -6,6 +6,7 @@ import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.DiscardLogger
 import com.cooper.binge.companion.jellyfin.server.ENCODING_AUDIO_VBR
 import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLING
+import com.cooper.binge.companion.jellyfin.server.NETWORK_IGNORE_VIRTUAL
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -197,6 +198,26 @@ class SearchServerConfigTest {
     fun `the search offers everything when the encoding configuration cannot be read`() {
         jellyfin.status["/System/Configuration/encoding"] = 500
         assertEquals(null, runBlocking { connection.encodingForSearch() })
+    }
+
+    private fun networkHeld(): JsonObject = Json.parseToJsonElement(jellyfin.networkConfiguration).jsonObject
+
+    @Test
+    fun `a network flip lands in the network configuration and keeps the rest`() {
+        val before = networkHeld()
+        val original = before.getValue(NETWORK_IGNORE_VIRTUAL).jsonPrimitive.boolean
+        val vm = made(SearchSwitchesViewModel(connection)).also { it.network.start() }
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.network.state.first { it is SearchConfigState.Ready } } }
+        vm.flip(SettingRows.network(NETWORK_IGNORE_VIRTUAL), !original)
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (networkHeld().getValue(NETWORK_IGNORE_VIRTUAL).jsonPrimitive.boolean == original) delay(POLL_MILLIS)
+            }
+        }
+        val after = networkHeld()
+        // Nothing else moved: the certificate password and an option this app does not know go back as they were read.
+        assertEquals(before.filterKeys { it != NETWORK_IGNORE_VIRTUAL }, after.filterKeys { it != NETWORK_IGNORE_VIRTUAL })
+        assertEquals(0, jellyfin.hits("/System/Configuration"))
     }
 
     private fun awaitEncoding(check: (JsonObject) -> Boolean) {
