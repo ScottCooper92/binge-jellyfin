@@ -86,6 +86,9 @@ data class Actions(
     val onAskSignOut: () -> Unit = {},
     val onCancelSignOut: () -> Unit = {},
     val onSignOut: () -> Unit = {},
+    /** Asks to take back the user's agreement to plain HTTP to the saved server, which signs them out of it. */
+    val onAskTakeBack: () -> Unit = {},
+    val onCancelTakeBack: () -> Unit = {},
     val onDiscover: () -> Unit = {},
     val onChooseServer: (DiscoveredServer) -> Unit = {},
     val onOpenPage: (ConsolePage) -> Unit = {},
@@ -446,6 +449,27 @@ private fun SignedIn(
         else -> SignedInHome(state, actions, inner, topInset)
     }
     if (state.confirmingSignOut) SignOutConfirm(actions)
+    if (state.confirmingTakeBack) state.consentHost?.let { TakeBackConfirm(it, actions) }
+}
+
+/**
+ * The confirm for taking back the agreement to plain HTTP to [host]. Taking it back is a sign-out, since the app can no longer reach the
+ * server, so it says so and confirms with the sign-out. [inWindow] false draws its body alone, as [SignOutConfirm] does.
+ */
+@Composable
+internal fun TakeBackConfirm(
+    host: String,
+    actions: Actions,
+    inWindow: Boolean = true,
+) {
+    val title = stringResource(R.string.take_back_title)
+    val message = stringResource(R.string.take_back_body, host)
+    val confirm = stringResource(R.string.take_back_confirm)
+    if (inWindow) {
+        BingeConfirmDialog(title, message, confirm, actions.onSignOut, actions.onCancelTakeBack, destructive = true)
+    } else {
+        BingeConfirmDialogContent(title, message, confirm, actions.onSignOut, actions.onCancelTakeBack, destructive = true)
+    }
 }
 
 /**

@@ -655,6 +655,50 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a session to a public plain HTTP host holds an agreement the user can take back`() {
+        runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
+        val vm = viewModel(AddressPolicy.Shared)
+        assertEquals("jellyfin.example.com", vm.await<UiState.SignedIn>().consentHost)
+    }
+
+    @Test
+    fun `a session that holds no agreement has none to take back and cannot ask`() {
+        listOf(
+            AddressPolicy.Shared to "https://jellyfin.example.com",
+            AddressPolicy.Shared to "http://192.168.1.10:8096",
+            AddressPolicy.Legacy to "http://jellyfin.example.com",
+        ).forEach { (policy, url) ->
+            runBlocking { sessions.save(jellyfin.session().copy(baseUrl = url)) }
+            val vm = viewModel(policy)
+            assertNull("$policy $url", vm.await<UiState.SignedIn>().consentHost)
+            vm.confirmTakeBack(true)
+            assertFalse("$policy $url", vm.await<UiState.SignedIn>().confirmingTakeBack)
+        }
+    }
+
+    @Test
+    fun `taking the agreement back asks first, and confirming signs out and brings back the row asking for it`() {
+        runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
+        val vm = viewModel(AddressPolicy.Shared)
+        vm.await<UiState.SignedIn>()
+
+        vm.confirmTakeBack(true)
+        assertTrue(vm.await<UiState.SignedIn> { it.confirmingTakeBack }.confirmingTakeBack)
+        // Cancelling changes nothing: the session is still there.
+        vm.confirmTakeBack(false)
+        assertFalse(vm.await<UiState.SignedIn> { !it.confirmingTakeBack }.confirmingTakeBack)
+        assertEquals("jellyfin.example.com", runBlocking { sessions.current() }?.baseUrl?.removePrefix("http://"))
+
+        vm.confirmTakeBack(true)
+        vm.signOut()
+        val asked = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
+        assertEquals("jellyfin.example.com", asked.insecureHost)
+        assertFalse(asked.cleartextAllowed)
+        assertFalse(asked.canConnect)
+        assertNull(runBlocking { sessions.current() })
+    }
+
+    @Test
     fun `an address that needs no agreement asks for none`() {
         val vm = viewModel(AddressPolicy.Shared)
         vm.await<UiState.EnterServer>()

@@ -1,6 +1,8 @@
 package com.cooper.binge.companion.jellyfin
 
 import com.cooper.homelab.core.server.network.CleartextConsent
+import com.cooper.homelab.core.server.network.DataStoreCleartextConsent
+import com.cooper.homelab.core.testing.InMemoryDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,5 +62,21 @@ class SessionCleartextConsentTest {
             baseUrls.value = "http://media.example.com:8097"
 
             assertEquals(listOf("media.example.com"), consent.retained)
+        }
+
+    @Test
+    fun `taking the agreement back leaves the real store allowing nothing`() =
+        runTest {
+            val consent = DataStoreCleartextConsent(InMemoryDataStore()) { null }
+            consent.grant("media.example.com")
+            val baseUrls = MutableStateFlow<String?>("http://media.example.com:8096")
+            val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
+            consent.followSession(baseUrls, scope)
+            assertEquals(true, consent.allows("media.example.com"))
+
+            // The sign-out the take-back runs clears the session.
+            baseUrls.value = null
+
+            assertEquals(false, consent.allows("media.example.com"))
         }
 }

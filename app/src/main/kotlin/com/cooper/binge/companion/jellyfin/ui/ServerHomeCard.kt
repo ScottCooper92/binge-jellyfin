@@ -36,13 +36,15 @@ import com.binge.designsystem.R as DesR
 /**
  * The console home's server card: which server, whether it answered, and what is worth acting on (not encrypted,
  * an update, a restart). Its totals are the ones the signed-in user may see: an administrator also gets the user
- * count. A total that hasn't arrived is a placeholder, and one whose read failed stays one.
+ * count. A total that hasn't arrived is a placeholder, and one whose read failed stays one. Where the server is reached over plain HTTP
+ * by the user's agreement, its "Not encrypted" mark opens the way to take that back ([onTakeBack]).
  */
 @Composable
 internal fun ServerHomeCard(
     state: UiState.SignedIn,
     canOpen: (String) -> Boolean = LocalContext.current::canOpen,
     open: (String) -> Unit = LocalContext.current::openInBrowser,
+    onTakeBack: () -> Unit = {},
 ) {
     val session = state.session
     val card = state.card
@@ -51,7 +53,13 @@ internal fun ServerHomeCard(
     val releaseNotes = stringResource(R.string.release_notes)
     val chips =
         listOfNotNull(
-            ServerCardChip(stringResource(R.string.server_card_not_encrypted), BingeSentiment.Caution).takeIf { state.cleartext },
+            ServerCardChip(
+                label = stringResource(R.string.server_card_not_encrypted),
+                sentiment = BingeSentiment.Caution,
+                // Where the user agreed to it on the server step, the mark is also the way to take that back.
+                onClick = onTakeBack.takeIf { state.consentHost != null },
+                contentDescription = stringResource(R.string.take_back_description).takeIf { state.consentHost != null },
+            ).takeIf { state.cleartext },
             ServerCardChip(
                 label = stringResource(R.string.server_card_update),
                 sentiment = BingeSentiment.Info,

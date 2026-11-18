@@ -152,6 +152,8 @@ class MainActivity : ComponentActivity() {
                     onRefresh = viewModel::refresh,
                     onAskSignOut = { viewModel.confirmSignOut(true) },
                     onCancelSignOut = { viewModel.confirmSignOut(false) },
+                    onAskTakeBack = { viewModel.confirmTakeBack(true) },
+                    onCancelTakeBack = { viewModel.confirmTakeBack(false) },
                     onSignOut = viewModel::signOut,
                     onDiscover = { withLocalNetwork(viewModel::discoverServers) },
                     onChooseServer = viewModel::chooseServer,
