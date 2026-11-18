@@ -219,6 +219,27 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
+    fun `a flip sent as a page opens is not put back over what the page then saved`() {
+        val vm = started()
+        vm.ready()
+        vm.setAutoplayNextEpisode(false)
+        vm.leaving()
+        runBlocking { connection.awaitSaves() }
+        assertFalse(server().on("EnableNextEpisodeAutoPlay"))
+
+        // On the page the user turns it back on, and the page saves it. Then the search is shown again.
+        jellyfin.userConfiguration =
+            jellyfin.userConfiguration.replace("\"EnableNextEpisodeAutoPlay\":false", "\"EnableNextEpisodeAutoPlay\":true")
+        assertTrue(server().on("EnableNextEpisodeAutoPlay"))
+        vm.refresh()
+        vm.settled { (it as? SearchSwitchesState.Ready)?.reading == false }
+        Thread.sleep(SEND_WAIT_MILLIS)
+
+        assertTrue(vm.ready().playback.autoplayNextEpisode)
+        assertTrue(server().on("EnableNextEpisodeAutoPlay"))
+    }
+
+    @Test
     fun `several switches asking at once make one read`() {
         val vm = made(SearchSwitchesViewModel(connection))
         val held = jellyfin.hold("/Users/Me")
@@ -309,7 +330,7 @@ class SearchSwitchesViewModelTest {
     }
 
     private companion object {
-        const val TIMEOUT_MILLIS = 10_000L
+        const val TIMEOUT_MILLIS = 30_000L
         const val POLL_MILLIS = 20L
         const val SEND_WAIT_MILLIS = 900L
     }

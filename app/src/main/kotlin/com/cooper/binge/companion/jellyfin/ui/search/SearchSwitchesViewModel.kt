@@ -107,7 +107,10 @@ class SearchSwitchesViewModel(
         viewModelScope.launch {
             try {
                 // Sent now and answered when the server has it.
-                if (!kept) saves.settle().await()
+                if (!kept) {
+                    val sent = unsent.toMap()
+                    acceptedBy(saves.settle().await(), sent)
+                }
                 connection.awaitSaves()
                 connection
                     .consoleCall(TAG) { _, client -> client.userConfiguration() }
@@ -157,8 +160,23 @@ class SearchSwitchesViewModel(
      * shown again.
      */
     fun leaving() {
+        val sent = unsent.toMap()
         val owed = saves.settle()
         connection.launchSave { owed.await() }
+        viewModelScope.launch { acceptedBy(owed.await(), sent) }
+    }
+
+    /**
+     * What a `settle()` answered: nothing kept means the server has accepted what it sent (a refusal is told through the callback,
+     * which clears [unsent] too), so those changes are no longer owed. Only the ones sent: a change made since is still owed. Without
+     * this a read would put the old change back on top of what a page saved after it.
+     */
+    private fun acceptedBy(
+        kept: JsonObject?,
+        sent: Map<String, JsonPrimitive>,
+    ) {
+        if (kept != null) return
+        sent.forEach { (key, value) -> if (unsent[key] == value) unsent.remove(key) }
     }
 
     /** Not while the copy is being read again: Retry would send the old copy over what a page saved, and the read puts the change back anyway. */
