@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.Dp
 import com.binge.designsystem.component.BingePullToRefresh
 import com.cooper.homelab.core.uiandroid.search.SettingsSearchEntry
 import com.cooper.homelab.ephyra.flags.LocalFlags
+import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.binge.designsystem.R as DesR
 

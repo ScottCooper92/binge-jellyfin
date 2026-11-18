@@ -25,6 +25,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import com.binge.designsystem.testing.createTakeDownKeyboardAndroidComposeRule
 import com.cooper.homelab.core.flags.Flags
+import com.cooper.homelab.core.flags.SharedFlags
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.flags.LocalFlags
@@ -103,7 +104,7 @@ class TvJellyfinFocusTest {
     private fun show(initial: UiState) {
         state = initial
         compose.setContent {
-            CompositionLocalProvider(LocalFlags provides if (promoted) Flags.AllOn else Flags()) {
+            CompositionLocalProvider(LocalFlags provides if (promoted) Flags.of(SharedFlags.BingePromotion to true) else Flags()) {
                 JellyfinTvTheme { TvJellyfinRoot(state, actions, playback = playback) }
             }
         }

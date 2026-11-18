@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.core.flags.Flags
+import com.cooper.homelab.core.flags.SharedFlags
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.server.TmdbCoverage
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
@@ -45,7 +46,7 @@ class TmdbCoverageNoteTest {
 
     @Test
     fun `it names Binge when the flag is on`() {
-        show(TmdbCoverage(titles = 20, withoutTmdbId = 3), Flags.AllOn)
+        show(TmdbCoverage(titles = 20, withoutTmdbId = 3), Flags.of(SharedFlags.BingePromotion to true))
         compose.onNodeWithText("Binge cannot find these.", substring = true).assertExists()
     }
 

@@ -11,6 +11,7 @@ import com.android.tools.screenshot.PreviewTest
 import com.binge.designsystem.SaveStatus
 import com.binge.designsystem.tv.component.TvButton
 import com.cooper.homelab.core.flags.Flags
+import com.cooper.homelab.core.flags.SharedFlags
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.preview.JellyfinTvScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinTvStressPreviews
@@ -247,18 +248,26 @@ class TvJellyfinScreenshotTest {
     @JellyfinTvScreenPreviews
     @Composable
     fun signedInChecking() =
-        CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInChecking, Actions()) }
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            TvJellyfinRoot(previewSignedInChecking, Actions())
+        }
 
     /** The saved server has not answered yet: its row says it is checking, and only the way out is offered. */
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
-    fun signedInWaiting() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInWaiting, Actions()) }
+    fun signedInWaiting() =
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            TvJellyfinRoot(previewSignedInWaiting, Actions())
+        }
 
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
-    fun signedInFailed() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedInFailed, Actions()) }
+    fun signedInFailed() =
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            TvJellyfinRoot(previewSignedInFailed, Actions())
+        }
 
     @PreviewTest
     @JellyfinTvScreenPreviews
@@ -279,7 +288,10 @@ class TvJellyfinScreenshotTest {
     @PreviewTest
     @JellyfinTvScreenPreviews
     @Composable
-    fun signedInPromoted() = CompositionLocalProvider(LocalFlags provides Flags.AllOn) { TvJellyfinRoot(previewSignedIn, Actions()) }
+    fun signedInPromoted() =
+        CompositionLocalProvider(LocalFlags provides Flags.of(SharedFlags.BingePromotion to true)) {
+            TvJellyfinRoot(previewSignedIn, Actions())
+        }
 
     private val cultures = listOf(Culture("English", "en", listOf("eng")), Culture("French", "fr", listOf("fre", "fra")))
     private val prefs = PlaybackPreferences(audio = "eng", subtitles = "", subtitleMode = SubtitleMode.Default)

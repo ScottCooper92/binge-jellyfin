@@ -15,8 +15,8 @@ import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
 import com.cooper.homelab.core.flags.FeatureFlags
 import com.cooper.homelab.core.flags.FirebaseRemoteFlagSource
-import com.cooper.homelab.core.flags.Flag
 import com.cooper.homelab.core.flags.RemoteFeatureFlags
+import com.cooper.homelab.core.flags.SharedFlags
 import com.cooper.homelab.core.flags.StaticFlagOverrides
 import com.cooper.homelab.core.foundation.AppDispatchers
 import com.cooper.homelab.core.foundation.Clock
@@ -190,9 +190,9 @@ class AppGraph(
      * made with -PbingePromotion=true turns it on locally, whatever the remote says.
      */
     val flags: FeatureFlags by lazy {
-        val fixed = if (BuildConfig.BINGE_PROMOTION) mapOf(Flag.BingePromotion to true) else emptyMap()
+        val fixed = if (BuildConfig.BINGE_PROMOTION) mapOf(SharedFlags.BingePromotion.key to true) else emptyMap()
         RemoteFeatureFlags(
-            source = FirebaseRemoteFlagSource(appContext),
+            source = FirebaseRemoteFlagSource(appContext, SharedFlags.all),
             overrides = StaticFlagOverrides(fixed),
             scope = scope,
             io = io,
@@ -266,7 +266,7 @@ class AppGraph(
                     ),
                 ),
             launcher = PlayReviewPromptLauncher(appContext, AppDispatchers.platform()),
-            isEnabled = { flags.flags.value.reviewPrompt },
+            isEnabled = { flags.flags.value[SharedFlags.ReviewPrompt] },
             scope = scope,
             clock = Clock.system(),
         )
