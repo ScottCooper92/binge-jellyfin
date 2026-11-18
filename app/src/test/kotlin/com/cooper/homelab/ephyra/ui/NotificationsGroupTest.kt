@@ -12,6 +12,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** The Notifications group on the This app page: an administrator's alone, and each row only while it means something. */
 @RunWith(RobolectricTestRunner::class)
@@ -57,6 +58,7 @@ class NotificationsGroupTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
     fun `the switch asks to turn on, and then off`() {
         val asked = mutableListOf<Boolean>()
         show(NotificationSettings(enabled = false), Actions(onNotificationsEnabled = { asked += it }))
