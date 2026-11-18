@@ -397,6 +397,7 @@ private fun Resources.indexPart4(): List<SettingEntry<SearchTarget>> =
             Icons.Outlined.Build,
             R.string.advanced_title,
             R.string.advanced_title,
+            shown = { profile, _ -> profile.hasCacheAndLegacyAuth },
             row = SettingRows.ADVANCED_CACHE,
         ),
     )
