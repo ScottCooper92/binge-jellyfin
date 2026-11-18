@@ -1,5 +1,6 @@
 package com.cooper.binge.companion.jellyfin.ui.search
 
+import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.ENCODING_ACCELERATION
 import com.cooper.binge.companion.jellyfin.server.ENCODING_AUDIO_VBR
 import com.cooper.binge.companion.jellyfin.server.ENCODING_AV1
@@ -24,12 +25,15 @@ import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.encodingChoice
+import com.cooper.binge.companion.jellyfin.server.encodingConfiguration
 import com.cooper.binge.companion.jellyfin.server.hasColorDepthDecoding
 import com.cooper.binge.companion.jellyfin.server.hasHevcRextDecoding
 import com.cooper.binge.companion.jellyfin.server.hasIntelOptions
 import com.cooper.binge.companion.jellyfin.server.hasToneMapping
 import com.cooper.binge.companion.jellyfin.server.isAccelerated
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.binge.companion.jellyfin.ui.console.consoleCall
+import com.cooper.homelab.core.presentation.search.SettingEntry
 import kotlinx.serialization.json.JsonObject
 
 /** The acceleration type as the page reads it, which decides which of the Transcoding switches the page shows. */
@@ -58,6 +62,28 @@ private fun encodingSpec(
 private val accelerated: (String, JellyfinServerProfile) -> Boolean = { type, _ -> isAccelerated(type) }
 
 private val advancedEncoding: (JellyfinServerProfile) -> Boolean = { it.hasAdvancedEncoding }
+
+/**
+ * Whether the Transcoding page draws this entry's row for [encoding], the page's configuration as read when the search opened. An
+ * entry that is no Transcoding switch is left alone, and so is every entry when [encoding] is null (it could not be read): the
+ * search then offers what it always did. The same rule as the switch's own, so a result and its switch cannot disagree.
+ */
+internal fun SettingEntry<SearchTarget>.drawnFor(
+    encoding: JsonObject?,
+    profile: JellyfinServerProfile,
+): Boolean {
+    val spec = ENCODING_SPECS[row] ?: return true
+    return encoding == null || (spec.applies(encoding, profile) && spec.read(encoding) != null)
+}
+
+/**
+ * The encoding configuration, for the search to know which Transcoding rows the page draws; null where it cannot be read, for which
+ * nothing is hidden. What a page has just saved goes first, so the acceleration type read is the one it chose.
+ */
+internal suspend fun Connection.encodingForSearch(): JsonObject? {
+    awaitSaves()
+    return consoleCall("JellyfinSearchAvailability") { _, client -> client.encodingConfiguration() }.getOrNull()
+}
 
 internal val ENCODING_SPECS: Map<String, SwitchSpec> =
     mapOf(

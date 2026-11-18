@@ -187,6 +187,18 @@ class SearchServerConfigTest {
         }
     }
 
+    @Test
+    fun `the search reads the encoding configuration to know which rows the page draws`() {
+        val read = runBlocking { connection.encodingForSearch() }
+        assertEquals(encodingHeld(), read)
+    }
+
+    @Test
+    fun `the search offers everything when the encoding configuration cannot be read`() {
+        jellyfin.status["/System/Configuration/encoding"] = 500
+        assertEquals(null, runBlocking { connection.encodingForSearch() })
+    }
+
     private fun awaitEncoding(check: (JsonObject) -> Boolean) {
         runBlocking {
             withTimeout(TIMEOUT_MILLIS) {
