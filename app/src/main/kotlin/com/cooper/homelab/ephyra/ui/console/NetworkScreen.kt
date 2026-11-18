@@ -32,7 +32,6 @@ import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchorIf
 import com.binge.designsystem.template.FormAction
 import com.binge.designsystem.template.FormScreen
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.server.NETWORK_AUTO_DISCOVERY
@@ -90,7 +89,6 @@ fun NetworkScreen(
     val ready = state as? NetworkUiState.Ready
     FormScreen(
         title = stringResource(R.string.network_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },

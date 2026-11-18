@@ -25,6 +25,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** A user's settings pages: which rows a release and a policy show, and that a tap reaches its action. */
 @RunWith(RobolectricTestRunner::class)
@@ -56,6 +57,7 @@ class UserPolicyScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
     fun `a user's page offers the sections the server sent, and no others`() {
         show(null, policy("""{"IsAdministrator":false,"EnableMediaPlayback":true,"EnableLiveTvAccess":true}"""))
         compose.onNodeWithText("Playback").assertExists()

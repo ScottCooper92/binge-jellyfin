@@ -37,7 +37,6 @@ import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.EmptyScreen
 import com.binge.designsystem.template.FormScreen
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.server.CHAPTER_RESOLUTIONS
@@ -102,7 +101,6 @@ fun LibraryDisplayScreen(
     val host = remember { SnackbarHostState() }
     FormScreen(
         title = stringResource(R.string.display_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },
@@ -128,7 +126,6 @@ fun LibraryDisplayListScreen(
     val host = remember { SnackbarHostState() }
     FormScreen(
         title = stringResource(list.title()),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },

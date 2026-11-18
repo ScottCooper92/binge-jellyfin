@@ -47,7 +47,6 @@ import com.binge.designsystem.component.ItemGroup
 import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.hasPaneBeside
 import com.binge.designsystem.template.BingeScreenScaffold
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.homelab.ephyra.R
@@ -123,7 +122,6 @@ fun JellyfinRoot(
 ) {
     BingeScreenScaffold(
         title = stringResource(R.string.app_label),
-        bar = ScreenBar.Small,
         // An administrator's own settings are one tap away, in the account: avatar, as binge-seerr has it.
         actions = {
             if (state is UiState.SignedIn &&

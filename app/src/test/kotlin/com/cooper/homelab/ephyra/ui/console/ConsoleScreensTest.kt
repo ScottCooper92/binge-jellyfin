@@ -238,6 +238,7 @@ class ConsoleScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
     fun `a library's screen hands its changes on`() {
         val calls = mutableListOf<String>()
         val actions =
@@ -452,6 +453,7 @@ class ConsoleScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
     fun `libraries scan one or all as job rows, stop the scan of everything, and show how a run went`() {
         val scanned = mutableListOf<String>()
         var everything = 0
@@ -888,7 +890,7 @@ class ConsoleScreensTest {
     }
 
     @Test
-    @Config(qualifiers = "w411dp-h891dp")
+    @Config(qualifiers = "w411dp-h1500dp")
     fun `a package lists its versions, installs a chosen one, and asks before putting an older one over a newer`() {
         val calls = mutableListOf<String>()
         val newer = catalogVersion.copy(version = "14.0.0.0", targetAbi = "10.11.0.0", changelog = "For a newer server.")
@@ -1147,6 +1149,7 @@ class ConsoleScreensTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
     fun `trickplay switches, pickers and numbers reach their actions, and a number out of range is refused in place`() {
         val calls = mutableListOf<String>()
         var state by mutableStateOf(TrickplayUiState.Ready(TrickplaySettings()))

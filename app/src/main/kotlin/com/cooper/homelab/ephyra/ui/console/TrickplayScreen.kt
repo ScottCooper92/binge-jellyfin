@@ -41,7 +41,6 @@ import com.binge.designsystem.component.PageIntro
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.formSaveStatus
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.server.TRICKPLAY_PRIORITIES
@@ -92,7 +91,6 @@ fun TrickplayScreen(
     val ready = state as? TrickplayUiState.Ready
     FormScreen(
         title = stringResource(R.string.trickplay_title),
-        bar = ScreenBar.Small,
         onBack = actions.onBack,
         snackbarHostState = host,
         saveStatus = ready?.save?.let { formSaveStatus(it.status, it.failed, actions.onRetrySave) },

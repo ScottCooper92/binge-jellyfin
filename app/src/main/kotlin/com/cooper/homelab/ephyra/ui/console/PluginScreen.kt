@@ -28,7 +28,6 @@ import com.binge.designsystem.component.ListItem
 import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.BingeScreenScaffold
-import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
 import com.cooper.homelab.ephyra.R
@@ -59,7 +58,6 @@ fun PluginScreen(
     val listState = rememberLazyListState()
     BingeScreenScaffold(
         title = plugin?.name ?: stringResource(R.string.plugins_title),
-        bar = ScreenBar.Small,
         onBack = onBack,
         snackbarHostState = host,
     ) { padding ->
