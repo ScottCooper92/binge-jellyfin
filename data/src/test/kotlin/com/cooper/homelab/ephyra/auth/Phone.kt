@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import com.binge.companion.kit.SecretCipher
+import com.cooper.homelab.core.foundation.LogField
 import com.cooper.homelab.core.foundation.LogLevel
 import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.server.connection.DeviceIdentity
@@ -34,7 +35,14 @@ class Phone(
     io: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Unconfined,
 ) {
     val warnings = mutableListOf<String>()
-    private val logger = Logger { level, _, event, _, _ -> if (level == LogLevel.Warn) warnings += event }
+
+    /** Every entry logged, by event, with its fields, so a test can hold what an entry says and what it leaves out. */
+    val logged = mutableListOf<Pair<String, List<LogField>>>()
+    private val logger =
+        Logger { level, _, event, fields, _ ->
+            logged += event to fields
+            if (level == LogLevel.Warn) warnings += event
+        }
     private val job = Job()
     private val executor = Executors.newSingleThreadExecutor { Thread(it, "phone").apply { isDaemon = true } }
     private val scope = CoroutineScope(executor.asCoroutineDispatcher() + job)

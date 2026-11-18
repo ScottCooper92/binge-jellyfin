@@ -6,6 +6,7 @@ import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
 import com.cooper.homelab.core.foundation.Clock
 import com.cooper.homelab.ephyra.FakeJellyfin
+import com.cooper.homelab.ephyra.OWN_LOG_PACKAGES
 import com.cooper.homelab.ephyra.server.ApiKey
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.session
@@ -40,7 +41,7 @@ class ApiKeysViewModelTest {
             Clock { Instant.fromEpochMilliseconds(0) },
             Redactor(),
             serverOrder = { emptyList() },
-            ownPackages = listOf("com.cooper.binge."),
+            ownPackages = OWN_LOG_PACKAGES,
         )
     private val connection =
         teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, ring))

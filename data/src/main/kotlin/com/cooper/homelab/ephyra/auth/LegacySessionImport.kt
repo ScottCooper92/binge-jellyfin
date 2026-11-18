@@ -63,7 +63,7 @@ class LegacySessionImport(
         }
         val name = old[SERVER_NAME]?.takeIf { it.isNotBlank() } ?: address.host
         registry.restore(SavedServer(id, address, name, JELLYFIN_KIND, ConnectionSecurity()))
-        logger.info(TAG, "legacy-session-imported", listOf(LogField.Server(id), LogField.Flag("signedIn", userId != null && token != null)))
+        logger.info(TAG, "legacy-session-imported", listOf(LogField.Flag("signedIn", userId != null && token != null)))
     }
 
     private companion object {
