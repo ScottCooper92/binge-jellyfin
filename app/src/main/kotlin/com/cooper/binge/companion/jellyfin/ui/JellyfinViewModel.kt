@@ -39,9 +39,7 @@ import com.cooper.binge.companion.jellyfin.server.userThumbnail
 import com.cooper.binge.companion.jellyfin.telemetry.AnalyticsEvents
 import com.cooper.binge.companion.jellyfin.telemetry.SignInReports
 import com.cooper.binge.companion.jellyfin.ui.console.decodeThumbnail
-import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.core.server.network.CleartextConsent
-import com.cooper.homelab.core.server.network.JvmTransportFailures
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.NoOpAnalytics
@@ -118,7 +116,7 @@ internal fun unreachableHealth(
     cause: IOException? = null,
 ): ConnectionHealth =
     when {
-        cause?.let(JvmTransportFailures::read) == ServerFailure.ClientCertificateNeeded -> ConnectionHealth.ClientCertificateNeeded
+        cause != null && asksForClientCertificate(listOf(cause)) -> ConnectionHealth.ClientCertificateNeeded
         baseUrl.localNetworkHostOrNull() != null && !localNetwork.isGranted() -> ConnectionHealth.LocalNetworkDenied
         else -> ConnectionHealth.Unreachable
     }

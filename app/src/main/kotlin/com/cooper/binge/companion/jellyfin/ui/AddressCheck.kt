@@ -6,9 +6,7 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinUnreadableAnswer
 import com.cooper.binge.companion.jellyfin.server.PublicServerInfo
 import com.cooper.binge.companion.jellyfin.server.noted
 import com.cooper.binge.companion.jellyfin.server.publicInfo
-import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.core.server.network.CleartextRefusedException
-import com.cooper.homelab.core.server.network.JvmTransportFailures
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import kotlinx.coroutines.CancellationException
 import okhttp3.HttpUrl
@@ -63,11 +61,14 @@ internal class AddressCheck(
         ) : Probe
     }
 
-    private suspend fun probe(url: HttpUrl): Probe =
-        try {
+    private suspend fun probe(url: HttpUrl): Probe {
+        val attempts = mutableListOf<IOException>()
+        return try {
             connection
-                .anonymous(url)
-                .publicInfo()
+                .anonymous(url) {
+                    connection.logger.noted(TAG, "an attempt failed", it)
+                    synchronized(attempts) { attempts += it }
+                }.publicInfo()
                 .takeIf { it.serverId.isNotBlank() }
                 ?.let { Probe.Found(it) }
                 ?: Probe.Failed(Answer.NotJellyfin)
@@ -84,10 +85,10 @@ internal class AddressCheck(
             Probe.Failed(Answer.Refused)
         } catch (e: IOException) {
             connection.logger.noted(TAG, "server check failed", e)
-            Probe.Failed(if (asksForCertificate(e)) Answer.ClientCertificateNeeded else Answer.Silent)
+            val seen = synchronized(attempts) { attempts.toList() } + e
+            Probe.Failed(if (asksForClientCertificate(seen)) Answer.ClientCertificateNeeded else Answer.Silent)
         }
-
-    private fun asksForCertificate(failure: IOException) = JvmTransportFailures.read(failure) == ServerFailure.ClientCertificateNeeded
+    }
 
     private companion object {
         const val TAG = "AddressCheck"
