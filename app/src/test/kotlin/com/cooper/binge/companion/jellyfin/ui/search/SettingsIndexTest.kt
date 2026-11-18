@@ -171,6 +171,16 @@ class SettingsIndexTest {
     }
 
     @Test
+    fun `the splash screen entry is offered from the release that has one`() {
+        val admin = JellyfinAccount("sam", Json.parseToJsonElement("""{"IsAdministrator":true}""").jsonObject)
+
+        fun offered(version: String) = find("splash") { it.available(JellyfinServerProfile.from(version), admin) }
+        assertTrue("Splash screen" in offered("10.11.6"))
+        assertTrue("Splash screen" in offered("10.9.11"))
+        assertFalse("Splash screen" in offered("10.8.13"))
+    }
+
+    @Test
     fun `the alerts row is offered to an administrator only`() {
         val profile = JellyfinServerProfile.from("10.11.6")
 

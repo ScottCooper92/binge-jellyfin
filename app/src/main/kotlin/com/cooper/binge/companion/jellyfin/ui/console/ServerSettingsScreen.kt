@@ -246,6 +246,7 @@ private fun LoginScreenRows(
                     detail = stringResource(R.string.server_settings_splashscreen_detail),
                     supportingMaxLines = SETTINGS_DETAIL_LINES,
                     toggled = branding.splashscreen,
+                    key = SettingRows.SERVER_SPLASHSCREEN,
                     onClick = { actions.onSplashscreen(!branding.splashscreen) },
                 ).takeIf { splashscreenAvailable },
                 ListItem(

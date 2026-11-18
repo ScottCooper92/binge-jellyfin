@@ -44,4 +44,5 @@ internal object SettingRows {
     const val ADVANCED_LEGACY_AUTH = "advanced.legacy-auth"
     const val SERVER_NAME = "server.name"
     const val SERVER_QUICK_CONNECT = "server.quick-connect"
+    const val SERVER_SPLASHSCREEN = "server.splashscreen"
 }
