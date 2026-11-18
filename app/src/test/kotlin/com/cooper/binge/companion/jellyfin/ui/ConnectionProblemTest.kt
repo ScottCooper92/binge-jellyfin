@@ -56,7 +56,7 @@ class ConnectionProblemTest {
     }
 
     @Test
-    fun `a server that asks for a client certificate says so, and does not retry on its own`() {
+    fun `a server that asks for a client certificate says so`() {
         compose.setContent { JellyfinTheme { JellyfinRoot(state(ConnectionHealth.ClientCertificateNeeded), Actions()) } }
         compose.onNodeWithText("This server asks for a client certificate").assertExists()
         compose.onNodeWithText("Edit server details").assertExists()
