@@ -718,8 +718,6 @@ class JellyfinViewModel(
         refresh()
     }
 
-    /** The signed-in state for [session], with the plain-HTTP agreement it holds, if any. */
-
     private companion object {
         const val TAG = "JellyfinSetup"
         const val HTTP_UNAUTHORIZED = 401
