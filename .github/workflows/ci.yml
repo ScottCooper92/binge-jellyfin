@@ -144,13 +144,6 @@ jobs:
           [ -n "$base" ] || all "No baseline to diff against"
 
           git diff --name-only "$base" "$head" > "$RUNNER_TEMP/changed.txt" || all "The diff could not be read"
-          # Code that R8 can break with no keep rule or build file changing: serialization and reflection.
-          # Written to a file and grepped there: `grep -q` exits on its first match, and under pipefail a
-          # large diff would then die of SIGPIPE (141) and read as "no match".
-          git diff -U0 "$base" "$head" -- 'app/src/main/*.kt' 'data/src/main/*.kt' > "$RUNNER_TEMP/main-kt.diff" || all "The diff could not be read"
-          if grep -qE '^\+.*(@Serializable|@Keep|Class\.forName|ServiceLoader|\.javaClass\.)' "$RUNNER_TEMP/main-kt.diff"; then
-            export SENSITIVE=true
-          fi
           .github/scripts/classify-changes.sh "$RUNNER_TEMP/changed.txt" | tee -a "$GITHUB_OUTPUT"
           {
             echo "Diff against $label:"
@@ -208,7 +201,9 @@ jobs:
       # commit, and a log showing only the first of three failures spends that attempt
       # fixing a third of the problem. Each -x names a task another job runs, with no project in front of it, so it
       # drops that task in every module, :data's included; -x also drops whatever only that task needed, which is the
-      # point for assembleRelease's R8.
+      # point for assembleRelease's R8. The `release` job that runs it is skipped on a pull request that changes no
+      # build file, keep rule or submodule pin (classify-changes.sh), and runs on every push to main; `build` counts a
+      # skipped job as passed, so branch protection still sees it.
       # There is no release unit-test task to exclude: AGP 9 creates unit tests for the debug build
       # type only, so testDebugUnitTest is the whole suite of each module and it runs once, in `tests`. Only :app has
       # frames, so the screenshots job is the one task still named with its project.
