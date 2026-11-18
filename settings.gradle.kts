@@ -74,3 +74,4 @@ includeBuild("homelab-core") {
 }
 
 include(":app")
+include(":data")

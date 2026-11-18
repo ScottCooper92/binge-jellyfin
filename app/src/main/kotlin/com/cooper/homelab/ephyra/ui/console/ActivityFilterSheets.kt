@@ -169,9 +169,10 @@ internal fun TimePage(
             BingeChoice(ActivityTimePreset.Last30Days.name, stringResource(R.string.activity_time_30), icon = Icons.Outlined.Event),
             BingeChoice(CUSTOM_CHOICE, stringResource(R.string.activity_time_custom), icon = Icons.Outlined.Event).takeIf { extended },
         )
+    val preset = draft.preset
     val selected =
         when {
-            draft.preset != null -> draft.preset.name
+            preset != null -> preset.name
             draft.fromMillis != null || draft.toMillis != null -> CUSTOM_CHOICE
             else -> ANY_CHOICE
         }

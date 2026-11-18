@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   bump:
-    uses: ScottCooper92/binge-ci/.github/workflows/submodule-bump.yml@1b8bfc7cd36efacdcd204aa0808fdb8afad1c546 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/submodule-bump.yml@37267fa7e22a43babb58aecf4577ce3cd0253b41 # v1.0.47
     with:
       submodule_path: homelab-core
       # The shared library is private, so the app token is named here to read it.

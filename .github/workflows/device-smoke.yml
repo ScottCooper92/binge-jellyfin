@@ -27,11 +27,11 @@ on:
       - 'app/src/main/AndroidManifest.xml'
       - 'app/src/main/kotlin/com/cooper/homelab/ephyra/AppGraph.kt'
       - 'app/src/main/kotlin/com/cooper/homelab/ephyra/JellyfinApp.kt'
-      - 'app/src/main/kotlin/com/cooper/homelab/ephyra/auth/**'
+      - 'data/build.gradle.kts'
+      - 'data/src/main/**'
       - 'app/src/androidTest/**'
       - 'app/src/main/keepRules/**'
       - 'app/src/main/kotlin/com/cooper/homelab/ephyra/service/**'
-      - 'app/src/main/kotlin/com/cooper/homelab/ephyra/server/**'
       - 'app/src/debug/keepRules/**'
       - 'binge-companions'
       - 'libs.versions.toml'
@@ -58,7 +58,7 @@ jobs:
     permissions:
       contents: read
       actions: write
-    uses: ScottCooper92/binge-ci/.github/workflows/device-smoke.yml@1b8bfc7cd36efacdcd204aa0808fdb8afad1c546 # v1
+    uses: ScottCooper92/binge-ci/.github/workflows/device-smoke.yml@37267fa7e22a43babb58aecf4577ce3cd0253b41 # v1.0.47
     with:
       private_submodules: homelab-core,binge-design-system,binge-ci
       ref: ${{ github.event.inputs.ref }}
@@ -88,7 +88,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@1b8bfc7cd36efacdcd204aa0808fdb8afad1c546 # v1
+      - uses: ScottCooper92/binge-ci/.github/actions/nightly-report@37267fa7e22a43babb58aecf4577ce3cd0253b41 # v1.0.47
         with:
           result: ${{ needs.companion-smoke.result }}
           title: Weekly device smoke is failing on main
