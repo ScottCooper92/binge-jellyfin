@@ -156,6 +156,15 @@ class SearchSwitchesViewModel(
         saves.retry()
     }
 
+    /**
+     * The user is opening a page over the search, which keeps this view model alive. A change still waiting out its delay is sent
+     * now, and counted with the saves [Connection.awaitSaves] waits for, so the page reads it rather than the copy without it.
+     */
+    fun leaving() {
+        if (_state.value !is SearchSwitchesState.Ready) return
+        connection.launchSave { saves.settle().await() }
+    }
+
     override fun onCleared() = saves.cleared()
 
     private fun save(

@@ -71,6 +71,7 @@ internal fun SettingsSearchRoute(
             icon = { it.target.icon },
             onOpen = { entry, _ ->
                 search.remember(entry)
+                switches?.leaving()
                 open(entry.target.page, entry.row)
             },
             onBack = onBack,

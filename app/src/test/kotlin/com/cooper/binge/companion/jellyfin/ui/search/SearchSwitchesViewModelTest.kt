@@ -201,6 +201,17 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
+    fun `a flip still waiting out its delay is sent when a page is opened, so the page reads it`() {
+        val vm = started()
+        vm.ready()
+        vm.setAutoplayNextEpisode(false)
+        // A result is opened inside the send delay: the page asks what is saved before it reads.
+        vm.leaving()
+        runBlocking { connection.awaitSaves() }
+        assertFalse(server().on("EnableNextEpisodeAutoPlay"))
+    }
+
+    @Test
     fun `several switches asking at once make one read`() {
         val vm = made(SearchSwitchesViewModel(connection))
         val held = jellyfin.hold("/Users/Me")
