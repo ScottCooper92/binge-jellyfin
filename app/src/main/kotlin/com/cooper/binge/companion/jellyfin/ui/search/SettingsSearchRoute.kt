@@ -71,6 +71,8 @@ internal fun SettingsSearchRoute(
             icon = { it.target.icon },
             onOpen = { entry, _ ->
                 search.remember(entry)
+                // The page reads the configuration as it opens: what the search still owes the server goes first.
+                switches?.leaving()
                 open(entry.target.page, entry.row)
             },
             onBack = onBack,

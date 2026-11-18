@@ -150,6 +150,17 @@ class SearchSwitchesViewModel(
 
     fun setDisplayCollectionsView(on: Boolean) = save(DISPLAY_COLLECTIONS_VIEW, on)
 
+    /**
+     * A page is about to open over the search, and will read the configuration. A change still waiting out its delay is sent now and
+     * counted with the saves [Connection.awaitSaves] waits for, so the page reads it: otherwise the page would read the server
+     * without it, and its next save would send that copy back over the change. The view model stays usable, for when the search is
+     * shown again.
+     */
+    fun leaving() {
+        val owed = saves.settle()
+        connection.launchSave { owed.await() }
+    }
+
     /** Not while the copy is being read again: Retry would send the old copy over what a page saved, and the read puts the change back anyway. */
     fun retrySave() {
         if ((_state.value as? SearchSwitchesState.Ready)?.reading == true) return

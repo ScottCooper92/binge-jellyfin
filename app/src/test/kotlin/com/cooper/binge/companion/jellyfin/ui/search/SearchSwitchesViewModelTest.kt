@@ -201,6 +201,24 @@ class SearchSwitchesViewModelTest {
     }
 
     @Test
+    fun `a flip still inside its delay is sent before a page opened over the search reads the configuration`() {
+        val vm = started()
+        vm.ready()
+        vm.setAutoplayNextEpisode(false)
+        // The page opens at once: it waits for the saves, as every page does as it loads, then reads.
+        vm.leaving()
+        runBlocking { connection.awaitSaves() }
+
+        val read = jellyfin.userConfiguration
+        assertTrue(Json.parseToJsonElement(read).jsonObject.containsKey("EnableNextEpisodeAutoPlay"))
+        assertFalse(server().on("EnableNextEpisodeAutoPlay"))
+        // The search stays usable for when it is shown again.
+        vm.setDisplayMissingEpisodes(true)
+        awaitServer { it.containsKey("DisplayMissingEpisodes") && it.on("DisplayMissingEpisodes") }
+        assertFalse(server().on("EnableNextEpisodeAutoPlay"))
+    }
+
+    @Test
     fun `several switches asking at once make one read`() {
         val vm = made(SearchSwitchesViewModel(connection))
         val held = jellyfin.hold("/Users/Me")
