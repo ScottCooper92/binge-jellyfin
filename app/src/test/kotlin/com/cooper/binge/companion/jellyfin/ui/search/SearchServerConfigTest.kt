@@ -8,6 +8,7 @@ import com.cooper.binge.companion.jellyfin.server.ENCODING_AUDIO_VBR
 import com.cooper.binge.companion.jellyfin.server.ENCODING_THROTTLING
 import com.cooper.binge.companion.jellyfin.server.LIVE_TV_SAVE_NFO
 import com.cooper.binge.companion.jellyfin.server.NETWORK_IGNORE_VIRTUAL
+import com.cooper.binge.companion.jellyfin.server.NFO_PATH_SUBSTITUTION
 import com.cooper.binge.companion.jellyfin.session
 import com.cooper.binge.companion.jellyfin.testSessionStore
 import com.cooper.binge.companion.jellyfin.ui.ViewModelTeardown
@@ -238,6 +239,25 @@ class SearchServerConfigTest {
         val after = liveTvHeld()
         // The tuner hosts, the guide providers with their password and a key this app does not know go back as they were read.
         assertEquals(before.filterKeys { it != LIVE_TV_SAVE_NFO }, after.filterKeys { it != LIVE_TV_SAVE_NFO })
+        assertEquals(0, jellyfin.hits("/System/Configuration"))
+    }
+
+    private fun nfoHeld(): JsonObject = Json.parseToJsonElement(jellyfin.nfoConfiguration).jsonObject
+
+    @Test
+    fun `an NFO flip lands in the NFO configuration and keeps the rest`() {
+        val before = nfoHeld()
+        val original = before.getValue(NFO_PATH_SUBSTITUTION).jsonPrimitive.boolean
+        val vm = made(SearchSwitchesViewModel(connection)).also { it.nfo.start() }
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.nfo.state.first { it is SearchConfigState.Ready } } }
+        vm.flip(SettingRows.nfo(NFO_PATH_SUBSTITUTION), !original)
+        runBlocking {
+            withTimeout(TIMEOUT_MILLIS) {
+                while (nfoHeld().getValue(NFO_PATH_SUBSTITUTION).jsonPrimitive.boolean == original) delay(POLL_MILLIS)
+            }
+        }
+        // The user, the date format and a key this app does not know go back as they were read.
+        assertEquals(before.filterKeys { it != NFO_PATH_SUBSTITUTION }, nfoHeld().filterKeys { it != NFO_PATH_SUBSTITUTION })
         assertEquals(0, jellyfin.hits("/System/Configuration"))
     }
 

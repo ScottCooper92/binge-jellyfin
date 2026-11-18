@@ -41,6 +41,7 @@ import com.cooper.binge.companion.jellyfin.server.NFO_RELEASE_DATE_FORMAT
 import com.cooper.binge.companion.jellyfin.server.NFO_SAVE_IMAGE_PATHS
 import com.cooper.binge.companion.jellyfin.server.bool
 import com.cooper.binge.companion.jellyfin.server.string
+import com.cooper.binge.companion.jellyfin.ui.search.SettingRows
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -183,6 +184,7 @@ private fun switchRow(
         detail = stringResource(detail),
         supportingMaxLines = DETAIL_LINES,
         toggled = on,
+        key = SettingRows.nfo(key),
         onClick = { actions.onSet(key, JsonPrimitive(!on)) },
     )
 }

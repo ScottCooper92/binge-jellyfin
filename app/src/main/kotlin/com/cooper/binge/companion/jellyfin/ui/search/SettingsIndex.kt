@@ -56,6 +56,9 @@ import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
 import com.cooper.binge.companion.jellyfin.server.NETWORK_BASE_URL
 import com.cooper.binge.companion.jellyfin.server.NETWORK_ENABLE_HTTPS
 import com.cooper.binge.companion.jellyfin.server.NETWORK_REMOTE_ACCESS
+import com.cooper.binge.companion.jellyfin.server.NFO_EXTRA_THUMBS
+import com.cooper.binge.companion.jellyfin.server.NFO_PATH_SUBSTITUTION
+import com.cooper.binge.companion.jellyfin.server.NFO_SAVE_IMAGE_PATHS
 import com.cooper.binge.companion.jellyfin.ui.console.ConsolePage
 import com.cooper.homelab.core.presentation.search.SettingEntry
 
@@ -220,6 +223,7 @@ private fun Resources.indexPart2(): List<SettingEntry<SearchTarget>> =
             R.string.settings_server,
             R.string.nfo_title,
             R.string.kw_nfo_images,
+            row = SettingRows.nfo(NFO_SAVE_IMAGE_PATHS),
         ),
         setting(
             ConsolePage.Nfo,
@@ -228,6 +232,7 @@ private fun Resources.indexPart2(): List<SettingEntry<SearchTarget>> =
             R.string.settings_server,
             R.string.nfo_title,
             R.string.kw_nfo_paths,
+            row = SettingRows.nfo(NFO_PATH_SUBSTITUTION),
         ),
         setting(
             ConsolePage.Nfo,
@@ -236,6 +241,7 @@ private fun Resources.indexPart2(): List<SettingEntry<SearchTarget>> =
             R.string.settings_server,
             R.string.nfo_title,
             R.string.kw_nfo_thumbs,
+            row = SettingRows.nfo(NFO_EXTRA_THUMBS),
         ),
         page(ConsolePage.Trickplay, R.string.trickplay_title, Icons.Outlined.Image, R.string.settings_server, R.string.kw_trickplay),
         page(ConsolePage.Plugins, R.string.plugins_title, Icons.Outlined.Extension, R.string.settings_server, R.string.kw_plugins),
