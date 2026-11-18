@@ -145,12 +145,15 @@ jobs:
 
           # --no-renames: git's default rename detection prints only the NEW path of a moved file, so a source file moved
           # into docs/ would read as documentation and skip every Gradle job. This lists both the old and the new path.
-          git diff --name-only --no-renames "$base" "$head" > "$RUNNER_TEMP/changed.txt" || all "The diff could not be read"
+          # -z: without it git C-quotes a path with a non-ASCII character, a quote or a tab, so it would match no pattern, and
+          # `release` is an allow-list, so a keep rule or build file named that way would skip the release build. With -z each
+          # path is written raw and ends in a NUL, and classify-changes.sh reads it that way.
+          git diff -z --name-only --no-renames "$base" "$head" > "$RUNNER_TEMP/changed.txt" || all "The diff could not be read"
           .github/scripts/classify-changes.sh "$RUNNER_TEMP/changed.txt" | tee -a "$GITHUB_OUTPUT"
           {
             echo "Diff against $label:"
             echo '```'
-            cat "$RUNNER_TEMP/changed.txt"
+            tr '\0' '\n' < "$RUNNER_TEMP/changed.txt"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

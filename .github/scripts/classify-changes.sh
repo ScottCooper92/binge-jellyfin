@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Decides which CI jobs a diff can affect, from the changed paths, one per line, in the file given
+# Decides which CI jobs a diff can affect, from the changed paths, each ending in a NUL (`git diff -z`), in the file given
 # as $1. Prints `product=`, `screens=` and `release=`, each true or false, one per line.
 #
 # The design is Binge's change classifier, kept deliberately small. A job is skipped only when
@@ -59,7 +59,8 @@ release_input() {
 }
 
 paths=()
-while IFS= read -r path; do
+# NUL-separated, so a path with a newline, a quote or a non-ASCII character reaches the patterns as it is.
+while IFS= read -r -d '' path || [ -n "$path" ]; do
   [ -n "$path" ] && paths+=("$path")
 done < "$list"
 

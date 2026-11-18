@@ -10,7 +10,7 @@ check() {
   shift 2
   local file got
   file="$(mktemp)"
-  printf '%s\n' "$@" > "$file"
+  printf '%s\0' "$@" > "$file"
   [ "$#" -eq 0 ] && : > "$file"
   got="$("$here/classify-changes.sh" "$file" 2>/dev/null | cut -d= -f2 | tr '\n' ' ' | sed 's/ $//')"
   rm -f "$file"
@@ -51,6 +51,11 @@ check "the companions pin"         "true false true"   binge-companions
 # A rename shows as both paths (the diff runs with --no-renames), so a source file moved into docs is not docs-only.
 check "a source file renamed into docs" "true true false" "$K/ui/SignedInHome.kt" docs/SignedInHome.md
 check "a keep rule renamed into docs"   "true false true" app/src/main/keepRules/companion.keep docs/companion.md
+# The diff is NUL-separated (git diff -z): a path with a non-ASCII character or a newline reaches the patterns as it is.
+check "an accented keep rule"           "true false true"   $'app/src/main/keepRules/r\u00e8gles.keep'
+check "an accented build file"          "true true true"    $'app/b\u00fcild.gradle.kts'
+check "a docs file with a newline in its name" "false false false" $'docs/notes\napp/build.gradle.kts'
+check "a keep rule with a newline in its name" "true false true"   $'app/src/main/keepRules/a\nb.keep'
 check "docs with a screen"         "true true false"   CLAUDE.md "$K/ui/SignedInHome.kt"
 
 check "a UI-only change skips R8" "true true false" "$K/ui/SignedInHome.kt" app/src/main/res/values/strings.xml
