@@ -23,6 +23,10 @@ import com.cooper.binge.companion.jellyfin.server.ENCODING_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.ENCODING_VIDEO_TOOLBOX_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.ENCODING_VPP_TONEMAPPING
 import com.cooper.binge.companion.jellyfin.server.JellyfinServerProfile
+import com.cooper.binge.companion.jellyfin.server.NETWORK_AUTO_DISCOVERY
+import com.cooper.binge.companion.jellyfin.server.NETWORK_IGNORE_VIRTUAL
+import com.cooper.binge.companion.jellyfin.server.NETWORK_PUBLISHED_BY_REQUEST
+import com.cooper.binge.companion.jellyfin.server.NETWORK_UPNP
 import com.cooper.binge.companion.jellyfin.ui.console.ConsoleFailure
 import com.cooper.binge.companion.jellyfin.ui.console.SaveProgress
 import kotlinx.serialization.json.Json
@@ -64,6 +68,9 @@ class ServerSwitchesTest {
             SettingRows.ADVANCED_METRICS,
             SettingRows.ADVANCED_LEGACY_AUTH,
         )
+
+    private val networkRows =
+        listOf(NETWORK_AUTO_DISCOVERY, NETWORK_UPNP, NETWORK_PUBLISHED_BY_REQUEST, NETWORK_IGNORE_VIRTUAL).map { SettingRows.network(it) }
 
     private val encodingRows =
         listOf(
@@ -130,10 +137,42 @@ class ServerSwitchesTest {
 
     @Test
     fun `every switch row has a spec, in the configuration its page saves to`() {
-        assertEquals((userRows + serverRows + encodingRows).toSet(), SWITCH_SPECS.keys)
+        assertEquals((userRows + serverRows + encodingRows + networkRows).toSet(), SWITCH_SPECS.keys)
         assertTrue(userRows.all { spec(it).kind == ConfigKind.User })
         assertTrue(serverRows.all { spec(it).kind == ConfigKind.Server })
         assertTrue(encodingRows.all { spec(it).kind == ConfigKind.Encoding })
+        assertTrue(networkRows.all { spec(it).kind == ConfigKind.Network })
+    }
+
+    @Test
+    fun `a network switch reads its own key as the page does and none where the server did not send it`() {
+        val on = buildJsonObject { networkRows.forEach { put(it.removePrefix("network."), true) } }
+        networkRows.forEach { assertTrue(it, spec(it).read(on)!!) }
+        val off = buildJsonObject { networkRows.forEach { put(it.removePrefix("network."), false) } }
+        networkRows.forEach { assertFalse(it, spec(it).read(off)!!) }
+        networkRows.forEach { assertNull(it, spec(it).read(buildJsonObject { put("EnableHttps", true) })) }
+    }
+
+    @Test
+    fun `the switches of the network page that wait for Save changes have no switch here`() {
+        val formKeys = listOf("EnableHttps", "RequireHttps", "EnableRemoteAccess", "IsRemoteIPFilterBlacklist", "EnableIPv4", "EnableIPv6")
+        formKeys.forEach { assertNull(it, SWITCH_SPECS[SettingRows.network(it)]) }
+    }
+
+    @Test
+    fun `UPnP is offered only on a release that has it, and the other network switches on every one`() {
+        val upnp = spec(SettingRows.network(NETWORK_UPNP))
+        assertTrue(upnp.gate(JellyfinServerProfile.from("10.10.7")))
+        assertTrue(upnp.gate(JellyfinServerProfile.from("10.8.13")))
+        assertFalse(upnp.gate(JellyfinServerProfile.from("10.11.6")))
+        assertTrue(spec(SettingRows.network(NETWORK_AUTO_DISCOVERY)).gate(JellyfinServerProfile.from("10.11.6")))
+    }
+
+    @Test
+    fun `a network switch makes a change to its own key`() {
+        val change = spec(SettingRows.network(NETWORK_IGNORE_VIRTUAL)).change(false)
+        assertEquals(NETWORK_IGNORE_VIRTUAL, change.id)
+        assertEquals(NETWORK_IGNORE_VIRTUAL to JsonPrimitive(false), change.apply(buildJsonObject { }))
     }
 
     @Test

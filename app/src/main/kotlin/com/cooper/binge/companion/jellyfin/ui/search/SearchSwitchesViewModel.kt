@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cooper.binge.companion.jellyfin.server.Connection
 import com.cooper.binge.companion.jellyfin.server.encodingConfiguration
+import com.cooper.binge.companion.jellyfin.server.networkConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveEncodingConfiguration
+import com.cooper.binge.companion.jellyfin.server.saveNetworkConfiguration
 import com.cooper.binge.companion.jellyfin.server.saveServerConfiguration
 import com.cooper.binge.companion.jellyfin.server.serverConfiguration
 import com.cooper.binge.companion.jellyfin.server.userConfiguration
@@ -19,6 +21,9 @@ enum class ConfigKind {
 
     /** The server's encoding configuration: the Transcoding switches. For an administrator. */
     Encoding,
+
+    /** The server's network configuration: the switches that save as made. For an administrator. */
+    Network,
 }
 
 /**
@@ -49,13 +54,23 @@ class SearchSwitchesViewModel(
             { _, client, json -> client.saveEncodingConfiguration(json) },
         )
 
-    private val copies = listOf(user, server, encoding)
+    val network =
+        SearchConfigCopy(
+            connection,
+            viewModelScope,
+            "JellyfinSearchNetworkConfig",
+            { it.networkConfiguration() },
+            { _, client, json -> client.saveNetworkConfiguration(json) },
+        )
+
+    private val copies = listOf(user, server, encoding, network)
 
     fun copy(kind: ConfigKind): SearchConfigCopy =
         when (kind) {
             ConfigKind.User -> user
             ConfigKind.Server -> server
             ConfigKind.Encoding -> encoding
+            ConfigKind.Network -> network
         }
 
     /** Reads again each copy that has been read before, once, as the search comes to the front. A copy nothing has asked for stays unread. */

@@ -115,7 +115,8 @@ internal fun settingsIndex(resources: Resources): List<SettingEntry<SearchTarget
             indexPart5() +
             indexSwitches() +
             indexServerSwitches() +
-            indexEncodingSwitches()
+            indexEncodingSwitches() +
+            indexNetworkSwitches()
     }
 
 private fun Resources.indexPart1(): List<SettingEntry<SearchTarget>> =
