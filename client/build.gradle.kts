@@ -13,6 +13,19 @@ android {
     namespace = "com.cooper.homelab.ephyra.client"
     compileSdk = 37
     defaultConfig { minSdk = 26 }
+    lint {
+        // As :app's: a locale is complete or it does not exist, and an unused string is an error.
+        error +=
+            setOf(
+                "MissingTranslation",
+                "ExtraTranslation",
+                "MissingQuantity",
+                "UnusedQuantity",
+                "StringFormatMatches",
+                "StringFormatCount",
+                "UnusedResources",
+            )
+    }
     testOptions {
         // The screens' tests need real resources, which Robolectric supplies.
         unitTests.isIncludeAndroidResources = true
