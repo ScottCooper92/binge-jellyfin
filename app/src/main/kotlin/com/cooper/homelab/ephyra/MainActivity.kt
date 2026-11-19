@@ -252,6 +252,7 @@ private fun ConsoleHost(
     EphyraNavHost(
         backStack = backStack,
         signedIn = signedIn,
+        resolved = state !is UiState.Loading,
         onBack = { backStack.closeTop() },
         signedOut = { JellyfinRoot(state, homeActions) },
         home = { JellyfinRoot(state, homeActions) },

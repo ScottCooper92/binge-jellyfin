@@ -61,8 +61,9 @@ fun EphyraNavHost(
     defaultPage: @Composable () -> Unit,
     page: @Composable (ConsoleEntry) -> Unit,
     item: @Composable (ConsoleEntry) -> Unit = {},
+    resolved: Boolean = true,
 ) {
-    LaunchedEffect(signedIn) { backStack.settleHome(signedIn) }
+    LaunchedEffect(signedIn, resolved) { backStack.settleHome(signedIn, resolved) }
     // One directive for the strategy and for the Back-arrow rule, so the two cannot disagree about whether the home
     // is on screen beside a page.
     val directive = calculatePaneScaffoldDirective(currentWindowAdaptiveInfoV2())
