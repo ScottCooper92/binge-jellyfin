@@ -24,16 +24,12 @@ import com.cooper.homelab.ephyra.server.JellyfinUnreadableAnswer
 import com.cooper.homelab.ephyra.server.LibraryIndex
 import com.cooper.homelab.ephyra.server.PublicServerInfo
 import com.cooper.homelab.ephyra.server.PublicUser
-import com.cooper.homelab.ephyra.server.SAVED_SERVER
 import com.cooper.homelab.ephyra.server.SignedIn
 import com.cooper.homelab.ephyra.server.authenticateByName
 import com.cooper.homelab.ephyra.server.authenticateWithQuickConnect
 import com.cooper.homelab.ephyra.server.insecureHost
 import com.cooper.homelab.ephyra.server.localNetworkHostOrNull
-import com.cooper.homelab.ephyra.server.logout
-import com.cooper.homelab.ephyra.server.me
 import com.cooper.homelab.ephyra.server.noted
-import com.cooper.homelab.ephyra.server.publicInfo
 import com.cooper.homelab.ephyra.server.publicUsers
 import com.cooper.homelab.ephyra.server.quickConnectAuthenticated
 import com.cooper.homelab.ephyra.server.quickConnectEnabled
@@ -411,17 +407,20 @@ class JellyfinViewModel(
             _state.value = if (session == null) UiState.EnterServer() else signedInState(addressPolicy, session)
             if (session != null) refresh()
         }
-        // A console page found the token refused: sign-in again, as a refused library refresh does.
-        viewModelScope.launch {
-            connection.refused.collect { (_state.value as? UiState.SignedIn)?.let { sessionRefused(it.session) } }
-        }
-        // The saved server stopped answering, or began again, while the app is open: the home follows it, as binge-seerr's does.
-        viewModelScope.launch {
-            connection.monitor.health(SAVED_SERVER).collect { reach ->
-                _state.update { it.afterReach(reach, localNetwork) }
-            }
-        }
     }
+
+    /** Refreshing, the gates, the server's health and signing out: everything from a saved session on. */
+    private val signedIn =
+        SignedInSession(viewModelScope, _state, sessions, connection, index, card, localNetwork, reports, onSessionEnded, addressPolicy)
+
+    /** Reads the gates, then the library index; with [gatesOnly], the gates alone. See [SignedInSession.refresh]. */
+    fun refresh(gatesOnly: Boolean = false) = signedIn.refresh(gatesOnly)
+
+    /** Changes the signed-in state, and leaves any other step as it is. */
+    internal fun updateSignedIn(change: (UiState.SignedIn) -> UiState.SignedIn) = signedIn.updateSignedIn(change)
+
+    /** Ends the session here and on the server. See [SignedInSession.signOut]. */
+    fun signOut() = signedIn.signOut()
 
     fun onAddress(value: String) =
         _state.update { current ->
@@ -595,98 +594,6 @@ class JellyfinViewModel(
         if (recheck && address.isNotBlank()) connect()
     }
 
-    /**
-     * Reads the gates, then the library index. With [gatesOnly], reads the gates again and only them:
-     * when a console page closes (it may have changed one, as turning Quick Connect off does) and when
-     * the app comes back (the server or the user's rights may have changed elsewhere). That read is
-     * quiet: one that fails keeps the gates as they were, and a full refresh says why.
-     */
-    fun refresh(gatesOnly: Boolean = false) {
-        val current = _state.value as? UiState.SignedIn ?: return
-        if (gatesOnly) {
-            viewModelScope.refreshGates(connection, _state, card)
-            return
-        }
-        // One read at a time: a second would end the first's spinner early, and the older of the two could write last.
-        if (current.refreshing) return
-        _state.value = current.copy(refreshing = true, refreshFailed = false)
-        viewModelScope.launch {
-            val health =
-                try {
-                    val signedIn = connection.signedIn()
-                    if (signedIn == null) {
-                        _state.update { (it as? UiState.SignedIn)?.copy(refreshing = false) ?: it }
-                        return@launch
-                    }
-                    // The gates first, so a library index that fails can't leave them unread.
-                    val gates = signedIn.second.readGates(signedIn.first.serverVersion)
-                    // The server has answered: end the first check here, not when the index finishes. A health that is already a problem stays one.
-                    _state.update {
-                        (it as? UiState.SignedIn)?.copy(
-                            profile = gates.first,
-                            account = gates.second,
-                            health = if (it.health == ConnectionHealth.Checking) ConnectionHealth.Healthy else it.health,
-                        ) ?: it
-                    }
-                    card.refresh(viewModelScope, _state, signedIn.first, signedIn.second, gates.second, force = true)
-                    index.refresh(signedIn.second, signedIn.first.userId)
-                    ConnectionHealth.Healthy
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: JellyfinHttpException) {
-                    connection.logger.noted(TAG, "library refresh refused", e)
-                    if (e.code == HTTP_UNAUTHORIZED) {
-                        sessionRefused(current.session)
-                        return@launch
-                    }
-                    ConnectionHealth.CouldNotLoad
-                } catch (e: JellyfinUnreadableAnswer) {
-                    connection.logger.noted(TAG, "library refresh answered something that is not a media server's", e)
-                    ConnectionHealth.CouldNotLoad
-                } catch (e: IOException) {
-                    connection.logger.noted(TAG, "library refresh failed", e)
-                    unreachableHealth(current.session.baseUrl, localNetwork, e)
-                }
-            _state.update {
-                (it as? UiState.SignedIn)?.copy(
-                    refreshing = false,
-                    refreshFailed = health.isProblem,
-                    health = health,
-                    titles = index.size,
-                ) ?: it
-            }
-        }
-    }
-
-    /** The server no longer accepts the token (a revoked device, say): forget it and ask for a sign-in, as the Service's UNAUTHENTICATED does. */
-    private suspend fun sessionRefused(session: JellyfinSession) {
-        sessions.clear()
-        index.clear()
-        onSessionEnded()
-        _state.value = enterServer(addressPolicy, session.baseUrl)
-    }
-
-    /** Changes the signed-in state, and leaves any other step as it is. */
-    internal fun updateSignedIn(change: (UiState.SignedIn) -> UiState.SignedIn) =
-        _state.update {
-            (it as? UiState.SignedIn)?.let(change)
-                ?: it
-        }
-
-    /** Ends the session on the server too, so the device leaves the user's Jellyfin devices list. A failure there still signs out here. */
-    fun signOut() {
-        _state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = false, confirmingTakeBack = false) ?: it }
-        viewModelScope.launch {
-            val signedIn = connection.signedIn()
-            attempt { signedIn?.second?.logout() }
-            reports.signedOut()
-            sessions.clear()
-            index.clear()
-            onSessionEnded()
-            _state.value = enterServer(addressPolicy, signedIn?.first?.baseUrl.orEmpty())
-        }
-    }
-
     private suspend fun finish(
         url: HttpUrl,
         server: PublicServerInfo,
@@ -749,32 +656,6 @@ private fun MutableStateFlow<UiState>.failQuickConnect(
     update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, gettingCode = false, quickConnectError = error) ?: it }
 }
 
-/**
- * The console's gates: the server's profile (its current version, which may have moved since sign-in,
- * and whether Quick Connect is on) and the user's account. Only the account read may fail the refresh.
- */
-private suspend fun JellyfinClient.readGates(signedInVersion: String): Pair<JellyfinServerProfile, JellyfinAccount> {
-    val account = me()
-    val version = attempt { publicInfo().version }.getOrNull() ?: signedInVersion
-    val quickConnect = attempt { quickConnectEnabled() }.getOrDefault(true)
-    return JellyfinServerProfile.from(version, quickConnect) to account
-}
-
-/** Reads what the server and the user allow again, and the server card with it, leaving the library alone. */
-private fun CoroutineScope.refreshGates(
-    connection: Connection,
-    state: MutableStateFlow<UiState>,
-    card: ServerCardLoader,
-) {
-    launch {
-        val (session, client) = connection.signedIn() ?: return@launch
-        attempt { client.readGates(session.serverVersion) }.onSuccess { (profile, account) ->
-            state.update { (it as? UiState.SignedIn)?.copy(profile = profile, account = account) ?: it }
-            card.refresh(this@refreshGates, state, session, client, account, force = false)
-        }
-    }
-}
-
 /** Asks the server for a Quick Connect code, shows it, and polls until the user approves it or its window ends; [finish] takes the sign-in. */
 private suspend fun awaitQuickConnect(
     connection: Connection,
@@ -803,7 +684,7 @@ private suspend fun awaitQuickConnect(
 }
 
 /** The server step with [address] in it, asking for the user's agreement when it reaches a public host over plain HTTP. */
-private fun enterServer(
+internal fun enterServer(
     policy: AddressPolicy,
     address: String,
 ) = UiState.EnterServer(address = address, insecureHost = policy.insecureHost(address))
