@@ -551,6 +551,25 @@ class JellyfinLibraryServiceTest {
         }
 
     @Test
+    fun `SetPlayed on a 10_8 session uses the route with the user in the path`() =
+        runBlocking {
+            sessions.save(jellyfin.session().copy(serverVersion = "10.8.13"))
+            for (played in listOf(true, false)) {
+                stub.setPlayed(
+                    SetPlayedRequest
+                        .newBuilder()
+                        .setMedia(movie)
+                        .setPlayed(played)
+                        .build(),
+                )
+            }
+            val userId = jellyfin.session().userId
+            val paths = jellyfin.requests.filter { "PlayedItems" in it.url.encodedPath }
+            assertEquals(listOf("POST", "DELETE"), paths.map { it.method })
+            assertTrue(paths.all { it.url.encodedPath == "/Users/$userId/PlayedItems/movie-1" })
+        }
+
+    @Test
     fun `a direct play source names the file, carries the token in a header and not the URL, and resumes`() =
         runBlocking {
             val response =
