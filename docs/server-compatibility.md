@@ -53,6 +53,9 @@ older server shows less rather than failing on a call it can't answer.
 | The audio tag options of a music library: the ARTISTS tag, custom tag delimiters and their whitelist (library options) | 10.10 | `hasMusicTagOptions` |
 | Libraries read from `/UserViews` (before, `/Users/{id}/Views`) | 10.9 | `hasUserViewsRoute` |
 | A user's picture at `/UserImage?userId=` (before, `/Users/{id}/Images/Primary`) | 10.9 | `hasUserImageRoute` |
+| The browse reads that name the user in the query: continue watching `/UserItems/Resume`, latest `/Items/Latest`, a title or a person by item id `/Items/{id}?userId=`, played `/UserPlayedItems/{id}` and favourite `/UserFavoriteItems/{id}`. Before, the user is in the path: `/Users/{id}/Items/Resume`, `/Users/{id}/Items/Latest`, `/Users/{id}/Items/{id}`, `/Users/{id}/PlayedItems/{id}` and `/Users/{id}/FavoriteItems/{id}`. Checked against the 10.8.13 and 12.4 OpenAPI documents. The LIBRARY Service's continue watching and set played use the same gate | 10.9 | `hasUserItemRoutes` |
+| Paging the people a search finds: `/Persons` takes `startIndex` (absent from every document from 10.8.13 to 10.11.11, so before 12.0 people are one capped page, and a later page is not asked for) | 12.0 | `hasPersonsPaging` |
+| The collections an item is in, `/Items/{id}/Collections` (no field on the item and no route before it, so before 12.0 the read says the server cannot tell, and sends no request) | 12.0 | `hasItemCollectionsRoute` |
 | Advanced options: library update duration, parallel image encoding, inactive session threshold, cast receivers (server configuration) | 10.9 | `hasAdvancedPerformance` |
 | Advanced options: user-data cache size, legacy authorization (server configuration) | 10.11 | `hasCacheAndLegacyAuth` |
 | Network: the ports and IPv4 and IPv6 switches have their later names (`InternalHttpPort`, `EnableIPv4`) | 10.9 | `hasInternalPortNames` |
@@ -73,6 +76,8 @@ older server shows less rather than failing on a call it can't answer.
 | Grouping movies and shows into collections separately | 10.11 | `hasSeparateCollectionGrouping` |
 | Activity filters by end time, user, severity and type (every server filters by start time and by whether an entry has a user; the others are ignored before 12.0, so the page does not offer them) | 12.0 | `hasActivityFilters` |
 | The Server page's Alerts card: the newest warnings and errors of the activity log (the web dashboard's Alerts). Every server has it. A server that filters by severity is asked once for each severity; an older one is read for its newest 100 entries and the rest dropped here, so a quiet stretch of the log can show fewer than there are | 12.0 for the server-side filter | `hasActivityFilters` chooses which |
+
+The browse reads with no gate send the same request on every release from 10.8 to 12.4 (checked against the 10.8.13 and 12.4 OpenAPI documents): `/Items` under a `parentId` and with `searchTerm` or `personIds`, `/Items/Filters` (the legacy route: `/Items/Filters2` names genres by id and has no years or ratings), `/Shows/NextUp`, `/Shows/{id}/Seasons`, `/Shows/{id}/Episodes` and `/Items/{id}/Similar`. `/Shows/NextUp` is sent `enableResumable=false`, which 10.8 does not have and ignores. One more is not a version gate: a title's next episode is worked out from its episodes, because the documents do not say what `/Shows/NextUp` returns for a series with nothing, or everything, watched. The libraries read has its gate above, `hasUserViewsRoute`.
 
 ## What each user has
 
