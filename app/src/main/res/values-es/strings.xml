@@ -1528,4 +1528,9 @@
         <item quantity="other">%d advertencias o errores en el registro de actividad</item>
     </plurals>
     <string name="tip_row">Invítame a un café</string>
+    <string name="shell_tab_home">Inicio</string>
+    <string name="shell_tab_libraries">Bibliotecas</string>
+    <string name="shell_tab_search">Buscar</string>
+    <string name="shell_tab_server">Servidor</string>
+    <string name="shell_placeholder_message">Esta pantalla está en camino.</string>
 </resources>
