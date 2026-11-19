@@ -1475,6 +1475,8 @@
     <string name="kw_diagnostics">log logs support copy share report bug problem debug</string>
     <string name="this_app_detail">Preferences, feedback and more</string>
     <string name="settings_group_app">This app</string>
+    <string name="settings_client">Browse and play</string>
+    <string name="settings_client_caption">Show your library and play it in this app</string>
     <string name="settings_share_usage_data">Share usage data</string>
     <string name="settings_share_usage_data_caption">Sends which screens and actions you use</string>
     <string name="settings_send_crash_reports">Send crash reports</string>
