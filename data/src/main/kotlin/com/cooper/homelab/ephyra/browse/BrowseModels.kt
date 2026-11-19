@@ -90,8 +90,18 @@ data class BrowseItem(
     val parentBackdropImageTag: String? = null,
     val parentThumbItemId: String? = null,
     val parentThumbImageTag: String? = null,
+    /**
+     * A season's own number is in [seasonNumber] (0 for specials); an episode has its season's in [seasonNumber] and its own
+     * in [episodeNumber]. The repositories do not sort specials: the page that shows them decides where they go.
+     */
     val seasonNumber: Int? = null,
     val episodeNumber: Int? = null,
+    /** The season an episode is in. */
+    val seasonId: String? = null,
+    /** The overview, on the reads that ask for it (episode lists); null on a card. A title page reads [TitleDetail]. */
+    val overview: String? = null,
+    /** How many children a season or series has (episodes, seasons), on the reads that ask for it. */
+    val childCount: Int? = null,
     val userData: ItemUserData = ItemUserData(),
 )
 
