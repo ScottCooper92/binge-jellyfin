@@ -53,11 +53,15 @@ data object ShellRoute : EphyraRoute
  * An entry's pane role is fixed when it is built, so a change of layout is a change of key. Only a home root is swapped, so a
  * key opened over it stays, except when the client turns on or off: what was open belonged to the other layout, so it closes.
  * Leaving the signed-in home takes the stack back to [HomeRoute], so nothing opened for the server just left stays over its sign-in.
+ * That happens only once the session is [resolved]: not signed in and resolved is a sign-out or a refused token, whereas after a
+ * process death the state starts at Loading, nobody is signed out yet, and the restored stack is kept until the first answer settles it.
  */
 fun NavBackStack<NavKey>.settleHome(
     signedIn: Boolean,
     shell: Boolean = false,
+    resolved: Boolean = true,
 ) {
+    if (!resolved) return
     val home =
         when {
             !signedIn -> HomeRoute

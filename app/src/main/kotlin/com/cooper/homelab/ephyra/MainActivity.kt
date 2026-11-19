@@ -265,6 +265,7 @@ private fun ConsoleHost(
         backStack = backStack,
         signedIn = signedIn,
         tabs = tabs.takeIf { clientOn },
+        resolved = state !is UiState.Loading,
         onBack = { backStack.closeTop() },
         signedOut = { JellyfinRoot(state, homeActions) },
         home = { JellyfinRoot(state, homeActions) },

@@ -20,12 +20,22 @@ private const val SIMILAR_LIMIT = 12
 internal class DemoBrowse(
     private val libraries: DemoLibraries,
 ) : DemoState {
-    private val titles: List<DemoTitle> = seedTitles()
+    private var titles: List<DemoTitle> = seedTitles()
 
-    override fun reset() = Unit
+    override fun reset() {
+        titles = seedTitles()
+    }
 
     override fun routes(): List<DemoRoute> =
         listOf(
+            route("POST", "UserPlayedItems", "{}") { _, parts -> writeUserData(titles, parts.first(), played = true) },
+            route("DELETE", "UserPlayedItems", "{}") { _, parts -> writeUserData(titles, parts.first(), played = false) },
+            route("POST", "UserFavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.first(), favourite = true) },
+            route("DELETE", "UserFavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.first(), favourite = false) },
+            route("POST", "Users", "{}", "PlayedItems", "{}") { _, parts -> writeUserData(titles, parts.last(), played = true) },
+            route("DELETE", "Users", "{}", "PlayedItems", "{}") { _, parts -> writeUserData(titles, parts.last(), played = false) },
+            route("POST", "Users", "{}", "FavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.last(), favourite = true) },
+            route("DELETE", "Users", "{}", "FavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.last(), favourite = false) },
             route("GET", "Items", "Filters") { call, _ -> ok(filters(call)) },
             route("GET", "Items", "Latest") { call, _ -> ok(latest(call)) },
             route("GET", "Users", "{}", "Items", "Latest") { call, _ -> ok(latest(call)) },

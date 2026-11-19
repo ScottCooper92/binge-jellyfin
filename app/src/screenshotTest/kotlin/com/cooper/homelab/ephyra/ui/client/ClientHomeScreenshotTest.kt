@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra.ui.client
 
 import androidx.compose.runtime.Composable
 import com.android.tools.screenshot.PreviewTest
+import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.BrowseItem
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
@@ -14,7 +15,6 @@ import com.cooper.homelab.ephyra.client.home.homeState
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
-import java.io.IOException
 
 /**
  * Home (`:client`) in the states the issue names: loaded, loading, partly failed (a row still loading under the rows that landed) and
@@ -83,12 +83,12 @@ class ClientHomeScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun partlyFailed() = Home(homeState(listOf(resume, latest), pending = 1))
+    fun partlyFailed() = Home(homeState(listOf(latest), pending = 1))
 
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun allFailed() = Home(HomeUiState.Error(IOException("unreachable")))
+    fun allFailed() = Home(HomeUiState.Error(ServerFailure.Unreachable()))
 
     @PreviewTest
     @JellyfinScreenStatePreview

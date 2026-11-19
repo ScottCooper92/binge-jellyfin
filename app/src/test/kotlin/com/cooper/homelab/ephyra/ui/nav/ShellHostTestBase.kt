@@ -52,6 +52,7 @@ abstract class ShellHostTestBase {
                 EphyraNavHost(
                     backStack = backStack,
                     signedIn = connected == true,
+                    resolved = connected != null,
                     tabs = shell.takeIf { gate ?: true },
                     onBack = { backStack.closeTop() },
                     signedOut = { Text("sign in") },

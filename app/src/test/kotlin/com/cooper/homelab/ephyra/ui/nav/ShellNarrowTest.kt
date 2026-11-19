@@ -128,4 +128,38 @@ class ShellNarrowTest : ShellHostTestBase() {
         assertEquals(EphyraTab.Home, tabs?.selected)
         compose.onNodeWithTag("tab_home").performClick()
     }
+
+    @Test
+    fun `a stack restored under the shell is kept while the session is still loading, and when it resolves as signed in`() {
+        host()
+        tap("tab_server")
+        click("open tasks")
+        compose.runOnUiThread { stack?.openItem("scan") }
+        compose.waitForIdle()
+        val open = keys()
+        assertEquals(3, open.size)
+        assertEquals(ShellRoute, open.first())
+        compose.scenario.recreate()
+        // After a process death the state starts at Loading: nobody is signed in yet.
+        connected = null
+        host()
+        assertEquals(open, keys())
+        compose.runOnUiThread { connected = true }
+        compose.waitForIdle()
+        assertEquals(open, keys())
+        assertShown("item scan")
+    }
+
+    @Test
+    fun `a session that resolves as ended after a restore clears the stack under the shell`() {
+        host()
+        tap("tab_server")
+        click("open tasks")
+        compose.scenario.recreate()
+        connected = null
+        host()
+        compose.runOnUiThread { connected = false }
+        compose.waitForIdle()
+        assertEquals(listOf<NavKey>(HomeRoute), keys())
+    }
 }
