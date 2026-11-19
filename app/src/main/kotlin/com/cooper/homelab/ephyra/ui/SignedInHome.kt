@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,10 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import com.binge.designsystem.component.BingePullToRefresh
+import com.binge.designsystem.component.ScrollToTopOnTabReselect
 import com.cooper.homelab.core.uiandroid.search.SettingsSearchEntry
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
+import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.binge.designsystem.R as DesR
 
 /**
@@ -42,7 +45,11 @@ internal fun SignedInHome(
         },
         indicatorTopInset = topInset,
     ) {
+        // A tap on the Server tab while it shows its root scrolls the home to the top. Without a shell there is no signal, so nothing happens.
+        val listState = rememberLazyListState()
+        ScrollToTopOnTabReselect(EphyraTab.Server, listState)
         LazyColumn(
+            state = listState,
             contentPadding = inner,
             verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l)),
         ) {

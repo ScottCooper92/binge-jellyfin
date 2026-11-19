@@ -30,6 +30,10 @@ import kotlinx.serialization.Serializable
  * The tabs of the client shell, in the order the bar shows them. The order must not change between launches: the selected tab
  * and each tab's saved state are kept by index. [Home] is the start tab, the one Back returns to. [Server] is the console, and
  * the tab a user who has opted out of the client keeps.
+ *
+ * A tap on the tab already showing pops it to its root and sends the tab on the design system's reselect signal. Each tab's root screen
+ * scrolls to its top with `ScrollToTopOnTabReselect(EphyraTab.X, state)` when it lands: the Server home does, and Home, Libraries and
+ * Search do as their screens arrive.
  */
 enum class EphyraTab(
     val icon: ImageVector,
