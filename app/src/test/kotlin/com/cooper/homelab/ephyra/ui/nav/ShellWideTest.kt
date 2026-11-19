@@ -113,4 +113,39 @@ class ShellWideTest : ShellHostTestBase() {
         assertShown("console home")
         assertShown("page Logs")
     }
+
+    @Test
+    fun `a page parked on the Server tab does not come back after the session ends`() {
+        host()
+        tap("tab_server")
+        click("open logs")
+        tap("tab_libraries")
+        assertEquals(2, tabs?.stack(EphyraTab.Server)?.size)
+        compose.runOnUiThread { connected = false }
+        compose.waitForIdle()
+        assertEquals(1, tabs?.stack(EphyraTab.Server)?.size)
+        compose.runOnUiThread { connected = true }
+        compose.waitForIdle()
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+        assertEquals(EphyraTab.Home, tabs?.selected)
+        tap("tab_server")
+        assertEquals(emptyList<PageRoute>(), pageKeys())
+        assertAbsent("page Logs")
+        assertShown("console home")
+    }
+
+    @Test
+    fun `a session still being worked out leaves a parked page where it is`() {
+        host()
+        tap("tab_server")
+        click("open logs")
+        tap("tab_libraries")
+        compose.runOnUiThread { connected = null }
+        compose.waitForIdle()
+        assertEquals(2, tabs?.stack(EphyraTab.Server)?.size)
+        compose.runOnUiThread { connected = true }
+        compose.waitForIdle()
+        tap("tab_server")
+        assertShown("page Logs")
+    }
 }

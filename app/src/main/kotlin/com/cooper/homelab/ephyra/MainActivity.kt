@@ -60,6 +60,7 @@ import com.cooper.homelab.ephyra.ui.localNetworkAnswered
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
+import com.cooper.homelab.ephyra.ui.nav.RestartOnSessionEnd
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
@@ -253,6 +254,8 @@ private fun ConsoleHost(
     val clientOn = clientResolved ?: graph.clientGate.fallback
     // Turning the client off or on starts over from the start tab, with no screen left over from the other layout.
     RestartOnGateChange(clientResolved, tabs, backStack, offTab = EphyraTab.Server)
+    // A session that ends takes what the Server tab parked with it, so the next account does not find it.
+    RestartOnSessionEnd(state.connected(), tabs, backStack)
     ReviewPromptOnReturnToRoot(
         connected = state.connected(),
         atRoot = backStack.entries().isEmpty(),

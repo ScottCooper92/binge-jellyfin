@@ -34,6 +34,9 @@ abstract class ShellHostTestBase {
 
     /** The gate's resolved value: null until it is read, then whether the client shows. */
     protected var gate by mutableStateOf<Boolean?>(true)
+
+    /** The session: null while it is worked out, false when signed out or the token is refused, true while signed in. */
+    protected var connected by mutableStateOf<Boolean?>(true)
     protected var stack: NavBackStack<NavKey>? = null
     protected var tabs: TabShellState<EphyraTab>? = null
 
@@ -45,9 +48,10 @@ abstract class ShellHostTestBase {
                 stack = backStack
                 tabs = shell
                 RestartOnGateChange(gate, shell, backStack, offTab = EphyraTab.Server)
+                RestartOnSessionEnd(connected, shell, backStack)
                 EphyraNavHost(
                     backStack = backStack,
-                    signedIn = true,
+                    signedIn = connected == true,
                     tabs = shell.takeIf { gate ?: true },
                     onBack = { backStack.closeTop() },
                     signedOut = { Text("sign in") },
