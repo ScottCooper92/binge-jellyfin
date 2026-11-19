@@ -21,11 +21,13 @@ class ConsolePageTest {
     }
 
     @Test
-    fun `Live TV follows the management flag alone, as the server does, with no shortcut for an administrator`() {
+    fun `Live TV is an administrator's page, and one whose management flag is on, though the server would allow a user with it`() {
+        val adminWith = account("""{"IsAdministrator":true,"EnableLiveTvManagement":true}""")
         val adminWithout = account("""{"IsAdministrator":true,"EnableLiveTvManagement":false}""")
         val userWith = account("""{"IsAdministrator":false,"EnableLiveTvManagement":true}""")
+        assertTrue(ConsolePage.LiveTv.available(server, adminWith))
         assertFalse(ConsolePage.LiveTv.available(server, adminWithout))
-        assertTrue(ConsolePage.LiveTv.available(server, userWith))
+        assertFalse(ConsolePage.LiveTv.available(server, userWith))
         assertFalse(ConsolePage.LiveTv.isAdmin)
         assertTrue(ConsolePage.entries.filter { it.isAdmin }.none { it.available(server, userWith) })
     }

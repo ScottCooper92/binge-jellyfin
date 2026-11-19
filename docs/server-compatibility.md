@@ -94,7 +94,7 @@ The browse reads with no gate send the same request on every release from 10.8 t
 | Controlling a stream on someone else's session (pause, seek, next, stop, volume, mute, message) | administrators, and users with `EnableRemoteControlOfOtherUsers` | `canControlOthers`, and the session in `GET /Sessions?controllableByUserId=` |
 | Controlling a session on a shared device (nobody signed in on it) | users with `EnableSharedDeviceControl`; an administrator has no shortcut | `canControlSharedDevices`, and the same list |
 | Changing how the server records (the Recording page) | administrators who also have `EnableLiveTvManagement`: the server saves the configuration for administrators only | `ConsolePage.LiveTvRecording` |
-| Seeing the server's Live TV tuners and guide data | users with `EnableLiveTvManagement`; an administrator whose flag is off is refused, as the server refuses them | `canManageLiveTv`. The guide end also needs `EnableLiveTvAccess` (`canAccessLiveTv`) |
+| Seeing the server's Live TV tuners and guide data | administrators who also have `EnableLiveTvManagement`. The server would let any user with the flag change tuners and guide data, but Jellyfin's web client keeps them in the administrator's dashboard, so this app offers the page to administrators only (#790). An administrator whose flag is off is refused, as the server refuses them | `ConsolePage.LiveTv`: `isAdministrator` and `canManageLiveTv`. The guide end also needs `EnableLiveTvAccess` (`canAccessLiveTv`) |
 | Approving a Quick Connect code | everyone, while Quick Connect is on | `profile.quickConnect` |
 
 ### The server does not check who controls a session
