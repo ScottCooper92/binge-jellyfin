@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import com.binge.designsystem.ErrorKind
 import com.binge.designsystem.component.CarouselSkeleton
 import com.binge.designsystem.component.HeroCarousel
 import com.binge.designsystem.component.HeroItem
@@ -44,7 +43,8 @@ fun HomeScreen(
     when (state) {
         HomeUiState.Loading -> HomeSkeleton(modifier, contentPadding)
         HomeUiState.Empty -> EmptyScreen(stringResource(R.string.home_empty), modifier.padding(contentPadding))
-        is HomeUiState.Error -> ErrorScreen(ErrorKind.Generic, onRetry, modifier.padding(contentPadding))
+        is HomeUiState.Error ->
+            ErrorScreen(state.failure.errorKind(), onRetry.takeIf { state.failure.canRetry() }, modifier.padding(contentPadding))
         is HomeUiState.Ready -> HomeContent(state, imageUrl, onOpen, onResume, modifier, contentPadding)
     }
 }

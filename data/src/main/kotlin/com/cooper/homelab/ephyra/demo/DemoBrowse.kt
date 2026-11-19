@@ -20,12 +20,22 @@ private const val SIMILAR_LIMIT = 12
 internal class DemoBrowse(
     private val libraries: DemoLibraries,
 ) : DemoState {
-    private val titles: List<DemoTitle> = seedTitles()
+    private var titles: List<DemoTitle> = seedTitles()
 
-    override fun reset() = Unit
+    override fun reset() {
+        titles = seedTitles()
+    }
 
     override fun routes(): List<DemoRoute> =
         listOf(
+            route("POST", "UserPlayedItems", "{}") { _, parts -> writeUserData(titles, parts.first(), played = true) },
+            route("DELETE", "UserPlayedItems", "{}") { _, parts -> writeUserData(titles, parts.first(), played = false) },
+            route("POST", "UserFavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.first(), favourite = true) },
+            route("DELETE", "UserFavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.first(), favourite = false) },
+            route("POST", "Users", "{}", "PlayedItems", "{}") { _, parts -> writeUserData(titles, parts.last(), played = true) },
+            route("DELETE", "Users", "{}", "PlayedItems", "{}") { _, parts -> writeUserData(titles, parts.last(), played = false) },
+            route("POST", "Users", "{}", "FavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.last(), favourite = true) },
+            route("DELETE", "Users", "{}", "FavoriteItems", "{}") { _, parts -> writeUserData(titles, parts.last(), favourite = false) },
             route("GET", "Items", "Filters") { call, _ -> ok(filters(call)) },
             route("GET", "Items", "Latest") { call, _ -> ok(latest(call)) },
             route("GET", "Users", "{}", "Items", "Latest") { call, _ -> ok(latest(call)) },
@@ -39,6 +49,7 @@ internal class DemoBrowse(
                 "{}",
                 "Episodes",
             ) { call, parts -> ok(page(call, children(parts.first(), "Episode", call.query("seasonId")))) },
+            route("GET", "Persons") { call, _ -> ok(searchPeople(call.query("searchTerm").orEmpty())) },
             route("GET", "Items", "{}", "Similar") { call, parts ->
                 ok(
                     page(
@@ -55,9 +66,15 @@ internal class DemoBrowse(
             route("GET", "Users", "{}", "Items", "{}") { _, parts -> title(parts.last()) },
         )
 
-    /** A `/Items` read under a library, or null when there is no `parentId` and so it is not a browse read. */
+    /**
+     * A `/Items` read the demo answers: a search by name, the titles of a person, or a library's titles. Null for any other,
+     * with no `parentId` or the like, so the LIBRARY index's read still finds nothing.
+     */
     fun items(call: DemoCall): JsonObject? {
-        if (call.query("personIds") != null) return page(call, titles.filter { it.type == "Movie" || it.type == "Series" })
+        val outsideALibrary =
+            call.query("searchTerm")?.let { search(call, it) }
+                ?: if (call.query("personIds") != null) page(call, titles.filter { it.type == "Movie" || it.type == "Series" }) else null
+        if (outsideALibrary != null) return outsideALibrary
         call.query("parentId") ?: return null
         val matching = inLibrary(call).filter { it.passes(call) }
         val key: Comparator<DemoTitle> =
@@ -69,6 +86,15 @@ internal class DemoBrowse(
             }
         val ordered = matching.sortedWith(if (call.query("sortOrder") == "Descending") key.reversed() else key)
         return page(call, ordered)
+    }
+
+    /** `searchTerm` over every title, as the server matches it: the name contains the term, ignoring case. */
+    private fun search(
+        call: DemoCall,
+        term: String,
+    ): JsonObject {
+        val types = call.query("includeItemTypes")?.split(',').orEmpty()
+        return page(call, titles.filter { it.name.contains(term, ignoreCase = true) && (types.isEmpty() || it.type in types) })
     }
 
     private fun children(
@@ -87,8 +113,6 @@ internal class DemoBrowse(
 
     private fun kindOf(call: DemoCall): String? =
         libraries.views().firstOrNull { it.string("Id") == call.query("parentId") }?.string("CollectionType")
-
-    private fun JsonObject.string(key: String) = (get(key) as? JsonPrimitive)?.content
 
     private fun inLibrary(call: DemoCall): List<DemoTitle> {
         val types =

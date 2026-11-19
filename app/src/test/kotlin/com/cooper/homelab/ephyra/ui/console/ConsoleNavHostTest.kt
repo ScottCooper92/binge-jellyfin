@@ -17,7 +17,20 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.HubRoute
+import com.cooper.homelab.ephyra.ui.nav.closeAll
+import com.cooper.homelab.ephyra.ui.nav.closeTop
+import com.cooper.homelab.ephyra.ui.nav.entries
+import com.cooper.homelab.ephyra.ui.nav.keeping
+import com.cooper.homelab.ephyra.ui.nav.openItem
+import com.cooper.homelab.ephyra.ui.nav.openPage
+import com.cooper.homelab.ephyra.ui.nav.rememberConsoleBackStack
+import com.cooper.homelab.ephyra.ui.nav.top
+import com.cooper.homelab.ephyra.ui.nav.topItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
@@ -48,32 +61,31 @@ class ConsoleNavHostTest {
 
     private val models = mutableMapOf<ConsolePage, PageModel>()
     private var detailOpen by mutableStateOf(false)
-    private var stackNow = ConsoleBackStack()
-    private var change: (ConsoleBackStack) -> Unit = {}
+    private var backStack: NavBackStack<NavKey> = NavBackStack(HubRoute)
     private var content: @Composable () -> Unit = {}
 
-    private fun host(initial: ConsoleBackStack = ConsoleBackStack()) {
+    private fun host(seed: NavBackStack<NavKey>.() -> Unit = {}) {
         content = {
-            var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(initial) }
-            stackNow = stack
-            change = { stack = it }
-            ConsoleNavHost(
-                stack = stack,
-                signedIn = false,
-                onBack = { stack = stack.back() },
+            val stack = rememberConsoleBackStack(seed)
+            backStack = stack
+            EphyraNavHost(
+                backStack = stack,
+                signedIn = true,
+                onBack = { stack.closeTop() },
+                signedOut = {},
                 defaultPage = {},
                 home = {
                     var scrolled by rememberSaveable { mutableIntStateOf(0) }
                     Column {
                         Text("home $scrolled", Modifier.clickable { scrolled++ })
-                        Text("open plugins", Modifier.clickable { stack = stack.open(ConsolePage.Plugins) })
+                        Text("open plugins", Modifier.clickable { stack.openPage(ConsolePage.Plugins) })
                     }
                 },
                 page = { entry ->
                     models[entry.page] = viewModel { PageModel() }
                     Column {
                         Text("page ${entry.page.name}")
-                        Text("open server", Modifier.clickable { stack = stack.open(ConsolePage.Server) })
+                        Text("open server", Modifier.clickable { stack.openPage(ConsolePage.Server) })
                         if (entry.page == ConsolePage.Plugins && detailOpen) {
                             Text("detail")
                             // A list's open detail closes before the page does.
@@ -104,7 +116,7 @@ class ConsoleNavHostTest {
 
     @Test
     fun `a page's own Back closes what it has open before Back closes the page`() {
-        host(ConsoleBackStack().open(ConsolePage.Plugins))
+        host { openPage(ConsolePage.Plugins) }
         detailOpen = true
         compose.waitForIdle()
         compose.onNodeWithText("detail").assertIsDisplayed()
@@ -160,7 +172,22 @@ class ConsoleNavHostTest {
         compose.onNodeWithText("page Plugins").assertIsDisplayed()
         assertSame(before, models.getValue(ConsolePage.Plugins))
         assertFalse(before.cleared)
-        assertEquals(ConsolePage.Plugins, stackNow.top?.page)
+        assertEquals(ConsolePage.Plugins, backStack.top?.page)
+    }
+
+    @Test
+    fun `an open page, its item and the row it was opened on survive the Activity being made again`() {
+        host {
+            openPage(ConsolePage.Plugins, "row")
+            openItem("scan")
+        }
+        compose.waitForIdle()
+        compose.scenario.recreate()
+        compose.setContent(content)
+        compose.waitForIdle()
+        assertEquals(ConsolePage.Plugins, backStack.top?.page)
+        assertEquals("scan", backStack.topItem?.item)
+        assertEquals("row", backStack.entries().first().row)
     }
 
     @Test
@@ -172,7 +199,7 @@ class ConsoleNavHostTest {
         compose.onNodeWithText("open server").performClick()
         compose.waitForIdle()
         val server = models.getValue(ConsolePage.Server)
-        compose.runOnIdle { change(stackNow.keeping { it != ConsolePage.Plugins }) }
+        compose.runOnIdle { backStack.keeping { it != ConsolePage.Plugins } }
         compose.waitForIdle()
         assertTrue(plugins.cleared)
         assertFalse(server.cleared)
@@ -189,7 +216,7 @@ class ConsoleNavHostTest {
         compose.onNodeWithText("open plugins").performClick()
         compose.waitForIdle()
         val plugins = models.getValue(ConsolePage.Plugins)
-        compose.runOnIdle { change(stackNow.clear()) }
+        compose.runOnIdle { backStack.closeAll() }
         compose.waitForIdle()
         assertTrue(plugins.cleared)
         compose.onNodeWithText("open plugins").assertIsDisplayed()

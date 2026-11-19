@@ -3,6 +3,8 @@ package com.cooper.homelab.ephyra.demo
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /** One title in the demo's Movies or TV shows library. An episode has a [seriesId]. */
 internal class DemoTitle(
@@ -14,9 +16,9 @@ internal class DemoTitle(
     val rating: String,
     val score: Double,
     val added: Int,
-    val played: Boolean = false,
-    val favourite: Boolean = false,
-    val positionTicks: Long = 0L,
+    var played: Boolean = false,
+    var favourite: Boolean = false,
+    var positionTicks: Long = 0L,
     val seriesId: String? = null,
     val seriesName: String? = null,
     val season: Int? = null,
@@ -90,6 +92,29 @@ internal fun seedTitles(): List<DemoTitle> =
         )
     }
 
+/** A played or favourite write: kept in the title, answered as the server does, with the item's user data. */
+internal fun writeUserData(
+    titles: List<DemoTitle>,
+    id: String,
+    played: Boolean? = null,
+    favourite: Boolean? = null,
+): DemoAnswer {
+    val found = titles.firstOrNull { it.id == id } ?: return demoNotFound
+    played?.let {
+        found.played = it
+        found.positionTicks = 0L
+    }
+    favourite?.let { found.favourite = it }
+    return ok(
+        buildJsonObject {
+            put("Played", found.played)
+            put("IsFavorite", found.favourite)
+            put("PlaybackPositionTicks", found.positionTicks)
+            put("ItemId", found.id)
+        },
+    )
+}
+
 /** The two people in every demo title's cast, as the item route sends a person. */
 internal val PEOPLE: Map<String, String> =
     mapOf(
@@ -110,4 +135,17 @@ internal fun DemoTitle.passes(call: DemoCall): Boolean {
         (years == null || title.year in years) &&
         (played == null || title.played == played) &&
         (call.query("isFavorite") != "true" || title.favourite)
+}
+
+/** `/Persons?searchTerm=`: the demo's people whose name contains the term, ignoring case, in the shape of a page. */
+internal fun searchPeople(term: String): JsonObject {
+    val found =
+        PEOPLE.values
+            .map {
+                jsonObject(it)
+            }.filter { (it["Name"] as? JsonPrimitive)?.content.orEmpty().contains(term, ignoreCase = true) }
+    return buildJsonObject {
+        put("Items", JsonArray(found))
+        put("StartIndex", 0)
+    }
 }

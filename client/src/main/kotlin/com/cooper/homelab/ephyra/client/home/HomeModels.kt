@@ -1,5 +1,6 @@
 package com.cooper.homelab.ephyra.client.home
 
+import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
 
@@ -81,8 +82,8 @@ sealed interface HomeUiState {
     /** Every row answered and none has anything to show. */
     data object Empty : HomeUiState
 
-    /** Every row failed. */
+    /** Every row failed, or the libraries could not be read. [failure] is why, as the screen classifies it. */
     data class Error(
-        val cause: Throwable,
+        val failure: ServerFailure,
     ) : HomeUiState
 }

@@ -54,6 +54,10 @@ class FakeBrowse {
                     ) != null ||
                         url.queryParameter("personIds") != null
                 ) -> items(request)
+            titles.isNotEmpty() && userDataRoute.matches(url.encodedPath) -> writeUserData(request)
+
+            url.encodedPath == "/Items" && url.queryParameter("searchTerm") != null -> search(request)
+            url.encodedPath == "/Persons" -> people(request)
             titles.isNotEmpty() && url.encodedPath.matches(relatedRoute) -> related(request)
             // A title by id, by either route generation, and a series' seasons and episodes.
             titles.isNotEmpty() && isTitleRoute(url.encodedPath) -> title(request)
@@ -136,6 +140,57 @@ class FakeBrowse {
                 (types.isEmpty() || it.type in types)
         }
     }
+
+    private val userDataRoute = Regex("/(User(Played|Favorite)Items|Users/[^/]+/(Played|Favorite)Items)/([^/]+)")
+
+    /** The writes: played and favourite, on either route generation. Answers the item's user data, as the server does. */
+    private fun writeUserData(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val match = userDataRoute.matchEntire(request.url.encodedPath)!!.groupValues
+        val index = titles.indexOfFirst { it.id == match[4] }
+        if (index < 0) {
+            return MockResponse
+                .Builder()
+                .code(404)
+                .body("{}")
+                .build()
+        }
+        val on = request.method == "POST"
+        val favourite = match[2] == "Favorite" || match[3] == "Favorite"
+        val current = titles[index]
+        val updated = if (favourite) current.copy(favourite = on) else current.copy(played = on, positionTicks = 0L)
+        titles[index] = updated
+        val count = if (updated.played) 1 else 0
+        val state = """"Played":${updated.played},"IsFavorite":${updated.favourite},"PlayCount":$count"""
+        return json("""{$state,"PlaybackPositionTicks":${updated.positionTicks},"Key":"k","ItemId":"${updated.id}"}""")
+    }
+
+    /** `searchTerm` over every title, as the server matches it: the name contains the term, ignoring case. */
+    private fun search(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val url = request.url
+        val term = url.queryParameter("searchTerm").orEmpty()
+        val types = url.queryParameter("includeItemTypes")?.split(',').orEmpty()
+        val found = titles.filter { it.name.contains(term, ignoreCase = true) && (types.isEmpty() || it.type in types) }
+        val start = url.queryParameter("startIndex")?.toInt() ?: 0
+        val limit = url.queryParameter("limit")?.toInt() ?: found.size
+        val total = if (url.queryParameter("enableTotalRecordCount") == "false") "" else ",\"TotalRecordCount\":${found.size}"
+        return json("""{"Items":[${found.drop(start).take(limit).joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
+    }
+
+    /** `/Persons?searchTerm=`: the titles of type Person that match. 10.x ignores `startIndex`, 12.0 and later honours it. */
+    private fun people(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val url = request.url
+        val term = url.queryParameter("searchTerm").orEmpty()
+        val found = titles.filter { it.type == "Person" && it.name.contains(term, ignoreCase = true) }
+        val start = if (pagesPeople) url.queryParameter("startIndex")?.toInt() ?: 0 else 0
+        val limit = url.queryParameter("limit")?.toInt() ?: found.size
+        return json("""{"Items":[${found.drop(start).take(limit).joinToString(",") { it.toJson() }}],"StartIndex":$start}""")
+    }
+
+    /** Whether `/Persons` honours `startIndex`, as 12.0 and later do. */
+    var pagesPeople = false
 
     private fun filters(request: RecordedRequest): MockResponse {
         val list = inLibrary(request)

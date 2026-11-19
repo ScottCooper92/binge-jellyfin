@@ -1,5 +1,6 @@
 package com.cooper.homelab.ephyra.server
 
+import com.cooper.homelab.ephyra.browse.browseSetPlayed
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -79,14 +80,18 @@ data class ItemPage(
     val total: Int,
 )
 
-/** The user's continue watching: what they started and did not finish, from [startIndex]. */
+/**
+ * The user's continue watching: what they started and did not finish, from [startIndex]. 10.9 moved the route to
+ * `/UserItems/Resume`; the 10.8 document has `/Users/{userId}/Items/Resume`, chosen by [profile].
+ */
 suspend fun JellyfinClient.resumeItems(
     userId: String,
+    profile: JellyfinServerProfile,
     startIndex: Int,
     limit: Int,
 ): ItemPage =
     getObject(
-        "UserItems/Resume",
+        if (profile.hasUserItemRoutes) "UserItems/Resume" else "Users/$userId/Items/Resume",
         mapOf(
             "userId" to userId,
             "startIndex" to startIndex.toString(),
@@ -115,11 +120,12 @@ suspend fun JellyfinClient.nextUp(
 
 suspend fun JellyfinClient.setPlayed(
     userId: String,
+    profile: JellyfinServerProfile,
     itemId: String,
     played: Boolean,
 ) {
-    val path = "UserPlayedItems/$itemId"
-    if (played) post(path, null, mapOf("userId" to userId)) else delete(path, mapOf("userId" to userId))
+    // One write for the app: the same route choice (10.9 moved it) as the client's own played mark.
+    browseSetPlayed(userId, profile, itemId, played)
 }
 
 suspend fun JellyfinClient.playbackInfo(

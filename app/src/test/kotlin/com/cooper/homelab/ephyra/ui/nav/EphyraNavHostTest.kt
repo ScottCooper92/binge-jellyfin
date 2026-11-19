@@ -14,6 +14,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -27,6 +28,7 @@ class EphyraNavHostTest {
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
     private var signedIn by mutableStateOf(false)
+    private var resolved by mutableStateOf(true)
     private var stack: NavBackStack<NavKey>? = null
 
     private fun host() {
@@ -36,9 +38,12 @@ class EphyraNavHostTest {
             EphyraNavHost(
                 backStack = backStack,
                 signedIn = signedIn,
+                resolved = resolved,
                 onBack = {},
                 signedOut = { Text("sign in") },
-                console = { Column { Text("console", Modifier.clickable { }) } },
+                home = { Column { Text("console", Modifier.clickable { }) } },
+                defaultPage = {},
+                page = {},
             )
         }
     }
@@ -78,6 +83,63 @@ class EphyraNavHostTest {
         compose.waitForIdle()
         assertEquals(listOf<NavKey>(HubRoute), stack?.toList())
         compose.onNodeWithText("console").assertIsDisplayed()
+    }
+
+    private fun openPageAndItem(): List<NavKey> {
+        compose.runOnUiThread {
+            stack?.openPage(ConsolePage.Tasks)
+            stack?.openItem("scan")
+        }
+        compose.waitForIdle()
+        return stack?.toList().orEmpty()
+    }
+
+    private fun recreateWhileLoading() {
+        compose.scenario.recreate()
+        // After a process death the view model is new and its state starts at Loading: nobody is signed in yet.
+        signedIn = false
+        resolved = false
+        host()
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun `a restored stack is kept while the session is still loading, and when it resolves as signed in`() {
+        signedIn = true
+        host()
+        compose.waitForIdle()
+        val open = openPageAndItem()
+        assertEquals(3, open.size)
+        recreateWhileLoading()
+        assertEquals(open, stack?.toList())
+        compose.runOnUiThread {
+            signedIn = true
+            resolved = true
+        }
+        compose.waitForIdle()
+        assertEquals(open, stack?.toList())
+    }
+
+    @Test
+    fun `a session that resolves as signed out, as with a refused token, still clears the restored stack`() {
+        signedIn = true
+        host()
+        compose.waitForIdle()
+        openPageAndItem()
+        recreateWhileLoading()
+        compose.runOnUiThread { resolved = true }
+        compose.waitForIdle()
+        assertEquals(listOf<NavKey>(HomeRoute), stack?.toList())
+        compose.onNodeWithText("sign in").assertIsDisplayed()
+    }
+
+    @Test
+    fun `settling while the session is unresolved changes nothing`() {
+        val back = NavBackStack<NavKey>(HubRoute, PageRoute(ConsolePage.Logs, 1))
+        back.settleHome(signedIn = false, resolved = false)
+        assertEquals(listOf<NavKey>(HubRoute, PageRoute(ConsolePage.Logs, 1)), back.toList())
+        back.settleHome(signedIn = false)
+        assertEquals(listOf<NavKey>(HomeRoute), back.toList())
     }
 
     @Test
