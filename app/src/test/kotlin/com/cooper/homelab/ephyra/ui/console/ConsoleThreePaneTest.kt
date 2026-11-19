@@ -4,14 +4,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.closeTop
+import com.cooper.homelab.ephyra.ui.nav.openFromHome
+import com.cooper.homelab.ephyra.ui.nav.rememberConsoleBackStack
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,12 +27,13 @@ class ConsoleThreePaneTest {
 
     private fun host() {
         compose.setContent {
-            var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
-            ConsoleNavHost(
-                stack = stack,
+            val stack = rememberConsoleBackStack()
+            EphyraNavHost(
+                backStack = stack,
                 signedIn = true,
-                onBack = { stack = stack.back() },
-                home = { Column { Text("home", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Activity) }) } },
+                onBack = { stack.closeTop() },
+                signedOut = {},
+                home = { Column { Text("home", Modifier.clickable { stack.openFromHome(ConsolePage.Activity) }) } },
                 defaultPage = { Text("default page") },
                 page = { Text("the page") },
             )

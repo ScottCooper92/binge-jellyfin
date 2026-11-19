@@ -38,7 +38,9 @@ class EphyraNavHostTest {
                 signedIn = signedIn,
                 onBack = {},
                 signedOut = { Text("sign in") },
-                console = { Column { Text("console", Modifier.clickable { }) } },
+                home = { Column { Text("console", Modifier.clickable { }) } },
+                defaultPage = {},
+                page = {},
             )
         }
     }
