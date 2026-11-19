@@ -27,6 +27,7 @@ import kotlinx.serialization.json.jsonObject
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -74,7 +75,7 @@ class NonAdminAccountTest {
         val home = viewModel().home()
         assertTrue(home.card.connected)
         assertEquals(ConnectionHealth.Healthy, home.health)
-        assertTrue(!home.isAdministrator)
+        assertFalse(home.isAdministrator)
         assertEquals(emptyList<String>(), jellyfin.forbidden.toList())
     }
 

@@ -1403,7 +1403,7 @@ class FakeJellyfin : Dispatcher() {
             .body(body)
             .build()
 
-    /** The routes the real server guards with its administrator policy: the server's own settings, never a user's own data. */
+    /** The routes the console's admin pages use that the real server guards with its administrator policy: the server's own settings, never a user's own data. */
     private fun requiresAdministrator(
         path: String,
         request: RecordedRequest,
@@ -1520,7 +1520,7 @@ fun FakeJellyfin.session(): JellyfinSession =
         token = "token-1",
     )
 
-/** The user image's route before 10.9, for any user. */
+/** The path prefixes of the routes the real server keeps for administrators (see `requiresAdministrator`). */
 private val ADMIN_PREFIXES =
     listOf(
         "/System/Info",
@@ -1541,6 +1541,7 @@ private val ADMIN_PREFIXES =
         "/Devices",
     )
 
+/** The user image's route before 10.9, for any user. */
 private val OLD_USER_IMAGE = Regex("/Users/[^/]+/Images/Primary")
 
 /** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
