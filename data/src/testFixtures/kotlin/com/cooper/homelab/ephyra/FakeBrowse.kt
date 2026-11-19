@@ -41,6 +41,8 @@ class FakeBrowse {
         return when {
             url.encodedPath == "/Items/Filters" -> filters(request)
             url.encodedPath == "/Items" && url.queryParameter("parentId") != null -> items(request)
+            url.encodedPath == "/Items" && url.queryParameter("searchTerm") != null -> search(request)
+            url.encodedPath == "/Persons" -> people(request)
             // The LIBRARY contract reads resume and next up too, with no titles seeded here: those fall through to the
             // rest of the fake. A test that seeds titles for the browse reads gets these answered from them.
             titles.isEmpty() -> null
@@ -59,6 +61,33 @@ class FakeBrowse {
         val types = url.queryParameter("includeItemTypes")?.split(',').orEmpty()
         return titles.filter { it.libraryId == url.queryParameter("parentId") && (types.isEmpty() || it.type in types) }
     }
+
+    /** `searchTerm` over every title, as the server matches it: the name contains the term, ignoring case. */
+    private fun search(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val url = request.url
+        val term = url.queryParameter("searchTerm").orEmpty()
+        val types = url.queryParameter("includeItemTypes")?.split(',').orEmpty()
+        val found = titles.filter { it.name.contains(term, ignoreCase = true) && (types.isEmpty() || it.type in types) }
+        val start = url.queryParameter("startIndex")?.toInt() ?: 0
+        val limit = url.queryParameter("limit")?.toInt() ?: found.size
+        val total = if (url.queryParameter("enableTotalRecordCount") == "false") "" else ",\"TotalRecordCount\":${found.size}"
+        return json("""{"Items":[${found.drop(start).take(limit).joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
+    }
+
+    /** `/Persons?searchTerm=`: the titles of type Person that match. 10.x ignores `startIndex`, 12.0 and later honours it. */
+    private fun people(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val url = request.url
+        val term = url.queryParameter("searchTerm").orEmpty()
+        val found = titles.filter { it.type == "Person" && it.name.contains(term, ignoreCase = true) }
+        val start = if (pagesPeople) url.queryParameter("startIndex")?.toInt() ?: 0 else 0
+        val limit = url.queryParameter("limit")?.toInt() ?: found.size
+        return json("""{"Items":[${found.drop(start).take(limit).joinToString(",") { it.toJson() }}],"StartIndex":$start}""")
+    }
+
+    /** Whether `/Persons` honours `startIndex`, as 12.0 and later do. */
+    var pagesPeople = false
 
     private fun filters(request: RecordedRequest): MockResponse {
         val list = inLibrary(request)

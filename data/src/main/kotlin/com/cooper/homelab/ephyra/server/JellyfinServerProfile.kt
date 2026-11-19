@@ -125,6 +125,9 @@ data class JellyfinServerProfile(
     /** The activity log filters by end time, user, severity and type, as well as start time and whether an entry has a user. 12.0. */
     val hasActivityFilters: Boolean get() = atLeast(TWELVE, 0)
 
+    /** `/Persons` takes `startIndex`, so people can be paged. 12.0: absent from every document from 10.8.13 to 10.11.11. */
+    val hasPersonsPaging: Boolean get() = atLeast(TWELVE, 0)
+
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
 
