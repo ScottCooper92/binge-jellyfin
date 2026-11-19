@@ -10,9 +10,12 @@ It signs in to the user's own Jellyfin server and answers Binge's questions abou
 in my library, what have I watched, and a playback source for Binge's player, with the plays
 reported back to the server. It serves the LIBRARY contract.
 
-It is also a console for that server, as binge-seerr is for Seerr: it stands on its own, without
-Binge. It manages the server and never browses or plays it (that is Binge's job, through this app's
-playback source, and Jellyfin's own apps'). See The console below, and the epic, #71.
+It is also a full client for that server, as binge-seerr is for Seerr: it stands on its own, without
+Binge. It browses and plays the user's library, and it manages the server through the console, its
+admin half. The LIBRARY Service is unchanged, and Binge still plays through this app's playback source.
+The user's own server is the only data source for browsing. The client is built behind the client gate
+(`PreferenceGate`, the `client_enabled` flag and the user's own choice under This app), on phones only for
+now. See The console below, and the epics, #71 (the console) and #759 (the client).
 
 Binge ships as a plain TMDB client with no bundled providers. A companion is a separate APK that
 exports a bound Android Service implementing a contract from
@@ -221,7 +224,8 @@ as binge-seerr's TV is.
   - **In place:** a failed load stays an error screen with Retry.
   - A snackbar never carries text the user must read to act. Do not turn every message into a dialog: a short result or a
     refusal with nothing to act on stays a snackbar.
-- **Out of scope:** browsing the library, editing an item's metadata, and anything that plays media.
+- **Out of scope for the console:** editing an item's metadata. Browsing and playing are the client's
+  (epic #759), not the console's, and every string that names Binge stays behind `FeatureFlags`.
   Everything else in Jellyfin's settings is in scope, the server's and the user's: the app means to
   be the best way to manage both. Every feature is gated on the server's version, the user's policy
   and the server's configuration, as `docs/server-compatibility.md` describes.
