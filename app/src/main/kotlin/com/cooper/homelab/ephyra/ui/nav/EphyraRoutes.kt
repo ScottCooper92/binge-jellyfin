@@ -41,6 +41,15 @@ data class ItemRoute(
 ) : EphyraRoute
 
 /**
+ * One library's titles, above [ShellRoute]: opened from the Libraries tab, it covers the bar on every width and Back closes it. It
+ * carries the library's id alone, so it survives a process death; the screen reads the rest from the server.
+ */
+@Serializable
+data class LibraryRoute(
+    val libraryId: String,
+) : EphyraRoute
+
+/**
  * The signed-in client, which replaces [HubRoute] at the root while the client is on (the user has not opted out, and the flag
  * offers it). Its entry holds the tab bar and each tab's root. The console's home is the Server tab's root, and its pages and
  * items are the keys above this one. With the client off there is no shell: [HubRoute] is the whole app. See [settleHome].
