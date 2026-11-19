@@ -62,3 +62,72 @@ internal fun chooseNextEpisode(episodes: List<BrowseItem>): NextEpisode {
                 ?: NextEpisode.AllWatched
     }
 }
+
+/** Titles like [id]: the server's `/Items/{id}/Similar`, which takes `limit` and `fields` and no image options. */
+internal suspend fun JellyfinClient.browseSimilar(
+    userId: String,
+    id: String,
+    limit: Int,
+): List<BrowseItem> {
+    val path = "Items/$id/Similar"
+    val query = mapOf("userId" to userId, "limit" to limit.toString(), "fields" to CARD_FIELDS)
+    return decodeAnswer(ItemsWire.serializer(), getObject(path, query), path).items.mapNotNull { it.toBrowseItem() }
+}
+
+/**
+ * A person, read by item id through the item route. `/Persons/{name}` is the only person route at every version and it
+ * addresses by name, which breaks on a slash or a repeated name; a person is an item with an id, and `People[].Id` gives it.
+ */
+internal suspend fun JellyfinClient.browsePerson(
+    userId: String,
+    profile: JellyfinServerProfile,
+    id: String,
+): PersonDetail? {
+    val (path, query) =
+        if (profile.hasUserItemRoutes) "Items/$id" to mapOf("userId" to userId) else "Users/$userId/Items/$id" to emptyMap()
+    return decodeAnswer(ItemWire.serializer(), getObject(path, query), path).toPersonDetail()
+}
+
+/** The movies and series on this server a person appears in, paged, by name. */
+internal suspend fun JellyfinClient.browseTitlesWith(
+    userId: String,
+    personId: String,
+    startIndex: Int,
+    limit: Int,
+    withTotal: Boolean,
+): Page<BrowseItem> {
+    val query = cardQuery(userId)
+    query["personIds"] = personId
+    query["recursive"] = "true"
+    query["includeItemTypes"] = "Movie,Series"
+    query["sortBy"] = "SortName"
+    query["sortOrder"] = "Ascending"
+    query["startIndex"] = startIndex.toString()
+    query["limit"] = limit.toString()
+    query["enableTotalRecordCount"] = withTotal.toString()
+    return decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").toPage(startIndex, withTotal)
+}
+
+/** A collection's parts, oldest first as the server's own clients show them: release year, premiere date, then name. */
+internal suspend fun JellyfinClient.browseCollectionParts(
+    userId: String,
+    collectionId: String,
+): List<BrowseItem> {
+    val query = cardQuery(userId)
+    query["parentId"] = collectionId
+    query["sortBy"] = "ProductionYear,PremiereDate,SortName"
+    query["sortOrder"] = "Ascending"
+    return decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items.mapNotNull { it.toBrowseItem() }
+}
+
+/** The collections [id] is in, or null when the server cannot say: the route is 12.0 and later, and no earlier one exists. */
+internal suspend fun JellyfinClient.browseCollectionsOf(
+    userId: String,
+    profile: JellyfinServerProfile,
+    id: String,
+): List<BrowseItem>? {
+    if (!profile.hasItemCollectionsRoute) return null
+    val path = "Items/$id/Collections"
+    val query = cardQuery(userId)
+    return decodeAnswer(ItemsWire.serializer(), getObject(path, query), path).items.mapNotNull { it.toBrowseItem() }
+}

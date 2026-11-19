@@ -125,6 +125,9 @@ data class JellyfinServerProfile(
     /** The activity log filters by end time, user, severity and type, as well as start time and whether an entry has a user. 12.0. */
     val hasActivityFilters: Boolean get() = atLeast(TWELVE, 0)
 
+    /** The collections an item is in, at `/Items/{id}/Collections`. 12.0: absent from the 10.8.13, 10.9.11, 10.10.7 and 10.11.11 documents. */
+    val hasItemCollectionsRoute: Boolean get() = atLeast(TWELVE, 0)
+
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
 

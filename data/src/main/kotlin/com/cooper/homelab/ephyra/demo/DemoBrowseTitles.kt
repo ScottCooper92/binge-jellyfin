@@ -114,3 +114,25 @@ internal fun writeUserData(
         },
     )
 }
+
+/** The two people in every demo title's cast, as the item route sends a person. */
+internal val PEOPLE: Map<String, String> =
+    mapOf(
+        "demo-person-1" to
+            """{"Id":"demo-person-1","Name":"Sam Rivers","Type":"Person","Overview":"An actor.","PremiereDate":"1980-03-02T00:00:00.0000000Z","ProductionLocations":["Leeds, UK"]}""",
+        "demo-person-2" to """{"Id":"demo-person-2","Name":"Alex Moor","Type":"Person","Overview":"A director."}""",
+    )
+
+/** Whether this title passes the filters the call names: genres, ratings, years, played and favourite. */
+internal fun DemoTitle.passes(call: DemoCall): Boolean {
+    val title = this
+    val genres = call.query("genres")?.split('|')
+    val ratings = call.query("officialRatings")?.split('|')
+    val years = call.query("years")?.split(',')?.mapNotNull(String::toIntOrNull)
+    val played = call.query("isPlayed")?.toBooleanStrictOrNull()
+    return (genres == null || title.genres.any { it in genres }) &&
+        (ratings == null || title.rating in ratings) &&
+        (years == null || title.year in years) &&
+        (played == null || title.played == played) &&
+        (call.query("isFavorite") != "true" || title.favourite)
+}

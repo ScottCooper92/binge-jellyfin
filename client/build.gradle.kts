@@ -13,6 +13,19 @@ android {
     namespace = "com.cooper.homelab.ephyra.client"
     compileSdk = 37
     defaultConfig { minSdk = 26 }
+    lint {
+        // As :app's: a locale is complete or it does not exist, and an unused string is an error.
+        error +=
+            setOf(
+                "MissingTranslation",
+                "ExtraTranslation",
+                "MissingQuantity",
+                "UnusedQuantity",
+                "StringFormatMatches",
+                "StringFormatCount",
+                "UnusedResources",
+            )
+    }
     testOptions {
         // The screens' tests need real resources, which Robolectric supplies.
         unitTests.isIncludeAndroidResources = true
@@ -65,5 +78,20 @@ tasks.withType<Test>().configureEach {
     systemProperty("robolectric.dependency.repo.id", "MavenCentralMirror")
 }
 
-// No floor yet: the module has no code to measure. The first screen's PR sets one from its measured coverage, and it is never
-// lowered. :app's floor is measured over :app, :data and this module together.
+// The gate measures logic: a composable is the screenshot gate's and the geometry tests' question, not line coverage's.
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*ComposableSingletons*", "*PreviewData*")
+                annotatedBy("androidx.compose.runtime.Composable")
+            }
+        }
+        // 90, measured: this module's own tests cover 98.18% of its lines. Raise it as the client gains code; never lower it.
+        verify {
+            rule {
+                minBound(90)
+            }
+        }
+    }
+}

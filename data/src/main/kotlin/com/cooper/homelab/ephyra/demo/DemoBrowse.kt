@@ -10,6 +10,7 @@ import kotlinx.serialization.json.putJsonObject
 
 private const val RUNTIME_TICKS = 72_000_000_000L
 private const val POSTER_ASPECT = 0.6667
+private const val SIMILAR_LIMIT = 12
 
 /**
  * The demo's titles: a few movies and series with the episodes a continue watching and next up row needs. It answers the
@@ -48,25 +49,27 @@ internal class DemoBrowse(
                 "{}",
                 "Episodes",
             ) { call, parts -> ok(page(call, children(parts.first(), "Episode", call.query("seasonId")))) },
+            route("GET", "Items", "{}", "Similar") { call, parts ->
+                ok(
+                    page(
+                        call,
+                        titles.filter { it.type == "Movie" && it.id != parts.first() }.take(
+                            call.query("limit")?.toIntOrNull() ?: SIMILAR_LIMIT,
+                        ),
+                    ),
+                )
+            },
+            // The demo's movies are in no collection; the route is 12.0 and later, as on a real server.
+            route("GET", "Items", "{}", "Collections") { call, _ -> ok(page(call, emptyList())) },
             route("GET", "Items", "{}") { _, parts -> title(parts.first()) },
             route("GET", "Users", "{}", "Items", "{}") { _, parts -> title(parts.last()) },
         )
 
     /** A `/Items` read under a library, or null when there is no `parentId` and so it is not a browse read. */
     fun items(call: DemoCall): JsonObject? {
+        if (call.query("personIds") != null) return page(call, titles.filter { it.type == "Movie" || it.type == "Series" })
         call.query("parentId") ?: return null
-        val genres = call.query("genres")?.split('|')
-        val ratings = call.query("officialRatings")?.split('|')
-        val years = call.query("years")?.split(',')?.mapNotNull(String::toIntOrNull)
-        val played = call.query("isPlayed")?.toBooleanStrictOrNull()
-        val matching =
-            inLibrary(call).filter { title ->
-                (genres == null || title.genres.any { it in genres }) &&
-                    (ratings == null || title.rating in ratings) &&
-                    (years == null || title.year in years) &&
-                    (played == null || title.played == played) &&
-                    (call.query("isFavorite") != "true" || title.favourite)
-            }
+        val matching = inLibrary(call).filter { it.passes(call) }
         val key: Comparator<DemoTitle> =
             when (call.query("sortBy")?.substringBefore(',')) {
                 "ProductionYear" -> compareBy { it.year }
@@ -86,6 +89,7 @@ internal class DemoBrowse(
 
     /** One title by id, with what only a title page reads. */
     private fun title(id: String): DemoAnswer {
+        PEOPLE[id]?.let { return ok(jsonObject(it)) }
         val found = titles.firstOrNull { it.id == id } ?: return demoNotFound
         val detail = json(DETAIL).let { it as JsonObject }
         return ok(JsonObject(found.toJson() + detail))

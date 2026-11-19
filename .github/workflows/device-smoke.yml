@@ -29,6 +29,8 @@ on:
       - 'app/src/main/kotlin/com/cooper/homelab/ephyra/JellyfinApp.kt'
       - 'data/build.gradle.kts'
       - 'data/src/main/**'
+      - 'client/build.gradle.kts'
+      - 'client/src/main/**'
       - 'app/src/androidTest/**'
       - 'app/src/main/keepRules/**'
       - 'app/src/main/kotlin/com/cooper/homelab/ephyra/service/**'

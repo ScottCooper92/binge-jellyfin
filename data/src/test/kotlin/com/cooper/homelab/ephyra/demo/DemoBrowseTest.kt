@@ -3,10 +3,12 @@ package com.cooper.homelab.ephyra.demo
 import com.cooper.homelab.ephyra.browse.ItemFilters
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.browse.ItemSort
+import com.cooper.homelab.ephyra.browse.JellyfinCollectionRepository
 import com.cooper.homelab.ephyra.browse.JellyfinItemsRepository
 import com.cooper.homelab.ephyra.browse.JellyfinLatestRepository
 import com.cooper.homelab.ephyra.browse.JellyfinLibraryRepository
 import com.cooper.homelab.ephyra.browse.JellyfinNextUpRepository
+import com.cooper.homelab.ephyra.browse.JellyfinPersonRepository
 import com.cooper.homelab.ephyra.browse.JellyfinResumeRepository
 import com.cooper.homelab.ephyra.browse.JellyfinTitleRepository
 import com.cooper.homelab.ephyra.browse.JellyfinUserDataRepository
@@ -150,5 +152,17 @@ class DemoBrowseTest {
                 assertEquals(false, data.setPlayed("demo-movie-1", false).played)
                 assertEquals(false, data.setFavourite("demo-movie-1", false).favourite)
             }
+        }
+
+    @Test
+    fun `the demo has similar titles, a person with titles, and no collections`() =
+        runBlocking {
+            val latest = JellyfinServerProfile(JellyfinVersion(12, 4, 0))
+            val similar = JellyfinTitleRepository(client, "demo-user", latest).similar("demo-movie-1")
+            assertTrue(similar.isNotEmpty() && similar.none { it.id == "demo-movie-1" })
+            val people = JellyfinPersonRepository(client, "demo-user", latest)
+            assertEquals("Sam Rivers", people.person("demo-person-1")!!.name)
+            assertTrue(people.titlesWith("demo-person-1").items.isNotEmpty())
+            assertTrue(JellyfinCollectionRepository(client, "demo-user", latest).collectionsOf("demo-movie-1")!!.isEmpty())
         }
 }
