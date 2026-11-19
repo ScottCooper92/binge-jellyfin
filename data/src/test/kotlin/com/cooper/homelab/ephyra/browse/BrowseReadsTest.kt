@@ -81,7 +81,10 @@ class BrowseReadsTest {
             val page = items.items(movies, startIndex = 0, limit = 10)
             assertEquals(listOf("Alien"), names(page))
             assertNull(page.total)
-            val sent = jellyfin.browse.itemRequests.last().url
+            val sent =
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
             assertEquals("user-1", sent.queryParameter("userId"))
             assertEquals("lib-movies", sent.queryParameter("parentId"))
             assertEquals("Movie", sent.queryParameter("includeItemTypes"))
@@ -148,8 +151,20 @@ class BrowseReadsTest {
                 listOf("Cube", "Brazil", "Alien"),
                 names(items.items(movies, ItemSort(SortField.Year, ascending = false))),
             )
-            assertEquals("ProductionYear,SortName", jellyfin.browse.itemRequests.last().url.queryParameter("sortBy"))
-            assertEquals("Descending", jellyfin.browse.itemRequests.last().url.queryParameter("sortOrder"))
+            assertEquals(
+                "ProductionYear,SortName",
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
+                    .queryParameter("sortBy"),
+            )
+            assertEquals(
+                "Descending",
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
+                    .queryParameter("sortOrder"),
+            )
             assertEquals(listOf("Alien", "Cube", "Brazil"), names(items.items(movies, ItemSort(SortField.Rating, ascending = false))))
             assertEquals(listOf("Brazil", "Cube", "Alien"), names(items.items(movies, ItemSort(SortField.DateAdded, ascending = false))))
         }
@@ -165,9 +180,21 @@ class BrowseReadsTest {
                 listOf("Alien", "Brazil", "Cube"),
                 names(items.items(movies, filters = ItemFilters(genres = setOf("Sci-Fi", "Horror")))),
             )
-            assertEquals("Sci-Fi|Horror", jellyfin.browse.itemRequests.last().url.queryParameter("genres"))
+            assertEquals(
+                "Sci-Fi|Horror",
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
+                    .queryParameter("genres"),
+            )
             assertEquals(listOf("Brazil", "Cube"), names(items.items(movies, filters = ItemFilters(years = setOf(1997, 1985)))))
-            assertEquals("1985,1997", jellyfin.browse.itemRequests.last().url.queryParameter("years"))
+            assertEquals(
+                "1985,1997",
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
+                    .queryParameter("years"),
+            )
             assertEquals(listOf("Cube"), names(items.items(movies, filters = ItemFilters(officialRatings = setOf("18")))))
             assertEquals(listOf("Alien"), names(items.items(movies, filters = ItemFilters(played = true))))
             assertEquals(listOf("Brazil", "Cube"), names(items.items(movies, filters = ItemFilters(played = false))))
@@ -178,7 +205,10 @@ class BrowseReadsTest {
     fun `no filter sends no filter parameters`() =
         runBlocking {
             items.items(movies)
-            val sent = jellyfin.browse.itemRequests.last().url
+            val sent =
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
             listOf("genres", "years", "officialRatings", "isPlayed", "isFavorite").forEach { assertNull(it, sent.queryParameter(it)) }
             assertTrue(ItemFilters().isEmpty)
         }

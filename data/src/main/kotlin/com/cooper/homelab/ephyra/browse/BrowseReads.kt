@@ -95,6 +95,7 @@ internal suspend fun JellyfinClient.browseFilterChoices(
             "Items/Filters",
             mapOf("userId" to userId, "parentId" to library.id, "includeItemTypes" to library.kind.itemTypes()),
         )
+
     fun strings(key: String) = answer.array(key).mapNotNull { (it as? JsonPrimitive)?.takeIf(JsonPrimitive::isString)?.content }
     return FilterChoices(
         genres = strings("Genres").sortedBy(String::lowercase),
