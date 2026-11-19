@@ -83,7 +83,7 @@ class ClientHomeScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun partlyFailed() = Home(homeState(listOf(resume, latest), pending = 1))
+    fun partlyFailed() = Home(homeState(listOf(latest), pending = 1))
 
     @PreviewTest
     @JellyfinScreenStatePreview
