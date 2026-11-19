@@ -1529,4 +1529,9 @@
         <item quantity="other">%d warnings or errors in the activity log</item>
     </plurals>
     <string name="tip_row">Buy me a coffee</string>
+    <string name="shell_tab_home">Home</string>
+    <string name="shell_tab_libraries">Libraries</string>
+    <string name="shell_tab_search">Search</string>
+    <string name="shell_tab_server">Server</string>
+    <string name="shell_placeholder_message">This screen is on its way.</string>
 </resources>

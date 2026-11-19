@@ -1082,6 +1082,11 @@ app:setup_sign_in  bfd402b2f6f3
 app:setup_sign_in_title  bfd402b2f6f3
 app:setup_try_demo  6e5fe4ca7c07
 app:setup_username  e3b89e9d33f8
+app:shell_placeholder_message  febbb84b9fe4
+app:shell_tab_home  3a78695388b3
+app:shell_tab_libraries  62ef6fd92ee1
+app:shell_tab_search  49c266baaaa7
+app:shell_tab_server  aef7de28d529
 app:sign_out_body  efc3fdd58f7b
 app:sign_out_body_plain  9ed5597bc6fb
 app:sign_out_title  c010e3d14518

@@ -22,6 +22,9 @@ import com.binge.designsystem.LocalPaneDepth
 import com.binge.designsystem.PaneContent
 import com.binge.designsystem.PaneEdge
 import com.binge.designsystem.motion.rememberBingeNavMotion
+import com.cooper.homelab.core.uiandroid.shell.TabShellState
+import com.cooper.homelab.core.uiandroid.shell.nothingOpenBeside
+import com.cooper.homelab.core.uiandroid.shell.settleStash
 import com.cooper.homelab.ephyra.ui.console.ConsoleEntry
 import com.cooper.homelab.ephyra.ui.console.ConsolePageStores
 import com.cooper.homelab.ephyra.ui.console.ConsoleThreePaneStrategy
@@ -31,6 +34,9 @@ import com.cooper.homelab.ephyra.ui.console.ItemPlaceholderPane
 import com.cooper.homelab.ephyra.ui.console.ItemRole
 import com.cooper.homelab.ephyra.ui.console.LocalHubBeside
 import com.cooper.homelab.ephyra.ui.console.LocalOpenItem
+import com.cooper.homelab.ephyra.ui.console.ServerPanes
+import com.cooper.homelab.ephyra.ui.console.ShellPane
+import com.cooper.homelab.ephyra.ui.console.ShellPanesStrategy
 import com.cooper.homelab.ephyra.ui.console.ThreePaneHub
 import com.cooper.homelab.ephyra.ui.console.isThreePaneWindow
 import com.cooper.homelab.ephyra.ui.console.pageAlone
@@ -49,6 +55,9 @@ import com.cooper.homelab.ephyra.ui.console.rememberConsolePaneStrategy
  * and every page it opens, shows beside it, and [defaultPage] fills the detail pane while none is open so it is never
  * empty. On a narrow window each is the whole window. On a landscape tablet the page is given two thirds of the window
  * ([ConsoleThreePaneStrategy]), for a list and what it opened.
+ *
+ * With [tabs] the client is on: [ShellRoute] is the root, its bar or rail holds the tabs, and the Server tab is the home. The
+ * pages are still keys above it, drawn inside the Server tab on a wide window and over the whole window on a narrow one.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -61,9 +70,11 @@ fun EphyraNavHost(
     defaultPage: @Composable () -> Unit,
     page: @Composable (ConsoleEntry) -> Unit,
     item: @Composable (ConsoleEntry) -> Unit = {},
+    tabs: TabShellState<EphyraTab>? = null,
     resolved: Boolean = true,
 ) {
-    LaunchedEffect(signedIn, resolved) { backStack.settleHome(signedIn, resolved) }
+    val shell = tabs != null
+    LaunchedEffect(signedIn, shell, resolved) { backStack.settleHome(signedIn, shell, resolved) }
     // One directive for the strategy and for the Back-arrow rule, so the two cannot disagree about whether the home
     // is on screen beside a page.
     val directive = calculatePaneScaffoldDirective(currentWindowAdaptiveInfoV2())
@@ -81,7 +92,8 @@ fun EphyraNavHost(
     val itemNow by rememberUpdatedState(item)
     // A page and the items open in it share their view models, kept by opening.
     val stores: ConsolePageStores = viewModel()
-    val openings = backStack.openings()
+    // What the Server tab parked while another tab shows is still open, so its view models are kept too.
+    val openings = backStack.openings() + tabs.parkedOpenings()
     LaunchedEffect(openings) { stores.retain(openings) }
     val openItem by rememberUpdatedState(backStack.topItem)
     // The setting a page was opened on: read inside its content, as the entry is built once for its key.
@@ -92,6 +104,7 @@ fun EphyraNavHost(
         onBack = onBack,
         sceneStrategies =
             listOf(
+                ShellPanesStrategy(enabled = shell && hubBeside, threePane = threePane),
                 ConsoleThreePaneStrategy(threePane, { DefaultPane(defaultPageNow) }) { ItemPlaceholderPane(it) },
                 rememberConsolePaneStrategy(directive),
             ),
@@ -111,6 +124,8 @@ fun EphyraNavHost(
                             PaneContent(innerEdge = PaneEdge.End) { homeNow() }
                         }
                     }
+                ShellRoute ->
+                    NavEntry(key, metadata = ShellPane) { ShellEntry(tabs, signedIn, backStack, hubBeside, homeNow, defaultPageNow) }
                 is PageRoute ->
                     // Keyed by the opening, so a page opened on another row is the same entry and keeps its state.
                     NavEntry(key, contentKey = "page-${key.opening}", metadata = pageMetadata(key.page)) {
@@ -148,3 +163,38 @@ fun EphyraNavHost(
         },
     )
 }
+
+/**
+ * The shell's entry: the bar or rail over the tabs, with the console's home as the Server tab. A page open beside the home is drawn
+ * inside the Server tab by `ShellPanesStrategy`, so while another tab shows it is parked on the Server tab's own stack, and put back
+ * when that tab returns. Back from the bare home goes to the start tab.
+ */
+@Composable
+private fun ShellEntry(
+    tabs: TabShellState<EphyraTab>?,
+    signedIn: Boolean,
+    backStack: NavBackStack<NavKey>,
+    hubBeside: Boolean,
+    home: @Composable () -> Unit,
+    defaultPage: @Composable () -> Unit,
+) {
+    if (tabs == null || !signedIn) return
+    val stack = backStack.toList()
+    LaunchedEffect(tabs.selected, stack) {
+        tabs.settleStash(backStack, EphyraTab.Server, ::opensBesideHome, ::isStandIn)
+    }
+    EphyraTabShell(tabs, backToStart = nothingOpenBeside(stack, { it == ShellRoute }, ::isStandIn)) {
+        ServerPanes(
+            home = {
+                CompositionLocalProvider(LocalIsSinglePaneNav provides !hubBeside) {
+                    PaneContent(innerEdge = PaneEdge.End) { home() }
+                }
+            },
+            defaultPage = { DefaultPane(defaultPage) },
+            itemPlaceholder = { ItemPlaceholderPane(it) },
+        )
+    }
+}
+
+/** The openings of what the Server tab parked while another tab shows: still open, so their view models are kept. */
+private fun TabShellState<EphyraTab>?.parkedOpenings(): Set<Int> = this?.stack(EphyraTab.Server)?.openings().orEmpty()

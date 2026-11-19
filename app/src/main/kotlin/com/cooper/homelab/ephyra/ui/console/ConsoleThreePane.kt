@@ -18,9 +18,9 @@ import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
 import com.binge.designsystem.R as DesR
 
-private const val HUB_ROLE = "console.threePane.hub"
-private const val PAGE_ROLE = "console.threePane.page"
-private const val ITEM_ROLE = "console.threePane.item"
+internal const val HUB_ROLE = "console.threePane.hub"
+internal const val PAGE_ROLE = "console.threePane.page"
+internal const val ITEM_ROLE = "console.threePane.item"
 
 /** Marks the home's entry, so [ConsoleThreePaneStrategy] knows which entry is the first pane. */
 internal val ThreePaneHub: Map<String, Any> = mapOf(HUB_ROLE to true)
@@ -98,7 +98,7 @@ private class ConsoleThreePaneScene(
 
 /** The home, a page and its item, each a third of the window, with the design system's gap between them. */
 @Composable
-private fun ThreePaneRow(
+internal fun ThreePaneRow(
     hub: @Composable () -> Unit,
     page: @Composable () -> Unit,
     item: @Composable () -> Unit,
@@ -115,7 +115,7 @@ private fun ThreePaneRow(
 
 /** Two panes in a row, [first] and [second] sharing the width by their weights, with the design system's gap between them. */
 @Composable
-private fun PaneRow(
+internal fun PaneRow(
     firstWeight: Float,
     first: @Composable () -> Unit,
     secondWeight: Float,

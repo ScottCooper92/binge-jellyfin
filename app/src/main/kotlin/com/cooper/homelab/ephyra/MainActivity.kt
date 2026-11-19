@@ -38,6 +38,7 @@ import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
 import com.cooper.homelab.core.uiandroid.consent.ConsentGate
 import com.cooper.homelab.core.uiandroid.review.ReviewPromptOnReturnToRoot
+import com.cooper.homelab.core.uiandroid.shell.RestartOnGateChange
 import com.cooper.homelab.ephyra.flags.LocalClientEnabled
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.telemetry.ReportScreen
@@ -57,7 +58,9 @@ import com.cooper.homelab.ephyra.ui.console.ConsolePageRoute
 import com.cooper.homelab.ephyra.ui.console.LocalUserPictures
 import com.cooper.homelab.ephyra.ui.localNetworkAnswered
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
+import com.cooper.homelab.ephyra.ui.nav.RestartOnSessionEnd
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
@@ -67,6 +70,7 @@ import com.cooper.homelab.ephyra.ui.nav.openPage
 import com.cooper.homelab.ephyra.ui.nav.openPageItem
 import com.cooper.homelab.ephyra.ui.nav.openSubItem
 import com.cooper.homelab.ephyra.ui.nav.openings
+import com.cooper.homelab.ephyra.ui.nav.rememberEphyraTabs
 import com.cooper.homelab.ephyra.ui.nav.top
 import com.cooper.homelab.ephyra.ui.pickPublicUser
 import com.cooper.homelab.ephyra.ui.rememberAppSettingsBinding
@@ -218,7 +222,7 @@ class MainActivity : ComponentActivity() {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                             ConsentGate(telemetry.consent, telemetry.answerConsent) {
-                                ConsoleHost(state, backStack, graph, appActions(actions), appActions(homeActions))
+                                ConsoleHost(state, backStack, graph, appActions(actions), appActions(homeActions), client)
                             }
                         }
                     }
@@ -242,8 +246,16 @@ private fun ConsoleHost(
     graph: AppGraph,
     actions: Actions,
     homeActions: Actions,
+    clientResolved: Boolean?,
 ) {
     val signedIn = state is UiState.SignedIn
+    // The client's shell shows while the gate is on. Until the gate is read, the flag alone decides, right for anyone who has not opted out.
+    val tabs = rememberEphyraTabs()
+    val clientOn = clientResolved ?: graph.clientGate.fallback
+    // Turning the client off or on starts over from the start tab, with no screen left over from the other layout.
+    RestartOnGateChange(clientResolved, tabs, backStack, offTab = EphyraTab.Server)
+    // A session that ends takes what the Server tab parked with it, so the next account does not find it.
+    RestartOnSessionEnd(state.connected(), tabs, backStack)
     ReviewPromptOnReturnToRoot(
         connected = state.connected(),
         atRoot = backStack.entries().isEmpty(),
@@ -252,6 +264,7 @@ private fun ConsoleHost(
     EphyraNavHost(
         backStack = backStack,
         signedIn = signedIn,
+        tabs = tabs.takeIf { clientOn },
         resolved = state !is UiState.Loading,
         onBack = { backStack.closeTop() },
         signedOut = { JellyfinRoot(state, homeActions) },
