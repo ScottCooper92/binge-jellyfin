@@ -2,12 +2,13 @@ package com.cooper.homelab.ephyra.flags
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.cooper.homelab.core.flags.FixedFeatureFlags
+import com.cooper.homelab.core.flags.FlagPreferenceGate
 import com.cooper.homelab.core.flags.Flags
+import com.cooper.homelab.core.flags.PreferenceGate
 import com.cooper.homelab.ephyra.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -18,7 +19,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-/** The client is the remote flag AND the user's own preference, read from this one place. */
+/**
+ * The client gate's wiring: this app's flag key, its build override and its preference store, through the shared `PreferenceGate`. The gate's
+ * own cases (what is offered, that a first value is not a toggle, the fall-back) are tested with it in homelab-core.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClientGateTest {
     @get:Rule
@@ -70,52 +74,5 @@ class ClientGateTest {
     fun `an unset preference with the flag on is on`() =
         runTest {
             assertTrue(gate(flag = true, prefs = prefs(stored = null)).resolved.first { it != null }!!)
-        }
-
-    @Test
-    fun `the row is offered only while the remote flag is on`() =
-        runTest {
-            assertFalse(gate(false, prefs(null)).offered.first())
-            assertTrue(gate(true, prefs(null)).offered.first())
-        }
-
-    @Test
-    fun `an opted-out user never observes the client on, so a first value is not mistaken for a toggle`() =
-        runTest {
-            val gate = gate(flag = true, prefs = prefs(stored = false))
-            val seen = mutableListOf<Boolean?>()
-            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { gate.resolved.collect { seen += it } }
-
-            assertEquals(false, gate.resolved.first { it != null })
-            assertFalse("the value is false from its first non-null state: $seen", seen.any { it == true })
-            assertFalse(seen.drop(1).any { it == null })
-        }
-
-    @Test
-    fun `turning it off and on again emits each change once, and never goes back to unread`() =
-        runTest {
-            val gate = gate(flag = true, prefs = prefs(stored = null))
-            val seen = mutableListOf<Boolean?>()
-            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { gate.resolved.collect { seen += it } }
-
-            gate.setPreference(false)
-            gate.setPreference(true)
-
-            assertEquals(listOf(true, false, true), seen.filterNotNull())
-            assertFalse(seen.dropWhile { it == null }.any { it == null })
-        }
-
-    @Test
-    fun `before it is read the gate falls back to the flag alone`() =
-        runTest {
-            val gate = gate(flag = true, prefs = prefs(stored = null))
-            assertEquals(true, gate.current())
-        }
-
-    @Test
-    fun `a gate built without one is off and offers nothing`() =
-        runTest {
-            assertFalse(NoPreferenceGate.current())
-            assertFalse(NoPreferenceGate.offered.first())
         }
 }
