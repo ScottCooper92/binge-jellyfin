@@ -65,6 +65,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status = mutableMapOf<String, Int>()
 
+    /** The browse reads: a library's titles, paged, ordered and filtered, and the filter choices. */
+    val browse = FakeBrowse()
+
     /** What `/Users/ForgotPassword` answers, and the PIN `/Users/ForgotPassword/Pin` accepts. */
     var forgotAnswer = """{"Action":"ContactAdmin"}"""
     var forgotPin = "1234"
@@ -644,6 +647,7 @@ class FakeJellyfin : Dispatcher() {
                 .body("<html>Sign in to the Wi-Fi</html>")
                 .build()
         }
+        browse.answer(request)?.let { return it }
         return when {
             sessionEnded && (path == "/Backup" || path == "/Users/Me") -> MockResponse(code = 401)
             path == "/System/Info/Public" && down > 0 -> {
