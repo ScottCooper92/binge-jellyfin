@@ -6,4 +6,11 @@
     <string name="home_loading_row">Cargando</string>
     <string name="home_caption_episode">T%1$d, E%2$d · %3$s</string>
     <string name="home_empty">Aún no hay nada que mostrar. Aquí aparecerán los títulos que veas y añadas.</string>
+    <string name="movie_versions_title">Elige una versión</string>
+    <string name="movie_version_number">Versión %1$d</string>
+    <plurals name="movie_version_subtitles">
+        <item quantity="one">%1$d subtítulo</item>
+        <item quantity="many">%1$d subtítulos</item>
+        <item quantity="other">%1$d subtítulos</item>
+    </plurals>
 </resources>
