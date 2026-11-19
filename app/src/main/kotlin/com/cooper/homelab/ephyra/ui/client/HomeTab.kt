@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.designsystem.component.BingePullToRefresh
 import com.cooper.homelab.ephyra.AppGraph
 import com.cooper.homelab.ephyra.client.home.HomeCard
+import com.cooper.homelab.ephyra.client.home.HomeImage
 import com.cooper.homelab.ephyra.client.home.HomeScreen
 import com.cooper.homelab.ephyra.client.home.HomeUiState
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
@@ -51,7 +52,7 @@ fun HomeTab(
 internal fun HomeTabContent(
     state: HomeUiState,
     refreshing: Boolean,
-    imageUrl: (com.cooper.homelab.ephyra.client.home.HomeImage, Int) -> String?,
+    imageUrl: (HomeImage, Int) -> String?,
     onOpen: (HomeCard) -> Unit,
     onResume: (HomeCard) -> Unit,
     onRefresh: () -> Unit,

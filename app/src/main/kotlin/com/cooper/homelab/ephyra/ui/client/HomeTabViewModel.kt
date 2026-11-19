@@ -17,6 +17,7 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.serverFailure
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -74,29 +75,36 @@ class HomeTabViewModel(
         width: Int,
     ): String? = (source.value as? Source.Ready)?.images?.of(image.itemId, image.kind, image.tag, width)
 
-    /** Reads the signed-in client and starts Home. Does nothing once it has, and a retry after no session reads it again. */
+    /** The read of the client that is running, so a second [start] while it runs builds no second Home. */
+    private var starting: Job? = null
+
+    /**
+     * Reads the signed-in client and starts Home. Does nothing once it has, or while a read is still running (the tab leaving and
+     * re-entering composition calls it again), and a retry after no session reads it again.
+     */
     fun start() {
-        if (source.value is Source.Ready) return
-        viewModelScope.launch(dispatcher) {
-            val signedIn = attempt { connection.signedIn() }.getOrNull()
-            if (signedIn == null) {
-                source.value = Source.NotConnected
-                return@launch
+        if (source.value is Source.Ready || starting?.isActive == true) return
+        starting =
+            viewModelScope.launch(dispatcher) {
+                val signedIn = attempt { connection.signedIn() }.getOrNull()
+                if (signedIn == null) {
+                    source.value = Source.NotConnected
+                    return@launch
+                }
+                val (session, client) = signedIn
+                val home =
+                    HomeViewModel(
+                        scope = viewModelScope,
+                        dispatcher = dispatcher,
+                        libraries = JellyfinLibraryRepository(client, session.userId, profile),
+                        resume = JellyfinResumeRepository(client, session.userId, profile),
+                        nextUp = JellyfinNextUpRepository(client, session.userId),
+                        latest = JellyfinLatestRepository(client, session.userId, profile),
+                        classify = { it.serverFailure() },
+                    )
+                source.value = Source.Ready(home, ImageUrls(client))
+                home.start()
             }
-            val (session, client) = signedIn
-            val home =
-                HomeViewModel(
-                    scope = viewModelScope,
-                    dispatcher = dispatcher,
-                    libraries = JellyfinLibraryRepository(client, session.userId, profile),
-                    resume = JellyfinResumeRepository(client, session.userId, profile),
-                    nextUp = JellyfinNextUpRepository(client, session.userId),
-                    latest = JellyfinLatestRepository(client, session.userId, profile),
-                    classify = { it.serverFailure() },
-                )
-            source.value = Source.Ready(home, ImageUrls(client))
-            home.start()
-        }
     }
 
     /** Reads everything again; with no client read yet, it is the retry of [start]. */
