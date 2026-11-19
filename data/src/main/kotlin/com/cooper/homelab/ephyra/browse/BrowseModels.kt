@@ -83,6 +83,13 @@ data class BrowseItem(
     val primaryAspectRatio: Double? = null,
     val seriesId: String? = null,
     val seriesName: String? = null,
+    /** The tag of the series' poster, for an episode's card that shows the series. */
+    val seriesPrimaryImageTag: String? = null,
+    /** An episode has no backdrop or thumb of its own to speak of; its series or season does. These name whose, and the tag. */
+    val parentBackdropItemId: String? = null,
+    val parentBackdropImageTag: String? = null,
+    val parentThumbItemId: String? = null,
+    val parentThumbImageTag: String? = null,
     val seasonNumber: Int? = null,
     val episodeNumber: Int? = null,
     val userData: ItemUserData = ItemUserData(),

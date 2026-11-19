@@ -145,6 +145,11 @@ internal fun JsonObject.toBrowseItem(): BrowseItem? {
         primaryAspectRatio = (get("PrimaryImageAspectRatio") as? JsonPrimitive)?.doubleOrNull,
         seriesId = string("SeriesId"),
         seriesName = string("SeriesName"),
+        seriesPrimaryImageTag = string("SeriesPrimaryImageTag"),
+        parentBackdropItemId = string("ParentBackdropItemId"),
+        parentBackdropImageTag = (array("ParentBackdropImageTags").firstOrNull() as? JsonPrimitive)?.content,
+        parentThumbItemId = string("ParentThumbItemId"),
+        parentThumbImageTag = string("ParentThumbImageTag"),
         seasonNumber = int("ParentIndexNumber"),
         episodeNumber = int("IndexNumber"),
         userData =
