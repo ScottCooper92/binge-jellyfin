@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -40,7 +41,7 @@ abstract class ShellHostTestBase {
     protected var stack: NavBackStack<NavKey>? = null
     protected var tabs: TabShellState<EphyraTab>? = null
 
-    protected fun host() {
+    protected fun host(homeTab: (@Composable () -> Unit)? = null) {
         compose.setContent {
             JellyfinTheme {
                 val backStack = rememberNavBackStack(HomeRoute)
@@ -54,6 +55,7 @@ abstract class ShellHostTestBase {
                     signedIn = connected == true,
                     resolved = connected != null,
                     tabs = shell.takeIf { gate ?: true },
+                    homeTab = homeTab,
                     onBack = { backStack.closeTop() },
                     signedOut = { Text("sign in") },
                     home = {

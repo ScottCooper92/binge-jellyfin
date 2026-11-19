@@ -107,13 +107,15 @@ internal fun ephyraTabItems(): List<BingeNavSuiteItem> =
  * The tab bar over each tab's root. [server] is the console's home. Home, Libraries and Search are placeholders until their
  * screens land. Only a root is drawn here: what a tab opens is an entry on the app's stack above the shell, so on a narrow window it
  * takes the whole window and the bar is hidden until Back pops it. Back at another tab's root returns to the start tab, and Back at
- * the start tab's root leaves the app. [backToStart] is off while something is open beside the home.
+ * the start tab's root leaves the app. [backToStart] is off while something is open beside the home. [home] is the Home tab's screen, a
+ * composable that takes the whole tab, as [server] does: until it is given, Home shows its placeholder. Libraries and Search keep theirs.
  */
 @Composable
 internal fun EphyraTabShell(
     tabs: TabShellState<EphyraTab>,
     modifier: Modifier = Modifier,
     backToStart: Boolean = true,
+    home: (@Composable () -> Unit)? = null,
     server: @Composable () -> Unit,
 ) {
     TabShell(
@@ -126,6 +128,7 @@ internal fun EphyraTabShell(
     ) { tab ->
         when (tab) {
             EphyraTab.Server -> server()
+            EphyraTab.Home -> home?.invoke() ?: TabPlaceholder(tab)
             else -> TabPlaceholder(tab)
         }
     }

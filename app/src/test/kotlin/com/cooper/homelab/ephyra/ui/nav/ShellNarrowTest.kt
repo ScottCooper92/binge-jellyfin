@@ -1,5 +1,6 @@
 package com.cooper.homelab.ephyra.ui.nav
 
+import androidx.compose.material3.Text
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.navigation3.runtime.NavKey
@@ -161,5 +162,32 @@ class ShellNarrowTest : ShellHostTestBase() {
         compose.runOnUiThread { connected = false }
         compose.waitForIdle()
         assertEquals(listOf<NavKey>(HomeRoute), keys())
+    }
+
+    @Test
+    fun `the Home tab draws the screen it is given in place of its placeholder, and the other tabs keep theirs`() {
+        host(homeTab = { Text("the home screen") })
+        assertShown("the home screen")
+        assertAbsent("This screen is on its way.")
+        tap("tab_libraries")
+        assertShown("This screen is on its way.")
+        tap("tab_search")
+        assertShown("This screen is on its way.")
+        tap("tab_home")
+        assertShown("the home screen")
+    }
+
+    @Test
+    fun `without a Home screen the Home tab shows its placeholder`() {
+        host()
+        assertShown("This screen is on its way.")
+    }
+
+    @Test
+    fun `with the gate off there is no Home tab, so the Home screen is never drawn`() {
+        gate = false
+        host(homeTab = { Text("the home screen") })
+        assertAbsent("the home screen")
+        assertEquals(listOf<NavKey>(HubRoute), keys())
     }
 }

@@ -56,6 +56,8 @@ import com.cooper.homelab.ephyra.ui.console.rememberConsolePaneStrategy
  * empty. On a narrow window each is the whole window. On a landscape tablet the page is given two thirds of the window
  * ([ConsoleThreePaneStrategy]), for a list and what it opened.
  *
+ * [homeTab] is the Home tab's screen, drawn in place of its placeholder once given.
+ *
  * With [tabs] the client is on: [ShellRoute] is the root, its bar or rail holds the tabs, and the Server tab is the home. The
  * pages are still keys above it, drawn inside the Server tab on a wide window and over the whole window on a narrow one.
  */
@@ -72,6 +74,7 @@ fun EphyraNavHost(
     item: @Composable (ConsoleEntry) -> Unit = {},
     tabs: TabShellState<EphyraTab>? = null,
     resolved: Boolean = true,
+    homeTab: (@Composable () -> Unit)? = null,
 ) {
     val shell = tabs != null
     LaunchedEffect(signedIn, shell, resolved) { backStack.settleHome(signedIn, shell, resolved) }
@@ -87,6 +90,7 @@ fun EphyraNavHost(
     val depth by rememberUpdatedState(backStack.entries().size)
     val signedOutNow by rememberUpdatedState(signedOut)
     val homeNow by rememberUpdatedState(home)
+    val homeTabNow by rememberUpdatedState(homeTab)
     val defaultPageNow by rememberUpdatedState(defaultPage)
     val pageNow by rememberUpdatedState(page)
     val itemNow by rememberUpdatedState(item)
@@ -125,7 +129,10 @@ fun EphyraNavHost(
                         }
                     }
                 ShellRoute ->
-                    NavEntry(key, metadata = ShellPane) { ShellEntry(tabs, signedIn, backStack, hubBeside, homeNow, defaultPageNow) }
+                    NavEntry(
+                        key,
+                        metadata = ShellPane,
+                    ) { ShellEntry(tabs, signedIn, backStack, hubBeside, homeNow, defaultPageNow, homeTabNow) }
                 is PageRoute ->
                     // Keyed by the opening, so a page opened on another row is the same entry and keeps its state.
                     NavEntry(key, contentKey = "page-${key.opening}", metadata = pageMetadata(key.page)) {
@@ -177,13 +184,14 @@ private fun ShellEntry(
     hubBeside: Boolean,
     home: @Composable () -> Unit,
     defaultPage: @Composable () -> Unit,
+    homeTab: (@Composable () -> Unit)?,
 ) {
     if (tabs == null || !signedIn) return
     val stack = backStack.toList()
     LaunchedEffect(tabs.selected, stack) {
         tabs.settleStash(backStack, EphyraTab.Server, ::opensBesideHome, ::isStandIn)
     }
-    EphyraTabShell(tabs, backToStart = nothingOpenBeside(stack, { it == ShellRoute }, ::isStandIn)) {
+    EphyraTabShell(tabs, backToStart = nothingOpenBeside(stack, { it == ShellRoute }, ::isStandIn), home = homeTab) {
         ServerPanes(
             home = {
                 CompositionLocalProvider(LocalIsSinglePaneNav provides !hubBeside) {
