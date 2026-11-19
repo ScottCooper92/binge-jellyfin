@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Healing
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +41,8 @@ import com.cooper.homelab.core.uiandroid.tip.TipSheet
 import com.cooper.homelab.ephyra.BuildConfig
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.feedback.installBugReportUrl
+import com.cooper.homelab.ephyra.flags.NoPreferenceGate
+import com.cooper.homelab.ephyra.flags.PreferenceGate
 import com.cooper.homelab.ephyra.server.JellyfinVersion
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.search.SettingRows
@@ -59,6 +62,8 @@ private const val PRIVACY_POLICY_URL = "https://scottcooper92.github.io/app-feed
 data class AppSettings(
     val shareUsageData: Boolean = false,
     val sendCrashReports: Boolean = false,
+    /** Whether the user wants the app to browse and play; null while the remote flag does not offer it, so the row is not shown. */
+    val client: Boolean? = null,
 )
 
 /** The "This app" group: Report a bug (with the connected server's [serverVersion], when known), then two switches that save as they are flipped. */
@@ -83,6 +88,17 @@ internal fun AppGroup(
                     onClick = { context.openInBrowser(installBugReportUrl(serverVersion)) },
                     key = SettingRows.THIS_APP_REPORT_BUG,
                 ),
+                // Only while the remote flag offers the client, which settings search cannot know, so the row has no search entry.
+                settings.client?.let { on ->
+                    ListItem(
+                        icon = Icons.Outlined.VideoLibrary,
+                        label = stringResource(R.string.settings_client),
+                        detail = stringResource(R.string.settings_client_caption),
+                        supportingMaxLines = CAPTION_LINES,
+                        toggled = on,
+                        onClick = { actions.onClient(!on) },
+                    )
+                },
                 ListItem(
                     icon = Icons.Outlined.BarChart,
                     label = stringResource(R.string.settings_share_usage_data),
@@ -247,25 +263,38 @@ class AppSettingsBinding(
     private val setUsageData: (Boolean) -> Unit,
     private val settings: AppSettings,
     private val setCrashReports: (Boolean) -> Unit,
+    private val setClient: (Boolean) -> Unit,
 ) {
     /** [actions] with the group's state and its two ways to change it. */
     fun applyTo(actions: Actions): Actions =
-        actions.copy(appSettings = settings, onShareUsageData = setUsageData, onSendCrashReports = setCrashReports)
+        actions.copy(appSettings = settings, onShareUsageData = setUsageData, onSendCrashReports = setCrashReports, onClient = setClient)
 }
 
 /** Reads [prefs] for the life of the composition; the stored answer is null until it has been read. */
 @Composable
-fun rememberAppSettingsBinding(prefs: TelemetryPrefs): AppSettingsBinding {
+fun rememberAppSettingsBinding(
+    prefs: TelemetryPrefs,
+    clientGate: PreferenceGate = NoPreferenceGate,
+): AppSettingsBinding {
     val consent by prefs.analyticsConsent.collectAsStateWithLifecycle(initialValue = null)
     val crashReports by prefs.crashReportingEnabled.collectAsStateWithLifecycle(initialValue = false)
+    // Null while the flag does not offer the client, and so no row. The user's own answer shows once the flag does.
+    val offered by clientGate.offered.collectAsStateWithLifecycle(initialValue = clientGate.fallback)
+    val wanted by clientGate.preference.collectAsStateWithLifecycle(initialValue = true)
     val scope = rememberCoroutineScope()
     return AppSettingsBinding(
         consent = consent,
         // The first-run question covers both, so one answer sets usage data and crash reports; Settings changes each on its own.
         answerConsent = { granted -> scope.launch { prefs.answerFirstRun(granted) } },
         setUsageData = { granted -> scope.launch { prefs.setAnalyticsGranted(granted) } },
-        settings = AppSettings(shareUsageData = consent == AnalyticsConsent.GRANTED, sendCrashReports = crashReports),
+        settings =
+            AppSettings(
+                shareUsageData = consent == AnalyticsConsent.GRANTED,
+                sendCrashReports = crashReports,
+                client = wanted.takeIf { offered },
+            ),
         setCrashReports = { enabled -> scope.launch { prefs.setCrashReportingEnabled(enabled) } },
+        setClient = { enabled -> scope.launch { clientGate.setPreference(enabled) } },
     )
 }
 

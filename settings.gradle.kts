@@ -75,3 +75,4 @@ includeBuild("homelab-core") {
 
 include(":app")
 include(":data")
+include(":client")

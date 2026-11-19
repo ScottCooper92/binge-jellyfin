@@ -1041,6 +1041,8 @@ app:server_title  aef7de28d529
 app:server_unnamed  8e03b3c29d2b
 app:server_update  fbb077ce2901
 app:server_version  8b089712c085
+app:settings_client  e2251a03e699
+app:settings_client_caption  3b7ccf695e1e
 app:settings_group_about  4efca0d10c5f
 app:settings_group_app  0982cb1775e6
 app:settings_group_notifications  788011833a5a
@@ -1415,3 +1417,9 @@ app:users_unrated_series  e714ae21d3b4
 app:users_unrated_trailer  099cdbe8994e
 app:users_video_transcoding  bf238a29e9bf
 app:users_you  71897d3f4628
+client:home_caption_episode  bf48a13f757a
+client:home_empty  a18bce91f48b
+client:home_loading_row  dc380888c4e2
+client:home_row_continue_watching  81ebbe6c38c8
+client:home_row_latest  055763dc484f
+client:home_row_next_up  c5ae65235e0a

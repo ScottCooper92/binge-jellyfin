@@ -25,8 +25,9 @@ internal class DemoModel {
     private val files = DemoServerFiles()
     private val plugins = DemoPlugins()
     private val configuration = DemoConfiguration()
+    private val browse = DemoBrowse(libraries)
     private val states: List<DemoState> =
-        listOf(users, sessions, devices, activity, libraries, lookups, tasks, files, plugins, configuration)
+        listOf(users, sessions, devices, activity, libraries, lookups, tasks, files, plugins, configuration, browse)
 
     private val routes: List<DemoRoute> by lazy {
         serverRoutes() + states.flatMap { it.routes() }
@@ -48,7 +49,7 @@ internal class DemoModel {
             route("POST", "QuickConnect", "Authorize") { _, _ -> noContent },
             route("POST", "Sessions", "Logout") { _, _ -> reset().let { noContent } },
             route("GET", "Items", "Counts") { _, _ -> ok(itemCounts()) },
-            route("GET", "Items") { call, _ -> ok(items(call)) },
+            route("GET", "Items") { call, _ -> ok(browse.items(call) ?: items(call)) },
         )
 
     private fun publicInfo() =

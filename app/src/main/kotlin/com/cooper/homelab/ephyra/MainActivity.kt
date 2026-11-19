@@ -39,6 +39,7 @@ import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
 import com.cooper.homelab.core.uiandroid.consent.ConsentGate
 import com.cooper.homelab.core.uiandroid.review.ReviewPromptOnReturnToRoot
+import com.cooper.homelab.ephyra.flags.LocalClientEnabled
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.telemetry.ReportScreen
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
@@ -190,10 +191,15 @@ class MainActivity : ComponentActivity() {
                 )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             // What the user has said about usage data and crash reports; the stored answer is null until it is read.
-            val telemetry = rememberAppSettingsBinding(graph.telemetryPrefs)
+            val telemetry = rememberAppSettingsBinding(graph.telemetryPrefs, graph.clientGate)
             // The telemetry choices, and an administrator's notifications, which no one else is shown.
             val appActions = rememberNotificationBinding(graph, (state as? UiState.SignedIn)?.isAdministrator == true, telemetry::applyTo)
-            CompositionLocalProvider(LocalFlags provides flags, LocalUserPictures provides graph.userPictures) {
+            val client by graph.clientGate.resolved.collectAsStateWithLifecycle()
+            CompositionLocalProvider(
+                LocalFlags provides flags,
+                LocalClientEnabled provides (client ?: graph.clientGate.fallback),
+                LocalUserPictures provides graph.userPictures,
+            ) {
                 if (LocalConfiguration.current.isTelevision()) {
                     JellyfinTvTheme {
                         TvConsentGate(telemetry.consent, telemetry.answerConsent) {
