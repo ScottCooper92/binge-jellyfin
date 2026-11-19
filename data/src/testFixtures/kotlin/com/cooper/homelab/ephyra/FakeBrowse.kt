@@ -165,7 +165,6 @@ class FakeBrowse {
         return json("""{$state,"PlaybackPositionTicks":${updated.positionTicks},"Key":"k","ItemId":"${updated.id}"}""")
     }
 
-
     /** `searchTerm` over every title, as the server matches it: the name contains the term, ignoring case. */
     private fun search(request: RecordedRequest): MockResponse {
         itemRequests += request
