@@ -1411,7 +1411,7 @@ class FakeJellyfin : Dispatcher() {
             .body(body)
             .build()
 
-    /** The routes the console's admin pages use that the real server guards with its administrator policy: the server's own settings, never a user's own data. */
+    /** The routes the console's admin pages use, which this fake keeps for administrators. This is stricter than the real server (see `enforcesAdministrator`). */
     private fun requiresAdministrator(
         path: String,
         request: RecordedRequest,
@@ -1528,7 +1528,7 @@ fun FakeJellyfin.session(): JellyfinSession =
         token = "token-1",
     )
 
-/** The path prefixes of the routes the real server keeps for administrators (see `requiresAdministrator`). */
+/** The path prefixes of the routes this fake keeps for administrators, stricter than the real server (see `requiresAdministrator`). */
 private val ADMIN_PREFIXES =
     listOf(
         "/System/Info",
