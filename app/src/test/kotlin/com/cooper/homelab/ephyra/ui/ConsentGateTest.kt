@@ -5,6 +5,9 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -80,6 +83,19 @@ class ConsentGateTest {
         compose.onNodeWithText("Share usage data").performClick()
         compose.onNodeWithText("Send crash reports").performClick()
         assertEquals(listOf("usage:true", "crash:false"), calls)
+    }
+
+    @Test
+    fun `the client row shows only while the flag offers it, and reports the switch`() {
+        val calls = mutableListOf<String>()
+        var settings by mutableStateOf(AppSettings(client = null))
+        compose.setContent {
+            JellyfinTheme { Column { AppGroup(settings, Actions(onClient = { calls += "client:$it" })) } }
+        }
+        compose.onNodeWithText("Browse and play").assertDoesNotExist()
+        settings = AppSettings(client = true)
+        compose.onNodeWithText("Browse and play").performClick()
+        assertEquals(listOf("client:false"), calls)
     }
 
     @Test
