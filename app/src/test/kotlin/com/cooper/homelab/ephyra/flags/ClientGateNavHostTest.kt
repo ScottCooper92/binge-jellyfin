@@ -12,7 +12,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.core.flags.FixedFeatureFlags
+import com.cooper.homelab.core.flags.FlagPreferenceGate
 import com.cooper.homelab.core.flags.Flags
+import com.cooper.homelab.core.flags.PreferenceGate
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.CoroutineScope

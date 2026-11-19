@@ -32,6 +32,8 @@ import com.binge.designsystem.component.ListItemDestination
 import com.binge.designsystem.template.BingeScreenScaffold
 import com.binge.designsystem.template.ScreenBody
 import com.binge.designsystem.template.screenListPadding
+import com.cooper.homelab.core.flags.NoPreferenceGate
+import com.cooper.homelab.core.flags.PreferenceGate
 import com.cooper.homelab.core.presentation.tip.TipEvent
 import com.cooper.homelab.core.presentation.tip.TipState
 import com.cooper.homelab.core.telemetry.AnalyticsConsent
@@ -41,8 +43,6 @@ import com.cooper.homelab.core.uiandroid.tip.TipSheet
 import com.cooper.homelab.ephyra.BuildConfig
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.feedback.installBugReportUrl
-import com.cooper.homelab.ephyra.flags.NoPreferenceGate
-import com.cooper.homelab.ephyra.flags.PreferenceGate
 import com.cooper.homelab.ephyra.server.JellyfinVersion
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.search.SettingRows
