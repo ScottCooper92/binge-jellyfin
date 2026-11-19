@@ -31,6 +31,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
 import com.binge.companion.kit.isTelevision
 import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
@@ -55,6 +58,8 @@ import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.console.ConsolePageRoute
 import com.cooper.homelab.ephyra.ui.console.LocalUserPictures
 import com.cooper.homelab.ephyra.ui.localNetworkAnswered
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import com.cooper.homelab.ephyra.ui.pickPublicUser
 import com.cooper.homelab.ephyra.ui.rememberAppSettingsBinding
 import com.cooper.homelab.ephyra.ui.rememberNotificationBinding
@@ -130,6 +135,8 @@ class MainActivity : ComponentActivity() {
             // The console pages open over the home, the last on top. A page that opens another stays under it, so
             // Back returns to the opener, and to the home from the first. Leaving SignedIn closes them all.
             var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
+            // The app's screens: the sign-in steps, then the console, which keeps its own stack above until its pages move here.
+            val backStack = rememberNavBackStack(HomeRoute)
             // The permission is asked for once; after that the way to it is the app's settings, as the prompt may not come back.
             var askedLocalNetwork by rememberSaveable { mutableStateOf(false) }
             LaunchedEffect(state is UiState.SignedIn) { if (state !is UiState.SignedIn) stack = stack.clear() }
@@ -197,7 +204,7 @@ class MainActivity : ComponentActivity() {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                             ConsentGate(telemetry.consent, telemetry.answerConsent) {
-                                ConsoleHost(state, stack, { stack = it }, graph, appActions(actions), appActions(homeActions))
+                                ConsoleHost(state, backStack, stack, { stack = it }, graph, appActions(actions), appActions(homeActions))
                             }
                         }
                     }
@@ -217,6 +224,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun ConsoleHost(
     state: UiState,
+    backStack: NavBackStack<NavKey>,
     stack: ConsoleBackStack,
     onStack: (ConsoleBackStack) -> Unit,
     graph: AppGraph,
@@ -231,46 +239,62 @@ private fun ConsoleHost(
         atRoot = stack.entries.isEmpty(),
         reviewPrompt = graph.reviewPrompt,
     )
-    ConsoleNavHost(
-        stack = if (signedIn) stack else ConsoleBackStack(),
+    EphyraNavHost(
+        backStack = backStack,
         signedIn = signedIn,
-        onBack = { onStack(latest.back()) },
-        home = { JellyfinRoot(state, homeActions) },
-        defaultPage = {
-            (state as? UiState.SignedIn)?.let { gated ->
-                // A stream tapped here has no page to open over, so the page opens, and the stream over it.
-                ConsolePageRoute(
-                    ConsolePage.NowPlaying,
-                    graph,
-                    gated,
-                    {},
-                    actions.onOpenPage,
-                    actions,
-                    { onStack(latest.openFromHome(ConsolePage.NowPlaying).openItem(it)) },
-                )
-            }
-        },
-        page = { entry ->
-            (state as? UiState.SignedIn)?.let { gated ->
-                ConsolePageRoute(
-                    entry.page,
-                    graph,
-                    gated,
-                    { onStack(latest.back()) },
-                    actions.onOpenPage,
-                    actions,
-                    { onStack(latest.openItem(it)) },
-                    { page, item -> onStack(latest.openPageItem(page, item)) },
-                    row = entry.row,
-                )
-            }
-        },
-        item = { entry ->
-            (state as? UiState.SignedIn)?.let {
-                ConsoleItemRoute(entry, graph, it.profile.version, it.profile, it.account, { item -> onStack(latest.openSubItem(item)) }) {
-                    onStack(latest.back())
-                }
-            }
+        // The root has nothing under it: Back leaves the app, as it did from the console's home.
+        onBack = {},
+        signedOut = { JellyfinRoot(state, homeActions) },
+        console = {
+            ConsoleNavHost(
+                stack = if (signedIn) stack else ConsoleBackStack(),
+                signedIn = signedIn,
+                onBack = { onStack(latest.back()) },
+                home = { JellyfinRoot(state, homeActions) },
+                defaultPage = {
+                    (state as? UiState.SignedIn)?.let { gated ->
+                        // A stream tapped here has no page to open over, so the page opens, and the stream over it.
+                        ConsolePageRoute(
+                            ConsolePage.NowPlaying,
+                            graph,
+                            gated,
+                            {},
+                            actions.onOpenPage,
+                            actions,
+                            { onStack(latest.openFromHome(ConsolePage.NowPlaying).openItem(it)) },
+                        )
+                    }
+                },
+                page = { entry ->
+                    (state as? UiState.SignedIn)?.let { gated ->
+                        ConsolePageRoute(
+                            entry.page,
+                            graph,
+                            gated,
+                            { onStack(latest.back()) },
+                            actions.onOpenPage,
+                            actions,
+                            { onStack(latest.openItem(it)) },
+                            { page, item -> onStack(latest.openPageItem(page, item)) },
+                            row = entry.row,
+                        )
+                    }
+                },
+                item = { entry ->
+                    (state as? UiState.SignedIn)?.let {
+                        ConsoleItemRoute(
+                            entry,
+                            graph,
+                            it.profile.version,
+                            it.profile,
+                            it.account,
+                            { item -> onStack(latest.openSubItem(item)) },
+                        ) {
+                            onStack(latest.back())
+                        }
+                    }
+                },
+            )
         },
     )
 }
