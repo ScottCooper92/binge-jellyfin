@@ -291,11 +291,7 @@ fun rememberAppSettingsBinding(
             AppSettings(
                 shareUsageData = consent == AnalyticsConsent.GRANTED,
                 sendCrashReports = crashReports,
-                client =
-                    wanted
-                        .takeIf {
-                            offered
-                        },
+                client = wanted.takeIf { offered },
             ),
         setCrashReports = { enabled -> scope.launch { prefs.setCrashReportingEnabled(enabled) } },
         setClient = { enabled -> scope.launch { clientGate.setPreference(enabled) } },
