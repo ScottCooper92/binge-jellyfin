@@ -87,7 +87,7 @@ class LibrariesScreenTest {
     @Test
     fun `no libraries to list say so`() {
         show(LibrariesUiState.Empty)
-        rule.onNodeWithText("No movie or series libraries yet.", substring = true).assertIsDisplayed()
+        rule.onNodeWithText("Movie and series libraries on this server will appear here.", substring = true).assertIsDisplayed()
     }
 
     @Test

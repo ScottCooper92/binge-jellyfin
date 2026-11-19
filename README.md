@@ -19,10 +19,11 @@ A title is found by its TMDB id, so the server's items have to carry one. Jellyf
 Movies and Shows libraries (it is not a separate plugin): turn on TMDb as a metadata downloader for the library and refresh its
 metadata. A title with no id is never matched, and the home screen says how many there are.
 
-It is also a console for the server, so it stands on its own: approve a Quick Connect code from
-your phone, set your playback languages, see what's playing, and, as an admin, scan libraries, run
-tasks, read the activity log, and manage devices and users. It is not a client: browsing and
-playing stay in Binge, and in Jellyfin's own apps.
+It is also a full client for the server, so it stands on its own: it browses and plays your library
+(being built, and off until it is ready), and it is a console for the server. The console lets you approve a
+Quick Connect code from your phone, set your playback languages, see what's playing, and, as an admin, scan
+libraries, run tasks, read the activity log, and manage devices and users. Your own server is the only data
+source for browsing.
 
 ## Signing in
 

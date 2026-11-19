@@ -7,5 +7,5 @@
     <string name="home_caption_episode">S%1$d, E%2$d · %3$s</string>
     <string name="home_empty">Nothing to show yet. Titles you watch and add will appear here.</string>
     <string name="client_libraries_title">Libraries</string>
-    <string name="client_libraries_empty">No movie or series libraries yet. Libraries you add on your server will appear here.</string>
+    <string name="client_libraries_empty">Movie and series libraries on this server will appear here.</string>
 </resources>

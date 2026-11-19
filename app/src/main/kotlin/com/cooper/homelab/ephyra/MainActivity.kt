@@ -50,6 +50,7 @@ import com.cooper.homelab.ephyra.ui.JellyfinRoot
 import com.cooper.homelab.ephyra.ui.JellyfinViewModel
 import com.cooper.homelab.ephyra.ui.UiState
 import com.cooper.homelab.ephyra.ui.chooseServer
+import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryPlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
@@ -273,6 +274,12 @@ private fun ConsoleHost(
         onBack = { backStack.closeTop() },
         signedOut = { JellyfinRoot(state, homeActions) },
         home = { JellyfinRoot(state, homeActions) },
+        // Home's rows come from the user's own server, so the tab needs a session. A card opens its title page and Continue watching
+        // resumes it, both once those screens exist (#753, #756): until then neither has anywhere to go.
+        homeTab =
+            (state as? UiState.SignedIn)?.let { signed ->
+                { HomeTab(graph, signed.profile, onOpen = {}, onResume = {}) }
+            },
         librariesTab = {
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
         },
