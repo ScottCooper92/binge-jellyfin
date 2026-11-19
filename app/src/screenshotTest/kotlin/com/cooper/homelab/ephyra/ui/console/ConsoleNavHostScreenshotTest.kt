@@ -57,8 +57,9 @@ class ConsoleNavHostScreenshotTest {
     @PreviewTest
     @JellyfinWidePreview
     @Composable
-    fun itemOpen() = Console {
-        openFromHome(ConsolePage.Tasks)
-        openItem("scan")
-    }
+    fun itemOpen() =
+        Console {
+            openFromHome(ConsolePage.Tasks)
+            openItem("scan")
+        }
 }

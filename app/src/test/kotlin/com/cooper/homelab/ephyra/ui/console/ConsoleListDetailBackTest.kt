@@ -10,8 +10,8 @@ import androidx.navigation3.runtime.NavKey
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
-import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.HubRoute
+import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.openFromHome
 import com.cooper.homelab.ephyra.ui.nav.rememberConsoleBackStack
