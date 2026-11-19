@@ -66,6 +66,12 @@ data class JellyfinServerProfile(
     val hasUserViewsRoute: Boolean get() = atLeast(TEN, NINE)
 
     /**
+     * Continue watching and latest are at `/UserItems/Resume` and `/Items/Latest`, with the user in the query; before 10.9,
+     * at `/Users/{id}/Items/Resume` and `/Users/{id}/Items/Latest`. 10.9, checked against the 10.8.13 and 12.4 documents.
+     */
+    val hasUserItemRoutes: Boolean get() = atLeast(TEN, NINE)
+
+    /**
      * A user's picture is at `/UserImage?userId=`; before 10.9, at `/Users/{id}/Images/Primary`. 10.9. The old route stays as
      * an alias to 10.11, but is the one marked legacy.
      */
