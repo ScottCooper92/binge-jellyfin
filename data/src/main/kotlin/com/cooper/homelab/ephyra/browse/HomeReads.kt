@@ -51,8 +51,9 @@ internal suspend fun JellyfinClient.browseNextUp(
 }
 
 /**
- * The newest titles in [library]. The answer is a bare array, not a page. With [groupItems] the server folds a series'
- * new episodes into the one series, as the home screen shows them.
+ * The newest titles in [library]. The answer is a bare array, not a page. A TV library is asked for its episodes, not its
+ * series, because the server orders by when each item was added and a series' new episode is what is new. With
+ * [groupItems] it then folds a series' new episodes into the one series, as the home screen shows them.
  */
 internal suspend fun JellyfinClient.browseLatest(
     userId: String,
@@ -64,7 +65,7 @@ internal suspend fun JellyfinClient.browseLatest(
 ): List<BrowseItem> {
     val query = cardQuery(userId)
     query["parentId"] = library.id
-    query["includeItemTypes"] = library.kind.itemTypes()
+    query["includeItemTypes"] = library.kind.latestItemTypes()
     query["limit"] = limit.toString()
     query["groupItems"] = groupItems.toString()
     if (hidePlayed) query["isPlayed"] = "false"

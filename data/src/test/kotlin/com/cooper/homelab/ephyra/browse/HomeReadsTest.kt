@@ -168,6 +168,23 @@ class HomeReadsTest {
         }
 
     @Test
+    fun `latest in a TV library asks for episodes, so a new episode is what is new`() =
+        runBlocking {
+            episode("e1", 1, 1)
+            latest.latest(shows)
+            assertEquals(
+                "Episode",
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
+                    .queryParameter("includeItemTypes"),
+            )
+            assertEquals(listOf("e1"), latest.latest(shows).map { it.id })
+            assertEquals("Episode", LibraryKind.TvShows.latestItemTypes())
+            assertEquals("Movie,Episode", LibraryKind.Other.latestItemTypes())
+        }
+
+    @Test
     fun `an empty home is empty lists`() =
         runBlocking {
             movie("a", "Alien")

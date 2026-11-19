@@ -119,8 +119,20 @@ internal class DemoBrowse(
     private fun latest(call: DemoCall): JsonArray {
         val limit = call.query("limit")?.toIntOrNull() ?: Int.MAX_VALUE
         val hidePlayed = call.query("isPlayed") == "false"
-        val newest = inLibrary(call).filter { !hidePlayed || !it.played }.sortedByDescending { it.added }.take(limit)
-        return JsonArray(newest.map { it.toJson() })
+        val newest =
+            if (kindOf(call) == "tvshows") {
+                // As the server groups them: a series is as new as its newest unwatched episode.
+                val series = titles.filter { it.type == "Series" }.associateBy { it.id }
+                titles
+                    .filter { it.type == "Episode" && (!hidePlayed || !it.played) }
+                    .groupBy { it.seriesId }
+                    .mapNotNull { (id, episodes) -> series[id]?.let { it to episodes.maxOf { episode -> episode.added } } }
+                    .sortedByDescending { it.second }
+                    .map { it.first }
+            } else {
+                inLibrary(call).filter { !hidePlayed || !it.played }.sortedByDescending { it.added }
+            }
+        return JsonArray(newest.take(limit).map { it.toJson() })
     }
 
     private fun filters(call: DemoCall): JsonObject {
