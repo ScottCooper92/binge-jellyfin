@@ -112,7 +112,7 @@ working around them:
   - A server that cannot be reached is `UNAVAILABLE`, also with a user message.
 - **Media is identified as media type + TMDB id**, with an `EpisodeRef` beside it for an episode.
   Translating that into Jellyfin item ids is this app's job, in `LibraryIndex`.
-- **Play is Binge's player, fed by `GetPlaybackSource`.** The companion never renders video.
+- **Play is Binge's player, fed by `GetPlaybackSource`.** For the host, the companion never renders video: Binge's player does. Playing in this app is the client's (#759).
   It sends Jellyfin the host's `PlaybackDeviceProfile` as a Jellyfin `DeviceProfile`
   (`DeviceProfiles`), and the server chooses direct play or an HLS transcode. Fix playback by
   describing the device more accurately, never by inspecting the file here.
