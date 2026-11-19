@@ -58,13 +58,13 @@ fun LibrariesScreen(
 ) {
     val gridState = rememberLazyGridState()
     ScrollToTopOnTabReselect(reselect, gridState)
-    BingeScreenScaffold(title = stringResource(R.string.libraries_title), modifier = modifier) { padding ->
+    BingeScreenScaffold(title = stringResource(R.string.client_libraries_title), modifier = modifier) { padding ->
         ScreenBody(padding) { _ ->
             val inner = padding.screenListPadding()
             when (state) {
                 LibrariesUiState.Loading -> LibrariesSkeleton(inner)
                 LibrariesUiState.Empty ->
-                    EmptyScreen(stringResource(R.string.libraries_empty), Modifier.fillMaxSize())
+                    EmptyScreen(stringResource(R.string.client_libraries_empty), Modifier.fillMaxSize())
                 is LibrariesUiState.Error ->
                     ErrorScreen(state.failure.errorKind(), onRefresh.takeIf { state.failure.canRetry() }, Modifier.fillMaxSize())
                 is LibrariesUiState.Ready ->

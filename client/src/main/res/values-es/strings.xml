@@ -6,6 +6,6 @@
     <string name="home_loading_row">Cargando</string>
     <string name="home_caption_episode">T%1$d, E%2$d · %3$s</string>
     <string name="home_empty">Aún no hay nada que mostrar. Aquí aparecerán los títulos que veas y añadas.</string>
-    <string name="libraries_title">Bibliotecas</string>
-    <string name="libraries_empty">Todavía no hay bibliotecas de películas ni de series. Las que añadas en tu servidor aparecerán aquí.</string>
+    <string name="client_libraries_title">Bibliotecas</string>
+    <string name="client_libraries_empty">Todavía no hay bibliotecas de películas ni de series. Las que añadas en tu servidor aparecerán aquí.</string>
 </resources>
