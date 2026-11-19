@@ -74,6 +74,82 @@ internal data class ItemWire(
     @SerialName("ParentIndexNumber") val parentIndexNumber: Int? = null,
     @SerialName("IndexNumber") val indexNumber: Int? = null,
     @SerialName("UserData") val userData: UserDataWire? = null,
+    @SerialName("SeasonId") val seasonId: String? = null,
+    @SerialName("Overview") val overview: String? = null,
+    @SerialName("ChildCount") val childCount: Int? = null,
+    // What only a title page reads (the item route sends all of it; a list read asks for none of it).
+    @SerialName("OriginalTitle") val originalTitle: String? = null,
+    @SerialName("Taglines") val taglines: List<String> = emptyList(),
+    @SerialName("Genres") val genres: List<String> = emptyList(),
+    @SerialName("Studios") val studios: List<NameWire> = emptyList(),
+    @SerialName("People") val people: List<PersonWire> = emptyList(),
+    @SerialName("ProviderIds") val providerIds: Map<String, String?> = emptyMap(),
+    @SerialName("MediaSources") val mediaSources: List<SourceWire> = emptyList(),
+    @SerialName("Chapters") val chapters: List<ChapterWire> = emptyList(),
+    @SerialName("PremiereDate") val premiereDate: String? = null,
+    @SerialName("EndDate") val endDate: String? = null,
+    @SerialName("Status") val status: String? = null,
+    @SerialName("CriticRating") val criticRating: Double? = null,
+    @SerialName("SeasonName") val seasonName: String? = null,
+    @SerialName("ProductionLocations") val productionLocations: List<String> = emptyList(),
+)
+
+@Serializable
+internal data class NameWire(
+    @SerialName("Name") val name: String? = null,
+)
+
+@Serializable
+internal data class PersonWire(
+    @SerialName("Id") val id: String? = null,
+    @SerialName("Name") val name: String? = null,
+    @SerialName("Role") val role: String? = null,
+    @SerialName("Type") val type: String? = null,
+    @SerialName("PrimaryImageTag") val primaryImageTag: String? = null,
+)
+
+@Serializable
+internal data class SourceWire(
+    @SerialName("Id") val id: String? = null,
+    @SerialName("Name") val name: String? = null,
+    @SerialName("Container") val container: String? = null,
+    @SerialName("Size") val size: Long? = null,
+    @SerialName("Bitrate") val bitrate: Int? = null,
+    @SerialName("RunTimeTicks") val runTimeTicks: Long? = null,
+    @SerialName("DefaultAudioStreamIndex") val defaultAudioStreamIndex: Int? = null,
+    @SerialName("DefaultSubtitleStreamIndex") val defaultSubtitleStreamIndex: Int? = null,
+    @SerialName("MediaStreams") val mediaStreams: List<StreamWire> = emptyList(),
+)
+
+@Serializable
+internal data class StreamWire(
+    @SerialName("Index") val index: Int? = null,
+    @SerialName("Type") val type: String? = null,
+    @SerialName("Codec") val codec: String? = null,
+    @SerialName("Language") val language: String? = null,
+    @SerialName("Title") val title: String? = null,
+    @SerialName("DisplayTitle") val displayTitle: String? = null,
+    @SerialName("IsDefault") val isDefault: Boolean? = null,
+    @SerialName("IsForced") val isForced: Boolean? = null,
+    @SerialName("IsExternal") val isExternal: Boolean? = null,
+    @SerialName("IsHearingImpaired") val isHearingImpaired: Boolean? = null,
+    @SerialName("Channels") val channels: Int? = null,
+    @SerialName("ChannelLayout") val channelLayout: String? = null,
+    @SerialName("BitRate") val bitRate: Int? = null,
+    @SerialName("Width") val width: Int? = null,
+    @SerialName("Height") val height: Int? = null,
+    @SerialName("VideoRange") val videoRange: String? = null,
+    @SerialName("VideoRangeType") val videoRangeType: String? = null,
+    @SerialName("BitDepth") val bitDepth: Int? = null,
+    @SerialName("AverageFrameRate") val averageFrameRate: Double? = null,
+    @SerialName("Profile") val profile: String? = null,
+)
+
+@Serializable
+internal data class ChapterWire(
+    @SerialName("StartPositionTicks") val startPositionTicks: Long? = null,
+    @SerialName("Name") val name: String? = null,
+    @SerialName("ImageTag") val imageTag: String? = null,
 )
 
 @Serializable
@@ -104,10 +180,11 @@ internal fun ItemWire.toBrowseItem(): BrowseItem? {
             imageTags["Logo"]?.let { put(ImageKind.Logo, it) }
             backdropImageTags.firstOrNull()?.let { put(ImageKind.Backdrop, it) }
         }
+    val kind = ItemKind.fromServer(type)
     return BrowseItem(
         id = id,
         name = name.orEmpty(),
-        kind = ItemKind.fromServer(type),
+        kind = kind,
         year = productionYear,
         communityRating = communityRating,
         officialRating = officialRating,
@@ -121,8 +198,12 @@ internal fun ItemWire.toBrowseItem(): BrowseItem? {
         parentBackdropImageTag = parentBackdropImageTags.firstOrNull(),
         parentThumbItemId = parentThumbItemId,
         parentThumbImageTag = parentThumbImageTag,
-        seasonNumber = parentIndexNumber,
-        episodeNumber = indexNumber,
+        // A season is numbered by its own index; an episode by its parent's (the season) and its own.
+        seasonNumber = if (kind == ItemKind.Season) indexNumber else parentIndexNumber,
+        episodeNumber = indexNumber.takeIf { kind != ItemKind.Season },
+        seasonId = seasonId,
+        overview = overview,
+        childCount = childCount,
         userData =
             ItemUserData(
                 played = userData?.played ?: false,
@@ -143,3 +224,88 @@ internal fun ItemsWire.toPage(
         total = if (withTotal) totalRecordCount else null,
         startIndex = startIndex,
     )
+
+internal fun ItemWire.toTitleDetail(): TitleDetail? {
+    val item = toBrowseItem() ?: return null
+    return TitleDetail(
+        item = item,
+        originalTitle = originalTitle?.takeIf { it != name },
+        overview = overview,
+        taglines = taglines,
+        genres = genres,
+        studios = studios.mapNotNull { it.name },
+        criticRating = criticRating,
+        premiereDate = premiereDate,
+        endDate = endDate,
+        status = status,
+        externalIds = providerIds.mapNotNull { (key, value) -> value?.let { key to it } }.toMap(),
+        people =
+            people.mapNotNull { person ->
+                val id = person.id ?: return@mapNotNull null
+                TitlePerson(
+                    id,
+                    person.name.orEmpty(),
+                    person.role?.takeIf(String::isNotBlank),
+                    PersonKind.fromServer(person.type),
+                    person.primaryImageTag,
+                )
+            },
+        versions = mediaSources.mapNotNull { it.toVersion() },
+        chapters = chapters.map { TitleChapter(it.startPositionTicks ?: 0L, it.name?.takeIf(String::isNotBlank), it.imageTag) },
+        seasonName = seasonName,
+    )
+}
+
+private fun SourceWire.toVersion(): MediaVersion? {
+    val id = id ?: return null
+    return MediaVersion(
+        id = id,
+        name = name,
+        container = container,
+        sizeBytes = size,
+        bitrate = bitrate,
+        runTimeTicks = runTimeTicks,
+        tracks = mediaStreams.mapNotNull { it.toTrack() },
+        defaultAudioIndex = defaultAudioStreamIndex,
+        defaultSubtitleIndex = defaultSubtitleStreamIndex,
+    )
+}
+
+private fun StreamWire.toTrack(): MediaTrack? {
+    val index = index ?: return null
+    return MediaTrack(
+        index = index,
+        kind = TrackKind.fromServer(type),
+        codec = codec,
+        language = language,
+        title = title,
+        displayTitle = displayTitle,
+        isDefault = isDefault ?: false,
+        isForced = isForced ?: false,
+        isExternal = isExternal ?: false,
+        isHearingImpaired = isHearingImpaired ?: false,
+        channels = channels,
+        channelLayout = channelLayout,
+        bitrate = bitRate,
+        width = width,
+        height = height,
+        videoRange = videoRange,
+        videoRangeType = videoRangeType,
+        bitDepth = bitDepth,
+        frameRate = averageFrameRate,
+        profile = profile,
+    )
+}
+
+internal fun ItemWire.toPersonDetail(): PersonDetail? {
+    val id = id ?: return null
+    return PersonDetail(
+        id = id,
+        name = name.orEmpty(),
+        overview = overview,
+        birthDate = premiereDate,
+        deathDate = endDate,
+        birthPlace = productionLocations.firstOrNull(),
+        imageTag = imageTags["Primary"],
+    )
+}

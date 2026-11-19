@@ -24,6 +24,13 @@ data class FakeTitle(
     val seriesName: String? = null,
     val season: Int? = null,
     val episode: Int? = null,
+    val seasonId: String? = null,
+    /** The ids of the people in it, for `personIds`. */
+    val personIds: List<String> = emptyList(),
+    /** The ids of the collections it is in, for `/Items/{id}/Collections`. */
+    val collectionIds: List<String> = emptyList(),
+    /** Raw JSON members appended to the item (`"Overview":"..."`, `"MediaSources":[...]`), for what a title page reads. */
+    val extra: String = "",
 )
 
 /**
@@ -40,7 +47,19 @@ class FakeBrowse {
         val url = request.url
         return when {
             url.encodedPath == "/Items/Filters" -> filters(request)
-            url.encodedPath == "/Items" && url.queryParameter("parentId") != null -> items(request)
+            url.encodedPath == "/Items" &&
+                (
+                    url.queryParameter(
+                        "parentId",
+                    ) != null ||
+                        url.queryParameter("personIds") != null
+                ) -> items(request)
+            url.encodedPath == "/Items" && url.queryParameter("searchTerm") != null -> search(request)
+            url.encodedPath == "/Persons" -> people(request)
+            titles.isNotEmpty() && url.encodedPath.matches(relatedRoute) -> related(request)
+            // A title by id, by either route generation, and a series' seasons and episodes.
+            titles.isNotEmpty() && isTitleRoute(url.encodedPath) -> title(request)
+            titles.isNotEmpty() && url.encodedPath.matches(showsRoute) -> shows(request)
             // The LIBRARY contract reads resume and next up too, with no titles seeded here: those fall through to the
             // rest of the fake. A test that seeds titles for the browse reads gets these answered from them.
             titles.isEmpty() -> null
@@ -54,11 +73,98 @@ class FakeBrowse {
     /** Before 10.9 the user is a path segment: `/Users/{id}/Items/Resume` and `/Users/{id}/Items/Latest`. */
     private fun oldUserRoute(last: String) = Regex("/Users/[^/]+/Items/$last")
 
+    private val itemRoute = Regex("/(Users/[^/]+/)?Items/([^/]+)")
+    private val relatedRoute = Regex("/Items/([^/]+)/(Similar|Collections)")
+    private val showsRoute = Regex("/Shows/([^/]+)/(Seasons|Episodes)")
+
+    private fun isTitleRoute(path: String): Boolean {
+        val id = itemRoute.matchEntire(path)?.groupValues?.get(2) ?: return false
+        return id !in setOf("Latest", "Resume", "Filters", "Filters2", "Counts")
+    }
+
+    private fun title(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val id = itemRoute.matchEntire(request.url.encodedPath)?.groupValues?.get(2)
+        val found =
+            titles.firstOrNull { it.id == id } ?: return MockResponse
+                .Builder()
+                .code(404)
+                .body("{}")
+                .build()
+        return json(found.toJson())
+    }
+
+    private fun related(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val (id, what) = relatedRoute.matchEntire(request.url.encodedPath)!!.destructured
+        val item =
+            titles.firstOrNull { it.id == id } ?: return MockResponse
+                .Builder()
+                .code(404)
+                .body("{}")
+                .build()
+        val limit = request.url.queryParameter("limit")?.toInt() ?: Int.MAX_VALUE
+        val list =
+            if (what == "Similar") {
+                titles.filter { it.libraryId == item.libraryId && it.type == item.type && it.id != id }.take(limit)
+            } else {
+                titles.filter { it.type == "BoxSet" && it.id in item.collectionIds }
+            }
+        return pageOf(request, list)
+    }
+
+    private fun shows(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val match = showsRoute.matchEntire(request.url.encodedPath) ?: return json("{}")
+        val (series, what) = match.destructured
+        val season = request.url.queryParameter("seasonId")
+        val list =
+            if (what == "Seasons") {
+                titles.filter { it.type == "Season" && it.seriesId == series }
+            } else {
+                titles.filter { it.type == "Episode" && it.seriesId == series && (season == null || it.seasonId == season) }
+            }
+        return pageOf(request, list)
+    }
+
     private fun inLibrary(request: RecordedRequest): List<FakeTitle> {
         val url = request.url
         val types = url.queryParameter("includeItemTypes")?.split(',').orEmpty()
-        return titles.filter { it.libraryId == url.queryParameter("parentId") && (types.isEmpty() || it.type in types) }
+        val parent = url.queryParameter("parentId")
+        val person = url.queryParameter("personIds")
+        return titles.filter {
+            (parent == null || it.libraryId == parent) &&
+                (person == null || person in it.personIds) &&
+                (types.isEmpty() || it.type in types)
+        }
     }
+
+    /** `searchTerm` over every title, as the server matches it: the name contains the term, ignoring case. */
+    private fun search(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val url = request.url
+        val term = url.queryParameter("searchTerm").orEmpty()
+        val types = url.queryParameter("includeItemTypes")?.split(',').orEmpty()
+        val found = titles.filter { it.name.contains(term, ignoreCase = true) && (types.isEmpty() || it.type in types) }
+        val start = url.queryParameter("startIndex")?.toInt() ?: 0
+        val limit = url.queryParameter("limit")?.toInt() ?: found.size
+        val total = if (url.queryParameter("enableTotalRecordCount") == "false") "" else ",\"TotalRecordCount\":${found.size}"
+        return json("""{"Items":[${found.drop(start).take(limit).joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
+    }
+
+    /** `/Persons?searchTerm=`: the titles of type Person that match. 10.x ignores `startIndex`, 12.0 and later honours it. */
+    private fun people(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val url = request.url
+        val term = url.queryParameter("searchTerm").orEmpty()
+        val found = titles.filter { it.type == "Person" && it.name.contains(term, ignoreCase = true) }
+        val start = if (pagesPeople) url.queryParameter("startIndex")?.toInt() ?: 0 else 0
+        val limit = url.queryParameter("limit")?.toInt() ?: found.size
+        return json("""{"Items":[${found.drop(start).take(limit).joinToString(",") { it.toJson() }}],"StartIndex":$start}""")
+    }
+
+    /** Whether `/Persons` honours `startIndex`, as 12.0 and later do. */
+    var pagesPeople = false
 
     private fun filters(request: RecordedRequest): MockResponse {
         val list = inLibrary(request)
@@ -165,6 +271,8 @@ class FakeBrowse {
             seriesId?.let { append(""","SeriesId":"$it","SeriesName":"${seriesName.orEmpty()}","SeriesPrimaryImageTag":"sp-$it"""") }
             season?.let { append(""","ParentIndexNumber":$it""") }
             episode?.let { append(""","IndexNumber":$it""") }
+            seasonId?.let { append(""","SeasonId":"$it"""") }
+            if (extra.isNotEmpty()) append(",").append(extra)
             append(""","UserData":{"Played":$played,"IsFavorite":$favourite,"PlaybackPositionTicks":$positionTicks}}""")
         }
 

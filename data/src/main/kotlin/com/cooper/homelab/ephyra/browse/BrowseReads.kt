@@ -94,3 +94,14 @@ internal fun LibraryKind.itemTypes(): String =
         LibraryKind.BoxSets -> "BoxSet"
         LibraryKind.Other -> "Movie,Series"
     }
+
+/**
+ * The item types a latest read asks for. A series has no latest-items container of its own, so a TV library is asked for
+ * its episodes and the server groups them under their series.
+ */
+internal fun LibraryKind.latestItemTypes(): String =
+    when (this) {
+        LibraryKind.TvShows -> "Episode"
+        LibraryKind.Other -> "Movie,Episode"
+        else -> itemTypes()
+    }
