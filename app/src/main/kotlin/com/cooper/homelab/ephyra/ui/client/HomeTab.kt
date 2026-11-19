@@ -16,7 +16,6 @@ import com.cooper.homelab.ephyra.client.home.HomeCard
 import com.cooper.homelab.ephyra.client.home.HomeScreen
 import com.cooper.homelab.ephyra.client.home.HomeUiState
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
-import kotlinx.coroutines.Dispatchers
 
 /**
  * The Home tab: the rows of the user's own server, with pull to refresh. [onOpen] is a card's tap, which opens its title page, and
@@ -32,7 +31,7 @@ fun HomeTab(
     modifier: Modifier = Modifier,
 ) {
     val model: HomeTabViewModel =
-        viewModel(factory = viewModelFactory { initializer { HomeTabViewModel(graph.connection, Dispatchers.IO, profile) } })
+        viewModel(factory = viewModelFactory { initializer { HomeTabViewModel(graph.connection, graph.ioDispatcher, profile) } })
     LaunchedEffect(model) { model.start() }
     val state by model.state.collectAsStateWithLifecycle()
     val refreshing by model.refreshing.collectAsStateWithLifecycle()
