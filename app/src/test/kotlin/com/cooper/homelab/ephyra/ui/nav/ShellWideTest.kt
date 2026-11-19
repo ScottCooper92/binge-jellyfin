@@ -133,19 +133,4 @@ class ShellWideTest : ShellHostTestBase() {
         assertAbsent("page Logs")
         assertShown("console home")
     }
-
-    @Test
-    fun `a session still being worked out leaves a parked page where it is`() {
-        host()
-        tap("tab_server")
-        click("open logs")
-        tap("tab_libraries")
-        compose.runOnUiThread { connected = null }
-        compose.waitForIdle()
-        assertEquals(2, tabs?.stack(EphyraTab.Server)?.size)
-        compose.runOnUiThread { connected = true }
-        compose.waitForIdle()
-        tap("tab_server")
-        assertShown("page Logs")
-    }
 }

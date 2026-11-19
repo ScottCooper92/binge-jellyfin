@@ -8,12 +8,10 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.binge.designsystem.component.BingeNavSuiteItem
@@ -22,7 +20,6 @@ import com.binge.designsystem.template.EmptyScreen
 import com.cooper.homelab.core.uiandroid.shell.TabShell
 import com.cooper.homelab.core.uiandroid.shell.TabShellState
 import com.cooper.homelab.core.uiandroid.shell.rememberTabShellState
-import com.cooper.homelab.core.uiandroid.shell.restart
 import com.cooper.homelab.ephyra.R
 import kotlinx.serialization.Serializable
 
@@ -71,20 +68,6 @@ fun rememberEphyraTabs(): TabShellState<EphyraTab> {
             )
         }
     return rememberTabShellState(tabs = EphyraTab.entries, initial = EphyraTab.Home, stacks = stacks)
-}
-
-/**
- * A session that ends starts the shell over: every tab goes back to its root and the start tab shows, so a page parked on the Server
- * tab is not restored into the next session, which may be another account or another server. [connected] is null while the session is
- * still being worked out (after a process death), which leaves a restored stack alone; false is a sign-out or a token the server refused.
- */
-@Composable
-internal fun RestartOnSessionEnd(
-    connected: Boolean?,
-    tabs: TabShellState<EphyraTab>,
-    appStack: NavBackStack<NavKey>,
-) {
-    LaunchedEffect(connected) { if (connected == false) tabs.restart(appStack) }
 }
 
 @Composable
