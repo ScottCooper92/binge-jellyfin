@@ -98,8 +98,6 @@ internal class DemoBrowse(
     private fun kindOf(call: DemoCall): String? =
         libraries.views().firstOrNull { it.string("Id") == call.query("parentId") }?.string("CollectionType")
 
-    private fun JsonObject.string(key: String) = (get(key) as? JsonPrimitive)?.content
-
     private fun inLibrary(call: DemoCall): List<DemoTitle> {
         val types =
             when (kindOf(call)) {
