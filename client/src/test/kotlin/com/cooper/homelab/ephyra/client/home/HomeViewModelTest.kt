@@ -139,6 +139,18 @@ class HomeViewModelTest {
         )
     }
 
+    @Test
+    fun `a retry after every row failed reloads the rows, even when the libraries cannot be read again`() {
+        movie("a", "Alien", added = 1)
+        listOf("/UserItems/Resume", "/Shows/NextUp", "/Items/Latest").forEach { jellyfin.status[it] = 500 }
+        val vm = viewModel()
+        assertTrue(vm.settled() is HomeUiState.Error)
+        jellyfin.status.clear()
+        jellyfin.status["/UserViews"] = 503
+        vm.refresh()
+        assertTrue(vm.settled { it is HomeUiState.Ready }.keys().isNotEmpty())
+    }
+
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
     }
