@@ -401,6 +401,10 @@ class JellyfinViewModel(
     /** The forgotten-password steps of the sign-in step. */
     val forgotPassword = ForgotPasswordFlow(viewModelScope, connection, _state)
 
+    /** Refreshing, the gates, the server's health and signing out: everything from a saved session on. */
+    private val signedIn =
+        SignedInSession(viewModelScope, _state, sessions, connection, index, card, localNetwork, reports, onSessionEnded, addressPolicy)
+
     init {
         viewModelScope.launch {
             val session = sessions.current()
@@ -408,10 +412,6 @@ class JellyfinViewModel(
             if (session != null) refresh()
         }
     }
-
-    /** Refreshing, the gates, the server's health and signing out: everything from a saved session on. */
-    private val signedIn =
-        SignedInSession(viewModelScope, _state, sessions, connection, index, card, localNetwork, reports, onSessionEnded, addressPolicy)
 
     /** Reads the gates, then the library index; with [gatesOnly], the gates alone. See [SignedInSession.refresh]. */
     fun refresh(gatesOnly: Boolean = false) = signedIn.refresh(gatesOnly)
