@@ -85,7 +85,8 @@ abstract class ShellHostTestBase {
     /** The shell with a Libraries tab that offers one library to open, and a screen for it. */
     protected fun hostWithLibraries() =
         host(
-            librariesTab = { Text("open movies", Modifier.clickable { stack?.openLibrary("lib-movies") }) },
+            // Clear of the rail, as the console home is: a bare Text would sit under it on a wide window.
+            librariesTab = { Text("open movies", Modifier.padding(start = 112.dp).clickable { stack?.openLibrary("lib-movies") }) },
             library = { Text("library ${it.libraryId}") },
         )
 

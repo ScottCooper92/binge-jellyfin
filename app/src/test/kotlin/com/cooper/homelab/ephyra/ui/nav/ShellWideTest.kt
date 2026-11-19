@@ -146,4 +146,17 @@ class ShellWideTest : ShellHostTestBase() {
         assertShown("open movies")
         assertEquals(listOf<NavKey>(ShellRoute), keys())
     }
+
+    @Test
+    fun `a page parked on the Server tab is still there after a library was opened and closed`() {
+        hostWithLibraries()
+        tap("tab_server")
+        click("open tasks")
+        tap("tab_libraries")
+        click("open movies")
+        assertFalse(pressBack())
+        assertEquals(EphyraTab.Libraries, tabs?.selected)
+        tap("tab_server")
+        assertEquals(listOf(ConsolePage.Tasks), pageKeys().map { it.page })
+    }
 }
