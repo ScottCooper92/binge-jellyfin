@@ -355,12 +355,7 @@ class JellyfinScreenshotTest {
     @Composable
     fun signedInAdmin() = JellyfinRoot(previewSignedInAdmin, Actions())
 
-    /** The Live TV row, for a user who is not an administrator but may manage it, and for an administrator who may. */
-    @PreviewTest
-    @JellyfinScreenStatePreview
-    @Composable
-    fun signedInLiveTvManager() = JellyfinRoot(previewSignedInLiveTvManager, Actions())
-
+    /** The Live TV row, for an administrator whose policy lets them manage it. A user who is not an administrator is offered none. */
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
