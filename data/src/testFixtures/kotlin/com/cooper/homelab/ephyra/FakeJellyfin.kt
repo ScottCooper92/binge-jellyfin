@@ -190,6 +190,15 @@ class FakeJellyfin : Dispatcher() {
     /** Whether `/Users/Me` answers with an administrator's policy. */
     var administrator = false
 
+    /**
+     * Whether the routes only an administrator may call answer anyone else with a 403, as the real server does. Off by default, so a
+     * test that does not care about the policy reads them freely. A request refused this way is in [forbidden].
+     */
+    var enforcesAdministrator = false
+
+    /** The `METHOD /path` of each request [enforcesAdministrator] refused, so a test can say none was made. */
+    val forbidden = CopyOnWriteArrayList<String>()
+
     /** More of the user's policy for `/Users/Me`, as JSON members after `IsAdministrator` (`,"Key":value`). */
     var policy = ""
 
@@ -635,6 +644,10 @@ class FakeJellyfin : Dispatcher() {
                 .code(code)
                 .apply { statusBody[path]?.let { body(it) } }
                 .build()
+        }
+        if (enforcesAdministrator && !administrator && requiresAdministrator(path, request)) {
+            forbidden += "${request.method} $path"
+            return MockResponse(code = 403)
         }
         if (path == "/socket") return socket(request)
         if (path in notJson) {
@@ -1390,6 +1403,21 @@ class FakeJellyfin : Dispatcher() {
             .body(body)
             .build()
 
+    /** The routes the real server guards with its administrator policy: the server's own settings, never a user's own data. */
+    private fun requiresAdministrator(
+        path: String,
+        request: RecordedRequest,
+    ): Boolean =
+        when {
+            path == "/System/Info/Public" -> false
+            ADMIN_PREFIXES.any { path == it || path.startsWith("$it/") } -> true
+            path == "/Users" || path == "/Users/New" -> true
+            path.startsWith("/Users/") && path.endsWith("/Policy") -> true
+            path == "/Users/Password" -> "CurrentPw" !in request.body?.utf8().orEmpty()
+            path == "/Branding/Splashscreen" -> request.method != "GET"
+            else -> false
+        }
+
     /** A command sent to a session: playstate, general command or message. */
     private fun isSessionCommand(path: String) = "/Playing/" in path || "/Command" in path || path.endsWith("/Message")
 
@@ -1493,6 +1521,26 @@ fun FakeJellyfin.session(): JellyfinSession =
     )
 
 /** The user image's route before 10.9, for any user. */
+private val ADMIN_PREFIXES =
+    listOf(
+        "/System/Info",
+        "/System/Configuration",
+        "/System/ActivityLog",
+        "/System/Logs",
+        "/System/Restart",
+        "/System/Shutdown",
+        "/Library/VirtualFolders",
+        "/Libraries/AvailableOptions",
+        "/Environment",
+        "/ScheduledTasks",
+        "/Auth/Keys",
+        "/Backup",
+        "/Plugins",
+        "/Packages",
+        "/Repositories",
+        "/Devices",
+    )
+
 private val OLD_USER_IMAGE = Regex("/Users/[^/]+/Images/Primary")
 
 /** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
