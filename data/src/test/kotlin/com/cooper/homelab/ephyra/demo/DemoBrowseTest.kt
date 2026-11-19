@@ -99,11 +99,13 @@ class DemoBrowseTest {
         }
 
     @Test
-    fun `the demo searches titles by name`() =
+    fun `the demo searches titles and people by name`() =
         runBlocking {
             val search = JellyfinSearchRepository(client, "demo-user", profile)
             assertEquals(listOf("demo-movie-1"), search.titles("long QUIET").items.map { it.id })
             assertTrue(search.titles("zzz").items.isEmpty())
+            assertEquals(listOf("demo-person-1"), search.people("rivers").items.map { it.id })
+            assertTrue(search.people("zzz").items.isEmpty())
         }
 
     @Test

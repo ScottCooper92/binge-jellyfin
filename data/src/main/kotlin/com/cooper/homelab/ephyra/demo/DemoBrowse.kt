@@ -39,6 +39,7 @@ internal class DemoBrowse(
                 "{}",
                 "Episodes",
             ) { call, parts -> ok(page(call, children(parts.first(), "Episode", call.query("seasonId")))) },
+            route("GET", "Persons") { call, _ -> ok(searchPeople(call.query("searchTerm").orEmpty())) },
             route("GET", "Items", "{}", "Similar") { call, parts ->
                 ok(
                     page(
@@ -55,10 +56,15 @@ internal class DemoBrowse(
             route("GET", "Users", "{}", "Items", "{}") { _, parts -> title(parts.last()) },
         )
 
-    /** A `/Items` read under a library, or null when there is no `parentId` and so it is not a browse read. */
+    /**
+     * A `/Items` read the demo answers: a search by name, the titles of a person, or a library's titles. Null for any other,
+     * with no `parentId` or the like, so the LIBRARY index's read still finds nothing.
+     */
     fun items(call: DemoCall): JsonObject? {
-        call.query("searchTerm")?.let { return search(call, it) }
-        if (call.query("personIds") != null) return page(call, titles.filter { it.type == "Movie" || it.type == "Series" })
+        val outsideALibrary =
+            call.query("searchTerm")?.let { search(call, it) }
+                ?: if (call.query("personIds") != null) page(call, titles.filter { it.type == "Movie" || it.type == "Series" }) else null
+        if (outsideALibrary != null) return outsideALibrary
         call.query("parentId") ?: return null
         val matching = inLibrary(call).filter { it.passes(call) }
         val key: Comparator<DemoTitle> =
