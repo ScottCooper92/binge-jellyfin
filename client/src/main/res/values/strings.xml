@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_row_continue_watching">Continue watching</string>
+    <string name="home_row_next_up">Next up</string>
+    <string name="home_row_latest">Latest in %1$s</string>
+    <string name="home_loading_row">Loading</string>
+    <string name="home_caption_episode">S%1$d, E%2$d · %3$s</string>
+    <string name="home_empty">Nothing to show yet. Titles you watch and add will appear here.</string>
+</resources>
