@@ -188,7 +188,15 @@ android {
 // translated source string is committed at the root and `check` fails when one moves. Re-read the
 // translation it names, then re-stamp with `updateTranslationHashes`. The gate is binge-ci's.
 translationStaleness {
-    includes.set(listOf("app/src/*/res/values/strings.xml", "app/src/*/res/values-*/strings.xml"))
+    // :client's strings are translated too, and its English is as likely to be reworded as :app's.
+    includes.set(
+        listOf(
+            "app/src/*/res/values/strings.xml",
+            "app/src/*/res/values-*/strings.xml",
+            "client/src/*/res/values/strings.xml",
+            "client/src/*/res/values-*/strings.xml",
+        ),
+    )
 }
 
 // Material 3 and tv-material each ship a MaterialTheme under the same simple name, so the wrong
