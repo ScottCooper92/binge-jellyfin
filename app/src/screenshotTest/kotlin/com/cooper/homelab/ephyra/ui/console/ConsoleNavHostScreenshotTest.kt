@@ -4,8 +4,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.HubRoute
+import com.cooper.homelab.ephyra.ui.nav.openFromHome
+import com.cooper.homelab.ephyra.ui.nav.openItem
 
 /**
  * The console on a window wide enough for two panes: the home beside the default page, then beside an open page. On a
@@ -13,12 +20,13 @@ import com.cooper.homelab.ephyra.preview.JellyfinWidePreview
  */
 class ConsoleNavHostScreenshotTest {
     @Composable
-    private fun Console(stack: ConsoleBackStack) =
+    private fun Console(open: NavBackStack<NavKey>.() -> Unit = {}) =
         Surface {
-            ConsoleNavHost(
-                stack = stack,
+            EphyraNavHost(
+                backStack = remember { NavBackStack<NavKey>(HubRoute).apply(open) },
                 signedIn = true,
                 onBack = {},
+                signedOut = {},
                 home = {
                     Column {
                         Text("Home")
@@ -34,20 +42,23 @@ class ConsoleNavHostScreenshotTest {
     @PreviewTest
     @JellyfinWidePreview
     @Composable
-    fun defaultPage() = Console(ConsoleBackStack())
+    fun defaultPage() = Console()
 
     @PreviewTest
     @JellyfinWidePreview
     @Composable
-    fun pageOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.Activity))
+    fun pageOpen() = Console { openFromHome(ConsolePage.Activity) }
 
     @PreviewTest
     @JellyfinWidePreview
     @Composable
-    fun itemPageNothingOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.Tasks))
+    fun itemPageNothingOpen() = Console { openFromHome(ConsolePage.Tasks) }
 
     @PreviewTest
     @JellyfinWidePreview
     @Composable
-    fun itemOpen() = Console(ConsoleBackStack().openFromHome(ConsolePage.Tasks).openItem("scan"))
+    fun itemOpen() = Console {
+        openFromHome(ConsolePage.Tasks)
+        openItem("scan")
+    }
 }

@@ -19,7 +19,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -51,15 +50,23 @@ import com.cooper.homelab.ephyra.ui.chooseServer
 import com.cooper.homelab.ephyra.ui.confirmSignOut
 import com.cooper.homelab.ephyra.ui.confirmTakeBack
 import com.cooper.homelab.ephyra.ui.connected
-import com.cooper.homelab.ephyra.ui.console.ConsoleBackStack
 import com.cooper.homelab.ephyra.ui.console.ConsoleItemRoute
-import com.cooper.homelab.ephyra.ui.console.ConsoleNavHost
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.console.ConsolePageRoute
 import com.cooper.homelab.ephyra.ui.console.LocalUserPictures
 import com.cooper.homelab.ephyra.ui.localNetworkAnswered
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
+import com.cooper.homelab.ephyra.ui.nav.closeTop
+import com.cooper.homelab.ephyra.ui.nav.entries
+import com.cooper.homelab.ephyra.ui.nav.keeping
+import com.cooper.homelab.ephyra.ui.nav.openFromHome
+import com.cooper.homelab.ephyra.ui.nav.openItem
+import com.cooper.homelab.ephyra.ui.nav.openPage
+import com.cooper.homelab.ephyra.ui.nav.openPageItem
+import com.cooper.homelab.ephyra.ui.nav.openSubItem
+import com.cooper.homelab.ephyra.ui.nav.openings
+import com.cooper.homelab.ephyra.ui.nav.top
 import com.cooper.homelab.ephyra.ui.pickPublicUser
 import com.cooper.homelab.ephyra.ui.rememberAppSettingsBinding
 import com.cooper.homelab.ephyra.ui.rememberNotificationBinding
@@ -132,24 +139,22 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: JellyfinViewModel = viewModel(factory = factory)
             val state by viewModel.state.collectAsStateWithLifecycle()
-            // The console pages open over the home, the last on top. A page that opens another stays under it, so
-            // Back returns to the opener, and to the home from the first. Leaving SignedIn closes them all.
-            var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
-            // The app's screens: the sign-in steps, then the console, which keeps its own stack above until its pages move here.
+            // The app's screens: the sign-in steps, then the home with the console pages open over it, the last on top. A
+            // page that opens another stays under it, so Back returns to the opener, and to the home from the first.
+            // Leaving SignedIn takes the stack back to the sign-in steps.
             val backStack = rememberNavBackStack(HomeRoute)
             // The permission is asked for once; after that the way to it is the app's settings, as the prompt may not come back.
             var askedLocalNetwork by rememberSaveable { mutableStateOf(false) }
-            LaunchedEffect(state is UiState.SignedIn) { if (state !is UiState.SignedIn) stack = stack.clear() }
             // A page the server or the user lost (Quick Connect turned off, admin rights taken away) closes,
             // once the refresh has read what they now allow; Back skips it.
             (state as? UiState.SignedIn)?.let { gated ->
                 LaunchedEffect(gated.profile, gated.account) {
-                    if (gated.account.isRead) stack = stack.keeping { it.available(gated.profile, gated.account) }
+                    if (gated.account.isRead) backStack.keeping { it.available(gated.profile, gated.account) }
                 }
             }
-            val openPage = stack.top.takeIf { state is UiState.SignedIn }
+            val openPage = backStack.top.takeIf { state is UiState.SignedIn }
             ReportScreen(state, openPage?.page, graph.analytics)
-            RefreshGatesWhenHomeReturns(openPage?.opening, stack.openings) { viewModel.refresh(gatesOnly = true) }
+            RefreshGatesWhenHomeReturns(openPage?.opening, backStack.openings()) { viewModel.refresh(gatesOnly = true) }
             val actions =
                 viewModel.signInActions().copy(
                     onAddress = viewModel::onAddress,
@@ -167,9 +172,12 @@ class MainActivity : ComponentActivity() {
                     onSignOut = viewModel::signOut,
                     onDiscover = { withLocalNetwork(viewModel::discoverServers) },
                     onChooseServer = viewModel::chooseServer,
-                    onOpenPage = { stack = stack.open(it) },
-                    onOpenRow = { page, row -> stack = stack.open(page, row) },
-                    onOpenResult = { page, row -> stack = stack.back().openFromHome(page, row) },
+                    onOpenPage = { backStack.openPage(it) },
+                    onOpenRow = { page, row -> backStack.openPage(page, row) },
+                    onOpenResult = { page, row ->
+                        backStack.closeTop()
+                        backStack.openFromHome(page, row)
+                    },
                     onAllowLocalNetwork = {
                         if (askedLocalNetwork) {
                             openAppSettings()
@@ -184,9 +192,9 @@ class MainActivity : ComponentActivity() {
             // Now playing is what shows beside it while none is open.
             val homeActions =
                 actions.copy(
-                    onOpenPage = { stack = stack.openFromHome(it) },
-                    onOpenRow = { page, row -> stack = stack.openFromHome(page, row) },
-                    selectedPage = stack.entries.firstOrNull()?.page ?: ConsolePage.NowPlaying,
+                    onOpenPage = { backStack.openFromHome(it) },
+                    onOpenRow = { page, row -> backStack.openFromHome(page, row) },
+                    selectedPage = backStack.entries().firstOrNull()?.page ?: ConsolePage.NowPlaying,
                 )
             val flags by graph.flags.flags.collectAsStateWithLifecycle()
             // What the user has said about usage data and crash reports; the stored answer is null until it is read.
@@ -204,7 +212,7 @@ class MainActivity : ComponentActivity() {
                     JellyfinTheme {
                         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                             ConsentGate(telemetry.consent, telemetry.answerConsent) {
-                                ConsoleHost(state, backStack, stack, { stack = it }, graph, appActions(actions), appActions(homeActions))
+                                ConsoleHost(state, backStack, graph, appActions(actions), appActions(homeActions))
                             }
                         }
                     }
@@ -220,81 +228,72 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** The console: the home, and the pages and items open over it, on [stack], whose changes [onStack] takes. */
+/** The app's screens: the sign-in steps, then the home, and the pages and items open over it, on [backStack]. */
 @Composable
 private fun ConsoleHost(
     state: UiState,
     backStack: NavBackStack<NavKey>,
-    stack: ConsoleBackStack,
-    onStack: (ConsoleBackStack) -> Unit,
     graph: AppGraph,
     actions: Actions,
     homeActions: Actions,
 ) {
     val signedIn = state is UiState.SignedIn
-    // A tap acts on the stack as it is then, not as it was when the screen under it was composed.
-    val latest by rememberUpdatedState(stack)
     ReviewPromptOnReturnToRoot(
         connected = state.connected(),
-        atRoot = stack.entries.isEmpty(),
+        atRoot = backStack.entries().isEmpty(),
         reviewPrompt = graph.reviewPrompt,
     )
     EphyraNavHost(
         backStack = backStack,
         signedIn = signedIn,
-        // The root has nothing under it: Back leaves the app, as it did from the console's home.
-        onBack = {},
+        onBack = { backStack.closeTop() },
         signedOut = { JellyfinRoot(state, homeActions) },
-        console = {
-            ConsoleNavHost(
-                stack = if (signedIn) stack else ConsoleBackStack(),
-                signedIn = signedIn,
-                onBack = { onStack(latest.back()) },
-                home = { JellyfinRoot(state, homeActions) },
-                defaultPage = {
-                    (state as? UiState.SignedIn)?.let { gated ->
-                        // A stream tapped here has no page to open over, so the page opens, and the stream over it.
-                        ConsolePageRoute(
-                            ConsolePage.NowPlaying,
-                            graph,
-                            gated,
-                            {},
-                            actions.onOpenPage,
-                            actions,
-                            { onStack(latest.openFromHome(ConsolePage.NowPlaying).openItem(it)) },
-                        )
-                    }
-                },
-                page = { entry ->
-                    (state as? UiState.SignedIn)?.let { gated ->
-                        ConsolePageRoute(
-                            entry.page,
-                            graph,
-                            gated,
-                            { onStack(latest.back()) },
-                            actions.onOpenPage,
-                            actions,
-                            { onStack(latest.openItem(it)) },
-                            { page, item -> onStack(latest.openPageItem(page, item)) },
-                            row = entry.row,
-                        )
-                    }
-                },
-                item = { entry ->
-                    (state as? UiState.SignedIn)?.let {
-                        ConsoleItemRoute(
-                            entry,
-                            graph,
-                            it.profile.version,
-                            it.profile,
-                            it.account,
-                            { item -> onStack(latest.openSubItem(item)) },
-                        ) {
-                            onStack(latest.back())
-                        }
-                    }
-                },
-            )
+        home = { JellyfinRoot(state, homeActions) },
+        defaultPage = {
+            (state as? UiState.SignedIn)?.let { gated ->
+                // A stream tapped here has no page to open over, so the page opens, and the stream over it.
+                ConsolePageRoute(
+                    ConsolePage.NowPlaying,
+                    graph,
+                    gated,
+                    {},
+                    actions.onOpenPage,
+                    actions,
+                    {
+                        backStack.openFromHome(ConsolePage.NowPlaying)
+                        backStack.openItem(it)
+                    },
+                )
+            }
+        },
+        page = { entry ->
+            (state as? UiState.SignedIn)?.let { gated ->
+                ConsolePageRoute(
+                    entry.page,
+                    graph,
+                    gated,
+                    { backStack.closeTop() },
+                    actions.onOpenPage,
+                    actions,
+                    { backStack.openItem(it) },
+                    { page, item -> backStack.openPageItem(page, item) },
+                    row = entry.row,
+                )
+            }
+        },
+        item = { entry ->
+            (state as? UiState.SignedIn)?.let {
+                ConsoleItemRoute(
+                    entry,
+                    graph,
+                    it.profile.version,
+                    it.profile,
+                    it.account,
+                    { item -> backStack.openSubItem(item) },
+                ) {
+                    backStack.closeTop()
+                }
+            }
         },
     )
 }

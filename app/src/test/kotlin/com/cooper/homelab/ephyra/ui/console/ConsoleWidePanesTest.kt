@@ -4,19 +4,24 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.binge.designsystem.LocalIsSinglePaneNav
 import com.binge.designsystem.LocalPaneDepth
 import com.binge.designsystem.LocalPaneInnerEdge
 import com.binge.designsystem.PaneEdge
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.closeTop
+import com.cooper.homelab.ephyra.ui.nav.HubRoute
+import com.cooper.homelab.ephyra.ui.nav.entries
+import com.cooper.homelab.ephyra.ui.nav.openFromHome
+import com.cooper.homelab.ephyra.ui.nav.rememberConsoleBackStack
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -31,25 +36,27 @@ class ConsoleWidePanesTest {
     @get:Rule
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
-    private var stackNow = ConsoleBackStack()
+    private var backStack: NavBackStack<NavKey> = NavBackStack(HubRoute)
     private val seen = mutableMapOf<String, Triple<PaneEdge?, Boolean, Int>>()
 
     private fun host(signedIn: Boolean = true) {
         compose.setContent {
-            var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(ConsoleBackStack()) }
-            stackNow = stack
-            ConsoleNavHost(
-                stack = stack,
+            val stack = rememberConsoleBackStack()
+            backStack = stack
+            val homeContent: @Composable () -> Unit = {
+                seen["home"] = Triple(LocalPaneInnerEdge.current, LocalIsSinglePaneNav.current, LocalPaneDepth.current)
+                Column {
+                    Text("home")
+                    Text("open logs", Modifier.clickable { stack.openFromHome(ConsolePage.Logs) })
+                    Text("open tasks", Modifier.clickable { stack.openFromHome(ConsolePage.Tasks) })
+                }
+            }
+            EphyraNavHost(
+                backStack = stack,
                 signedIn = signedIn,
-                onBack = { stack = stack.back() },
-                home = {
-                    seen["home"] = Triple(LocalPaneInnerEdge.current, LocalIsSinglePaneNav.current, LocalPaneDepth.current)
-                    Column {
-                        Text("home")
-                        Text("open logs", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Logs) })
-                        Text("open tasks", Modifier.clickable { stack = stack.openFromHome(ConsolePage.Tasks) })
-                    }
-                },
+                onBack = { stack.closeTop() },
+                signedOut = homeContent,
+                home = homeContent,
                 defaultPage = {
                     seen["default"] = Triple(LocalPaneInnerEdge.current, LocalIsSinglePaneNav.current, LocalPaneDepth.current)
                     Text("default page")
@@ -77,7 +84,7 @@ class ConsoleWidePanesTest {
         compose.onNodeWithText("page Logs").assertIsDisplayed()
         compose.onNodeWithText("open tasks").performClick()
         compose.onNodeWithText("page Tasks").assertIsDisplayed()
-        assertEquals(listOf(ConsolePage.Tasks), stackNow.entries.map { it.page })
+        assertEquals(listOf(ConsolePage.Tasks), backStack.entries().map { it.page })
     }
 
     @Test

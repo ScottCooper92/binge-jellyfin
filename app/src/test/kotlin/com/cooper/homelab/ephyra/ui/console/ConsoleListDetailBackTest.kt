@@ -3,14 +3,18 @@ package com.cooper.homelab.ephyra.ui.console
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.closeTop
+import com.cooper.homelab.ephyra.ui.nav.HubRoute
+import com.cooper.homelab.ephyra.ui.nav.entries
+import com.cooper.homelab.ephyra.ui.nav.openFromHome
+import com.cooper.homelab.ephyra.ui.nav.rememberConsoleBackStack
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,24 +29,23 @@ class ConsoleListDetailBackTest {
     @get:Rule
     val compose = createTakeDownAndroidComposeRule<ComponentActivity>()
 
-    private var current = ConsoleBackStack()
+    private var current: NavBackStack<NavKey> = NavBackStack(HubRoute)
 
     private fun host(
         page: ConsolePage,
         content: @Composable (() -> Unit) -> Unit,
     ) = compose.setContent {
         JellyfinTheme {
-            var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) {
-                mutableStateOf(ConsoleBackStack().openFromHome(page))
-            }
+            val stack = rememberConsoleBackStack { openFromHome(page) }
             current = stack
-            ConsoleNavHost(
+            EphyraNavHost(
                 stack,
                 signedIn = true,
-                onBack = { stack = stack.back() },
+                onBack = { stack.closeTop() },
+                signedOut = {},
                 home = { Text("Console home") },
                 defaultPage = { Text("Default page") },
-                page = { content { stack = stack.back() } },
+                page = { content { stack.closeTop() } },
             )
         }
     }
@@ -58,6 +61,6 @@ class ConsoleListDetailBackTest {
         }
         compose.onNodeWithText("Console home").assertIsDisplayed()
         compose.onNodeWithText("Default page").assertIsDisplayed()
-        assertEquals(0, current.entries.size)
+        assertEquals(0, current.entries().size)
     }
 }

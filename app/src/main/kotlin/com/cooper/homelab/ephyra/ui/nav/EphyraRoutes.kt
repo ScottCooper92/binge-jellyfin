@@ -2,11 +2,12 @@ package com.cooper.homelab.ephyra.ui.nav
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import kotlinx.serialization.Serializable
 
 /**
  * The app's screens, as Navigation 3 keys. Serializable so the back stack is saved across a rotation and a process death.
- * The console's own pages and items are still on their own stack, inside [HubRoute] (#616).
+ * Every console page and item is a key above [HubRoute]; the helpers that open them are in `ConsoleStack.kt`.
  */
 sealed interface EphyraRoute : NavKey
 
@@ -17,6 +18,26 @@ data object HomeRoute : EphyraRoute
 /** The signed-in home, which replaces [HomeRoute] at the root once the user is signed in. See [settleHome]. */
 @Serializable
 data object HubRoute : EphyraRoute
+
+/**
+ * One console page, above [HubRoute]. [opening] is its id: its view models are kept under it, so a page and the items
+ * open in it share them, and the same page twice on the stack has a set each. [row] is the setting the page was opened on,
+ * by its row key, for a search result: the page scrolls to it and washes it once. It is not part of the entry's identity.
+ */
+@Serializable
+data class PageRoute(
+    val page: ConsolePage,
+    val opening: Int,
+    val row: String? = null,
+) : EphyraRoute
+
+/** An item open in [page] (a task, a log, a user), above its [PageRoute], under the same [opening]. */
+@Serializable
+data class ItemRoute(
+    val page: ConsolePage,
+    val opening: Int,
+    val item: String,
+) : EphyraRoute
 
 /**
  * Swaps the home root for the one that fits [signedIn]. An entry's pane role is fixed when it is built, so a change of
