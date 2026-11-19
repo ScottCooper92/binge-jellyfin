@@ -9,6 +9,7 @@ import com.cooper.homelab.ephyra.browse.JellyfinLibraryRepository
 import com.cooper.homelab.ephyra.browse.JellyfinNextUpRepository
 import com.cooper.homelab.ephyra.browse.JellyfinResumeRepository
 import com.cooper.homelab.ephyra.browse.JellyfinTitleRepository
+import com.cooper.homelab.ephyra.browse.JellyfinUserDataRepository
 import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.NextEpisode
 import com.cooper.homelab.ephyra.browse.PersonKind
@@ -19,6 +20,7 @@ import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.JellyfinVersion
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -125,5 +127,28 @@ class DemoBrowseTest {
             assertEquals("demo-ep-1-3", (titles.nextEpisode("demo-series-1") as NextEpisode.Next).episode.id)
             assertEquals("demo-ep-3-1", (titles.nextEpisode("demo-series-3") as NextEpisode.Resume).episode.id)
             assertEquals(NextEpisode.None, titles.nextEpisode("demo-series-2"))
+        }
+
+    @Test
+    fun `the demo keeps played and favourite in memory, on either route`() =
+        runBlocking {
+            listOf(profile, JellyfinServerProfile(JellyfinVersion(10, 8, 13))).forEach { each ->
+                val data = JellyfinUserDataRepository(client, "demo-user", each, emptyFlow())
+                val movies = library(LibraryKind.Movies)
+
+                suspend fun played() =
+                    JellyfinItemsRepository(client, "demo-user")
+                        .items(movies)
+                        .items
+                        .first { it.id == "demo-movie-1" }
+                        .userData
+                assertEquals(true, data.setPlayed("demo-movie-1", true).played)
+                assertEquals(0L, data.setPlayed("demo-movie-1", true).positionTicks)
+                assertEquals(true, played().played)
+                assertEquals(true, data.setFavourite("demo-movie-1", true).favourite)
+                assertEquals(true, played().favourite)
+                assertEquals(false, data.setPlayed("demo-movie-1", false).played)
+                assertEquals(false, data.setFavourite("demo-movie-1", false).favourite)
+            }
         }
 }

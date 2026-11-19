@@ -931,6 +931,7 @@ class FakeJellyfin : Dispatcher() {
             path == "/Shows/NextUp" ->
                 paged(request, items.filter { it.type == "Episode" && !it.played }.distinctBy { it.seriesId })
             path.startsWith("/UserPlayedItems/") -> setPlayed(path.removePrefix("/UserPlayedItems/"), request.method == "POST")
+            path.matches(OLD_PLAYED_ROUTE) -> setPlayed(path.substringAfterLast('/'), request.method == "POST")
             path.endsWith("/PlaybackInfo") -> json(playbackInfo)
             path.startsWith("/Sessions/Playing") -> MockResponse(code = 204)
             else -> MockResponse(code = 404)
@@ -1547,6 +1548,9 @@ private val ADMIN_PREFIXES =
 
 /** The user image's route before 10.9, for any user. */
 private val OLD_USER_IMAGE = Regex("/Users/[^/]+/Images/Primary")
+
+/** Marking played before 10.9: the user is in the path. */
+private val OLD_PLAYED_ROUTE = Regex("/Users/[^/]+/PlayedItems/[^/]+")
 
 /** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
 private const val HOLD_LIMIT_SECONDS = 20L

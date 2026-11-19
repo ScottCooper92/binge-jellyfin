@@ -44,6 +44,7 @@ class FakeBrowse {
         return when {
             url.encodedPath == "/Items/Filters" -> filters(request)
             url.encodedPath == "/Items" && url.queryParameter("parentId") != null -> items(request)
+            titles.isNotEmpty() && userDataRoute.matches(url.encodedPath) -> writeUserData(request)
             // A title by id, by either route generation, and a series' seasons and episodes.
             titles.isNotEmpty() && isTitleRoute(url.encodedPath) -> title(request)
             titles.isNotEmpty() && url.encodedPath.matches(showsRoute) -> shows(request)
@@ -98,6 +99,30 @@ class FakeBrowse {
         val url = request.url
         val types = url.queryParameter("includeItemTypes")?.split(',').orEmpty()
         return titles.filter { it.libraryId == url.queryParameter("parentId") && (types.isEmpty() || it.type in types) }
+    }
+
+    private val userDataRoute = Regex("/(User(Played|Favorite)Items|Users/[^/]+/(Played|Favorite)Items)/([^/]+)")
+
+    /** The writes: played and favourite, on either route generation. Answers the item's user data, as the server does. */
+    private fun writeUserData(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val match = userDataRoute.matchEntire(request.url.encodedPath)!!.groupValues
+        val index = titles.indexOfFirst { it.id == match[4] }
+        if (index < 0) {
+            return MockResponse
+                .Builder()
+                .code(404)
+                .body("{}")
+                .build()
+        }
+        val on = request.method == "POST"
+        val favourite = match[2] == "Favorite" || match[3] == "Favorite"
+        val current = titles[index]
+        val updated = if (favourite) current.copy(favourite = on) else current.copy(played = on, positionTicks = 0L)
+        titles[index] = updated
+        val count = if (updated.played) 1 else 0
+        val state = """"Played":${updated.played},"IsFavorite":${updated.favourite},"PlayCount":$count"""
+        return json("""{$state,"PlaybackPositionTicks":${updated.positionTicks},"Key":"k","ItemId":"${updated.id}"}""")
     }
 
     private fun filters(request: RecordedRequest): MockResponse {

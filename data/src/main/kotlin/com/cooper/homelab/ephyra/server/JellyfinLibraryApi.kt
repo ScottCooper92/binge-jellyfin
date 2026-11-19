@@ -1,5 +1,6 @@
 package com.cooper.homelab.ephyra.server
 
+import com.cooper.homelab.ephyra.browse.browseSetPlayed
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -115,11 +116,12 @@ suspend fun JellyfinClient.nextUp(
 
 suspend fun JellyfinClient.setPlayed(
     userId: String,
+    profile: JellyfinServerProfile,
     itemId: String,
     played: Boolean,
 ) {
-    val path = "UserPlayedItems/$itemId"
-    if (played) post(path, null, mapOf("userId" to userId)) else delete(path, mapOf("userId" to userId))
+    // One write for the app: the same route choice (10.9 moved it) as the client's own played mark.
+    browseSetPlayed(userId, profile, itemId, played)
 }
 
 suspend fun JellyfinClient.playbackInfo(
