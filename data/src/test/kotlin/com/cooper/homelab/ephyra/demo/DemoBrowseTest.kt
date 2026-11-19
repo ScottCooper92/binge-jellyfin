@@ -47,6 +47,15 @@ class DemoBrowseTest {
     private suspend fun library(kind: LibraryKind) = libraries.views().first { it.kind == kind }
 
     @Test
+    fun `the demo's movies library has a Primary, a Thumb and a backdrop, and its series library only a Primary`() =
+        runBlocking {
+            val movies = library(LibraryKind.Movies)
+            val shows = library(LibraryKind.TvShows)
+            assertTrue(movies.primaryImageTag != null && movies.thumbImageTag != null && movies.backdropImageTag != null)
+            assertTrue(shows.primaryImageTag != null && shows.thumbImageTag == null && shows.backdropImageTag == null)
+        }
+
+    @Test
     fun `the demo's movies and series list, sort and filter like a server's`() =
         runBlocking {
             val items = JellyfinItemsRepository(client, "demo-user")
