@@ -927,7 +927,7 @@ class FakeJellyfin : Dispatcher() {
                 if (request.url.queryParameter("code") == approvableCode) json("true") else MockResponse(code = 404)
             path == "/Items" -> items(request)
             path.startsWith("/Shows/") && path.endsWith("/Episodes") -> episodes(path.split('/')[2])
-            path == "/UserItems/Resume" -> paged(request, items.filter { it.positionTicks > 0 })
+            path == "/UserItems/Resume" || path.matches(OLD_RESUME_ROUTE) -> paged(request, items.filter { it.positionTicks > 0 })
             path == "/Shows/NextUp" ->
                 paged(request, items.filter { it.type == "Episode" && !it.played }.distinctBy { it.seriesId })
             path.startsWith("/UserPlayedItems/") -> setPlayed(path.removePrefix("/UserPlayedItems/"), request.method == "POST")
@@ -1547,6 +1547,9 @@ private val ADMIN_PREFIXES =
 
 /** The user image's route before 10.9, for any user. */
 private val OLD_USER_IMAGE = Regex("/Users/[^/]+/Images/Primary")
+
+/** Continue watching before 10.9: the user is in the path. */
+private val OLD_RESUME_ROUTE = Regex("/Users/[^/]+/Items/Resume")
 
 /** How long a held request waits for its test before giving up, so a test that forgets to end one doesn't hang the suite. */
 private const val HOLD_LIMIT_SECONDS = 20L
