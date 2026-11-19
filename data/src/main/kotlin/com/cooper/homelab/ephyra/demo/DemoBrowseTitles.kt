@@ -136,3 +136,16 @@ internal fun DemoTitle.passes(call: DemoCall): Boolean {
         (played == null || title.played == played) &&
         (call.query("isFavorite") != "true" || title.favourite)
 }
+
+/** `/Persons?searchTerm=`: the demo's people whose name contains the term, ignoring case, in the shape of a page. */
+internal fun searchPeople(term: String): JsonObject {
+    val found =
+        PEOPLE.values
+            .map {
+                jsonObject(it)
+            }.filter { (it["Name"] as? JsonPrimitive)?.content.orEmpty().contains(term, ignoreCase = true) }
+    return buildJsonObject {
+        put("Items", JsonArray(found))
+        put("StartIndex", 0)
+    }
+}
