@@ -31,6 +31,7 @@ import com.cooper.homelab.core.foundation.LogField
 import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.foundation.warn
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
+import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.ServerEvent
 import com.cooper.homelab.ephyra.server.nextUp
 import com.cooper.homelab.ephyra.server.resumeItems
@@ -114,7 +115,13 @@ class JellyfinLibraryService(
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_CONTINUE_WATCHING)
             val start = startOf(request.pageToken, request.pageSize)
             val (session, client) = reads.signedIn()
-            val page = client.resumeItems(session.userId, start, pageSize(request.pageSize))
+            val page =
+                client.resumeItems(
+                    session.userId,
+                    JellyfinServerProfile.from(session.serverVersion),
+                    start,
+                    pageSize(request.pageSize),
+                )
             ListContinueWatchingResponse
                 .newBuilder()
                 .addAllEntries(reads.entries(session, client, page.items))
