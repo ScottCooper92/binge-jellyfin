@@ -39,6 +39,7 @@ import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
 import com.cooper.homelab.core.uiandroid.consent.ConsentGate
 import com.cooper.homelab.core.uiandroid.review.ReviewPromptOnReturnToRoot
 import com.cooper.homelab.core.uiandroid.shell.RestartOnGateChange
+import com.cooper.homelab.core.uiandroid.shell.RestartOnSessionEnd
 import com.cooper.homelab.ephyra.flags.LocalClientEnabled
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.telemetry.ReportScreen
@@ -60,7 +61,6 @@ import com.cooper.homelab.ephyra.ui.localNetworkAnswered
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
-import com.cooper.homelab.ephyra.ui.nav.RestartOnSessionEnd
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
