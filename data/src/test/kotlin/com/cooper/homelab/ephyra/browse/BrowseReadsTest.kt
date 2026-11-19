@@ -238,10 +238,11 @@ class BrowseReadsTest {
     @Test
     fun `an item type this app does not know is Other, and an entry with no id is dropped`() {
         val page =
-            kotlinx.serialization.json.Json
-                .parseToJsonElement("""{"Items":[{"Id":"x","Name":"Mix","Type":"Trailer"},{"Name":"No id"}]}""")
-                .let { it as kotlinx.serialization.json.JsonObject }
-                .toPage(0, withTotal = false)
+            BrowseJson
+                .decodeFromString(
+                    ItemsWire.serializer(),
+                    """{"Items":[{"Id":"x","Name":"Mix","Type":"Trailer","Extra":1},{"Name":"No id"}]}""",
+                ).toPage(0, withTotal = false)
         assertEquals(listOf(ItemKind.Other), page.items.map { it.kind })
         assertEquals(ItemKind.Series, ItemKind.fromServer("series"))
     }
