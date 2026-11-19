@@ -1,0 +1,107 @@
+package com.cooper.homelab.ephyra.ui.client
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.binge.companion.sdk.attempt
+import com.cooper.homelab.core.foundation.ServerFailure
+import com.cooper.homelab.ephyra.browse.ImageUrls
+import com.cooper.homelab.ephyra.browse.JellyfinLatestRepository
+import com.cooper.homelab.ephyra.browse.JellyfinLibraryRepository
+import com.cooper.homelab.ephyra.browse.JellyfinNextUpRepository
+import com.cooper.homelab.ephyra.browse.JellyfinResumeRepository
+import com.cooper.homelab.ephyra.client.home.HomeImage
+import com.cooper.homelab.ephyra.client.home.HomeUiState
+import com.cooper.homelab.ephyra.client.home.HomeViewModel
+import com.cooper.homelab.ephyra.server.Connection
+import com.cooper.homelab.ephyra.server.JellyfinServerProfile
+import com.cooper.homelab.ephyra.server.serverFailure
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+/** What the tab has read of the session so far. */
+private sealed interface Source {
+    data object Starting : Source
+
+    data object NotConnected : Source
+
+    class Ready(
+        val home: HomeViewModel,
+        val images: ImageUrls,
+    ) : Source
+}
+
+/**
+ * Holds Home's [HomeViewModel] for the life of the tab, so a rotation or a switch of tab keeps the rows. The signed-in client is read
+ * once ([Connection.signedIn]) and the repositories are built on it for the user and the server's [profile]. With no session, Home is
+ * a "not connected" failure. The access token is the client's own, in its header: [imageUrl] builds picture URLs through [ImageUrls],
+ * which never carries it.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class HomeTabViewModel(
+    private val connection: Connection,
+    private val dispatcher: CoroutineDispatcher,
+    private val profile: JellyfinServerProfile,
+) : ViewModel() {
+    private val source = MutableStateFlow<Source>(Source.Starting)
+
+    /** What Home shows. */
+    val state: StateFlow<HomeUiState> =
+        source
+            .flatMapLatest {
+                when (it) {
+                    Source.Starting -> flowOf(HomeUiState.Loading)
+                    Source.NotConnected -> flowOf(HomeUiState.Error(ServerFailure.NotConnected))
+                    is Source.Ready -> it.home.state
+                }
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState.Loading)
+
+    /** Whether a refresh is still running, for the pull-to-refresh indicator. */
+    val refreshing: StateFlow<Boolean> =
+        source
+            .flatMapLatest { (it as? Source.Ready)?.home?.refreshing ?: flowOf(false) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Turns a picture Home asks for into a URL at [width] pixels, or null before the client is read. */
+    fun imageUrl(
+        image: HomeImage,
+        width: Int,
+    ): String? = (source.value as? Source.Ready)?.images?.of(image.itemId, image.kind, image.tag, width)
+
+    /** Reads the signed-in client and starts Home. Does nothing once it has, and a retry after no session reads it again. */
+    fun start() {
+        if (source.value is Source.Ready) return
+        viewModelScope.launch(dispatcher) {
+            val signedIn = attempt { connection.signedIn() }.getOrNull()
+            if (signedIn == null) {
+                source.value = Source.NotConnected
+                return@launch
+            }
+            val (session, client) = signedIn
+            val home =
+                HomeViewModel(
+                    scope = viewModelScope,
+                    dispatcher = dispatcher,
+                    libraries = JellyfinLibraryRepository(client, session.userId, profile),
+                    resume = JellyfinResumeRepository(client, session.userId, profile),
+                    nextUp = JellyfinNextUpRepository(client, session.userId),
+                    latest = JellyfinLatestRepository(client, session.userId, profile),
+                    classify = { it.serverFailure() },
+                )
+            source.value = Source.Ready(home, ImageUrls(client))
+            home.start()
+        }
+    }
+
+    /** Reads everything again; with no client read yet, it is the retry of [start]. */
+    fun refresh() {
+        val ready = source.value as? Source.Ready
+        if (ready == null) start() else ready.home.refresh()
+    }
+}

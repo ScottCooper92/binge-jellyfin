@@ -65,14 +65,22 @@ class HomeViewModel(
 
     private fun readLibraries(refresh: Boolean = false) {
         scope.launch(dispatcher) {
+            // Rows already shown are reloaded by a refresh. With no libraries read yet, `show` starts every row itself, so a refresh as
+            // well would cancel each one it had just started and load it again.
+            val rowsShown = read.value is Libraries.Loaded
             attempt { libraries.views() }
                 .onSuccess { views ->
                     read.value = Libraries.Loaded(views)
                     loader.show(homeRowKeys(views))
-                    if (refresh) loader.refresh()
+                    if (refresh && rowsShown) loader.refresh()
                 }.onFailure { error ->
-                    // A refresh that cannot read the libraries keeps the rows already shown; a first read has none, so it is the failure.
-                    if (read.value !is Libraries.Loaded) read.value = Libraries.Failed(classify(error))
+                    if (rowsShown) {
+                        // The libraries could not be read again, but the rows are asked for anyway: the list they were made from still
+                        // stands, and a retry that did nothing at all would look like a button that does not work.
+                        if (refresh) loader.refresh()
+                    } else {
+                        read.value = Libraries.Failed(classify(error))
+                    }
                 }
         }
     }
