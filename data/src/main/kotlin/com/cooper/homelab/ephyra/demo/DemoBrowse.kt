@@ -54,6 +54,7 @@ internal class DemoBrowse(
 
     /** A `/Items` read under a library, or null when there is no `parentId` and so it is not a browse read. */
     fun items(call: DemoCall): JsonObject? {
+        call.query("searchTerm")?.let { return search(call, it) }
         call.query("parentId") ?: return null
         val genres = call.query("genres")?.split('|')
         val ratings = call.query("officialRatings")?.split('|')
@@ -76,6 +77,15 @@ internal class DemoBrowse(
             }
         val ordered = matching.sortedWith(if (call.query("sortOrder") == "Descending") key.reversed() else key)
         return page(call, ordered)
+    }
+
+    /** `searchTerm` over every title, as the server matches it: the name contains the term, ignoring case. */
+    private fun search(
+        call: DemoCall,
+        term: String,
+    ): JsonObject {
+        val types = call.query("includeItemTypes")?.split(',').orEmpty()
+        return page(call, titles.filter { it.name.contains(term, ignoreCase = true) && (types.isEmpty() || it.type in types) })
     }
 
     private fun kindOf(call: DemoCall): String? =
