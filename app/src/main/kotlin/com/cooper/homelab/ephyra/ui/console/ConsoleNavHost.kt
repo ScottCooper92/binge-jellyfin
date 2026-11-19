@@ -43,7 +43,20 @@ private val DetailPane: Map<String, Any> = ListDetailSceneStrategy.detailPane()
  * covers the whole window, as Android's own Settings search does, because without a pane role the strategy leaves the entry to
  * the default, a single pane.
  */
-private fun pageMetadata(page: ConsolePage): Map<String, Any> = if (page.coversWindow) emptyMap() else DetailPane + pageRole(page)
+internal fun pageMetadata(page: ConsolePage): Map<String, Any> =
+    if (page.coversWindow) mapOf(COVERS_WINDOW to true) else DetailPane + pageRole(page)
+
+/** The metadata key of an entry that covers the whole window. A predictive back reads it off the popped entry, whose key is not public. */
+internal const val COVERS_WINDOW = "ephyra.console.coversWindow"
+
+/**
+ * Whether popping the entry with [metadata] is a drill-down inside the window the home shares: the home is beside it ([hubBeside]) and the
+ * page does not cover the window.
+ */
+internal fun isDrillDownPop(
+    metadata: Map<String, Any>?,
+    hubBeside: Boolean,
+): Boolean = hubBeside && metadata?.get(COVERS_WINDOW) != true
 
 /** Whether the home is on screen beside the pages: a window wide enough for two panes. The search reads it to open a result beside the home. */
 internal val LocalHubBeside = compositionLocalOf { false }
@@ -55,14 +68,13 @@ private fun pageAlone(
 ): Boolean = page.coversWindow || !hubBeside
 
 /**
- * The drag of a predictive back for the screen being popped. A page that shares the window with the home is a drill-down inside it, so
- * the screen under is the same one and the drag is the lighter. A page that covers the window (the search) or fills it alone is a whole
- * screen.
+ * The drag of a predictive back for the screen being popped ([isDrillDownPop]): a drill-down inside the window the home shares is the
+ * lighter drag, as the screen under is the same one; a page that covers the window (the search) or fills it alone is a whole screen.
  */
 private fun BingeNavMotion.predictivePopFor(
-    popped: Any?,
+    popped: Map<String, Any>?,
     hubBeside: Boolean,
-): ContentTransform = if (hubBeside && (popped as? ConsoleKey.Page)?.page?.coversWindow != true) tabPredictivePop else detailPredictivePop
+): ContentTransform = if (isDrillDownPop(popped, hubBeside)) tabPredictivePop else detailPredictivePop
 
 /**
  * The console's pages as Navigation 3 entries over [stack]: the home at the bottom, then each open page. Back
@@ -119,7 +131,7 @@ fun ConsoleNavHost(
         entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
         transitionSpec = { motion.detailForward },
         popTransitionSpec = { motion.detailPop },
-        predictivePopTransitionSpec = { motion.predictivePopFor(initialState.entries.lastOrNull()?.contentKey, hubBeside) },
+        predictivePopTransitionSpec = { motion.predictivePopFor(initialState.entries.lastOrNull()?.metadata, hubBeside) },
         entryProvider = { key ->
             when (key) {
                 ConsoleKey.Home -> NavEntry(key) { homeNow() }
