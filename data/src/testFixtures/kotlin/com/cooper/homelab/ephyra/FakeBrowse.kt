@@ -25,6 +25,10 @@ data class FakeTitle(
     val season: Int? = null,
     val episode: Int? = null,
     val seasonId: String? = null,
+    /** The ids of the people in it, for `personIds`. */
+    val personIds: List<String> = emptyList(),
+    /** The ids of the collections it is in, for `/Items/{id}/Collections`. */
+    val collectionIds: List<String> = emptyList(),
     /** Raw JSON members appended to the item (`"Overview":"..."`, `"MediaSources":[...]`), for what a title page reads. */
     val extra: String = "",
 )
@@ -43,7 +47,14 @@ class FakeBrowse {
         val url = request.url
         return when {
             url.encodedPath == "/Items/Filters" -> filters(request)
-            url.encodedPath == "/Items" && url.queryParameter("parentId") != null -> items(request)
+            url.encodedPath == "/Items" &&
+                (
+                    url.queryParameter(
+                        "parentId",
+                    ) != null ||
+                        url.queryParameter("personIds") != null
+                ) -> items(request)
+            titles.isNotEmpty() && url.encodedPath.matches(relatedRoute) -> related(request)
             // A title by id, by either route generation, and a series' seasons and episodes.
             titles.isNotEmpty() && isTitleRoute(url.encodedPath) -> title(request)
             titles.isNotEmpty() && url.encodedPath.matches(showsRoute) -> shows(request)
@@ -61,6 +72,7 @@ class FakeBrowse {
     private fun oldUserRoute(last: String) = Regex("/Users/[^/]+/Items/$last")
 
     private val itemRoute = Regex("/(Users/[^/]+/)?Items/([^/]+)")
+    private val relatedRoute = Regex("/Items/([^/]+)/(Similar|Collections)")
     private val showsRoute = Regex("/Shows/([^/]+)/(Seasons|Episodes)")
 
     private fun isTitleRoute(path: String): Boolean {
@@ -80,6 +92,25 @@ class FakeBrowse {
         return json(found.toJson())
     }
 
+    private fun related(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val (id, what) = relatedRoute.matchEntire(request.url.encodedPath)!!.destructured
+        val item =
+            titles.firstOrNull { it.id == id } ?: return MockResponse
+                .Builder()
+                .code(404)
+                .body("{}")
+                .build()
+        val limit = request.url.queryParameter("limit")?.toInt() ?: Int.MAX_VALUE
+        val list =
+            if (what == "Similar") {
+                titles.filter { it.libraryId == item.libraryId && it.type == item.type && it.id != id }.take(limit)
+            } else {
+                titles.filter { it.type == "BoxSet" && it.id in item.collectionIds }
+            }
+        return pageOf(request, list)
+    }
+
     private fun shows(request: RecordedRequest): MockResponse {
         itemRequests += request
         val match = showsRoute.matchEntire(request.url.encodedPath) ?: return json("{}")
@@ -97,7 +128,13 @@ class FakeBrowse {
     private fun inLibrary(request: RecordedRequest): List<FakeTitle> {
         val url = request.url
         val types = url.queryParameter("includeItemTypes")?.split(',').orEmpty()
-        return titles.filter { it.libraryId == url.queryParameter("parentId") && (types.isEmpty() || it.type in types) }
+        val parent = url.queryParameter("parentId")
+        val person = url.queryParameter("personIds")
+        return titles.filter {
+            (parent == null || it.libraryId == parent) &&
+                (person == null || person in it.personIds) &&
+                (types.isEmpty() || it.type in types)
+        }
     }
 
     private fun filters(request: RecordedRequest): MockResponse {

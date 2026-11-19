@@ -148,3 +148,15 @@ sealed interface NextEpisode {
         override val episode: BrowseItem? = null
     }
 }
+
+/** A person's own page: who they are. Their titles on this server are [PersonRepository.titlesWith]. */
+data class PersonDetail(
+    val id: String,
+    val name: String,
+    val overview: String?,
+    /** ISO 8601 as the server sends it. */
+    val birthDate: String?,
+    val deathDate: String?,
+    val birthPlace: String?,
+    val imageTag: String?,
+)
