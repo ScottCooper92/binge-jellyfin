@@ -16,8 +16,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * The rows the home's server group offers, by who is signed in. This group is built from the account's policy row by row, not from
- * the console's list of administrator pages, so each row is checked here against the policy that governs it (#790).
+ * The Live TV row of the home's server group, by who is signed in. The group renders the row through `ConsolePage.LiveTv.available`,
+ * so these check the row on screen, not only the predicate (#790).
  */
 @RunWith(RobolectricTestRunner::class)
 class ServerGroupRowsTest {
@@ -46,13 +46,19 @@ class ServerGroupRowsTest {
     }
 
     /**
-     * The page follows the server's own rule (`docs/server-compatibility.md`): `LiveTvManagement` guards the writes and has no
-     * administrator shortcut, so a plain user with it on may manage tuners and guide data, and the home offers the page. Jellyfin's
-     * default policy for a new user has it on. If the page is to be an administrator's alone, this is the test that changes (#790).
+     * The server would let a plain user with `LiveTvManagement` change tuners and guide data, since that policy has no administrator
+     * shortcut. This app offers the page to administrators only, as Jellyfin's web client does (#790), so a plain user with it on is not
+     * offered it, though Jellyfin's default policy for a new user turns it on.
      */
     @Test
-    fun `a plain user whose Live TV management is on is offered the page, as the server allows them`() {
+    fun `a plain user whose Live TV management is on is still offered no tuners and guide data page`() {
         show("\"IsAdministrator\":false,\"EnableLiveTvAccess\":true,\"EnableLiveTvManagement\":true")
+        compose.onAllNodesWithText("Tuners and guide data").assertCountEquals(0)
+    }
+
+    @Test
+    fun `an administrator whose Live TV management is on is offered the page`() {
+        show("\"IsAdministrator\":true,\"EnableLiveTvAccess\":true,\"EnableLiveTvManagement\":true")
         compose.onNodeWithText("Tuners and guide data").assertExists()
     }
 }
