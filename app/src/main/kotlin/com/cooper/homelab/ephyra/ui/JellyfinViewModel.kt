@@ -392,6 +392,9 @@ class JellyfinViewModel(
     /** The steps before a session exists. The setup half writes this and never a signed-in state. */
     private val _state = MutableStateFlow<UiState.Setup>(UiState.Loading)
 
+    /** The setup half as it stands, whatever the screens show: for tests, which check that a finished sign-in leaves nothing behind. */
+    internal val setupStep: StateFlow<UiState.Setup> get() = _state
+
     /** The signed-in state, or null with no session. [SignedInSession] writes this and never a setup step. */
     private val signedInFlow = MutableStateFlow<UiState.SignedIn?>(null)
 
@@ -669,6 +672,8 @@ class JellyfinViewModel(
         index.clear()
         reports.signedIn(method)
         signedInFlow.value = signedInState(addressPolicy, session)
+        // The step that led here goes with it: its typed password and the account pictures are gone when the step is left.
+        _state.value = UiState.Loading
         refresh()
     }
 
