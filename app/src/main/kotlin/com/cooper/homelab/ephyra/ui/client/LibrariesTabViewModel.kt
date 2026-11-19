@@ -24,15 +24,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** What the tab has read of the session so far. */
-private sealed interface Source {
-    data object Starting : Source
+private sealed interface LibrariesSource {
+    data object Starting : LibrariesSource
 
-    data object NotConnected : Source
+    data object NotConnected : LibrariesSource
 
     class Ready(
         val libraries: LibrariesViewModel,
         val images: ImageUrls,
-    ) : Source
+    ) : LibrariesSource
 }
 
 /**
@@ -47,38 +47,38 @@ class LibrariesTabViewModel(
     private val dispatcher: CoroutineDispatcher,
     private val profile: JellyfinServerProfile,
 ) : ViewModel() {
-    private val source = MutableStateFlow<Source>(Source.Starting)
+    private val source = MutableStateFlow<LibrariesSource>(LibrariesSource.Starting)
 
     /** What the tab shows. */
     val state: StateFlow<LibrariesUiState> =
         source
             .flatMapLatest {
                 when (it) {
-                    Source.Starting -> flowOf(LibrariesUiState.Loading)
-                    Source.NotConnected -> flowOf(LibrariesUiState.Error(ServerFailure.NotConnected))
-                    is Source.Ready -> it.libraries.state
+                    LibrariesSource.Starting -> flowOf(LibrariesUiState.Loading)
+                    LibrariesSource.NotConnected -> flowOf(LibrariesUiState.Error(ServerFailure.NotConnected))
+                    is LibrariesSource.Ready -> it.libraries.state
                 }
             }.stateIn(viewModelScope, SharingStarted.Eagerly, LibrariesUiState.Loading)
 
     /** Whether a refresh is still running, for the pull-to-refresh indicator. */
     val refreshing: StateFlow<Boolean> =
         source
-            .flatMapLatest { (it as? Source.Ready)?.libraries?.refreshing ?: flowOf(false) }
+            .flatMapLatest { (it as? LibrariesSource.Ready)?.libraries?.refreshing ?: flowOf(false) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** The URL of [tile]'s picture at [width] pixels, or null before the client is read or for a library with no picture. */
     fun imageUrl(
         tile: LibraryTile,
         width: Int,
-    ): String? = tile.imageTag?.let { (source.value as? Source.Ready)?.images?.of(tile.id, ImageKind.Primary, it, width) }
+    ): String? = tile.imageTag?.let { (source.value as? LibrariesSource.Ready)?.images?.of(tile.id, ImageKind.Primary, it, width) }
 
     /** Reads the signed-in client and starts the tab. Does nothing once it has, and a retry after no session reads it again. */
     fun start() {
-        if (source.value is Source.Ready) return
+        if (source.value is LibrariesSource.Ready) return
         viewModelScope.launch(dispatcher) {
             val signedIn = attempt { connection.signedIn() }.getOrNull()
             if (signedIn == null) {
-                source.value = Source.NotConnected
+                source.value = LibrariesSource.NotConnected
                 return@launch
             }
             val (session, client) = signedIn
@@ -89,14 +89,14 @@ class LibrariesTabViewModel(
                     libraries = JellyfinLibraryRepository(client, session.userId, profile),
                     classify = { it.serverFailure() },
                 )
-            source.value = Source.Ready(libraries, ImageUrls(client))
+            source.value = LibrariesSource.Ready(libraries, ImageUrls(client))
             libraries.start()
         }
     }
 
     /** Reads everything again; with no client read yet, it is the retry of [start]. */
     fun refresh() {
-        val ready = source.value as? Source.Ready
+        val ready = source.value as? LibrariesSource.Ready
         if (ready == null) start() else ready.libraries.refresh()
     }
 }
