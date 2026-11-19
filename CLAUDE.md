@@ -10,9 +10,12 @@ It signs in to the user's own Jellyfin server and answers Binge's questions abou
 in my library, what have I watched, and a playback source for Binge's player, with the plays
 reported back to the server. It serves the LIBRARY contract.
 
-It is also a console for that server, as binge-seerr is for Seerr: it stands on its own, without
-Binge. It manages the server and never browses or plays it (that is Binge's job, through this app's
-playback source, and Jellyfin's own apps'). See The console below, and the epic, #71.
+It is also a full client for that server, as binge-seerr is for Seerr: it stands on its own, without
+Binge. It browses and plays the user's library, and it manages the server through the console, its
+admin half. The LIBRARY Service is unchanged, and Binge still plays through this app's playback source.
+The user's own server is the only data source for browsing. The client is built behind the client gate
+(`PreferenceGate`, the `client_enabled` flag and the user's own choice under This app), on phones only for
+now. See The console below, and the epics, #71 (the console) and #759 (the client).
 
 Binge ships as a plain TMDB client with no bundled providers. A companion is a separate APK that
 exports a bound Android Service implementing a contract from
@@ -109,7 +112,7 @@ working around them:
   - A server that cannot be reached is `UNAVAILABLE`, also with a user message.
 - **Media is identified as media type + TMDB id**, with an `EpisodeRef` beside it for an episode.
   Translating that into Jellyfin item ids is this app's job, in `LibraryIndex`.
-- **Play is Binge's player, fed by `GetPlaybackSource`.** The companion never renders video.
+- **Play is Binge's player, fed by `GetPlaybackSource`.** For the host, the companion never renders video: Binge's player does. Playing in this app is the client's (#759).
   It sends Jellyfin the host's `PlaybackDeviceProfile` as a Jellyfin `DeviceProfile`
   (`DeviceProfiles`), and the server chooses direct play or an HLS transcode. Fix playback by
   describing the device more accurately, never by inspecting the file here.
@@ -221,7 +224,8 @@ as binge-seerr's TV is.
   - **In place:** a failed load stays an error screen with Retry.
   - A snackbar never carries text the user must read to act. Do not turn every message into a dialog: a short result or a
     refusal with nothing to act on stays a snackbar.
-- **Out of scope:** browsing the library, editing an item's metadata, and anything that plays media.
+- **Out of scope for the console:** editing an item's metadata. Browsing and playing are the client's
+  (epic #759), not the console's, and every string that names Binge stays behind `FeatureFlags`.
   Everything else in Jellyfin's settings is in scope, the server's and the user's: the app means to
   be the best way to manage both. Every feature is gated on the server's version, the user's policy
   and the server's configuration, as `docs/server-compatibility.md` describes.
@@ -235,10 +239,10 @@ as binge-seerr's TV is.
   applied. It puts the catalog's Kotlin on AGP's classpath. See the comment in `libs.versions.toml`.
 - The version catalog is `libs.versions.toml` at the repository root, not under `gradle/`.
 - Application id `com.cooper.homelab.ephyra`; a debug build adds `.debug`. The Kotlin package and `namespace` are `com.cooper.homelab.ephyra` too, but a debug build's package name is not (it ends in `.debug`), so a component's class name is built from the package, never the application id. The debug broadcasts (`.ADDRESS_POLICY`, `.SERVER_REGISTRY`, `.SEARCH_TOGGLES`) are built from the application id, so a debug build answers `adb shell am broadcast -a com.cooper.homelab.ephyra.debug.ADDRESS_POLICY -p com.cooper.homelab.ephyra.debug --ez enabled true`.
-- Two modules. `:data` holds the Jellyfin client (`server/`), the session stores (`auth/`) and the demo (`demo/`): no Compose, no Activity types, no vendor SDK, nothing from `ui/`. `:app` holds everything else and depends on it. Packages keep their names across the split, so a package is not a module: `data/src/main/kotlin/…/server/` is where `server/` is. `internal` means inside `:data`, so what `:app` calls is public. Tests are JUnit 4; `:data`'s tests, and the helpers both modules' tests share (the fake Jellyfin server, `PlainCipher`, `testSessionStore`, `DiscardLogger`), live in `:data`, as `testFixtures`.
+- Three modules. `:data` holds the Jellyfin client (`server/`), the typed browse reads and repositories (`browse/`), the session stores (`auth/`) and the demo (`demo/`): no Compose, no Activity types, no vendor SDK, nothing from `ui/`. `:client` holds the client's screens (epic #759), one sub-package each (`home` first): their models, view models and UI state use no Android types, and it depends on `:data` and the design system, never on `:app`. `:app` holds everything else (the console, sign-in, settings, the exported Service, the shell) and depends on both. Packages keep their names across the split, so a package is not a module: `data/src/main/kotlin/…/server/` is where `server/` is. `internal` means inside `:data`, so what `:app` and `:client` call is public. Tests are JUnit 4; `:data`'s tests, and the helpers the modules' tests share (the fake Jellyfin server, `PlainCipher`, `testSessionStore`, `DiscardLogger`), live in `:data`, as `testFixtures`.
 - No DI framework: `AppGraph` builds the handful of objects by hand, and `JellyfinApp` holds it.
 - A Robolectric test needs no `@Config` for the SDK: `app/src/test/resources/robolectric.properties`
-  pins `sdk=34` and a plain `Application` for the whole module. `:data` carries its own copy of the file, and its own
+  pins `sdk=34` and a plain `Application` for the whole module. `:data` and `:client` carry their own copy of the file, and their own
   `RobolectricDefaultsTest` asserts it, so each module has its own pin.
 - `runCatching` is banned in `src/main` by detekt. Use the SDK's `attempt`
   (`com.binge.companion.sdk`): `runCatching` also catches the cancellation a cancelled scope sends.
@@ -261,7 +265,7 @@ where to confirm the list.
   does not exist, so an English string added without its Spanish is a red build.
 - `checkTranslationStaleness`: a reworded English string whose Spanish was not re-read. Re-read it,
   then `./gradlew updateTranslationHashes` and commit `translation-hashes.txt`.
-- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`, 85%, measured over `:app` and `:data` together (`kover(project(":data"))`). `:data` also holds itself to 74% on its own tests (`data/build.gradle.kts`). The floor was
+- `koverVerify`: line coverage below the floor in `app/build.gradle.kts`, 85%, measured over `:app`, `:data` and `:client` together (`kover(project(":data"))`, `kover(project(":client"))`). `:data` also holds itself to 74% on its own tests (`data/build.gradle.kts`), and `:client` to 90% (`client/build.gradle.kts`). The floor was
   measured, not inherited: the suite sat at 87.8% when the first stack of the app landed. Excluded:
   `MainActivity`, the Application and `AppGraph` (wiring), `JellyfinCompanionService` (it only hands
   the SDK the graph's objects), `BuildConfig`, and composables with their `ComposableSingletons`.
