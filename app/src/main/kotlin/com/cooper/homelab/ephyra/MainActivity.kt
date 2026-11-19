@@ -50,6 +50,8 @@ import com.cooper.homelab.ephyra.ui.JellyfinRoot
 import com.cooper.homelab.ephyra.ui.JellyfinViewModel
 import com.cooper.homelab.ephyra.ui.UiState
 import com.cooper.homelab.ephyra.ui.chooseServer
+import com.cooper.homelab.ephyra.ui.client.LibrariesTab
+import com.cooper.homelab.ephyra.ui.client.LibraryPlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
 import com.cooper.homelab.ephyra.ui.confirmTakeBack
 import com.cooper.homelab.ephyra.ui.connected
@@ -66,6 +68,7 @@ import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
 import com.cooper.homelab.ephyra.ui.nav.openFromHome
 import com.cooper.homelab.ephyra.ui.nav.openItem
+import com.cooper.homelab.ephyra.ui.nav.openLibrary
 import com.cooper.homelab.ephyra.ui.nav.openPage
 import com.cooper.homelab.ephyra.ui.nav.openPageItem
 import com.cooper.homelab.ephyra.ui.nav.openSubItem
@@ -258,7 +261,8 @@ private fun ConsoleHost(
     RestartOnSessionEnd(state.connected(), tabs, backStack)
     ReviewPromptOnReturnToRoot(
         connected = state.connected(),
-        atRoot = backStack.entries().isEmpty(),
+        // Nothing is open over the root: no page and no library.
+        atRoot = backStack.size <= 1,
         reviewPrompt = graph.reviewPrompt,
     )
     EphyraNavHost(
@@ -269,6 +273,10 @@ private fun ConsoleHost(
         onBack = { backStack.closeTop() },
         signedOut = { JellyfinRoot(state, homeActions) },
         home = { JellyfinRoot(state, homeActions) },
+        librariesTab = {
+            (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
+        },
+        library = { LibraryPlaceholder(onBack = { backStack.closeTop() }) },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
                 // A stream tapped here has no page to open over, so the page opens, and the stream over it.

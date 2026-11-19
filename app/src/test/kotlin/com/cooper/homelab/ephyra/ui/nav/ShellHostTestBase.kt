@@ -42,7 +42,11 @@ abstract class ShellHostTestBase {
     protected var stack: NavBackStack<NavKey>? = null
     protected var tabs: TabShellState<EphyraTab>? = null
 
-    protected fun host(homeTab: (@Composable () -> Unit)? = null) {
+    protected fun host(
+        homeTab: (@Composable () -> Unit)? = null,
+        librariesTab: (@Composable () -> Unit)? = null,
+        library: @Composable (LibraryRoute) -> Unit = {},
+    ) {
         compose.setContent {
             JellyfinTheme {
                 val backStack = rememberNavBackStack(HomeRoute)
@@ -57,6 +61,8 @@ abstract class ShellHostTestBase {
                     resolved = connected != null,
                     tabs = shell.takeIf { gate ?: true },
                     homeTab = homeTab,
+                    librariesTab = librariesTab,
+                    library = library,
                     onBack = { backStack.closeTop() },
                     signedOut = { Text("sign in") },
                     home = {
@@ -75,6 +81,15 @@ abstract class ShellHostTestBase {
         }
         compose.waitForIdle()
     }
+
+    /** The shell with a Libraries tab that offers one library to open, and a screen for it. */
+    protected fun hostWithLibraries() =
+        host(
+            librariesTab = { Text("open movies", Modifier.clickable { stack?.openLibrary("lib-movies") }) },
+            library = { Text("library ${it.libraryId}") },
+        )
+
+    protected fun libraryKeys(): List<LibraryRoute> = keys().filterIsInstance<LibraryRoute>()
 
     protected fun tap(tag: String) {
         compose.onNodeWithTag(tag).performClick()

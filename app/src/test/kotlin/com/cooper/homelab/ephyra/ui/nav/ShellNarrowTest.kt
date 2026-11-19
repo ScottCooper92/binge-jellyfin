@@ -190,4 +190,80 @@ class ShellNarrowTest : ShellHostTestBase() {
         assertAbsent("the home screen")
         assertEquals(listOf<NavKey>(HubRoute), keys())
     }
+
+    @Test
+    fun `the Libraries tab draws the screen it is given in place of its placeholder`() {
+        hostWithLibraries()
+        assertShown("This screen is on its way.")
+        tap("tab_libraries")
+        assertShown("open movies")
+        assertAbsent("This screen is on its way.")
+    }
+
+    @Test
+    fun `a library opens over the bar, and Back closes it to the Libraries tab with the bar back`() {
+        hostWithLibraries()
+        tap("tab_libraries")
+        click("open movies")
+        assertEquals(listOf(ShellRoute, LibraryRoute("lib-movies")), keys())
+        assertShown("library lib-movies")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+        assertBar(true)
+        assertShown("open movies")
+        assertEquals(EphyraTab.Libraries, tabs?.selected)
+    }
+
+    @Test
+    fun `opening the same library twice puts it on the stack once`() {
+        hostWithLibraries()
+        tap("tab_libraries")
+        compose.runOnUiThread {
+            stack?.openLibrary("lib-movies")
+            stack?.openLibrary("lib-movies")
+        }
+        compose.waitForIdle()
+        assertEquals(listOf(LibraryRoute("lib-movies")), libraryKeys())
+    }
+
+    @Test
+    fun `an open library is restored after a process death, with Back still closing it`() {
+        hostWithLibraries()
+        tap("tab_libraries")
+        click("open movies")
+        compose.scenario.recreate()
+        connected = null
+        hostWithLibraries()
+        assertEquals(listOf(ShellRoute, LibraryRoute("lib-movies")), keys())
+        compose.runOnUiThread { connected = true }
+        compose.waitForIdle()
+        assertShown("library lib-movies")
+        assertFalse(pressBack())
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
+
+    @Test
+    fun `a session that ends closes an open library with the rest`() {
+        hostWithLibraries()
+        tap("tab_libraries")
+        click("open movies")
+        compose.runOnUiThread { connected = false }
+        compose.waitForIdle()
+        assertEquals(listOf<NavKey>(HomeRoute), keys())
+    }
+
+    @Test
+    fun `a page parked on the Server tab is still there after a library was opened and closed`() {
+        hostWithLibraries()
+        tap("tab_server")
+        click("open tasks")
+        assertEquals(1, pageKeys().size)
+        tap("tab_libraries")
+        click("open movies")
+        assertFalse(pressBack())
+        assertEquals(listOf(EphyraTab.Libraries), listOf(tabs?.selected))
+        tap("tab_server")
+        assertEquals(listOf(ConsolePage.Tasks), pageKeys().map { it.page })
+    }
 }

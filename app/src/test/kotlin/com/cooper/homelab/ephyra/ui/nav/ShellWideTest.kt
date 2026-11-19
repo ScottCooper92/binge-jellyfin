@@ -133,4 +133,17 @@ class ShellWideTest : ShellHostTestBase() {
         assertAbsent("page Logs")
         assertShown("console home")
     }
+
+    @Test
+    fun `a library covers the rail and the whole window, and Back brings the shell back`() {
+        hostWithLibraries()
+        tap("tab_libraries")
+        click("open movies")
+        assertShown("library lib-movies")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertBar(true)
+        assertShown("open movies")
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
 }
