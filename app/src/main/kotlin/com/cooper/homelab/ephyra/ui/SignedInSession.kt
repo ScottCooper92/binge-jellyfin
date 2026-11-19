@@ -4,7 +4,6 @@ import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.auth.SessionStore
-import com.cooper.homelab.ephyra.server.AddressPolicy
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.JellyfinAccount
 import com.cooper.homelab.ephyra.server.JellyfinClient
@@ -33,7 +32,7 @@ import java.io.IOException
  */
 class SignedInSession(
     private val scope: CoroutineScope,
-    private val state: MutableStateFlow<UiState>,
+    private val state: MutableStateFlow<UiState.SignedIn?>,
     private val sessions: SessionStore,
     private val connection: Connection,
     private val index: LibraryIndex,
@@ -41,17 +40,18 @@ class SignedInSession(
     private val localNetwork: LocalNetworkPermission,
     private val reports: SignInReports,
     private val onSessionEnded: suspend () -> Unit,
-    private val addressPolicy: AddressPolicy,
+    /** Hands the screen to the setup half, with the server's address, once the session has ended. */
+    private val leave: (baseUrl: String) -> Unit,
 ) {
     init {
         // A console page found the token refused: sign-in again, as a refused library refresh does.
         scope.launch {
-            connection.refused.collect { (state.value as? UiState.SignedIn)?.let { sessionRefused(it.session) } }
+            connection.refused.collect { state.value?.let { sessionRefused(it.session) } }
         }
         // The saved server stopped answering, or began again, while the app is open: the home follows it, as binge-seerr's does.
         scope.launch {
             connection.monitor.health(SAVED_SERVER).collect { reach ->
-                state.update { it.afterReach(reach, localNetwork) }
+                state.update { it?.afterReach(reach, localNetwork) }
             }
         }
     }
@@ -63,7 +63,7 @@ class SignedInSession(
      * quiet: one that fails keeps the gates as they were, and a full refresh says why.
      */
     fun refresh(gatesOnly: Boolean = false) {
-        val current = state.value as? UiState.SignedIn ?: return
+        val current = state.value ?: return
         if (gatesOnly) {
             scope.refreshGates(connection, state, card)
             return
@@ -76,18 +76,18 @@ class SignedInSession(
                 try {
                     val signedIn = connection.signedIn()
                     if (signedIn == null) {
-                        state.update { (it as? UiState.SignedIn)?.copy(refreshing = false) ?: it }
+                        state.update { it?.copy(refreshing = false) }
                         return@launch
                     }
                     // The gates first, so a library index that fails can't leave them unread.
                     val gates = signedIn.second.readGates(signedIn.first.serverVersion)
                     // The server has answered: end the first check here, not when the index finishes. A health that is already a problem stays one.
                     state.update {
-                        (it as? UiState.SignedIn)?.copy(
+                        it?.copy(
                             profile = gates.first,
                             account = gates.second,
                             health = if (it.health == ConnectionHealth.Checking) ConnectionHealth.Healthy else it.health,
-                        ) ?: it
+                        )
                     }
                     card.refresh(scope, state, signedIn.first, signedIn.second, gates.second, force = true)
                     index.refresh(signedIn.second, signedIn.first.userId)
@@ -109,12 +109,12 @@ class SignedInSession(
                     unreachableHealth(current.session.baseUrl, localNetwork, e)
                 }
             state.update {
-                (it as? UiState.SignedIn)?.copy(
+                it?.copy(
                     refreshing = false,
                     refreshFailed = health.isProblem,
                     health = health,
                     titles = index.size,
-                ) ?: it
+                )
             }
         }
     }
@@ -124,19 +124,15 @@ class SignedInSession(
         sessions.clear()
         index.clear()
         onSessionEnded()
-        state.value = enterServer(addressPolicy, session.baseUrl)
+        leave(session.baseUrl)
     }
 
-    /** Changes the signed-in state, and leaves any other step as it is. */
-    internal fun updateSignedIn(change: (UiState.SignedIn) -> UiState.SignedIn) =
-        state.update {
-            (it as? UiState.SignedIn)?.let(change)
-                ?: it
-        }
+    /** Changes the signed-in state; with no session, nothing changes. */
+    internal fun updateSignedIn(change: (UiState.SignedIn) -> UiState.SignedIn) = state.update { it?.let(change) }
 
     /** Ends the session on the server too, so the device leaves the user's Jellyfin devices list. A failure there still signs out here. */
     fun signOut() {
-        state.update { (it as? UiState.SignedIn)?.copy(confirmingSignOut = false, confirmingTakeBack = false) ?: it }
+        state.update { it?.copy(confirmingSignOut = false, confirmingTakeBack = false) }
         scope.launch {
             val signedIn = connection.signedIn()
             attempt { signedIn?.second?.logout() }
@@ -144,13 +140,13 @@ class SignedInSession(
             sessions.clear()
             index.clear()
             onSessionEnded()
-            state.value = enterServer(addressPolicy, signedIn?.first?.baseUrl.orEmpty())
+            leave(signedIn?.first?.baseUrl.orEmpty())
         }
     }
 }
 
-private const val TAG = "JellyfinSetup"
-private const val HTTP_UNAUTHORIZED = 401
+internal const val TAG = "JellyfinSetup"
+internal const val HTTP_UNAUTHORIZED = 401
 
 /**
  * The console's gates: the server's profile (its current version, which may have moved since sign-in,
@@ -166,13 +162,13 @@ private suspend fun JellyfinClient.readGates(signedInVersion: String): Pair<Jell
 /** Reads what the server and the user allow again, and the server card with it, leaving the library alone. */
 private fun CoroutineScope.refreshGates(
     connection: Connection,
-    state: MutableStateFlow<UiState>,
+    state: MutableStateFlow<UiState.SignedIn?>,
     card: ServerCardLoader,
 ) {
     launch {
         val (session, client) = connection.signedIn() ?: return@launch
         attempt { client.readGates(session.serverVersion) }.onSuccess { (profile, account) ->
-            state.update { (it as? UiState.SignedIn)?.copy(profile = profile, account = account) ?: it }
+            state.update { it?.copy(profile = profile, account = account) }
             card.refresh(this@refreshGates, state, session, client, account, force = false)
         }
     }
