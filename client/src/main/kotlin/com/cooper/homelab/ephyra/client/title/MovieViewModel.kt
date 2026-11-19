@@ -60,14 +60,14 @@ class MovieViewModel(
 ) {
     private var itemId: String? = null
     private val snapshot = MutableStateFlow<Snapshot>(Snapshot.Loading)
-    private val eventFlow = MutableSharedFlow<MovieEvent>(extraBufferCapacity = EVENT_BUFFER)
+    private val eventFlow = MutableSharedFlow<TitleEvent>(extraBufferCapacity = EVENT_BUFFER)
 
     /** What the page shows now. */
     val state: StateFlow<MovieUiState> =
         snapshot.map(::uiState).stateIn(scope, SharingStarted.Eagerly, MovieUiState.Loading)
 
     /** What the page tells the user once, as a snackbar. */
-    val events: SharedFlow<MovieEvent> = eventFlow.asSharedFlow()
+    val events: SharedFlow<TitleEvent> = eventFlow.asSharedFlow()
 
     /** Opens the page for the film [id]: reads it, and from then on follows the changes to the user's data. Call it once. */
     fun start(id: String) {
@@ -89,7 +89,7 @@ class MovieViewModel(
         val id = itemId ?: return
         val held = (snapshot.value as? Snapshot.Loaded)?.detail ?: return
         scope.launch(dispatcher) {
-            attempt { action(id, held) }.onFailure { eventFlow.emit(MovieEvent.WriteFailed(classify(it))) }
+            attempt { action(id, held) }.onFailure { eventFlow.emit(TitleEvent.WriteFailed(classify(it))) }
         }
     }
 

@@ -168,7 +168,7 @@ class MovieViewModelTest {
             val event = scope.async { withTimeout(TIMEOUT) { model.events.first() } }
             Thread.sleep(SETTLE_MILLIS)
             model.toggleWatched()
-            assertEquals(MovieEvent.WriteFailed(ServerFailure.ServerError), event.await())
+            assertEquals(TitleEvent.WriteFailed(ServerFailure.ServerError), event.await())
             assertEquals(false, (model.state.value as MovieUiState.Ready).movie.watched)
         }
 
