@@ -17,6 +17,13 @@ data class FakeTitle(
     val played: Boolean = false,
     val favourite: Boolean = false,
     val added: Int = 0,
+    val positionTicks: Long = 0L,
+    /** Orders continue watching, newest first. */
+    val lastPlayed: Int = 0,
+    val seriesId: String? = null,
+    val seriesName: String? = null,
+    val season: Int? = null,
+    val episode: Int? = null,
 )
 
 /**
@@ -34,9 +41,18 @@ class FakeBrowse {
         return when {
             url.encodedPath == "/Items/Filters" -> filters(request)
             url.encodedPath == "/Items" && url.queryParameter("parentId") != null -> items(request)
+            // The LIBRARY contract reads resume and next up too, with no titles seeded here: those fall through to the
+            // rest of the fake. A test that seeds titles for the browse reads gets these answered from them.
+            titles.isEmpty() -> null
+            url.encodedPath == "/UserItems/Resume" || url.encodedPath.matches(oldUserRoute("Resume")) -> resume(request)
+            url.encodedPath == "/Shows/NextUp" -> nextUp(request)
+            url.encodedPath == "/Items/Latest" || url.encodedPath.matches(oldUserRoute("Latest")) -> latest(request)
             else -> null
         }
     }
+
+    /** Before 10.9 the user is a path segment: `/Users/{id}/Items/Resume` and `/Users/{id}/Items/Latest`. */
+    private fun oldUserRoute(last: String) = Regex("/Users/[^/]+/Items/$last")
 
     private fun inLibrary(request: RecordedRequest): List<FakeTitle> {
         val url = request.url
@@ -77,6 +93,52 @@ class FakeBrowse {
         return json("""{"Items":[${page.joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
     }
 
+    private fun resume(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val inProgress = titles.filter { it.positionTicks > 0 && !it.played }.filter { inParent(request, it) }
+        return pageOf(request, inProgress.sortedByDescending { it.lastPlayed })
+    }
+
+    /** The first unwatched episode of each series that has a watched one. */
+    private fun nextUp(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val episodes = titles.filter { it.type == "Episode" && it.seriesId != null }.filter { inParent(request, it) }
+        val next =
+            episodes
+                .groupBy { it.seriesId }
+                .values
+                .mapNotNull { series ->
+                    if (series.none { it.played }) return@mapNotNull null
+                    series.filter { !it.played }.minWithOrNull(compareBy({ it.season }, { it.episode }))
+                }
+        return pageOf(request, next.sortedBy { it.name })
+    }
+
+    private fun latest(request: RecordedRequest): MockResponse {
+        itemRequests += request
+        val url = request.url
+        val played = url.queryParameter("isPlayed")?.toBooleanStrictOrNull()
+        val limit = url.queryParameter("limit")?.toInt() ?: Int.MAX_VALUE
+        val newest = inLibrary(request).filter { played == null || it.played == played }.sortedByDescending { it.added }.take(limit)
+        return json("[${newest.joinToString(",") { it.toJson() }}]")
+    }
+
+    private fun inParent(
+        request: RecordedRequest,
+        title: FakeTitle,
+    ) = request.url.queryParameter("parentId")?.let { it == title.libraryId } ?: true
+
+    private fun pageOf(
+        request: RecordedRequest,
+        list: List<FakeTitle>,
+    ): MockResponse {
+        val url = request.url
+        val start = url.queryParameter("startIndex")?.toInt() ?: 0
+        val limit = url.queryParameter("limit")?.toInt() ?: list.size
+        val total = if (url.queryParameter("enableTotalRecordCount") == "false") "" else ",\"TotalRecordCount\":${list.size}"
+        return json("""{"Items":[${list.drop(start).take(limit).joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
+    }
+
     private fun comparator(
         sortBy: String?,
         descending: Boolean,
@@ -100,7 +162,10 @@ class FakeBrowse {
             officialRating?.let { append(""","OfficialRating":"$it"""") }
             append(""","RunTimeTicks":72000000000,"PrimaryImageAspectRatio":0.6667""")
             append(""","ImageTags":{"Primary":"p-$id"},"BackdropImageTags":["b-$id"]""")
-            append(""","UserData":{"Played":$played,"IsFavorite":$favourite,"PlaybackPositionTicks":0}}""")
+            seriesId?.let { append(""","SeriesId":"$it","SeriesName":"${seriesName.orEmpty()}","SeriesPrimaryImageTag":"sp-$it"""") }
+            season?.let { append(""","ParentIndexNumber":$it""") }
+            episode?.let { append(""","IndexNumber":$it""") }
+            append(""","UserData":{"Played":$played,"IsFavorite":$favourite,"PlaybackPositionTicks":$positionTicks}}""")
         }
 
     private fun json(body: String): MockResponse =
