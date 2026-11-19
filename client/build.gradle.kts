@@ -43,6 +43,9 @@ android {
 
 dependencies {
     implementation(project(":data"))
+    implementation(libs.binge.companion.sdk)
+    implementation(libs.homelab.presentation)
+    implementation(libs.homelab.server)
     implementation(libs.binge.designsystem)
     implementation(libs.homelab.appservices)
     implementation(libs.homelab.uiandroid)
@@ -56,6 +59,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
+    testImplementation(libs.okhttp)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.homelab.testing)
     testImplementation(testFixtures(project(":data")))

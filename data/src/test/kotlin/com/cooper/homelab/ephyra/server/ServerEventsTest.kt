@@ -14,6 +14,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -70,6 +71,49 @@ class ServerEventsTest {
         jellyfin.push("not json")
         assertEquals(ServerEvent.USER_DATA_CHANGED, received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
         assertEquals(ServerEvent.LIBRARY_CHANGED, received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `the user data in a message is passed on, with unknown fields ignored, and the old flow says what it always did`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val events = ServerEvents(connection, index, scope, Dispatchers.IO) { 50L }
+        val oldFlow = LinkedBlockingQueue<ServerEvent>()
+        val changes = LinkedBlockingQueue<List<UserDataChange>>()
+        scope.launch { events.events.collect { oldFlow.put(it) } }
+        scope.launch { events.userDataChanges.collect { changes.put(it) } }
+        awaitUntil { jellyfin.sockets.isNotEmpty() }
+
+        jellyfin.push(
+            """{"MessageType":"UserDataChanged","MessageId":"x","Data":{"UserId":"user-1","Extra":1,"UserDataList":[
+              {"ItemId":"abcd","Played":true,"IsFavorite":false,"PlaybackPositionTicks":0,"UnplayedItemCount":2,"Key":"k","Other":[1]},
+              {"ItemId":"efgh","IsFavorite":true},{"Played":true}]}}""",
+        )
+        val list = changes.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)!!
+        assertEquals(listOf("abcd", "efgh"), list.map { it.itemId })
+        assertEquals(UserDataChange("user-1", "abcd", played = true, favourite = false, positionTicks = 0, unplayedCount = 2), list.first())
+        assertNull(list.last().played)
+        assertEquals(true, list.last().favourite)
+        assertEquals(ServerEvent.USER_DATA_CHANGED, oldFlow.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+
+        // A body of the wrong shape, a message of another type and one with no list give no change; the old flow still says so.
+        jellyfin.push("""{"MessageType":"UserDataChanged","Data":{"UserDataList":"nope"}}""")
+        jellyfin.push("""{"MessageType":"UserDataChanged","Data":{"UserId":"user-1"}}""")
+        jellyfin.push("""{"MessageType":"LibraryChanged","Data":{"ItemsAdded":["x"]}}""")
+        assertEquals(ServerEvent.USER_DATA_CHANGED, oldFlow.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+        assertEquals(ServerEvent.USER_DATA_CHANGED, oldFlow.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+        assertEquals(ServerEvent.LIBRARY_CHANGED, oldFlow.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
+        assertNull(changes.poll(QUIET_MILLIS, TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun `both flows share one socket`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val events = ServerEvents(connection, index, scope, Dispatchers.IO) { 50L }
+        scope.launch { events.events.collect { } }
+        scope.launch { events.userDataChanges.collect { } }
+        awaitUntil { jellyfin.sockets.isNotEmpty() }
+        Thread.sleep(QUIET_MILLIS)
+        assertEquals(1, jellyfin.requests.count { it.url.encodedPath == "/socket" })
     }
 
     @Test
