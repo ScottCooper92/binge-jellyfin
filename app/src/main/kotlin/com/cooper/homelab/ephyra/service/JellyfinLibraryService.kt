@@ -106,7 +106,7 @@ class JellyfinLibraryService(
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_WATCH_STATE_WRITE)
             val (session, client) = reads.signedIn()
             val target = reads.playableItem(session, client, request.media, if (request.hasEpisode()) request.episode else null)
-            client.setPlayed(session.userId, target.id, request.played)
+            client.setPlayed(session.userId, JellyfinServerProfile.from(session.serverVersion), target.id, request.played)
             SetPlayedResponse.getDefaultInstance()
         }
 

@@ -36,15 +36,31 @@ class ServerEvents(
     io: CoroutineDispatcher,
     private val retryDelayMillis: (attempt: Int) -> Long = ::socketRetryDelay,
 ) {
-    val events: SharedFlow<ServerEvent> =
+    /** The socket's messages, one socket for every flow below: each of them listens to this, not to a socket of its own. */
+    private val messages: SharedFlow<JsonObject> =
         flow {
             emitAll(
                 connection.clients().flatMapLatest { client ->
-                    if (client == null) emptyFlow() else client.socketMessages(retryDelayMillis = retryDelayMillis).mapNotNull(::event)
+                    if (client == null) emptyFlow() else client.socketMessages(retryDelayMillis = retryDelayMillis)
                 },
             )
-        }.onEach { if (it == ServerEvent.LIBRARY_CHANGED) index.invalidate() }
+        }.flowOn(io)
+            .shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS))
+
+    val events: SharedFlow<ServerEvent> =
+        messages
+            .mapNotNull(::event)
+            .onEach { if (it == ServerEvent.LIBRARY_CHANGED) index.invalidate() }
             .flowOn(io)
+            .shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS))
+
+    /**
+     * The user data each `UserDataChanged` message carries (the item ids and what they are now), one list per message.
+     * Added beside [events], which is unchanged: it still says only that something changed.
+     */
+    val userDataChanges: SharedFlow<List<UserDataChange>> =
+        messages
+            .mapNotNull { message -> message.userDataChanges().takeIf { it.isNotEmpty() } }
             .shareIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS))
 
     private fun event(message: JsonObject): ServerEvent? =
