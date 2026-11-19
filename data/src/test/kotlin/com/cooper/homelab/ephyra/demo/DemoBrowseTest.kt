@@ -10,6 +10,7 @@ import com.cooper.homelab.ephyra.browse.JellyfinLibraryRepository
 import com.cooper.homelab.ephyra.browse.JellyfinNextUpRepository
 import com.cooper.homelab.ephyra.browse.JellyfinPersonRepository
 import com.cooper.homelab.ephyra.browse.JellyfinResumeRepository
+import com.cooper.homelab.ephyra.browse.JellyfinSearchRepository
 import com.cooper.homelab.ephyra.browse.JellyfinTitleRepository
 import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.NextEpisode
@@ -95,6 +96,16 @@ class DemoBrowseTest {
             val old = JellyfinServerProfile(JellyfinVersion(10, 8, 13))
             assertEquals(2, JellyfinResumeRepository(client, "demo-user", old).resume().items.size)
             assertEquals(6, JellyfinLatestRepository(client, "demo-user", old).latest(library(LibraryKind.Movies)).size)
+        }
+
+    @Test
+    fun `the demo searches titles and people by name`() =
+        runBlocking {
+            val search = JellyfinSearchRepository(client, "demo-user", profile)
+            assertEquals(listOf("demo-movie-1"), search.titles("long QUIET").items.map { it.id })
+            assertTrue(search.titles("zzz").items.isEmpty())
+            assertEquals(listOf("demo-person-1"), search.people("rivers").items.map { it.id })
+            assertTrue(search.people("zzz").items.isEmpty())
         }
 
     @Test

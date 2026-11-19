@@ -3,6 +3,8 @@ package com.cooper.homelab.ephyra.demo
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /** One title in the demo's Movies or TV shows library. An episode has a [seriesId]. */
 internal class DemoTitle(
@@ -110,4 +112,17 @@ internal fun DemoTitle.passes(call: DemoCall): Boolean {
         (years == null || title.year in years) &&
         (played == null || title.played == played) &&
         (call.query("isFavorite") != "true" || title.favourite)
+}
+
+/** `/Persons?searchTerm=`: the demo's people whose name contains the term, ignoring case, in the shape of a page. */
+internal fun searchPeople(term: String): JsonObject {
+    val found =
+        PEOPLE.values
+            .map {
+                jsonObject(it)
+            }.filter { (it["Name"] as? JsonPrimitive)?.content.orEmpty().contains(term, ignoreCase = true) }
+    return buildJsonObject {
+        put("Items", JsonArray(found))
+        put("StartIndex", 0)
+    }
 }
