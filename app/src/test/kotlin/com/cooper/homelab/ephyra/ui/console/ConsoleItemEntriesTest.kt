@@ -4,10 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -16,11 +12,21 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.binge.designsystem.LocalIsSinglePaneNav
 import com.binge.designsystem.LocalPaneDepth
 import com.binge.designsystem.paneShowsBack
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.HubRoute
+import com.cooper.homelab.ephyra.ui.nav.closeTop
+import com.cooper.homelab.ephyra.ui.nav.entries
+import com.cooper.homelab.ephyra.ui.nav.openFromHome
+import com.cooper.homelab.ephyra.ui.nav.openItem
+import com.cooper.homelab.ephyra.ui.nav.openSubItem
+import com.cooper.homelab.ephyra.ui.nav.rememberConsoleBackStack
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
@@ -37,24 +43,25 @@ abstract class ItemEntriesBase {
 
     class Shared : ViewModel()
 
-    protected var stackNow = ConsoleBackStack()
+    protected var backStack: NavBackStack<NavKey> = NavBackStack(HubRoute)
     protected var pageModel: Shared? = null
     protected var itemModel: Shared? = null
     protected var itemDepth = -1
     protected var itemBack = false
 
-    protected fun host(initial: ConsoleBackStack = ConsoleBackStack().openFromHome(ConsolePage.Tasks)) {
+    protected fun host(seed: NavBackStack<NavKey>.() -> Unit = { openFromHome(ConsolePage.Tasks) }) {
         compose.setContent {
             JellyfinTheme {
-                var stack by rememberSaveable(stateSaver = ConsoleBackStack.Saver) { mutableStateOf(initial) }
-                stackNow = stack
-                ConsoleNavHost(
-                    stack = stack,
+                val stack = rememberConsoleBackStack(seed)
+                backStack = stack
+                EphyraNavHost(
+                    backStack = stack,
                     signedIn = true,
-                    onBack = { stack = stack.back() },
+                    onBack = { stack.closeTop() },
+                    signedOut = {},
                     home = { Text("home") },
                     defaultPage = { Text("default page") },
-                    page = { entry -> Page(entry) { stack = stack.openItem("scan") } },
+                    page = { entry -> Page(entry) { stack.openItem("scan") } },
                     item = { entry -> Item(entry) },
                 )
             }
@@ -103,10 +110,10 @@ class ConsoleItemEntriesTwoPaneTest : ItemEntriesBase() {
         back()
         compose.waitForIdle()
         compose.onNodeWithText("page Tasks").assertIsDisplayed()
-        assertEquals(listOf(ConsolePage.Tasks), stackNow.entries.map { it.page })
+        assertEquals(listOf(ConsolePage.Tasks), backStack.entries().map { it.page })
         back()
         compose.waitForIdle()
-        assertEquals(emptyList<ConsolePage>(), stackNow.entries.map { it.page })
+        assertEquals(emptyList<ConsolePage>(), backStack.entries().map { it.page })
     }
 
     @Test
@@ -136,7 +143,11 @@ class ConsoleItemEntriesThreePaneTest : ItemEntriesBase() {
 
     @Test
     fun `an item opened over another keeps the page beside it, and Back returns to the first`() {
-        host(ConsoleBackStack().openFromHome(ConsolePage.Tasks).openItem("scan").openSubItem("scan/triggers"))
+        host {
+            openFromHome(ConsolePage.Tasks)
+            openItem("scan")
+            openSubItem("scan/triggers")
+        }
         compose.onNodeWithText("home").assertIsDisplayed()
         compose.onNodeWithText("page Tasks").assertIsDisplayed()
         compose.onNodeWithText("item scan/triggers").assertIsDisplayed()
