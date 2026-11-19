@@ -66,7 +66,7 @@ class MovieMappingTest {
         assertEquals(TitleImage("m1", ImageKind.Backdrop, "b1"), movie.backdrop)
         assertTrue(movie.favourite)
         assertFalse(movie.watched)
-        assertEquals(MovieFacts(null, listOf("Brandywine"), "1979-05-25T00:00:00Z"), movie.facts)
+        assertEquals(TitleFacts(null, listOf("Brandywine"), "1979-05-25T00:00:00Z"), movie.facts)
     }
 
     @Test
