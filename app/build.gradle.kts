@@ -67,6 +67,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Whether the app names Binge (FeatureFlags). Off unless a build asks: ./gradlew … -PbingePromotion=true.
         buildConfigField("boolean", "BINGE_PROMOTION", (findProperty("bingePromotion") == "true").toString())
+        // Whether the app is a client for the user's server too (FeatureFlags). Off unless a build asks: ./gradlew … -PclientEnabled=true.
+        buildConfigField("boolean", "CLIENT_ENABLED", (findProperty("clientEnabled") == "true").toString())
         buildConfigField("String", "POSTHOG_API_KEY", "\"${telemetryValue("POSTHOG_API_KEY")}\"")
         buildConfigField("String", "POSTHOG_HOST", "\"${telemetryValue("POSTHOG_HOST", "https://eu.i.posthog.com")}\"")
     }
