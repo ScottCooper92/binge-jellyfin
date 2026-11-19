@@ -83,7 +83,8 @@ class DemoBrowseTest {
             assertEquals(listOf("demo-ep-1-3"), next.map { it.id })
             val latest = JellyfinLatestRepository(client, "demo-user", profile)
             assertEquals("The Long Quiet", latest.latest(library(LibraryKind.Movies), limit = 1).single().name)
-            assertEquals(3, latest.latest(library(LibraryKind.TvShows)).size)
+            // A TV library's latest is its episodes folded into their series, newest first.
+            assertEquals(listOf("Harbour Lights", "Second Shift"), latest.latest(library(LibraryKind.TvShows)).map { it.name })
         }
 
     @Test
