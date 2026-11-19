@@ -128,6 +128,9 @@ data class JellyfinServerProfile(
     /** `/Persons` takes `startIndex`, so people can be paged. 12.0: absent from every document from 10.8.13 to 10.11.11. */
     val hasPersonsPaging: Boolean get() = atLeast(TWELVE, 0)
 
+    /** The collections an item is in, at `/Items/{id}/Collections`. 12.0: absent from the 10.8.13, 10.9.11, 10.10.7 and 10.11.11 documents. */
+    val hasItemCollectionsRoute: Boolean get() = atLeast(TWELVE, 0)
+
     /** Grouping movies and shows into collections, set separately. 10.11. */
     val hasSeparateCollectionGrouping: Boolean get() = atLeast(TEN, ELEVEN)
 

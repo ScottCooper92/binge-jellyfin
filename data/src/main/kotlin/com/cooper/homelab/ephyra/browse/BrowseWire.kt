@@ -91,6 +91,7 @@ internal data class ItemWire(
     @SerialName("Status") val status: String? = null,
     @SerialName("CriticRating") val criticRating: Double? = null,
     @SerialName("SeasonName") val seasonName: String? = null,
+    @SerialName("ProductionLocations") val productionLocations: List<String> = emptyList(),
 )
 
 @Serializable
@@ -293,5 +294,18 @@ private fun StreamWire.toTrack(): MediaTrack? {
         bitDepth = bitDepth,
         frameRate = averageFrameRate,
         profile = profile,
+    )
+}
+
+internal fun ItemWire.toPersonDetail(): PersonDetail? {
+    val id = id ?: return null
+    return PersonDetail(
+        id = id,
+        name = name.orEmpty(),
+        overview = overview,
+        birthDate = premiereDate,
+        deathDate = endDate,
+        birthPlace = productionLocations.firstOrNull(),
+        imageTag = imageTags["Primary"],
     )
 }
