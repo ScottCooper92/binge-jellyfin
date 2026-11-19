@@ -988,6 +988,16 @@ class JellyfinLibraryServiceTest {
         }
 
     @Test
+    fun `continue watching on a 10_8 server is read from the old route, and answers the same`() =
+        runBlocking {
+            val newer = stub.listContinueWatching(ListContinueWatchingRequest.getDefaultInstance()).entriesList
+            sessions.save(jellyfin.session().copy(serverVersion = "10.8.13"))
+            val older = stub.listContinueWatching(ListContinueWatchingRequest.getDefaultInstance()).entriesList
+            assertEquals(newer, older)
+            assertTrue(jellyfin.requests.any { it.url.encodedPath == "/Users/${jellyfin.session().userId}/Items/Resume" })
+        }
+
+    @Test
     fun `the observe streams start with the current state`() =
         runBlocking {
             val availability = stub.observeAvailability(ObserveAvailabilityRequest.newBuilder().setMedia(movie).build()).first()

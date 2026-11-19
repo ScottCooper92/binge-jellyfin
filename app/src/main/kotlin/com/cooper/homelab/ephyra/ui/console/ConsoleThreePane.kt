@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
@@ -55,8 +56,8 @@ internal class ConsoleThreePaneStrategy(
     private val enabled: Boolean,
     private val defaultPage: @Composable () -> Unit,
     private val itemPlaceholder: @Composable (ConsolePage) -> Unit,
-) : SceneStrategy<ConsoleKey> {
-    override fun SceneStrategyScope<ConsoleKey>.calculateScene(entries: List<NavEntry<ConsoleKey>>): Scene<ConsoleKey>? {
+) : SceneStrategy<NavKey> {
+    override fun SceneStrategyScope<NavKey>.calculateScene(entries: List<NavEntry<NavKey>>): Scene<NavKey>? {
         if (!enabled) return null
         val hub = entries.indexOfLast { it.metadata[HUB_ROLE] == true }
         if (hub == -1) return null
@@ -74,17 +75,17 @@ internal class ConsoleThreePaneStrategy(
 }
 
 private class ConsoleThreePaneScene(
-    override val entries: List<NavEntry<ConsoleKey>>,
-    private val hub: NavEntry<ConsoleKey>,
-    private val page: NavEntry<ConsoleKey>?,
-    private val item: NavEntry<ConsoleKey>?,
+    override val entries: List<NavEntry<NavKey>>,
+    private val hub: NavEntry<NavKey>,
+    private val page: NavEntry<NavKey>?,
+    private val item: NavEntry<NavKey>?,
     private val itemsOf: ConsolePage?,
     private val defaultPage: @Composable () -> Unit,
     private val itemPlaceholder: @Composable (ConsolePage) -> Unit,
-) : Scene<ConsoleKey> {
+) : Scene<NavKey> {
     /** One key for every stack, so opening or closing a page or an item swaps a pane's content rather than animating a new scene in. */
     override val key: Any = ConsoleThreePaneScene::class
-    override val previousEntries: List<NavEntry<ConsoleKey>> = entries.dropLast(1)
+    override val previousEntries: List<NavEntry<NavKey>> = entries.dropLast(1)
 
     override val content: @Composable () -> Unit = {
         if (itemsOf == null) {

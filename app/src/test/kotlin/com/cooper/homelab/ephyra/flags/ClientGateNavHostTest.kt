@@ -2,17 +2,19 @@ package com.cooper.homelab.ephyra.flags
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.rememberNavBackStack
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.core.flags.FixedFeatureFlags
 import com.cooper.homelab.core.flags.Flags
-import com.cooper.homelab.ephyra.ui.console.ConsoleBackStack
-import com.cooper.homelab.ephyra.ui.console.ConsoleNavHost
+import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
+import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -46,12 +48,14 @@ class ClientGateNavHostTest {
         compose.setContent {
             val resolved by gate.resolved.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalClientEnabled provides (resolved ?: gate.fallback)) {
-                ConsoleNavHost(
-                    stack = ConsoleBackStack(),
+                val probe: @Composable () -> Unit = { Text(if (LocalClientEnabled.current) "client on" else "client off") }
+                EphyraNavHost(
+                    backStack = rememberNavBackStack(HomeRoute),
                     signedIn = false,
                     onBack = {},
+                    signedOut = probe,
+                    home = probe,
                     defaultPage = {},
-                    home = { Text(if (LocalClientEnabled.current) "client on" else "client off") },
                     page = {},
                 )
             }

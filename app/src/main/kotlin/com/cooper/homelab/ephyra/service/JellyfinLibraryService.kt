@@ -115,7 +115,13 @@ class JellyfinLibraryService(
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_CONTINUE_WATCHING)
             val start = startOf(request.pageToken, request.pageSize)
             val (session, client) = reads.signedIn()
-            val page = client.resumeItems(session.userId, start, pageSize(request.pageSize))
+            val page =
+                client.resumeItems(
+                    session.userId,
+                    JellyfinServerProfile.from(session.serverVersion),
+                    start,
+                    pageSize(request.pageSize),
+                )
             ListContinueWatchingResponse
                 .newBuilder()
                 .addAllEntries(reads.entries(session, client, page.items))
