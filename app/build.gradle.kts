@@ -204,6 +204,9 @@ dependencies {
     implementation(project(":data"))
     // Its classes count towards this module's coverage: the floor below is measured over both, as it was when they were one.
     kover(project(":data"))
+    // The client's screens (epic #759), in a module of their own. Their classes count towards the floor below too.
+    implementation(project(":client"))
+    kover(project(":client"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     // The licences page reads the list the AboutLibraries plugin writes at build time.
