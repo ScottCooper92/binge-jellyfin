@@ -45,6 +45,8 @@ check "assets"                     "true true false" app/src/main/assets/x.json
 check "the manifest"               "true true false"    app/src/main/AndroidManifest.xml
 check "the data module's manifest"  "true true false"    data/src/main/AndroidManifest.xml
 check "the data module's build file" "true true true"   data/build.gradle.kts
+check "the client module's tests"    "true false false"  client/src/test/kotlin/x/YTest.kt
+check "the client module's build file" "true true true"   client/build.gradle.kts
 check "the design system pin"      "true true true"    design-system
 check "the homelab-core pin"      "true true true"    homelab-core
 check "the companions pin"         "true false true"   binge-companions

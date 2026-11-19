@@ -28,4 +28,14 @@ class ConsentScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun appGroupSharing() = AppGroup(AppSettings(shareUsageData = true, sendCrashReports = false), Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun appGroupClientOn() = AppGroup(AppSettings(client = true), Actions())
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun appGroupClientOff() = AppGroup(AppSettings(client = false), Actions())
 }

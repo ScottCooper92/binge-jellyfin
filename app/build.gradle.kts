@@ -68,6 +68,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Whether the app names Binge (FeatureFlags). Off unless a build asks: ./gradlew … -PbingePromotion=true.
         buildConfigField("boolean", "BINGE_PROMOTION", (findProperty("bingePromotion") == "true").toString())
+        // Whether the app is a client for the user's server too (FeatureFlags). Off unless a build asks: ./gradlew … -PclientEnabled=true.
+        buildConfigField("boolean", "CLIENT_ENABLED", (findProperty("clientEnabled") == "true").toString())
         buildConfigField("String", "POSTHOG_API_KEY", "\"${telemetryValue("POSTHOG_API_KEY")}\"")
         buildConfigField("String", "POSTHOG_HOST", "\"${telemetryValue("POSTHOG_HOST", "https://eu.i.posthog.com")}\"")
     }
@@ -186,7 +188,15 @@ android {
 // translated source string is committed at the root and `check` fails when one moves. Re-read the
 // translation it names, then re-stamp with `updateTranslationHashes`. The gate is binge-ci's.
 translationStaleness {
-    includes.set(listOf("app/src/*/res/values/strings.xml", "app/src/*/res/values-*/strings.xml"))
+    // :client's strings are translated too, and its English is as likely to be reworded as :app's.
+    includes.set(
+        listOf(
+            "app/src/*/res/values/strings.xml",
+            "app/src/*/res/values-*/strings.xml",
+            "client/src/*/res/values/strings.xml",
+            "client/src/*/res/values-*/strings.xml",
+        ),
+    )
 }
 
 // Material 3 and tv-material each ship a MaterialTheme under the same simple name, so the wrong
@@ -202,6 +212,9 @@ dependencies {
     implementation(project(":data"))
     // Its classes count towards this module's coverage: the floor below is measured over both, as it was when they were one.
     kover(project(":data"))
+    // The client's screens (epic #759), in a module of their own. Their classes count towards the floor below too.
+    implementation(project(":client"))
+    kover(project(":client"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     // The licences page reads the list the AboutLibraries plugin writes at build time.

@@ -56,6 +56,11 @@ import com.cooper.homelab.ephyra.auth.SessionStore
 import com.cooper.homelab.ephyra.auth.TOKEN_KEY_ALIAS
 import com.cooper.homelab.ephyra.auth.forLibrary
 import com.cooper.homelab.ephyra.demo.DemoTransport
+import com.cooper.homelab.ephyra.flags.ClientEnabled
+import com.cooper.homelab.ephyra.flags.ClientPrefs
+import com.cooper.homelab.ephyra.flags.FlagPreferenceGate
+import com.cooper.homelab.ephyra.flags.PreferenceGate
+import com.cooper.homelab.ephyra.flags.RemoteFlagKeys
 import com.cooper.homelab.ephyra.notifications.ActivityChecker
 import com.cooper.homelab.ephyra.notifications.ActivitySwitch
 import com.cooper.homelab.ephyra.notifications.AndroidBackgroundAccess
@@ -191,14 +196,33 @@ class AppGraph(
      * made with -PbingePromotion=true turns it on locally, whatever the remote says.
      */
     val flags: FeatureFlags by lazy {
-        val fixed = if (BuildConfig.BINGE_PROMOTION) mapOf(SharedFlags.BingePromotion.key to true) else emptyMap()
+        val fixed =
+            buildMap {
+                if (BuildConfig.BINGE_PROMOTION) put(SharedFlags.BingePromotion.key, true)
+                if (BuildConfig.CLIENT_ENABLED) put(ClientEnabled.key, true)
+            }
         RemoteFeatureFlags(
-            source = FirebaseRemoteFlagSource(appContext, SharedFlags.all),
+            source = FirebaseRemoteFlagSource(appContext, RemoteFlagKeys),
             overrides = StaticFlagOverrides(fixed),
             scope = scope,
             io = io,
             initialOverrides = fixed,
         )
+    }
+
+    /** Whether the user wants the client surfaces, in a store of its own. On until turned off. */
+    private val clientPrefs: ClientPrefs by lazy {
+        ClientPrefs(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("client") },
+            ),
+        )
+    }
+
+    /** Whether the app browses and plays as well as manages: the remote flag and the user's own choice, read from this one place. */
+    val clientGate: PreferenceGate by lazy {
+        FlagPreferenceGate(flags, ClientEnabled, clientPrefs.enabled, clientPrefs::setEnabled, scope)
     }
 
     /** The user's answers about usage data and crash reports, in a store of their own. */

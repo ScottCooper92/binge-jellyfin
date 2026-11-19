@@ -1472,6 +1472,8 @@
     <string name="kw_diagnostics">registro registros soporte copiar compartir informe error problema depurar</string>
     <string name="this_app_detail">Preferencias, comentarios y más</string>
     <string name="settings_group_app">Esta aplicación</string>
+    <string name="settings_client">Explorar y reproducir</string>
+    <string name="settings_client_caption">Muestra tu biblioteca y la reproduce en esta app</string>
     <string name="settings_share_usage_data">Compartir datos de uso</string>
     <string name="settings_share_usage_data_caption">Envía qué pantallas y acciones usas</string>
     <string name="settings_send_crash_reports">Enviar informes de fallos</string>

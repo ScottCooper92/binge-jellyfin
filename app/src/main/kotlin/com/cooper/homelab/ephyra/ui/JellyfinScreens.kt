@@ -102,6 +102,7 @@ data class Actions(
     val appSettings: AppSettings = AppSettings(),
     val onShareUsageData: (Boolean) -> Unit = {},
     val onSendCrashReports: (Boolean) -> Unit = {},
+    val onClient: (Boolean) -> Unit = {},
     /** An administrator's notification settings; null for anyone else, who is shown no such group. */
     val notifications: NotificationSettings? = null,
     val onNotificationsEnabled: (Boolean) -> Unit = {},
