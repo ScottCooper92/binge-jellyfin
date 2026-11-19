@@ -490,6 +490,45 @@ class JellyfinLibraryServiceTest {
     }
 
     @Test
+    fun `SetPlayed on a 10_8 server uses the old route, for played and for unplayed`() =
+        runBlocking {
+            sessions.save(jellyfin.session().copy(serverVersion = "10.8.13"))
+            val userId = jellyfin.session().userId
+            stub.setPlayed(
+                SetPlayedRequest
+                    .newBuilder()
+                    .setMedia(movie)
+                    .setPlayed(true)
+                    .build(),
+            )
+            stub.setPlayed(
+                SetPlayedRequest
+                    .newBuilder()
+                    .setMedia(movie)
+                    .setPlayed(false)
+                    .build(),
+            )
+            val written = jellyfin.requests.filter { it.url.encodedPath.contains("PlayedItems") }
+            assertEquals(listOf("POST", "DELETE"), written.map { it.method })
+            assertTrue(written.all { it.url.encodedPath == "/Users/$userId/PlayedItems/movie-1" })
+        }
+
+    @Test
+    fun `SetPlayed on a newer server uses the user items route`() =
+        runBlocking {
+            stub.setPlayed(
+                SetPlayedRequest
+                    .newBuilder()
+                    .setMedia(movie)
+                    .setPlayed(true)
+                    .build(),
+            )
+            val written = jellyfin.requests.single { it.url.encodedPath.contains("PlayedItems") }
+            assertEquals("/UserPlayedItems/movie-1", written.url.encodedPath)
+            assertEquals(jellyfin.session().userId, written.url.queryParameter("userId"))
+        }
+
+    @Test
     fun `SetPlayed marks the episode the request names`() =
         runBlocking {
             stub.setPlayed(
@@ -509,6 +548,25 @@ class JellyfinLibraryServiceTest {
                     .build(),
             )
             assertEquals(1, jellyfin.requests.count { it.method == "DELETE" })
+        }
+
+    @Test
+    fun `SetPlayed on a 10_8 session uses the route with the user in the path`() =
+        runBlocking {
+            sessions.save(jellyfin.session().copy(serverVersion = "10.8.13"))
+            for (played in listOf(true, false)) {
+                stub.setPlayed(
+                    SetPlayedRequest
+                        .newBuilder()
+                        .setMedia(movie)
+                        .setPlayed(played)
+                        .build(),
+                )
+            }
+            val userId = jellyfin.session().userId
+            val paths = jellyfin.requests.filter { "PlayedItems" in it.url.encodedPath }
+            assertEquals(listOf("POST", "DELETE"), paths.map { it.method })
+            assertTrue(paths.all { it.url.encodedPath == "/Users/$userId/PlayedItems/movie-1" })
         }
 
     @Test

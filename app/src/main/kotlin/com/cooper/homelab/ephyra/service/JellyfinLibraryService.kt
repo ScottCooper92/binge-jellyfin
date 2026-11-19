@@ -31,6 +31,7 @@ import com.cooper.homelab.core.foundation.LogField
 import com.cooper.homelab.core.foundation.Logger
 import com.cooper.homelab.core.foundation.warn
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
+import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.ServerEvent
 import com.cooper.homelab.ephyra.server.nextUp
 import com.cooper.homelab.ephyra.server.resumeItems
@@ -105,7 +106,7 @@ class JellyfinLibraryService(
             CAPABILITIES.requireDeclared(Capability.CAPABILITY_WATCH_STATE_WRITE)
             val (session, client) = reads.signedIn()
             val target = reads.playableItem(session, client, request.media, if (request.hasEpisode()) request.episode else null)
-            client.setPlayed(session.userId, target.id, request.played)
+            client.setPlayed(session.userId, JellyfinServerProfile.from(session.serverVersion), target.id, request.played)
             SetPlayedResponse.getDefaultInstance()
         }
 
