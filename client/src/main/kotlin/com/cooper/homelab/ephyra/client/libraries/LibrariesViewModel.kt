@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.client.libraries
 import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.LibraryRepository
+import com.cooper.homelab.ephyra.client.TabModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,21 +20,21 @@ class LibrariesViewModel(
     private val dispatcher: CoroutineDispatcher,
     private val libraries: LibraryRepository,
     private val classify: suspend (Throwable) -> ServerFailure,
-) {
+) : TabModel<LibrariesUiState> {
     private val mutableState = MutableStateFlow<LibrariesUiState>(LibrariesUiState.Loading)
     private val mutableRefreshing = MutableStateFlow(false)
 
     /** What the tab shows now. */
-    val state: StateFlow<LibrariesUiState> = mutableState.asStateFlow()
+    override val state: StateFlow<LibrariesUiState> = mutableState.asStateFlow()
 
     /** Whether a [refresh] is still running, for a pull-to-refresh indicator. */
-    val refreshing: StateFlow<Boolean> = mutableRefreshing.asStateFlow()
+    override val refreshing: StateFlow<Boolean> = mutableRefreshing.asStateFlow()
 
     /** Reads the libraries. Call it once when the tab opens. */
-    fun start() = read(refresh = false)
+    override fun start() = read(refresh = false)
 
     /** Reads them again, keeping what is on screen until the answer lands. After a failure it is a retry, shown as loading. */
-    fun refresh() = read(refresh = true)
+    override fun refresh() = read(refresh = true)
 
     private fun read(refresh: Boolean) {
         val showing = mutableState.value
