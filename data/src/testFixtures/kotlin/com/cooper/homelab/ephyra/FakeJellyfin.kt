@@ -194,8 +194,12 @@ class FakeJellyfin : Dispatcher() {
     var administrator = false
 
     /**
-     * Whether the routes only an administrator may call answer anyone else with a 403, as the real server does. Off by default, so a
-     * test that does not care about the policy reads them freely. A request refused this way is in [forbidden].
+     * Whether the routes an administrator's pages use answer anyone else with a 403. Off by default, so a test that does not care about
+     * the policy reads them freely. A request refused this way is in [forbidden].
+     *
+     * This is stricter than the real server, not its exact rule: on Jellyfin 10.11 a non-admin is answered 200 by `/System/Info` and by
+     * `/Users`, which this refuses. Stricter is safe for the tests that use it (a read that was refused here can only fail them), but it
+     * is not evidence of what a real server refuses.
      */
     var enforcesAdministrator = false
 
@@ -1407,7 +1411,7 @@ class FakeJellyfin : Dispatcher() {
             .body(body)
             .build()
 
-    /** The routes the console's admin pages use that the real server guards with its administrator policy: the server's own settings, never a user's own data. */
+    /** The routes the console's admin pages use, which this fake keeps for administrators. This is stricter than the real server (see `enforcesAdministrator`). */
     private fun requiresAdministrator(
         path: String,
         request: RecordedRequest,
@@ -1524,7 +1528,7 @@ fun FakeJellyfin.session(): JellyfinSession =
         token = "token-1",
     )
 
-/** The path prefixes of the routes the real server keeps for administrators (see `requiresAdministrator`). */
+/** The path prefixes of the routes this fake keeps for administrators, stricter than the real server (see `requiresAdministrator`). */
 private val ADMIN_PREFIXES =
     listOf(
         "/System/Info",
