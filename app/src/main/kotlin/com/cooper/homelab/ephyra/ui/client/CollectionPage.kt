@@ -15,9 +15,8 @@ import com.cooper.homelab.ephyra.client.title.CollectionScreen
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 
 /**
- * A collection's page, over the shell. [onOpenTitle] opens one of its parts, which is of the kind it is given;
- * [onOpenPerson] opens a person. The play button does nothing yet: playing in the app is #756. The view model is the page's own,
- * keyed by the collection so two collections on the stack keep their own.
+ * A collection's page, over the shell. [onOpenTitle] opens one of its parts, which is of the kind it is given. The view model is the page's
+ * own, keyed by the collection so two collections on the stack keep their own.
  */
 @Composable
 fun CollectionPage(
