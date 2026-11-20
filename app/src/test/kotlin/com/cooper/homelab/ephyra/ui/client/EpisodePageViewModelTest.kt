@@ -6,6 +6,7 @@ import com.cooper.homelab.ephyra.FakeTitle
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.client.title.EpisodeUiState
 import com.cooper.homelab.ephyra.client.title.EpisodesState
+import com.cooper.homelab.ephyra.client.title.PlayKind
 import com.cooper.homelab.ephyra.client.title.TitleImage
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
@@ -119,6 +120,17 @@ class EpisodePageViewModelTest {
         assertEquals(listOf("e1", "e2"), ((ready as EpisodeUiState.Ready).episode.season as EpisodesState.Ready).episodes.map { it.id })
         vm.retrySeason()
         assertTrue(vm.settled { it is EpisodeUiState.Ready && it.episode.season is EpisodesState.Ready } is EpisodeUiState.Ready)
+    }
+
+    @Test
+    fun `an episode nobody has watched shows as not watched and not a favourite, on a cold start`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        seed()
+        val ready = viewModel("e2").settled { it is EpisodeUiState.Ready }
+        val episode = (ready as EpisodeUiState.Ready).episode
+        assertFalse("watched", episode.watched)
+        assertFalse("favourite", episode.favourite)
+        assertEquals(PlayKind.Play, episode.play.kind)
     }
 
     @Test
