@@ -47,4 +47,9 @@
     <string name="client_movie_media_picture">Vídeo</string>
     <string name="client_movie_media_audio">Audio</string>
     <string name="client_movie_media_subtitles">Subtítulos</string>
+    <string name="client_person_born">Nacimiento</string>
+    <string name="client_person_died">Fallecimiento</string>
+    <string name="client_person_birthplace">Lugar de nacimiento</string>
+    <string name="client_person_titles">Títulos</string>
+    <string name="client_person_empty">No hay nada suyo en este servidor.</string>
 </resources>

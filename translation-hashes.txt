@@ -1463,3 +1463,8 @@ client:client_movie_versions_title  ae8211ceb8be
 client:client_movie_watched  1ca8c1c0de6f
 client:client_movie_write_failed  dd2557d6417a
 client:client_movie_year  89f6832560de
+client:client_person_birthplace  7dafb93a1ab9
+client:client_person_born  16178f9087b8
+client:client_person_died  90f16c1dea8a
+client:client_person_empty  ae20b6b79e55
+client:client_person_titles  3b23a123fa00
