@@ -31,6 +31,8 @@ import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.LibraryIndex
 import com.cooper.homelab.ephyra.server.ServerEvent
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
+import com.cooper.homelab.ephyra.server.TICKS_PER_SECOND
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
 import io.grpc.ManagedChannel
@@ -414,7 +416,16 @@ class JellyfinLibraryServiceTest {
             jellyfin.items +=
                 (1..250).map { n ->
                     FakeItem("many-$n", "E$n", "Episode", seriesId = "series-1", season = 2, episode = n, played = true)
-                } + FakeItem("special", "Special", "Episode", seriesId = "series-1", season = 0, episode = 1, positionTicks = 600_000_000L)
+                } +
+                FakeItem(
+                    "special",
+                    "Special",
+                    "Episode",
+                    seriesId = "series-1",
+                    season = 0,
+                    episode = 1,
+                    positionTicks = TICKS_PER_MINUTE,
+                )
             val seen = mutableListOf<Pair<Int, Int>>()
             var token = ""
             var pages = 0
@@ -883,7 +894,8 @@ class JellyfinLibraryServiceTest {
     @Test
     fun `a page_token replayed under a different page_size is INVALID_ARGUMENT`() =
         runBlocking {
-            jellyfin.items += (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            jellyfin.items +=
+                (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = TICKS_PER_SECOND) }
             val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(2).build())
             val resume =
                 statusOf {
@@ -913,7 +925,7 @@ class JellyfinLibraryServiceTest {
     fun `a negative page_size pages on, because the token it issued is accepted back`() =
         runBlocking {
             jellyfin.items +=
-                (2..22).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+                (2..22).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = TICKS_PER_SECOND) }
             val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(-1).build())
             assertEquals("p20s-1", first.nextPageToken)
             val second =
@@ -951,7 +963,8 @@ class JellyfinLibraryServiceTest {
     @Test
     fun `continue watching pages through the whole list, and the last page carries no token`() =
         runBlocking {
-            jellyfin.items += (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = 10_000_000L) }
+            jellyfin.items +=
+                (2..3).map { FakeItem("movie-$it", "Movie $it", "Movie", tmdbId = 2000 + it, positionTicks = TICKS_PER_SECOND) }
             val first = stub.listContinueWatching(ListContinueWatchingRequest.newBuilder().setPageSize(2).build())
             assertEquals(2, first.entriesCount)
             assertEquals("p2s2", first.nextPageToken)
