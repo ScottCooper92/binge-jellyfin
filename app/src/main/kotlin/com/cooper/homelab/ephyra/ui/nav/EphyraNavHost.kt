@@ -58,7 +58,7 @@ import com.cooper.homelab.ephyra.ui.console.rememberConsolePaneStrategy
  *
  * [homeTab], [librariesTab] and [searchTab] are the Home, Libraries and Search tabs' screens, drawn in place of their placeholders once given. [library] is
  * a library's screen, opened from the Libraries tab as a [LibraryRoute] above the shell: it takes the whole window at every width. [title] is
- * the same for a title's page, a [TitleRoute] above the shell.
+ * the same for a title's page, a [TitleRoute] above the shell. [player] is a play's screen, a [PlayerRoute] above a title's page.
  *
  * With [tabs] the client is on: [ShellRoute] is the root, its bar or rail holds the tabs, and the Server tab is the home. The
  * pages are still keys above it, drawn inside the Server tab on a wide window and over the whole window on a narrow one.
@@ -81,6 +81,7 @@ fun EphyraNavHost(
     searchTab: (@Composable () -> Unit)? = null,
     library: @Composable (LibraryRoute) -> Unit = {},
     title: @Composable (TitleRoute) -> Unit = {},
+    player: @Composable (PlayerRoute) -> Unit = {},
 ) {
     val shell = tabs != null
     LaunchedEffect(signedIn, shell, resolved) { backStack.settleHome(signedIn, shell, resolved) }
@@ -100,8 +101,7 @@ fun EphyraNavHost(
     val signedOutNow by rememberUpdatedState(signedOut)
     val homeNow by rememberUpdatedState(home)
     val screens by rememberUpdatedState(TabScreens(homeTab, librariesTab, searchTab))
-    val libraryNow by rememberUpdatedState(library)
-    val titleNow by rememberUpdatedState(title)
+    val covering by rememberUpdatedState(CoveringScreens(library, title, player))
     val defaultPageNow by rememberUpdatedState(defaultPage)
     val pageNow by rememberUpdatedState(page)
     val itemNow by rememberUpdatedState(item)
@@ -163,9 +163,10 @@ fun EphyraNavHost(
                         }
                     }
                 // A library covers the window, bar and all: it has no pane role, so no strategy draws it beside the shell.
-                is LibraryRoute -> NavEntry(key) { libraryNow(key) }
-                // A title's page covers the window the same way: no pane role.
-                is TitleRoute -> NavEntry(key) { titleNow(key) }
+                is LibraryRoute -> NavEntry(key) { covering.library(key) }
+                // A title's page, and a play, cover the window the same way: no pane role.
+                is TitleRoute -> NavEntry(key) { covering.title(key) }
+                is PlayerRoute -> NavEntry(key) { covering.player(key) }
                 is ItemRoute ->
                     NavEntry(key, metadata = DetailPane + ItemRole) {
                         // Beside its page on a tablet the item never leaves the screen, so it offers no Back of its own, but
@@ -185,6 +186,13 @@ fun EphyraNavHost(
         },
     )
 }
+
+/** The screens that cover the whole window, bar and all: a library's, a title's and a play's. */
+private class CoveringScreens(
+    val library: @Composable (LibraryRoute) -> Unit,
+    val title: @Composable (TitleRoute) -> Unit,
+    val player: @Composable (PlayerRoute) -> Unit,
+)
 
 /** The screens the tabs show, once each has one: a tab with none shows its placeholder. */
 private class TabScreens(

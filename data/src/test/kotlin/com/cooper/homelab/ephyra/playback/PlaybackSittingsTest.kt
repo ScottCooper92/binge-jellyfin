@@ -206,6 +206,18 @@ class PlaybackSittingsTest {
         }
 
     @Test
+    fun `a player closed before the first frame leaves no sitting behind`() =
+        runTest {
+            val sittings = sittings()
+            val id = sittings.start(episodes[0])
+            assertTrue(sittings.outcomeOf(id) is PlaybackOutcome.Preparing)
+
+            player.events.close()
+
+            assertNull(sittings.outcomeOf(id))
+        }
+
+    @Test
     fun `a sitting that ends on its own is forgotten, and one that ends refused is kept`() =
         runTest {
             val sittings = sittings()

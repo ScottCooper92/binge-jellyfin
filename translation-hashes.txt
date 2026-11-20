@@ -203,6 +203,10 @@ app:channel_mappings_pick_title  421cf7800f87
 app:channel_mappings_search  db9f2284f1cf
 app:channel_mappings_title  7b66db40cf32
 app:channel_mappings_unmatched  2395fae627c0
+app:client_play_demo_message  e0f8200616fc
+app:client_play_demo_title  4e7b97224bc3
+app:client_play_http_message  a0db1483d1b0
+app:client_play_http_title  61ada6aebad5
 app:companion_label  8e03b3c29d2b
 app:connection_allow_local_network  b97c4592cdf4
 app:connection_allow_local_network_short  827bdde10636

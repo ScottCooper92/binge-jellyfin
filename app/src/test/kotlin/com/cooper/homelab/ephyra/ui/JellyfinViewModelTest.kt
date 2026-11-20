@@ -29,6 +29,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
@@ -143,8 +144,17 @@ class JellyfinViewModelTest {
 
     private fun made(vm: JellyfinViewModel): JellyfinViewModel = teardown.made(vm)
 
+    /** A wait that times out says which state it was in and what the server had been asked (method and path only), so a failure on a loaded machine can be told apart. */
     private inline fun <reified T : UiState> JellyfinViewModel.await(crossinline matches: (T) -> Boolean = { true }): T =
-        runBlocking { withTimeout(10_000) { state.first { it is T && matches(it) } as T } }
+        try {
+            runBlocking { withTimeout(10_000) { state.first { it is T && matches(it) } as T } }
+        } catch (e: TimeoutCancellationException) {
+            val asked = jellyfin.requests.map { "${it.method} ${it.url.encodedPath}" }
+            throw AssertionError(
+                "Timed out waiting for ${T::class.simpleName}. The state was ${state.value::class.simpleName}; the server was asked $asked",
+                e,
+            )
+        }
 
     private fun JellyfinViewModel.toSignIn(): UiState.SignIn {
         await<UiState.EnterServer>()
@@ -187,8 +197,9 @@ class JellyfinViewModelTest {
         vm.onPassword("right")
         vm.signInWithPassword()
         vm.await<UiState.SignedIn>()
-        // The typed password and the account pictures live in the step, so the step must not outlive the sign-in.
-        assertEquals(UiState.Loading, vm.setupStep.value)
+        // The typed password and the account pictures live in the step, so the step must not outlive the sign-in. The signed-in state shows
+        // a moment before the step is cleared, on the thread that finished the sign-in, so the step is waited for, not read once.
+        runBlocking { withTimeout(10_000) { vm.setupStep.first { it == UiState.Loading } } }
     }
 
     @Test
