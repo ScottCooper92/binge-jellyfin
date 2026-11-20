@@ -228,7 +228,10 @@ class TitleReadsTest {
             jellyfin.browse.titles.clear()
             episode("e1", 1, 1, played = true)
             episode("e2", 1, 2, played = true)
-            assertEquals(NextEpisode.AllWatched, titles.nextEpisode("s1"))
+            // Everything watched: nothing is next, and the first episode is there to watch again.
+            val all = titles.nextEpisode("s1") as NextEpisode.AllWatched
+            assertEquals("e1", all.first.id)
+            assertNull(all.episode)
             assertFalse(titles.nextEpisode("s1") is NextEpisode.Next)
         }
 

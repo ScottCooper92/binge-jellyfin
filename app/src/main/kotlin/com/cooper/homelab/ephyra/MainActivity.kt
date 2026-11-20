@@ -52,10 +52,12 @@ import com.cooper.homelab.ephyra.ui.JellyfinRoot
 import com.cooper.homelab.ephyra.ui.JellyfinViewModel
 import com.cooper.homelab.ephyra.ui.UiState
 import com.cooper.homelab.ephyra.ui.chooseServer
+import com.cooper.homelab.ephyra.ui.client.EpisodePage
 import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
+import com.cooper.homelab.ephyra.ui.client.PersonPage
 import com.cooper.homelab.ephyra.ui.client.SeriesPage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
@@ -68,9 +70,11 @@ import com.cooper.homelab.ephyra.ui.console.LocalUserPictures
 import com.cooper.homelab.ephyra.ui.localNetworkAnswered
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
+import com.cooper.homelab.ephyra.ui.nav.EpisodeRoute
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import com.cooper.homelab.ephyra.ui.nav.LibraryRoute
 import com.cooper.homelab.ephyra.ui.nav.MovieRoute
+import com.cooper.homelab.ephyra.ui.nav.PersonRoute
 import com.cooper.homelab.ephyra.ui.nav.SeriesRoute
 import com.cooper.homelab.ephyra.ui.nav.TitleRoute
 import com.cooper.homelab.ephyra.ui.nav.closeTop
@@ -366,7 +370,7 @@ internal fun ConsoleHost(
 }
 
 /**
- * The page for a title route. A film's or a series' page needs the user's session and the server's version; every other kind keeps the
+ * The page for a title route. A film's, a series', an episode's or a person's page needs the user's session and the server's version; every other kind keeps the
  * placeholder until its screen lands.
  */
 @Composable
@@ -386,6 +390,14 @@ private fun TitlePageRoute(
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
             )
+        route is PersonRoute && signed != null ->
+            PersonPage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+            )
         route is SeriesRoute && signed != null ->
             SeriesPage(
                 graph,
@@ -395,6 +407,16 @@ private fun TitlePageRoute(
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
                 onOpenSeason = { id -> backStack.openTitle(ItemKind.Season, id) },
                 onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
+                onOpenPerson = { id -> backStack.openPerson(id) },
+            )
+        route is EpisodeRoute && signed != null ->
+            EpisodePage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
+                onOpenSeries = { id -> backStack.openTitle(ItemKind.Series, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
             )
         else -> TitlePlaceholder(onBack = { backStack.closeTop() })
