@@ -132,7 +132,16 @@ suspend fun JellyfinClient.playbackInfo(
     userId: String,
     itemId: String,
     body: JsonObject,
-): JsonObject = postObject("Items/$itemId/PlaybackInfo", body, mapOf("userId" to userId))
+    startTimeTicks: Long? = null,
+): JsonObject =
+    postObject(
+        "Items/$itemId/PlaybackInfo",
+        body,
+        buildMap {
+            put("userId", userId)
+            startTimeTicks?.takeIf { it > 0 }?.let { put("startTimeTicks", it.toString()) }
+        },
+    )
 
 suspend fun JellyfinClient.reportStart(body: JsonObject) {
     post("Sessions/Playing", body)
