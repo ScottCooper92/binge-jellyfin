@@ -88,11 +88,12 @@ class DemoPicturesTest {
         assertNotNull(demoPictureFor(url("demo-box-1")))
         assertNull(demoPictureFor(url("demo-box-1", "Backdrop")))
         assertNull(demoPictureFor(url("demo-box-1", "Thumb")))
-        // Only the Movies library has a thumb and a backdrop.
-        assertNotNull(library("Movies").pictureOf("Thumb"))
-        assertNotNull(library("Movies").pictureOf("Backdrop"))
-        assertNull(library("TV shows").pictureOf("Thumb"))
-        assertNotNull(library("TV shows").pictureOf("Primary"))
+        // A stock library has a Primary and nothing else, so all four tiles draw the same way.
+        listOf("Movies", "TV shows", "Collections", "Mixed").forEach { name ->
+            assertNotNull(library(name).pictureOf("Primary"))
+            assertNull(library(name).pictureOf("Thumb"))
+            assertNull(library(name).pictureOf("Backdrop"))
+        }
     }
 
     @Test
@@ -115,8 +116,11 @@ class DemoPicturesTest {
     fun `a library's own picture has its whole name and its thumb and backdrop none, as on a real server`() {
         // Jellyfin draws the name into a library's generated Primary; the tile writes it over a Thumb or a Backdrop.
         assertEquals("Movies", library("Movies").pictureOf("Primary")!!.label)
-        assertEquals("", library("Movies").pictureOf("Thumb")!!.label)
-        assertEquals("", library("Movies").pictureOf("Backdrop")!!.label)
+        // A library that has artwork uploaded has a Thumb and a Backdrop, which say nothing: the tile writes the name over them.
+        listOf("Thumb", "Backdrop").forEach { kind ->
+            val tag = "${if (kind == "Thumb") "t" else "b"}-lib-Movies"
+            assertEquals("", demoPictureFor(url("lib", kind, tag = tag))!!.label)
+        }
         assertEquals("Collections", library("Collections").pictureOf("Primary")!!.label)
         // A title's pictures say initials only, since its card writes the title under them.
         assertEquals("LQ", demoPictureFor(url("demo-movie-1"))!!.label)
