@@ -11,8 +11,6 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +22,6 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeFilledButton
 import com.binge.designsystem.component.DetailRoundAction
 import com.binge.designsystem.component.DetailStat
-import com.binge.designsystem.component.EpisodeRow
 import com.binge.designsystem.component.SeasonRow
 import com.binge.designsystem.template.DetailInfo
 import com.binge.designsystem.template.DetailState
@@ -49,9 +46,6 @@ private const val HERO_PICTURE_WIDTH = 1080
 
 /** The width of a poster beside the title at the expanded width. */
 private const val POSTER_WIDTH = 600
-
-/** The width of an episode's still in its row. */
-private const val STILL_WIDTH = 480
 
 /** How many stats the loading page stands for: a series' usual four (rating, year, seasons, certification). */
 private const val SKELETON_STATS = 4
@@ -226,31 +220,6 @@ private fun SeasonUi.episodeCountText(withUnwatched: Boolean = false): String {
     val count = episodeCount?.let { pluralStringResource(R.plurals.client_series_episode_count, it, it) }.orEmpty()
     val left = unwatched?.takeIf { withUnwatched && it > 0 && count.isNotEmpty() }
     return if (left != null) stringResource(R.string.client_series_unwatched_count, count, left) else count
-}
-
-@Composable
-private fun EpisodeUi.row(
-    imageUrl: (TitleImage, Int) -> String?,
-    onToggle: (EpisodeUi) -> Unit,
-): EpisodeRow {
-    val markWatched = stringResource(if (watched) R.string.client_title_mark_unwatched else R.string.client_title_mark_watched)
-    val runtime = runtimeMinutes?.let { stringResource(DesR.string.detail_runtime_minutes, it) }
-    return EpisodeRow(
-        number = number,
-        name = title,
-        stillUrl = still?.let { imageUrl(it, STILL_WIDTH) },
-        progress = progress,
-        key = id,
-        supporting = runtime,
-        trailing = {
-            IconButton(onClick = { onToggle(this) }) {
-                Icon(
-                    imageVector = if (watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
-                    contentDescription = markWatched,
-                )
-            }
-        },
-    )
 }
 
 /** Who is on the page, cast first. */

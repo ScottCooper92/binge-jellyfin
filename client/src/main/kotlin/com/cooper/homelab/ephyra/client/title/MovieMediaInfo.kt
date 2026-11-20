@@ -31,20 +31,20 @@ fun MovieMediaInfo(
     val context = LocalContext.current
     val picture = listOfNotNull(version.resolution?.label, version.range).joinToString(SEPARATOR).ifBlank { null }
     DetailInfoSection(
-        heading = stringResource(R.string.client_movie_media_info),
+        heading = stringResource(R.string.client_title_media_info),
         entries =
             listOf(
-                DetailInfoEntry(Icons.Filled.Movie, stringResource(R.string.client_movie_media_container), version.container?.uppercase()),
+                DetailInfoEntry(Icons.Filled.Movie, stringResource(R.string.client_title_media_container), version.container?.uppercase()),
                 DetailInfoEntry(
                     Icons.Filled.Storage,
-                    stringResource(R.string.client_movie_media_size),
+                    stringResource(R.string.client_title_media_size),
                     version.sizeBytes?.let {
                         Formatter.formatFileSize(context, it)
                     },
                 ),
-                DetailInfoEntry(Icons.Filled.HighQuality, stringResource(R.string.client_movie_media_picture), picture),
-                DetailInfoEntry(Icons.Filled.Audiotrack, stringResource(R.string.client_movie_media_audio), version.audio.streams()),
-                DetailInfoEntry(Icons.Filled.Subtitles, stringResource(R.string.client_movie_media_subtitles), version.subtitles.streams()),
+                DetailInfoEntry(Icons.Filled.HighQuality, stringResource(R.string.client_title_media_picture), picture),
+                DetailInfoEntry(Icons.Filled.Audiotrack, stringResource(R.string.client_title_media_audio), version.audio.streams()),
+                DetailInfoEntry(Icons.Filled.Subtitles, stringResource(R.string.client_title_media_subtitles), version.subtitles.streams()),
             ),
         modifier = modifier,
     )
