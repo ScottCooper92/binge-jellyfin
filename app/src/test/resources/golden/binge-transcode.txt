@@ -1,0 +1,17 @@
+{"UserId":"user-1","DeviceProfile":{"Name":"Binge","MaxStreamingBitrate":120000000,"MaxStaticBitrate":120000000,"DirectPlayProfiles":[{"Type":"Video","Container":"mp4,m4v","VideoCodec":"h264","AudioCodec":"aac,mp3"}],"TranscodingProfiles":[{"Type":"Video","Container":"ts","Protocol":"hls","Context":"Streaming","VideoCodec":"h264","AudioCodec":"aac,mp3","MinSegments":1,"BreakOnNonKeyFrames":true}],"CodecProfiles":[{"Type":"VideoAudio","Codec":"eac3","Conditions":[{"Condition":"NotEquals","Property":"AudioProfile","Value":"Dolby Digital Plus + Dolby Atmos","IsRequired":false}]},{"Type":"Video","Codec":"h264","Conditions":[{"Condition":"LessThanEqual","Property":"VideoBitDepth","Value":"8","IsRequired":false},{"Condition":"EqualsAny","Property":"VideoProfile","Value":"high|main|baseline|constrained baseline","IsRequired":false}]}],"SubtitleProfiles":[{"Format":"vtt","Method":"External"},{"Format":"srt","Method":"External"},{"Format":"subrip","Method":"External"},{"Format":"ass","Method":"External"},{"Format":"ssa","Method":"External"},{"Format":"ttml","Method":"External"}]},"MaxStreamingBitrate":120000000,"EnableDirectPlay":true,"EnableDirectStream":true,"EnableTranscoding":true,"AllowVideoStreamCopy":true,"AllowAudioStreamCopy":true,"AutoOpenLiveStream":true}
+method: PLAYBACK_METHOD_TRANSCODE
+method_value: 2
+playback_session_id: "ep-2|source-2|play-2|Transcode"
+resume_position_millis: 0
+runtime_millis: 3600000
+source {
+  expires_at {
+    seconds: 22600
+  }
+  headers {
+    name: "Authorization"
+    value: "MediaBrowser Client=\"Jellyfin%20Companion\", Device=\"Test\", DeviceId=\"DEVICE\", Version=\"1.2.3\", Token=\"token-1\""
+  }
+  mime_type: "application/x-mpegURL"
+  url: "BASE/videos/x/master.m3u8?MediaSourceId=source-2"
+}
