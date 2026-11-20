@@ -51,10 +51,10 @@ interface CollectionRepository {
     suspend fun parts(collectionId: String): List<BrowseItem>
 
     /**
-     * The collections [id] belongs to, or null when this server cannot say (before 12.0 it has no route for it, and the
-     * item carries no field). A page loads it on its own, after the title.
+     * The collections [id] belongs to. From 12.0 the server names them; before it the user's box sets are each asked for their
+     * members, which costs a read per box set, so a page loads this on its own, after the title.
      */
-    suspend fun collectionsOf(id: String): List<BrowseItem>?
+    suspend fun collectionsOf(id: String): List<BrowseItem>
 }
 
 /** [TitleRepository] over the user's own server. */
@@ -104,5 +104,5 @@ class JellyfinCollectionRepository(
 ) : CollectionRepository {
     override suspend fun parts(collectionId: String): List<BrowseItem> = client.browseCollectionParts(userId, collectionId)
 
-    override suspend fun collectionsOf(id: String): List<BrowseItem>? = client.browseCollectionsOf(userId, profile, id)
+    override suspend fun collectionsOf(id: String): List<BrowseItem> = client.browseCollectionsOf(userId, profile, id)
 }

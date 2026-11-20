@@ -244,6 +244,13 @@ class LibraryGridModelTest {
     }
 
     @Test
+    fun `the controls carry what the library holds once it has been read`() {
+        libraries.views = listOf(LibraryView("lib-movies", "Collections", LibraryKind.BoxSets))
+        val model = model()
+        assertEquals(LibraryKind.BoxSets, model.ready().controls.kind)
+    }
+
+    @Test
     fun `starting reads the library once, so the first page does not read it again`() {
         val model =
             LibraryGridModel(

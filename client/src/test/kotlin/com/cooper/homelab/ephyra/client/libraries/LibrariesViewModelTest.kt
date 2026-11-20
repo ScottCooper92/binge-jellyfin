@@ -43,6 +43,7 @@ class LibrariesViewModelTest {
     private val movies = LibraryView("lib-movies", "Movies", LibraryKind.Movies, primaryImageTag = "tag-1")
     private val shows = LibraryView("lib-shows", "Shows", LibraryKind.TvShows)
     private val boxSets = LibraryView("lib-sets", "Collections", LibraryKind.BoxSets)
+    private val mixed = LibraryView("lib-mixed", "Everything", LibraryKind.Mixed)
     private val music = LibraryView("lib-music", "Music", LibraryKind.Other)
 
     @Test
@@ -57,17 +58,34 @@ class LibrariesViewModelTest {
     }
 
     @Test
-    fun `movie and series libraries are listed in the server's order and the rest are left out`() {
-        val model = viewModel(FakeLibraries(listOf(shows, boxSets, movies, music)))
+    fun `movies, series, collections and mixed libraries are listed in the server's order and the rest are left out`() {
+        val model = viewModel(FakeLibraries(listOf(shows, boxSets, mixed, movies, music)))
         model.start()
         val ready = model.state.value as LibrariesUiState.Ready
         assertEquals(
             listOf(
                 LibraryTile("lib-shows", "Shows", LibraryKind.TvShows, imageTag = null),
+                LibraryTile("lib-sets", "Collections", LibraryKind.BoxSets, imageTag = null),
+                LibraryTile("lib-mixed", "Everything", LibraryKind.Mixed, imageTag = null),
                 LibraryTile("lib-movies", "Movies", LibraryKind.Movies, imageTag = "tag-1"),
             ),
             ready.tiles,
         )
+        assertTrue(ready.othersHidden)
+    }
+
+    @Test
+    fun `a server whose libraries are all listed hides nothing`() {
+        val model = viewModel(FakeLibraries(listOf(movies, boxSets)))
+        model.start()
+        assertFalse((model.state.value as LibrariesUiState.Ready).othersHidden)
+    }
+
+    @Test
+    fun `a server with only a mixed library lists it, so the tab is not empty`() {
+        val model = viewModel(FakeLibraries(listOf(mixed)))
+        model.start()
+        assertEquals(listOf("lib-mixed"), (model.state.value as LibrariesUiState.Ready).tiles.map { it.id })
     }
 
     @Test
@@ -87,7 +105,7 @@ class LibrariesViewModelTest {
 
     @Test
     fun `libraries that are none of ours are empty`() {
-        val model = viewModel(FakeLibraries(listOf(boxSets, music)))
+        val model = viewModel(FakeLibraries(listOf(music, LibraryView("lib-books", "Books", LibraryKind.Other))))
         model.start()
         assertEquals(LibrariesUiState.Empty, model.state.value)
     }
@@ -150,7 +168,7 @@ class LibrariesViewModelTest {
         val libraries = FakeLibraries(listOf(movies, shows))
         val model = viewModel(libraries)
         model.start()
-        libraries.views = listOf(boxSets)
+        libraries.views = listOf(music)
         model.refresh()
         assertEquals(LibrariesUiState.Empty, model.state.value)
     }

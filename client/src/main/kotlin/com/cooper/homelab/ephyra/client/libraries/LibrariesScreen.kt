@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -41,7 +44,7 @@ private const val TILE_ASPECT_RATIO = 16f / 9f
 private const val PICTURE_WIDTH_PX = 640
 
 /**
- * The Libraries tab for [state]: the user's movie and series libraries as picture tiles in the design system's grid, so a tablet gets
+ * The Libraries tab for [state]: the user's movie, series, collection and mixed libraries as picture tiles in the design system's grid, so a tablet gets
  * more columns than a phone. [imageUrl] turns a tile and a width in pixels into a URL, or null when the library has no picture, so this
  * screen holds no server and no token. A tile opens its library through [onOpen]. A pull calls [onRefresh]; a failure has its own Try again.
  * [reselect] is the tab the bar shows this under, so a tap on it while it shows scrolls to the top.
@@ -73,7 +76,7 @@ fun LibrariesScreen(
                         onRefresh = onRefresh,
                         indicatorTopInset = padding.calculateTopPadding(),
                     ) {
-                        LibrariesGrid(state.tiles, imageUrl, onOpen, gridState, inner)
+                        LibrariesGrid(state.tiles, imageUrl, onOpen, gridState, inner, othersHidden = state.othersHidden)
                     }
             }
         }
@@ -89,6 +92,7 @@ fun LibrariesGrid(
     state: LazyGridState,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    othersHidden: Boolean = false,
 ) {
     val gap = dimensionResource(DesR.dimen.padding_m)
     LazyVerticalGrid(
@@ -107,6 +111,15 @@ fun LibrariesGrid(
                 showTitle = tile.showsName,
                 modifier = Modifier.fillMaxWidth().firstTileAnchor(index),
             )
+        }
+        if (othersHidden) {
+            item(key = "others-hidden", span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    text = stringResource(R.string.client_libraries_others_hidden),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

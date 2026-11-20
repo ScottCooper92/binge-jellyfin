@@ -13,6 +13,7 @@ import com.cooper.homelab.ephyra.browse.FilterChoices
 import com.cooper.homelab.ephyra.browse.ItemFilters
 import com.cooper.homelab.ephyra.browse.ItemSort
 import com.cooper.homelab.ephyra.browse.ItemsRepository
+import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.LibraryRepository
 import com.cooper.homelab.ephyra.browse.LibraryView
 import com.cooper.homelab.ephyra.client.TabModel
@@ -35,6 +36,8 @@ data class LibraryGridControls(
     val libraryName: String?,
     val applied: LibraryFilterDraft,
     val choices: FilterChoices?,
+    /** What the library holds, once it has been read: a box-set library's sheet offers only the order and Favourites. */
+    val kind: LibraryKind? = null,
 )
 
 /** What a library's grid shows: the paged titles, or why there are none, with the [LibraryGridControls] in every state. */
@@ -60,6 +63,7 @@ class LibraryGridModel(
     private val sortFilter = SortFilterState(initial.filters, initial.sort)
     private val choices = MutableStateFlow<FilterChoices?>(null)
     private val libraryName = MutableStateFlow<String?>(null)
+    private val libraryKind = MutableStateFlow<LibraryKind?>(null)
 
     /** The library once it has been read, so a retry reads it again only if the first read failed. */
     private var library: LibraryView? = null
@@ -78,8 +82,8 @@ class LibraryGridModel(
         )
 
     override val state: StateFlow<LibraryGridUiState> =
-        combine(list.state, sortFilter.query, choices, libraryName) { page, query, offered, name ->
-            page.toGridState(LibraryGridControls(name, LibraryFilterDraft(query.sort, query.filters), offered))
+        combine(list.state, sortFilter.query, choices, libraryName, libraryKind) { page, query, offered, name, kind ->
+            page.toGridState(LibraryGridControls(name, LibraryFilterDraft(query.sort, query.filters), offered, kind))
         }.stateIn(scope, SharingStarted.Lazily, GridState.Loading(LibraryGridControls(null, initial, null)))
 
     /** Whether a pull to refresh is reading the first page again behind the rows, which stay until it answers. */
@@ -115,6 +119,7 @@ class LibraryGridModel(
         library ?: libraries.views().firstOrNull { it.id == libraryId }?.also {
             library = it
             libraryName.value = it.name
+            libraryKind.value = it.kind
         } ?: throw JellyfinHttpException(NOT_FOUND, "/Library/$libraryId")
 
     private companion object {

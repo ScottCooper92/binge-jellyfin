@@ -112,10 +112,10 @@ class MovieViewModel(
         }
     }
 
-    /** The first collection the film is in and its parts. A server that cannot say, or a film in none, has no row. */
+    /** The first collection the film is in and its parts. A film in none has no row. */
     private suspend fun loadCollection(id: String) {
         attempt {
-            val box = collections.collectionsOf(id)?.firstOrNull()
+            val box = collections.collectionsOf(id).firstOrNull()
             box?.let { LoadedCollection(it.id, it.name, collections.parts(it.id)) }
         }.onSuccess { found ->
             if (found != null) snapshot.update { if (it is Snapshot.Loaded) it.copy(collection = found) else it }

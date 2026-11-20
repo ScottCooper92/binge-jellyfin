@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.client.libraries
 import com.cooper.homelab.ephyra.browse.FilterChoices
 import com.cooper.homelab.ephyra.browse.ItemFilters
 import com.cooper.homelab.ephyra.browse.ItemSort
+import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.SortField
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -124,6 +125,19 @@ class LibraryFilterDraftTest {
         assertEquals(2, both.activeCount)
         assertEquals(0, both.clearedAll().activeCount)
         assertEquals(0, LibraryFilterDraft().activeCount)
+    }
+
+    @Test
+    fun `a box-set library's sheet offers only the order and favourites`() {
+        val choices = FilterChoices(listOf("Drama"), listOf(2020), listOf("PG"))
+        val draft = LibraryFilterDraft()
+        assertEquals(
+            listOf(LibraryFilterSection.SORT, LibraryFilterSection.DIRECTION, LibraryFilterSection.FAVOURITES),
+            draft.sections(choices, LibraryKind.BoxSets).map { it.id },
+        )
+        // Every other kind, and a library not read yet, offers all of them.
+        assertEquals(7, draft.sections(choices, LibraryKind.Movies).size)
+        assertEquals(7, draft.sections(choices).size)
     }
 
     @Test
