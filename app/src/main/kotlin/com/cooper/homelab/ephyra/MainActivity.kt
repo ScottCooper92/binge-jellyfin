@@ -149,6 +149,7 @@ class MainActivity : ComponentActivity() {
                     analytics = graph.analytics,
                     onSessionEnded = graph::clearAccountCaches,
                     cleartext = graph.cleartextConsent,
+                    linkStash = graph.linkStash,
                     savedState = createSavedStateHandle(),
                 )
             }

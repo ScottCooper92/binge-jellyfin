@@ -44,7 +44,7 @@ internal class SetupFlow(
     localNetwork: LocalNetworkPermission,
     cleartext: CleartextConsent,
     cipher: SecretCipher,
-    linkStash: LinkStash,
+    private val linkStash: LinkStash,
     quickConnectPollMillis: Long,
     private val reports: SignInReports,
     private val state: MutableStateFlow<UiState.Setup>,
@@ -175,6 +175,8 @@ internal class SetupFlow(
 
     /** A sign-in has ended in a kept session: the signed-in state takes the screen, and the steps that led here are gone. */
     private fun publish(begun: UiState.SignedIn) {
+        // A wait for a code that ends in a session has nothing left to keep, and none is left once the session shows.
+        linkStash.clear()
         // The server step that comes back when the session ends starts at this server's address, from its first frame.
         flow.editAddress(addressAfter(begun.session.baseUrl))
         signedInFlow.value = begun
@@ -193,6 +195,8 @@ internal class SetupFlow(
 
     /** The session has ended: the server step takes the screen with the address it had, and the signed-in state goes. */
     fun leave(baseUrl: String) {
+        // Nothing of a sign-in is kept past the session it ended in.
+        linkStash.clear()
         signedInFlow.value = null
         state.value = UiState.Loading
         typed = emptyMap()

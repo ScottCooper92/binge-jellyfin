@@ -178,7 +178,7 @@ internal class JellyfinQuickConnect(
         }
 }
 
-/** A link stash that remembers nothing: a code wait does not survive the process dying. The seam is here for a store that does. */
+/** A link stash that remembers nothing, for a view model built without one: the app's is [SharedPreferencesLinkStash], and a test's is its own. */
 internal object NoLinkStash : LinkStash {
     override fun read(): String? = null
 

@@ -27,6 +27,7 @@ import com.cooper.homelab.core.notifications.DataStoreFeedCursorStore
 import com.cooper.homelab.core.notifications.FeedCursorStore
 import com.cooper.homelab.core.notifications.PollScheduler
 import com.cooper.homelab.core.presentation.appsettings.LicenceSource
+import com.cooper.homelab.core.presentation.connect.LinkStash
 import com.cooper.homelab.core.presentation.search.DataStoreQueryHistory
 import com.cooper.homelab.core.presentation.search.QueryHistory
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
@@ -81,6 +82,7 @@ import com.cooper.homelab.ephyra.server.LibraryIndex
 import com.cooper.homelab.ephyra.server.ServerEvents
 import com.cooper.homelab.ephyra.server.UdpDiscovery
 import com.cooper.homelab.ephyra.server.lanTargets
+import com.cooper.homelab.ephyra.ui.SharedPreferencesLinkStash
 import com.cooper.homelab.ephyra.ui.console.AboutLibrariesLicenceSource
 import com.cooper.homelab.ephyra.ui.console.UserPictures
 import com.cooper.homelab.ephyra.ui.console.clearSharedLogs
@@ -148,6 +150,11 @@ class AppGraph(
 
     /** Seals what a Quick Connect wait would keep, under the same Keystore key as the session's token. */
     internal val linkCipher: SecretCipher by lazy { KeystoreSecretCipher(TOKEN_KEY_ALIAS).forLibrary() }
+
+    /** Where a Quick Connect wait is kept until it ends: one sealed record in a private file, written at once and excluded from backup. */
+    internal val linkStash: LinkStash by lazy {
+        SharedPreferencesLinkStash(appContext.getSharedPreferences(LINK_STASH_FILE, Context.MODE_PRIVATE))
+    }
 
     private fun dataStore(name: String): DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
@@ -405,6 +412,9 @@ internal const val CLIENT_NAME = "Ephyra"
 
 /** The debug switches' file and the key in it that turns the per-server stores on. A shipped build never reads either. */
 internal const val DEBUG_SWITCHES_FILE = "debug_switches"
+
+/** The private file a pending Quick Connect wait is kept in. A debug build adds `.debug` to the package, so its path does too. */
+internal const val LINK_STASH_FILE = "quick_connect_pending"
 internal const val SERVER_REGISTRY_SWITCH = "server_registry"
 internal const val SEARCH_TOGGLES_SWITCH = "search_toggles"
 private const val REDACTOR_TAG = "Redactor"
