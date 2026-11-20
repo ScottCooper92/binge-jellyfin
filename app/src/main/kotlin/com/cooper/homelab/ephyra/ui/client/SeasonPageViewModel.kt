@@ -103,6 +103,7 @@ class SeasonPageViewModel(
         if (ready != null) ready.model.retry() else itemId?.let(::start)
     }
 
+    /** Marks the whole season watched, or not watched when it is. */
     fun toggleWatched() = (source.value as? SeasonSource.Ready)?.model?.toggleWatched()
 
     /** Reads the season's episodes again after they failed. */
