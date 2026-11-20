@@ -103,7 +103,7 @@ class HomeReadsTest {
             assertEquals("true", url.queryParameter("enableTotalRecordCount"))
             assertEquals("true", url.queryParameter("enableUserData"))
             assertEquals("1", url.queryParameter("imageTypeLimit"))
-            assertEquals("PrimaryImageAspectRatio", url.queryParameter("fields"))
+            assertEquals("PrimaryImageAspectRatio,ChildCount", url.queryParameter("fields"))
         }
 
     @Test
