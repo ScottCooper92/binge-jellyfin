@@ -7,9 +7,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.StateRestorationTester
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runAndroidComposeUiTest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -38,6 +43,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * A process death, as the device does it (#823): the saved UI state comes back, and the view model does not. `recreate()` on the
@@ -53,7 +60,7 @@ class ProcessDeathRestoreTest {
     private val teardown = ViewModelTeardown()
     private val connection =
         teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
-    private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext()) }
+    private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext(), sessionsForTest = sessions) }
 
     /** As every view model test: Main is a dispatcher the teardown can wait on from the main thread, which the platform's looper is not. */
     @Before
@@ -103,6 +110,46 @@ class ProcessDeathRestoreTest {
             waitUntil(timeoutMillis = WAIT_MILLIS) { onAllNodesWithTag("tab_server").fetchSemanticsNodes().isNotEmpty() }
             assertTrue("the shell is on screen after the restore", onAllNodesWithTag("tab_server").fetchSemanticsNodes().isNotEmpty())
         }
+
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-xhdpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `a library open with its order and filters comes back with them`() =
+        runAndroidComposeUiTest<ComponentActivity> {
+            runBlocking { sessions.save(jellyfin.session()) }
+            val tester = StateRestorationTester(this)
+            tester.setContent { App() }
+            waitUntil(timeoutMillis = WAIT_MILLIS) { onAllNodesWithTag("tab_libraries").fetchSemanticsNodes().isNotEmpty() }
+            onNodeWithTag("tab_libraries").performClick()
+            waitUntil(timeoutMillis = WAIT_MILLIS) { onAllNodesWithContentDescription("Movies").fetchSemanticsNodes().isNotEmpty() }
+            onNodeWithContentDescription("Movies").performClick()
+            waitUntil(
+                timeoutMillis = WAIT_MILLIS,
+            ) { onAllNodesWithContentDescription("Filters and order").fetchSemanticsNodes().isNotEmpty() }
+            // The first page is in before the pill is used: a tap on it while the grid is still a skeleton did not open the sheet.
+            waitUntil(
+                timeoutMillis = WAIT_MILLIS,
+            ) { onAllNodesWithText("This library has nothing in it yet.").fetchSemanticsNodes().isNotEmpty() }
+            onNodeWithContentDescription("Filters and order").performClick()
+            waitUntil(timeoutMillis = WAIT_MILLIS) { onAllNodesWithText("Date added").fetchSemanticsNodes().isNotEmpty() }
+            onNodeWithText("Date added").performScrollTo().performClick()
+            onNodeWithText("Show results").performClick()
+            waitUntil(timeoutMillis = WAIT_MILLIS) { readsByDateAdded() > 0 }
+            val before = readsByDateAdded()
+
+            tester.emulateSaveAndRestore()
+
+            // The library is on screen again, and its first page is asked for in the order the user chose, not the default.
+            waitUntil(timeoutMillis = WAIT_MILLIS) { readsByDateAdded() > before }
+            assertTrue(
+                "the library's grid is on screen after the restore",
+                onAllNodesWithContentDescription("Filters and order").fetchSemanticsNodes().isNotEmpty(),
+            )
+        }
+
+    /** How many times the server has been asked for a library's titles newest first. */
+    private fun readsByDateAdded(): Int =
+        jellyfin.requests.count { it.url.encodedPath == "/Items" && it.url.queryParameter("sortBy")?.startsWith("DateCreated") == true }
 
     private companion object {
         const val WAIT_MILLIS = 10_000L
