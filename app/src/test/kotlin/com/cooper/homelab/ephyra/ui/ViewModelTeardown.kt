@@ -28,10 +28,20 @@ internal class ViewModelTeardown {
     /** A connection a test builds: closed with the view models, so its session watcher and saves end with the test. */
     fun made(connection: Connection): Connection = connection.also { connections += it }
 
-    fun close(jellyfin: FakeJellyfin) {
+    fun close(
+        jellyfin: FakeJellyfin,
+        idle: () -> Unit = {},
+    ) {
         val jobs = viewModels.mapNotNull { it.viewModelScope.coroutineContext[Job] }
         jobs.forEach { it.cancel() }
-        runBlocking { jobs.forEach { it.join() } }
+        runBlocking {
+            jobs.forEach { job ->
+                while (!job.isCompleted) {
+                    idle()
+                    kotlinx.coroutines.withTimeoutOrNull(5L) { job.join() }
+                }
+            }
+        }
         viewModels.clear()
         connections.forEach { it.close() }
         connections.clear()

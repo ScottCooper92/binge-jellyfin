@@ -38,10 +38,8 @@ import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -73,10 +71,15 @@ class ProcessDeathRestoreTest {
 
     /** As every view model test: Main is a dispatcher the teardown can wait on from the main thread, which the platform's looper is not. */
     @Before
-    fun main() = Dispatchers.setMain(Dispatchers.Unconfined)
+    fun main() = Dispatchers.setMain(MainLooperDispatcher)
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() =
+        teardown.close(jellyfin, idle = {
+            org.robolectric.Shadows
+                .shadowOf(android.os.Looper.getMainLooper())
+                .idle()
+        })
 
     /** The view model the composition last built, so a test can read what it restored. */
     private var shown: JellyfinViewModel? = null
@@ -164,13 +167,18 @@ class ProcessDeathRestoreTest {
             waitUntil(timeoutMillis = WAIT_MILLIS) { onAllNodesWithText("Date added").fetchSemanticsNodes().isNotEmpty() }
             onNodeWithText("Date added").performScrollTo().performClick()
             onNodeWithText("Show results").performClick()
-            waitUntil(timeoutMillis = WAIT_MILLIS) { readsByDateAdded() > 0 }
+            waitUntil(timeoutMillis = WAIT_MILLIS) {
+                waitForIdle()
+                readsByDateAdded() > 0
+            }
             val before = readsByDateAdded()
-
             tester.emulateSaveAndRestore()
 
             // The library is on screen again, and its first page is asked for in the order the user chose, not the default.
-            waitUntil(timeoutMillis = WAIT_MILLIS) { readsByDateAdded() > before }
+            waitUntil(timeoutMillis = WAIT_MILLIS) {
+                waitForIdle()
+                readsByDateAdded() > before
+            }
             assertTrue(
                 "the library's grid is on screen after the restore",
                 onAllNodesWithContentDescription("Filters and order").fetchSemanticsNodes().isNotEmpty(),
@@ -222,10 +230,16 @@ class ProcessDeathRestoreTest {
             assertNull("nothing is kept once it has signed in", stash.value)
         }
 
-    private fun awaitState(
+    private fun androidx.compose.ui.test.AndroidComposeUiTest<ComponentActivity>.awaitState(
         viewModel: JellyfinViewModel,
         matches: (UiState) -> Boolean,
-    ): UiState = runBlocking { withTimeout(WAIT_MILLIS) { viewModel.state.first { matches(it) } } }
+    ): UiState {
+        waitUntil(timeoutMillis = WAIT_MILLIS) {
+            waitForIdle()
+            matches(viewModel.state.value)
+        }
+        return viewModel.state.value
+    }
 
     private companion object {
         const val WAIT_MILLIS = 10_000L
