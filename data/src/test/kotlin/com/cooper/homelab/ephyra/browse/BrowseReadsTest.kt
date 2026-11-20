@@ -50,6 +50,36 @@ class BrowseReadsTest {
     private fun names(page: Page<BrowseItem>) = page.items.map { it.name }
 
     @Test
+    fun `a box set's card carries what it holds, because the read asks the server for it`() =
+        runBlocking {
+            jellyfin.userViews = """[{"Id":"lib-sets","Name":"Collections","CollectionType":"boxsets"}]"""
+            jellyfin.browse.titles.add(FakeTitle("set-1", "Bond", "lib-sets", "BoxSet", childCount = 3))
+            jellyfin.browse.titles.add(FakeTitle("set-2", "Matrix", "lib-sets", "BoxSet"))
+            val sets = libraries.views().single()
+            val page = items.items(sets)
+            assertEquals(listOf("Bond", "Matrix"), names(page))
+            assertEquals(listOf(3, null), page.items.map { it.childCount })
+            assertTrue(
+                "ChildCount" in
+                    jellyfin.browse.itemRequests
+                        .last()
+                        .url
+                        .queryParameter("fields")
+                        .orEmpty()
+                        .split(','),
+            )
+        }
+
+    @Test
+    fun `the server sends no count unless it is asked for, which is why the read names it`() {
+        jellyfin.browse.titles.add(FakeTitle("set-1", "Bond", "lib-sets", "BoxSet", childCount = 3))
+        // A read that names no fields gets no `ChildCount` back, as the test server answered before the field was asked for.
+        val query = mapOf("userId" to "user-1", "parentId" to "lib-sets", "includeItemTypes" to "BoxSet")
+        assertFalse(runBlocking { client.getObject("Items", query) }.toString().contains("ChildCount"))
+        assertTrue(runBlocking { client.getObject("Items", query + ("fields" to "ChildCount")) }.toString().contains("ChildCount"))
+    }
+
+    @Test
     fun `a collections view is BoxSets, a view with no type is Mixed, and music is Other`() =
         runBlocking {
             jellyfin.userViews =
@@ -119,7 +149,7 @@ class BrowseReadsTest {
             assertEquals("Movie", sent.queryParameter("includeItemTypes"))
             assertEquals("true", sent.queryParameter("recursive"))
             assertEquals("true", sent.queryParameter("enableUserData"))
-            assertEquals("PrimaryImageAspectRatio", sent.queryParameter("fields"))
+            assertEquals("PrimaryImageAspectRatio,ChildCount", sent.queryParameter("fields"))
             assertEquals("Primary,Thumb,Backdrop", sent.queryParameter("enableImageTypes"))
             assertEquals("1", sent.queryParameter("imageTypeLimit"))
             assertEquals("false", sent.queryParameter("enableTotalRecordCount"))

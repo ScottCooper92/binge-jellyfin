@@ -235,7 +235,7 @@ private fun SeriesUi.episodeList(): List<EpisodeUi> = (episodes as? EpisodesStat
 
 /** The primary button's words, or null when there is nothing to play: none on the server, or not known yet. A series with every episode watched offers its first again. */
 @Composable
-private fun SeriesPlay?.primaryLabel(): String? =
+internal fun SeriesPlay?.primaryLabel(): String? =
     when (this) {
         is SeriesPlay.Episode -> label()
         is SeriesPlay.AllWatched -> first.label()

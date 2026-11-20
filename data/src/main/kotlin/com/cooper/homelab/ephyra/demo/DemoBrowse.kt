@@ -8,7 +8,6 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-private const val RUNTIME_TICKS = 72_000_000_000L
 private const val POSTER_ASPECT = 0.6667
 private const val SIMILAR_LIMIT = 12
 
@@ -60,8 +59,10 @@ internal class DemoBrowse(
                     ),
                 )
             },
-            // The demo's movies are in no collection; the route is 12.0 and later, as on a real server.
-            route("GET", "Items", "{}", "Collections") { call, _ -> ok(page(call, emptyList())) },
+            // The box sets a film is in. The route is 12.0 and later, as on a real server; the demo's own version reads the box sets instead.
+            route("GET", "Items", "{}", "Collections") { call, parts ->
+                ok(page(call, titles.filter { it.type == "BoxSet" && parts.first() in it.members }))
+            },
             route("GET", "Items", "{}") { _, parts -> title(parts.first()) },
             route("GET", "Users", "{}", "Items", "{}") { _, parts -> title(parts.last()) },
         )
@@ -73,7 +74,17 @@ internal class DemoBrowse(
     fun items(call: DemoCall): JsonObject? {
         val outsideALibrary =
             call.query("searchTerm")?.let { search(call, it) }
-                ?: if (call.query("personIds") != null) page(call, titles.filter { it.type == "Movie" || it.type == "Series" }) else null
+                ?: call.query("personIds")?.let {
+                    page(
+                        call,
+                        titles.creditsOf(
+                            it,
+                            call.query("includeItemTypes")?.split(',') ?: listOf("Movie", "Series"),
+                        ),
+                    )
+                }
+                // Before 12.0 a film's box sets are found by listing them, with no parent.
+                ?: if (call.query("parentId") == null && call.query("includeItemTypes") == "BoxSet") page(call, titles.boxSets()) else null
         if (outsideALibrary != null) return outsideALibrary
         call.query("parentId") ?: return null
         val matching = inLibrary(call).filter { it.passes(call) }
@@ -101,27 +112,26 @@ internal class DemoBrowse(
         seriesId: String,
         type: String,
         seasonId: String?,
-    ) = titles.filter { it.type == type && it.seriesId == seriesId && (seasonId == null || it.seasonId() == seasonId) }
+    ) = titles
+        .filter { it.type == type && it.seriesId == seriesId && (seasonId == null || it.seasonId() == seasonId) }
+        .sortedWith(compareBy({ it.season ?: 0 }, { it.episode ?: Int.MAX_VALUE }))
 
     /** One title by id, with what only a title page reads. */
     private fun title(id: String): DemoAnswer {
         PEOPLE[id]?.let { return ok(jsonObject(it)) }
         val found = titles.firstOrNull { it.id == id } ?: return demoNotFound
-        val detail = json(DETAIL).let { it as JsonObject }
-        return ok(JsonObject(found.toJson() + detail))
+        return ok(JsonObject(found.toJson() + found.detail()))
     }
 
     private fun kindOf(call: DemoCall): String? =
         libraries.views().firstOrNull { it.string("Id") == call.query("parentId") }?.string("CollectionType")
 
     private fun inLibrary(call: DemoCall): List<DemoTitle> {
-        val types =
-            when (kindOf(call)) {
-                "movies" -> listOf("Movie")
-                "tvshows" -> listOf("Series")
-                else -> return emptyList()
-            }
-        return titles.filter { it.type in types }
+        val parent = call.query("parentId")
+        // A box set's own children are its parts.
+        val box = titles.firstOrNull { it.id == parent && it.type == "BoxSet" }
+        val types = libraryTypes(kindOf(call), isView = libraries.views().any { it.string("Id") == parent })
+        return if (box != null) titles.filter { it.id in box.members } else titles.filter { it.type in types }
     }
 
     private fun resume(call: DemoCall): List<DemoTitle> =
@@ -130,7 +140,8 @@ internal class DemoBrowse(
     /** The first unwatched episode of each series that has a watched one. */
     private fun nextUp(call: DemoCall): List<DemoTitle> =
         titles
-            .filter { it.type == "Episode" }
+            // As the server does, specials are not next up.
+            .filter { it.type == "Episode" && it.season != 0 }
             .groupBy { it.seriesId }
             .values
             .mapNotNull { episodes ->
@@ -194,13 +205,14 @@ internal class DemoBrowse(
             put("Id", id)
             put("Name", name)
             put("Type", type)
-            put("ProductionYear", year)
-            put("CommunityRating", score)
-            put("OfficialRating", rating)
-            put("RunTimeTicks", RUNTIME_TICKS)
+            if (year > 0) put("ProductionYear", year)
+            if (score > 0.0) put("CommunityRating", score)
+            if (rating.isNotEmpty()) put("OfficialRating", rating)
+            put("RunTimeTicks", runtimeTicks)
             put("PrimaryImageAspectRatio", POSTER_ASPECT)
             putJsonObject("ImageTags") { put("Primary", "p-$id") }
-            putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id")) }
+            if (hasBackdrop) putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id")) }
+            if (type == "BoxSet") put("ChildCount", members.size)
             seriesId?.let {
                 put("SeriesId", it)
                 put("SeriesName", seriesName.orEmpty())

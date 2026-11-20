@@ -60,7 +60,7 @@ class SearchReadsTest {
                     .url
             assertEquals("Series", url.queryParameter("includeItemTypes"))
             assertEquals("true", url.queryParameter("recursive"))
-            assertEquals("PrimaryImageAspectRatio", url.queryParameter("fields"))
+            assertEquals("PrimaryImageAspectRatio,ChildCount", url.queryParameter("fields"))
             assertEquals("true", url.queryParameter("enableUserData"))
         }
 
