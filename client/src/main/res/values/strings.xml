@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="client_movie_versions_title">Choose a version</string>
-    <string name="client_movie_version_number">Version %1$d</string>
-    <plurals name="client_movie_version_subtitles">
+    <string name="client_title_versions_title">Choose a version</string>
+    <string name="client_title_version_number">Version %1$d</string>
+    <plurals name="client_title_version_subtitles">
         <item quantity="one">%1$d subtitle</item>
         <item quantity="other">%1$d subtitles</item>
     </plurals>
@@ -17,14 +17,14 @@
     <string name="client_title_overview">Overview</string>
     <string name="client_title_play">Play</string>
     <string name="client_title_resume">Resume</string>
-    <string name="client_movie_resume_left">Resume · %1$d min left</string>
+    <string name="client_title_resume_left">Resume · %1$d min left</string>
     <string name="client_title_watched">Watched</string>
     <string name="client_title_mark_watched">Mark as watched</string>
     <string name="client_title_mark_unwatched">Mark as not watched</string>
     <string name="client_title_favourite">Favourite</string>
     <string name="client_title_add_favourite">Add to favourites</string>
     <string name="client_title_remove_favourite">Remove from favourites</string>
-    <string name="client_movie_versions">Versions</string>
+    <string name="client_title_versions">Versions</string>
     <string name="client_title_cast">Cast</string>
     <string name="client_title_crew">Crew</string>
     <string name="client_title_similar">More like this</string>
@@ -33,19 +33,19 @@
     <string name="client_title_studios">Studios</string>
     <string name="client_title_premiere">Premiere</string>
     <string name="client_title_year">Year</string>
-    <string name="client_movie_runtime">Runtime</string>
+    <string name="client_title_runtime">Runtime</string>
     <string name="client_title_certification">Rated</string>
     <string name="client_title_write_failed">Not changed. Try again.</string>
     <string name="client_title_job_director">Director</string>
     <string name="client_title_job_writer">Writer</string>
     <string name="client_title_job_producer">Producer</string>
     <string name="client_title_job_composer">Composer</string>
-    <string name="client_movie_media_info">Media information</string>
-    <string name="client_movie_media_container">Container</string>
-    <string name="client_movie_media_size">Size</string>
-    <string name="client_movie_media_picture">Video</string>
-    <string name="client_movie_media_audio">Audio</string>
-    <string name="client_movie_media_subtitles">Subtitles</string>
+    <string name="client_title_media_info">Media information</string>
+    <string name="client_title_media_container">Container</string>
+    <string name="client_title_media_size">Size</string>
+    <string name="client_title_media_picture">Video</string>
+    <string name="client_title_media_audio">Audio</string>
+    <string name="client_title_media_subtitles">Subtitles</string>
     <string name="client_series_play_episode">Play S%1$d · E%2$d</string>
     <string name="client_series_resume_episode">Resume S%1$d · E%2$d</string>
     <string name="client_series_resume_episode_left">Resume S%1$d · E%2$d · %3$d min left</string>
@@ -60,6 +60,13 @@
         <item quantity="other">%1$d episodes</item>
     </plurals>
     <string name="client_series_episodes_failed">Couldn\'t load the episodes.</string>
+    <string name="client_title_guest_cast">Guest cast</string>
+    <string name="client_title_season_episode">S%1$d · E%2$d</string>
+    <string name="client_title_air_date">Air date</string>
+    <string name="client_title_more_from_season">More from season %1$d</string>
+    <string name="client_title_more_episodes">More episodes</string>
+    <string name="client_title_series">Series</string>
+    <string name="client_title_go_to_series">Go to series</string>
     <string name="client_library_filters">Filters</string>
     <string name="client_library_filters_description">Filters and order</string>
     <string name="client_library_clear_all">Clear all</string>
