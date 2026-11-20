@@ -212,12 +212,27 @@ class LibraryGridModelTest {
     }
 
     @Test
-    fun `refreshing reads the first page again`() {
+    fun `refreshing reads the first page again and the rows stay until it answers`() {
         val model = model()
         items.all = titles(1)
         model.refresh()
         assertEquals(1, model.ready().items.size)
+        assertFalse(model.ready().refreshing)
         assertFalse(model.refreshing.value)
+    }
+
+    @Test
+    fun `a refresh that fails keeps the rows and says so, and the next refresh clears it`() {
+        val model = model()
+        items.failure = IOException("down")
+        model.refresh()
+        val shown = model.ready()
+        assertEquals(PAGE, shown.items.size)
+        assertTrue(shown.refreshFailed)
+        assertFalse(shown.refreshing)
+        items.failure = null
+        model.refresh()
+        assertFalse(model.ready().refreshFailed)
     }
 
     @Test

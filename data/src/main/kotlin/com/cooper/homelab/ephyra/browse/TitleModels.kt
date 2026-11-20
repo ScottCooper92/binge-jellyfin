@@ -143,8 +143,10 @@ sealed interface NextEpisode {
         override val episode: BrowseItem,
     ) : NextEpisode
 
-    /** Every episode is watched. */
-    data object AllWatched : NextEpisode {
+    /** Every episode is watched, so none is next. [first] is the first episode (not a special), for watching the series again. */
+    data class AllWatched(
+        val first: BrowseItem,
+    ) : NextEpisode {
         override val episode: BrowseItem? = null
     }
 }
