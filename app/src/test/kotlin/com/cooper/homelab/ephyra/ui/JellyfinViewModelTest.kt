@@ -166,6 +166,18 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a finished sign-in leaves nothing of the sign-in step behind`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("Claude")
+        vm.onPassword("right")
+        vm.signInWithPassword()
+        vm.await<UiState.SignedIn>()
+        // The typed password and the account pictures live in the step, so the step must not outlive the sign-in.
+        assertEquals(UiState.Loading, vm.setupStep.value)
+    }
+
+    @Test
     fun `Try the demo signs in to the demo server with no address and no account`() {
         val vm = demoViewModel()
         vm.await<UiState.EnterServer>()
