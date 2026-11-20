@@ -13,6 +13,8 @@ android {
     namespace = "com.cooper.homelab.ephyra.client"
     compileSdk = 37
     defaultConfig { minSdk = 26 }
+    // :client and :app share one merged resource namespace and :app wins a name clash, so every resource here starts with this.
+    resourcePrefix = "client_"
     lint {
         // As :app's: a locale is complete or it does not exist, and an unused string is an error.
         error +=
@@ -24,6 +26,8 @@ android {
                 "StringFormatMatches",
                 "StringFormatCount",
                 "UnusedResources",
+                // A resource without the prefix above is an error, not a warning.
+                "ResourceName",
             )
     }
     testOptions {
