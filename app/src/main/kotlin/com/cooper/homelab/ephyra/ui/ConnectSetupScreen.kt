@@ -17,7 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -70,8 +73,15 @@ internal fun ConnectSetupScreen(
             is UiState.SignIn -> state.toConnectState()
             else -> return
         }
+    // A step sliding out is still drawn, with the slots below, after the state has moved to the other one: each keeps what it last had.
+    var lastSignIn by remember { mutableStateOf<UiState.SignIn?>(null) }
+    var lastEnterServer by remember { mutableStateOf<UiState.EnterServer?>(null) }
     val signIn = state as? UiState.SignIn
     val enterServer = state as? UiState.EnterServer
+    signIn?.let { lastSignIn = it }
+    enterServer?.let { lastEnterServer = it }
+    val signInShown = signIn ?: lastSignIn
+    val enterServerShown = enterServer ?: lastEnterServer
     // The servers on the network are looked for once per visit to the server step.
     LaunchedEffect(enterServer != null) { if (enterServer != null) actions.onDiscover() }
     val passwordFocus = remember { FocusRequester() }
@@ -84,12 +94,7 @@ internal fun ConnectSetupScreen(
                 placeholder = ADDRESS_EXAMPLE,
                 notThisServer = stringResource(R.string.error_not_jellyfin),
                 notSetUpMessage = stringResource(R.string.setup_incomplete_body),
-                linkCopy = {
-                    ConnectLinkCopy(
-                        title = stringResource(R.string.quick_connect_title),
-                        body = stringResource(R.string.quick_connect_body),
-                    )
-                },
+                linkCopy = { quickConnectCopy() },
             ),
         addressActions =
             ConnectAddressActions(
@@ -104,8 +109,10 @@ internal fun ConnectSetupScreen(
             StepHeading(title = stringResource(R.string.setup_server_title), subtitle = stringResource(R.string.setup_server_body))
         },
         serverHeading = { server ->
-            val cleartext = server.address.url.startsWith("http://")
-            val address = if (cleartext) stringResource(R.string.server_detail_cleartext, server.address.url) else server.address.url
+            // The address as it was typed or found, without the slash the canonical form ends in.
+            val shown = server.address.url.removeSuffix("/")
+            val cleartext = shown.startsWith("http://")
+            val address = if (cleartext) stringResource(R.string.server_detail_cleartext, shown) else shown
             // A server that is not set up is its notice's subject, so the notice leads; the notice itself says which server.
             if (server.setUp) {
                 StepHeading(title = server.name, subtitle = address)
@@ -116,15 +123,21 @@ internal fun ConnectSetupScreen(
         barActions = { ReportProblemAction() },
         localNetwork =
             enterServer?.takeIf { it.error == SetupError.LocalNetworkDenied }?.let { localNetworkAsk(actions) },
-        foundServers = enterServer?.let { step -> { DiscoveredServers(step, actions) } },
+        foundServers = enterServerShown?.let { step -> { DiscoveredServers(step, actions) } },
         errorText = { error -> errorText(error.toSetupError()) },
         signInOptions =
             ConnectSignInOptions(
                 // Quick Connect is a button under the form, not a tab: the form is always the password's.
                 modeSelector = { _, _ -> },
-                aboveFields = { signIn?.let { PublicUsers(it, actions, passwordFocus) } },
-                afterFields = { signIn?.let { AfterFields(it, actions) } },
-                afterError = { signIn?.let { ForgotPasswordOverlay(it.forgot, actions.forgotPassword) } },
+                aboveFields = { signInShown?.let { PublicUsers(it, actions, passwordFocus) } },
+                // After the error, so the error sits directly under the fields it is about.
+                afterError =
+                    {
+                        signInShown?.let {
+                            AfterError(it, actions)
+                            ForgotPasswordOverlay(it.forgot, actions.forgotPassword)
+                        }
+                    },
                 fieldFocus = mapOf(PASSWORD_FIELD to passwordFocus),
                 notSetUpAction = { SetupWizardEntry(actions) },
             ),
@@ -242,9 +255,9 @@ private fun ColumnScope.PublicUsers(
     )
 }
 
-/** Under the form: the reset of a forgotten password, the local-network ask, and Quick Connect with what it is for. */
+/** Under the form and its error: the reset of a forgotten password, the local-network ask, and Quick Connect with what it is for. */
 @Composable
-private fun ColumnScope.AfterFields(
+private fun ColumnScope.AfterError(
     state: UiState.SignIn,
     actions: Actions,
 ) {
