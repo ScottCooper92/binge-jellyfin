@@ -1431,3 +1431,6 @@ client:client_home_row_latest  055763dc484f
 client:client_home_row_next_up  c5ae65235e0a
 client:client_libraries_empty  279abf4b0277
 client:client_libraries_title  62ef6fd92ee1
+client:client_movie_version_number  3b334e3c6b61
+client:client_movie_version_subtitles  a4dd6d3417d8
+client:client_movie_versions_title  ae8211ceb8be
