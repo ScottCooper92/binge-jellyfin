@@ -62,7 +62,7 @@ jobs:
       pull-requests: read
     uses: ScottCooper92/binge-ci/.github/workflows/submodule-pins.yml@c34892a468b77ebc2f92ef7ec716e27ad5c50d69 # v1.0.50
     with:
-      private_submodules: homelab-core,binge-design-system,binge-ci
+      private_submodules: homelab-core,homelab-player,binge-design-system,binge-ci
     secrets:
       REVIEWER_APP_ID: ${{ secrets.REVIEWER_APP_ID }}
       REVIEWER_APP_PRIVATE_KEY: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
@@ -179,7 +179,7 @@ jobs:
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core,binge-design-system,binge-ci
+          repositories: ephyra,homelab-core,homelab-player,binge-design-system,binge-ci
           permission-contents: read
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -241,7 +241,7 @@ jobs:
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core,binge-design-system,binge-ci
+          repositories: ephyra,homelab-core,homelab-player,binge-design-system,binge-ci
           permission-contents: read
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -294,7 +294,7 @@ jobs:
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core,binge-design-system,binge-ci
+          repositories: ephyra,homelab-core,homelab-player,binge-design-system,binge-ci
           permission-contents: read
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -346,7 +346,7 @@ jobs:
         with:
           app-id: ${{ secrets.REVIEWER_APP_ID }}
           private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
-          repositories: ephyra,homelab-core,binge-design-system,binge-ci
+          repositories: ephyra,homelab-core,homelab-player,binge-design-system,binge-ci
           permission-contents: read
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
