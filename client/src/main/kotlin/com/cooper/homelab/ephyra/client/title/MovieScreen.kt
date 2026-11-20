@@ -279,11 +279,12 @@ private fun MovieRails(
         person = { DetailPerson(it.name, it.subtitle, it.photo?.let { photo -> imageUrl(photo, photoWidth) }) },
         onOpen = actions.onOpenPerson,
     )
+    val jobs = crewJobWords()
     DetailPeopleRail(
         title = stringResource(R.string.client_movie_crew),
         people = movie.crew,
-        itemKey = { "crew-${it.id}-${it.subtitle}" },
-        person = { DetailPerson(it.name, it.subtitle, it.photo?.let { photo -> imageUrl(photo, photoWidth) }) },
+        itemKey = { "crew-${it.id}-${it.job}-${it.subtitle}" },
+        person = { DetailPerson(it.name, it.subtitle ?: it.job?.let(jobs::get), it.photo?.let { photo -> imageUrl(photo, photoWidth) }) },
         onOpen = actions.onOpenPerson,
     )
     movie.collection?.let { box ->
@@ -303,6 +304,16 @@ private fun MovieRails(
         onOpen = actions.onOpenTitle,
     )
 }
+
+/** What each crew job is called, in the user's language. The server sends no text for it. */
+@Composable
+private fun crewJobWords(): Map<CrewJob, String> =
+    mapOf(
+        CrewJob.Director to stringResource(R.string.client_movie_job_director),
+        CrewJob.Writer to stringResource(R.string.client_movie_job_writer),
+        CrewJob.Producer to stringResource(R.string.client_movie_job_producer),
+        CrewJob.Composer to stringResource(R.string.client_movie_job_composer),
+    )
 
 private fun TitleCard.poster(
     imageUrl: (TitleImage, Int) -> String?,
@@ -351,9 +362,11 @@ internal fun premiere(
 
 /** The stats the server gave, each a cell; a stat it did not give is left out. */
 @Composable
-private fun MovieStats.cells(): List<DetailStat> =
-    listOfNotNull(
-        rating?.let { DetailStat(Icons.Filled.Star, "%.1f".format(Locale.getDefault(), it), stringResource(DesR.string.detail_rating)) },
+private fun MovieStats.cells(): List<DetailStat> {
+    // The configuration's locale is observable, so a change of language recomposes the stats.
+    val locale = LocalConfiguration.current.locales[0]
+    return listOfNotNull(
+        rating?.let { DetailStat(Icons.Filled.Star, "%.1f".format(locale, it), stringResource(DesR.string.detail_rating)) },
         year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), stringResource(R.string.client_movie_year)) },
         runtimeMinutes?.let {
             DetailStat(
@@ -364,3 +377,4 @@ private fun MovieStats.cells(): List<DetailStat> =
         },
         certification?.let { DetailStat(Icons.Filled.Shield, it, stringResource(R.string.client_movie_certification)) },
     )
+}

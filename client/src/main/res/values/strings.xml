@@ -36,4 +36,8 @@
     <string name="client_movie_runtime">Runtime</string>
     <string name="client_movie_certification">Rated</string>
     <string name="client_movie_write_failed">Not changed. Try again.</string>
+    <string name="client_movie_job_director">Director</string>
+    <string name="client_movie_job_writer">Writer</string>
+    <string name="client_movie_job_producer">Producer</string>
+    <string name="client_movie_job_composer">Composer</string>
 </resources>

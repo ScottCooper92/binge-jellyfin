@@ -110,7 +110,7 @@ internal fun sampleMovie(
     facts = MovieFacts("Le Grand Silence", listOf("Harbour Films"), "2021-04-09T00:00:00.0000000Z"),
     versions = List(versions) { VersionUi("v$it", null, "mkv", Resolution.FullHd, null, null, emptyList(), emptyList(), null, null) },
     cast = listOf(PersonUi("p1", "Amara Okafor", "Lead", null)),
-    crew = listOf(PersonUi("p2", "Jonas Weil", "Director", null)),
+    crew = listOf(PersonUi("p2", "Jonas Weil", null, null, CrewJob.Director)),
     collection = null,
     similar = listOf(TitleCard("m2", com.cooper.homelab.ephyra.browse.ItemKind.Movie, "Night Market", 2019, 7.1, null, false)),
 )

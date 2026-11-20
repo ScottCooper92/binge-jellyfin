@@ -6,6 +6,7 @@ import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.client.title.CollectionRow
+import com.cooper.homelab.ephyra.client.title.CrewJob
 import com.cooper.homelab.ephyra.client.title.MovieActions
 import com.cooper.homelab.ephyra.client.title.MovieFacts
 import com.cooper.homelab.ephyra.client.title.MovieScreen
@@ -59,7 +60,11 @@ class ClientMovieScreenshotTest {
                     PersonUi("a2", "Jonas Weil", "The Harbourmaster", null),
                     PersonUi("a3", "Ines Marlow", "Keeper's sister", null),
                 ),
-            crew = listOf(PersonUi("c1", "Tomas Reyes", "Director", null), PersonUi("c2", "Mei Tanaka", "Writer", null)),
+            crew =
+                listOf(
+                    PersonUi("c1", "Tomas Reyes", null, null, CrewJob.Director),
+                    PersonUi("c2", "Mei Tanaka", null, null, CrewJob.Writer),
+                ),
             collection =
                 CollectionRow(
                     "box",

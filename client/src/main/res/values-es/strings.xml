@@ -37,4 +37,8 @@
     <string name="client_movie_runtime">Duración</string>
     <string name="client_movie_certification">Clasificación</string>
     <string name="client_movie_write_failed">Sin cambios. Inténtalo de nuevo.</string>
+    <string name="client_movie_job_director">Dirección</string>
+    <string name="client_movie_job_writer">Guion</string>
+    <string name="client_movie_job_producer">Producción</string>
+    <string name="client_movie_job_composer">Música</string>
 </resources>
