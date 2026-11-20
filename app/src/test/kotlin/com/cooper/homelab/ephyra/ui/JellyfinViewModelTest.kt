@@ -257,7 +257,8 @@ class JellyfinViewModelTest {
         assertTrue(first.server.setupIncomplete)
         jellyfin.startupWizardCompleted = true
         vm.changeServer(recheck = true)
-        assertTrue(!vm.await<UiState.SignIn>().server.setupIncomplete)
+        // The step is still the one that said "not set up" until the recheck has answered, so wait for the answer.
+        assertTrue(!vm.await<UiState.SignIn> { !it.server.setupIncomplete }.server.setupIncomplete)
     }
 
     private fun JellyfinViewModel.toStartup(): StartupPhase.Configuring {
@@ -739,8 +740,8 @@ class JellyfinViewModelTest {
 
         vm.changeServer()
 
-        val step = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
-        assertTrue(step.cleartextAllowed)
+        // The address is shown before the agreement for it has been read back, so wait for the agreement itself.
+        val step = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" && it.cleartextAllowed }
         assertTrue(step.canConnect)
     }
 
@@ -965,7 +966,8 @@ class JellyfinViewModelTest {
         jellyfin.startupWizardCompleted = true
         vm.changeServer(recheck = true)
 
-        assertFalse(vm.await<UiState.SignIn>().server.setupIncomplete)
+        // Until the recheck has answered the step is still the "not set up" one: wait for the answer, not for any sign-in step.
+        assertFalse(vm.await<UiState.SignIn> { !it.server.setupIncomplete }.server.setupIncomplete)
     }
 
     private class RecordingConsent : CleartextConsent {
