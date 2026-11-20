@@ -171,6 +171,54 @@ class SeriesViewModelTest {
         }
 
     @Test
+    fun `marking a later episode watched moves what to play next past it`() =
+        runBlocking {
+            jellyfin.browse.titles.add(FakeTitle("series", "Show", "lib-shows", "Series", year = 2020))
+            jellyfin.browse.titles.add(
+                FakeTitle("s1", "Season 1", "lib-shows", "Season", seriesId = "series", season = 1, extra = "\"IndexNumber\":1"),
+            )
+            (1..4).forEach { number ->
+                jellyfin.browse.titles.add(
+                    FakeTitle(
+                        "e$number",
+                        "Episode $number",
+                        "lib-shows",
+                        "Episode",
+                        seriesId = "series",
+                        seriesName = "Show",
+                        season = 1,
+                        episode = number,
+                        seasonId = "s1",
+                    ),
+                )
+            }
+            val model = viewModel().also { it.start("series") }
+            model.ready { it.episodes is EpisodesState.Ready }
+            model.toggleEpisodeWatched("e1")
+            model.ready { (it.play as? SeriesPlay.Episode)?.episodeId == "e2" }
+            // E3 is not the episode the button names (E2), but it is now the last one watched, so what comes after it is next.
+            model.toggleEpisodeWatched("e3")
+            val moved = model.ready { (it.play as? SeriesPlay.Episode)?.episodeId == "e4" }
+            assertEquals(SeriesPlay.Episode(PlayKind.Play, "e4", 1, 4, null), moved.play)
+        }
+
+    @Test
+    fun `a season that failed and then loads shows its episodes`() =
+        runBlocking {
+            seed()
+            jellyfin.status["/Shows/series/Episodes"] = 500
+            val model = viewModel().also { it.start("series") }
+            model.ready { it.episodes is EpisodesState.Failed }
+            jellyfin.status.clear()
+            model.selectSeason("s2")
+            model.ready { it.selectedSeasonId == "s2" && it.episodes is EpisodesState.Ready }
+            // Season 1 failed once and is read again now that the server answers: it must not still be shown as failed.
+            model.selectSeason("s1")
+            val again = model.ready { it.selectedSeasonId == "s1" && it.episodes is EpisodesState.Ready }
+            assertEquals(listOf("e1", "e2"), (again.episodes as EpisodesState.Ready).episodes.map { it.id })
+        }
+
+    @Test
     fun `the series' watched and favourite marks follow the server, and a change from another app shows`() =
         runBlocking {
             seed()

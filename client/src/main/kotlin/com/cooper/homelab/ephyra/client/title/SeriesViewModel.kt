@@ -10,9 +10,9 @@ import com.cooper.homelab.ephyra.browse.UserDataRepository
 import com.cooper.homelab.ephyra.browse.with
 import com.cooper.homelab.ephyra.browse.withChanges
 import com.cooper.homelab.ephyra.server.UserDataChange
-import com.cooper.homelab.ephyra.server.sameItem
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -56,6 +56,7 @@ class SeriesViewModel(
     private val classify: suspend (Throwable) -> ServerFailure,
 ) {
     private var seriesId: String? = null
+    private var nextRead: Job? = null
     private val loaded = MutableStateFlow<Loaded>(Loaded.Loading)
     private val eventFlow = MutableSharedFlow<SeriesEvent>(extraBufferCapacity = EVENT_BUFFER)
 
@@ -138,7 +139,17 @@ class SeriesViewModel(
         scope.launch(dispatcher) {
             attempt { titles.episodes(id, seasonId) }
                 .onSuccess { list ->
-                    loaded.update { if (it is Loaded.Series) it.copy(episodes = it.episodes + (seasonId to list)) else it }
+                    loaded.update {
+                        if (it is Loaded.Series) {
+                            it.copy(
+                                episodes = it.episodes + (seasonId to list),
+                                failedSeasons =
+                                    it.failedSeasons - seasonId,
+                            )
+                        } else {
+                            it
+                        }
+                    }
                 }.onFailure { error ->
                     val failure = classify(error)
                     loaded.update { if (it is Loaded.Series) it.copy(failedSeasons = it.failedSeasons + (seasonId to failure)) else it }
@@ -152,15 +163,22 @@ class SeriesViewModel(
         }
     }
 
-    /** What to play next after a mark that can move it: the series' own, or the very episode the button names. */
+    /**
+     * What to play next after a watched mark. Any episode can move it, not only the one the button names: the answer is the first one
+     * not watched after the last one that is, so marking a later episode moves it past that one. A mark for an episode this page has
+     * not read (another season, or another app) moves it too, so every watched mark reads it again. A burst of marks, such as a season
+     * marked watched, makes one read: a read still running is replaced by the next.
+     */
     private fun refreshNext(change: UserDataChange) {
         val id = seriesId ?: return
-        val current = loaded.value as? Loaded.Series ?: return
-        val moves = sameItem(change.itemId, id) || current.next?.episode?.let { sameItem(change.itemId, it.id) } == true
-        if (!moves || change.played == null) return
-        scope.launch(dispatcher) {
-            attempt { titles.nextEpisode(id) }.onSuccess { next -> loaded.update { if (it is Loaded.Series) it.copy(next = next) else it } }
-        }
+        if (loaded.value !is Loaded.Series || change.played == null) return
+        nextRead?.cancel()
+        nextRead =
+            scope.launch(dispatcher) {
+                attempt { titles.nextEpisode(id) }.onSuccess { next ->
+                    loaded.update { if (it is Loaded.Series) it.copy(next = next) else it }
+                }
+            }
     }
 
     private fun apply(change: UserDataChange) {
