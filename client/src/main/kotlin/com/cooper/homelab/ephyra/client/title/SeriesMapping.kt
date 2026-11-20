@@ -25,6 +25,7 @@ fun seriesUi(
         tagline = detail.taglines.firstOrNull { it.isNotBlank() },
         genres = detail.genres,
         backdrop = item.imageTags[ImageKind.Backdrop]?.let { TitleImage(item.id, ImageKind.Backdrop, it) },
+        poster = item.imageTags[ImageKind.Primary]?.let { TitleImage(item.id, ImageKind.Primary, it) },
         stats =
             SeriesStats(
                 rating = item.communityRating,
