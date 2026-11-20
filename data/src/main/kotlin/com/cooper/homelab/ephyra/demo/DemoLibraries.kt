@@ -5,7 +5,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import java.util.UUID
 
@@ -52,12 +51,11 @@ internal class DemoLibraries : DemoState {
                 val type = library.string("CollectionType")
                 type?.let { put("CollectionType", it) }
                 val id = library.string("ItemId").orEmpty()
-                // Movies has all three pictures, as a library with artwork does; every other library has only a Primary.
-                putJsonObject("ImageTags") {
-                    put("Primary", "p-$id")
-                    if (type == "movies") put("Thumb", "t-$id")
-                }
-                if (type == "movies") putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id")) }
+                // A stock library has only a Primary after its first scan, the picture Jellyfin generates with the name drawn in; a
+                // Thumb or a Backdrop comes from artwork the owner uploads. The tag carries the library's current name, so its picture
+                // follows a rename and a new library gets one of its own: a tag is only a cache key, and a renamed library is a new key.
+                val name = library.string("Name").orEmpty()
+                putJsonObject("ImageTags") { put("Primary", "p-$id-$name") }
             }
         }
 

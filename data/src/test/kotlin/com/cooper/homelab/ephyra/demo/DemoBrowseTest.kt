@@ -47,12 +47,11 @@ class DemoBrowseTest {
     private suspend fun library(kind: LibraryKind) = libraries.views().first { it.kind == kind }
 
     @Test
-    fun `the demo's movies library has a Primary, a Thumb and a backdrop, and its series library only a Primary`() =
+    fun `every demo library has a Primary only, as a stock library does after its first scan`() =
         runBlocking {
-            val movies = library(LibraryKind.Movies)
-            val shows = library(LibraryKind.TvShows)
-            assertTrue(movies.primaryImageTag != null && movies.thumbImageTag != null && movies.backdropImageTag != null)
-            assertTrue(shows.primaryImageTag != null && shows.thumbImageTag == null && shows.backdropImageTag == null)
+            libraries.views().forEach { view ->
+                assertTrue(view.name, view.primaryImageTag != null && view.thumbImageTag == null && view.backdropImageTag == null)
+            }
         }
 
     @Test
