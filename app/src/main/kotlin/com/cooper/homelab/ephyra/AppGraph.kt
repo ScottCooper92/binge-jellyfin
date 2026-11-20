@@ -27,6 +27,8 @@ import com.cooper.homelab.core.notifications.DataStoreFeedCursorStore
 import com.cooper.homelab.core.notifications.FeedCursorStore
 import com.cooper.homelab.core.notifications.PollScheduler
 import com.cooper.homelab.core.presentation.appsettings.LicenceSource
+import com.cooper.homelab.core.presentation.search.DataStoreQueryHistory
+import com.cooper.homelab.core.presentation.search.QueryHistory
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
@@ -251,6 +253,14 @@ class AppGraph(
                 produceFile = { appContext.preferencesDataStoreFile("recent_searches") },
             ),
         )
+    }
+
+    /**
+     * The queries the user searched in the Search tab, kept on this device alone and one list per server. The file (`search_history`) and the
+     * key prefix (`search_query`) are on-disk names: a different one would lose what the user searched.
+     */
+    val queryHistory: QueryHistory by lazy {
+        DataStoreQueryHistory(dataStore("search_history"), serverIdentity::currentServerId, "search_query")
     }
 
     val notifier: AndroidNotifier by lazy { AndroidNotifier(appContext) }

@@ -83,4 +83,18 @@
         <item quantity="one">%1$d applied</item>
         <item quantity="other">%1$d applied</item>
     </plurals>
+    <string name="client_search_title">Search</string>
+    <string name="client_search_placeholder">Search your library</string>
+    <string name="client_search_idle_message">Find a movie, a series, an episode or a person.</string>
+    <string name="client_search_type_all">All</string>
+    <string name="client_search_type_movies">Movies</string>
+    <string name="client_search_type_series">Series</string>
+    <string name="client_search_type_episodes">Episodes</string>
+    <string name="client_search_type_people">People</string>
+    <string name="client_search_kind_movie">Movie</string>
+    <string name="client_search_kind_series">Series</string>
+    <string name="client_search_kind_episode">Episode</string>
+    <string name="client_search_episode_of">%1$s · S%2$d, E%3$d</string>
+    <string name="client_search_no_results">Nothing matches “%1$s”.</string>
+    <string name="client_search_type_empty">None of the results so far is of this kind.</string>
 </resources>

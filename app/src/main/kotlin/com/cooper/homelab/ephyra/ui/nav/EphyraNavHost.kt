@@ -56,7 +56,7 @@ import com.cooper.homelab.ephyra.ui.console.rememberConsolePaneStrategy
  * empty. On a narrow window each is the whole window. On a landscape tablet the page is given two thirds of the window
  * ([ConsoleThreePaneStrategy]), for a list and what it opened.
  *
- * [homeTab] and [librariesTab] are the Home and Libraries tabs' screens, drawn in place of their placeholders once given. [library] is
+ * [homeTab], [librariesTab] and [searchTab] are the Home, Libraries and Search tabs' screens, drawn in place of their placeholders once given. [library] is
  * a library's screen, opened from the Libraries tab as a [LibraryRoute] above the shell: it takes the whole window at every width. [title] is
  * the same for a title's page, a [TitleRoute] above the shell.
  *
@@ -78,6 +78,7 @@ fun EphyraNavHost(
     resolved: Boolean = true,
     homeTab: (@Composable () -> Unit)? = null,
     librariesTab: (@Composable () -> Unit)? = null,
+    searchTab: (@Composable () -> Unit)? = null,
     library: @Composable (LibraryRoute) -> Unit = {},
     title: @Composable (TitleRoute) -> Unit = {},
 ) {
@@ -98,8 +99,7 @@ fun EphyraNavHost(
     val tabsNow by rememberUpdatedState(tabs)
     val signedOutNow by rememberUpdatedState(signedOut)
     val homeNow by rememberUpdatedState(home)
-    val homeTabNow by rememberUpdatedState(homeTab)
-    val librariesTabNow by rememberUpdatedState(librariesTab)
+    val screens by rememberUpdatedState(TabScreens(homeTab, librariesTab, searchTab))
     val libraryNow by rememberUpdatedState(library)
     val titleNow by rememberUpdatedState(title)
     val defaultPageNow by rememberUpdatedState(defaultPage)
@@ -143,7 +143,7 @@ fun EphyraNavHost(
                     NavEntry(
                         key,
                         metadata = ShellPane,
-                    ) { ShellEntry(tabsNow, signedInNow, backStack, hubBeside, homeNow, defaultPageNow, homeTabNow, librariesTabNow) }
+                    ) { ShellEntry(tabsNow, signedInNow, backStack, hubBeside, homeNow, defaultPageNow, screens) }
                 is PageRoute ->
                     // Keyed by the opening, so a page opened on another row is the same entry and keeps its state.
                     NavEntry(key, contentKey = "page-${key.opening}", metadata = pageMetadata(key.page)) {
@@ -186,6 +186,13 @@ fun EphyraNavHost(
     )
 }
 
+/** The screens the tabs show, once each has one: a tab with none shows its placeholder. */
+private class TabScreens(
+    val home: (@Composable () -> Unit)?,
+    val libraries: (@Composable () -> Unit)?,
+    val search: (@Composable () -> Unit)?,
+)
+
 /**
  * The shell's entry: the bar or rail over the tabs, with the console's home as the Server tab. A page open beside the home is drawn
  * inside the Server tab by `ShellPanesStrategy`, so while another tab shows it is parked on the Server tab's own stack, and put back
@@ -199,8 +206,7 @@ private fun ShellEntry(
     hubBeside: Boolean,
     home: @Composable () -> Unit,
     defaultPage: @Composable () -> Unit,
-    homeTab: (@Composable () -> Unit)?,
-    librariesTab: (@Composable () -> Unit)?,
+    screens: TabScreens,
 ) {
     if (tabs == null || !signedIn) return
     val stack = backStack.toList()
@@ -210,8 +216,9 @@ private fun ShellEntry(
     EphyraTabShell(
         tabs,
         backToStart = nothingOpenBeside(stack, { it == ShellRoute }, ::isStandIn),
-        home = homeTab,
-        libraries = librariesTab,
+        home = screens.home,
+        libraries = screens.libraries,
+        search = screens.search,
     ) {
         ServerPanes(
             home = {

@@ -55,6 +55,7 @@ import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
+import com.cooper.homelab.ephyra.ui.client.SearchTab
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
 import com.cooper.homelab.ephyra.ui.confirmTakeBack
@@ -78,6 +79,7 @@ import com.cooper.homelab.ephyra.ui.nav.openLibrary
 import com.cooper.homelab.ephyra.ui.nav.openPage
 import com.cooper.homelab.ephyra.ui.nav.openPageItem
 import com.cooper.homelab.ephyra.ui.nav.openPerson
+import com.cooper.homelab.ephyra.ui.nav.openSearchHit
 import com.cooper.homelab.ephyra.ui.nav.openSubItem
 import com.cooper.homelab.ephyra.ui.nav.openTitle
 import com.cooper.homelab.ephyra.ui.nav.openings
@@ -269,6 +271,18 @@ private fun LibraryRouteScreen(
     }
 }
 
+/** The Search tab, for the user the session belongs to: a result opens its page above the bar. */
+@Composable
+private fun SearchTabRoute(
+    state: UiState,
+    graph: AppGraph,
+    backStack: NavBackStack<NavKey>,
+) {
+    (state as? UiState.SignedIn)?.let { signed ->
+        SearchTab(graph, signed.profile, onOpen = { kind, id -> backStack.openSearchHit(kind, id) })
+    }
+}
+
 /** The app's screens: the sign-in steps, then the home, and the pages and items open over it, on [backStack]. */
 @Composable
 internal fun ConsoleHost(
@@ -287,12 +301,8 @@ internal fun ConsoleHost(
     RestartOnGateChange(clientResolved, tabs, backStack, offTab = EphyraTab.Server)
     // A session that ends takes what the Server tab parked with it, so the next account does not find it.
     RestartOnSessionEnd(state.connected(), tabs, backStack)
-    ReviewPromptOnReturnToRoot(
-        connected = state.connected(),
-        // Nothing is open over the root: no page and no library.
-        atRoot = backStack.size <= 1,
-        reviewPrompt = graph.reviewPrompt,
-    )
+    // At the root when nothing is open over it: no page and no library.
+    ReviewPromptOnReturnToRoot(connected = state.connected(), atRoot = backStack.size <= 1, reviewPrompt = graph.reviewPrompt)
     EphyraNavHost(
         backStack = backStack,
         signedIn = signedIn,
@@ -310,6 +320,7 @@ internal fun ConsoleHost(
         librariesTab = {
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
         },
+        searchTab = { SearchTabRoute(state, graph, backStack) },
         library = { route -> LibraryRouteScreen(state, route, graph, backStack) },
         title = { route ->
             val signed = state as? UiState.SignedIn

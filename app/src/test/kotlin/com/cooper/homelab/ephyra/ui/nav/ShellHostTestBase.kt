@@ -46,6 +46,7 @@ abstract class ShellHostTestBase {
     protected fun host(
         homeTab: (@Composable () -> Unit)? = null,
         librariesTab: (@Composable () -> Unit)? = null,
+        searchTab: (@Composable () -> Unit)? = null,
         library: @Composable (LibraryRoute) -> Unit = {},
         title: @Composable (TitleRoute) -> Unit = {},
     ) {
@@ -64,6 +65,7 @@ abstract class ShellHostTestBase {
                     tabs = shell.takeIf { gate ?: true },
                     homeTab = homeTab,
                     librariesTab = librariesTab,
+                    searchTab = searchTab,
                     library = library,
                     title = title,
                     onBack = { backStack.closeTop() },
