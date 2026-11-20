@@ -8,6 +8,7 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.player.api.AudioCodec
 import com.cooper.homelab.player.api.PlayTitle
 import com.cooper.homelab.player.api.PlaybackDeviceProfile
+import com.cooper.homelab.player.api.SubtitlePreference
 import com.cooper.homelab.player.api.TrackChoice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -221,6 +222,50 @@ class StreamChoiceTest {
         streams(audio(1, "eng", "Stereo", default = true), audio(2, "eng", "Commentary"))
         mint(StreamChoice(TrackChoice("en", null), null, audioStream = 2))
         assertEquals("2", playbackInfoAsks().last().url.queryParameter("audioStreamIndex"))
+    }
+
+    private fun defaults(
+        audio: Int,
+        subtitle: Int?,
+    ) {
+        val subtitleDefault = subtitle?.let { ""","DefaultSubtitleStreamIndex":$it""" }.orEmpty()
+        jellyfin.playbackInfo =
+            """{"PlaySessionId":"p","MediaSources":[{"Id":"source-1","Container":"mkv","SupportsDirectPlay":true,""" +
+            """"SupportsDirectStream":true,"DefaultAudioStreamIndex":$audio$subtitleDefault,"MediaStreams":[""" +
+            """{"Type":"Audio","Index":1,"Language":"eng","Title":"Stereo"},""" +
+            """{"Type":"Audio","Index":2,"Language":"spa","Title":"Doblaje"},""" +
+            """{"Type":"Subtitle","Index":3,"Language":"eng","Title":"English","DisplayTitle":"English - SUBRIP","IsExternal":false,""" +
+            """"DeliveryMethod":"External","DeliveryUrl":"/s/3.srt","Codec":"subrip"},""" +
+            """{"Type":"Subtitle","Index":4,"Language":"spa","Title":"","DisplayTitle":"Spanish - SUBRIP","IsExternal":true,""" +
+            """"DeliveryMethod":"External","DeliveryUrl":"/s/4.srt","Codec":"subrip"}]}]}"""
+    }
+
+    @Test
+    fun `a first source asks the player to open on the audio and subtitle the server names for this user`() {
+        defaults(audio = 2, subtitle = 3)
+        val request = mint(null).request
+        assertEquals(TrackChoice("spa", "Doblaje"), request.preferredAudio)
+        assertEquals(SubtitlePreference.Track(TrackChoice("eng", "English")), request.preferredSubtitle)
+    }
+
+    @Test
+    fun `a subtitle file beside the video is named by the label the player lists it under`() {
+        defaults(audio = 1, subtitle = 4)
+        assertEquals(SubtitlePreference.Track(TrackChoice("spa", "Spanish - SUBRIP")), mint(null).request.preferredSubtitle)
+    }
+
+    @Test
+    fun `where the server names no subtitle the player is asked for none`() {
+        defaults(audio = 1, subtitle = null)
+        assertEquals(SubtitlePreference.Off, mint(null).request.preferredSubtitle)
+    }
+
+    @Test
+    fun `a request made on a remembered choice leaves the choice to the sitting`() {
+        defaults(audio = 2, subtitle = 3)
+        val request = mint(StreamChoice(TrackChoice("en", null), null)).request
+        assertNull(request.preferredAudio)
+        assertNull(request.preferredSubtitle)
     }
 
     @Test
