@@ -94,7 +94,8 @@ class JellyfinSourceMinter(
     /**
      * Asks again, naming the streams of [choice], when the server's first answer is on others: the server picks the tracks of a transcode, so
      * the choice has to be in the request. Null, so the first answer stands, when it already matches, the choice names nothing this source
-     * has, the server refused, or the second ask fails: a track hint never stops a play.
+     * has, the server refused, the only difference is subtitles the server burns in, or the second ask fails or has no playable source: a
+     * track hint never stops a play.
      */
     private suspend fun withChoice(
         item: PlayItem,
@@ -108,7 +109,7 @@ class JellyfinSourceMinter(
         val wanted = source.streamIndexes(choice)
         val chosen = source.chosenIndexes()
         val audio = wanted.audio?.takeIf { it != chosen.audio }
-        val subtitle = wanted.subtitle?.takeIf { it != chosen.subtitle }
+        val subtitle = wanted.subtitle?.takeIf { it != chosen.subtitle && !(it == SUBTITLES_OFF && source.burnsInSubtitle()) }
         if (audio == null && subtitle == null) return null
         val streams =
             buildMap {
@@ -116,7 +117,9 @@ class JellyfinSourceMinter(
                 audio?.let { put("audioStreamIndex", it.toString()) }
                 subtitle?.let { put("subtitleStreamIndex", it.toString()) }
             }
-        return attempt { client.playbackInfo(userId, item.itemId, body, resume * TICKS_PER_MILLI, streams) }.getOrNull()
+        return attempt { client.playbackInfo(userId, item.itemId, body, resume * TICKS_PER_MILLI, streams) }
+            .getOrNull()
+            ?.takeIf { it.string("ErrorCode") == null && it.array("MediaSources").firstOrNull() is JsonObject }
     }
 
     /** The item's chapters, as the page reads them; none when the read fails, since a play does not need them. */

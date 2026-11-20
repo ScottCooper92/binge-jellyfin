@@ -38,6 +38,17 @@ internal fun JsonObject.chosenIndexes(): StreamIndexes =
         subtitle = this["DefaultSubtitleStreamIndex"]?.jsonPrimitive?.intOrNull ?: SUBTITLES_OFF,
     )
 
+/**
+ * Whether the server burns its default subtitle into the video of a transcode (`Encode`). The player never has that track, so what it
+ * says of subtitles says nothing of it: a "subtitles off" from it is not the user's.
+ */
+internal fun JsonObject.burnsInSubtitle(): Boolean {
+    val index = this["DefaultSubtitleStreamIndex"]?.jsonPrimitive?.intOrNull ?: return false
+    return array("MediaStreams").filterIsInstance<JsonObject>().any {
+        it.string("Type") == "Subtitle" && it["Index"]?.jsonPrimitive?.intOrNull == index && it.string("DeliveryMethod") == "Encode"
+    }
+}
+
 private fun JsonObject.indexOf(
     type: String,
     choice: TrackChoice,

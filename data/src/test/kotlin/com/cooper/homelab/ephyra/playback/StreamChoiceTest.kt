@@ -119,6 +119,36 @@ class StreamChoiceTest {
     }
 
     @Test
+    fun `subtitles the server burns into the video are not turned off by a player that never had them`() {
+        streams(
+            audio(1, "eng", default = true),
+            """{"Type":"Subtitle","Index":3,"Language":"eng","DeliveryMethod":"Encode","Codec":"pgssub"}""",
+        )
+        jellyfin.playbackInfo =
+            jellyfin.playbackInfo.replace("\"DefaultAudioStreamIndex\":1", "\"DefaultAudioStreamIndex\":1,\"DefaultSubtitleStreamIndex\":3")
+        mint(StreamChoice(TrackChoice("en", null), null))
+        assertEquals(1, playbackInfoAsks().size)
+    }
+
+    @Test
+    fun `a second answer that cannot be played leaves the first, and the mint still succeeds`() {
+        streams(audio(1, "eng", default = true), audio(2, "spa"))
+        jellyfin.streamPlaybackInfo = """{"ErrorCode":"NoCompatibleStream","MediaSources":[]}"""
+        val minted = mint(StreamChoice(TrackChoice("es", null), null))
+        assertEquals(2, playbackInfoAsks().size)
+        assertEquals(
+            "the first answer's source",
+            "source-1",
+            minted.request.source.url
+                .substringAfter("mediaSourceId=")
+                .substringBefore('&'),
+        )
+
+        jellyfin.streamPlaybackInfo = """{"PlaySessionId":"p","MediaSources":[]}"""
+        mint(StreamChoice(TrackChoice("es", null), null))
+    }
+
+    @Test
     fun `a language is one code however the tag or the file spells it`() {
         assertEquals("eng", languageCode("en"))
         assertEquals("eng", languageCode("eng"))
