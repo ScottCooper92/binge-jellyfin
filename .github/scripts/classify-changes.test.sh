@@ -49,6 +49,7 @@ check "the client module's tests"    "true false false"  client/src/test/kotlin/
 check "the client module's build file" "true true true"   client/build.gradle.kts
 check "the design system pin"      "true true true"    design-system
 check "the homelab-core pin"      "true true true"    homelab-core
+check "the homelab-player pin"    "true true true"    homelab-player
 check "the companions pin"         "true false true"   binge-companions
 # A rename shows as both paths (the diff runs with --no-renames), so a source file moved into docs is not docs-only.
 check "a source file renamed into docs" "true true false" "$K/ui/SignedInHome.kt" docs/SignedInHome.md

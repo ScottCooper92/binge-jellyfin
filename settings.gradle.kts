@@ -73,6 +73,15 @@ includeBuild("homelab-core") {
     }
 }
 
+// The shared player, as source the same way (a private submodule). Its settings leave out its own copy of the
+// design system when a build includes it, so it resolves the one substituted above.
+includeBuild("homelab-player") {
+    dependencySubstitution {
+        substitute(module("com.cooper.homelab:player")).using(project(":player"))
+        substitute(module("com.cooper.homelab:player-api")).using(project(":player-api"))
+    }
+}
+
 include(":app")
 include(":data")
 include(":client")
