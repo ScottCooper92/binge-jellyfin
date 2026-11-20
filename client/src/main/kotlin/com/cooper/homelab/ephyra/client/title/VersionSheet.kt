@@ -3,12 +3,14 @@ package com.cooper.homelab.ephyra.client.title
 import android.content.res.Resources
 import android.text.format.Formatter
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeChoice
 import com.binge.designsystem.component.BingeChoiceList
 import com.binge.designsystem.component.BingeChoiceSheet
+import com.binge.designsystem.component.BingeChoiceSheetContent
 import com.cooper.homelab.ephyra.client.R
 
 private const val SEPARATOR = " · "
@@ -25,26 +27,46 @@ fun VersionSheet(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Read first, so a change of configuration recomposes the sheet and its strings follow the new locale.
-    LocalConfiguration.current
-    val context = LocalContext.current
-    val resources = context.resources
-    val choices =
-        versions.mapIndexed { index, version ->
-            BingeChoice(
-                value = version.id,
-                label = versionTitle(version, index, resources),
-                supportingText = versionSummary(version, resources) { Formatter.formatFileSize(context, it) },
-                supportingMaxLines = SUMMARY_LINES,
-            )
-        }
     BingeChoiceSheet(
         title = stringResource(R.string.client_movie_versions_title),
-        choices = BingeChoiceList.Ready(choices),
+        choices = BingeChoiceList.Ready(versionChoices(versions)),
         selected = selected,
         onSelect = onSelect,
         onDismissRequest = onDismiss,
     )
+}
+
+/** The sheet's body without its modal, so a frame can show it. [VersionSheet] is this inside the design system's sheet. */
+@Composable
+fun VersionSheetContent(
+    versions: List<VersionUi>,
+    selected: String?,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BingeChoiceSheetContent(
+        title = stringResource(R.string.client_movie_versions_title),
+        choices = BingeChoiceList.Ready(versionChoices(versions)),
+        selected = selected,
+        onSelect = onSelect,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun versionChoices(versions: List<VersionUi>): List<BingeChoice<String>> {
+    // Read first, so a change of configuration recomposes the sheet and its strings follow the new locale.
+    LocalConfiguration.current
+    val context = LocalContext.current
+    val resources = context.resources
+    return versions.mapIndexed { index, version ->
+        BingeChoice(
+            value = version.id,
+            label = versionTitle(version, index, resources),
+            supportingText = versionSummary(version, resources) { Formatter.formatFileSize(context, it) },
+            supportingMaxLines = SUMMARY_LINES,
+        )
+    }
 }
 
 private const val SUMMARY_LINES = 3
