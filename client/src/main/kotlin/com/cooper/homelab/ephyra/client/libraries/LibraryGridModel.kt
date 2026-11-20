@@ -6,16 +6,20 @@ import com.cooper.homelab.core.presentation.browse.SortFilterQuery
 import com.cooper.homelab.core.presentation.browse.SortFilterState
 import com.cooper.homelab.core.presentation.paging.GridState
 import com.cooper.homelab.core.presentation.paging.PagedList
+import com.cooper.homelab.core.presentation.paging.PagedListState
 import com.cooper.homelab.core.presentation.paging.ResultPage
 import com.cooper.homelab.core.presentation.paging.toGridState
 import com.cooper.homelab.ephyra.browse.BrowseItem
 import com.cooper.homelab.ephyra.browse.FilterChoices
+import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemFilters
+import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.browse.ItemSort
 import com.cooper.homelab.ephyra.browse.ItemsRepository
 import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.LibraryRepository
 import com.cooper.homelab.ephyra.browse.LibraryView
+import com.cooper.homelab.ephyra.browse.PosterRef
 import com.cooper.homelab.ephyra.client.TabModel
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -25,8 +29,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 /**
  * What sits above a library's grid in every state: its name, the sort and filters applied, and what the library offers to filter by
@@ -38,6 +46,8 @@ data class LibraryGridControls(
     val choices: FilterChoices?,
     /** What the library holds, once it has been read: a box-set library's sheet offers only the order and Favourites. */
     val kind: LibraryKind? = null,
+    /** The poster a box set with no picture of its own is drawn with, by the box set's id, for those read so far. */
+    val posters: Map<String, PosterRef> = emptyMap(),
 )
 
 /** What a library's grid shows: the paged titles, or why there are none, with the [LibraryGridControls] in every state. */
@@ -62,8 +72,12 @@ class LibraryGridModel(
 ) : TabModel<LibraryGridUiState> {
     private val sortFilter = SortFilterState(initial.filters, initial.sort)
     private val choices = MutableStateFlow<FilterChoices?>(null)
-    private val libraryName = MutableStateFlow<String?>(null)
-    private val libraryKind = MutableStateFlow<LibraryKind?>(null)
+    private val header = MutableStateFlow(LibraryHeader(null, null))
+
+    /** The poster each box set with no picture of its own is drawn with, by id: null once read and none was found, so it is not read again. */
+    private val resolved = MutableStateFlow<Map<String, PosterRef?>>(emptyMap())
+    private val posterReads = Semaphore(MAX_POSTER_READS)
+    private val asked = mutableSetOf<String>()
 
     /** The library once it has been read, so a retry reads it again only if the first read failed. */
     private var library: LibraryView? = null
@@ -82,8 +96,9 @@ class LibraryGridModel(
         )
 
     override val state: StateFlow<LibraryGridUiState> =
-        combine(list.state, sortFilter.query, choices, libraryName, libraryKind) { page, query, offered, name, kind ->
-            page.toGridState(LibraryGridControls(name, LibraryFilterDraft(query.sort, query.filters), offered, kind))
+        combine(list.state.onEach(::resolvePosters), sortFilter.query, choices, header, resolved) { page, query, offered, head, posters ->
+            val found = posters.mapNotNull { (id, ref) -> ref?.let { id to it } }.toMap()
+            page.toGridState(LibraryGridControls(head.name, LibraryFilterDraft(query.sort, query.filters), offered, head.kind, found))
         }.stateIn(scope, SharingStarted.Lazily, GridState.Loading(LibraryGridControls(null, initial, null)))
 
     /** Whether a pull to refresh is reading the first page again behind the rows, which stay until it answers. */
@@ -115,14 +130,39 @@ class LibraryGridModel(
         scope.launch(dispatcher) { attempt { items.filterChoices(library()) }.onSuccess { choices.value = it } }
     }
 
+    /** The poster [item] is drawn with: its own, or the one read for it, or null while it is not read or there is none. */
+    fun posterOf(item: BrowseItem): PosterRef? = resolved.value[item.id]
+
+    /**
+     * A page landed: each box set in it with no picture of its own, and not yet asked about, gets its first part's poster read, a few at a
+     * time. The card shows its placeholder until then, and a read that fails leaves it, for the rest of the session: it is only a picture.
+     */
+    private fun resolvePosters(page: PagedListState<BrowseItem>) {
+        val shown = (page as? PagedListState.Ready)?.items.orEmpty()
+        shown.filter { it.kind == ItemKind.BoxSet && it.imageTags[ImageKind.Primary] == null }.forEach { boxSet ->
+            if (!asked.add(boxSet.id)) return@forEach
+            scope.launch(dispatcher) {
+                val poster = posterReads.withPermit { attempt { items.firstPoster(boxSet) }.getOrNull() }
+                resolved.update { it + (boxSet.id to poster) }
+            }
+        }
+    }
+
     private suspend fun library(): LibraryView =
         library ?: libraries.views().firstOrNull { it.id == libraryId }?.also {
             library = it
-            libraryName.value = it.name
-            libraryKind.value = it.kind
+            header.value = LibraryHeader(it.name, it.kind)
         } ?: throw JellyfinHttpException(NOT_FOUND, "/Library/$libraryId")
 
+    /** What is known of the library once it has been read. */
+    private data class LibraryHeader(
+        val name: String?,
+        val kind: LibraryKind?,
+    )
+
     private companion object {
+        /** How many box sets' posters are read at once: a library of hand-made box sets would otherwise ask for dozens together. */
+        const val MAX_POSTER_READS = 4
         const val NOT_FOUND = 404
     }
 }
