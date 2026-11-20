@@ -41,6 +41,8 @@
     <string name="client_title_job_writer">Writer</string>
     <string name="client_title_job_producer">Producer</string>
     <string name="client_title_job_composer">Composer</string>
+    <string name="client_collection_watched">%1$d of %2$d watched</string>
+    <string name="client_collection_empty">There are no titles in this collection on your server.</string>
     <string name="client_title_media_info">Media information</string>
     <string name="client_title_media_container">Container</string>
     <string name="client_title_media_size">Size</string>

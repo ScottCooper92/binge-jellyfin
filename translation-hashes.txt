@@ -1071,7 +1071,9 @@ app:setup_insecure_warning  b08aaaa9819c
 app:setup_password  e7cf3ef4f17c
 app:setup_pick_user  dbdbe08dd555
 app:setup_quick_connect  d52940712fbe
-app:setup_quick_connect_hint  471f6e3b2f15
+app:setup_quick_connect_get_code  b6dbd8215798
+app:setup_quick_connect_hint  54dd3df7f89a
+app:setup_quick_connect_tab  d15125b20094
 app:setup_searching  fad10c01b7c9
 app:setup_server_body  3219d0cc0f0a
 app:setup_server_field  8be89710b2f1
@@ -1420,6 +1422,8 @@ app:users_unrated_series  e714ae21d3b4
 app:users_unrated_trailer  099cdbe8994e
 app:users_video_transcoding  bf238a29e9bf
 app:users_you  71897d3f4628
+client:client_collection_empty  cdbbd00f7d70
+client:client_collection_watched  c6e615564b67
 client:client_home_caption_episode  bf48a13f757a
 client:client_home_empty  a18bce91f48b
 client:client_home_loading_row  dc380888c4e2

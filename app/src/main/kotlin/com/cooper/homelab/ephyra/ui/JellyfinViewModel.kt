@@ -271,15 +271,10 @@ sealed interface UiState {
          * on, and the server's own refusal when a code is asked for stays the backstop.
          */
         val quickConnectOn: Boolean = true,
+        /** The method the tab row has chosen: Quick Connect when true, the password's form when not. */
+        val quickConnectSelected: Boolean = false,
     ) : Setup {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
-
-        /**
-         * Whether the sign-in step says what Quick Connect is for. Only while Quick Connect is untried: the server's answer that it is
-         * off is read when the step opens, so the hint is never shown for a server that has it off, and once a code has failed or is
-         * on its way the screen already says what to do.
-         */
-        val showsQuickConnectHint: Boolean get() = quickConnectOn && quickConnectError == null && !gettingCode
     }
 
     /** The setup wizard of a server that has not finished its first-run setup, reached from the sign-in step's notice. */
@@ -394,7 +389,8 @@ class JellyfinViewModel(
             refresh = { signedIn.refresh() },
         )
 
-    private val actions = SetupActions(setup, _state, viewModelScope, { signedInFlow.value }, discover)
+    /** What the setup screens ask of the setup half. The tab row and a code's Cancel go to it directly, as the class has no room for more. */
+    internal val actions = SetupActions(setup, _state, viewModelScope, { signedInFlow.value }, discover)
 
     /** The setup wizard for a server that has not finished its first-run setup. */
     val startup =
@@ -415,8 +411,19 @@ class JellyfinViewModel(
     init {
         viewModelScope.launch {
             val session = sessions.current()
-            // A session is the app's own state to come back to; the steps before one are what the saved draft puts back.
-            if (session != null) setup.restore(session) else drafts.restoreInto(setup)
+            // A session is the app's own state to come back to. Without one, a Quick Connect wait the last process left is picked
+            // up where it was; with none, the steps before a session are what the saved draft puts back.
+            // Finding the wait, and reading and decrypting it (a Keystore call), is disk and crypto work: it runs on the IO dispatcher,
+            // and the screen shows its loading step until it has said what comes back, so no frame waits on the main thread for it.
+            val waiting = session == null && withContext(dispatcher) { linkStash.read() != null }
+            when {
+                session != null -> {
+                    withContext(dispatcher) { linkStash.clear() }
+                    setup.restore(session)
+                }
+                waiting -> withContext(dispatcher) { setup.links.restore() }
+                else -> drafts.restoreInto(setup)
+            }
             // Nothing is kept once a session exists: the draft is for the steps that lead to one.
             drafts.keep(combine(setup.flow.draft, signedInFlow) { draft, signedIn -> draft.takeIf { signedIn == null } })
         }

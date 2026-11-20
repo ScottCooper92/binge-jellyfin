@@ -52,7 +52,9 @@
     <string name="setup_password">Password</string>
     <string name="setup_sign_in">Sign in</string>
     <string name="setup_quick_connect">Use Quick Connect</string>
-    <string name="setup_quick_connect_hint">No password here? Quick Connect signs you in from a Jellyfin app you\'re already signed in to.</string>
+    <string name="setup_quick_connect_hint">Signs you in from a Jellyfin app you\'re already signed in to. You get a code to enter there.</string>
+    <string name="setup_quick_connect_tab">Quick Connect</string>
+    <string name="setup_quick_connect_get_code">Get a code</string>
 
     <string name="quick_connect_title">Enter this code</string>
     <string name="quick_connect_body">In a Jellyfin app you\'re signed in to, open your profile, then Quick Connect, and enter the code.</string>

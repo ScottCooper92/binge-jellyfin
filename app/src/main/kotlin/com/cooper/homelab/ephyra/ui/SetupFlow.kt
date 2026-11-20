@@ -44,7 +44,7 @@ internal class SetupFlow(
     localNetwork: LocalNetworkPermission,
     cleartext: CleartextConsent,
     cipher: SecretCipher,
-    linkStash: LinkStash,
+    private val linkStash: LinkStash,
     quickConnectPollMillis: Long,
     private val reports: SignInReports,
     private val state: MutableStateFlow<UiState.Setup>,
@@ -101,6 +101,9 @@ internal class SetupFlow(
     /** What the password form held when Quick Connect was chosen, so leaving Quick Connect gives it back. */
     var typed: Map<String, String> = emptyMap()
 
+    /** The tab the sign-in step opens on once the server has been read, for a restore; used once, only for that server, and only if it offers it. */
+    var firstMode: SetupMode? = null
+
     /** The name to put in the sign-in step once the server has been read again: the account the wizard made, whose sign-in failed. */
     private var pendingName: String? = null
 
@@ -126,6 +129,16 @@ internal class SetupFlow(
         if (connect is ConnectState.SignIn && connect.form.mode == null) {
             flow.selectMode(SetupMode.Password)
             return
+        }
+        // A restore opens on the tab the killed process was on, once the server has been read and still offers it.
+        if (connect is ConnectState.SignIn) {
+            firstMode?.let { first ->
+                firstMode = null
+                if (first in connect.server.modes && connect.form.mode != first) {
+                    flow.selectMode(first)
+                    return
+                }
+            }
         }
         if (connect is ConnectState.SignIn) {
             pendingName?.let { name ->
@@ -175,6 +188,8 @@ internal class SetupFlow(
 
     /** A sign-in has ended in a kept session: the signed-in state takes the screen, and the steps that led here are gone. */
     private fun publish(begun: UiState.SignedIn) {
+        // A wait for a code that ends in a session has nothing left to keep, and none is left once the session shows.
+        linkStash.clear()
         // The server step that comes back when the session ends starts at this server's address, from its first frame.
         flow.editAddress(addressAfter(begun.session.baseUrl))
         signedInFlow.value = begun
@@ -193,9 +208,12 @@ internal class SetupFlow(
 
     /** The session has ended: the server step takes the screen with the address it had, and the signed-in state goes. */
     fun leave(baseUrl: String) {
+        // Nothing of a sign-in is kept past the session it ended in.
+        linkStash.clear()
         signedInFlow.value = null
         state.value = UiState.Loading
         typed = emptyMap()
+        firstMode = null
         flow.editAddress(addressAfter(baseUrl))
         flow.changeServer()
         // The flow may already have been at this step, in which case it has nothing new to say.

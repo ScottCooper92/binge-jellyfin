@@ -1,7 +1,9 @@
 package com.cooper.homelab.ephyra.ui
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.binge.companion.kit.SecretCipher
+import com.cooper.homelab.core.presentation.connect.LinkStash
 import com.cooper.homelab.core.server.connection.CallResult
 import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.CleartextGate
@@ -26,6 +28,9 @@ import com.cooper.homelab.ephyra.testSessionStore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -45,6 +50,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -54,10 +60,13 @@ import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.net.ServerSocket
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLProtocolException
+import com.cooper.homelab.core.server.connection.SecretCipher as LibraryCipher
 
 /** Setup and settings against a fake server. The server calls run on a real IO thread, so each step waits for its state. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -81,7 +90,10 @@ class JellyfinViewModelTest {
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() {
+        teardown.close(jellyfin)
+        mainExecutor?.shutdownNow()
+    }
 
     @Volatile
     private var found: List<DiscoveredServer> = emptyList()
@@ -110,19 +122,22 @@ class JellyfinViewModelTest {
         over: Connection = connection,
         cleartext: CleartextConsent = CleartextConsent.None,
         savedState: SavedStateHandle = SavedStateHandle(),
+        linkStash: LinkStash = NoLinkStash,
+        cipher: LibraryCipher = PlainCipher.forLibrary(),
     ) = made(
         JellyfinViewModel(
             sessions,
             over,
             index,
             dispatcher = Dispatchers.IO,
-            cipher = PlainCipher.forLibrary(),
+            cipher = cipher,
             discover = { found },
             quickConnectPollMillis = 10L,
             analytics = analytics,
             onSessionEnded = { sessionsEnded.incrementAndGet() },
             cleartext = cleartext,
             savedState = savedState,
+            linkStash = linkStash,
         ),
     )
 
@@ -776,6 +791,60 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a kill on the Quick Connect tab reopens the sign-in step on that tab, with no code asked for`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(savedState = handle)
+        vm.toSignIn()
+        vm.await<UiState.SignIn>()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.await<UiState.SignIn> { it.quickConnectSelected }
+        runBlocking { withTimeout(10_000) { while (handle.get<Boolean>("setup_quick_connect") != true) delay(5) } }
+
+        val reopened = viewModel(savedState = handle.afterKill())
+
+        val step = reopened.await<UiState.SignIn> { it.quickConnectSelected }
+        assertNull("no code is asked for on the way back", step.quickConnectCode)
+        assertFalse(step.gettingCode)
+    }
+
+    @Test
+    fun `the tab restored for a server that was not reached is not carried to another server`() {
+        val handle =
+            SavedStateHandle(
+                mapOf(
+                    "setup_address" to "http://127.0.0.1:1",
+                    "setup_signing_in" to true,
+                    "setup_quick_connect" to true,
+                ),
+            )
+        val vm = viewModel(savedState = handle)
+        // Nothing answers at the restored address, so the sign-in step is never reached for it.
+        vm.await<UiState.EnterServer> { it.address == "http://127.0.0.1:1" && it.error != null }
+
+        vm.onAddress(jellyfin.baseUrl)
+        vm.connect()
+
+        assertFalse(vm.await<UiState.SignIn>().quickConnectSelected)
+    }
+
+    @Test
+    fun `a kill on the password tab reopens the sign-in step on the password tab`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(savedState = handle)
+        vm.toSignIn()
+        vm.await<UiState.SignIn>()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.await<UiState.SignIn> { it.quickConnectSelected }
+        vm.actions.selectMethod(quickConnect = false)
+        vm.await<UiState.SignIn> { !it.quickConnectSelected }
+        runBlocking { withTimeout(10_000) { while (handle.get<Boolean>("setup_quick_connect") != false) delay(5) } }
+
+        val reopened = viewModel(savedState = handle.afterKill())
+
+        assertFalse(reopened.await<UiState.SignIn>().quickConnectSelected)
+    }
+
+    @Test
     fun `nothing is kept once a session exists, and a saved draft does not override the session`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val handle = SavedStateHandle(mapOf("setup_address" to "http://elsewhere.example:8096", "setup_signing_in" to true))
@@ -1010,6 +1079,69 @@ class JellyfinViewModelTest {
         assertFalse(vm.await<UiState.SignIn> { !it.server.setupIncomplete }.server.setupIncomplete)
     }
 
+    /** A stash that lives as long as the test, so a second view model can find what the first left: a process that died and came back. */
+    private class MemoryStash : LinkStash {
+        @Volatile
+        var value: String? = null
+
+        override fun read(): String? = value
+
+        override fun write(value: String) {
+            this.value = value
+        }
+
+        override fun clear() {
+            value = null
+        }
+    }
+
+    private var mainExecutor: ExecutorService? = null
+
+    /**
+     * Main as a device has it: a thread of its own, which work resumes on. The class's own Main runs a coroutine on whichever thread
+     * resumes it, so work the view model hands to the IO dispatcher would come back to it there, and a test could not tell main-thread
+     * work from the rest. Ended with the test, after the teardown.
+     */
+    private fun useAMainThread() {
+        val executor = Executors.newSingleThreadExecutor { Thread(it, MAIN_THREAD) }
+        mainExecutor = executor
+        Dispatchers.setMain(executor.asCoroutineDispatcher())
+    }
+
+    /** A stash that notes whether each of its reads and clears ran on the main thread. */
+    private class ThreadNotingStash(
+        private val inner: MemoryStash,
+    ) : LinkStash {
+        val onMain = CopyOnWriteArrayList<Boolean>()
+
+        override fun read(): String? = inner.read().also { onMain += Thread.currentThread().name.startsWith(MAIN_THREAD) }
+
+        override fun write(value: String) = inner.write(value)
+
+        override fun clear() = inner.clear()
+    }
+
+    /** A cipher that notes whether each decryption ran on the main thread: it is a Keystore call. */
+    private class ThreadNotingCipher(
+        private val inner: LibraryCipher,
+    ) : LibraryCipher {
+        val decryptedOnMain = CopyOnWriteArrayList<Boolean>()
+
+        override fun encrypt(plaintext: String): String = inner.encrypt(plaintext)
+
+        override fun decrypt(ciphertext: String): String? =
+            inner.decrypt(ciphertext).also {
+                decryptedOnMain += Thread.currentThread().name.startsWith(MAIN_THREAD)
+            }
+    }
+
+    /** Starts Quick Connect on the sign-in step and returns once its code shows. */
+    private fun JellyfinViewModel.waitingForApproval(): UiState.SignIn {
+        toSignIn()
+        startQuickConnect()
+        return await<UiState.SignIn> { it.quickConnectCode != null }
+    }
+
     private class RecordingConsent : CleartextConsent {
         val granted = mutableListOf<String>()
 
@@ -1199,6 +1331,195 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `the Quick Connect tab shows its form without asking for a code, and the password tab brings back what was typed`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("sam")
+        vm.onPassword("hunter2")
+        vm.await<UiState.SignIn> { it.username == "sam" && it.password == "hunter2" }
+
+        vm.actions.selectMethod(quickConnect = true)
+        val tab = vm.await<UiState.SignIn> { it.quickConnectSelected }
+        assertNull("choosing the tab asks for no code", tab.quickConnectCode)
+        assertEquals("no request for a code was made", 0, jellyfin.hits("/QuickConnect/Initiate"))
+
+        vm.actions.selectMethod(quickConnect = false)
+        val back = vm.await<UiState.SignIn> { !it.quickConnectSelected }
+        assertEquals("sam", back.username)
+        assertEquals("hunter2", back.password)
+    }
+
+    @Test
+    fun `asking for a code from the Quick Connect tab shows it, and cancelling stays on the tab`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.await<UiState.SignIn> { it.quickConnectSelected }
+
+        vm.startQuickConnect()
+        assertTrue(vm.await<UiState.SignIn> { it.quickConnectCode != null }.quickConnectSelected)
+
+        vm.actions.cancelCode()
+        val stayed = vm.await<UiState.SignIn> { it.quickConnectCode == null }
+        assertTrue("cancelling a code does not leave the tab", stayed.quickConnectSelected)
+    }
+
+    @Test
+    fun `leaving the Quick Connect tab while a code waits lets the wait go`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectCode != null }
+
+        vm.actions.selectMethod(quickConnect = false)
+
+        val back = vm.await<UiState.SignIn> { !it.quickConnectSelected && it.quickConnectCode == null }
+        assertNull(back.quickConnectError)
+        assertFalse(back.gettingCode)
+    }
+
+    @Test
+    fun `choosing the tab already chosen changes nothing`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("sam")
+        vm.await<UiState.SignIn> { it.username == "sam" }
+
+        vm.actions.selectMethod(quickConnect = false)
+
+        assertEquals("sam", (vm.state.value as UiState.SignIn).username)
+    }
+
+    @Test
+    fun `a Quick Connect wait is kept while its code waits, and is gone once it has signed in`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.waitingForApproval()
+        assertNotNull("the wait is kept as soon as its code shows", stash.value)
+
+        jellyfin.quickConnectApproved = true
+        vm.await<UiState.SignedIn>()
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `cancelling a Quick Connect wait forgets it`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.waitingForApproval()
+        assertNotNull(stash.value)
+
+        vm.cancelQuickConnect()
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `a Quick Connect wait the server refuses or lets expire is forgotten`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.toSignIn()
+        // The code is given, and then every check of it is refused: the wait ends as an expired code does.
+        jellyfin.status["/QuickConnect/Connect"] = 500
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectError != null }
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `changing the server while a code waits forgets the wait`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.waitingForApproval()
+        assertNotNull(stash.value)
+
+        vm.changeServer(recheck = false)
+        vm.await<UiState.EnterServer>()
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `a record left behind is forgotten when a session exists at launch and when it ends`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val stash = MemoryStash().apply { value = "left by an earlier run" }
+        val vm = viewModel(linkStash = stash)
+        vm.await<UiState.SignedIn>()
+        assertNull("a launch with a session keeps no wait", stash.value)
+
+        stash.value = "left again"
+        vm.signOut()
+        vm.await<UiState.EnterServer>()
+
+        assertNull("signing out keeps none either", stash.value)
+    }
+
+    @Test
+    fun `a process killed while a code waits comes back to the same code, and signs in once it is approved`() {
+        val stash = MemoryStash()
+        val first = viewModel(linkStash = stash)
+        val code = requireNotNull(first.waitingForApproval().quickConnectCode)
+        // The process dies: the view model's work is cancelled and nothing runs after it, so nothing clears the record.
+        runBlocking { requireNotNull(first.viewModelScope.coroutineContext[Job]).cancelAndJoin() }
+        assertNotNull("the record outlives the view model", stash.value)
+
+        val second = viewModel(linkStash = stash)
+        val back = second.await<UiState.SignIn> { it.quickConnectCode != null }
+        assertEquals("the user is shown the code they were given", code, back.quickConnectCode)
+
+        jellyfin.quickConnectApproved = true
+        second.await<UiState.SignedIn>()
+
+        assertNull(stash.value)
+        assertEquals(jellyfin.baseUrl, runBlocking { sessions.current() }?.baseUrl)
+    }
+
+    @Test
+    fun `a pending Quick Connect wait is found, read and decrypted off the main thread at launch`() {
+        useAMainThread()
+        val stash = MemoryStash()
+        val first = viewModel(linkStash = stash)
+        first.waitingForApproval()
+        runBlocking { requireNotNull(first.viewModelScope.coroutineContext[Job]).cancelAndJoin() }
+        assertNotNull(stash.value)
+
+        val notedStash = ThreadNotingStash(stash)
+        val notedCipher = ThreadNotingCipher(PlainCipher.forLibrary())
+        val second = viewModel(linkStash = notedStash, cipher = notedCipher)
+        second.await<UiState.SignIn> { it.quickConnectCode != null }
+
+        assertTrue("the record was read", notedStash.onMain.isNotEmpty())
+        assertEquals("no read of it ran on the main thread", emptyList<Boolean>(), notedStash.onMain.filter { it })
+        assertTrue("the record was decrypted", notedCipher.decryptedOnMain.isNotEmpty())
+        assertEquals("no decryption of it ran on the main thread", emptyList<Boolean>(), notedCipher.decryptedOnMain.filter { it })
+    }
+
+    @Test
+    fun `the launch finds no wait without waiting on the main thread, and the address step shows at once`() {
+        useAMainThread()
+        val notedStash = ThreadNotingStash(MemoryStash())
+
+        val vm = viewModel(linkStash = notedStash)
+
+        vm.await<UiState.EnterServer>()
+        assertEquals(emptyList<Boolean>(), notedStash.onMain.filter { it })
+    }
+
+    @Test
+    fun `a record no one can use is forgotten at launch, and the address step shows`() {
+        val stash = MemoryStash().apply { value = "not a record" }
+
+        val vm = viewModel(linkStash = stash)
+
+        vm.await<UiState.EnterServer>()
+        runBlocking { withTimeout(10_000) { while (stash.value != null) delay(5) } }
+        assertNull(stash.value)
+    }
+
+    @Test
     fun `Quick Connect turned off on the server is reported as that reason`() {
         val vm = viewModel()
         vm.toSignIn()
@@ -1215,16 +1536,15 @@ class JellyfinViewModelTest {
         vm.toSignIn()
         val step = vm.state.value as UiState.SignIn
         assertTrue(step.quickConnectOn)
-        assertTrue(step.showsQuickConnectHint)
+        assertFalse("the password's form is the tab it opens on", step.quickConnectSelected)
     }
 
     @Test
-    fun `the sign-in step stops offering Quick Connect, and its hint, when the server has it off`() {
+    fun `the sign-in step stops offering Quick Connect when the server has it off`() {
         jellyfin.quickConnectEnabled = false
         val vm = viewModel()
         vm.toSignIn()
         val step = vm.await<UiState.SignIn> { !it.quickConnectOn }
-        assertFalse(step.showsQuickConnectHint)
         assertNull(step.quickConnectError)
     }
 
@@ -1239,7 +1559,6 @@ class JellyfinViewModelTest {
         jellyfin.notJson += "/QuickConnect/Enabled"
         val unclear = viewModel().toSignIn()
         assertTrue(unclear.quickConnectOn)
-        assertTrue(unclear.showsQuickConnectHint)
     }
 
     @Test
@@ -1472,7 +1791,7 @@ class JellyfinViewModelTest {
         assertEquals(false, back.gettingCode)
         // Typing clears the password's own failure.
         vm.onPassword("again")
-        assertNull((vm.state.value as UiState.SignIn).passwordError)
+        assertNull(vm.await<UiState.SignIn> { it.password == "again" }.passwordError)
     }
 
     @Test
@@ -1484,7 +1803,9 @@ class JellyfinViewModelTest {
         vm.await<UiState.SignIn> { it.quickConnectError != null }
         jellyfin.slow += "/QuickConnect/Enabled"
         vm.startQuickConnect()
-        val retrying = vm.state.value as UiState.SignIn
+        // The step shows a code being asked for with the last failure gone, never the failure beside it. Waiting for that state, and
+        // not reading the one the step happens to be in, is what tells it from the failure the step held a moment ago.
+        val retrying = vm.await<UiState.SignIn> { it.gettingCode && it.quickConnectError == null }
         assertNull(retrying.quickConnectError)
         assertTrue(retrying.gettingCode)
         vm.cancelQuickConnect()
@@ -1648,6 +1969,9 @@ class JellyfinViewModelTest {
         assertEquals(before, libraryReads())
     }
 }
+
+/** The thread name Main has in the tests that give it a thread of its own; a coroutine on it adds its own name after this. */
+private const val MAIN_THREAD = "test-main"
 
 private const val PUBLIC_USERS =
     """[{"Name":"Kid","Id":"u-kid","HasPassword":false},{"Name":"Mum","Id":"u-mum","HasPassword":true}]"""

@@ -55,6 +55,10 @@ data class Actions(
     val onSignIn: () -> Unit = {},
     val onQuickConnect: () -> Unit = {},
     val onCancelQuickConnect: () -> Unit = {},
+    /** The sign-in step's tab row: true for Quick Connect, false for the password's form. */
+    val onSelectMethod: (Boolean) -> Unit = {},
+    /** Stops waiting for a code and stays on the tab it was asked on. */
+    val onCancelCode: () -> Unit = {},
     val onChangeServer: () -> Unit = {},
     /** Asks the server again whether its setup is done, from the notice a server that is not set up gets. */
     val onRecheckServer: () -> Unit = {},

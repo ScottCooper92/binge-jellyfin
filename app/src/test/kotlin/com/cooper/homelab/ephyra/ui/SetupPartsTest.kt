@@ -228,6 +228,22 @@ class SetupPartsTest {
     }
 
     @Test
+    fun `the tab row's choice is the flow's mode, in both directions`() {
+        val password = UiState.SignIn(baseUrl = "http://truenas.local:8096", server = info, username = "sam")
+        assertEquals(SetupMode.Password, (password.toConnectState() as ConnectState.SignIn).form.mode)
+
+        val quick = password.copy(quickConnectSelected = true)
+        val state = quick.toConnectState() as ConnectState.SignIn
+        assertEquals(SetupMode.QuickConnect, state.form.mode)
+        assertTrue("Quick Connect has no field to fill, so the form can be submitted", state.form.canSubmit)
+
+        val back = projectSetup(state, null, UiState.Loading) as UiState.SignIn
+        assertTrue(back.quickConnectSelected)
+        val onPassword = projectSetup(password.toConnectState(), null, UiState.Loading) as UiState.SignIn
+        assertTrue(!onPassword.quickConnectSelected)
+    }
+
+    @Test
     fun `the sign-in step is the password form, busy while a code waits, and a server not set up is its notice`() {
         val step =
             UiState.SignIn(

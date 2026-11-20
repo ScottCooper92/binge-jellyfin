@@ -16,6 +16,7 @@ import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
 import com.cooper.homelab.ephyra.preview.JellyfinHomeLayoutPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
+import com.cooper.homelab.ephyra.preview.JellyfinSpanishFontScalePreviews
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 import com.cooper.homelab.ephyra.server.ForgotPasswordAction
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
@@ -105,6 +106,7 @@ class JellyfinScreenshotTest {
     @JellyfinScreenStatePreview
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
+    @JellyfinSpanishFontScalePreviews
     @Composable
     fun signIn() = JellyfinRoot(previewSignIn, Actions())
 
@@ -239,6 +241,15 @@ class JellyfinScreenshotTest {
     @JellyfinSpanishPreviews
     @Composable
     fun quickConnectCode() = QuickConnectCodeBody(requireNotNull(previewQuickConnect.quickConnectCode), Actions())
+
+    /** The sign-in step on its Quick Connect tab, before a code is asked for, with the tab labels at large font and in Spanish. */
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @JellyfinSpanishFontScalePreviews
+    @Composable
+    fun quickConnectTab() = JellyfinRoot(previewQuickConnectTab, Actions())
 
     @PreviewTest
     @JellyfinScreenStatePreview

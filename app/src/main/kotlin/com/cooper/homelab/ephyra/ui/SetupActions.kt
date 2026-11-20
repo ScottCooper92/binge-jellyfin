@@ -16,7 +16,11 @@ internal class SetupActions(
 ) {
     private val flow get() = setup.flow
 
-    fun onAddress(value: String) = flow.editAddress(value)
+    fun onAddress(value: String) {
+        // A tab restored for the server that was typed before the kill is not for a different address.
+        setup.firstMode = null
+        flow.editAddress(value)
+    }
 
     fun allowCleartext(allowed: Boolean) = flow.allowCleartext(allowed)
 
@@ -62,6 +66,28 @@ internal class SetupActions(
         setup.links.start()
     }
 
+    /**
+     * The tab row's choice. The other method's form starts over, as the connect flow does for any change of mode, so what was typed
+     * for the password comes back with it; a code being waited on is let go on the way, and asking for one is the footer's start.
+     */
+    fun selectMethod(quickConnect: Boolean) {
+        val draft = flow.draft.value
+        if (draft.server == null || (draft.form.mode == SetupMode.QuickConnect) == quickConnect) return
+        setup.links.cancel()
+        if (quickConnect) {
+            setup.typed = draft.form.values
+            flow.selectMode(SetupMode.QuickConnect)
+        } else {
+            flow.selectMode(SetupMode.Password)
+            flow.editForm { copy(values = setup.typed) }
+        }
+    }
+
+    /** Stops waiting for a code, and its failure with it, and stays on the method the code was asked on. */
+    fun cancelCode() {
+        setup.links.cancel()
+    }
+
     /** Leaves Quick Connect for the password form, taking Quick Connect's code and failure with it. */
     fun cancelQuickConnect() {
         setup.links.cancel()
@@ -78,6 +104,7 @@ internal class SetupActions(
      */
     fun changeServer(recheck: Boolean) {
         setup.links.cancel()
+        setup.firstMode = null
         setup.typed = emptyMap()
         val saved = signedIn()
         val address =
