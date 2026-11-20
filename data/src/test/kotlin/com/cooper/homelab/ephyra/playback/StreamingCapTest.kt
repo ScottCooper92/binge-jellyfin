@@ -36,7 +36,7 @@ class StreamingCapTest {
     @After
     fun close() = jellyfin.close()
 
-    private fun minter(cap: StreamingCap) = JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.11.6"), cap)
+    private fun minter(cap: StreamingCap) = JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.11.6"), cap = cap)
 
     private fun asked(): Pair<Long?, Long?> {
         val body = jellyfin.lastBody("/Items/movie-1/PlaybackInfo")

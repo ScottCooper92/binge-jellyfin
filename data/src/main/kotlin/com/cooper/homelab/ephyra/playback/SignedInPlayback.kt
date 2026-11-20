@@ -13,9 +13,10 @@ private const val HTTP_UNAUTHORIZED = 401
  */
 private suspend fun Connection.signedInOrRefused() = signedIn() ?: throw JellyfinHttpException(HTTP_UNAUTHORIZED, "no session")
 
-/** [JellyfinSourceMinter] for whichever session is saved when the source is asked for, held to the user's own [cap] on the bitrate. */
+/** [JellyfinSourceMinter] for whichever session is saved when the source is asked for, held to the user's own [cap] on the bitrate, and wording the audio options as [wording] does. */
 class SignedInSourceMinter(
     private val connection: Connection,
+    private val wording: AudioWording = NoAudioWording,
     private val cap: StreamingCap = NoStreamingCap,
 ) : SourceMinter {
     override suspend fun mint(
@@ -29,6 +30,7 @@ class SignedInSourceMinter(
             client,
             session.userId,
             JellyfinServerProfile.from(session.serverVersion),
+            wording,
             cap,
         ).mint(item, profile, resumeMs, choice)
     }

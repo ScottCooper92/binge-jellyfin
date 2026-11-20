@@ -1540,6 +1540,23 @@
     <string name="client_play_demo_title">Nothing to play in the demo</string>
     <string name="client_play_demo_message">The demo has titles and pictures but no video. Sign in to your own server to play something.</string>
     <string name="client_play_http_title">Can\'t play from this server</string>
+    <string name="client_audio_codec_dolby_digital" translatable="false">Dolby Digital</string>
+    <string name="client_audio_codec_dolby_digital_plus" translatable="false">Dolby Digital Plus</string>
+    <string name="client_audio_codec_dolby_atmos" translatable="false">Dolby Atmos</string>
+    <string name="client_audio_codec_dolby_truehd" translatable="false">Dolby TrueHD</string>
+    <string name="client_audio_codec_dts" translatable="false">DTS</string>
+    <string name="client_audio_codec_dts_hd" translatable="false">DTS-HD</string>
+    <string name="client_audio_codec_aac" translatable="false">AAC</string>
+    <string name="client_audio_codec_mp3" translatable="false">MP3</string>
+    <string name="client_audio_codec_opus" translatable="false">Opus</string>
+    <string name="client_audio_codec_flac" translatable="false">FLAC</string>
+    <string name="client_audio_codec_vorbis" translatable="false">Vorbis</string>
+    <string name="client_audio_description" translatable="false">%1$s %2$s</string>
+    <string name="client_audio_channels_mono">mono</string>
+    <string name="client_audio_channels_stereo">stereo</string>
+    <string name="client_audio_channels_5_1">5.1</string>
+    <string name="client_audio_channels_7_1">7.1</string>
+    <string name="client_audio_channels_n">%1$d channels</string>
     <string name="client_audio_switch_title">Couldn\'t change the audio</string>
     <string name="client_audio_switch_unreachable">Your server couldn\'t be reached. The audio stays as it was and the video keeps playing. Check your connection, then pick it again.</string>
     <string name="client_audio_switch_refused">Your server wouldn\'t change the audio. It stays as it was and the video keeps playing. Pick another track, or try again soon.</string>
