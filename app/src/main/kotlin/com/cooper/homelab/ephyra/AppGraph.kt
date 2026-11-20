@@ -10,6 +10,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.lifecycle.ViewModelProvider
+import androidx.media3.common.util.UnstableApi
 import com.binge.companion.kit.KeystoreSecretCipher
 import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
@@ -77,6 +79,10 @@ import com.cooper.homelab.ephyra.notifications.PollBreadcrumbs
 import com.cooper.homelab.ephyra.notifications.PollRunner
 import com.cooper.homelab.ephyra.notifications.pollReactor
 import com.cooper.homelab.ephyra.notifications.workManagerPollScheduler
+import com.cooper.homelab.ephyra.playback.PlaybackSittings
+import com.cooper.homelab.ephyra.playback.SignedInNextEpisodes
+import com.cooper.homelab.ephyra.playback.SignedInPlayReporter
+import com.cooper.homelab.ephyra.playback.SignedInSourceMinter
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.LibraryIndex
 import com.cooper.homelab.ephyra.server.ServerEvents
@@ -87,6 +93,11 @@ import com.cooper.homelab.ephyra.ui.console.AboutLibrariesLicenceSource
 import com.cooper.homelab.ephyra.ui.console.UserPictures
 import com.cooper.homelab.ephyra.ui.console.clearSharedLogs
 import com.cooper.homelab.ephyra.ui.search.LocalRecentSearches
+import com.cooper.homelab.player.AudioFallbackMemory
+import com.cooper.homelab.player.InAppPlayer
+import com.cooper.homelab.player.PlayerViewModelFactory
+import com.cooper.homelab.player.api.PlayerClock
+import com.cooper.homelab.player.api.PlayerDispatchers
 import com.posthog.android.PostHogAndroid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -376,6 +387,42 @@ class AppGraph(
 
     /** The dispatcher this graph's reads and writes run on. */
     val ioDispatcher: CoroutineDispatcher get() = io
+
+    private val playerDispatchers by lazy { PlayerDispatchers(main = Dispatchers.Main, io = io, default = io) }
+
+    private val inAppPlayer: InAppPlayer by lazy { InAppPlayer.create(appContext, playerDispatchers) }
+
+    /** Every play in the app, from the Play button to the last report. It lives as long as the process, so a stop is still reported once the screen is gone. */
+    val playbackSittings: PlaybackSittings by lazy {
+        PlaybackSittings(
+            scope = scope,
+            player = inAppPlayer,
+            minter = SignedInSourceMinter(connection),
+            reporter = SignedInPlayReporter(connection),
+            nextEpisodes = SignedInNextEpisodes(connection),
+            newSessionId = { UUID.randomUUID().toString() },
+        )
+    }
+
+    @androidx.annotation.OptIn(UnstableApi::class)
+    private fun playerFactory() =
+        PlayerViewModelFactory(
+            context = appContext,
+            control = playbackSittings,
+            inAppPlayer = inAppPlayer,
+            dispatchers = playerDispatchers,
+            clock = PlayerClock { System.currentTimeMillis() },
+            fallbackMemory = AudioFallbackMemory(),
+        )
+
+    private val playerViewModels by lazy { playerFactory() }
+
+    /** The view model of the player's screen for the sitting [sessionId], kept for as long as that screen is open. */
+    @androidx.annotation.OptIn(UnstableApi::class)
+    fun playerViewModels(
+        sessionId: String,
+        title: String,
+    ): ViewModelProvider.Factory = playerViewModels.forSitting(sessionId, title)
 
     /** Told what the session holds, so an entry that names it is redacted. A debug build says so when one had to be. */
     private val redactor: Redactor by lazy {

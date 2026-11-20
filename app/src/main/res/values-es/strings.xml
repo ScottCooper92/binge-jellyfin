@@ -1533,4 +1533,8 @@
     <string name="shell_tab_server">Servidor</string>
     <string name="shell_placeholder_message">Esta pantalla está en camino.</string>
     <string name="title_placeholder_title">Título</string>
+    <string name="client_play_demo_title">No hay nada que reproducir en la demo</string>
+    <string name="client_play_demo_message">La demo tiene títulos e imágenes, pero no vídeo. Inicia sesión en tu propio servidor para reproducir algo.</string>
+    <string name="client_play_http_title">No se puede reproducir aquí</string>
+    <string name="client_play_http_message">Para reproducir hace falta https, o http en tu red. Este servidor usa http sin cifrar en una dirección pública. Explorar sigue funcionando. Usa una dirección https o local para reproducir.</string>
 </resources>

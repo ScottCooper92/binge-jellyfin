@@ -91,6 +91,16 @@ data class PersonRoute(
 ) : TitleRoute
 
 /**
+ * A play, above the title page it began from: the player covers the window, bar and all. It carries the sitting's id and the title's
+ * name alone, so it survives a process death; a sitting that is not known then shows as one that is gone.
+ */
+@Serializable
+data class PlayerRoute(
+    val sessionId: String,
+    val title: String,
+) : EphyraRoute
+
+/**
  * The signed-in client, which replaces [HubRoute] at the root while the client is on (the user has not opted out, and the flag
  * offers it). Its entry holds the tab bar and each tab's root. The console's home is the Server tab's root, and its pages and
  * items are the keys above this one. With the client off there is no shell: [HubRoute] is the whole app. See [settleHome].

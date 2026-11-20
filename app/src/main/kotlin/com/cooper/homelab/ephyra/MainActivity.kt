@@ -59,6 +59,7 @@ import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
 import com.cooper.homelab.ephyra.ui.client.PersonPage
+import com.cooper.homelab.ephyra.ui.client.PlayerPage
 import com.cooper.homelab.ephyra.ui.client.SearchTab
 import com.cooper.homelab.ephyra.ui.client.SeasonPage
 import com.cooper.homelab.ephyra.ui.client.SeriesPage
@@ -91,6 +92,7 @@ import com.cooper.homelab.ephyra.ui.nav.openLibrary
 import com.cooper.homelab.ephyra.ui.nav.openPage
 import com.cooper.homelab.ephyra.ui.nav.openPageItem
 import com.cooper.homelab.ephyra.ui.nav.openPerson
+import com.cooper.homelab.ephyra.ui.nav.openPlayer
 import com.cooper.homelab.ephyra.ui.nav.openSearchHit
 import com.cooper.homelab.ephyra.ui.nav.openSubItem
 import com.cooper.homelab.ephyra.ui.nav.openTitle
@@ -336,6 +338,7 @@ internal fun ConsoleHost(
         searchTab = { SearchTabRoute(state, graph, backStack) },
         library = { route -> LibraryRouteScreen(state, route, graph, backStack) },
         title = { route -> TitlePageRoute(route, state as? UiState.SignedIn, graph, backStack) },
+        player = { route -> PlayerPage(graph, route, onBack = { backStack.closeTop() }) },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
                 // A stream tapped here has no page to open over, so the page opens, and the stream over it.
@@ -402,7 +405,9 @@ private fun TitlePageRoute(
                 graph,
                 signed.profile,
                 route.itemId,
+                signed.session.baseUrl,
                 onBack = { backStack.closeTop() },
+                onPlay = { sessionId, title -> backStack.openPlayer(sessionId, title) },
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
             )
