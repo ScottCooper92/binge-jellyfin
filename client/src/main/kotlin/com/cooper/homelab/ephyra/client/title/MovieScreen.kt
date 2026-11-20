@@ -59,7 +59,7 @@ private const val SKELETON_ACTIONS = 2
 /**
  * What the movie page does: [onBack] leaves it, [onRetry] reads the title again after a failure, and [onPlay] is the primary button,
  * which opens nothing yet (in-app play is #756). [onOpenTitle] and [onOpenPerson] open a poster card's or a person's page, and
- * [onOpenCollection] the page of the collection the film is in, from its rail's heading or its see-all tile.
+ * [onOpenCollection] the page of the collection the film is in, from its rail's See all button or its trailing tile (the heading is not tappable).
  */
 class MovieActions(
     val onBack: () -> Unit,

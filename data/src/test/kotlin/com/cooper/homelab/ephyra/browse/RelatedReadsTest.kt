@@ -65,7 +65,7 @@ class RelatedReadsTest {
                     .url
             assertEquals("/Items/a/Similar", url.encodedPath)
             assertEquals("user-1", url.queryParameter("userId"))
-            assertEquals("PrimaryImageAspectRatio", url.queryParameter("fields"))
+            assertEquals("PrimaryImageAspectRatio,ChildCount", url.queryParameter("fields"))
         }
 
     @Test
