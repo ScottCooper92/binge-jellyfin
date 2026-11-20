@@ -77,6 +77,7 @@ class JellyfinSourceMinter(
         val mediaSourceId = source.string("Id") ?: item.itemId
         val playSessionId = info.string("PlaySessionId").orEmpty()
         val runtimeMs = (source.long("RunTimeTicks") ?: 0L) / TICKS_PER_MILLI
+        val defaults = if (choice == null) source.serverDefaults() else null
         val request =
             PlayRequest(
                 sessionId = "",
@@ -89,6 +90,8 @@ class JellyfinSourceMinter(
                 segments = segments(item.itemId, source),
                 trickplay = trickplay(read.getOrNull(), mediaSourceId),
                 audioOptions = source.audioOptions(),
+                preferredAudio = defaults?.audio,
+                preferredSubtitle = defaults?.subtitle,
             )
         return Minted(request, JellyfinPlayHandle(item.itemId, mediaSourceId, playSessionId, method, runtimeMs))
     }

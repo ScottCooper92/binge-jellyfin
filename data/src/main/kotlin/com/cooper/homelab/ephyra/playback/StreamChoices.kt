@@ -5,6 +5,7 @@ import com.cooper.homelab.ephyra.server.bool
 import com.cooper.homelab.ephyra.server.string
 import com.cooper.homelab.player.api.AudioCodec
 import com.cooper.homelab.player.api.PlayAudioOption
+import com.cooper.homelab.player.api.SubtitlePreference
 import com.cooper.homelab.player.api.TrackChoice
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.intOrNull
@@ -165,3 +166,51 @@ private val TERMINOLOGY_CODES =
         "tib" to "bod",
         "wel" to "cym",
     )
+
+/** The tracks the server names as this user's defaults for a media source, as the player is asked to open on them. */
+internal class ServerDefaults(
+    val audio: TrackChoice?,
+    val subtitle: SubtitlePreference,
+)
+
+/**
+ * What the server chose for this user: its default audio stream and default subtitle stream in the media source (it applies the user's
+ * language and subtitle-mode settings when it answers for a play), as the player's own track choices. A subtitle the server names none
+ * of is [SubtitlePreference.Off]. A stream's language is the server's own tag, which the player reads either way; the title is the
+ * tie-break between two tracks in one language, and a subtitle file beside the video is named by the label the player lists it under.
+ */
+internal fun JsonObject.serverDefaults(): ServerDefaults {
+    val streams = array("MediaStreams").filterIsInstance<JsonObject>()
+
+    fun stream(
+        type: String,
+        key: String,
+    ): JsonObject? {
+        val index = this[key]?.jsonPrimitive?.intOrNull?.takeIf { it >= 0 } ?: return null
+        return streams.firstOrNull { it.string("Type") == type && it["Index"]?.jsonPrimitive?.intOrNull == index }
+    }
+
+    fun choice(
+        stream: JsonObject,
+        sidecar: Boolean,
+    ): TrackChoice? {
+        val language = stream.string("Language")?.takeIf { it.isNotBlank() && languageCode(it) != null }
+        val label =
+            (
+                if (sidecar) {
+                    stream.string(
+                        "DisplayTitle",
+                    ) ?: stream.string("Title")
+                } else {
+                    stream.string("Title")
+                }
+            )?.takeIf { it.isNotBlank() }
+        return if (language == null && label == null) null else TrackChoice(language, label)
+    }
+    val audio = stream("Audio", "DefaultAudioStreamIndex")?.let { choice(it, sidecar = false) }
+    val subtitle =
+        stream("Subtitle", "DefaultSubtitleStreamIndex")
+            ?.let { choice(it, sidecar = it.bool("IsExternal") == true) }
+            ?.let { SubtitlePreference.Track(it) }
+    return ServerDefaults(audio, subtitle ?: SubtitlePreference.Off)
+}

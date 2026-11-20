@@ -64,6 +64,7 @@ class PlaybackSittingsTest {
     private val choices = mutableListOf<StreamChoice?>()
     private var mintFails: Throwable? = null
     private var mintFailsOnce: Throwable? = null
+    private var serverDefaults: Pair<TrackChoice, SubtitlePreference>? = null
     private val reports = mutableListOf<Triple<String, PlayReport, Long>>()
     private var nextOf: (PlayItem) -> PlayItem? = { null }
     private var ids = 0
@@ -80,7 +81,7 @@ class PlaybackSittingsTest {
                 }
                 minted += item.itemId to resume
                 choices += choice
-                Minted(if (offeredAudio) offered(item, choice) else request(item), Handle(item))
+                Minted(withDefaults(if (offeredAudio) offered(item, choice) else request(item), choice), Handle(item))
             },
             reporter = { play, kind, position -> reports += Triple((play as Handle).item.itemId, kind, position) },
             nextEpisodes = { nextOf(it) },
@@ -222,6 +223,12 @@ class PlaybackSittingsTest {
             assertEquals("off is a choice, kept", SubtitlePreference.Off, player.updates.last().preferredSubtitle)
         }
 
+    private fun withDefaults(
+        request: PlayRequest,
+        choice: StreamChoice?,
+    ): PlayRequest =
+        serverDefaults?.takeIf { choice == null }?.let { request.copy(preferredAudio = it.first, preferredSubtitle = it.second) } ?: request
+
     private fun offered(
         item: PlayItem,
         choice: StreamChoice?,
@@ -333,6 +340,26 @@ class PlaybackSittingsTest {
             player.events.send(PlayerEvent.Ended(60_000, 60_000))
             assertEquals(emptyList<Unit>(), endings)
             job.cancel()
+        }
+
+    @Test
+    fun `what the mint asks the player to open on reaches the first play, and a remembered choice replaces it on a re-mint`() =
+        runTest {
+            val server = TrackChoice("es", "Doblaje")
+            serverDefaults = server to SubtitlePreference.Off
+            val sittings = sittings()
+            sittings.start(episodes[0])
+            assertEquals(server, player.played.single().preferredAudio)
+            assertEquals(SubtitlePreference.Off, player.played.single().preferredSubtitle)
+            player.events.send(PlayerEvent.Started(0, 60_000))
+
+            player.events.send(PlayerEvent.SourceRejected(30_000, 403))
+            assertEquals("no report yet, so the server's defaults stand", server, player.updates.last().preferredAudio)
+
+            val english = TrackChoice("en", null)
+            player.events.send(PlayerEvent.TracksChosen(null, english))
+            player.events.send(PlayerEvent.RetryRequested(31_000))
+            assertEquals("what the player says it is on wins", english, player.updates.last().preferredAudio)
         }
 
     @Test
