@@ -15,4 +15,26 @@
     <string name="client_home_empty">Aún no hay nada que mostrar. Aquí aparecerán los títulos que veas y añadas.</string>
     <string name="client_libraries_title">Bibliotecas</string>
     <string name="client_libraries_empty">Las bibliotecas de películas y series de este servidor aparecerán aquí.</string>
+    <string name="client_movie_overview">Sinopsis</string>
+    <string name="client_movie_play">Reproducir</string>
+    <string name="client_movie_resume">Reanudar</string>
+    <string name="client_movie_resume_left">Reanudar · quedan %1$d min</string>
+    <string name="client_movie_watched">Vista</string>
+    <string name="client_movie_mark_watched">Marcar como vista</string>
+    <string name="client_movie_mark_unwatched">Marcar como no vista</string>
+    <string name="client_movie_favourite">Favorita</string>
+    <string name="client_movie_add_favourite">Añadir a favoritas</string>
+    <string name="client_movie_remove_favourite">Quitar de favoritas</string>
+    <string name="client_movie_versions">Versiones</string>
+    <string name="client_movie_cast">Reparto</string>
+    <string name="client_movie_crew">Equipo</string>
+    <string name="client_movie_similar">Más como esta</string>
+    <string name="client_movie_details">Detalles</string>
+    <string name="client_movie_original_title">Título original</string>
+    <string name="client_movie_studios">Estudios</string>
+    <string name="client_movie_premiere">Estreno</string>
+    <string name="client_movie_year">Año</string>
+    <string name="client_movie_runtime">Duración</string>
+    <string name="client_movie_certification">Clasificación</string>
+    <string name="client_movie_write_failed">Sin cambios. Inténtalo de nuevo.</string>
 </resources>

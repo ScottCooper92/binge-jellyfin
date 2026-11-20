@@ -14,4 +14,26 @@
     <string name="client_home_empty">Nothing to show yet. Titles you watch and add will appear here.</string>
     <string name="client_libraries_title">Libraries</string>
     <string name="client_libraries_empty">Movie and series libraries on this server will appear here.</string>
+    <string name="client_movie_overview">Overview</string>
+    <string name="client_movie_play">Play</string>
+    <string name="client_movie_resume">Resume</string>
+    <string name="client_movie_resume_left">Resume · %1$d min left</string>
+    <string name="client_movie_watched">Watched</string>
+    <string name="client_movie_mark_watched">Mark as watched</string>
+    <string name="client_movie_mark_unwatched">Mark as not watched</string>
+    <string name="client_movie_favourite">Favourite</string>
+    <string name="client_movie_add_favourite">Add to favourites</string>
+    <string name="client_movie_remove_favourite">Remove from favourites</string>
+    <string name="client_movie_versions">Versions</string>
+    <string name="client_movie_cast">Cast</string>
+    <string name="client_movie_crew">Crew</string>
+    <string name="client_movie_similar">More like this</string>
+    <string name="client_movie_details">Details</string>
+    <string name="client_movie_original_title">Original title</string>
+    <string name="client_movie_studios">Studios</string>
+    <string name="client_movie_premiere">Premiere</string>
+    <string name="client_movie_year">Year</string>
+    <string name="client_movie_runtime">Runtime</string>
+    <string name="client_movie_certification">Rated</string>
+    <string name="client_movie_write_failed">Not changed. Try again.</string>
 </resources>
