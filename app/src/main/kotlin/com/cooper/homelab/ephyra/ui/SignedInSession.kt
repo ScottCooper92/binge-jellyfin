@@ -145,8 +145,8 @@ class SignedInSession(
     }
 }
 
-internal const val TAG = "JellyfinSetup"
-internal const val HTTP_UNAUTHORIZED = 401
+private const val TAG = "JellyfinSetup"
+private const val HTTP_UNAUTHORIZED = 401
 
 /**
  * The console's gates: the server's profile (its current version, which may have moved since sign-in,
