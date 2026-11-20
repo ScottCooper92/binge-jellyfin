@@ -68,9 +68,14 @@ class SignedInSession(
             scope.refreshGates(connection, state, card)
             return
         }
-        // One read at a time: a second would end the first's spinner early, and the older of the two could write last.
-        if (current.refreshing) return
-        state.value = current.copy(refreshing = true, refreshFailed = false)
+        // One read at a time: a second would end the first's spinner early, and the older of the two could write last. The state is
+        // taken in one step: setting it from [current] would bring back a session that a sign-out ended since it was read.
+        var started = false
+        state.update { latest ->
+            started = latest?.refreshing == false
+            if (started) latest?.copy(refreshing = true, refreshFailed = false) else latest
+        }
+        if (!started) return
         scope.launch {
             val health =
                 try {
