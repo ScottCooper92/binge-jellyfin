@@ -43,6 +43,7 @@ import com.cooper.homelab.core.uiandroid.tip.TipSheet
 import com.cooper.homelab.ephyra.BuildConfig
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.feedback.installBugReportUrl
+import com.cooper.homelab.ephyra.playback.StreamingNetwork
 import com.cooper.homelab.ephyra.server.JellyfinVersion
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.console.PlaybackActions
@@ -180,7 +181,7 @@ internal fun AboutGroup(actions: Actions) {
 /**
  * The "This app" page: what the app reports and feedback, the tip jar, then About. Opened from the home's This app row, for
  * everyone. The tip jar's row shows only once Play has priced every step ([tip] is [TipState.Ready]); [tipEvents] says how a
- * tip ended. [playback] is the user's server preferences for languages, null (no group) while the client is off.
+ * tip ended. [playback] is the user's server preferences for languages and [quality] the device's streaming limits, both null (no group) while the client is off.
  */
 @Composable
 internal fun ThisAppScreen(
@@ -192,6 +193,8 @@ internal fun ThisAppScreen(
     serverVersion: JellyfinVersion? = null,
     playback: PlaybackUiState? = null,
     playbackActions: PlaybackActions = PlaybackActions(),
+    quality: StreamingQualitySettings? = null,
+    onQuality: (StreamingNetwork, Int) -> Unit = { _, _ -> },
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var tipOpen by remember { mutableStateOf(false) }
@@ -226,7 +229,9 @@ internal fun ThisAppScreen(
                             onOpenTip = prices?.let { { tipOpen = true } },
                             serverVersion = serverVersion,
                         )
-                        playback?.let { PlaybackSettingsGroup(it, playbackActions, snackbarHostState) }
+                        if (playback != null || quality != null) {
+                            PlaybackSettingsGroup(playback, quality, onQuality, playbackActions, snackbarHostState)
+                        }
                         actions.notifications?.let { notifications -> NotificationsGroup(notifications, actions) }
                         AboutGroup(actions)
                     }

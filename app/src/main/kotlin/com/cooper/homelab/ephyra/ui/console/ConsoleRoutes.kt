@@ -441,7 +441,9 @@ private fun ThisAppRoute(
     val state by tip.state.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     // The user's own server preferences, only behind the client gate, read when the page opens.
-    val playback = if (actions.appSettings.client == true) thisAppPlayback(graph) else null
+    val client = actions.appSettings.client == true
+    val playback = if (client) thisAppPlayback(graph) else null
+    val quality = if (client) thisAppQuality(graph) else null
     ThisAppScreen(
         actions,
         onBack,
@@ -451,5 +453,7 @@ private fun ThisAppRoute(
         serverVersion = serverVersion,
         playback = playback?.first,
         playbackActions = playback?.second ?: PlaybackActions(),
+        quality = quality?.first,
+        onQuality = quality?.second ?: { _, _ -> },
     )
 }
