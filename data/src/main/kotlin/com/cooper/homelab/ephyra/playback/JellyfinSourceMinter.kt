@@ -88,6 +88,7 @@ class JellyfinSourceMinter(
                 chapters = chapters(item.itemId),
                 segments = segments(item.itemId, source),
                 trickplay = trickplay(read.getOrNull(), mediaSourceId),
+                audioOptions = source.audioOptions(),
             )
         return Minted(request, JellyfinPlayHandle(item.itemId, mediaSourceId, playSessionId, method, runtimeMs))
     }

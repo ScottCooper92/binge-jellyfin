@@ -10,6 +10,7 @@ import com.cooper.homelab.ephyra.AppGraph
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.demo.isDemoOrigin
 import com.cooper.homelab.ephyra.insecurePublicHost
+import com.cooper.homelab.ephyra.playback.AudioSwitchFailure
 import com.cooper.homelab.ephyra.playback.PlayItem
 import com.cooper.homelab.ephyra.ui.console.ConsoleMessage
 
@@ -43,6 +44,26 @@ internal fun PlayBlockedMessage(
             PlayBlock.PublicHttp -> R.string.client_play_http_title to R.string.client_play_http_message
         }
     ConsoleMessage(title = stringResource(title), message = stringResource(message), onDismiss = onDismiss, inWindow = inWindow)
+}
+
+/** Says why the audio did not change, and that the play goes on. An acknowledgement: the cause and the next step, and one OK. */
+@Composable
+internal fun AudioSwitchMessage(
+    failure: AudioSwitchFailure,
+    onDismiss: () -> Unit,
+    inWindow: Boolean = true,
+) {
+    val message =
+        when (failure) {
+            AudioSwitchFailure.Unreachable -> R.string.client_audio_switch_unreachable
+            AudioSwitchFailure.Refused -> R.string.client_audio_switch_refused
+        }
+    ConsoleMessage(
+        title = stringResource(R.string.client_audio_switch_title),
+        message = stringResource(message),
+        onDismiss = onDismiss,
+        inWindow = inWindow,
+    )
 }
 
 /**

@@ -21,12 +21,14 @@ class Minted(
 )
 
 /**
- * The audio and subtitle tracks a sitting is on, as the player last said: by language, and by label where the language is not enough.
+ * The audio and subtitle tracks a sitting is on, as the player last said (and, for a transcode, as the user picked them from the host's list): by language, and by label where the language is not enough.
  * A null [subtitle] is subtitles off. Kept for the sitting only; it is never written to the account's own preferences.
  */
 data class StreamChoice(
     val audio: TrackChoice?,
     val subtitle: TrackChoice?,
+    /** The exact audio stream the user picked from the host's own list, for the item being played; it wins over [audio] for that item. */
+    val audioStream: Int? = null,
 )
 
 /**
@@ -42,7 +44,14 @@ fun interface SourceMinter {
     ): Minted
 }
 
-enum class PlayReport { STARTED, PROGRESS, PAUSED, RESUMED, FINISHED, STOPPED }
+/** Why a switch of audio in a play did not happen: the server could not be reached, or it would not make the source. */
+enum class AudioSwitchFailure { Unreachable, Refused }
+
+/**
+ * What a play's reports say. [REPLACED] is not about the viewer: a source was handed over for another, and the server may end the work it
+ * started for the old one. It leaves the play's state alone.
+ */
+enum class PlayReport { STARTED, PROGRESS, PAUSED, RESUMED, FINISHED, STOPPED, REPLACED }
 
 /** Tells the server where a play stands. A failure here never ends the play. */
 fun interface PlayReporter {

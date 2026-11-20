@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.playback
 import com.cooper.homelab.ephyra.server.array
 import com.cooper.homelab.ephyra.server.bool
 import com.cooper.homelab.ephyra.server.string
+import com.cooper.homelab.player.api.PlayAudioOption
 import com.cooper.homelab.player.api.TrackChoice
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.intOrNull
@@ -26,7 +27,7 @@ internal class StreamIndexes(
 internal fun JsonObject.streamIndexes(choice: StreamChoice): StreamIndexes {
     val subtitle = choice.subtitle
     return StreamIndexes(
-        audio = choice.audio?.let { indexOf("Audio", it) },
+        audio = choice.audioStream ?: choice.audio?.let { indexOf("Audio", it) },
         subtitle = if (subtitle == null) SUBTITLES_OFF else indexOf("Subtitle", subtitle),
     )
 }
@@ -61,6 +62,36 @@ private fun JsonObject.indexOf(
     if (language == null && labelled == null) return null
     val picked = labelled ?: sameLanguage.firstOrNull { it.bool("IsDefault") == true } ?: sameLanguage.first()
     return picked["Index"]?.jsonPrimitive?.intOrNull
+}
+
+/**
+ * The audio streams of the media source, as options the player lists when the stream itself has one track (a transcode): the key is the
+ * server's stream index. Empty for a source with fewer than two. The label is the language in the device's own language, and the
+ * description is the server's own line for the stream (its codec and channels).
+ */
+internal fun JsonObject.audioOptions(): List<PlayAudioOption> {
+    val streams = array("MediaStreams").filterIsInstance<JsonObject>().filter { it.string("Type") == "Audio" }
+    if (streams.size < MIN_AUDIO_OPTIONS) return emptyList()
+    val current = this["DefaultAudioStreamIndex"]?.jsonPrimitive?.intOrNull
+    return streams.mapNotNull { stream ->
+        val index = stream["Index"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
+        val line = stream.string("DisplayTitle") ?: stream.string("Title")
+        val label = languageName(stream.string("Language")) ?: stream.string("Title") ?: line ?: index.toString()
+        PlayAudioOption(
+            key = index.toString(),
+            language = stream.string("Language"),
+            label = label,
+            description = line?.takeIf { it != label },
+            current = index == current,
+        )
+    }
+}
+
+private const val MIN_AUDIO_OPTIONS = 2
+
+private fun languageName(tag: String?): String? {
+    val code = languageCode(tag) ?: return null
+    return Locale.forLanguageTag(code).getDisplayLanguage(Locale.getDefault()).takeIf { it.isNotBlank() && it != code }
 }
 
 private fun JsonObject.named(label: String): Boolean =

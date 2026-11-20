@@ -74,6 +74,23 @@ class JellyfinPlaybackTest {
         }
 
     @Test
+    fun `a replaced transcode is ended on the server by device and play session, and a direct play asks nothing`() =
+        runBlocking {
+            jellyfin.playbackInfo = FakeJellyfin.transcodeInfo()
+            val transcode = minter.mint(item, profile, null, null).report
+            reporter.report(transcode, PlayReport.REPLACED, 5_000L)
+            val ended = jellyfin.requests.single { it.method == "DELETE" }
+            assertEquals("/Videos/ActiveEncodings", ended.url.encodedPath)
+            assertEquals("play-2", ended.url.queryParameter("playSessionId"))
+            assertEquals("device-1", ended.url.queryParameter("deviceId"))
+
+            jellyfin.requests.clear()
+            jellyfin.playbackInfo = FakeJellyfin.directPlayInfo()
+            reporter.report(minter.mint(item, profile, null, null).report, PlayReport.REPLACED, 5_000L)
+            assertTrue(jellyfin.requests.none { it.method == "DELETE" })
+        }
+
+    @Test
     fun `a source the device cannot play is the server's HLS transcode, with the token taken out of its address`() =
         runBlocking {
             jellyfin.playbackInfo = FakeJellyfin.transcodeInfo()
