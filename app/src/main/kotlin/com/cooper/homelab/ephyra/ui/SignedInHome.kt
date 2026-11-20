@@ -14,9 +14,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import com.binge.designsystem.component.BingePullToRefresh
 import com.binge.designsystem.component.ScrollToTopOnTabReselect
+import com.cooper.homelab.core.flags.bingePromotion
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.core.uiandroid.search.SettingsSearchEntry
-import com.cooper.homelab.ephyra.flags.LocalFlags
-import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.binge.designsystem.R as DesR

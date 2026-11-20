@@ -10,6 +10,7 @@ import com.cooper.homelab.ephyra.browse.PersonKind
 import com.cooper.homelab.ephyra.browse.TitleDetail
 import com.cooper.homelab.ephyra.browse.TitlePerson
 import com.cooper.homelab.ephyra.browse.TrackKind
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -17,12 +18,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MovieMappingTest {
-    private val minute = 600_000_000L
-
     private fun item(
         played: Boolean = false,
         position: Long = 0L,
-        runtime: Long? = 120 * minute,
+        runtime: Long? = 120 * TICKS_PER_MINUTE,
     ) = BrowseItem(
         id = "m1",
         name = "Alien",
@@ -72,18 +71,18 @@ class MovieMappingTest {
     @Test
     fun `a film with nothing started plays, a film part watched resumes with what is left, and a watched one plays again`() {
         assertEquals(PlayAction(PlayKind.Play, null), playAction(item()))
-        assertEquals(PlayAction(PlayKind.Resume, 90), playAction(item(position = 30 * minute)))
-        assertEquals(PlayAction(PlayKind.Resume, null), playAction(item(position = 30 * minute, runtime = null)))
-        assertEquals(PlayAction(PlayKind.Play, null), playAction(item(played = true, position = 30 * minute)))
-        assertEquals(PlayAction(PlayKind.Resume, 0), playAction(item(position = 200 * minute)))
+        assertEquals(PlayAction(PlayKind.Resume, 90), playAction(item(position = 30 * TICKS_PER_MINUTE)))
+        assertEquals(PlayAction(PlayKind.Resume, null), playAction(item(position = 30 * TICKS_PER_MINUTE, runtime = null)))
+        assertEquals(PlayAction(PlayKind.Play, null), playAction(item(played = true, position = 30 * TICKS_PER_MINUTE)))
+        assertEquals(PlayAction(PlayKind.Resume, 0), playAction(item(position = 200 * TICKS_PER_MINUTE)))
     }
 
     @Test
     fun `a runtime under a minute is left out and one of a minute or more is kept`() {
-        assertNull(movieUi(detail(item = item(runtime = 59 * minute / 60)), emptyList(), null).stats.runtimeMinutes)
-        assertEquals(1, movieUi(detail(item = item(runtime = minute)), emptyList(), null).stats.runtimeMinutes)
+        assertNull(movieUi(detail(item = item(runtime = 59 * TICKS_PER_MINUTE / 60)), emptyList(), null).stats.runtimeMinutes)
+        assertEquals(1, movieUi(detail(item = item(runtime = TICKS_PER_MINUTE)), emptyList(), null).stats.runtimeMinutes)
         assertNull(runtimeMinutes(0L))
-        assertEquals(90, runtimeMinutes(90 * minute + 1))
+        assertEquals(90, runtimeMinutes(90 * TICKS_PER_MINUTE + 1))
     }
 
     @Test

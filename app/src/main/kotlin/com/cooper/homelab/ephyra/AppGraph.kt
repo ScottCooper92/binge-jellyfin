@@ -15,6 +15,8 @@ import androidx.media3.common.util.UnstableApi
 import com.binge.companion.kit.KeystoreSecretCipher
 import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
+import com.cooper.homelab.core.diagnostics.follow
+import com.cooper.homelab.core.flags.BooleanPreference
 import com.cooper.homelab.core.flags.FeatureFlags
 import com.cooper.homelab.core.flags.FirebaseRemoteFlagSource
 import com.cooper.homelab.core.flags.FlagPreferenceGate
@@ -65,8 +67,8 @@ import com.cooper.homelab.ephyra.auth.TOKEN_KEY_ALIAS
 import com.cooper.homelab.ephyra.auth.forLibrary
 import com.cooper.homelab.ephyra.demo.DemoTransport
 import com.cooper.homelab.ephyra.flags.ClientEnabled
-import com.cooper.homelab.ephyra.flags.ClientPrefs
 import com.cooper.homelab.ephyra.flags.RemoteFlagKeys
+import com.cooper.homelab.ephyra.flags.clientPreference
 import com.cooper.homelab.ephyra.notifications.ActivityChecker
 import com.cooper.homelab.ephyra.notifications.ActivitySwitch
 import com.cooper.homelab.ephyra.notifications.AndroidBackgroundAccess
@@ -226,8 +228,8 @@ class AppGraph(
     }
 
     /** Whether the user wants the client surfaces, in a store of its own. On until turned off. */
-    private val clientPrefs: ClientPrefs by lazy {
-        ClientPrefs(
+    private val clientPrefs: BooleanPreference by lazy {
+        clientPreference(
             PreferenceDataStoreFactory.create(
                 corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
                 produceFile = { appContext.preferencesDataStoreFile("client") },
@@ -237,7 +239,7 @@ class AppGraph(
 
     /** Whether the app browses and plays as well as manages: the remote flag and the user's own choice, read from this one place. */
     val clientGate: PreferenceGate by lazy {
-        FlagPreferenceGate(flags, ClientEnabled, clientPrefs.enabled, clientPrefs::setEnabled, scope)
+        FlagPreferenceGate(flags, ClientEnabled, clientPrefs.value, clientPrefs::set, scope)
     }
 
     /** The user's answers about usage data and crash reports, in a store of their own. */
@@ -427,7 +429,7 @@ class AppGraph(
     /** Told what the session holds, so an entry that names it is redacted. A debug build says so when one had to be. */
     private val redactor: Redactor by lazy {
         Redactor(onRedaction = { if (BuildConfig.DEBUG) Log.w(REDACTOR_TAG, "A log entry held a registered literal") })
-            .also { it.followSession(sessions.session, scope) }
+            .also { it.follow(sessions.session.map { session -> session?.toRedactionLiterals() }, scope) }
     }
 
     /** The app's log: held in memory and never written to disk. A debug build also forwards each redacted entry to Logcat. */

@@ -15,6 +15,7 @@ import com.cooper.homelab.ephyra.client.home.homeState
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
 import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
+import com.cooper.homelab.ephyra.server.TICKS_PER_HOUR
 
 /**
  * Home (`:client`) in the states the issue names: loaded, loading, partly failed (a row still loading under the rows that landed) and
@@ -33,7 +34,7 @@ class ClientHomeScreenshotTest {
         kind = ItemKind.Movie,
         year = year,
         communityRating = 7.8,
-        runTimeTicks = 72_000_000_000L,
+        runTimeTicks = 2 * TICKS_PER_HOUR,
         imageTags = mapOf(ImageKind.Primary to "p-$id", ImageKind.Backdrop to "b-$id"),
         userData = ItemUserData(playedPercentage = progress),
     )

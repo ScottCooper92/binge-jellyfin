@@ -11,8 +11,8 @@ import com.cooper.homelab.core.flags.SharedFlags
 import com.cooper.homelab.core.presentation.search.SettingsSearchState
 import com.cooper.homelab.core.presentation.tip.TipState
 import com.cooper.homelab.core.tip.TIP_STEPS
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.core.uiandroid.search.SettingsSearchScreen
-import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
 import com.cooper.homelab.ephyra.preview.JellyfinHomeLayoutPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview

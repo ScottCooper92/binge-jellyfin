@@ -1,10 +1,10 @@
 package com.cooper.homelab.ephyra.demo
 
+import com.cooper.homelab.ephyra.server.TICKS_PER_SECOND
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-private const val TICKS_PER_SECOND = 10_000_000L
 private const val INTRO_START_TICKS = 30L * TICKS_PER_SECOND
 private const val INTRO_END_TICKS = 90L * TICKS_PER_SECOND
 private const val CREDITS_SECONDS = 120L
