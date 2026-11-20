@@ -141,8 +141,9 @@ class PlaybackSittings(
             withContext(NonCancellable) { report(minted, PlayReport.STOPPED, position) }
             throw e
         }
-        // A sitting that ended on its own is forgotten; one that ended in a refusal or an expired source stays, for the screen to say so.
-        if (sitting.outcome.value is PlaybackOutcome.Playing) sittings.update { it - id }
+        // A sitting that ended on its own is forgotten, whether or not the first frame came; one that ended in a refusal or an expired
+        // source stays, for the screen to say so.
+        if (sitting.outcome.value.endsOnItsOwn()) sittings.update { it - id }
     }
 
     /** Mints [item] again at [positionMs] and hands it to the player under the same session; null, with the outcome set, when the server refuses. */
@@ -171,6 +172,8 @@ class PlaybackSittings(
     ) {
         attempt { reporter.report(minted.report, kind, positionMs) }
     }
+
+    private fun PlaybackOutcome.endsOnItsOwn() = this !is PlaybackOutcome.Refused && this !is PlaybackOutcome.SourceExpired
 
     private fun Sitting.fail(
         error: Throwable,
