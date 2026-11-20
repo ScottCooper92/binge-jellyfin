@@ -205,7 +205,18 @@ class SearchSwitchesViewModelTest {
             jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
 
         vm.refresh()
-        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
+        // Done reading is two steps: the copy takes what the server holds, and then the change kept unsent is put back on it. The
+        // state before the refresh already says "not reading", and the one between the two steps has the server's copy without the
+        // change, so the wait is for the copy that has both.
+        vm.settled {
+            (it as? SearchConfigState.Ready)?.let { copy ->
+                !copy.reading &&
+                    copy.home.displayCollectionsView &&
+                    copy.configuration
+                        .getValue("AudioLanguagePreference")
+                        .jsonPrimitive.content == "fra"
+            } == true
+        }
         val ready = vm.ready()
         assertEquals(
             "fra",
