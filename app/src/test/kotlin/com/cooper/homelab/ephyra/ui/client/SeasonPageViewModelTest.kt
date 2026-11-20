@@ -114,7 +114,6 @@ class SeasonPageViewModelTest {
                     (state.season.episodes as? EpisodesState.Ready)?.episodes?.single { it.id == "e2" }?.watched == true
             }
         assertTrue(marked is SeasonUiState.Ready)
-        vm.retryEpisodes()
     }
 
     @Test
