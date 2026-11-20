@@ -1,14 +1,13 @@
 package com.cooper.homelab.ephyra.playback
 
 import com.cooper.homelab.ephyra.server.JellyfinClient
+import com.cooper.homelab.ephyra.server.TICKS_PER_MILLI
+import com.cooper.homelab.ephyra.server.playReportBody
 import com.cooper.homelab.ephyra.server.reportProgress
 import com.cooper.homelab.ephyra.server.reportStart
 import com.cooper.homelab.ephyra.server.reportStopped
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import java.util.concurrent.atomic.AtomicBoolean
-
-internal const val TICKS_PER_MILLI = 10_000L
 
 /**
  * What a play's reports name to the server: the item, the media source, the play session and the play method, all from the answer
@@ -32,18 +31,7 @@ internal class JellyfinPlayHandle(
     fun body(
         positionMs: Long,
         paused: Boolean,
-    ): JsonObject =
-        JsonObject(
-            mapOf(
-                "ItemId" to JsonPrimitive(itemId),
-                "MediaSourceId" to JsonPrimitive(mediaSourceId),
-                "PlaySessionId" to JsonPrimitive(playSessionId),
-                "PlayMethod" to JsonPrimitive(playMethod),
-                "PositionTicks" to JsonPrimitive(positionMs.coerceAtLeast(0L) * TICKS_PER_MILLI),
-                "CanSeek" to JsonPrimitive(true),
-                "IsPaused" to JsonPrimitive(paused),
-            ),
-        )
+    ): JsonObject = playReportBody(itemId, mediaSourceId, playSessionId, playMethod, positionMs.coerceAtLeast(0L) * TICKS_PER_MILLI, paused)
 }
 
 /**

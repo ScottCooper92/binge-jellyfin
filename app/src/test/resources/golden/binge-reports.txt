@@ -1,0 +1,6 @@
+PLAYBACK_EVENT_STARTED /Sessions/Playing {"ItemId":"movie-1","MediaSourceId":"source-1","PlaySessionId":"play-1","PlayMethod":"DirectPlay","PositionTicks":15000000,"CanSeek":true,"IsPaused":false}
+PLAYBACK_EVENT_PROGRESS /Sessions/Playing/Progress {"ItemId":"movie-1","MediaSourceId":"source-1","PlaySessionId":"play-1","PlayMethod":"DirectPlay","PositionTicks":15000000,"CanSeek":true,"IsPaused":false}
+PLAYBACK_EVENT_PAUSED /Sessions/Playing/Progress {"ItemId":"movie-1","MediaSourceId":"source-1","PlaySessionId":"play-1","PlayMethod":"DirectPlay","PositionTicks":15000000,"CanSeek":true,"IsPaused":true}
+PLAYBACK_EVENT_RESUMED /Sessions/Playing/Progress {"ItemId":"movie-1","MediaSourceId":"source-1","PlaySessionId":"play-1","PlayMethod":"DirectPlay","PositionTicks":15000000,"CanSeek":true,"IsPaused":false}
+PLAYBACK_EVENT_STOPPED /Sessions/Playing/Stopped {"ItemId":"movie-1","MediaSourceId":"source-1","PlaySessionId":"play-1","PlayMethod":"DirectPlay","PositionTicks":15000000,"CanSeek":true,"IsPaused":false}
+PLAYBACK_EVENT_FINISHED /Sessions/Playing/Stopped {"ItemId":"movie-1","MediaSourceId":"source-1","PlaySessionId":"play-1","PlayMethod":"DirectPlay","PositionTicks":36000000000,"CanSeek":true,"IsPaused":false}
