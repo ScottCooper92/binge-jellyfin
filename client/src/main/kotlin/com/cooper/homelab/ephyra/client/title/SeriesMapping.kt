@@ -49,10 +49,11 @@ fun seriesUi(
 
 private val CREW_KINDS = setOf(PersonKind.Director, PersonKind.Writer, PersonKind.Producer, PersonKind.Composer)
 
-/** What the one wide button does, from what [next] says to play. */
-fun seriesPlay(next: NextEpisode?): SeriesPlay =
+/** What the one wide button does, from what [next] says to play. Null when [next] is not known yet, which is not "no episodes". */
+fun seriesPlay(next: NextEpisode?): SeriesPlay? =
     when (next) {
-        null, NextEpisode.None -> SeriesPlay.NoEpisodes
+        null -> null
+        NextEpisode.None -> SeriesPlay.NoEpisodes
         NextEpisode.AllWatched -> SeriesPlay.AllWatched
         is NextEpisode.Start -> episodePlay(PlayKind.Play, next.episode)
         is NextEpisode.Next -> episodePlay(PlayKind.Play, next.episode)

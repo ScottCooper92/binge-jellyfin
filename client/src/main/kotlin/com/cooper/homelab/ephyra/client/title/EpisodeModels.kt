@@ -32,8 +32,8 @@ data class EpisodePageUi(
     val versions: List<VersionUi>,
     val guestCast: List<PersonUi>,
     val crew: List<PersonUi>,
-    /** The other episodes of the season, which load after the page and fail on their own. */
-    val season: EpisodesState,
+    /** The other episodes of the season, which load after the page and fail on their own. Null for an episode the server gives no series or season for, which has no season to list. */
+    val season: EpisodesState?,
 )
 
 /** What the episode page shows. */
@@ -59,8 +59,8 @@ data class SeasonPageUi(
     val seriesName: String?,
     val poster: TitleImage?,
     val overview: String?,
-    /** The episode the button plays or resumes, or why there is none. */
-    val play: SeriesPlay,
+    /** The episode the button plays or resumes, or why there is none. Null while the episodes are loading or failed: say nothing yet. */
+    val play: SeriesPlay?,
     val watched: Boolean,
     val episodes: EpisodesState,
 ) {

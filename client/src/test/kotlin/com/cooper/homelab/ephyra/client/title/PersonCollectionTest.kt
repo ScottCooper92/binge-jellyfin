@@ -165,6 +165,19 @@ class PersonCollectionTest {
         }
 
     @Test
+    fun `a retry does nothing unless the person failed to load`() =
+        runBlocking {
+            seedPerson()
+            val model = personModel().also { it.start("p1") }
+            model.ready { it.credits.size == 2 }
+            val reads = jellyfin.requests.count { it.url.encodedPath == "/Items/p1" }
+            model.retry()
+            Thread.sleep(SETTLE_MILLIS)
+            assertEquals(reads, jellyfin.requests.count { it.url.encodedPath == "/Items/p1" })
+            assertEquals(2, model.ready().credits.size)
+        }
+
+    @Test
     fun `a page of titles that fails keeps the ones shown, and the next ask retries it`() =
         runBlocking {
             seedPerson()

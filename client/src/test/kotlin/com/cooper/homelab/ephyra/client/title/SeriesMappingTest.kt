@@ -75,7 +75,7 @@ class SeriesMappingTest {
 
     @Test
     fun `the button follows what to play next`() {
-        assertEquals(SeriesPlay.NoEpisodes, seriesPlay(null))
+        assertNull(seriesPlay(null))
         assertEquals(SeriesPlay.NoEpisodes, seriesPlay(NextEpisode.None))
         assertEquals(SeriesPlay.AllWatched, seriesPlay(NextEpisode.AllWatched))
         assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null), seriesPlay(NextEpisode.Start(episode("e1", 1))))

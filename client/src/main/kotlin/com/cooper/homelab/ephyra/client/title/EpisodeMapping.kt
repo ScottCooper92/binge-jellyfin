@@ -10,9 +10,10 @@ private val EPISODE_CREW = setOf(PersonKind.Director, PersonKind.Writer, PersonK
 /** The episode page from what the server answered for the episode and, once read, its season's episodes. */
 fun episodePageUi(
     detail: TitleDetail,
-    season: EpisodesState,
+    season: EpisodesState?,
 ): EpisodePageUi {
     val item = detail.item
+    val row = episodeUi(item)
     return EpisodePageUi(
         id = item.id,
         title = item.name,
@@ -21,11 +22,11 @@ fun episodePageUi(
         seasonId = item.seasonId,
         seasonNumber = item.seasonNumber,
         episodeNumber = item.episodeNumber,
-        still = episodeUi(item).still,
+        still = row.still,
         stats =
             EpisodeStats(
                 rating = item.communityRating,
-                runtimeMinutes = episodeUi(item).runtimeMinutes,
+                runtimeMinutes = row.runtimeMinutes,
                 certification = item.officialRating?.takeIf { it.isNotBlank() },
             ),
         play = playAction(item),
@@ -55,7 +56,7 @@ fun seasonPageUi(
         seriesName = item.seriesName,
         poster = item.imageTags[ImageKind.Primary]?.let { TitleImage(item.id, ImageKind.Primary, it) },
         overview = detail.overview?.takeIf { it.isNotBlank() },
-        play = episodes?.let(::seasonPlay) ?: SeriesPlay.NoEpisodes,
+        play = episodes?.let(::seasonPlay),
         watched = item.userData.played,
         episodes =
             when {
