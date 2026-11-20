@@ -29,6 +29,8 @@ data class FakeTitle(
     val personIds: List<String> = emptyList(),
     /** The ids of the collections it is in, for `/Items/{id}/Collections`. */
     val collectionIds: List<String> = emptyList(),
+    /** Whether it has a Primary picture. A hand-made box set often has none, and a part may not either. */
+    val hasPicture: Boolean = true,
     /** What a box set holds, sent as `ChildCount` only when a read names it in `fields`, as the server does. */
     val childCount: Int? = null,
     /** Raw JSON members appended to the item (`"Overview":"..."`, `"MediaSources":[...]`), for what a title page reads. */
@@ -287,7 +289,7 @@ class FakeBrowse {
         val first = sortBy?.substringBefore(',')
         val key: Comparator<FakeTitle> =
             when (first) {
-                "ProductionYear" -> compareBy(nullsLast()) { it.year }
+                "ProductionYear", "PremiereDate" -> compareBy(nullsLast()) { it.year }
                 "CommunityRating" -> compareBy(nullsLast()) { it.rating }
                 "DateCreated" -> compareBy { it.added }
                 else -> compareBy { it.name.lowercase() }
@@ -303,7 +305,7 @@ class FakeBrowse {
             rating?.let { append(""","CommunityRating":$it""") }
             officialRating?.let { append(""","OfficialRating":"$it"""") }
             append(""","RunTimeTicks":72000000000,"PrimaryImageAspectRatio":0.6667""")
-            append(""","ImageTags":{"Primary":"p-$id"},"BackdropImageTags":["b-$id"]""")
+            if (hasPicture) append(""","ImageTags":{"Primary":"p-$id"},"BackdropImageTags":["b-$id"]""") else append(""","ImageTags":{}""")
             seriesId?.let { append(""","SeriesId":"$it","SeriesName":"${seriesName.orEmpty()}","SeriesPrimaryImageTag":"sp-$it"""") }
             season?.let { append(""","ParentIndexNumber":$it""") }
             episode?.let { append(""","IndexNumber":$it""") }

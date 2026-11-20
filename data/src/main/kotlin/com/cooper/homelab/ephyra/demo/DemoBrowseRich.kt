@@ -125,7 +125,8 @@ private fun boxSets(): List<DemoTitle> =
     listOf(
         boxSet("demo-box-1", "The Quiet Collection", 2, listOf("demo-movie-1", "demo-movie-2", "demo-movie-3", "demo-movie-4")),
         // Salt Road is in both box sets, as a film can be.
-        boxSet("demo-box-2", "Late Night Trilogy", 1, listOf("demo-movie-4", "demo-movie-5", "demo-movie-6")),
+        // No picture of its own, so a card shows its first part's poster.
+        boxSet("demo-box-2", "Late Night Trilogy", 1, listOf("demo-movie-4", "demo-movie-5", "demo-movie-6"), hasPoster = false),
     )
 
 private fun boxSet(
@@ -133,7 +134,8 @@ private fun boxSet(
     name: String,
     added: Int,
     members: List<String>,
-) = DemoTitle(id, name, "BoxSet", 0, emptyList(), "", 0.0, added, members = members, hasBackdrop = false)
+    hasPoster: Boolean = true,
+) = DemoTitle(id, name, "BoxSet", 0, emptyList(), "", 0.0, added, members = members, hasPoster = hasPoster, hasBackdrop = false)
 
 /** A series of two seasons, ten episodes in the first and four in the second, and specials with one episode that has no number. */
 private fun lighthouseYears(): List<DemoTitle> {

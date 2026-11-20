@@ -20,6 +20,12 @@ interface ItemsRepository {
     /** The genres, years and ratings [library] has titles for. */
     suspend fun filterChoices(library: LibraryView): FilterChoices
 
+    /**
+     * The Primary picture of the first of [boxSet]'s parts, in release order, that has one, or null when none does: a poster for a box
+     * set with no picture of its own. One small read, so ask only for a box set that needs it.
+     */
+    suspend fun firstPoster(boxSet: BrowseItem): PosterRef? = null
+
     companion object {
         const val DEFAULT_PAGE_SIZE = 60
     }
@@ -40,4 +46,6 @@ class JellyfinItemsRepository(
     ): Page<BrowseItem> = client.browseItems(userId, library, sort, filters, startIndex, limit, withTotal)
 
     override suspend fun filterChoices(library: LibraryView): FilterChoices = client.browseFilterChoices(userId, library)
+
+    override suspend fun firstPoster(boxSet: BrowseItem): PosterRef? = client.browseFirstPoster(userId, boxSet.id)
 }

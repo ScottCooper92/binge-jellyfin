@@ -28,6 +28,8 @@ internal class DemoTitle(
     val versions: Int = 1,
     /** A box set's parts, by id. */
     val members: List<String> = emptyList(),
+    /** False for a title with no picture of its own, as a box set the user never gave one is. */
+    val hasPoster: Boolean = true,
     /** The ids of the people in it, for a person's credits and the cast row. */
     val cast: List<String> = emptyList(),
     /** False for a title with a poster and no backdrop, as a hand-made box set has. */

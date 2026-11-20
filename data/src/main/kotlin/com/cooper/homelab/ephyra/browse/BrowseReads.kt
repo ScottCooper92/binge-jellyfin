@@ -65,6 +65,37 @@ internal suspend fun JellyfinClient.browseItems(
     return decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").toPage(startIndex, withTotal)
 }
 
+/** How many of a box set's parts a poster read looks through for one with a picture: the first often has none and a later one does. */
+private const val FIRST_POSTER_PARTS = 5
+
+/**
+ * The Primary picture of the first of a box set's parts, in release order, that has one: its children, `parentId` being the box set. Only
+ * the Primary picture is asked for, one of it, and no count.
+ */
+internal suspend fun JellyfinClient.browseFirstPoster(
+    userId: String,
+    boxSetId: String,
+): PosterRef? {
+    val query =
+        linkedMapOf(
+            "userId" to userId,
+            "parentId" to boxSetId,
+            "sortBy" to "PremiereDate,SortName",
+            "sortOrder" to "Ascending",
+            "limit" to FIRST_POSTER_PARTS.toString(),
+            "enableTotalRecordCount" to "false",
+            "enableImages" to "true",
+            "enableImageTypes" to "Primary",
+            "imageTypeLimit" to "1",
+        )
+    val parts = decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items
+    return parts.firstNotNullOfOrNull { part ->
+        val id = part.id
+        val tag = part.imageTags["Primary"]
+        if (id != null && tag != null) PosterRef(id, tag) else null
+    }
+}
+
 /**
  * What the library can be filtered by: `/Items/Filters`, not `/Items/Filters2`. The newer route names genres by id and
  * leaves out years and ratings, which a filter sheet needs; the older one is in the OpenAPI document at the floor and at latest.
