@@ -739,7 +739,7 @@ class JellyfinViewModelTest {
 
         vm.changeServer()
 
-        val step = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
+        val step = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" && it.cleartextAllowed }
         assertTrue(step.cleartextAllowed)
         assertTrue(step.canConnect)
     }

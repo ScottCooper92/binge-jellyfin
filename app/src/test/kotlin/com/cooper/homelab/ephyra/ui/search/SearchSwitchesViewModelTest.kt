@@ -200,8 +200,12 @@ class SearchSwitchesViewModelTest {
             jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
 
         vm.refresh()
-        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
-        val ready = vm.ready()
+        // The kept change is put back just after the read is done, so wait for it as well as for the read.
+        val ready =
+            vm.settled {
+                val state = it as? SearchConfigState.Ready
+                state?.reading == false && state.home.displayCollectionsView
+            } as SearchConfigState.Ready
         assertEquals(
             "fra",
             ready.configuration
