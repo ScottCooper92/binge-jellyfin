@@ -58,6 +58,7 @@ private fun JsonObject.indexOf(
     val sameLanguage = if (language == null) streams else streams.filter { languageCode(it.string("Language")) == language }
     if (sameLanguage.isEmpty() || (language == null && choice.label == null)) return null
     val labelled = choice.label?.let { label -> sameLanguage.firstOrNull { it.named(label) } }
+    if (language == null && labelled == null) return null
     val picked = labelled ?: sameLanguage.firstOrNull { it.bool("IsDefault") == true } ?: sameLanguage.first()
     return picked["Index"]?.jsonPrimitive?.intOrNull
 }

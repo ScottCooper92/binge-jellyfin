@@ -149,6 +149,16 @@ class StreamChoiceTest {
     }
 
     @Test
+    fun `a label with no language that matches no track names none`() {
+        streams(audio(1, "eng", "Stereo", default = true), audio(2, "spa", "Doblaje"))
+        mint(StreamChoice(TrackChoice(null, "Commentary"), null))
+        assertEquals(1, playbackInfoAsks().size)
+        jellyfin.requests.clear()
+        mint(StreamChoice(TrackChoice(null, "Doblaje"), null))
+        assertEquals("2", playbackInfoAsks().last().url.queryParameter("audioStreamIndex"))
+    }
+
+    @Test
     fun `a language is one code however the tag or the file spells it`() {
         assertEquals("eng", languageCode("en"))
         assertEquals("eng", languageCode("eng"))
