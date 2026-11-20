@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.flags
 import com.cooper.homelab.core.flags.FixedFeatureFlags
 import com.cooper.homelab.core.flags.Flags
 import com.cooper.homelab.core.flags.SharedFlags
+import com.cooper.homelab.core.flags.bingePromotion
 import com.cooper.homelab.ephyra.BuildConfig
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

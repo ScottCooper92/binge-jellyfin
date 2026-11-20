@@ -8,7 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.core.flags.Flags
 import com.cooper.homelab.core.flags.SharedFlags
-import com.cooper.homelab.ephyra.flags.LocalFlags
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.ephyra.server.TmdbCoverage
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import org.junit.Rule
