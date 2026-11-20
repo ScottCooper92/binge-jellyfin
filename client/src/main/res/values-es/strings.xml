@@ -41,4 +41,10 @@
     <string name="client_movie_job_writer">Guion</string>
     <string name="client_movie_job_producer">Producción</string>
     <string name="client_movie_job_composer">Música</string>
+    <string name="client_movie_media_info">Información del archivo</string>
+    <string name="client_movie_media_container">Contenedor</string>
+    <string name="client_movie_media_size">Tamaño</string>
+    <string name="client_movie_media_picture">Vídeo</string>
+    <string name="client_movie_media_audio">Audio</string>
+    <string name="client_movie_media_subtitles">Subtítulos</string>
 </resources>

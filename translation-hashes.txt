@@ -1443,6 +1443,12 @@ client:client_movie_job_producer  98ee4021c6f1
 client:client_movie_job_writer  0e3c5fe00f66
 client:client_movie_mark_unwatched  17d091973ad1
 client:client_movie_mark_watched  aad77636f1ac
+client:client_movie_media_audio  bc1b88907d3b
+client:client_movie_media_container  0c7823e8c759
+client:client_movie_media_info  c01b2b208ccc
+client:client_movie_media_picture  d534be829e32
+client:client_movie_media_size  1af851907331
+client:client_movie_media_subtitles  0ee695bdeb26
 client:client_movie_original_title  4c198f5da765
 client:client_movie_overview  d4b1ea5708dd
 client:client_movie_play  436e61016e26

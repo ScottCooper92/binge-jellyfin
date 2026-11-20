@@ -1,10 +1,5 @@
 package com.cooper.homelab.ephyra.client.title
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -32,35 +27,23 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.unit.Dp
 import com.binge.companion.sdk.attempt
 import com.binge.designsystem.component.BingeFilledButton
-import com.binge.designsystem.component.DetailActions
-import com.binge.designsystem.component.DetailActionsSkeleton
-import com.binge.designsystem.component.DetailHeroSkeleton
 import com.binge.designsystem.component.DetailInfoEntry
-import com.binge.designsystem.component.DetailInfoSection
-import com.binge.designsystem.component.DetailOverviewSection
-import com.binge.designsystem.component.DetailOverviewSkeleton
-import com.binge.designsystem.component.DetailPeopleRail
 import com.binge.designsystem.component.DetailPerson
 import com.binge.designsystem.component.DetailPoster
-import com.binge.designsystem.component.DetailPosterRail
 import com.binge.designsystem.component.DetailRoundAction
 import com.binge.designsystem.component.DetailStat
-import com.binge.designsystem.component.DetailStatsRows
-import com.binge.designsystem.component.DetailStatsRowsSkeleton
 import com.binge.designsystem.component.MediaCardStatus
-import com.binge.designsystem.isExpandedLayout
-import com.binge.designsystem.layout.LayoutAnchors
-import com.binge.designsystem.layout.layoutAnchor
-import com.binge.designsystem.template.ErrorScreen
-import com.binge.designsystem.template.HeroDetailScreen
-import com.binge.designsystem.template.HeroDetailStateScreen
-import com.binge.designsystem.template.MediaHeroDetailPage
-import com.binge.designsystem.template.MediaWideHeader
-import com.binge.designsystem.template.readingMargin
+import com.binge.designsystem.template.DetailInfo
+import com.binge.designsystem.template.DetailState
+import com.binge.designsystem.template.MediaDetail
+import com.binge.designsystem.template.MediaDetailCallbacks
+import com.binge.designsystem.template.MovieDetailScreen
+import com.binge.designsystem.template.PeopleRail
+import com.binge.designsystem.template.PersonItem
+import com.binge.designsystem.template.PosterItem
+import com.binge.designsystem.template.PosterRail
 import com.binge.designsystem.theme.BingeSentiment
 import com.cooper.homelab.ephyra.client.R
 import com.cooper.homelab.ephyra.client.home.canRetry
@@ -79,11 +62,11 @@ private const val HERO_PICTURE_WIDTH = 1080
 /** The width of the poster beside the title at the expanded width. */
 private const val POSTER_WIDTH = 600
 
-/** How many round actions the loading row stands for: the watched mark and the favourite, the two every film has. */
-private const val SKELETON_ACTIONS = 2
+/** How many stats the loading page stands for: a film's usual four (rating, year, runtime, certification). */
+private const val SKELETON_STATS = 4
 
-/** The length of an ISO date (`yyyy-MM-dd`) at the front of the server's premiere date. */
-private const val ISO_DATE_LENGTH = 10
+/** How many round actions the loading page stands for: the watched mark and the favourite, the two every film has. */
+private const val SKELETON_ACTIONS = 2
 
 /**
  * What the movie page does: [onBack] leaves it, [onRetry] reads the title again after a failure, and [onPlay] is the primary button,
@@ -100,9 +83,11 @@ class MovieActions(
 )
 
 /**
- * The movie page for [state]. [imageUrl] turns a picture into a URL at a width in pixels, or null when there is none, so this screen
- * holds no server and no token. A write that fails says so in a snackbar, from [events]. A loading page is the page's own skeleton under the same back control, and a failure is the design
- * system's error screen under it, so back works whether or not the load does.
+ * The movie page for [state], on the design system's movie template. This holds what is a Jellyfin film's: the mapping from the state to
+ * the template's model (see [movieDetail]), the Play or Resume button as the primary action, the watched, favourite and versions buttons
+ * as the round ones, and the versions sheet as an overlay. The order of the page, the wide-screen rule, the skeleton and the failure
+ * frame are the template's. [imageUrl] turns a picture into a URL at a width in pixels, or null when there is none, so this screen holds
+ * no server and no token. A write that fails says so in a snackbar, from [events].
  */
 @Composable
 fun MovieScreen(
@@ -115,143 +100,164 @@ fun MovieScreen(
 ) {
     val writeFailed = stringResource(R.string.client_movie_write_failed)
     LaunchedEffect(events) { events.collect { snackbarHostState.showSnackbar(writeFailed) } }
-    when (state) {
-        MovieUiState.Loading -> MovieSkeleton(actions.onBack, snackbarHostState, modifier)
-        is MovieUiState.Failed ->
-            HeroDetailStateScreen(actions.onBack, modifier, snackbarHostState) {
-                ErrorScreen(state.failure.errorKind(), actions.onRetry.takeIf { state.failure.canRetry() }, Modifier.fillMaxSize())
-            }
-        is MovieUiState.Ready -> MovieContent(state.movie, imageUrl, actions, snackbarHostState, modifier)
-    }
-}
-
-/** The page before the title has answered: the hero, the stats, the actions and the overview as plates at the height the loaded page gives them. */
-@Composable
-fun MovieSkeleton(
-    onBack: () -> Unit,
-    snackbarHostState: SnackbarHostState,
-    modifier: Modifier = Modifier,
-) {
-    val cinematic = isExpandedLayout()
-    HeroDetailScreen(
-        title = "",
-        onBack = onBack,
-        modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        heroHeight = dimensionResource(if (cinematic) DesR.dimen.detail_cinematic_header_height else DesR.dimen.detail_hero_height),
-        horizontalInset = dimensionResource(if (cinematic) DesR.dimen.detail_cinematic_header_padding else DesR.dimen.padding_m),
-        contentMaxWidth = Dp.Infinity,
-        darkStatusBar = false,
-        hero = { DetailHeroSkeleton(cinematic) },
-    ) {
-        Spacer(Modifier.height(dimensionResource(DesR.dimen.padding_m)))
-        Column(Modifier.clearAndSetSemantics {}, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-            if (!cinematic) {
-                DetailStatsRowsSkeleton(Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Detail.STATS)), count = SKELETON_STATS)
-            }
-            DetailActionsSkeleton(Modifier.readingMargin(), buttons = SKELETON_ACTIONS)
-            if (!cinematic) DetailOverviewSkeleton(Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Detail.OVERVIEW)))
-        }
-    }
-}
-
-/** How many stats the loading page stands for: a film's usual four (rating, year, runtime, certification). */
-private const val SKELETON_STATS = 4
-
-@Composable
-private fun MovieContent(
-    movie: MovieUi,
-    imageUrl: (TitleImage, Int) -> String?,
-    actions: MovieActions,
-    snackbarHostState: SnackbarHostState,
-    modifier: Modifier,
-) {
     var choosing by rememberSaveable { mutableStateOf(false) }
     var version by rememberSaveable { mutableStateOf<String?>(null) }
-    val cinematic = isExpandedLayout()
-    val stats = movie.stats.cells()
-    val synopsis = movie.overview
-    MediaHeroDetailPage(
-        title = movie.title,
-        backdropUrl = movie.backdrop?.let { imageUrl(it, HERO_PICTURE_WIDTH) },
-        metaText = "",
-        onBack = actions.onBack,
-        modifier = modifier,
-        snackbarHostState = snackbarHostState,
-        genres = movie.genres,
-        tagline = movie.tagline,
-        wideHeader = MediaWideHeader(movie.poster?.let { imageUrl(it, POSTER_WIDTH) }, synopsis, stats),
-    ) {
-        Spacer(Modifier.height(dimensionResource(DesR.dimen.padding_m)))
-        Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-            // At the expanded width the cinematic header carries the stats and the synopsis, so the body keeps only the rest.
-            if (!cinematic && stats.isNotEmpty()) DetailStatsRows(stats)
-            MovieActionRow(movie, actions, onChooseVersion = { choosing = true })
-            if (!cinematic) DetailOverviewSection(stringResource(R.string.client_movie_overview), synopsis)
-            MovieRails(movie, imageUrl, actions)
-            TitleFacts(movie.facts)
-        }
-    }
-    if (choosing) {
-        VersionSheet(
-            versions = movie.versions,
-            selected = version ?: movie.versions.firstOrNull()?.id,
-            onSelect = {
-                version = it
-                choosing = false
-            },
-            onDismiss = { choosing = false },
+    val movie = (state as? MovieUiState.Ready)?.movie
+    // The template hands back the key an item was given, and a key must be a type a list can save, so a key is text and the item is found by it.
+    val callbacks =
+        MediaDetailCallbacks(
+            onBack = actions.onBack,
+            onRetry = actions.onRetry,
+            onOpenPerson = { key -> movie?.people()?.firstOrNull { it.key() == key }?.let(actions.onOpenPerson) },
+            onOpenPoster = { key -> movie?.cards()?.firstOrNull { it.key() == key }?.let(actions.onOpenTitle) },
         )
+    when (state) {
+        MovieUiState.Loading ->
+            MovieDetailScreen(
+                state = DetailState.Loading(stats = SKELETON_STATS, hasPrimary = true, roundActions = SKELETON_ACTIONS),
+                callbacks = callbacks,
+                modifier = modifier,
+                snackbarHostState = snackbarHostState,
+            )
+        is MovieUiState.Failed -> {
+            MovieDetailScreen(
+                // The kind's own words say it: nothing here knows more than why the server could not be read.
+                state = DetailState.Failed(retryable = state.failure.canRetry(), kind = state.failure.errorKind()),
+                callbacks = callbacks,
+                modifier = modifier,
+                snackbarHostState = snackbarHostState,
+            )
+        }
+        is MovieUiState.Ready -> {
+            MovieDetailScreen(
+                state = DetailState.Content(movieDetail(state.movie, imageUrl)),
+                callbacks = callbacks,
+                modifier = modifier,
+                primary = { sized ->
+                    BingeFilledButton(
+                        label = state.movie.play.label(),
+                        onClick = actions.onPlay,
+                        modifier = sized,
+                        leadingIcon = Icons.Filled.PlayArrow,
+                    )
+                },
+                roundActions = movieRoundActions(state.movie, actions, onChooseVersion = { choosing = true }),
+                atEnd = {
+                    val shown = state.movie.versions.firstOrNull { it.id == version } ?: state.movie.versions.firstOrNull()
+                    shown?.let { MovieMediaInfo(it) }
+                },
+                overlays = {
+                    if (choosing) {
+                        VersionSheet(
+                            versions = state.movie.versions,
+                            selected =
+                                version ?: state.movie.versions
+                                    .firstOrNull()
+                                    ?.id,
+                            onSelect = {
+                                version = it
+                                choosing = false
+                            },
+                            onDismiss = { choosing = false },
+                        )
+                    }
+                },
+                snackbarHostState = snackbarHostState,
+            )
+        }
     }
 }
 
-/** The primary button and the round actions under it: watched, favourite and, for a film with several files, the file to play. */
+/**
+ * The page's model for the template: plain display values, with every word in the user's language and every picture a URL at the width
+ * it is drawn. The cast and the crew are two rails whose items carry the person as their key, so one person can appear in both. The
+ * collection the film is in and similar films are two poster rails, the collection's titled with its own name.
+ */
 @Composable
-private fun MovieActionRow(
+fun movieDetail(
+    movie: MovieUi,
+    imageUrl: (TitleImage, Int) -> String?,
+): MediaDetail {
+    val locale = LocalConfiguration.current.locales[0]
+    val cardWidth = with(LocalDensity.current) { dimensionResource(DesR.dimen.card_width).roundToPx() }
+    val photoWidth = with(LocalDensity.current) { dimensionResource(DesR.dimen.person_card_photo_size).roundToPx() }
+    val watched = stringResource(R.string.client_movie_watched)
+    val jobs = crewJobWords()
+
+    fun people(list: List<PersonUi>) =
+        list.map { person ->
+            PersonItem(
+                person.key(),
+                DetailPerson(person.name, person.subtitle ?: person.job?.let(jobs::get), person.photo?.let { imageUrl(it, photoWidth) }),
+            )
+        }
+
+    fun posters(list: List<TitleCard>) = list.map { PosterItem(it.key(), it.poster(imageUrl, cardWidth, watched)) }
+    return MediaDetail(
+        title = movie.title,
+        backdropUrl = movie.backdrop?.let { imageUrl(it, HERO_PICTURE_WIDTH) },
+        posterUrl = movie.poster?.let { imageUrl(it, POSTER_WIDTH) },
+        tagline = movie.tagline,
+        genres = movie.genres,
+        stats = movie.stats.cells(locale),
+        overview = movie.overview,
+        overviewHeading = stringResource(R.string.client_movie_overview),
+        peopleRails =
+            listOf(
+                PeopleRail(stringResource(R.string.client_movie_cast), people(movie.cast)),
+                PeopleRail(stringResource(R.string.client_movie_crew), people(movie.crew)),
+            ),
+        posterRails =
+            listOfNotNull(
+                movie.collection?.let { PosterRail(it.name, posters(it.parts)) },
+                PosterRail(stringResource(R.string.client_movie_similar), posters(movie.similar)),
+            ),
+        info = DetailInfo(stringResource(R.string.client_movie_details), movie.facts.entries(locale)),
+    )
+}
+
+/** Who is on the page, cast first. */
+private fun MovieUi.people(): List<PersonUi> = cast + crew
+
+/** Every poster on the page: the collection's parts, then similar films. */
+private fun MovieUi.cards(): List<TitleCard> = collection?.parts.orEmpty() + similar
+
+/** A person's key on a rail: text, as a list's key must be saveable. One person is two items when they have two roles, so the role is in it. */
+private fun PersonUi.key(): String = "$id|$job|$subtitle"
+
+private fun TitleCard.key(): String = id
+
+/** The round buttons beside the primary: watched and favourite, which show their state, and for a film with several files, the file to play. */
+@Composable
+private fun movieRoundActions(
     movie: MovieUi,
     actions: MovieActions,
     onChooseVersion: () -> Unit,
-) {
+): List<DetailRoundAction> {
     val watchedLabel = stringResource(R.string.client_movie_watched)
     val favouriteLabel = stringResource(R.string.client_movie_favourite)
-    val round =
-        buildList {
-            add(
-                DetailRoundAction(
-                    icon = if (movie.watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
-                    label = watchedLabel,
-                    onClick = actions.onToggleWatched,
-                    contentDescription =
-                        stringResource(if (movie.watched) R.string.client_movie_mark_unwatched else R.string.client_movie_mark_watched),
-                ),
-            )
-            add(
-                DetailRoundAction(
-                    icon = if (movie.favourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    label = favouriteLabel,
-                    onClick = actions.onToggleFavourite,
-                    contentDescription =
-                        stringResource(
-                            if (movie.favourite) R.string.client_movie_remove_favourite else R.string.client_movie_add_favourite,
-                        ),
-                ),
-            )
-            if (movie.versions.size > 1) {
-                add(DetailRoundAction(Icons.Filled.VideoLibrary, stringResource(R.string.client_movie_versions), onChooseVersion))
-            }
-        }
-    DetailActions(
-        primary = { sized ->
-            BingeFilledButton(
-                label = movie.play.label(),
-                onClick = actions.onPlay,
-                modifier = sized,
-                leadingIcon = Icons.Filled.PlayArrow,
-            )
-        },
-        roundActions = round,
-        modifier = Modifier.readingMargin(),
-    )
+    val markWatched = stringResource(if (movie.watched) R.string.client_movie_mark_unwatched else R.string.client_movie_mark_watched)
+    val markFavourite = stringResource(if (movie.favourite) R.string.client_movie_remove_favourite else R.string.client_movie_add_favourite)
+    val versionsLabel = stringResource(R.string.client_movie_versions)
+    return buildList {
+        add(
+            DetailRoundAction(
+                icon = if (movie.watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
+                label = watchedLabel,
+                onClick = actions.onToggleWatched,
+                contentDescription = markWatched,
+            ),
+        )
+        add(
+            DetailRoundAction(
+                icon = if (movie.favourite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                label = favouriteLabel,
+                onClick = actions.onToggleFavourite,
+                contentDescription = markFavourite,
+            ),
+        )
+        if (movie.versions.size > 1) add(DetailRoundAction(Icons.Filled.VideoLibrary, versionsLabel, onChooseVersion))
+    }
 }
 
 @Composable
@@ -261,49 +267,6 @@ private fun PlayAction.label(): String =
         minutesLeft != null -> stringResource(R.string.client_movie_resume_left, minutesLeft)
         else -> stringResource(R.string.client_movie_resume)
     }
-
-/** The cast, the crew, the collection the film is in and similar films, each a row that is left out when it has nothing. */
-@Composable
-private fun MovieRails(
-    movie: MovieUi,
-    imageUrl: (TitleImage, Int) -> String?,
-    actions: MovieActions,
-) {
-    val watched = stringResource(R.string.client_movie_watched)
-    val cardWidth = with(LocalDensity.current) { dimensionResource(DesR.dimen.card_width).roundToPx() }
-    val photoWidth = with(LocalDensity.current) { dimensionResource(DesR.dimen.person_card_photo_size).roundToPx() }
-    DetailPeopleRail(
-        title = stringResource(R.string.client_movie_cast),
-        people = movie.cast,
-        itemKey = { "cast-${it.id}-${it.subtitle}" },
-        person = { DetailPerson(it.name, it.subtitle, it.photo?.let { photo -> imageUrl(photo, photoWidth) }) },
-        onOpen = actions.onOpenPerson,
-    )
-    val jobs = crewJobWords()
-    DetailPeopleRail(
-        title = stringResource(R.string.client_movie_crew),
-        people = movie.crew,
-        itemKey = { "crew-${it.id}-${it.job}-${it.subtitle}" },
-        person = { DetailPerson(it.name, it.subtitle ?: it.job?.let(jobs::get), it.photo?.let { photo -> imageUrl(photo, photoWidth) }) },
-        onOpen = actions.onOpenPerson,
-    )
-    movie.collection?.let { box ->
-        DetailPosterRail(
-            title = box.name,
-            items = box.parts,
-            itemKey = { it.id },
-            poster = { it.poster(imageUrl, cardWidth, watched) },
-            onOpen = actions.onOpenTitle,
-        )
-    }
-    DetailPosterRail(
-        title = stringResource(R.string.client_movie_similar),
-        items = movie.similar,
-        itemKey = { it.id },
-        poster = { it.poster(imageUrl, cardWidth, watched) },
-        onOpen = actions.onOpenTitle,
-    )
-}
 
 /** What each crew job is called, in the user's language. The server sends no text for it. */
 @Composable
@@ -330,42 +293,35 @@ private fun TitleCard.poster(
 
 /** The facts at the end of the page: the original title, the studios and the premiere date. Each is left out when the server gave none. */
 @Composable
-private fun TitleFacts(facts: TitleFacts) {
-    val locale = LocalConfiguration.current.locales[0]
-    DetailInfoSection(
-        heading = stringResource(R.string.client_movie_details),
-        entries =
-            listOf(
-                DetailInfoEntry(Icons.Filled.Translate, stringResource(R.string.client_movie_original_title), facts.originalTitle),
-                DetailInfoEntry(
-                    Icons.Filled.Business,
-                    stringResource(R.string.client_movie_studios),
-                    facts.studios.joinToString().ifBlank { null },
-                ),
-                DetailInfoEntry(
-                    Icons.Filled.Event,
-                    stringResource(R.string.client_movie_premiere),
-                    facts.premiereDate?.let { premiere(it, locale) },
-                ),
-            ),
+private fun TitleFacts.entries(locale: Locale): List<DetailInfoEntry> =
+    listOf(
+        DetailInfoEntry(Icons.Filled.Translate, stringResource(R.string.client_movie_original_title), originalTitle),
+        DetailInfoEntry(Icons.Filled.Business, stringResource(R.string.client_movie_studios), studios.joinToString().ifBlank { null }),
+        DetailInfoEntry(Icons.Filled.Event, stringResource(R.string.client_movie_premiere), premiereDate?.let { premiere(it, locale) }),
     )
-}
 
 /** The premiere date in the user's locale, or the server's text when it is not a date. */
 internal fun premiere(
     text: String,
     locale: Locale,
 ): String =
-    attempt { LocalDate.parse(text.take(ISO_DATE_LENGTH)) }
-        .map { it.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)) }
-        .getOrDefault(text)
+    com.binge.companion.sdk
+        .attempt { java.time.LocalDate.parse(text.take(ISO_DATE_LENGTH)) }
+        .map {
+            it.format(
+                java.time.format.DateTimeFormatter
+                    .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
+                    .withLocale(locale),
+            )
+        }.getOrDefault(text)
+
+/** The length of an ISO date (`yyyy-MM-dd`) at the front of the server's premiere date. */
+private const val ISO_DATE_LENGTH = 10
 
 /** The stats the server gave, each a cell; a stat it did not give is left out. */
 @Composable
-private fun MovieStats.cells(): List<DetailStat> {
-    // The configuration's locale is observable, so a change of language recomposes the stats.
-    val locale = LocalConfiguration.current.locales[0]
-    return listOfNotNull(
+private fun MovieStats.cells(locale: Locale): List<DetailStat> =
+    listOfNotNull(
         rating?.let { DetailStat(Icons.Filled.Star, "%.1f".format(locale, it), stringResource(DesR.string.detail_rating)) },
         year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), stringResource(R.string.client_movie_year)) },
         runtimeMinutes?.let {
@@ -377,4 +333,3 @@ private fun MovieStats.cells(): List<DetailStat> {
         },
         certification?.let { DetailStat(Icons.Filled.Shield, it, stringResource(R.string.client_movie_certification)) },
     )
-}

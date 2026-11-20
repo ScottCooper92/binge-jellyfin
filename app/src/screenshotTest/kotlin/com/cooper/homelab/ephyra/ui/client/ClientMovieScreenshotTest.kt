@@ -5,9 +5,11 @@ import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
+import com.cooper.homelab.ephyra.browse.TrackKind
 import com.cooper.homelab.ephyra.client.title.CollectionRow
 import com.cooper.homelab.ephyra.client.title.CrewJob
 import com.cooper.homelab.ephyra.client.title.MovieActions
+import com.cooper.homelab.ephyra.client.title.MovieMediaInfo
 import com.cooper.homelab.ephyra.client.title.MovieScreen
 import com.cooper.homelab.ephyra.client.title.MovieStats
 import com.cooper.homelab.ephyra.client.title.MovieUi
@@ -19,6 +21,7 @@ import com.cooper.homelab.ephyra.client.title.Resolution
 import com.cooper.homelab.ephyra.client.title.TitleCard
 import com.cooper.homelab.ephyra.client.title.TitleFacts
 import com.cooper.homelab.ephyra.client.title.TitleImage
+import com.cooper.homelab.ephyra.client.title.TrackUi
 import com.cooper.homelab.ephyra.client.title.VersionUi
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
 import com.cooper.homelab.ephyra.preview.JellyfinScreenStatePreview
@@ -128,4 +131,36 @@ class ClientMovieScreenshotTest {
     @JellyfinScreenStatePreview
     @Composable
     fun failed() = Movie(MovieUiState.Failed(ServerFailure.Unreachable()))
+
+    private fun track(
+        index: Int,
+        kind: TrackKind,
+        label: String,
+    ) = TrackUi(index, kind, label, isDefault = index == 1, isForced = false, isExternal = false, isHearingImpaired = false)
+
+    private val detailed =
+        VersionUi(
+            id = "v2",
+            name = null,
+            container = "mkv",
+            resolution = Resolution.Uhd,
+            range = "HDR10",
+            sizeBytes = 14_800_000_000L,
+            audio = listOf(track(1, TrackKind.Audio, "English · TRUEHD 7.1"), track(2, TrackKind.Audio, "Spanish · AC3 5.1")),
+            subtitles = listOf(track(3, TrackKind.Subtitle, "English"), track(4, TrackKind.Subtitle, "Spanish")),
+            defaultAudioIndex = 1,
+            defaultSubtitleIndex = null,
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinFontScalePreviews
+    @JellyfinSpanishPreviews
+    @Composable
+    fun mediaInfo() = MovieMediaInfo(detailed)
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @Composable
+    fun mediaInfoSparse() = MovieMediaInfo(version("v1").copy(resolution = null, sizeBytes = null))
 }
