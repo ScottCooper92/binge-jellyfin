@@ -43,8 +43,12 @@ class SearchSwitchesViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
     private val teardown = ViewModelTeardown()
-    private val connection =
+
+    // Built after the session is saved (as the app builds it, with a session already there): the connection's watcher takes the first
+    // session it reads as its baseline, so one built first could read none, then see the saved one as a change and cancel a save in flight.
+    private val connection by lazy {
         teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
+    }
 
     private fun <T : ViewModel> made(viewModel: T): T = teardown.made(viewModel)
 
@@ -52,6 +56,7 @@ class SearchSwitchesViewModelTest {
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
         runBlocking { sessions.save(jellyfin.session()) }
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { connection.awaitWatching() } }
     }
 
     @After
@@ -247,11 +252,15 @@ class SearchSwitchesViewModelTest {
             jellyfin.userConfiguration.replace("\"EnableNextEpisodeAutoPlay\":false", "\"EnableNextEpisodeAutoPlay\":true")
         assertTrue(server().on("EnableNextEpisodeAutoPlay"))
         vm.refresh()
-        vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
-        Thread.sleep(SEND_WAIT_MILLIS)
+        // The read has landed when the copy shows what the page saved: the state before it already says "not reading", so waiting
+        // on that alone returns at once, and the assertions below ran against the copy as it was before the read.
+        vm.settled { (it as? SearchConfigState.Ready)?.playback?.autoplayNextEpisode == true }
+        // Whatever the search still owes the server is sent now, so a stale send would be on the server before it is looked at.
+        vm.leaving()
+        runBlocking { connection.awaitSaves() }
 
-        assertTrue(vm.ready().playback.autoplayNextEpisode)
-        assertTrue(server().on("EnableNextEpisodeAutoPlay"))
+        assertTrue("the search's copy shows what the page saved", vm.ready().playback.autoplayNextEpisode)
+        assertTrue("the server still has what the page saved", server().on("EnableNextEpisodeAutoPlay"))
     }
 
     @Test
@@ -297,7 +306,10 @@ class SearchSwitchesViewModelTest {
 
         // The server would take it now, but nobody asked again: reading must not.
         jellyfin.status.remove("/Users/Configuration")
+        val reads = jellyfin.hits("/Users/Me")
         vm.refresh()
+        // The read has landed: the server was asked, and the copy is no longer reading it.
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (jellyfin.hits("/Users/Me") <= reads) delay(POLL_MILLIS) } }
         vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
         Thread.sleep(SEND_WAIT_MILLIS)
 
