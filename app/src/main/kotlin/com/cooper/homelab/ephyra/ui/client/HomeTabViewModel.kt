@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.ui.client
 
 import com.cooper.homelab.core.foundation.ServerFailure
+import com.cooper.homelab.core.server.connection.ConnectionHealth
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.browse.JellyfinLatestRepository
 import com.cooper.homelab.ephyra.browse.JellyfinLibraryRepository
@@ -12,9 +13,18 @@ import com.cooper.homelab.ephyra.client.home.HomeViewModel
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
+import com.cooper.homelab.ephyra.server.SAVED_SERVER
 import com.cooper.homelab.ephyra.server.serverFailure
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
+
+/** [read] with the monitor's word on the server laid over a Home that is still loading. */
+internal fun homeShown(
+    read: HomeUiState,
+    reach: ConnectionHealth,
+): HomeUiState =
+    if (read is HomeUiState.Loading && reach == ConnectionHealth.Unreachable) HomeUiState.Error(ServerFailure.Unreachable()) else read
 
 /**
  * Holds Home's [HomeViewModel] for the life of the tab, so a rotation or a switch of tab keeps the rows ([SignedInTabViewModel]). The
@@ -29,6 +39,7 @@ class HomeTabViewModel(
         dispatcher,
         loading = HomeUiState.Loading,
         notConnected = HomeUiState.Error(ServerFailure.NotConnected),
+        shown = { read -> combine(read, connection.monitor.health(SAVED_SERVER), ::homeShown) },
     ) {
     override fun build(
         scope: CoroutineScope,

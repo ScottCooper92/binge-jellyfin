@@ -1,6 +1,8 @@
 package com.cooper.homelab.ephyra.ui.client
 
 import com.cooper.homelab.core.foundation.ServerFailure
+import com.cooper.homelab.core.server.connection.CallResult
+import com.cooper.homelab.core.server.connection.ConnectionHealth
 import com.cooper.homelab.ephyra.FakeJellyfin
 import com.cooper.homelab.ephyra.FakeTitle
 import com.cooper.homelab.ephyra.browse.ImageKind
@@ -9,6 +11,7 @@ import com.cooper.homelab.ephyra.client.home.HomeUiState
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
+import com.cooper.homelab.ephyra.server.SAVED_SERVER
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
@@ -87,6 +90,31 @@ class HomeTabViewModelTest {
     @Test
     fun `there is no picture URL before the client is read`() {
         assertNull(viewModel().imageUrl(HomeImage("m1", ImageKind.Primary, "p"), 300))
+    }
+
+    @Test
+    fun `a server the monitor reads as unreachable shows no connection while Home is still loading`() {
+        val vm = teardown.made(HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6")))
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        assertEquals(HomeUiState.Error(ServerFailure.Unreachable()), vm.settled())
+    }
+
+    @Test
+    fun `an answer from the server takes no connection away again`() {
+        val vm = teardown.made(HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6")))
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        vm.settled { it is HomeUiState.Error }
+        connection.monitor.report(SAVED_SERVER, CallResult.Answered(200))
+        assertEquals(HomeUiState.Loading, vm.settled { it is HomeUiState.Loading })
+    }
+
+    @Test
+    fun `rows that have landed stay when the monitor reads unreachable`() {
+        val loaded = HomeUiState.Ready(hero = null, rows = emptyList())
+        assertEquals(loaded, homeShown(loaded, ConnectionHealth.Unreachable))
+        assertEquals(HomeUiState.Loading, homeShown(HomeUiState.Loading, ConnectionHealth.Healthy))
     }
 
     private companion object {
