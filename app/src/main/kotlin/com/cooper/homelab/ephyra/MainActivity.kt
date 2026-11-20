@@ -53,6 +53,7 @@ import com.cooper.homelab.ephyra.ui.chooseServer
 import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryPlaceholder
+import com.cooper.homelab.ephyra.ui.client.MoviePage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
 import com.cooper.homelab.ephyra.ui.confirmTakeBack
@@ -65,6 +66,7 @@ import com.cooper.homelab.ephyra.ui.localNetworkAnswered
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
+import com.cooper.homelab.ephyra.ui.nav.MovieRoute
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
@@ -73,6 +75,7 @@ import com.cooper.homelab.ephyra.ui.nav.openItem
 import com.cooper.homelab.ephyra.ui.nav.openLibrary
 import com.cooper.homelab.ephyra.ui.nav.openPage
 import com.cooper.homelab.ephyra.ui.nav.openPageItem
+import com.cooper.homelab.ephyra.ui.nav.openPerson
 import com.cooper.homelab.ephyra.ui.nav.openSubItem
 import com.cooper.homelab.ephyra.ui.nav.openTitle
 import com.cooper.homelab.ephyra.ui.nav.openings
@@ -286,7 +289,22 @@ private fun ConsoleHost(
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
         },
         library = { LibraryPlaceholder(onBack = { backStack.closeTop() }) },
-        title = { TitlePlaceholder(onBack = { backStack.closeTop() }) },
+        title = { route ->
+            val signed = state as? UiState.SignedIn
+            when {
+                // A film's page needs the user's session and the server's version. Every other kind keeps the placeholder until its screen lands.
+                route is MovieRoute && signed != null ->
+                    MoviePage(
+                        graph,
+                        signed.profile,
+                        route.itemId,
+                        onBack = { backStack.closeTop() },
+                        onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+                        onOpenPerson = { id -> backStack.openPerson(id) },
+                    )
+                else -> TitlePlaceholder(onBack = { backStack.closeTop() })
+            }
+        },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
                 // A stream tapped here has no page to open over, so the page opens, and the stream over it.
