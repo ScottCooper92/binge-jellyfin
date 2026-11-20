@@ -28,7 +28,7 @@ fun VersionSheet(
     onDismiss: () -> Unit,
 ) {
     BingeChoiceSheet(
-        title = stringResource(R.string.client_movie_versions_title),
+        title = stringResource(R.string.client_title_versions_title),
         choices = BingeChoiceList.Ready(versionChoices(versions)),
         selected = selected,
         onSelect = onSelect,
@@ -45,7 +45,7 @@ fun VersionSheetContent(
     modifier: Modifier = Modifier,
 ) {
     BingeChoiceSheetContent(
-        title = stringResource(R.string.client_movie_versions_title),
+        title = stringResource(R.string.client_title_versions_title),
         choices = BingeChoiceList.Ready(versionChoices(versions)),
         selected = selected,
         onSelect = onSelect,
@@ -79,7 +79,7 @@ fun versionTitle(
 ): String =
     version.name
         ?: listOfNotNull(version.resolution?.label, version.range).joinToString(SEPARATOR).ifBlank { null }
-        ?: resources.getString(R.string.client_movie_version_number, index + 1)
+        ?: resources.getString(R.string.client_title_version_number, index + 1)
 
 /**
  * What tells this file from another: its container, size, the audio it opens with and how many subtitles it carries. [formatSize]
@@ -96,6 +96,6 @@ fun versionSummary(
         version.container?.uppercase(),
         version.sizeBytes?.let(formatSize),
         audio?.label,
-        subtitles.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.client_movie_version_subtitles, it, it) },
+        subtitles.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.client_title_version_subtitles, it, it) },
     ).joinToString(SEPARATOR).ifBlank { null }
 }
