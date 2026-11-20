@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.rememberNavBackStack
 import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
+import com.cooper.homelab.core.flags.BooleanPreference
 import com.cooper.homelab.core.flags.FixedFeatureFlags
 import com.cooper.homelab.core.flags.FlagPreferenceGate
 import com.cooper.homelab.core.flags.Flags
@@ -43,10 +44,10 @@ class ClientGateNavHostTest {
 
     private fun hostWith(
         flag: Boolean,
-        prefs: ClientPrefs,
+        prefs: BooleanPreference,
     ): PreferenceGate {
         val gate =
-            FlagPreferenceGate(FixedFeatureFlags(Flags.of(ClientEnabled to flag)), ClientEnabled, prefs.enabled, prefs::setEnabled, scope)
+            FlagPreferenceGate(FixedFeatureFlags(Flags.of(ClientEnabled to flag)), ClientEnabled, prefs.value, prefs::set, scope)
         compose.setContent {
             val resolved by gate.resolved.collectAsStateWithLifecycle()
             CompositionLocalProvider(LocalClientEnabled provides (resolved ?: gate.fallback)) {
@@ -65,7 +66,7 @@ class ClientGateNavHostTest {
         return gate
     }
 
-    private fun prefs() = ClientPrefs(PreferenceDataStoreFactory.create(scope = scope) { folder.newFile("client.preferences_pb") })
+    private fun prefs() = clientPreference(PreferenceDataStoreFactory.create(scope = scope) { folder.newFile("client.preferences_pb") })
 
     @Test
     fun `the client is off while the flag is off, whatever the user chose`() {
