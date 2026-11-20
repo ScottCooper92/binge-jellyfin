@@ -14,7 +14,7 @@ import java.io.File
  */
 class ViewModelTeardownConventionTest {
     /** Tests that stop their own view models, and why. Nothing else belongs here. */
-    private val ownTeardown = setOf("JellyfinViewModelTest.kt")
+    private val ownTeardown = emptySet<String>()
 
     @Test
     fun `every view model a test builds is made through the shared teardown`() {
