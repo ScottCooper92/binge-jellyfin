@@ -57,6 +57,7 @@ import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
+import com.cooper.homelab.ephyra.ui.client.PersonPage
 import com.cooper.homelab.ephyra.ui.client.SeasonPage
 import com.cooper.homelab.ephyra.ui.client.SeriesPage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
@@ -74,6 +75,7 @@ import com.cooper.homelab.ephyra.ui.nav.EpisodeRoute
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import com.cooper.homelab.ephyra.ui.nav.LibraryRoute
 import com.cooper.homelab.ephyra.ui.nav.MovieRoute
+import com.cooper.homelab.ephyra.ui.nav.PersonRoute
 import com.cooper.homelab.ephyra.ui.nav.SeasonRoute
 import com.cooper.homelab.ephyra.ui.nav.SeriesRoute
 import com.cooper.homelab.ephyra.ui.nav.TitleRoute
@@ -370,8 +372,8 @@ internal fun ConsoleHost(
 }
 
 /**
- * The page for a title route. A film's, a series', a season's or an episode's page needs the user's session and the server's version; every other kind keeps the
- * placeholder until its screen lands.
+ * The page for a title route. A film's, a series', a season's, an episode's or a person's page needs the user's session and the server's version; every
+ * other kind keeps the placeholder until its screen lands.
  */
 @Composable
 private fun TitlePageRoute(
@@ -389,6 +391,14 @@ private fun TitlePageRoute(
                 onBack = { backStack.closeTop() },
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
+            )
+        route is PersonRoute && signed != null ->
+            PersonPage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
             )
         route is SeriesRoute && signed != null ->
             SeriesPage(

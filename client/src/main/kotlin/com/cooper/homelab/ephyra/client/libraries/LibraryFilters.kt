@@ -81,7 +81,10 @@ data class LibraryFilterDraft(
     val sort: ItemSort = ItemSort(),
     val filters: ItemFilters = ItemFilters(),
 ) {
-    /** How many filters are set, for the sheet's title. The order is not counted. */
+    /** What the pill and the sheet count: the filters set, and one more for an order other than the default. */
+    val activeCount: Int get() = appliedCount + if (sort != ItemSort()) 1 else 0
+
+    /** How many filters are set. The order is not counted here; see [activeCount]. */
     val appliedCount: Int
         get() =
             (if (filters.genres.isNotEmpty()) 1 else 0) +
@@ -181,8 +184,11 @@ data class LibraryFilterDraft(
                 },
         )
 
-    /** Clear all: no filters, and the order the sheet opened with is kept. */
+    /** Every filter off, and the order kept: what "Clear filters" on an empty grid does. */
     fun clearedFilters(): LibraryFilterDraft = copy(filters = ItemFilters())
+
+    /** Clear all in the sheet: every filter off and the order back to the library's default, which is everything [activeCount] counts. */
+    fun clearedAll(): LibraryFilterDraft = LibraryFilterDraft()
 
     private fun <T> Set<T>.toggled(value: T): Set<T> = if (value in this) this - value else this + value
 }
