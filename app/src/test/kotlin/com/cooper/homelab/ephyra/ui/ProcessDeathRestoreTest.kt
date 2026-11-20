@@ -37,7 +37,6 @@ import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import okhttp3.OkHttpClient
@@ -215,7 +214,13 @@ class ProcessDeathRestoreTest {
                 requireNotNull(
                     (awaitState(dying) { it is UiState.SignIn && it.quickConnectCode != null } as UiState.SignIn).quickConnectCode,
                 )
-            runBlocking { requireNotNull(dying.viewModelScope.coroutineContext[Job]).cancelAndJoin() }
+            val dyingJob = requireNotNull(dying.viewModelScope.coroutineContext[Job])
+            dyingJob.cancel()
+            // Not a blocking join: the cancelled work finishes on the main thread, which a block would hold.
+            waitUntil(timeoutMillis = WAIT_MILLIS) {
+                waitForIdle()
+                dyingJob.isCompleted
+            }
             assertNotNull("the wait outlives the process", stash.value)
 
             // The process that comes back: a new view model reads the wait, and the screen it composes shows that code again.
