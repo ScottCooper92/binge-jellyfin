@@ -35,7 +35,7 @@ data class MovieStats(
 }
 
 /** The facts in the details grid. Each is null or empty when the server gave none, and then is not drawn. */
-data class MovieFacts(
+data class TitleFacts(
     val originalTitle: String?,
     val studios: List<String>,
     /** The premiere date as the server sends it (`yyyy-MM-dd…`); the screen words it in the user's locale. */
@@ -127,7 +127,7 @@ data class MovieUi(
     val watched: Boolean,
     val favourite: Boolean,
     val overview: String?,
-    val facts: MovieFacts,
+    val facts: TitleFacts,
     val versions: List<VersionUi>,
     val cast: List<PersonUi>,
     val crew: List<PersonUi>,
