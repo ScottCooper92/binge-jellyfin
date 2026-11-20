@@ -22,8 +22,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -82,14 +82,15 @@ class LibraryGridModel(
             page.toGridState(LibraryGridControls(name, LibraryFilterDraft(query.sort, query.filters), offered))
         }.stateIn(scope, SharingStarted.Lazily, GridState.Loading(LibraryGridControls(null, initial, null)))
 
-    /** A grid has no pull-to-refresh state of its own: a read again shows the first page loading, as a new filter does. */
-    override val refreshing: StateFlow<Boolean> = MutableStateFlow(false).asStateFlow()
+    /** Whether a pull to refresh is reading the first page again behind the rows, which stay until it answers. */
+    override val refreshing: StateFlow<Boolean> =
+        state.map { (it as? GridState.Ready)?.refreshing == true }.stateIn(scope, SharingStarted.Lazily, false)
 
     override fun start() {
         scope.launch(dispatcher) { attempt { library() } }
     }
 
-    override fun refresh() = list.retry()
+    override fun refresh() = list.refresh()
 
     fun retry() = list.retry()
 

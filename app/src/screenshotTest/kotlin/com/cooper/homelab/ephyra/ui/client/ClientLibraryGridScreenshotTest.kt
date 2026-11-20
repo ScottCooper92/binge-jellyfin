@@ -48,7 +48,7 @@ class ClientLibraryGridScreenshotTest {
         LibraryGridScreen(
             state = state,
             imageUrl = { _, _ -> null },
-            actions = LibraryGridActions({ _, _ -> }, {}, {}, {}, {}, {}, {}, {}),
+            actions = LibraryGridActions({ _, _ -> }, {}, {}, {}, {}, {}, {}, {}, {}),
         )
 
     @PreviewTest

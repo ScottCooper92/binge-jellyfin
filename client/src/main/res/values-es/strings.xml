@@ -47,6 +47,11 @@
     <string name="client_title_media_picture">Vídeo</string>
     <string name="client_title_media_audio">Audio</string>
     <string name="client_title_media_subtitles">Subtítulos</string>
+    <string name="client_person_born">Nacimiento</string>
+    <string name="client_person_died">Fallecimiento</string>
+    <string name="client_person_birthplace">Lugar de nacimiento</string>
+    <string name="client_person_titles">Títulos</string>
+    <string name="client_person_empty">No hay nada suyo en este servidor.</string>
     <string name="client_series_play_episode">Reproducir T%1$d · E%2$d</string>
     <string name="client_series_resume_episode">Reanudar T%1$d · E%2$d</string>
     <string name="client_series_resume_episode_left">Reanudar T%1$d · E%2$d · quedan %3$d min</string>
@@ -101,6 +106,8 @@
     <string name="client_library_no_match">No hay coincidencias</string>
     <string name="client_library_empty">Esta biblioteca aún está vacía.</string>
     <string name="client_library_empty_filtered">Ningún título coincide con estos filtros.</string>
+    <string name="client_library_empty_filtered_title">Sin resultados</string>
+    <string name="client_library_refresh_failed">No se pudo actualizar. Desliza hacia abajo para reintentar.</string>
     <string name="client_library_clear_filters">Borrar filtros</string>
     <plurals name="client_library_filters_applied">
         <item quantity="one">%1$d aplicado</item>

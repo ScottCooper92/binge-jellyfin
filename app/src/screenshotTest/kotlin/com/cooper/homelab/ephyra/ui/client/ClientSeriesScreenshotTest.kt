@@ -143,7 +143,12 @@ class ClientSeriesScreenshotTest {
     @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
-    fun allWatched() = Series(SeriesUiState.Ready(series.copy(play = SeriesPlay.AllWatched, watched = true)))
+    fun allWatched() =
+        Series(
+            SeriesUiState.Ready(
+                series.copy(play = SeriesPlay.AllWatched(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null)), watched = true),
+            ),
+        )
 
     @PreviewTest
     @JellyfinTallPreview
