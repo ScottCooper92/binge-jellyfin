@@ -49,6 +49,50 @@ class BrowseReadsTest {
 
     private fun names(page: Page<BrowseItem>) = page.items.map { it.name }
 
+    private val bond = BrowseItem("set-1", "Bond", ItemKind.BoxSet)
+
+    private fun part(
+        id: String,
+        year: Int,
+        hasPicture: Boolean = true,
+    ) = jellyfin.browse.titles.add(
+        FakeTitle(id, "Film $id", "set-1", "Movie", year = year, hasPicture = hasPicture),
+    )
+
+    @Test
+    fun `a box set with no picture of its own is drawn with its first part's poster, in release order`() =
+        runBlocking {
+            part("late", 2012)
+            part("early", 1962)
+            part("middle", 1987)
+            assertEquals(PosterRef("early", "p-early"), items.firstPoster(bond))
+            val sent =
+                jellyfin.browse.itemRequests
+                    .last()
+                    .url
+            assertEquals("set-1", sent.queryParameter("parentId"))
+            assertEquals("PremiereDate,SortName", sent.queryParameter("sortBy"))
+            assertEquals("5", sent.queryParameter("limit"))
+            assertEquals("Primary", sent.queryParameter("enableImageTypes"))
+        }
+
+    @Test
+    fun `a first part with no picture is passed over for the next one that has one`() =
+        runBlocking {
+            part("early", 1962, hasPicture = false)
+            part("middle", 1987)
+            part("late", 2012)
+            assertEquals(PosterRef("middle", "p-middle"), items.firstPoster(bond))
+        }
+
+    @Test
+    fun `a box set none of whose parts has a picture, or that has no parts, has no poster`() =
+        runBlocking {
+            assertEquals(null, items.firstPoster(bond))
+            part("early", 1962, hasPicture = false)
+            assertEquals(null, items.firstPoster(bond))
+        }
+
     @Test
     fun `a box set's card carries what it holds, because the read asks the server for it`() =
         runBlocking {

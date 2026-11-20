@@ -4,6 +4,7 @@ import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.core.presentation.paging.GridState
 import com.cooper.homelab.ephyra.browse.BrowseItem
 import com.cooper.homelab.ephyra.browse.FilterChoices
+import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemFilters
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.browse.ItemSort
@@ -12,7 +13,9 @@ import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.LibraryRepository
 import com.cooper.homelab.ephyra.browse.LibraryView
 import com.cooper.homelab.ephyra.browse.Page
+import com.cooper.homelab.ephyra.browse.PosterRef
 import com.cooper.homelab.ephyra.browse.SortField
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,9 +41,17 @@ class LibraryGridModelTest {
         var failure: Throwable? = null,
         var choices: FilterChoices = FilterChoices(listOf("Drama"), listOf(2020), listOf("PG")),
         var choicesFailure: Throwable? = null,
+        /** The poster each box set is drawn with, by id; a box set not named has none. */
+        var posters: Map<String, PosterRef> = emptyMap(),
+        var posterFailure: Throwable? = null,
+        /** Holds every poster read until it completes, to see how many are in flight at once. */
+        var posterGate: CompletableDeferred<Unit>? = null,
     ) : ItemsRepository {
         val reads = mutableListOf<Read>()
         var choiceReads = 0
+        val posterReads = mutableListOf<String>()
+        var inFlight = 0
+        var mostInFlight = 0
 
         class Read(
             val sort: ItemSort,
@@ -59,6 +70,19 @@ class LibraryGridModelTest {
             reads += Read(sort, filters, startIndex)
             failure?.let { throw it }
             return Page(all.drop(startIndex).take(limit), total = all.size, startIndex = startIndex)
+        }
+
+        override suspend fun firstPoster(boxSet: BrowseItem): PosterRef? {
+            posterReads += boxSet.id
+            inFlight++
+            mostInFlight = maxOf(mostInFlight, inFlight)
+            try {
+                posterGate?.await()
+                posterFailure?.let { throw it }
+                return posters[boxSet.id]
+            } finally {
+                inFlight--
+            }
         }
 
         override suspend fun filterChoices(library: LibraryView): FilterChoices {
@@ -85,17 +109,19 @@ class LibraryGridModelTest {
     @After
     fun close() = scope.cancel()
 
-    private fun model(initial: LibraryFilterDraft = LibraryFilterDraft()) =
-        LibraryGridModel(
-            scope = scope,
-            dispatcher = Dispatchers.Unconfined,
-            libraryId = "lib-movies",
-            libraries = libraries,
-            items = items,
-            classify = { ServerFailure.Unreachable() },
-            initial = initial,
-            pageSize = PAGE,
-        ).also { it.state.onEach { }.launchIn(scope) }
+    private fun model(
+        initial: LibraryFilterDraft = LibraryFilterDraft(),
+        pageSize: Int = PAGE,
+    ) = LibraryGridModel(
+        scope = scope,
+        dispatcher = Dispatchers.Unconfined,
+        libraryId = "lib-movies",
+        libraries = libraries,
+        items = items,
+        classify = { ServerFailure.Unreachable() },
+        initial = initial,
+        pageSize = pageSize,
+    ).also { it.state.onEach { }.launchIn(scope) }
 
     private fun titles(count: Int) = List(count) { BrowseItem("item-$it", "Title $it", ItemKind.Movie) }
 
@@ -241,6 +267,95 @@ class LibraryGridModelTest {
         val model = model()
         assertEquals(ServerFailure.Unreachable(), (model.state.value as GridState.Error).failure)
         assertTrue(items.reads.isEmpty())
+    }
+
+    private fun boxSets(
+        count: Int,
+        withPicture: Set<Int> = emptySet(),
+    ) = List(count) {
+        BrowseItem(
+            "set-$it",
+            "Set $it",
+            ItemKind.BoxSet,
+            imageTags = if (it in withPicture) mapOf(ImageKind.Primary to "own-$it") else emptyMap(),
+        )
+    }
+
+    @Test
+    fun `a box set with no picture of its own gets its first part's poster, and one with a picture is not asked about`() {
+        items.all = boxSets(3, withPicture = setOf(1))
+        items.posters = mapOf("set-0" to PosterRef("part-a", "tag-a"), "set-2" to PosterRef("part-c", "tag-c"))
+        val model = model(pageSize = 10)
+        assertEquals(listOf("set-0", "set-2"), items.posterReads.sorted().filter { it in setOf("set-0", "set-2") })
+        assertFalse("set-1" in items.posterReads)
+        assertEquals(
+            mapOf("set-0" to PosterRef("part-a", "tag-a"), "set-2" to PosterRef("part-c", "tag-c")),
+            model.ready().controls.posters,
+        )
+        assertEquals(PosterRef("part-a", "tag-a"), model.posterOf(items.all[0]))
+        assertNull(model.posterOf(items.all[1]))
+    }
+
+    @Test
+    fun `a box set is asked about once, however many pages land and however often the list is read again`() {
+        items.all = boxSets(5)
+        items.posters = items.all.associate { it.id to PosterRef("part-${it.id}", "t") }
+        val model = model()
+        model.loadMore()
+        model.loadMore()
+        model.refresh()
+        assertEquals(5, items.posterReads.size)
+        assertEquals(items.posterReads.size, items.posterReads.toSet().size)
+    }
+
+    @Test
+    fun `a box set with no poster to find, or whose read fails, keeps no poster and is not asked again`() {
+        items.all = boxSets(2)
+        items.posterFailure = IOException("down")
+        val model = model()
+        assertTrue(
+            model
+                .ready()
+                .controls.posters
+                .isEmpty(),
+        )
+        items.posterFailure = null
+        items.posters = items.all.associate { it.id to PosterRef("p", "t") }
+        model.refresh()
+        model.loadMore()
+        assertTrue(
+            "it is only a picture, so it is not tried again this session",
+            model
+                .ready()
+                .controls.posters
+                .isEmpty(),
+        )
+        assertEquals(2, items.posterReads.size)
+    }
+
+    @Test
+    fun `no more than four posters are read at once`() {
+        items.all = boxSets(6)
+        val gate = CompletableDeferred<Unit>()
+        items.posterGate = gate
+        val model = model(pageSize = 10)
+        assertEquals(4, items.mostInFlight)
+        assertEquals(4, items.posterReads.size)
+        gate.complete(Unit)
+        assertEquals(6, items.posterReads.size)
+        assertEquals(4, items.mostInFlight)
+        assertTrue(
+            model
+                .ready()
+                .controls.posters
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun `titles that are not box sets are never asked about`() {
+        model()
+        assertTrue(items.posterReads.isEmpty())
     }
 
     @Test

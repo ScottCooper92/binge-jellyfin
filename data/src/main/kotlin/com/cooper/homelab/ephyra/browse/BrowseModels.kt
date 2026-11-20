@@ -24,6 +24,15 @@ enum class LibraryKind {
     }
 }
 
+/**
+ * A picture of an item that is drawn with another: [itemId]'s Primary picture, which [tag] names. A box set with no picture of its own is
+ * drawn with its first part's poster (see [ItemsRepository.firstPoster]); [ImageUrls] builds the URL for any item id and tag.
+ */
+data class PosterRef(
+    val itemId: String,
+    val tag: String,
+)
+
 /** One of the user's libraries (a view): the thing the Libraries tab lists. */
 data class LibraryView(
     val id: String,

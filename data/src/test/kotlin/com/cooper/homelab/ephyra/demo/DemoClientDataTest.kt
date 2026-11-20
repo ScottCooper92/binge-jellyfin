@@ -22,6 +22,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -112,13 +113,21 @@ class DemoClientDataTest {
         }
 
     @Test
-    fun `the Collections view lists box sets, with a poster and no backdrop`() =
+    fun `the Collections view lists box sets, none with a backdrop and one with no poster`() =
         runBlocking {
             val boxes = items.items(view(LibraryKind.BoxSets), withTotal = true)
             assertEquals(listOf("The Quiet Collection", "Late Night Trilogy"), boxes.items.map { it.name }.sortedByDescending { it.length })
             assertEquals(2, boxes.total)
             assertTrue(boxes.items.all { it.kind == ItemKind.BoxSet })
-            assertTrue(boxes.items.all { ImageKind.Primary in it.imageTags && ImageKind.Backdrop !in it.imageTags })
+            assertTrue(boxes.items.all { ImageKind.Backdrop !in it.imageTags })
+            assertEquals(listOf("The Quiet Collection"), boxes.items.filter { ImageKind.Primary in it.imageTags }.map { it.name })
+        }
+
+    @Test
+    fun `a box set with no poster has its first part's poster to show`() =
+        runBlocking {
+            val box = items.items(view(LibraryKind.BoxSets), withTotal = true).items.first { ImageKind.Primary !in it.imageTags }
+            assertNotNull(items.firstPoster(box))
         }
 
     @Test

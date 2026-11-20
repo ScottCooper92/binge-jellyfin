@@ -143,12 +143,65 @@ class JellyfinPlaybackTest {
         }
 
     @Test
-    fun `a position the sitting gives wins over the server's, and the server is not asked for it`() =
+    fun `a position the sitting gives wins over the server's`() =
         runBlocking {
             jellyfin.items += FakeItem("movie-1", "The Long Voyage", "Movie", positionTicks = 12_000_000_000L)
             val request = minter.mint(item, profile, 30_000L).request
             assertEquals(30_000L, request.resumePositionMs)
-            assertEquals(0, jellyfin.requests.count { it.url.encodedPath == "/Items" })
+            assertEquals(
+                "300000000",
+                jellyfin.requests
+                    .last {
+                        it.url.encodedPath == "/Items/movie-1/PlaybackInfo"
+                    }.url
+                    .queryParameter("startTimeTicks"),
+            )
+        }
+
+    @Test
+    fun `a play whose resume point cannot be read is refused, and one given a position is not`() {
+        jellyfin.status["/Items"] = 500
+        assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null) } }
+        assertEquals(30_000L, runBlocking { minter.mint(item, profile, 30_000L) }.request.resumePositionMs)
+    }
+
+    private fun sets(
+        sourceId: String,
+        vararg widths: Int,
+    ) = """"$sourceId":{${widths.joinToString(",") {
+        """"$it":{"Width":$it,"Height":${it * 9 / 16},"TileWidth":10,"TileHeight":10,"ThumbnailCount":360,"Interval":10000,"Bandwidth":1}"""
+    }}}"""
+
+    private fun withTrickplay(trickplay: String?) {
+        jellyfin.items += FakeItem("movie-1", "The Long Voyage", "Movie", trickplay = trickplay)
+    }
+
+    @Test
+    fun `the seek thumbnails are the sheets for the media source played, with no credential in their address`() =
+        runBlocking {
+            withTrickplay("{${sets("source-1", 160, 320, 640)},${sets("source-2", 320)}}")
+            val trickplay = minter.mint(item, profile, null).request.trickplay!!
+            assertEquals("${jellyfin.baseUrl}/Videos/source-1/Trickplay/320/{index}.jpg", trickplay.urlTemplate)
+            assertEquals(320, trickplay.thumbnailWidth)
+            assertEquals(180, trickplay.thumbnailHeight)
+            assertEquals(10, trickplay.tileColumns)
+            assertEquals(10, trickplay.tileRows)
+            assertEquals(10_000L, trickplay.intervalMs)
+            assertEquals(360, trickplay.thumbnailCount)
+            assertEquals("${jellyfin.baseUrl}/Videos/source-1/Trickplay/320/3.jpg", trickplay.sheetUrl(3))
+            assertFalse(trickplay.urlTemplate.contains("token-1") || trickplay.urlTemplate.contains("ApiKey", ignoreCase = true))
+        }
+
+    @Test
+    fun `no seek thumbnails for a title with none, an older server, or a source the server holds none for`() =
+        runBlocking {
+            assertNull(minter.mint(item, profile, null).request.trickplay)
+            withTrickplay("{${sets("other-source", 320)}}")
+            assertNull(minter.mint(item, profile, null).request.trickplay)
+            jellyfin.items.clear()
+            withTrickplay("{${sets("source-1", 320)}}")
+            val old = JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.8.13"))
+            assertNull(old.mint(item, profile, null).request.trickplay)
         }
 
     @Test
