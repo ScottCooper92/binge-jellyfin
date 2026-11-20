@@ -55,7 +55,7 @@ class JellyfinPlaybackTest {
     @Test
     fun `a source the device plays as it is is the file itself with the token in the header only`() =
         runBlocking {
-            val request = minter.mint(item, profile, null).request
+            val request = minter.mint(item, profile, null, null).request
             assertEquals(PlayMethod.DIRECT_PLAY, request.source.method)
             assertEquals("video/mp4", request.source.mimeType)
             val url = request.source.url.toHttpUrl()
@@ -77,7 +77,7 @@ class JellyfinPlaybackTest {
     fun `a source the device cannot play is the server's HLS transcode, with the token taken out of its address`() =
         runBlocking {
             jellyfin.playbackInfo = FakeJellyfin.transcodeInfo()
-            val request = minter.mint(item, profile, null).request
+            val request = minter.mint(item, profile, null, null).request
             assertEquals(PlayMethod.TRANSCODE, request.source.method)
             assertEquals("application/x-mpegURL", request.source.mimeType)
             assertTrue(request.source.url, request.source.url.contains("/videos/x/master.m3u8"))
@@ -93,7 +93,7 @@ class JellyfinPlaybackTest {
     @Test
     fun `an external subtitle is a track with no token in its address, and an embedded one stays in the stream`() =
         runBlocking {
-            val tracks = minter.mint(item, profile, null).request.subtitles
+            val tracks = minter.mint(item, profile, null, null).request.subtitles
             val track = tracks.single()
             assertEquals("eng", track.language)
             assertEquals("English", track.label)
@@ -108,7 +108,7 @@ class JellyfinPlaybackTest {
     fun `the device profile reaches the server as a Jellyfin profile`() =
         runBlocking {
             val limited = profile.copy(codecLimits = listOf(CodecLimit("video/avc", "high", 1920, 1080)), maxBitrateBps = 20_000_000L)
-            minter.mint(item, limited, null)
+            minter.mint(item, limited, null, null)
             val body = jellyfin.lastBody("/Items/movie-1/PlaybackInfo")
             assertEquals("user-1", body["UserId"]?.jsonPrimitive?.content)
             assertEquals(20_000_000L, body["MaxStreamingBitrate"]?.jsonPrimitive?.content?.toLong())
@@ -127,7 +127,7 @@ class JellyfinPlaybackTest {
     fun `a play resumes where the server last had the user, and a played item starts over`() =
         runBlocking {
             jellyfin.items += FakeItem("movie-1", "The Long Voyage", "Movie", positionTicks = 12_000_000_000L)
-            val request = minter.mint(item, profile, null).request
+            val request = minter.mint(item, profile, null, null).request
             assertEquals(1_200_000L, request.resumePositionMs)
             assertEquals(
                 "12000000000",
@@ -139,14 +139,14 @@ class JellyfinPlaybackTest {
             )
             jellyfin.items.clear()
             jellyfin.items += FakeItem("movie-1", "The Long Voyage", "Movie", played = true, positionTicks = 12_000_000_000L)
-            assertEquals(0L, minter.mint(item, profile, null).request.resumePositionMs)
+            assertEquals(0L, minter.mint(item, profile, null, null).request.resumePositionMs)
         }
 
     @Test
     fun `a position the sitting gives wins over the server's`() =
         runBlocking {
             jellyfin.items += FakeItem("movie-1", "The Long Voyage", "Movie", positionTicks = 12_000_000_000L)
-            val request = minter.mint(item, profile, 30_000L).request
+            val request = minter.mint(item, profile, 30_000L, null).request
             assertEquals(30_000L, request.resumePositionMs)
             assertEquals(
                 "300000000",
@@ -161,8 +161,8 @@ class JellyfinPlaybackTest {
     @Test
     fun `a play whose resume point cannot be read is refused, and one given a position is not`() {
         jellyfin.status["/Items"] = 500
-        assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null) } }
-        assertEquals(30_000L, runBlocking { minter.mint(item, profile, 30_000L) }.request.resumePositionMs)
+        assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null, null) } }
+        assertEquals(30_000L, runBlocking { minter.mint(item, profile, 30_000L, null) }.request.resumePositionMs)
     }
 
     private fun sets(
@@ -180,7 +180,7 @@ class JellyfinPlaybackTest {
     fun `the seek thumbnails are the sheets for the media source played, with no credential in their address`() =
         runBlocking {
             withTrickplay("{${sets("source-1", 160, 320, 640)},${sets("source-2", 320)}}")
-            val trickplay = minter.mint(item, profile, null).request.trickplay!!
+            val trickplay = minter.mint(item, profile, null, null).request.trickplay!!
             assertEquals("${jellyfin.baseUrl}/Videos/source-1/Trickplay/320/{index}.jpg", trickplay.urlTemplate)
             assertEquals(320, trickplay.thumbnailWidth)
             assertEquals(180, trickplay.thumbnailHeight)
@@ -195,23 +195,23 @@ class JellyfinPlaybackTest {
     @Test
     fun `no seek thumbnails for a title with none, an older server, or a source the server holds none for`() =
         runBlocking {
-            assertNull(minter.mint(item, profile, null).request.trickplay)
+            assertNull(minter.mint(item, profile, null, null).request.trickplay)
             withTrickplay("{${sets("other-source", 320)}}")
-            assertNull(minter.mint(item, profile, null).request.trickplay)
+            assertNull(minter.mint(item, profile, null, null).request.trickplay)
             jellyfin.items.clear()
             withTrickplay("{${sets("source-1", 320)}}")
             val old = JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.8.13"))
-            assertNull(old.mint(item, profile, null).request.trickplay)
+            assertNull(old.mint(item, profile, null, null).request.trickplay)
         }
 
     @Test
     fun `a refusal the server gives is a status, and a server with no source for the item is not found`() {
         jellyfin.playbackInfo = """{"ErrorCode":"NotAllowed","MediaSources":[]}"""
-        assertEquals(403, assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null) } }.code)
+        assertEquals(403, assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null, null) } }.code)
         jellyfin.playbackInfo = """{"ErrorCode":"NoCompatibleStream","MediaSources":[]}"""
-        assertEquals(409, assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null) } }.code)
+        assertEquals(409, assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null, null) } }.code)
         jellyfin.playbackInfo = """{"PlaySessionId":"p","MediaSources":[]}"""
-        assertEquals(404, assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null) } }.code)
+        assertEquals(404, assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null, null) } }.code)
     }
 
     private fun segmentsBody(vararg entries: String) = """{"Items":[${entries.joinToString(",")}],"TotalRecordCount":${entries.size}}"""
@@ -242,7 +242,7 @@ class JellyfinPlaybackTest {
                     PlaySegment(PlaySegmentKind.PREVIEW, 3_200_000L, 3_300_000L),
                     PlaySegment(PlaySegmentKind.CREDITS, 3_300_000L, 3_600_000L),
                 ),
-                minter.mint(item, profile, null).request.segments,
+                minter.mint(item, profile, null, null).request.segments,
             )
         }
 
@@ -253,7 +253,7 @@ class JellyfinPlaybackTest {
             val old = JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.9.11"))
             assertTrue(
                 old
-                    .mint(item, profile, null)
+                    .mint(item, profile, null, null)
                     .request.segments
                     .isEmpty(),
             )
@@ -262,14 +262,14 @@ class JellyfinPlaybackTest {
                 FakeJellyfin.directPlayInfo().replace("\"Container\":\"mp4\"", "\"Container\":\"mp4\",\"HasSegments\":false")
             assertTrue(
                 minter
-                    .mint(item, profile, null)
+                    .mint(item, profile, null, null)
                     .request.segments
                     .isEmpty(),
             )
             assertEquals(0, jellyfin.hits("/MediaSegments/movie-1"))
             jellyfin.playbackInfo = FakeJellyfin.directPlayInfo()
             jellyfin.status["/MediaSegments/movie-1"] = 500
-            val request = minter.mint(item, profile, null).request
+            val request = minter.mint(item, profile, null, null).request
             assertTrue(request.segments.isEmpty())
             assertEquals(
                 "source-1",
@@ -293,7 +293,7 @@ class JellyfinPlaybackTest {
                 )
             assertEquals(
                 listOf(PlayChapter(0L, "Departure"), PlayChapter(600_000L, null), PlayChapter(1_200_000L, null)),
-                minter.mint(item, profile, null).request.chapters,
+                minter.mint(item, profile, null, null).request.chapters,
             )
         }
 
@@ -302,14 +302,14 @@ class JellyfinPlaybackTest {
         runBlocking {
             assertTrue(
                 minter
-                    .mint(item, profile, null)
+                    .mint(item, profile, null, null)
                     .request.chapters
                     .isEmpty(),
             )
             jellyfin.browse.titles += FakeTitle("movie-1", "The Long Voyage", "lib-movies")
             assertTrue(
                 minter
-                    .mint(item, profile, null)
+                    .mint(item, profile, null, null)
                     .request.chapters
                     .isEmpty(),
             )
@@ -317,7 +317,7 @@ class JellyfinPlaybackTest {
             assertEquals(
                 "source-1",
                 minter
-                    .mint(item, profile, null)
+                    .mint(item, profile, null, null)
                     .request.source.url
                     .toHttpUrl()
                     .queryParameter("mediaSourceId"),

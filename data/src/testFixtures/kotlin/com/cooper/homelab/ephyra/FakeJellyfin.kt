@@ -602,6 +602,10 @@ class FakeJellyfin : Dispatcher() {
     @Volatile
     var playbackInfo: String = directPlayInfo()
 
+    /** What a `PlaybackInfo` ask that names an audio or subtitle stream gets, where it is not the same as the first answer. */
+    @Volatile
+    var streamPlaybackInfo: String? = null
+
     init {
         server.dispatcher = this
         server.start()
@@ -1030,10 +1034,15 @@ class FakeJellyfin : Dispatcher() {
             path.startsWith("/UserPlayedItems/") -> setPlayed(path.removePrefix("/UserPlayedItems/"), request.method == "POST")
             path.matches(OLD_PLAYED_ROUTE) -> setPlayed(path.substringAfterLast('/'), request.method == "POST")
             path.startsWith("/MediaSegments/") -> json(segments[path.substringAfterLast('/')] ?: """{"Items":[],"TotalRecordCount":0}""")
-            path.endsWith("/PlaybackInfo") -> json(playbackInfo)
+            path.endsWith("/PlaybackInfo") -> json(playbackInfoFor(request))
             path.startsWith("/Sessions/Playing") -> MockResponse(code = 204)
             else -> MockResponse(code = 404)
         }
+    }
+
+    private fun playbackInfoFor(request: RecordedRequest): String {
+        val names = request.url.queryParameter("audioStreamIndex") != null || request.url.queryParameter("subtitleStreamIndex") != null
+        return if (names) streamPlaybackInfo ?: playbackInfo else playbackInfo
     }
 
     private fun socket(request: RecordedRequest): MockResponse {

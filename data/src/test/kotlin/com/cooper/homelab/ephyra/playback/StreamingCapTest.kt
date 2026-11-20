@@ -48,28 +48,28 @@ class StreamingCapTest {
     @Test
     fun `no cap leaves what the device says, in the body and in the profile`() =
         runBlocking {
-            minter(NoStreamingCap).mint(item, device, null)
+            minter(NoStreamingCap).mint(item, device, null, null)
             assertEquals(40_000_000L to 40_000_000L, asked())
         }
 
     @Test
     fun `a cap below the device's lowers the body and the profile to the same number`() =
         runBlocking {
-            minter { 4_000_000L }.mint(item, device, null)
+            minter { 4_000_000L }.mint(item, device, null, null)
             assertEquals(4_000_000L to 4_000_000L, asked())
         }
 
     @Test
     fun `a cap above the device's does not raise it`() =
         runBlocking {
-            minter { 120_000_000L }.mint(item, device, null)
+            minter { 120_000_000L }.mint(item, device, null, null)
             assertEquals(40_000_000L to 40_000_000L, asked())
         }
 
     @Test
     fun `a device that gave no ceiling is held to the cap`() =
         runBlocking {
-            minter { 8_000_000L }.mint(item, device.copy(maxBitrateBps = 0L), null)
+            minter { 8_000_000L }.mint(item, device.copy(maxBitrateBps = 0L), null, null)
             assertEquals(8_000_000L to 8_000_000L, asked())
         }
 
@@ -78,13 +78,13 @@ class StreamingCapTest {
         runBlocking {
             var cap: Long? = 4_000_000L
             val minter = minter { cap }
-            minter.mint(item, device, null)
+            minter.mint(item, device, null, null)
             assertEquals(4_000_000L, asked().first)
             cap = 10_000_000L
-            minter.mint(item, device, null)
+            minter.mint(item, device, null, null)
             assertEquals(10_000_000L, asked().first)
             cap = null
-            minter.mint(item, device, null)
+            minter.mint(item, device, null, null)
             assertEquals(40_000_000L, asked().first)
         }
 }

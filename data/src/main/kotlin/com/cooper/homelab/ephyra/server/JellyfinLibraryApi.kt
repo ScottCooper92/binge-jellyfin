@@ -133,6 +133,7 @@ suspend fun JellyfinClient.playbackInfo(
     itemId: String,
     body: JsonObject,
     startTimeTicks: Long? = null,
+    streams: Map<String, String> = emptyMap(),
 ): JsonObject =
     postObject(
         "Items/$itemId/PlaybackInfo",
@@ -140,6 +141,7 @@ suspend fun JellyfinClient.playbackInfo(
         buildMap {
             put("userId", userId)
             startTimeTicks?.takeIf { it > 0 }?.let { put("startTimeTicks", it.toString()) }
+            putAll(streams)
         },
     )
 
