@@ -122,6 +122,8 @@ data class MovieUi(
     val tagline: String?,
     val genres: List<String>,
     val backdrop: TitleImage?,
+    /** The poster, which the wide header shows beside the title. */
+    val poster: TitleImage?,
     val stats: MovieStats,
     val play: PlayAction,
     val watched: Boolean,
