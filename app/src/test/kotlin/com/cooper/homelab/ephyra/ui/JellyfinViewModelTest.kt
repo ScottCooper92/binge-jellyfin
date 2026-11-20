@@ -808,6 +808,26 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `the tab restored for a server that was not reached is not carried to another server`() {
+        val handle =
+            SavedStateHandle(
+                mapOf(
+                    "setup_address" to "http://127.0.0.1:1",
+                    "setup_signing_in" to true,
+                    "setup_quick_connect" to true,
+                ),
+            )
+        val vm = viewModel(savedState = handle)
+        // Nothing answers at the restored address, so the sign-in step is never reached for it.
+        vm.await<UiState.EnterServer> { it.address == "http://127.0.0.1:1" && it.error != null }
+
+        vm.onAddress(jellyfin.baseUrl)
+        vm.connect()
+
+        assertFalse(vm.await<UiState.SignIn>().quickConnectSelected)
+    }
+
+    @Test
     fun `a kill on the password tab reopens the sign-in step on the password tab`() {
         val handle = SavedStateHandle()
         val vm = viewModel(savedState = handle)
