@@ -305,6 +305,10 @@ tasks.withType<Test>().configureEach {
         failOnNoDiscoveredTests = false
         maxParallelForks = 1
     } else {
+        // Half the cores, at most four: two forks on CI's four-vCPU runner, as binge-seerr does. The Robolectric classes
+        // dominate this task, and in one fork they ran one after another. Each fork is its own JVM and Robolectric
+        // sandbox, so nothing is shared between them that a single fork did not already reset between classes.
+        maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 4)
         // Robolectric fetches its android-all jars itself, outside Gradle's repositories, so point it at
         // the same mirror as settings.gradle.kts: Central answers bursts from shared runners with a 429.
         systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2/")
