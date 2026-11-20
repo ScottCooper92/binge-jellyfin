@@ -11,7 +11,6 @@
     <string name="setup_insecure_warning">Esta dirección usa HTTP sin cifrar en un host público, así que tu contraseña cruzaría internet sin cifrar. Usa https:// si el servidor lo admite.</string>
     <string name="setup_allow_cleartext">Conectar por HTTP sin cifrar igualmente</string>
     <string name="setup_try_demo">Probar la demo</string>
-    <string name="setup_change">Cambiar</string>
     <string name="setup_incomplete_title">Este servidor aún no está configurado</string>
     <string name="setup_incomplete_body">Termina de configurarlo en la página web de Jellyfin y vuelve a comprobar. No hay ninguna cuenta con la que iniciar sesión hasta entonces.</string>
     <string name="setup_incomplete_check">Comprobar de nuevo</string>
@@ -31,7 +30,6 @@
     <string name="startup_password_again">Repite la contraseña</string>
     <string name="startup_password_mismatch">Las contraseñas no coinciden.</string>
     <string name="startup_account_save">Crear cuenta</string>
-    <string name="setup_sign_in_title">Iniciar sesión</string>
     <string name="forgot_password">¿Olvidaste la contraseña?</string>
     <string name="tv_forgot_back">Volver a iniciar sesión</string>
     <string name="forgot_admin_title">Pídeselo a un administrador</string>
@@ -57,7 +55,6 @@
 
     <string name="quick_connect_title">Introduce este código</string>
     <string name="quick_connect_body">En una app de Jellyfin en la que hayas iniciado sesión, abre tu perfil, luego Quick Connect, e introduce el código.</string>
-    <string name="quick_connect_cancel">Usar una contraseña</string>
 
     <string name="server_detail">%1$s · Jellyfin %2$s</string>
     <string name="server_detail_cleartext">Sin cifrar · %1$s</string>
