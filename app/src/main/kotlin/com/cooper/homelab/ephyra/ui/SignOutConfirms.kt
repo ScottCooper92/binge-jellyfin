@@ -4,10 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeConfirmDialog
 import com.binge.designsystem.component.BingeConfirmDialogContent
+import com.cooper.homelab.core.flags.bingePromotion
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.auth.JellyfinSession
-import com.cooper.homelab.ephyra.flags.LocalFlags
-import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.insecurePublicHost
 
 /** Shows or hides the sign-out confirm. */

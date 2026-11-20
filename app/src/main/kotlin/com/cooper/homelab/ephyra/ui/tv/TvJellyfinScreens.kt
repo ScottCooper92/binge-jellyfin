@@ -60,10 +60,10 @@ import com.binge.designsystem.tv.template.TvTwoPaneCopy
 import com.binge.designsystem.tv.template.TvTwoPanePage
 import com.binge.designsystem.tv.template.TvTwoPaneStyle
 import com.binge.designsystem.tv.theme.TvButtonStyle
+import com.cooper.homelab.core.flags.bingePromotion
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.feedback.installBugReportUrl
-import com.cooper.homelab.ephyra.flags.LocalFlags
-import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.server.ForgotPasswordAction
 import com.cooper.homelab.ephyra.server.JellyfinVersion
 import com.cooper.homelab.ephyra.ui.Actions

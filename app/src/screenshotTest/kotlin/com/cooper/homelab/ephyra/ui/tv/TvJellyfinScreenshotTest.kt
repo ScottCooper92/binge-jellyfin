@@ -12,7 +12,7 @@ import com.binge.designsystem.SaveStatus
 import com.binge.designsystem.tv.component.TvButton
 import com.cooper.homelab.core.flags.Flags
 import com.cooper.homelab.core.flags.SharedFlags
-import com.cooper.homelab.ephyra.flags.LocalFlags
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.ephyra.preview.JellyfinTvScreenPreviews
 import com.cooper.homelab.ephyra.preview.JellyfinTvStressPreviews
 import com.cooper.homelab.ephyra.server.Culture

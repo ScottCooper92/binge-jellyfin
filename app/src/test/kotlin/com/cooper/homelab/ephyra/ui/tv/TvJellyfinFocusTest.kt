@@ -26,9 +26,9 @@ import androidx.compose.ui.test.pressKey
 import com.binge.designsystem.testing.createTakeDownKeyboardAndroidComposeRule
 import com.cooper.homelab.core.flags.Flags
 import com.cooper.homelab.core.flags.SharedFlags
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.auth.JellyfinSession
-import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.server.Culture
 import com.cooper.homelab.ephyra.server.DiscoveredServer
 import com.cooper.homelab.ephyra.server.ForgotPasswordAction

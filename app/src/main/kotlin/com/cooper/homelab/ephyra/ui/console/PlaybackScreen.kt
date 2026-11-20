@@ -39,9 +39,9 @@ import com.binge.designsystem.layout.LayoutAnchors
 import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.FormScreen
 import com.binge.designsystem.template.formSaveStatus
+import com.cooper.homelab.core.flags.bingePromotion
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.ephyra.R
-import com.cooper.homelab.ephyra.flags.LocalFlags
-import com.cooper.homelab.ephyra.flags.bingePromotion
 import com.cooper.homelab.ephyra.server.Culture
 import com.cooper.homelab.ephyra.server.SubtitleMode
 import com.cooper.homelab.ephyra.ui.search.SettingRows
