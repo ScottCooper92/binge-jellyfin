@@ -17,7 +17,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.cooper.homelab.ephyra.AppGraph
 import com.cooper.homelab.ephyra.ConsoleHost
 import com.cooper.homelab.ephyra.FakeJellyfin
+import com.cooper.homelab.ephyra.PlainCipher
 import com.cooper.homelab.ephyra.auth.SessionStore
+import com.cooper.homelab.ephyra.auth.forLibrary
 import com.cooper.homelab.ephyra.flags.LocalClientEnabled
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
@@ -28,9 +30,11 @@ import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.setMain
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -51,13 +55,29 @@ class ProcessDeathRestoreTest {
         teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
     private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext()) }
 
+    /** As every view model test: Main is a dispatcher the teardown can wait on from the main thread, which the platform's looper is not. */
+    @Before
+    fun main() = Dispatchers.setMain(Dispatchers.Unconfined)
+
     @After
     fun close() = teardown.close(jellyfin)
 
     /** The app's screen over a view model that is new each time the composition is built from nothing but its saved state. */
     @Composable
     private fun App() {
-        val viewModel = remember { teardown.made(JellyfinViewModel(sessions, connection, LibraryIndex(), discover = { emptyList() })) }
+        val viewModel =
+            remember {
+                teardown.made(
+                    JellyfinViewModel(
+                        sessions,
+                        connection,
+                        LibraryIndex(),
+                        dispatcher = Dispatchers.IO,
+                        cipher = PlainCipher.forLibrary(),
+                        discover = { emptyList() },
+                    ),
+                )
+            }
         val state by viewModel.state.collectAsStateWithLifecycle()
         val backStack = rememberNavBackStack(HomeRoute)
         val actions = Actions(onAddress = viewModel::onAddress)
