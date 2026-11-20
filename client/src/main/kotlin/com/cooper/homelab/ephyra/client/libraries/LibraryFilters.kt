@@ -167,6 +167,20 @@ data class LibraryFilterDraft(
             else -> this
         }
 
+    /** The filter [section] cleared, as the chip that stands for it is removed. The order and the other filters are kept. */
+    fun without(section: String): LibraryFilterDraft =
+        copy(
+            filters =
+                when (section) {
+                    LibraryFilterSection.GENRES -> filters.copy(genres = emptySet())
+                    LibraryFilterSection.RATINGS -> filters.copy(officialRatings = emptySet())
+                    LibraryFilterSection.YEARS -> filters.copy(years = emptySet())
+                    LibraryFilterSection.PLAYED -> filters.copy(played = null)
+                    LibraryFilterSection.FAVOURITES -> filters.copy(favouritesOnly = false)
+                    else -> filters
+                },
+        )
+
     /** Clear all: no filters, and the order the sheet opened with is kept. */
     fun clearedFilters(): LibraryFilterDraft = copy(filters = ItemFilters())
 
