@@ -233,7 +233,7 @@ private fun SeriesUi.shownSeason(): SeasonUi? = seasons.firstOrNull { it.id == s
 
 private fun SeriesUi.episodeList(): List<EpisodeUi> = (episodes as? EpisodesState.Ready)?.episodes.orEmpty()
 
-/** The primary button's words, or null when there is nothing to play: every episode watched, none on the server, or not known yet. */
+/** The primary button's words, or null when there is nothing to play: none on the server, or not known yet. A series with every episode watched offers its first again. */
 @Composable
 private fun SeriesPlay?.primaryLabel(): String? =
     when (this) {

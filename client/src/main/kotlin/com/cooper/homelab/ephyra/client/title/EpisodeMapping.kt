@@ -69,7 +69,7 @@ fun seasonPageUi(
 
 /**
  * What the season's button does: resume the episode the user stopped part way through, else play the first not watched, else
- * nothing to continue with. The episodes are in the server's order.
+ * offer the season's first episode again once all are watched. The episodes are in the server's order.
  */
 fun seasonPlay(episodes: List<BrowseItem>): SeriesPlay {
     val target =
