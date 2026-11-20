@@ -71,6 +71,7 @@ import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import com.cooper.homelab.ephyra.ui.nav.MovieRoute
 import com.cooper.homelab.ephyra.ui.nav.SeriesRoute
+import com.cooper.homelab.ephyra.ui.nav.TitleRoute
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
@@ -294,33 +295,7 @@ internal fun ConsoleHost(
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
         },
         library = { LibraryPlaceholder(onBack = { backStack.closeTop() }) },
-        title = { route ->
-            val signed = state as? UiState.SignedIn
-            when {
-                // A film's or a series' page needs the user's session and the server's version. Every other kind keeps the placeholder until its screen lands.
-                route is MovieRoute && signed != null ->
-                    MoviePage(
-                        graph,
-                        signed.profile,
-                        route.itemId,
-                        onBack = { backStack.closeTop() },
-                        onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
-                        onOpenPerson = { id -> backStack.openPerson(id) },
-                    )
-                route is SeriesRoute && signed != null ->
-                    SeriesPage(
-                        graph,
-                        signed.profile,
-                        route.itemId,
-                        onBack = { backStack.closeTop() },
-                        onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
-                        onOpenSeason = { id -> backStack.openTitle(ItemKind.Season, id) },
-                        onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
-                        onOpenPerson = { id -> backStack.openPerson(id) },
-                    )
-                else -> TitlePlaceholder(onBack = { backStack.closeTop() })
-            }
-        },
+        title = { route -> TitlePageRoute(route, state as? UiState.SignedIn, graph, backStack) },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
                 // A stream tapped here has no page to open over, so the page opens, and the stream over it.
@@ -368,6 +343,42 @@ internal fun ConsoleHost(
             }
         },
     )
+}
+
+/**
+ * The page for a title route. A film's or a series' page needs the user's session and the server's version; every other kind keeps the
+ * placeholder until its screen lands.
+ */
+@Composable
+private fun TitlePageRoute(
+    route: TitleRoute,
+    signed: UiState.SignedIn?,
+    graph: AppGraph,
+    backStack: NavBackStack<NavKey>,
+) {
+    when {
+        route is MovieRoute && signed != null ->
+            MoviePage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+                onOpenPerson = { id -> backStack.openPerson(id) },
+            )
+        route is SeriesRoute && signed != null ->
+            SeriesPage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+                onOpenSeason = { id -> backStack.openTitle(ItemKind.Season, id) },
+                onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
+                onOpenPerson = { id -> backStack.openPerson(id) },
+            )
+        else -> TitlePlaceholder(onBack = { backStack.closeTop() })
+    }
 }
 
 /**
