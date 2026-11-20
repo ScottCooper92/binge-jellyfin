@@ -66,8 +66,10 @@ class LiveTvSchedulesDirectViewModelTest {
         try {
             runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
         } catch (e: TimeoutCancellationException) {
-            val asked = jellyfin.requests.map { "${it.method} ${it.url.encodedPath}" }
-            throw AssertionError("Timed out waiting for the setup to reach a state. It was ${state.value}; the server was asked $asked", e)
+            throw AssertionError(
+                "Timed out waiting for the setup to reach a state. It was ${state.value}; the server was asked ${jellyfin.asked()}",
+                e,
+            )
         }
 
     private val usa = SdCountry("USA", "United States", "North America")
