@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra.playback
 
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
 import com.cooper.homelab.player.api.MediaPlayer
+import com.cooper.homelab.player.api.PlayAudioOption
 import com.cooper.homelab.player.api.PlayRequest
 import com.cooper.homelab.player.api.PlaySource
 import com.cooper.homelab.player.api.PlayTitle
@@ -19,6 +20,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -61,19 +63,24 @@ class PlaybackSittingsTest {
     private val minted = mutableListOf<Pair<String, Long?>>()
     private val choices = mutableListOf<StreamChoice?>()
     private var mintFails: Throwable? = null
+    private var mintFailsOnce: Throwable? = null
     private val reports = mutableListOf<Triple<String, PlayReport, Long>>()
     private var nextOf: (PlayItem) -> PlayItem? = { null }
     private var ids = 0
 
-    private fun sittings() =
+    private fun sittings(offeredAudio: Boolean = false) =
         PlaybackSittings(
             scope,
             player,
             minter = { item, _, resume, choice ->
                 mintFails?.let { throw it }
+                mintFailsOnce?.let {
+                    mintFailsOnce = null
+                    throw it
+                }
                 minted += item.itemId to resume
                 choices += choice
-                Minted(request(item), Handle(item))
+                Minted(if (offeredAudio) offered(item) else request(item), Handle(item))
             },
             reporter = { play, kind, position -> reports += Triple((play as Handle).item.itemId, kind, position) },
             nextEpisodes = { nextOf(it) },
@@ -213,6 +220,62 @@ class PlaybackSittingsTest {
             player.events.send(PlayerEvent.NextRequested(59_000))
             assertEquals(audio, player.updates.last().preferredAudio)
             assertEquals("off is a choice, kept", SubtitlePreference.Off, player.updates.last().preferredSubtitle)
+        }
+
+    private fun offered(item: PlayItem) =
+        request(item).copy(
+            audioOptions =
+                listOf(
+                    PlayAudioOption("1", "en", "English", current = true),
+                    PlayAudioOption("2", "es", "Spanish"),
+                ),
+        )
+
+    @Test
+    fun `a pick from the offered audio mints that stream at the position in the same session, and is remembered for the next episode`() =
+        runTest {
+            nextOf = { item -> episodes.getOrNull(episodes.indexOf(item) + 1) }
+            val sittings = sittings(offeredAudio = true)
+            val id = sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+
+            player.events.send(PlayerEvent.AudioOptionRequested("2", 12_000))
+            assertEquals("item1" to 12_000L, minted.last())
+            assertEquals(2, choices.last()?.audioStream)
+            assertEquals(id, player.updates.last().sessionId)
+            assertEquals(TrackChoice("es", "Spanish"), player.updates.last().preferredAudio)
+
+            player.events.send(PlayerEvent.TracksChosen(null, TrackChoice(null, "Track 1")))
+            assertEquals("the one track the transcode reports does not undo the pick", "Spanish", choices.last()?.audio?.label)
+
+            player.events.send(PlayerEvent.NextRequested(59_000))
+            assertEquals("item2" to 0L, minted.last())
+            assertNull("the stream index belongs to the first episode", choices.last()?.audioStream)
+            assertEquals("es", choices.last()?.audio?.language)
+        }
+
+    @Test
+    fun `a switch of audio the server refuses says so, and the play goes on as it was`() =
+        runTest {
+            val sittings = sittings(offeredAudio = true)
+            val id = sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            val failures = mutableListOf<AudioSwitchFailure>()
+            val job = launch(UnconfinedTestDispatcher(testScheduler)) { sittings.audioSwitchFailures(id).collect { failures += it } }
+
+            mintFailsOnce = JellyfinHttpException(409, "Items/{id}/PlaybackInfo")
+            player.events.send(PlayerEvent.AudioOptionRequested("2", 12_000))
+            assertEquals(listOf(AudioSwitchFailure.Refused), failures)
+            assertTrue("still playing", sittings.outcomeOf(id) is PlaybackOutcome.Playing)
+            assertTrue("no new source was handed over", player.updates.isEmpty())
+
+            mintFailsOnce = IOException("down")
+            player.events.send(PlayerEvent.AudioOptionRequested("2", 13_000))
+            assertEquals(AudioSwitchFailure.Unreachable, failures.last())
+
+            player.events.send(PlayerEvent.AudioOptionRequested("9", 14_000))
+            assertEquals("a key it never offered is ignored", 2, failures.size)
+            job.cancel()
         }
 
     @Test

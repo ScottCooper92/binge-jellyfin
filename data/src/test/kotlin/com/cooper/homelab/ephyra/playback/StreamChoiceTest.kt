@@ -149,6 +149,26 @@ class StreamChoiceTest {
     }
 
     @Test
+    fun `a source with two audio streams offers both, the one the server chose marked current, and one stream offers nothing`() {
+        streams(audio(1, "eng", "Stereo", default = true), audio(2, "spa", "Doblaje"))
+        val options = mint(null).request.audioOptions
+        assertEquals(listOf("1", "2"), options.map { it.key })
+        assertEquals(listOf("eng", "spa"), options.map { it.language })
+        assertEquals(listOf(true, false), options.map { it.current })
+        assertEquals("Stereo", options[0].description)
+
+        streams(audio(1, "eng", "Stereo", default = true))
+        assertEquals(emptyList<Any>(), mint(null).request.audioOptions)
+    }
+
+    @Test
+    fun `a stream the user picked from the list is asked for by its index, whatever the language says`() {
+        streams(audio(1, "eng", "Stereo", default = true), audio(2, "eng", "Commentary"))
+        mint(StreamChoice(TrackChoice("en", null), null, audioStream = 2))
+        assertEquals("2", playbackInfoAsks().last().url.queryParameter("audioStreamIndex"))
+    }
+
+    @Test
     fun `a label with no language that matches no track names none`() {
         streams(audio(1, "eng", "Stereo", default = true), audio(2, "spa", "Doblaje"))
         mint(StreamChoice(TrackChoice(null, "Commentary"), null))
