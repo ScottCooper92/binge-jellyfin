@@ -5,6 +5,7 @@ import com.cooper.homelab.core.presentation.connect.ConnectError
 import com.cooper.homelab.core.presentation.connect.ConnectState
 import com.cooper.homelab.core.presentation.connect.LinkState
 import com.cooper.homelab.core.presentation.connect.ProbedServer
+import com.cooper.homelab.core.presentation.connect.SignInForm
 import com.cooper.homelab.core.server.address.ServerAddress
 import com.cooper.homelab.ephyra.server.PublicServerInfo
 
@@ -89,3 +90,53 @@ private fun signIn(
         quickConnectOn = SetupMode.QuickConnect in server.modes,
     )
 }
+
+/** The flow's error for what the screens hold, so a shared step can show it: the reverse of [toSetupError]. */
+internal fun SetupError.toConnectError(): ConnectError =
+    when (this) {
+        SetupError.InvalidAddress -> ConnectError.InvalidAddress
+        SetupError.NotJellyfin -> ConnectError.NotThisServer
+        SetupError.QuickConnectExpired -> ConnectError.LinkExpired
+        SetupError.QuickConnectOff -> ConnectError.LinkNotOffered
+        SetupError.Unreachable -> ConnectError.Failed(ServerFailure.Unreachable())
+        SetupError.LocalNetworkDenied -> ConnectError.Failed(ServerFailure.LocalNetworkDenied)
+        SetupError.ClientCertificateNeeded -> ConnectError.Failed(ServerFailure.ClientCertificateNeeded)
+        SetupError.CleartextRefused -> ConnectError.Failed(ServerFailure.CleartextBlocked)
+        SetupError.WrongCredentials -> ConnectError.Failed(ServerFailure.SessionRejected)
+        SetupError.Generic -> ConnectError.Failed(ServerFailure.Unknown)
+    }
+
+/** The address step the shared screen draws for this step of the server step, with the local-network ask where that is what failed. */
+internal fun UiState.EnterServer.toConnectState(): ConnectState.Address =
+    ConnectState.Address(
+        address = address,
+        insecure = insecureHost != null,
+        cleartextAllowed = cleartextAllowed,
+        isInspecting = checking,
+        error = error?.toConnectError(),
+        needsLocalNetwork = error == SetupError.LocalNetworkDenied,
+        canTryDemo = true,
+    )
+
+private const val UNPARSED_ADDRESS = "http://invalid.invalid"
+
+/**
+ * The second step the shared screen draws for this sign-in step: the password form (the way in the screens offer first, with Quick
+ * Connect as a button of their own, so the form always holds the password's mode), or the notice of a server that is not set up. A code
+ * being waited on is [linkState]'s, and keeps the step busy.
+ */
+internal fun UiState.SignIn.toConnectState(): ConnectState<PublicServerInfo> {
+    val address = ServerAddress.parse(baseUrl) ?: requireNotNull(ServerAddress.parse(UNPARSED_ADDRESS))
+    val modes = if (quickConnectOn) listOf(SetupMode.Password, SetupMode.QuickConnect) else listOf(SetupMode.Password)
+    val probed = ProbedServer(address, server.serverName.ifBlank { baseUrl }, !server.setupIncomplete, modes, server)
+    val failure = (passwordError ?: quickConnectError)?.toConnectError()
+    if (server.setupIncomplete) return ConnectState.NotSetUp(probed, isChecking = false, error = failure)
+    val form = SignInForm(SetupMode.Password, mapOf(USERNAME_FIELD to username, PASSWORD_FIELD to password))
+    return ConnectState.SignIn(probed, form, isConnecting = busy || gettingCode || quickConnectCode != null, error = failure)
+}
+
+/** The code the screen shows while Quick Connect waits for its approval, or null. */
+internal fun UiState.SignIn.linkState(): LinkState? = quickConnectCode?.let { LinkState(it, openUrl = null, launchPending = false) }
+
+/** What changed between this form and [after], by field id: the screens report each as the user's edit of that field. */
+internal fun SignInForm.changesTo(after: SignInForm): Map<String, String> = after.values.filter { (field, value) -> value(field) != value }

@@ -98,13 +98,11 @@ fun episodeUi(episode: BrowseItem): EpisodeUi {
         title = episode.name,
         overview = episode.overview?.takeIf { it.isNotBlank() },
         still = still,
-        runtimeMinutes = episode.runTimeTicks?.let { (it / TICKS_PER_MINUTE).toInt() },
+        runtimeMinutes = episode.runTimeTicks?.let(::runtimeMinutes),
         watched = episode.userData.played,
         progress = episodeProgress(episode),
     )
 }
-
-private const val TICKS_PER_MINUTE = 600_000_000L
 
 private fun episodeProgress(episode: BrowseItem): Float? {
     if (episode.userData.played) return null

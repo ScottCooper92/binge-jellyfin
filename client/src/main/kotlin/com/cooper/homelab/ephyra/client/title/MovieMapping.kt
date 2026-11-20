@@ -9,7 +9,6 @@ import com.cooper.homelab.ephyra.browse.TitleDetail
 import com.cooper.homelab.ephyra.browse.TitlePerson
 import com.cooper.homelab.ephyra.browse.TrackKind
 
-private const val TICKS_PER_MINUTE = 600_000_000L
 private const val UHD_WIDTH = 3_000
 private const val FULL_HD_WIDTH = 1_800
 private const val HD_WIDTH = 1_200
@@ -32,7 +31,7 @@ fun movieUi(
             MovieStats(
                 rating = item.communityRating,
                 year = item.year,
-                runtimeMinutes = item.runTimeTicks?.let(::minutes),
+                runtimeMinutes = item.runTimeTicks?.let(::runtimeMinutes),
                 certification = item.officialRating?.takeIf { it.isNotBlank() },
             ),
         play = playAction(item),

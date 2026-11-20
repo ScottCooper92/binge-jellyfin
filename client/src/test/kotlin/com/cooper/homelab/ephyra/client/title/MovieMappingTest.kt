@@ -79,6 +79,14 @@ class MovieMappingTest {
     }
 
     @Test
+    fun `a runtime under a minute is left out and one of a minute or more is kept`() {
+        assertNull(movieUi(detail(item = item(runtime = 59 * minute / 60)), emptyList(), null).stats.runtimeMinutes)
+        assertEquals(1, movieUi(detail(item = item(runtime = minute)), emptyList(), null).stats.runtimeMinutes)
+        assertNull(runtimeMinutes(0L))
+        assertEquals(90, runtimeMinutes(90 * minute + 1))
+    }
+
+    @Test
     fun `stats with nothing are empty`() {
         val bare = movieUi(detail(item = BrowseItem("x", "Bare", ItemKind.Movie)), emptyList(), null)
         assertTrue(bare.stats.isEmpty)

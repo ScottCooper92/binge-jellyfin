@@ -238,7 +238,7 @@ class JellyfinScreenshotTest {
     @JellyfinFontScalePreviews
     @JellyfinSpanishPreviews
     @Composable
-    fun quickConnectCode() = JellyfinRoot(previewQuickConnect, Actions())
+    fun quickConnectCode() = QuickConnectCodeBody(requireNotNull(previewQuickConnect.quickConnectCode), Actions())
 
     @PreviewTest
     @JellyfinScreenStatePreview
