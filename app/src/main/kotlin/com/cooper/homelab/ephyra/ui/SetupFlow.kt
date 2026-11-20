@@ -101,7 +101,7 @@ internal class SetupFlow(
     /** What the password form held when Quick Connect was chosen, so leaving Quick Connect gives it back. */
     var typed: Map<String, String> = emptyMap()
 
-    /** The tab the sign-in step opens on once the server has been read, for a restore; used once, and only if the server offers it. */
+    /** The tab the sign-in step opens on once the server has been read, for a restore; used once, only for that server, and only if it offers it. */
     var firstMode: SetupMode? = null
 
     /** The name to put in the sign-in step once the server has been read again: the account the wizard made, whose sign-in failed. */
@@ -213,6 +213,7 @@ internal class SetupFlow(
         signedInFlow.value = null
         state.value = UiState.Loading
         typed = emptyMap()
+        firstMode = null
         flow.editAddress(addressAfter(baseUrl))
         flow.changeServer()
         // The flow may already have been at this step, in which case it has nothing new to say.

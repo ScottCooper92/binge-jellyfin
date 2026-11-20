@@ -16,7 +16,11 @@ internal class SetupActions(
 ) {
     private val flow get() = setup.flow
 
-    fun onAddress(value: String) = flow.editAddress(value)
+    fun onAddress(value: String) {
+        // A tab restored for the server that was typed before the kill is not for a different address.
+        setup.firstMode = null
+        flow.editAddress(value)
+    }
 
     fun allowCleartext(allowed: Boolean) = flow.allowCleartext(allowed)
 
@@ -100,6 +104,7 @@ internal class SetupActions(
      */
     fun changeServer(recheck: Boolean) {
         setup.links.cancel()
+        setup.firstMode = null
         setup.typed = emptyMap()
         val saved = signedIn()
         val address =
