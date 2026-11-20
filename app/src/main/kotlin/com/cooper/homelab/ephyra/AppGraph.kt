@@ -103,6 +103,8 @@ class AppGraph(
     context: Context,
     /** Where every server call runs. */
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    /** The session store, for a test that signs in without the platform's keystore, which a unit test has none of. The app passes none. */
+    private val sessionsForTest: SessionStore? = null,
 ) {
     private val appContext = context.applicationContext
 
@@ -169,6 +171,7 @@ class AppGraph(
     val serverIdentity: ServerIdentity by lazy { ServerIdentity(dataStore("server_identity")) }
 
     val sessions: SessionStore by lazy {
+        sessionsForTest?.let { return@lazy it }
         val cipher = KeystoreSecretCipher(TOKEN_KEY_ALIAS)
         val legacyFile = dataStore("session")
         val legacy = LegacySessionStore(legacyFile, cipher, io)

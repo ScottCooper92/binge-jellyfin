@@ -74,6 +74,9 @@ abstract class SignedInTabViewModel<S, M : TabModel<S>>(
         client: JellyfinClient,
     ): M
 
+    /** The tab's own model once the client is read, for a tab that offers actions of its own beyond the two ways to read. */
+    protected val model: M? get() = (source.value as? Source.Ready)?.model
+
     /** The URL builder for the client that was read, or null before it is (and with no session). */
     protected val images: ImageUrls? get() = (source.value as? Source.Ready)?.images
 
