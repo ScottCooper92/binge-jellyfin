@@ -28,7 +28,7 @@ class PersonActions(
 private const val PHOTO_WIDTH = 400
 private const val POSTER_WIDTH = 300
 
-/** The person page over the design system's template: mapping and callbacks only. TRIAL: not pushed. */
+/** The person page over the design system's template: mapping and callbacks only. */
 @Composable
 fun PersonScreen(
     state: PersonUiState,
@@ -65,8 +65,6 @@ fun PersonScreen(
             ),
     )
 }
-
-private fun TitleCard.key(): String = id
 
 /** The profile's labelled lines; a fact the server did not give is left out. */
 @Composable
@@ -119,6 +117,7 @@ internal fun credits(
     val state = person.creditsState
     return when {
         items.isEmpty() && state is CreditsState.Loading -> DesCreditsState.Loading
+        items.isEmpty() && state is CreditsState.Ready && state.hasMore -> DesCreditsState.Loading
         items.isEmpty() && state is CreditsState.Failed -> DesCreditsState.Failed(retryable = state.failure.canRetry())
         items.isEmpty() && state is CreditsState.Ready && !state.hasMore -> DesCreditsState.Empty(emptyMessage)
         else ->
