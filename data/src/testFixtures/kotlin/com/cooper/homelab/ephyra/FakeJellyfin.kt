@@ -5,6 +5,7 @@ import com.binge.companion.kit.SecretCipher
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.auth.LegacySessionStore
 import com.cooper.homelab.ephyra.auth.SessionStore
+import com.cooper.homelab.ephyra.server.TICKS_PER_HOUR
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +45,7 @@ data class FakeItem(
     val name: String,
     val type: String,
     val tmdbId: Int? = null,
-    val runTimeTicks: Long = 60 * 60 * 10_000_000L,
+    val runTimeTicks: Long = TICKS_PER_HOUR,
     val played: Boolean = false,
     val positionTicks: Long = 0L,
     val lastPlayed: String? = null,

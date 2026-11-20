@@ -17,6 +17,7 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.JellyfinVersion
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import com.cooper.homelab.ephyra.server.UserDataChange
 import com.cooper.homelab.ephyra.server.serverFailure
 import kotlinx.coroutines.CoroutineScope
@@ -117,7 +118,7 @@ class PersonCollectionTest {
     fun `a collection counts what is watched and gives each part its runtime`() {
         val parts =
             listOf(
-                BrowseItem("a", "A", ItemKind.Movie, runTimeTicks = 600_000_000L * 90, userData = ItemUserData(played = true)),
+                BrowseItem("a", "A", ItemKind.Movie, runTimeTicks = 90 * TICKS_PER_MINUTE, userData = ItemUserData(played = true)),
                 BrowseItem("b", "B", ItemKind.Movie),
             )
         val detail =

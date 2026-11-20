@@ -5,6 +5,7 @@ import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.browse.ItemUserData
 import com.cooper.homelab.ephyra.browse.NextEpisode
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -12,8 +13,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SeriesMappingTest {
-    private val minute = 600_000_000L
-
     private fun season(
         id: String,
         number: Int,
@@ -42,7 +41,7 @@ class SeriesMappingTest {
         seasonNumber = 1,
         episodeNumber = number,
         seasonId = seasonId,
-        runTimeTicks = 50 * minute,
+        runTimeTicks = 50 * TICKS_PER_MINUTE,
         overview = " ",
         parentBackdropItemId = "series",
         parentBackdropImageTag = "bd",
@@ -67,8 +66,8 @@ class SeriesMappingTest {
         assertNull(plain.overview)
         assertEquals(50, plain.runtimeMinutes)
         assertNull(plain.progress)
-        assertEquals(0.5f, episodeUi(episode("e2", 2, position = 25 * minute)).progress)
-        assertNull(episodeUi(episode("e3", 3, played = true, position = 25 * minute)).progress)
+        assertEquals(0.5f, episodeUi(episode("e2", 2, position = 25 * TICKS_PER_MINUTE)).progress)
+        assertNull(episodeUi(episode("e3", 3, played = true, position = 25 * TICKS_PER_MINUTE)).progress)
         val own = episodeUi(episode("e4", 4).copy(imageTags = mapOf(ImageKind.Primary to "p")))
         assertEquals(TitleImage("e4", ImageKind.Primary, "p"), own.still)
     }
@@ -85,7 +84,7 @@ class SeriesMappingTest {
         assertEquals(SeriesPlay.Episode(PlayKind.Play, "e2", 1, 2, null), seriesPlay(NextEpisode.Next(episode("e2", 2))))
         assertEquals(
             SeriesPlay.Episode(PlayKind.Resume, "e3", 1, 3, 25),
-            seriesPlay(NextEpisode.Resume(episode("e3", 3, position = 25 * minute))),
+            seriesPlay(NextEpisode.Resume(episode("e3", 3, position = 25 * TICKS_PER_MINUTE))),
         )
     }
 

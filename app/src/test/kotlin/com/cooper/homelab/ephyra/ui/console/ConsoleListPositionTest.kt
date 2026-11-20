@@ -13,6 +13,7 @@ import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.ephyra.server.ApiKey
 import com.cooper.homelab.ephyra.server.ServerDevice
 import com.cooper.homelab.ephyra.server.ServerTask
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import com.cooper.homelab.ephyra.server.TaskTrigger
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import org.junit.Assert.assertEquals
@@ -102,6 +103,5 @@ class ConsoleListPositionTest {
     private companion object {
         const val ROWS = 60
         const val SCROLL_PX = 900f
-        const val TICKS_PER_MINUTE = 600_000_000L
     }
 }
