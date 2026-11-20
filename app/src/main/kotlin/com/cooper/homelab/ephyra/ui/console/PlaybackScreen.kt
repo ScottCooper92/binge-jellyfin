@@ -114,10 +114,7 @@ private fun PlaybackBody(
     actions: PlaybackActions,
     onOpen: (LanguagePicker) -> Unit,
 ) {
-    val locale = currentLocale()
-    val any = stringResource(R.string.languages_any)
-
-    fun named(code: String) = if (code == ANY) any else state.cultures.find(code)?.label(locale) ?: code
+    val languages = languageItems(state, onOpen)
     val preferences = state.preferences
     Column(verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_l))) {
         PageIntro(stringResource(playbackBody()))
@@ -126,12 +123,7 @@ private fun PlaybackBody(
             modifier = Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Collection.FIRST_ITEM)),
             rows =
                 listOf(
-                    ListItem(
-                        icon = Icons.Outlined.Audiotrack,
-                        label = stringResource(R.string.languages_audio),
-                        detail = named(preferences.audio),
-                        onClick = { onOpen(LanguagePicker.Audio) },
-                    ),
+                    languages.audio,
                     ListItem(
                         icon = Icons.Outlined.GraphicEq,
                         label = stringResource(R.string.playback_default_audio),
@@ -156,18 +148,8 @@ private fun PlaybackBody(
             title = stringResource(R.string.playback_subtitles),
             rows =
                 listOf(
-                    ListItem(
-                        icon = Icons.Outlined.Subtitles,
-                        label = stringResource(R.string.languages_subtitles),
-                        detail = named(preferences.subtitles),
-                        onClick = { onOpen(LanguagePicker.Subtitles) },
-                    ),
-                    ListItem(
-                        icon = Icons.Outlined.ClosedCaption,
-                        label = stringResource(R.string.languages_subtitle_mode),
-                        detail = stringResource(preferences.subtitleMode.label),
-                        onClick = { onOpen(LanguagePicker.SubtitleMode) },
-                    ),
+                    languages.subtitles,
+                    languages.subtitleMode,
                     ListItem(
                         icon = Icons.Outlined.Restore,
                         label = stringResource(R.string.playback_remember_subtitles),
@@ -195,8 +177,54 @@ private fun PlaybackBody(
     }
 }
 
+/**
+ * The three rows that are the user's server preferences, the one definition of them: the playback page and the This app page both
+ * show these, so their labels, icons and "any language" wording cannot drift. A tap asks [onOpen] for the picker.
+ */
+internal class LanguageItems(
+    val audio: ListItem,
+    val subtitles: ListItem,
+    val subtitleMode: ListItem,
+)
+
 @Composable
-private fun LanguageSheet(
+internal fun languageItems(
+    state: PlaybackUiState.Ready,
+    onOpen: (LanguagePicker) -> Unit,
+): LanguageItems {
+    val locale = currentLocale()
+    val any = stringResource(R.string.languages_any)
+
+    fun named(code: String) = if (code == ANY) any else state.cultures.find(code)?.label(locale) ?: code
+    val preferences = state.preferences
+    return LanguageItems(
+        audio =
+            ListItem(
+                icon = Icons.Outlined.Audiotrack,
+                label = stringResource(R.string.languages_audio),
+                detail = named(preferences.audio),
+                onClick = { onOpen(LanguagePicker.Audio) },
+            ),
+        subtitles =
+            ListItem(
+                icon = Icons.Outlined.Subtitles,
+                label = stringResource(R.string.languages_subtitles),
+                detail = named(preferences.subtitles),
+                onClick = { onOpen(LanguagePicker.Subtitles) },
+            ),
+        subtitleMode =
+            ListItem(
+                icon = Icons.Outlined.ClosedCaption,
+                label = stringResource(R.string.languages_subtitle_mode),
+                detail = stringResource(preferences.subtitleMode.label),
+                onClick = { onOpen(LanguagePicker.SubtitleMode) },
+            ),
+    )
+}
+
+/** The picker [picker] opens, over whichever page shows the rows. */
+@Composable
+internal fun LanguageSheet(
     picker: LanguagePicker,
     state: PlaybackUiState.Ready,
     actions: PlaybackActions,
