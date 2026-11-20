@@ -169,6 +169,20 @@ class DemoClientDataTest {
         }
 
     @Test
+    fun `every person a title lists has that title in their credits`() =
+        runBlocking {
+            listOf("demo-movie-1", "demo-movie-7", "demo-series-4", "demo-series-1", "demo-film-5", "demo-movie-4").forEach { id ->
+                titles.title(id)!!.people.forEach { person ->
+                    val credits = people.titlesWith(person.id, limit = 200).items.map { it.id }
+                    assertTrue("$id is in ${person.name}'s credits", id in credits)
+                }
+            }
+            // A title that credits no one lists no one, and the director is on the titles that credit him.
+            assertTrue(titles.title("demo-movie-4")!!.people.isEmpty())
+            assertTrue(people.titlesWith(ALEX_MOOR).items.isNotEmpty())
+        }
+
+    @Test
     fun `a cast row has a person with a picture and one without`() =
         runBlocking {
             val cast = titles.title("demo-movie-7")!!.people

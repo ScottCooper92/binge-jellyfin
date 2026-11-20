@@ -58,7 +58,7 @@ private val EPISODE_NAMES =
 /** Who is in the original sample titles, so a person's credits are real: the cast they list is in the titles that list them. */
 internal fun originalCast(id: String): List<String> =
     when (id) {
-        "demo-movie-1", "demo-movie-2", "demo-movie-3", "demo-series-1" -> listOf(SAM_RIVERS)
+        "demo-movie-1", "demo-movie-2", "demo-movie-3", "demo-series-1" -> listOf(SAM_RIVERS, ALEX_MOOR)
         "demo-movie-5", "demo-series-3" -> listOf(ROBIN_HALE)
         else -> emptyList()
     }
@@ -205,7 +205,17 @@ private fun lighthouseYears(): List<DemoTitle> {
     val secondSeason = (1..SECOND_SEASON_EPISODES).map { episode(2, it, "Winter $it") }
     val specials = listOf(episode(0, 1, "Behind the Lamp"), episode(0, null, "Outtakes"))
     val series =
-        DemoTitle(id, name, "Series", SERIES_YEAR, listOf("Drama", "Mystery"), "TV-14", 8.6, 3, cast = listOf(SAM_RIVERS, ROBIN_HALE))
+        DemoTitle(
+            id,
+            name,
+            "Series",
+            SERIES_YEAR,
+            listOf("Drama", "Mystery"),
+            "TV-14",
+            8.6,
+            3,
+            cast = listOf(SAM_RIVERS, ROBIN_HALE, ALEX_MOOR),
+        )
     return listOf(series, season(0), season(1), season(2)) + specials + firstSeason + secondSeason
 }
 
@@ -217,6 +227,8 @@ internal class DemoPerson(
     val born: String?,
     val place: String?,
     val photo: Boolean,
+    /** How a title page credits them: an actor with a role, or the director. */
+    val type: String = "Actor",
 ) {
     fun toJson(): JsonObject =
         buildJsonObject {
@@ -234,7 +246,7 @@ internal class DemoPerson(
 internal val PERSONS: List<DemoPerson> =
     listOf(
         DemoPerson(SAM_RIVERS, "Sam Rivers", "An actor.", "1980-03-02T00:00:00.0000000Z", "Leeds, UK", true),
-        DemoPerson(ALEX_MOOR, "Alex Moor", "A director.", null, null, true),
+        DemoPerson(ALEX_MOOR, "Alex Moor", "A director.", null, null, true, type = "Director"),
         DemoPerson(ROBIN_HALE, "Robin Hale", "An actor with no picture on file.", "1991-07-14T00:00:00.0000000Z", "Cork, IE", false),
         DemoPerson(QUINN_ASH, "Quinn Ash", "A writer with nothing on this server yet.", null, "Dundee, UK", true),
     )
@@ -247,7 +259,8 @@ internal fun DemoTitle.detail(): JsonObject {
         buildMap {
             putAll(base)
             if (genres.isNotEmpty()) put("Genres", JsonArray(genres.map(::JsonPrimitive)))
-            if (cast.isNotEmpty()) put("People", people())
+            // A title lists only the people it is credited to, so a person's page and a title's cast agree.
+            if (cast.isNotEmpty()) put("People", people()) else remove("People")
             if (playable) put("MediaSources", JsonArray((1..versions).map { source(it) })) else remove("MediaSources")
             if (type == "BoxSet" || type == "Season") {
                 remove("People")
@@ -262,8 +275,8 @@ internal fun DemoTitle.detail(): JsonObject {
 private fun DemoTitle.people(): JsonArray =
     JsonArray(
         cast.mapNotNull { id -> PERSONS.firstOrNull { it.id == id } }.map { person ->
-            castMember("Actor", person, "Role")
-        } + castMember("Director", PERSONS.first { it.id == ALEX_MOOR }, null),
+            castMember(person.type, person, "Role".takeIf { person.type == "Actor" })
+        },
     )
 
 private fun castMember(
