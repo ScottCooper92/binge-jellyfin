@@ -51,6 +51,12 @@ annotation class JellyfinFontScalePreviews
 @Preview(name = "es", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = "es")
 annotation class JellyfinSpanishPreviews
 
+/** Spanish at font scales 1.3 and 2.0: its longer words at the sizes that most often clip them. */
+@PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
+@Preview(name = "es-font13", device = PHONE_PORTRAIT_SPEC, fontScale = 1.3f, uiMode = UI_MODE_NIGHT_YES, locale = "es")
+@Preview(name = "es-font20", device = PHONE_PORTRAIT_SPEC, fontScale = 2f, uiMode = UI_MODE_NIGHT_YES, locale = "es")
+annotation class JellyfinSpanishFontScalePreviews
+
 /** The phone cell alone: a screen's own frame, and each state of it. */
 @PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
 @Preview(name = "phone", device = PHONE_PORTRAIT_SPEC, uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)

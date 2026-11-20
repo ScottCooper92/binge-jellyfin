@@ -3,7 +3,6 @@ package com.cooper.homelab.ephyra.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.binge.designsystem.component.BingeLoadingIndicator
 import com.binge.designsystem.component.BingeOutlinedButton
 import com.binge.designsystem.component.BingeTextButton
@@ -107,7 +106,7 @@ internal fun ConnectSetupScreen(
                 onTryDemo = actions.onTryDemo,
             ),
         signInActions = signInActions(signIn, actions),
-        linkActions = ConnectLinkActions(onLaunched = {}, onCancel = actions.onCancelQuickConnect),
+        linkActions = ConnectLinkActions(onLaunched = {}, onCancel = actions.onCancelCode),
         addressHeading = {
             StepHeading(title = stringResource(R.string.setup_server_title), subtitle = stringResource(R.string.setup_server_body))
         },
@@ -130,9 +129,11 @@ internal fun ConnectSetupScreen(
         errorText = { error -> errorText(error.toSetupError()) },
         signInOptions =
             ConnectSignInOptions(
-                // Quick Connect is a button under the form, not a tab: the form is always the password's.
-                modeSelector = { _, _ -> },
-                aboveFields = { signInShown?.let { PublicUsers(it, actions, passwordFocus) } },
+                // The tab row is the shared one: Password and Quick Connect. It starts at the fields' own edge: with the inset it keeps by
+                // default, Spanish at 2x font runs the second tab off the screen's edge.
+                tabEdgePadding = 0.dp,
+                // The listed accounts are for the password's form.
+                aboveFields = { signInShown?.takeUnless { it.quickConnectSelected }?.let { PublicUsers(it, actions, passwordFocus) } },
                 // After the error, so the error sits directly under the fields it is about.
                 afterError =
                     {
@@ -150,10 +151,15 @@ internal fun ConnectSetupScreen(
 @Composable
 private fun setupCopy() =
     ConnectCopy(
-        modeLabel = { _, _ -> stringResource(R.string.setup_password) },
+        modeLabel = { _, mode ->
+            stringResource(if (mode == SetupMode.QuickConnect) R.string.setup_quick_connect_tab else R.string.setup_password)
+        },
         fieldLabel = { _, _, field ->
             stringResource(if (field.id == USERNAME_FIELD) R.string.setup_username else R.string.setup_password)
         },
+        // Quick Connect has no fields: its tab says what it does, and its button asks for the code.
+        submitLabel = { mode -> if (mode == SetupMode.QuickConnect) stringResource(R.string.setup_quick_connect_get_code) else null },
+        modeHint = { _, mode -> if (mode == SetupMode.QuickConnect) stringResource(R.string.setup_quick_connect_hint) else null },
     )
 
 /** What the sign-in step's controls do: each edit of the form is the edit of the one field it changed. */
@@ -161,7 +167,7 @@ private fun signInActions(
     signIn: UiState.SignIn?,
     actions: Actions,
 ) = ConnectSignInActions(
-    onSelectMode = {},
+    onSelectMode = { mode -> actions.onSelectMethod(mode == SetupMode.QuickConnect) },
     onEditForm = { transform ->
         val before =
             SignInForm(
@@ -258,43 +264,24 @@ private fun ColumnScope.PublicUsers(
     )
 }
 
-/** Under the form and its error: the reset of a forgotten password, the local-network ask, and Quick Connect with what it is for. */
+/** Under the form and its error: the reset of a forgotten password (the password's form only), and the local-network ask. */
 @Composable
 private fun ColumnScope.AfterError(
     state: UiState.SignIn,
     actions: Actions,
 ) {
-    BingeTextButton(
-        label = stringResource(R.string.forgot_password),
-        onClick = { actions.forgotPassword?.start() },
-        enabled = state.username.isNotBlank() && !state.busy,
-        loading = state.forgot == ForgotPasswordStep.Asking,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    if (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied) {
-        val ask = localNetworkAsk(actions)
-        BingeOutlinedButton(label = stringResource(ask.label), onClick = ask.run, modifier = Modifier.fillMaxWidth())
-    }
-    if (state.quickConnectOn) {
-        BingeOutlinedButton(
-            label = stringResource(R.string.setup_quick_connect),
-            onClick = actions.onQuickConnect,
-            leadingIcon = Icons.Outlined.QrCode2,
-            loading = state.gettingCode,
+    if (!state.quickConnectSelected) {
+        BingeTextButton(
+            label = stringResource(R.string.forgot_password),
+            onClick = { actions.forgotPassword?.start() },
+            enabled = state.username.isNotBlank() && !state.busy,
+            loading = state.forgot == ForgotPasswordStep.Asking,
             modifier = Modifier.fillMaxWidth(),
         )
     }
-    // An account that exists only through single sign-on has no password here; this is how it gets in. It is said before
-    // Quick Connect is tried: once a code is being fetched, or the server has said it is off, or the code has expired, it
-    // would only repeat the screen or point at something that isn't there.
-    if (state.showsQuickConnectHint) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                stringResource(R.string.setup_quick_connect_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+    if (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied) {
+        val ask = localNetworkAsk(actions)
+        BingeOutlinedButton(label = stringResource(ask.label), onClick = ask.run, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -313,7 +300,7 @@ internal fun QuickConnectCodeBody(
             link = LinkState(code, openUrl = null, launchPending = false),
             copy = quickConnectCopy(),
             onOpen = {},
-            onCancel = actions.onCancelQuickConnect,
+            onCancel = actions.onCancelCode,
         )
     }
 }
