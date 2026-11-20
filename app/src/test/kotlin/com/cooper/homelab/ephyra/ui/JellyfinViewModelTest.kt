@@ -1,5 +1,6 @@
 package com.cooper.homelab.ephyra.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewModelScope
@@ -125,6 +126,7 @@ class JellyfinViewModelTest {
     private fun viewModel(
         over: Connection = connection,
         cleartext: CleartextConsent = CleartextConsent.None,
+        savedState: SavedStateHandle = SavedStateHandle(),
     ) = track(
         JellyfinViewModel(
             sessions,
@@ -137,6 +139,7 @@ class JellyfinViewModelTest {
             analytics = analytics,
             onSessionEnded = { sessionsEnded++ },
             cleartext = cleartext,
+            savedState = savedState,
         ),
     )
 
@@ -743,6 +746,55 @@ class JellyfinViewModelTest {
         // The address is shown before the agreement for it has been read back, so wait for the agreement itself.
         val step = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" && it.cleartextAllowed }
         assertTrue(step.canConnect)
+    }
+
+    /** What a killed process hands the next one: the saved values, as a new handle. The view model itself is not kept. */
+    private fun SavedStateHandle.afterKill() = SavedStateHandle(keys().associateWith { get<Any>(it) })
+
+    /** The draft is written from the background, so a test waits for the value it expects. */
+    private fun SavedStateHandle.awaitAddress(expected: String?) =
+        runBlocking { withTimeout(10_000) { while (get<String>("setup_address") != expected) delay(5) } }
+
+    @Test
+    fun `a kill on the address step reopens it with the address typed`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(savedState = handle)
+        vm.await<UiState.EnterServer>()
+        vm.onAddress(jellyfin.baseUrl)
+        handle.awaitAddress(jellyfin.baseUrl)
+
+        val reopened = viewModel(savedState = handle.afterKill())
+
+        assertEquals(jellyfin.baseUrl, reopened.await<UiState.EnterServer> { it.address == jellyfin.baseUrl }.address)
+    }
+
+    @Test
+    fun `a kill on the sign-in step reopens it with the form empty and nothing typed in it kept`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(savedState = handle)
+        vm.toSignIn()
+        vm.onUsername("sam")
+        vm.onPassword("hunter2")
+        vm.await<UiState.SignIn> { it.username == "sam" && it.password == "hunter2" }
+
+        val kept = handle.afterKill()
+        val reopened = viewModel(savedState = kept)
+
+        val step = reopened.await<UiState.SignIn>()
+        assertEquals("", step.username)
+        assertEquals("", step.password)
+        assertTrue("only the address and the step are kept", kept.keys().all { it.startsWith("setup_") })
+        assertTrue(kept.keys().none { key -> kept.get<Any>(key)?.toString()?.contains("hunter2") == true })
+    }
+
+    @Test
+    fun `nothing is kept once a session exists, and a saved draft does not override the session`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val handle = SavedStateHandle(mapOf("setup_address" to "http://elsewhere.example:8096", "setup_signing_in" to true))
+        val vm = viewModel(savedState = handle)
+
+        vm.await<UiState.SignedIn>()
+        handle.awaitAddress(null)
     }
 
     @Test
