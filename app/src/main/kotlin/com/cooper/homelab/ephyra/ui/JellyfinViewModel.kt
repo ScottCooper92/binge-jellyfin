@@ -41,12 +41,15 @@ import com.cooper.homelab.ephyra.telemetry.SignInReports
 import com.cooper.homelab.ephyra.ui.console.decodeThumbnail
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -149,7 +152,7 @@ fun JellyfinViewModel.pickPublicUser(user: PublicUser) {
 /** Reads the server's public users once, for the sign-in step. A failure or an empty list leaves the step as it is. */
 private fun CoroutineScope.loadPublicUsers(
     connection: Connection,
-    state: MutableStateFlow<UiState>,
+    state: MutableStateFlow<UiState.Setup>,
     url: HttpUrl,
     base: String,
 ) {
@@ -170,7 +173,7 @@ private fun CoroutineScope.loadPublicUsers(
  */
 internal fun CoroutineScope.loadQuickConnectOn(
     connection: Connection,
-    state: MutableStateFlow<UiState>,
+    state: MutableStateFlow<UiState.Setup>,
     url: HttpUrl,
     base: String,
     onOff: () -> Unit,
@@ -202,7 +205,7 @@ internal fun CoroutineScope.loadQuickConnectOn(
  */
 private suspend fun loadPublicPictures(
     connection: Connection,
-    state: MutableStateFlow<UiState>,
+    state: MutableStateFlow<UiState.Setup>,
     url: HttpUrl,
     users: List<PublicUser>,
 ) {
@@ -255,11 +258,11 @@ fun JellyfinViewModel.localNetworkAnswered() {
  * answered with something unusable, and one the app may not reach, are the read's to name and to clear, and a start's first
  * read is its own: [ConnectionHealth.Checking] is not touched here.
  */
-internal fun UiState.afterReach(
+internal fun UiState.SignedIn.afterReach(
     reach: CoreConnectionHealth,
     localNetwork: LocalNetworkPermission,
-): UiState {
-    val signedIn = this as? UiState.SignedIn ?: return this
+): UiState.SignedIn {
+    val signedIn = this
     return when {
         reach == CoreConnectionHealth.Unreachable && signedIn.health == ConnectionHealth.Healthy ->
             signedIn.copy(health = unreachableHealth(signedIn.session.baseUrl, localNetwork), refreshFailed = true)
@@ -270,7 +273,10 @@ internal fun UiState.afterReach(
 }
 
 sealed interface UiState {
-    data object Loading : UiState
+    /** The steps before a session exists: the one flow the setup half writes, which can never hold a [SignedIn]. */
+    sealed interface Setup : UiState
+
+    data object Loading : Setup
 
     /** Step one: the server's address. */
     data class EnterServer(
@@ -284,7 +290,7 @@ sealed interface UiState {
         val insecureHost: String? = null,
         /** The user has agreed to plain HTTP to [insecureHost]. */
         val cleartextAllowed: Boolean = false,
-    ) : UiState {
+    ) : Setup {
         /** Whether Connect can go: an address is typed, and a plain-HTTP public host has been agreed to. */
         val canConnect: Boolean get() = address.isNotBlank() && (insecureHost == null || cleartextAllowed)
     }
@@ -317,7 +323,7 @@ sealed interface UiState {
          * on, and the server's own refusal when a code is asked for stays the backstop.
          */
         val quickConnectOn: Boolean = true,
-    ) : UiState {
+    ) : Setup {
         val cleartext: Boolean get() = baseUrl.startsWith("http://")
 
         /**
@@ -333,7 +339,7 @@ sealed interface UiState {
         val baseUrl: String,
         val server: PublicServerInfo,
         val phase: StartupPhase = StartupPhase.Loading,
-    ) : UiState
+    ) : Setup
 
     data class SignedIn(
         val session: JellyfinSession,
@@ -383,8 +389,17 @@ class JellyfinViewModel(
     /** Where the user's agreement to plain HTTP to a public host is kept. Nothing is agreed to by default. */
     private val cleartext: CleartextConsent = CleartextConsent.None,
 ) : ViewModel() {
-    private val _state = MutableStateFlow<UiState>(UiState.Loading)
-    val state: StateFlow<UiState> = _state.asStateFlow()
+    /** The steps before a session exists. The setup half writes this and never a signed-in state. */
+    private val _state = MutableStateFlow<UiState.Setup>(UiState.Loading)
+
+    /** The setup half as it stands, whatever the screens show: for tests, which check that a finished sign-in leaves nothing behind. */
+    internal val setupStep: StateFlow<UiState.Setup> get() = _state
+
+    /** The signed-in state, or null with no session. [SignedInSession] writes this and never a setup step. */
+    private val signedInFlow = MutableStateFlow<UiState.SignedIn?>(null)
+
+    /** What the screens read: the signed-in state while a session is held, the setup step otherwise. */
+    val state: StateFlow<UiState> = ScreenState(_state, signedInFlow)
 
     /** The setup wizard for a server that has not finished its first-run setup. */
     val startup =
@@ -403,13 +418,34 @@ class JellyfinViewModel(
 
     /** Refreshing, the gates, the server's health and signing out: everything from a saved session on. */
     private val signedIn =
-        SignedInSession(viewModelScope, _state, sessions, connection, index, card, localNetwork, reports, onSessionEnded, addressPolicy)
+        SignedInSession(
+            viewModelScope,
+            signedInFlow,
+            sessions,
+            connection,
+            index,
+            card,
+            localNetwork,
+            reports,
+            onSessionEnded,
+            leave = ::leaveSession,
+        )
+
+    /** The session has ended: the server step takes the screen, and the signed-in state goes. */
+    private fun leaveSession(baseUrl: String) {
+        _state.value = enterServer(addressPolicy, baseUrl)
+        signedInFlow.value = null
+    }
 
     init {
         viewModelScope.launch {
             val session = sessions.current()
-            _state.value = if (session == null) UiState.EnterServer() else signedInState(addressPolicy, session)
-            if (session != null) refresh()
+            if (session == null) {
+                _state.value = UiState.EnterServer()
+            } else {
+                signedInFlow.value = signedInState(addressPolicy, session)
+                refresh()
+            }
         }
     }
 
@@ -581,16 +617,18 @@ class JellyfinViewModel(
      */
     fun changeServer(recheck: Boolean = false) {
         quickConnect?.cancel()
+        val saved = signedInFlow.value
         val address =
-            when (val current = _state.value) {
-                is UiState.SignIn -> current.baseUrl
-                is UiState.Startup -> current.baseUrl
-                is UiState.SignedIn -> current.session.baseUrl
-                else -> ""
-            }
+            saved?.session?.baseUrl
+                ?: when (val current = _state.value) {
+                    is UiState.SignIn -> current.baseUrl
+                    is UiState.Startup -> current.baseUrl
+                    else -> ""
+                }
         // Reaching the sign-in step took a connect, which had the agreement, so a recheck from it keeps it.
-        val agreed = _state.value is UiState.SignIn
+        val agreed = saved == null && _state.value is UiState.SignIn
         _state.value = enterServer(addressPolicy, address).let { it.copy(cleartextAllowed = agreed && it.insecureHost != null) }
+        signedInFlow.value = null
         if (recheck && address.isNotBlank()) connect()
     }
 
@@ -633,13 +671,13 @@ class JellyfinViewModel(
         }
         index.clear()
         reports.signedIn(method)
-        _state.value = signedInState(addressPolicy, session)
+        signedInFlow.value = signedInState(addressPolicy, session)
+        // The step that led here goes with it: its typed password and the account pictures are gone when the step is left.
+        _state.value = UiState.Loading
         refresh()
     }
 
     private companion object {
-        const val TAG = "JellyfinSetup"
-        const val HTTP_UNAUTHORIZED = 401
         const val QUICK_CONNECT_POLL_MILLIS = 3_000L
     }
 }
@@ -648,7 +686,7 @@ class JellyfinViewModel(
 private const val QUICK_CONNECT_WINDOW_MILLIS = 10 * 60_000L
 
 /** Quick Connect couldn't get or keep a code: the code goes, and the failure stays with Quick Connect. */
-private fun MutableStateFlow<UiState>.failQuickConnect(
+private fun MutableStateFlow<UiState.Setup>.failQuickConnect(
     error: SetupError,
     reports: SignInReports,
 ) {
@@ -659,7 +697,7 @@ private fun MutableStateFlow<UiState>.failQuickConnect(
 /** Asks the server for a Quick Connect code, shows it, and polls until the user approves it or its window ends; [finish] takes the sign-in. */
 private suspend fun awaitQuickConnect(
     connection: Connection,
-    state: MutableStateFlow<UiState>,
+    state: MutableStateFlow<UiState.Setup>,
     reports: SignInReports,
     pollMillis: Long,
     url: HttpUrl,
@@ -688,3 +726,22 @@ internal fun enterServer(
     policy: AddressPolicy,
     address: String,
 ) = UiState.EnterServer(address = address, insecureHost = policy.insecureHost(address))
+
+/**
+ * The state the screens read: the signed-in state while a session is held, the setup step otherwise. Its [value] is read from the
+ * two halves each time, so it is never behind a write to either of them, as one flow's value is not.
+ */
+@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
+private class ScreenState(
+    private val setup: StateFlow<UiState.Setup>,
+    private val signedIn: StateFlow<UiState.SignedIn?>,
+) : StateFlow<UiState> {
+    override val value: UiState get() = signedIn.value ?: setup.value
+
+    override val replayCache: List<UiState> get() = listOf(value)
+
+    override suspend fun collect(collector: FlowCollector<UiState>): Nothing {
+        combine(setup, signedIn) { step, session -> session ?: step }.distinctUntilChanged().collect(collector)
+        error("a state flow's collection never completes")
+    }
+}

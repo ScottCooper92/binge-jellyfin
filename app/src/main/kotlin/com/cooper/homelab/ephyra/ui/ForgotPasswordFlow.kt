@@ -43,7 +43,7 @@ sealed interface ForgotPasswordStep {
 class ForgotPasswordFlow(
     private val scope: CoroutineScope,
     private val connection: Connection,
-    private val state: MutableStateFlow<UiState>,
+    private val state: MutableStateFlow<UiState.Setup>,
 ) {
     /** Asks the server to start a reset for the typed username. One at a time. */
     fun start() {
