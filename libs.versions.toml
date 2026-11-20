@@ -24,6 +24,8 @@ kover = "0.9.11"
 kotlinxCoroutines = "1.11.0"
 # The version binge-design-system pins.
 composeBom = "2026.09.00"
+# The version binge-design-system pins: the app adds one fetcher to the image loader the design system draws with.
+coil = "3.6.3"
 # Pinned ahead of the BOM to the version binge-design-system pins: its theme reads material3 APIs
 # the BOM's stable line does not have, and resolution would otherwise pick one of the two silently.
 material3 = "1.5.0-alpha29"
@@ -53,6 +55,7 @@ markdownRenderer = "0.46.0"
 
 [libraries]
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutLibraries" }
+coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 junit = { module = "junit:junit", version.ref = "junit" }

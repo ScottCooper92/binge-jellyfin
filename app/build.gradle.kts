@@ -217,6 +217,8 @@ dependencies {
     kover(project(":client"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    // The demo's pictures: one fetcher added to the image loader the design system draws with. Real servers' pictures never reach it.
+    implementation(libs.coil)
     // The licences page reads the list the AboutLibraries plugin writes at build time.
     implementation(libs.aboutlibraries.core)
     implementation(libs.binge.companion.sdk)

@@ -135,6 +135,13 @@ internal class DemoLibraries : DemoState {
 
     private fun seededId(name: String) = UUID.nameUUIDFromBytes(name.toByteArray())
 
+    internal companion object {
+        /** The seeded libraries' ids by name, as their views carry them: the same name always has the same id. */
+        val SEEDED: Map<String, String> =
+            listOf("Movies", "TV shows", "Collections", "Mixed", "Music")
+                .associateWith { UUID.nameUUIDFromBytes(it.toByteArray()).toString().replace("-", "") }
+    }
+
     private fun JsonObject.locations() = (get("Locations") as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.content }
 
     private fun library(
