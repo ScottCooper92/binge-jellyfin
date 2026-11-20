@@ -73,7 +73,7 @@ class LibraryGridTabViewModelTest {
     private fun addPart(
         id: String,
         year: Int,
-    ) = jellyfin.browse.titles.add(FakeTitle(id, "Film $id", "lib-movies", "Movie", year = year, collectionIds = listOf("set-1")))
+    ) = jellyfin.browse.titles.add(FakeTitle(id, "Film $id", "set-1", "Movie", year = year))
 
     private fun GridState<*, BrowseItem>.items() = (this as GridState.Ready).items
 
@@ -121,7 +121,7 @@ class LibraryGridTabViewModelTest {
     fun `a box set whose parts have no picture either has none to draw`() {
         seed()
         jellyfin.browse.titles.add(FakeTitle("set-1", "Bond", "lib-sets", "BoxSet", hasPicture = false))
-        jellyfin.browse.titles.add(FakeTitle("film-1", "Film", "lib-movies", "Movie", collectionIds = listOf("set-1"), hasPicture = false))
+        jellyfin.browse.titles.add(FakeTitle("film-1", "Film", "set-1", "Movie", hasPicture = false))
         val vm = viewModel()
         val box = vm.settled { it is GridState.Ready }.items().single()
         runBlocking {

@@ -140,8 +140,7 @@ class FakeBrowse {
         val parent = url.queryParameter("parentId")
         val person = url.queryParameter("personIds")
         return titles.filter {
-            // A box set's children are the titles that name it, as the server answers `parentId` for one.
-            (parent == null || it.libraryId == parent || parent in it.collectionIds) &&
+            (parent == null || it.libraryId == parent) &&
                 (person == null || person in it.personIds) &&
                 (types.isEmpty() || it.type in types)
         }

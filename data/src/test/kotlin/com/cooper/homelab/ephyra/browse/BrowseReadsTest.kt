@@ -56,7 +56,7 @@ class BrowseReadsTest {
         year: Int,
         hasPicture: Boolean = true,
     ) = jellyfin.browse.titles.add(
-        FakeTitle(id, "Film $id", "lib-movies", "Movie", year = year, collectionIds = listOf("set-1"), hasPicture = hasPicture),
+        FakeTitle(id, "Film $id", "set-1", "Movie", year = year, hasPicture = hasPicture),
     )
 
     @Test

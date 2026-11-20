@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra.demo
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -210,8 +211,7 @@ internal class DemoBrowse(
             if (rating.isNotEmpty()) put("OfficialRating", rating)
             put("RunTimeTicks", runtimeTicks)
             put("PrimaryImageAspectRatio", POSTER_ASPECT)
-            putJsonObject("ImageTags") { put("Primary", "p-$id") }
-            if (hasBackdrop) putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id")) }
+            putImages(this@toJson)
             if (type == "BoxSet") put("ChildCount", members.size)
             seriesId?.let {
                 put("SeriesId", it)
@@ -232,4 +232,9 @@ internal class DemoBrowse(
                 put("PlaybackPositionTicks", positionTicks)
             }
         }
+}
+
+private fun JsonObjectBuilder.putImages(title: DemoTitle) {
+    putJsonObject("ImageTags") { if (title.hasPoster) put("Primary", "p-${title.id}") }
+    if (title.hasBackdrop) putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-${title.id}")) }
 }
