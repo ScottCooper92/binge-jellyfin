@@ -58,6 +58,7 @@
     <string name="client_series_unwatched_count">%1$s · %2$d sin ver</string>
     <plurals name="client_series_episode_count">
         <item quantity="one">%1$d episodio</item>
+        <item quantity="many">%1$d episodios</item>
         <item quantity="other">%1$d episodios</item>
     </plurals>
     <string name="client_series_episodes_failed">No se pudieron cargar los episodios.</string>

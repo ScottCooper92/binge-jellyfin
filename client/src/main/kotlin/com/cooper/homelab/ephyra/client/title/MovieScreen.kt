@@ -242,15 +242,9 @@ internal fun premiere(
     text: String,
     locale: Locale,
 ): String =
-    com.binge.companion.sdk
-        .attempt { java.time.LocalDate.parse(text.take(ISO_DATE_LENGTH)) }
-        .map {
-            it.format(
-                java.time.format.DateTimeFormatter
-                    .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
-                    .withLocale(locale),
-            )
-        }.getOrDefault(text)
+    attempt { LocalDate.parse(text.take(ISO_DATE_LENGTH)) }
+        .map { it.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)) }
+        .getOrDefault(text)
 
 /** The length of an ISO date (`yyyy-MM-dd`) at the front of the server's premiere date. */
 private const val ISO_DATE_LENGTH = 10
