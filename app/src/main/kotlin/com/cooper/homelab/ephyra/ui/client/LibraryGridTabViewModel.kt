@@ -49,11 +49,14 @@ class LibraryGridTabViewModel(
         initial = initial,
     )
 
-    /** The URL of [item]'s poster at [width] pixels, or null before the client is read or for a title with no poster. */
+    /** The URL of [item]'s poster at [width] pixels, or null before the client is read or for a title with no poster to draw. */
     fun imageUrl(
         item: BrowseItem,
         width: Int,
-    ): String? = images?.of(item, ImageKind.Primary, width)
+    ): String? =
+        images?.of(item, ImageKind.Primary, width)
+            // A box set with no picture of its own is drawn with its first part's poster, once that has been read.
+            ?: model?.posterOf(item)?.let { images?.of(it.itemId, ImageKind.Primary, it.tag, width) }
 
     fun retry() = model?.retry() ?: start()
 

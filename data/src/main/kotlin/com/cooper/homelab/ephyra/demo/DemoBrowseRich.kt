@@ -1,5 +1,7 @@
 package com.cooper.homelab.ephyra.demo
 
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
+import com.cooper.homelab.ephyra.server.TICKS_PER_SECOND
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -8,9 +10,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
 internal const val RUNTIME_TICKS = 72_000_000_000L
-private const val SECOND_TICKS = 10_000_000L
-private const val MINUTE_TICKS = 60 * SECOND_TICKS
-private const val EPISODE_TICKS = 47 * MINUTE_TICKS
+private const val EPISODE_TICKS = 47 * TICKS_PER_MINUTE
 private const val GENERATED_FILMS = 70
 private const val ADJECTIVE_COUNT = 10
 private const val FIRST_YEAR = 1990
@@ -117,7 +117,7 @@ private fun specialFilms(): List<DemoTitle> =
             rating = "G",
             score = 6.5,
             added = 2,
-            runtimeTicks = SHORT_FILM_SECONDS * SECOND_TICKS,
+            runtimeTicks = SHORT_FILM_SECONDS * TICKS_PER_SECOND,
         ),
     )
 
@@ -125,7 +125,8 @@ private fun boxSets(): List<DemoTitle> =
     listOf(
         boxSet("demo-box-1", "The Quiet Collection", 2, listOf("demo-movie-1", "demo-movie-2", "demo-movie-3", "demo-movie-4")),
         // Salt Road is in both box sets, as a film can be.
-        boxSet("demo-box-2", "Late Night Trilogy", 1, listOf("demo-movie-4", "demo-movie-5", "demo-movie-6")),
+        // No picture of its own, so a card shows its first part's poster.
+        boxSet("demo-box-2", "Late Night Trilogy", 1, listOf("demo-movie-4", "demo-movie-5", "demo-movie-6"), hasPoster = false),
     )
 
 private fun boxSet(
@@ -133,7 +134,8 @@ private fun boxSet(
     name: String,
     added: Int,
     members: List<String>,
-) = DemoTitle(id, name, "BoxSet", 0, emptyList(), "", 0.0, added, members = members, hasBackdrop = false)
+    hasPoster: Boolean = true,
+) = DemoTitle(id, name, "BoxSet", 0, emptyList(), "", 0.0, added, members = members, hasPoster = hasPoster, hasBackdrop = false)
 
 /** A series of two seasons, ten episodes in the first and four in the second, and specials with one episode that has no number. */
 private fun lighthouseYears(): List<DemoTitle> {
@@ -196,7 +198,7 @@ private fun lighthouseYears(): List<DemoTitle> {
                     if (number ==
                         PART_WATCHED_EPISODE
                     ) {
-                        PART_WATCHED_MINUTES * MINUTE_TICKS
+                        PART_WATCHED_MINUTES * TICKS_PER_MINUTE
                     } else {
                         0L
                     },
