@@ -33,7 +33,12 @@ import java.util.concurrent.CopyOnWriteArrayList
 class ConfigurationSavesTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
+
+    // Built after the session is saved (as the app builds it, with a session already there): the connection's watcher takes the first
+    // session it reads as its baseline, so one built first could read none, then see the saved one as a change and cancel a save in flight.
+    private val connection by lazy {
+        Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
 
     /** What the server was sent, and how it answers the next write: null is success, else the exception it fails with. */
@@ -42,7 +47,7 @@ class ConfigurationSavesTest {
     private val shown = CopyOnWriteArrayList<Pair<JsonObject, ConsoleFailure?>>()
     private val progress = CopyOnWriteArrayList<SaveProgress>()
 
-    private val saves =
+    private val saves by lazy {
         ConfigurationSaves(
             connection = connection,
             scope = scope,
@@ -54,10 +59,12 @@ class ConfigurationSavesTest {
             onProgress = { progress += it },
             onShown = { configuration, failure -> shown += configuration to failure },
         )
+    }
 
     @Before
     fun signIn() {
         runBlocking { sessions.save(jellyfin.session()) }
+        runBlocking { withTimeout(TIMEOUT_MILLIS) { connection.awaitWatching() } }
         saves.loaded(JsonObject(mapOf("a" to JsonPrimitive(1))))
     }
 
