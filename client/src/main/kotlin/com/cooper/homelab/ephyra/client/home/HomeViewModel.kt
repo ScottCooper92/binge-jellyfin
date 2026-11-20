@@ -10,6 +10,7 @@ import com.cooper.homelab.ephyra.browse.LibraryRepository
 import com.cooper.homelab.ephyra.browse.LibraryView
 import com.cooper.homelab.ephyra.browse.NextUpRepository
 import com.cooper.homelab.ephyra.browse.ResumeRepository
+import com.cooper.homelab.ephyra.client.TabModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,23 +46,23 @@ class HomeViewModel(
     private val nextUp: NextUpRepository,
     private val latest: LatestRepository,
     private val classify: suspend (Throwable) -> ServerFailure,
-) {
+) : TabModel<HomeUiState> {
     private val read = MutableStateFlow<Libraries>(Libraries.Loading)
     private val loader = HubLoader<HomeRowKey, BrowseItem>(scope, dispatcher, classify, ::load)
 
     /** What Home shows now. */
-    val state: StateFlow<HomeUiState> =
+    override val state: StateFlow<HomeUiState> =
         combine(read, loader.state) { libraries, rows -> uiState(libraries, rows) }
             .stateIn(scope, SharingStarted.Eagerly, HomeUiState.Loading)
 
     /** Whether a [refresh] is still running, for a pull-to-refresh indicator. */
-    val refreshing: StateFlow<Boolean> = loader.refreshing
+    override val refreshing: StateFlow<Boolean> = loader.refreshing
 
     /** Reads the libraries, then asks for the rows they name. Call it once when Home opens. */
-    fun start() = readLibraries()
+    override fun start() = readLibraries()
 
     /** Reads everything again, keeping the rows on screen until the new ones land. After a failure it is a retry. */
-    fun refresh() = readLibraries(refresh = true)
+    override fun refresh() = readLibraries(refresh = true)
 
     private fun readLibraries(refresh: Boolean = false) {
         scope.launch(dispatcher) {
