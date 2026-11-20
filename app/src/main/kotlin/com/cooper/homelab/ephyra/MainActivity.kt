@@ -54,7 +54,7 @@ import com.cooper.homelab.ephyra.ui.UiState
 import com.cooper.homelab.ephyra.ui.chooseServer
 import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
-import com.cooper.homelab.ephyra.ui.client.LibraryPlaceholder
+import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
 import com.cooper.homelab.ephyra.ui.client.SeriesPage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
@@ -69,6 +69,7 @@ import com.cooper.homelab.ephyra.ui.localNetworkAnswered
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
+import com.cooper.homelab.ephyra.ui.nav.LibraryRoute
 import com.cooper.homelab.ephyra.ui.nav.MovieRoute
 import com.cooper.homelab.ephyra.ui.nav.SeriesRoute
 import com.cooper.homelab.ephyra.ui.nav.TitleRoute
@@ -253,6 +254,25 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** A library's grid, for the user the session belongs to: a title opens its page above it, and Back closes it. */
+@Composable
+private fun LibraryRouteScreen(
+    state: UiState,
+    route: LibraryRoute,
+    graph: AppGraph,
+    backStack: NavBackStack<NavKey>,
+) {
+    (state as? UiState.SignedIn)?.let { signed ->
+        LibraryGridTab(
+            graph,
+            signed.profile,
+            route.libraryId,
+            onBack = { backStack.closeTop() },
+            onOpen = { kind, id -> backStack.openTitle(kind, id) },
+        )
+    }
+}
+
 /** The app's screens: the sign-in steps, then the home, and the pages and items open over it, on [backStack]. */
 @Composable
 internal fun ConsoleHost(
@@ -294,7 +314,7 @@ internal fun ConsoleHost(
         librariesTab = {
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
         },
-        library = { LibraryPlaceholder(onBack = { backStack.closeTop() }) },
+        library = { route -> LibraryRouteScreen(state, route, graph, backStack) },
         title = { route -> TitlePageRoute(route, state as? UiState.SignedIn, graph, backStack) },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
