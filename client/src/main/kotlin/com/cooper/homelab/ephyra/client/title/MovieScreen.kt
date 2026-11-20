@@ -207,7 +207,7 @@ private fun movieRoundActions(
     val favouriteLabel = stringResource(R.string.client_title_favourite)
     val markWatched = stringResource(if (movie.watched) R.string.client_title_mark_unwatched else R.string.client_title_mark_watched)
     val markFavourite = stringResource(if (movie.favourite) R.string.client_title_remove_favourite else R.string.client_title_add_favourite)
-    val versionsLabel = stringResource(R.string.client_movie_versions)
+    val versionsLabel = stringResource(R.string.client_title_versions)
     return buildList {
         add(
             DetailRoundAction(
@@ -233,7 +233,7 @@ private fun movieRoundActions(
 private fun PlayAction.label(): String =
     when {
         kind == PlayKind.Play -> stringResource(R.string.client_title_play)
-        minutesLeft != null -> stringResource(R.string.client_movie_resume_left, minutesLeft)
+        minutesLeft != null -> stringResource(R.string.client_title_resume_left, minutesLeft)
         else -> stringResource(R.string.client_title_resume)
     }
 
@@ -259,7 +259,7 @@ private fun MovieStats.cells(locale: Locale): List<DetailStat> =
             DetailStat(
                 Icons.Filled.Schedule,
                 stringResource(DesR.string.detail_runtime_minutes, it),
-                stringResource(R.string.client_movie_runtime),
+                stringResource(R.string.client_title_runtime),
             )
         },
         certification?.let { DetailStat(Icons.Filled.Shield, it, stringResource(R.string.client_title_certification)) },
