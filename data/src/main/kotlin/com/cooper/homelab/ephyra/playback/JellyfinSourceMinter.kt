@@ -57,6 +57,7 @@ class JellyfinSourceMinter(
     private val client: JellyfinClient,
     private val userId: String,
     private val server: JellyfinServerProfile,
+    private val wording: AudioWording = NoAudioWording,
     private val cap: StreamingCap = NoStreamingCap,
 ) : SourceMinter {
     override suspend fun mint(
@@ -88,7 +89,7 @@ class JellyfinSourceMinter(
                 chapters = chapters(item.itemId),
                 segments = segments(item.itemId, source),
                 trickplay = trickplay(read.getOrNull(), mediaSourceId),
-                audioOptions = source.audioOptions(),
+                audioOptions = source.audioOptions(wording),
             )
         return Minted(request, JellyfinPlayHandle(item.itemId, mediaSourceId, playSessionId, method, runtimeMs))
     }

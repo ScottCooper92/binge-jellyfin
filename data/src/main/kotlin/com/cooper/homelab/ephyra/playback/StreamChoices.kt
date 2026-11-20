@@ -66,22 +66,25 @@ private fun JsonObject.indexOf(
 
 /**
  * The audio streams of the media source, as options the player lists when the stream itself has one track (a transcode): the key is the
+
  * server's stream index. Empty for a source with fewer than two. The label is the language in the device's own language, and the
- * description is the server's own line for the stream (its codec and channels).
+ * description is [wording]'s line for the stream (its codec and channels), the way the player words its own rows.
  */
-internal fun JsonObject.audioOptions(): List<PlayAudioOption> {
+internal fun JsonObject.audioOptions(wording: AudioWording): List<PlayAudioOption> {
     val streams = array("MediaStreams").filterIsInstance<JsonObject>().filter { it.string("Type") == "Audio" }
     if (streams.size < MIN_AUDIO_OPTIONS) return emptyList()
     val current = this["DefaultAudioStreamIndex"]?.jsonPrimitive?.intOrNull
     return streams.mapNotNull { stream ->
         val index = stream["Index"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
-        val line = stream.string("DisplayTitle") ?: stream.string("Title")
-        val label = languageName(stream.string("Language")) ?: stream.string("Title") ?: line ?: index.toString()
+        val label = languageName(stream.string("Language")) ?: stream.string("Title") ?: stream.string("DisplayTitle") ?: index.toString()
         PlayAudioOption(
             key = index.toString(),
             language = stream.string("Language"),
             label = label,
-            description = line?.takeIf { it != label },
+            description =
+                wording.describe(
+                    AudioFormat(stream.string("Codec"), stream.string("Profile"), stream["Channels"]?.jsonPrimitive?.intOrNull),
+                ),
             current = index == current,
         )
     }

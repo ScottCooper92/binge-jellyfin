@@ -183,10 +183,29 @@ class StreamChoiceTest {
         assertEquals(listOf("1", "2"), options.map { it.key })
         assertEquals(listOf("eng", "spa"), options.map { it.language })
         assertEquals(listOf(true, false), options.map { it.current })
-        assertEquals("Stereo", options[0].description)
+        assertEquals("with no wording there is no second line", listOf(null, null), options.map { it.description })
 
         streams(audio(1, "eng", "Stereo", default = true))
         assertEquals(emptyList<Any>(), mint(null).request.audioOptions)
+    }
+
+    @Test
+    fun `the second line is the wording's, from the stream's codec and profile and channels, and never the server's own title`() {
+        jellyfin.playbackInfo =
+            """{"PlaySessionId":"p","MediaSources":[{"Id":"source-1","Container":"mkv","SupportsDirectPlay":true,""" +
+            """"SupportsDirectStream":true,"DefaultAudioStreamIndex":1,"MediaStreams":[""" +
+            """{"Type":"Audio","Index":1,"Language":"eng","DisplayTitle":"English - AAC - Mono - Default","Codec":"aac","Channels":1},""" +
+            """{"Type":"Audio","Index":2,"Language":"spa","DisplayTitle":"Spanish - EAC3","Codec":"eac3",""" +
+            """"Profile":"Dolby Digital Plus + Dolby Atmos","Channels":6}]}]}"""
+        val worded =
+            JellyfinSourceMinter(
+                client,
+                "user-1",
+                JellyfinServerProfile.from("10.11.6"),
+                wording = { "${it.codec}|${it.profile}|${it.channels}" },
+            )
+        val options = runBlocking { worded.mint(item, profile, null, null) }.request.audioOptions
+        assertEquals(listOf("aac|null|1", "eac3|Dolby Digital Plus + Dolby Atmos|6"), options.map { it.description })
     }
 
     @Test

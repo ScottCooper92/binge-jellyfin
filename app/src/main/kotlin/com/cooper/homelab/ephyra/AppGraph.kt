@@ -82,6 +82,7 @@ import com.cooper.homelab.ephyra.notifications.PollRunner
 import com.cooper.homelab.ephyra.notifications.pollReactor
 import com.cooper.homelab.ephyra.notifications.workManagerPollScheduler
 import com.cooper.homelab.ephyra.playback.PlaybackSittings
+import com.cooper.homelab.ephyra.playback.ResourceAudioWording
 import com.cooper.homelab.ephyra.playback.SignedInNextEpisodes
 import com.cooper.homelab.ephyra.playback.SignedInPlayReporter
 import com.cooper.homelab.ephyra.playback.SignedInSourceMinter
@@ -415,7 +416,7 @@ class AppGraph(
         PlaybackSittings(
             scope = scope,
             player = inAppPlayer,
-            minter = SignedInSourceMinter(connection, streamingCap),
+            minter = SignedInSourceMinter(connection, ResourceAudioWording(appContext), streamingCap),
             reporter = SignedInPlayReporter(connection),
             nextEpisodes = SignedInNextEpisodes(connection),
             newSessionId = { UUID.randomUUID().toString() },
