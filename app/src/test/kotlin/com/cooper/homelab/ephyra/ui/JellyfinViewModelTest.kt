@@ -187,8 +187,9 @@ class JellyfinViewModelTest {
         vm.onPassword("right")
         vm.signInWithPassword()
         vm.await<UiState.SignedIn>()
-        // The typed password and the account pictures live in the step, so the step must not outlive the sign-in.
-        assertEquals(UiState.Loading, vm.setupStep.value)
+        // The typed password and the account pictures live in the step, so the step must not outlive the sign-in. The signed-in state shows
+        // a moment before the step is cleared, on the thread that finished the sign-in, so the step is waited for, not read once.
+        runBlocking { withTimeout(10_000) { vm.setupStep.first { it == UiState.Loading } } }
     }
 
     @Test
