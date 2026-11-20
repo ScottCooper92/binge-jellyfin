@@ -212,4 +212,46 @@ class SetupPartsTest {
         val wizard = UiState.Startup("http://truenas.local:8096", info.copy(startupWizardCompleted = false))
         assertEquals(wizard, projectSetup(ConnectState.Loading, null, wizard))
     }
+
+    @Test
+    fun `every error the screens hold survives the trip to the flow's error and back`() {
+        SetupError.entries.forEach { assertEquals(it, it.toConnectError().toSetupError()) }
+    }
+
+    @Test
+    fun `the server step is the address step, asking for the local network where that is what failed`() {
+        val failed = UiState.EnterServer(address = "truenas.local", error = SetupError.LocalNetworkDenied, checking = false)
+        val address = failed.toConnectState()
+        assertTrue(address.needsLocalNetwork)
+        assertTrue(address.canTryDemo)
+        assertEquals("truenas.local", address.address)
+    }
+
+    @Test
+    fun `the sign-in step is the password form, busy while a code waits, and a server not set up is its notice`() {
+        val step =
+            UiState.SignIn(
+                baseUrl = "http://truenas.local:8096",
+                server = info,
+                username = "sam",
+                password = "x",
+                quickConnectCode = "123456",
+            )
+        val state = step.toConnectState() as ConnectState.SignIn
+        assertEquals(SetupMode.Password, state.form.mode)
+        assertEquals("sam", state.form.value(USERNAME_FIELD))
+        assertTrue(state.isConnecting)
+        assertEquals("123456", step.linkState()?.code)
+        assertEquals(listOf<Any>(SetupMode.Password, SetupMode.QuickConnect), state.server.modes)
+
+        val notSetUp = step.copy(server = info.copy(startupWizardCompleted = false), quickConnectCode = null).toConnectState()
+        assertTrue(notSetUp is ConnectState.NotSetUp)
+    }
+
+    @Test
+    fun `an edit of the form is reported as the fields it changed`() {
+        val before = SignInForm(SetupMode.Password, mapOf(USERNAME_FIELD to "sam", PASSWORD_FIELD to ""))
+        assertEquals(mapOf(PASSWORD_FIELD to "secret"), before.changesTo(before.with(PASSWORD_FIELD, "secret")))
+        assertEquals(emptyMap<String, String>(), before.changesTo(before))
+    }
 }
