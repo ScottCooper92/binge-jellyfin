@@ -98,7 +98,9 @@ class MovieMappingTest {
         assertEquals(listOf("a", "b"), movie.cast.map { it.id })
         assertEquals(listOf("c"), movie.crew.map { it.id })
         assertEquals("Ripley", movie.cast.first().subtitle)
-        assertEquals("Director", movie.crew.single().subtitle)
+        assertNull(movie.crew.single().subtitle)
+        assertEquals(CrewJob.Director, movie.crew.single().job)
+        assertNull(movie.cast.first().job)
         assertEquals(TitleImage("a", ImageKind.Primary, "t"), movie.cast.first().photo)
         assertNull(movie.cast.last().photo)
     }

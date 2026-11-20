@@ -64,14 +64,24 @@ fun playAction(item: BrowseItem): PlayAction {
     }
 }
 
-/** A person as a card: the actor's character, or the crew member's job. */
+/** A person as a card: the actor's character from the server, and for a crew member the job as a [CrewJob] for the screen to word. */
 fun personUi(person: TitlePerson): PersonUi =
     PersonUi(
         id = person.id,
         name = person.name,
-        subtitle = person.role ?: person.kind.takeIf { it in CREW_KINDS }?.name,
+        subtitle = person.role,
         photo = person.imageTag?.let { TitleImage(person.id, ImageKind.Primary, it) },
+        job = person.kind.crewJob(),
     )
+
+private fun PersonKind.crewJob(): CrewJob? =
+    when (this) {
+        PersonKind.Director -> CrewJob.Director
+        PersonKind.Writer -> CrewJob.Writer
+        PersonKind.Producer -> CrewJob.Producer
+        PersonKind.Composer -> CrewJob.Composer
+        PersonKind.Actor, PersonKind.GuestStar, PersonKind.Other -> null
+    }
 
 /** A poster card for a similar title or a collection's part. */
 fun titleCard(item: BrowseItem): TitleCard =
