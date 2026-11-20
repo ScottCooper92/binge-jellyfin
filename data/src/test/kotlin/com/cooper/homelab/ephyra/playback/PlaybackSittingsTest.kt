@@ -188,6 +188,39 @@ class PlaybackSittingsTest {
         }
 
     @Test
+    fun `a refused next episode names that episode, and leaves the one playing reported as it was`() =
+        runTest {
+            nextOf = { item -> episodes.getOrNull(episodes.indexOf(item) + 1) }
+            val sittings = sittings()
+            val id = sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            val before = reports.size
+            mintFails = JellyfinHttpException(403, "/Items/item2/PlaybackInfo")
+
+            player.events.send(PlayerEvent.NextRequested(59_000))
+
+            val refused = sittings.outcomeOf(id) as PlaybackOutcome.Refused
+            assertEquals(episodes[1].title, refused.title)
+            assertEquals(PlaybackRefusal.NoPermission, refused.error)
+            assertEquals("the first is not reported stopped", before, reports.size)
+        }
+
+    @Test
+    fun `a sitting that ends on its own is forgotten, and one that ends refused is kept`() =
+        runTest {
+            val sittings = sittings()
+            val id = sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            player.events.send(PlayerEvent.Stopped(20_000, 60_000))
+            player.events.close()
+            assertNull(sittings.outcomeOf(id))
+
+            mintFails = IOException("offline")
+            val refusedId = sittings.start(episodes[1])
+            assertTrue(sittings.outcomeOf(refusedId) is PlaybackOutcome.Refused)
+        }
+
+    @Test
     fun `asking for the next episode where there is none changes nothing`() =
         runTest {
             sittings().start(episodes[0])

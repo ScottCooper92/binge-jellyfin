@@ -3,6 +3,8 @@ package com.cooper.homelab.ephyra.playback
 import com.binge.companion.sdk.attempt
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
 import com.cooper.homelab.player.api.MediaPlayer
+import com.cooper.homelab.player.api.PlayTitle
+import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import com.cooper.homelab.player.api.PlaybackOutcome
 import com.cooper.homelab.player.api.PlaybackRefusal
 import com.cooper.homelab.player.api.PlaybackSittingControl
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -49,13 +52,14 @@ class PlaybackSittings(
     fun start(item: PlayItem): String {
         val id = newSessionId()
         val sitting = Sitting(item, MutableStateFlow(PlaybackOutcome.Preparing(item.title)))
-        sittings.value += id to sitting
+        sittings.update { it + (id to sitting) }
         launch(id, sitting)
         return id
     }
 
     override fun outcome(sessionId: String): Flow<PlaybackOutcome?> = sittings.flatMapLatest { it[sessionId]?.outcome ?: flowOf(null) }
 
+    /** Runs a refused sitting again from its first item, with the server's own resume point. */
     override fun retry(sessionId: String) {
         val sitting = sittings.value[sessionId] ?: return
         if (sitting.outcome.value is PlaybackOutcome.Playing || sitting.job?.isActive == true) return
@@ -65,7 +69,7 @@ class PlaybackSittings(
 
     override fun cancel(sessionId: String) {
         sittings.value[sessionId]?.job?.cancel()
-        sittings.value -= sessionId
+        sittings.update { it - sessionId }
     }
 
     private fun launch(
@@ -79,9 +83,9 @@ class PlaybackSittings(
         id: String,
         sitting: Sitting,
     ) {
-        val profile = attempt { player.deviceProfile() }.getOrElse { return sitting.fail(it) }
+        val profile = attempt { player.deviceProfile() }.getOrElse { return sitting.fail(it, sitting.item.title) }
         var current = sitting.item
-        var minted = attempt { minter.mint(current, profile, null) }.getOrElse { return sitting.fail(it) }
+        var minted = attempt { minter.mint(current, profile, null) }.getOrElse { return sitting.fail(it, current.title) }
         var upNext = attempt { nextEpisodes.after(current) }.getOrNull()
         var remintedOnce = false
         var position = 0L
@@ -118,15 +122,15 @@ class PlaybackSittings(
                         is PlayerEvent.NextRequested -> {
                             val next = upNext
                             if (next != null) {
-                                report(minted, PlayReport.STOPPED, event.positionMs)
-                                position = 0L
                                 val following = attempt { nextEpisodes.after(next) }.getOrNull()
                                 val fresh = reload(id, next, profile, 0L, following, sitting)
                                 if (fresh != null) {
+                                    report(minted, PlayReport.STOPPED, event.positionMs)
                                     current = next
                                     upNext = following
                                     minted = fresh
                                     remintedOnce = false
+                                    position = 0L
                                 }
                             }
                         }
@@ -137,20 +141,22 @@ class PlaybackSittings(
             withContext(NonCancellable) { report(minted, PlayReport.STOPPED, position) }
             throw e
         }
+        // A sitting that ended on its own is forgotten; one that ended in a refusal or an expired source stays, for the screen to say so.
+        if (sitting.outcome.value is PlaybackOutcome.Playing) sittings.update { it - id }
     }
 
     /** Mints [item] again at [positionMs] and hands it to the player under the same session; null, with the outcome set, when the server refuses. */
     private suspend fun reload(
         id: String,
         item: PlayItem,
-        profile: com.cooper.homelab.player.api.PlaybackDeviceProfile,
+        profile: PlaybackDeviceProfile,
         positionMs: Long,
         upNext: PlayItem?,
         sitting: Sitting,
     ): Minted? {
         val minted =
             attempt { minter.mint(item, profile, positionMs) }.getOrElse {
-                sitting.fail(it)
+                sitting.fail(it, item.title)
                 return null
             }
         player.update(minted.request.copy(sessionId = id, next = upNext?.title))
@@ -166,12 +172,15 @@ class PlaybackSittings(
         attempt { reporter.report(minted.report, kind, positionMs) }
     }
 
-    private fun Sitting.fail(error: Throwable) {
+    private fun Sitting.fail(
+        error: Throwable,
+        title: PlayTitle,
+    ) {
         outcome.value =
             when (error) {
-                is JellyfinHttpException -> PlaybackOutcome.Refused(item.title, error.refusal(), error.reason)
-                is IOException -> PlaybackOutcome.Refused(item.title, PlaybackRefusal.Unreachable)
-                else -> PlaybackOutcome.Refused(item.title, PlaybackRefusal.Generic)
+                is JellyfinHttpException -> PlaybackOutcome.Refused(title, error.refusal(), error.reason)
+                is IOException -> PlaybackOutcome.Refused(title, PlaybackRefusal.Unreachable)
+                else -> PlaybackOutcome.Refused(title, PlaybackRefusal.Generic)
             }
     }
 
