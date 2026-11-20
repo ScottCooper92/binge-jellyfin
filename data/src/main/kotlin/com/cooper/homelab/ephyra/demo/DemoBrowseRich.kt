@@ -1,5 +1,7 @@
 package com.cooper.homelab.ephyra.demo
 
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
+import com.cooper.homelab.ephyra.server.TICKS_PER_SECOND
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -8,9 +10,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
 internal const val RUNTIME_TICKS = 72_000_000_000L
-private const val SECOND_TICKS = 10_000_000L
-private const val MINUTE_TICKS = 60 * SECOND_TICKS
-private const val EPISODE_TICKS = 47 * MINUTE_TICKS
+private const val EPISODE_TICKS = 47 * TICKS_PER_MINUTE
 private const val GENERATED_FILMS = 70
 private const val ADJECTIVE_COUNT = 10
 private const val FIRST_YEAR = 1990
@@ -117,7 +117,7 @@ private fun specialFilms(): List<DemoTitle> =
             rating = "G",
             score = 6.5,
             added = 2,
-            runtimeTicks = SHORT_FILM_SECONDS * SECOND_TICKS,
+            runtimeTicks = SHORT_FILM_SECONDS * TICKS_PER_SECOND,
         ),
     )
 
@@ -198,7 +198,7 @@ private fun lighthouseYears(): List<DemoTitle> {
                     if (number ==
                         PART_WATCHED_EPISODE
                     ) {
-                        PART_WATCHED_MINUTES * MINUTE_TICKS
+                        PART_WATCHED_MINUTES * TICKS_PER_MINUTE
                     } else {
                         0L
                     },
