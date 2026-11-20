@@ -114,6 +114,19 @@ class LibraryFilterDraftTest {
     }
 
     @Test
+    fun `the order counts as one active setting and clear all resets it with the filters`() {
+        val sortOnly = LibraryFilterDraft(ItemSort(SortField.Rating, false))
+        assertEquals(0, sortOnly.appliedCount)
+        assertEquals(1, sortOnly.activeCount)
+        assertEquals(LibraryFilterDraft(), sortOnly.clearedAll())
+        assertEquals(0, sortOnly.clearedAll().activeCount)
+        val both = sortOnly.toggle(LibraryFilterSection.GENRES, "Drama")
+        assertEquals(2, both.activeCount)
+        assertEquals(0, both.clearedAll().activeCount)
+        assertEquals(0, LibraryFilterDraft().activeCount)
+    }
+
+    @Test
     fun `a sort the sheet does not list shows the first one as chosen`() {
         val draft = LibraryFilterDraft(ItemSort(SortField.Random))
         assertEquals("Name", (section(draft, LibraryFilterSection.SORT) as FilterSection.Single).selected)
