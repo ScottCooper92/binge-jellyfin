@@ -9,6 +9,7 @@ import com.cooper.homelab.ephyra.browse.ItemFilters
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.browse.ItemSort
 import com.cooper.homelab.ephyra.browse.ItemUserData
+import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.SortField
 import com.cooper.homelab.ephyra.client.libraries.LibraryFilterDraft
 import com.cooper.homelab.ephyra.client.libraries.LibraryGridActions
@@ -58,6 +59,26 @@ class ClientLibraryGridScreenshotTest {
     @JellyfinWidePreview
     @Composable
     fun loaded() = Grid(GridState.Ready(plain, titles, hasMore = false, appending = false, appendFailed = false))
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @Composable
+    fun collections() =
+        Grid(
+            GridState.Ready(
+                LibraryGridControls("Collections", LibraryFilterDraft(), null, LibraryKind.BoxSets),
+                listOf(
+                    BrowseItem("c1", "James Bond Collection", ItemKind.BoxSet, childCount = 24),
+                    BrowseItem("c2", "The Matrix Collection", ItemKind.BoxSet, childCount = 4),
+                    BrowseItem("c3", "Alien", ItemKind.BoxSet, childCount = 1),
+                    BrowseItem("c4", "Studio Ghibli", ItemKind.BoxSet),
+                ),
+                hasMore = false,
+                appending = false,
+                appendFailed = false,
+            ),
+        )
 
     @PreviewTest
     @JellyfinScreenStatePreview

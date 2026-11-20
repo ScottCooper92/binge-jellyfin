@@ -45,7 +45,8 @@ class LibrariesViewModel(
             attempt { libraries.views() }
                 .onSuccess { views ->
                     val tiles = views.tiles()
-                    mutableState.value = if (tiles.isEmpty()) LibrariesUiState.Empty else LibrariesUiState.Ready(tiles)
+                    mutableState.value =
+                        if (tiles.isEmpty()) LibrariesUiState.Empty else LibrariesUiState.Ready(tiles, othersHidden = views.hasUnlisted())
                 }.onFailure { error ->
                     if (mutableState.value !is LibrariesUiState.Ready && mutableState.value !is LibrariesUiState.Empty) {
                         mutableState.value = LibrariesUiState.Error(classify(error))

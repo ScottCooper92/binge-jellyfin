@@ -233,7 +233,7 @@ class FakeJellyfin : Dispatcher() {
     var userViews =
         """[{"Id":"lib-movies","Name":"Movies","CollectionType":"movies",""" +
             """"ImageTags":{"Primary":"lp","Thumb":"lt"},"BackdropImageTags":["lb"]},""" +
-            """{"Id":"lib-shows","Name":"Shows","CollectionType":"tvshows","ImageTags":{"Primary":"sp"}},{"Id":"lib-home","Name":"Home videos"}]"""
+            """{"Id":"lib-shows","Name":"Shows","CollectionType":"tvshows","ImageTags":{"Primary":"sp"}},{"Id":"lib-home","Name":"Home videos","CollectionType":"homevideos"}]"""
 
     /** [userViews] without the libraries in the configuration's `GroupedFolders`, as the server leaves them out. */
     private fun ungroupedViews(): String {

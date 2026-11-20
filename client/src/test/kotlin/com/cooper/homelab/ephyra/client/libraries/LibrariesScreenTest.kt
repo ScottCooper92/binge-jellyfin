@@ -72,6 +72,18 @@ class LibrariesScreenTest {
     }
 
     @Test
+    fun `a line under the tiles says other libraries are not shown yet, only when some are hidden`() {
+        show(LibrariesUiState.Ready(listOf(movies, shows), othersHidden = true))
+        rule.onNodeWithText("Other libraries on this server aren't shown yet.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `with nothing hidden there is no such line`() {
+        show(LibrariesUiState.Ready(listOf(movies, shows)))
+        rule.onNodeWithText("Other libraries on this server aren't shown yet.").assertDoesNotExist()
+    }
+
+    @Test
     fun `a tile asks for its picture only when the library has one`() {
         val asked = mutableListOf<String>()
         show(
@@ -87,7 +99,7 @@ class LibrariesScreenTest {
     @Test
     fun `no libraries to list say so`() {
         show(LibrariesUiState.Empty)
-        rule.onNodeWithText("Movie and series libraries on this server will appear here.", substring = true).assertIsDisplayed()
+        rule.onNodeWithText("Movie, series and collection libraries on this server will appear here.", substring = true).assertIsDisplayed()
     }
 
     @Test

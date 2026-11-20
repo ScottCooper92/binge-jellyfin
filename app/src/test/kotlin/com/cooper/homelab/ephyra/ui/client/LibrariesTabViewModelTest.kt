@@ -62,6 +62,49 @@ class LibrariesTabViewModelTest {
         assertTrue(ready.tiles.all { it.kind == LibraryKind.Movies || it.kind == LibraryKind.TvShows })
     }
 
+    private fun listed(views: String): LibrariesUiState.Ready {
+        jellyfin.userViews = views
+        runBlocking { sessions.save(jellyfin.session()) }
+        return viewModel().settled() as LibrariesUiState.Ready
+    }
+
+    @Test
+    fun `a collections view on the server is a tile`() {
+        val ready =
+            listed(
+                """[{"Id":"lib-movies","Name":"Movies","CollectionType":"movies"},""" +
+                    """{"Id":"lib-sets","Name":"Collections","CollectionType":"boxsets"},""" +
+                    """{"Id":"lib-shows","Name":"Shows","CollectionType":"tvshows"}]""",
+            )
+        assertEquals(listOf("Movies", "Collections", "Shows"), ready.tiles.map { it.name })
+        assertEquals(LibraryKind.BoxSets, ready.tiles[1].kind)
+        assertFalse(ready.othersHidden)
+    }
+
+    @Test
+    fun `a view with no collection type is a tile, so a server with only that is not empty`() {
+        val ready = listed("""[{"Id":"lib-mixed","Name":"Everything"}]""")
+        assertEquals(listOf(LibraryKind.Mixed), ready.tiles.map { it.kind })
+    }
+
+    @Test
+    fun `a music view is left out and the tab says other libraries are hidden`() {
+        val ready =
+            listed(
+                """[{"Id":"lib-movies","Name":"Movies","CollectionType":"movies"},""" +
+                    """{"Id":"lib-music","Name":"Music","CollectionType":"music"}]""",
+            )
+        assertEquals(listOf("Movies"), ready.tiles.map { it.name })
+        assertTrue(ready.othersHidden)
+    }
+
+    @Test
+    fun `a server with only a music view lists nothing`() {
+        jellyfin.userViews = """[{"Id":"lib-music","Name":"Music","CollectionType":"music"}]"""
+        runBlocking { sessions.save(jellyfin.session()) }
+        assertEquals(LibrariesUiState.Empty, viewModel().settled())
+    }
+
     @Test
     fun `with no session it is not connected, and a retry reads the session again`() {
         val vm = viewModel()

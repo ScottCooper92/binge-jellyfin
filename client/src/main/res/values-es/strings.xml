@@ -14,7 +14,8 @@
     <string name="client_home_caption_episode">T%1$d, E%2$d · %3$s</string>
     <string name="client_home_empty">Aún no hay nada que mostrar. Aquí aparecerán los títulos que veas y añadas.</string>
     <string name="client_libraries_title">Bibliotecas</string>
-    <string name="client_libraries_empty">Las bibliotecas de películas y series de este servidor aparecerán aquí.</string>
+    <string name="client_libraries_empty">Las bibliotecas de películas, series y colecciones de este servidor aparecerán aquí.</string>
+    <string name="client_libraries_others_hidden">Las demás bibliotecas de este servidor aún no se muestran.</string>
     <string name="client_title_overview">Sinopsis</string>
     <string name="client_title_play">Reproducir</string>
     <string name="client_title_resume">Reanudar</string>
@@ -94,6 +95,11 @@
     <string name="client_library_no_match">No hay coincidencias</string>
     <string name="client_library_empty">Esta biblioteca aún está vacía.</string>
     <string name="client_library_empty_filtered">Ningún título coincide con estos filtros.</string>
+    <plurals name="client_library_collection_count">
+        <item quantity="one">%1$d título</item>
+        <item quantity="many">%1$d títulos</item>
+        <item quantity="other">%1$d títulos</item>
+    </plurals>
     <string name="client_library_empty_filtered_title">Sin resultados</string>
     <string name="client_library_refresh_failed">No se pudo actualizar. Desliza hacia abajo para reintentar.</string>
     <string name="client_library_clear_filters">Borrar filtros</string>
