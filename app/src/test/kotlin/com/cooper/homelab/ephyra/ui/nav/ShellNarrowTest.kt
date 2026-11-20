@@ -201,6 +201,21 @@ class ShellNarrowTest : ShellHostTestBase() {
     }
 
     @Test
+    fun `the Search tab draws the screen it is given in place of its placeholder`() {
+        host(searchTab = { Text("the search screen") })
+        tap("tab_search")
+        assertShown("the search screen")
+        assertAbsent("This screen is on its way.")
+    }
+
+    @Test
+    fun `the Search tab keeps its placeholder until it has a screen`() {
+        host()
+        tap("tab_search")
+        assertShown("This screen is on its way.")
+    }
+
+    @Test
     fun `a library opens over the bar, and Back closes it to the Libraries tab with the bar back`() {
         hostWithLibraries()
         tap("tab_libraries")

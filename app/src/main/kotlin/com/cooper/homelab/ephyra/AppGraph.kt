@@ -27,6 +27,8 @@ import com.cooper.homelab.core.notifications.DataStoreFeedCursorStore
 import com.cooper.homelab.core.notifications.FeedCursorStore
 import com.cooper.homelab.core.notifications.PollScheduler
 import com.cooper.homelab.core.presentation.appsettings.LicenceSource
+import com.cooper.homelab.core.presentation.search.DataStoreQueryHistory
+import com.cooper.homelab.core.presentation.search.QueryHistory
 import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
@@ -253,6 +255,15 @@ class AppGraph(
         )
     }
 
+    /**
+     * The queries the user searched in the Search tab, kept on this device alone. It is the signed-in account's list: the server id it is keyed
+     * by is minted once per install, so [clearAccountCaches] forgets it when the session ends. The file (`search_history`) and the key prefix
+     * (`search_query`) are on-disk names: a different one would lose what the user searched.
+     */
+    val queryHistory: QueryHistory by lazy {
+        DataStoreQueryHistory(dataStore("search_history"), serverIdentity::currentServerId, "search_query")
+    }
+
     val notifier: AndroidNotifier by lazy { AndroidNotifier(appContext) }
 
     val notificationScheduler: PollScheduler by lazy { workManagerPollScheduler(appContext) }
@@ -340,10 +351,11 @@ class AppGraph(
 
     val index: LibraryIndex by lazy { LibraryIndex() }
 
-    /** Everything the app keeps on disk about the account that was signed in: its pictures and the last log shared. */
+    /** Everything the app keeps on disk about the account that was signed in: its pictures, its recent searches and the last log shared. */
     suspend fun clearAccountCaches() =
         withContext(io) {
             userPictures.clear()
+            queryHistory.clear()
             clearSharedLogs(appContext.cacheDir)
         }
 

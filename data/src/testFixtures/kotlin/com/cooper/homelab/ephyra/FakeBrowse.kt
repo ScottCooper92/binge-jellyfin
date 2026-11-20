@@ -191,6 +191,7 @@ class FakeBrowse {
     }
 
     /** Whether `/Persons` honours `startIndex`, as 12.0 and later do. */
+    @Volatile
     var pagesPeople = false
 
     private fun filters(request: RecordedRequest): MockResponse {
