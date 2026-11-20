@@ -31,6 +31,7 @@ import com.cooper.homelab.core.review.PlayReviewPromptLauncher
 import com.cooper.homelab.core.review.ReviewPrompt
 import com.cooper.homelab.core.review.ReviewSignalStore
 import com.cooper.homelab.core.server.connection.DeviceIdentity
+import com.cooper.homelab.core.server.connection.SecretCipher
 import com.cooper.homelab.core.server.connection.ServerRegistry
 import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.CleartextGate
@@ -73,7 +74,6 @@ import com.cooper.homelab.ephyra.notifications.PollBreadcrumbs
 import com.cooper.homelab.ephyra.notifications.PollRunner
 import com.cooper.homelab.ephyra.notifications.pollReactor
 import com.cooper.homelab.ephyra.notifications.workManagerPollScheduler
-import com.cooper.homelab.ephyra.server.AddressPolicy
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.LibraryIndex
 import com.cooper.homelab.ephyra.server.ServerEvents
@@ -109,17 +109,11 @@ class AppGraph(
     /** The licences of the libraries this app ships, read once for the licences page. */
     val licences: LicenceSource by lazy { AboutLibrariesLicenceSource(appContext, io) }
 
-    /** Whether the app reads a typed address and guards plain HTTP the way the shared library does. See [serverRegistryEnabled]. */
-    private val addressPolicyEnabled: Boolean by lazy { debugSwitch(ADDRESS_POLICY_SWITCH) }
-
     /**
      * Whether a settings-search result for an on/off setting carries its switch. Off unless a debug build's switch file says so, and
      * read once, so a flip takes effect on the next launch. It is not remote-controlled.
      */
     val searchTogglesEnabled: Boolean by lazy { debugSwitch(SEARCH_TOGGLES_SWITCH) }
-
-    /** The addresses to try for a typed one: the released behaviour, unless the debug switch is on. */
-    val addressPolicy: AddressPolicy by lazy { if (addressPolicyEnabled) AddressPolicy.Shared else AddressPolicy.Legacy }
 
     val http: OkHttpClient by lazy {
         OkHttpClient
@@ -128,14 +122,9 @@ class AppGraph(
             .addInterceptor(DemoTransport())
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .apply {
-                // A network interceptor, so it judges every hop, a redirect down to HTTP included. The demo never reaches it.
-                if (addressPolicyEnabled) {
-                    addNetworkInterceptor(
-                        CleartextGuard(CleartextGate(cleartextConsent, publicCleartextAvailable = true)),
-                    )
-                }
-            }.build()
+            // A network interceptor, so it judges every hop, a redirect down to HTTP included. The demo never reaches it.
+            .addNetworkInterceptor(CleartextGuard(CleartextGate(cleartextConsent, publicCleartextAvailable = true)))
+            .build()
     }
 
     /**
@@ -148,10 +137,13 @@ class AppGraph(
         }
     }
 
-    /** Drops the consent to a public plain-HTTP host once the user leaves that server. Only with the address policy on. */
+    /** Drops the consent to a public plain-HTTP host once the user leaves that server. */
     fun startCleartextConsent() {
-        if (addressPolicyEnabled) cleartextConsent.followSession(sessions.session.map { it?.baseUrl }, scope)
+        cleartextConsent.followSession(sessions.session.map { it?.baseUrl }, scope)
     }
+
+    /** Seals what a Quick Connect wait would keep, under the same Keystore key as the session's token. */
+    internal val linkCipher: SecretCipher by lazy { KeystoreSecretCipher(TOKEN_KEY_ALIAS).forLibrary() }
 
     private fun dataStore(name: String): DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
@@ -399,6 +391,5 @@ internal const val CLIENT_NAME = "Ephyra"
 /** The debug switches' file and the key in it that turns the per-server stores on. A shipped build never reads either. */
 internal const val DEBUG_SWITCHES_FILE = "debug_switches"
 internal const val SERVER_REGISTRY_SWITCH = "server_registry"
-internal const val ADDRESS_POLICY_SWITCH = "address_policy"
 internal const val SEARCH_TOGGLES_SWITCH = "search_toggles"
 private const val REDACTOR_TAG = "Redactor"

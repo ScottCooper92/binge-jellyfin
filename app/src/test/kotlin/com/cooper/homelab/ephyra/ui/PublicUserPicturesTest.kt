@@ -2,6 +2,8 @@ package com.cooper.homelab.ephyra.ui
 
 import android.graphics.Bitmap
 import com.cooper.homelab.ephyra.FakeJellyfin
+import com.cooper.homelab.ephyra.PlainCipher
+import com.cooper.homelab.ephyra.auth.forLibrary
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.LibraryIndex
@@ -54,7 +56,17 @@ class PublicUserPicturesTest {
     }
 
     private fun signInStep(): Pair<JellyfinViewModel, UiState.SignIn> {
-        val tracked = teardown.made(JellyfinViewModel(sessions, connection, LibraryIndex(), discover = { emptyList() }))
+        val tracked =
+            teardown.made(
+                JellyfinViewModel(
+                    sessions,
+                    connection,
+                    LibraryIndex(),
+                    dispatcher = Dispatchers.IO,
+                    cipher = PlainCipher.forLibrary(),
+                    discover = { emptyList() },
+                ),
+            )
         runBlocking { withTimeout(10_000) { tracked.state.first { it is UiState.EnterServer } } }
         tracked.onAddress(jellyfin.baseUrl)
         tracked.connect()

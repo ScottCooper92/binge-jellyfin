@@ -15,10 +15,10 @@ import com.cooper.homelab.ephyra.FakeItem
 import com.cooper.homelab.ephyra.FakeJellyfin
 import com.cooper.homelab.ephyra.PlainCipher
 import com.cooper.homelab.ephyra.auth.SessionStore
+import com.cooper.homelab.ephyra.auth.forLibrary
 import com.cooper.homelab.ephyra.demo.DEMO_ORIGIN
 import com.cooper.homelab.ephyra.demo.DEMO_TOKEN
 import com.cooper.homelab.ephyra.demo.DemoTransport
-import com.cooper.homelab.ephyra.server.AddressPolicy
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.DiscoveredServer
@@ -41,6 +41,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import mockwebserver3.Dispatcher
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -55,6 +59,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.net.ServerSocket
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLProtocolException
@@ -113,8 +118,11 @@ class JellyfinViewModelTest {
 
     private var sessionsEnded = 0
 
+    /** A successful sign-in is counted just after the signed-in state shows, so a test waits for the count it expects. */
+    private fun awaitReports(count: Int) =
+        runBlocking { withTimeout(10_000) { while (synchronized(reported) { reported.size } < count) delay(5) } }
+
     private fun viewModel(
-        policy: AddressPolicy = AddressPolicy.Legacy,
         over: Connection = connection,
         cleartext: CleartextConsent = CleartextConsent.None,
     ) = track(
@@ -122,11 +130,12 @@ class JellyfinViewModelTest {
             sessions,
             over,
             index,
+            dispatcher = Dispatchers.IO,
+            cipher = PlainCipher.forLibrary(),
             discover = { found },
             quickConnectPollMillis = 10L,
             analytics = analytics,
             onSessionEnded = { sessionsEnded++ },
-            addressPolicy = policy,
             cleartext = cleartext,
         ),
     )
@@ -144,10 +153,8 @@ class JellyfinViewModelTest {
         await<UiState.EnterServer>()
         onAddress(jellyfin.baseUrl)
         connect()
-        val step = await<UiState.SignIn>()
-        // The step reads whether Quick Connect is on as it opens; the tests that change the server's answer wait until it has been read.
-        runBlocking { withTimeout(10_000) { while (jellyfin.requests.none { it.url.encodedPath == "/QuickConnect/Enabled" }) delay(5) } }
-        return step
+        // Whether Quick Connect is on is read with the server, so the step is complete when it shows.
+        return await<UiState.SignIn>()
     }
 
     private fun demoViewModel(cipher: SecretCipher = PlainCipher): JellyfinViewModel {
@@ -162,7 +169,17 @@ class JellyfinViewModelTest {
                 Dispatchers.IO,
                 DiscardLogger,
             ).also { extraConnections += it }
-        return track(JellyfinViewModel(demoSessions, demoConnection, index, discover = { found }, analytics = analytics))
+        return track(
+            JellyfinViewModel(
+                demoSessions,
+                demoConnection,
+                index,
+                dispatcher = Dispatchers.IO,
+                cipher = PlainCipher.forLibrary(),
+                discover = { found },
+                analytics = analytics,
+            ),
+        )
     }
 
     @Test
@@ -185,7 +202,18 @@ class JellyfinViewModelTest {
         val signedIn = vm.await<UiState.SignedIn>()
         assertEquals(DEMO_ORIGIN, signedIn.session.baseUrl)
         assertEquals(DEMO_TOKEN, signedIn.session.token)
+        awaitReports(1)
         assertEquals(listOf("sign_in" to mapOf<String, Any>("method" to "demo")), reported.filter { it.first == "sign_in" })
+    }
+
+    @Test
+    fun `leaving the demo brings back an empty address step, not the demo's address`() {
+        val vm = demoViewModel()
+        vm.await<UiState.EnterServer>()
+        vm.tryDemo()
+        vm.await<UiState.SignedIn>()
+        vm.signOut()
+        assertEquals("", vm.await<UiState.EnterServer>().address)
     }
 
     @Test
@@ -404,9 +432,10 @@ class JellyfinViewModelTest {
         val vm = viewModel()
         vm.toFinish()
         jellyfin.startupCompleted = true
+        jellyfin.startupWizardCompleted = true
         jellyfin.status["/Users/AuthenticateByName"] = 500
         vm.startup.finish.finish()
-        val signIn = vm.await<UiState.SignIn>()
+        val signIn = vm.await<UiState.SignIn> { it.username == "sam" }
         assertEquals("sam", signIn.username)
         assertEquals("", signIn.password)
         assertTrue(!signIn.server.setupIncomplete)
@@ -426,21 +455,12 @@ class JellyfinViewModelTest {
     }
 
     @Test
-    fun `back from the wizard reads Quick Connect again for the sign-in step it returns to`() {
-        jellyfin.startupWizardCompleted = false
-        jellyfin.quickConnectEnabled = false
-        val vm = viewModel()
-        vm.toStartup()
-        vm.startup.back()
-        val step = vm.await<UiState.SignIn> { !it.quickConnectOn }
-        assertFalse(step.showsQuickConnectHint)
-    }
-
-    @Test
-    fun `a sign-in that fails after setup reads Quick Connect again for the step it falls back to`() {
+    fun `a sign-in that fails after setup reads the server again for the step it falls back to`() {
         jellyfin.startupWizardCompleted = false
         val vm = viewModel()
         vm.toFinish()
+        // The server is complete now, and has Quick Connect off: the step it falls back to is built from what it says.
+        jellyfin.startupWizardCompleted = true
         jellyfin.quickConnectEnabled = false
         jellyfin.status["/Users/AuthenticateByName"] = 500
         vm.startup.finish.finish()
@@ -593,56 +613,22 @@ class JellyfinViewModelTest {
     }
 
     @Test
-    fun `an address policy with several candidates takes the first that answers as Jellyfin`() {
-        val vm = viewModel(AddressPolicy { listOf(DEAD_PORT.toHttpUrl(), jellyfin.baseUrl.toHttpUrl()) })
-        vm.await<UiState.EnterServer>()
-        vm.onAddress("typed-by-the-user")
-        vm.connect()
-
-        assertEquals(jellyfin.baseUrl, vm.await<UiState.SignIn>().baseUrl)
-    }
-
-    @Test
-    fun `when no candidate answers the error is the unreachable one, and an answer that is not Jellyfin beats silence`() {
-        val vm = viewModel(AddressPolicy { listOf(DEAD_PORT.toHttpUrl(), "http://127.0.0.1:2/".toHttpUrl()) })
-        vm.await<UiState.EnterServer>()
-        vm.onAddress("x")
-        vm.connect()
-        assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
-
-        jellyfin.status["/System/Info/Public"] = 404
-        val mixed = viewModel(AddressPolicy { listOf(DEAD_PORT.toHttpUrl(), jellyfin.baseUrl.toHttpUrl()) })
-        mixed.await<UiState.EnterServer>()
-        mixed.onAddress("x")
-        mixed.connect()
-        assertEquals(SetupError.NotJellyfin, mixed.await<UiState.EnterServer> { it.error != null }.error)
-    }
-
-    @Test
-    fun `an address policy that yields nothing is an invalid address`() {
-        val vm = viewModel(AddressPolicy { emptyList() })
-        vm.await<UiState.EnterServer>()
-        vm.onAddress("x")
-        vm.connect()
-
-        assertEquals(SetupError.InvalidAddress, vm.await<UiState.EnterServer> { it.error != null }.error)
-    }
-
-    @Test
-    fun `plain HTTP to a public host the user has not agreed to is refused before any request`() {
+    fun `plain HTTP to a public host the user has not agreed to is not read, and no request is sent`() {
         val guarded = guardedConnection()
-        val vm = viewModel(AddressPolicy.Shared, guarded)
+        val vm = viewModel(guarded)
         vm.await<UiState.EnterServer>()
         vm.onAddress("http://jellyfin.example.com")
         vm.connect()
 
-        assertEquals(SetupError.CleartextRefused, vm.await<UiState.EnterServer> { it.error != null }.error)
+        val asked = vm.await<UiState.EnterServer> { it.insecureHost != null }
+        assertFalse(asked.canConnect)
+        assertFalse(asked.checking)
         assertTrue(jellyfin.requests.isEmpty())
     }
 
     @Test
     fun `an address that reaches a public host over plain HTTP waits for the user's agreement`() {
-        val vm = viewModel(AddressPolicy.Shared)
+        val vm = viewModel()
         vm.await<UiState.EnterServer>()
 
         vm.onAddress("http://jellyfin.example.com")
@@ -660,10 +646,108 @@ class JellyfinViewModelTest {
         assertFalse(other.cleartextAllowed)
     }
 
+    /** A connection that records every address asked for and answers none of them. */
+    private fun recordingConnection(asked: MutableList<HttpUrl>) =
+        Connection(
+            OkHttpClient
+                .Builder()
+                .addInterceptor { chain ->
+                    asked += chain.request().url
+                    throw IOException("no route")
+                }.build(),
+            sessions,
+            "Jellyfin Companion",
+            "Test",
+            "1.0",
+            Dispatchers.IO,
+            DiscardLogger,
+        ).also { extraConnections += it }
+
+    private fun askedFor(
+        typed: String,
+        consent: CleartextConsent = CleartextConsent.None,
+        agreed: Boolean = false,
+    ): List<String> {
+        val asked = CopyOnWriteArrayList<HttpUrl>()
+        val vm = viewModel(recordingConnection(asked), consent)
+        vm.await<UiState.EnterServer>()
+        vm.onAddress(typed)
+        if (agreed) vm.allowCleartext(true)
+        vm.connect()
+        vm.await<UiState.EnterServer> { it.error != null || !it.canConnect }
+        return asked.map { "${it.scheme}://${it.host}${if (it.port == it.scheme.defaultPort()) "" else ":${it.port}"}" }.distinct()
+    }
+
+    private fun String.defaultPort() = if (this == "https") 443 else 80
+
+    @Test
+    fun `a public host typed without a scheme is tried over https, then on the server's own https port`() {
+        assertEquals(listOf("https://jellyfin.example.com", "https://jellyfin.example.com:8920"), askedFor("jellyfin.example.com"))
+    }
+
+    @Test
+    fun `a local host or address typed without a scheme stays plain http, with no agreement asked for`() {
+        assertEquals(listOf("http://192.168.1.10", "http://192.168.1.10:8096"), askedFor("192.168.1.10"))
+        assertEquals(listOf("http://jellyfin.local", "http://jellyfin.local:8096"), askedFor("jellyfin.local"))
+    }
+
+    @Test
+    fun `a typed port is taken as meant and nothing else is tried`() {
+        assertEquals(listOf("http://192.168.1.10:9000"), askedFor("192.168.1.10:9000"))
+        assertEquals(listOf("https://jellyfin.example.com:9443"), askedFor("https://jellyfin.example.com:9443"))
+    }
+
+    @Test
+    fun `plain http to a public host is read only once the user has agreed, and then as typed`() {
+        assertEquals(emptyList<String>(), askedFor("http://jellyfin.example.com"))
+        assertEquals(
+            listOf("http://jellyfin.example.com", "http://jellyfin.example.com:8096"),
+            askedFor("http://jellyfin.example.com", RecordingConsent(), agreed = true),
+        )
+    }
+
+    @Test
+    fun `an address that is redirected is signed in to at the address that answered`() {
+        val redirector = MockWebServer()
+        try {
+            redirector.dispatcher =
+                object : Dispatcher() {
+                    override fun dispatch(request: RecordedRequest) =
+                        MockResponse
+                            .Builder()
+                            .code(302)
+                            .addHeader("Location", jellyfin.baseUrl.trimEnd('/') + request.url.encodedPath)
+                            .build()
+                }
+            redirector.start()
+            val vm = viewModel()
+            vm.await<UiState.EnterServer>()
+            vm.onAddress(redirector.url("/").toString())
+            vm.connect()
+            assertEquals(jellyfin.baseUrl.trimEnd('/'), vm.await<UiState.SignIn>().baseUrl)
+        } finally {
+            redirector.close()
+        }
+    }
+
+    @Test
+    fun `a plain http host the user agreed to earlier is found agreed to again when its server is edited`() {
+        val consent = RecordingConsent().apply { granted += "jellyfin.example.com" }
+        runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
+        val vm = viewModel(cleartext = consent)
+        vm.await<UiState.SignedIn>()
+
+        vm.changeServer()
+
+        val step = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
+        assertTrue(step.cleartextAllowed)
+        assertTrue(step.canConnect)
+    }
+
     @Test
     fun `leaving a plain HTTP public host's session brings back the row asking for agreement`() {
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
-        val vm = viewModel(AddressPolicy.Shared)
+        val vm = viewModel()
         // The saved session is read in the background: signing out before it has been read lets the read land after the sign-out.
         vm.await<UiState.SignedIn>()
         vm.signOut()
@@ -676,29 +760,25 @@ class JellyfinViewModelTest {
     @Test
     fun `a session to a public plain HTTP host holds an agreement the user can take back`() {
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
-        val vm = viewModel(AddressPolicy.Shared)
+        val vm = viewModel()
         assertEquals("jellyfin.example.com", vm.await<UiState.SignedIn>().consentHost)
     }
 
     @Test
     fun `a session that holds no agreement has none to take back and cannot ask`() {
-        listOf(
-            AddressPolicy.Shared to "https://jellyfin.example.com",
-            AddressPolicy.Shared to "http://192.168.1.10:8096",
-            AddressPolicy.Legacy to "http://jellyfin.example.com",
-        ).forEach { (policy, url) ->
+        listOf("https://jellyfin.example.com", "http://192.168.1.10:8096").forEach { url ->
             runBlocking { sessions.save(jellyfin.session().copy(baseUrl = url)) }
-            val vm = viewModel(policy)
-            assertNull("$policy $url", vm.await<UiState.SignedIn>().consentHost)
+            val vm = viewModel()
+            assertNull(url, vm.await<UiState.SignedIn>().consentHost)
             vm.confirmTakeBack(true)
-            assertFalse("$policy $url", vm.await<UiState.SignedIn>().confirmingTakeBack)
+            assertFalse(url, vm.await<UiState.SignedIn>().confirmingTakeBack)
         }
     }
 
     @Test
     fun `taking the agreement back asks first, and confirming signs out and brings back the row asking for it`() {
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
-        val vm = viewModel(AddressPolicy.Shared)
+        val vm = viewModel()
         vm.await<UiState.SignedIn>()
 
         vm.confirmTakeBack(true)
@@ -719,18 +799,13 @@ class JellyfinViewModelTest {
 
     @Test
     fun `an address that needs no agreement asks for none`() {
-        val vm = viewModel(AddressPolicy.Shared)
+        val vm = viewModel()
         vm.await<UiState.EnterServer>()
 
         listOf("https://jellyfin.example.com", "192.168.1.10:8096", "jellyfin.example.com", "http://jellyfin.local").forEach {
             vm.onAddress(it)
             assertNull(it, vm.await<UiState.EnterServer>().insecureHost)
         }
-        // The released policy guards nothing, so it asks for nothing.
-        val released = viewModel(AddressPolicy.Legacy)
-        released.await<UiState.EnterServer>()
-        released.onAddress("http://jellyfin.example.com")
-        assertNull(released.await<UiState.EnterServer>().insecureHost)
     }
 
     @Test
@@ -746,7 +821,7 @@ class JellyfinViewModelTest {
                 Dispatchers.IO,
                 DiscardLogger,
             ).also { extraConnections += it }
-        val vm = viewModel(AddressPolicy.Shared, failing, consent)
+        val vm = viewModel(failing, consent)
         vm.await<UiState.EnterServer>()
         vm.onAddress("http://jellyfin.example.com")
         vm.allowCleartext(true)
@@ -783,7 +858,7 @@ class JellyfinViewModelTest {
 
     @Test
     fun `a server that asks for a client certificate is named in the connect step, not called unreachable`() {
-        val vm = viewModel(AddressPolicy.Shared, askingForCertificate())
+        val vm = viewModel(askingForCertificate())
         vm.await<UiState.EnterServer>()
         vm.onAddress("https://jellyfin.example.com")
 
@@ -795,7 +870,7 @@ class JellyfinViewModelTest {
     @Test
     fun `a saved server that asks for a client certificate says so on reconnect`() {
         runBlocking { sessions.save(jellyfin.session()) }
-        val vm = viewModel(AddressPolicy.Shared, askingForCertificate())
+        val vm = viewModel(askingForCertificate())
         vm.refresh()
         assertEquals(
             ConnectionHealth.ClientCertificateNeeded,
@@ -805,7 +880,7 @@ class JellyfinViewModelTest {
 
     @Test
     fun `a client certificate request an earlier attempt met is not lost behind the last attempt's failure`() {
-        val vm = viewModel(AddressPolicy.Shared, askedThenRejected())
+        val vm = viewModel(askedThenRejected())
         vm.await<UiState.EnterServer>()
         vm.onAddress("https://jellyfin.example.com")
 
@@ -817,7 +892,7 @@ class JellyfinViewModelTest {
     @Test
     fun `a saved server whose earlier attempt met a client certificate request says so on reconnect`() {
         runBlocking { sessions.save(jellyfin.session()) }
-        val vm = viewModel(AddressPolicy.Shared, askedThenRejected())
+        val vm = viewModel(askedThenRejected())
         vm.refresh()
         assertEquals(
             ConnectionHealth.ClientCertificateNeeded,
@@ -826,25 +901,8 @@ class JellyfinViewModelTest {
     }
 
     @Test
-    fun `of several addresses one asking for a client certificate and another failing the handshake is named for the certificate`() {
-        val asking = "https://asks.example.com/".toHttpUrl()
-        val plain = "https://plain.example.com/".toHttpUrl()
-        val connection =
-            failingWith {
-                if (it.host == asking.host) SSLProtocolException(CERTIFICATE_REQUIRED_ALERT) else SSLHandshakeException("handshake failed")
-            }
-        listOf(listOf(asking, plain), listOf(plain, asking)).forEach { order ->
-            val vm = viewModel(AddressPolicy { order }, connection)
-            vm.await<UiState.EnterServer>()
-            vm.onAddress("x")
-            vm.connect()
-            assertEquals(SetupError.ClientCertificateNeeded, vm.await<UiState.EnterServer> { it.error != null }.error)
-        }
-    }
-
-    @Test
     fun `a handshake that fails on its own is still called unreachable`() {
-        val vm = viewModel(AddressPolicy.Shared, failingWith { SSLHandshakeException("handshake failed") })
+        val vm = viewModel(failingWith { SSLHandshakeException("handshake failed") })
         vm.await<UiState.EnterServer>()
         vm.onAddress("https://jellyfin.example.com")
 
@@ -855,7 +913,7 @@ class JellyfinViewModelTest {
 
     @Test
     fun `a guard that refuses after the user agreed is a refusal, not a connection`() {
-        val vm = viewModel(AddressPolicy.Shared, guardedConnection())
+        val vm = viewModel(guardedConnection())
         vm.await<UiState.EnterServer>()
         vm.onAddress("http://jellyfin.example.com")
         vm.allowCleartext(true)
@@ -897,7 +955,7 @@ class JellyfinViewModelTest {
                 Dispatchers.IO,
                 DiscardLogger,
             ).also { extraConnections += it }
-        val vm = viewModel(AddressPolicy.Shared, reaching, RecordingConsent())
+        val vm = viewModel(reaching, RecordingConsent())
         vm.await<UiState.EnterServer>()
         vm.onAddress("http://jellyfin.example.com")
         vm.allowCleartext(true)
@@ -989,7 +1047,7 @@ class JellyfinViewModelTest {
 
         jellyfin.forgotPin = "AB-12"
         vm.forgotPassword.submitPin(" ab-12 ")
-        val done = vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Done }
+        val done = vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Done && it.password == "AB-12" }
         // The password is now the PIN as sent: upper case, as the server keeps it.
         assertEquals("AB-12", done.password)
         assertEquals("Mum", done.username)
@@ -1069,6 +1127,7 @@ class JellyfinViewModelTest {
         vm.onPassword("right")
         vm.signInWithPassword()
         vm.await<UiState.SignedIn> { it.titles != null }
+        awaitReports(2)
         assertEquals(
             listOf(
                 "sign_in_failed" to mapOf("method" to "password", "reason" to "wrong_credentials"),
@@ -1088,6 +1147,7 @@ class JellyfinViewModelTest {
         vm.await<UiState.SignedIn> { it.titles != null }
         vm.signOut()
         vm.await<UiState.EnterServer>()
+        awaitReports(2)
         assertEquals(listOf("sign_in" to mapOf("method" to "quick_connect"), "sign_out" to emptyMap<String, Any>()), reported)
     }
 
@@ -1132,65 +1192,6 @@ class JellyfinViewModelTest {
         val unclear = viewModel().toSignIn()
         assertTrue(unclear.quickConnectOn)
         assertTrue(unclear.showsQuickConnectHint)
-    }
-
-    @Test
-    fun `a code already asked for is dropped quietly when the read then says Quick Connect is off`() {
-        val held = jellyfin.hold("/QuickConnect/Enabled")
-        val vm = viewModel()
-        vm.await<UiState.EnterServer>()
-        vm.onAddress(jellyfin.baseUrl)
-        vm.connect()
-        vm.await<UiState.SignIn>()
-        held.awaitArrival()
-        // The TV's code panel asks for a code as soon as it shows, before the step's own read has answered.
-        vm.startQuickConnect()
-        vm.await<UiState.SignIn> { it.quickConnectCode != null }
-        jellyfin.quickConnectEnabled = false
-        held.release()
-        val step = vm.await<UiState.SignIn> { !it.quickConnectOn }
-        assertNull(step.quickConnectCode)
-        assertNull(step.quickConnectError)
-        assertFalse(step.gettingCode)
-        // The request is cancelled: approving the code now signs nobody in.
-        jellyfin.quickConnectApproved = true
-        runBlocking { delay(200) }
-        assertTrue(vm.state.value is UiState.SignIn)
-        assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/AuthenticateWithQuickConnect" })
-    }
-
-    @Test
-    fun `a late answer that Quick Connect is off does not cancel the code of the server the user moved to`() {
-        val other = FakeJellyfin()
-        try {
-            jellyfin.quickConnectEnabled = false
-            val held = jellyfin.hold("/QuickConnect/Enabled")
-            val vm = viewModel()
-            vm.await<UiState.EnterServer>()
-            vm.onAddress(jellyfin.baseUrl)
-            vm.connect()
-            vm.await<UiState.SignIn>()
-            held.awaitArrival()
-            // The user moves on to a second server, whose Quick Connect is on, and asks it for a code.
-            vm.changeServer()
-            vm.await<UiState.EnterServer>()
-            vm.onAddress(other.baseUrl)
-            vm.connect()
-            vm.await<UiState.SignIn> { it.baseUrl == other.baseUrl.trimEnd('/') }
-            vm.startQuickConnect()
-            vm.await<UiState.SignIn> { it.quickConnectCode != null }
-            // The first server's answer arrives now: it is not this step's.
-            held.release()
-            runBlocking { delay(200) }
-            val step = vm.state.value as UiState.SignIn
-            assertTrue(step.quickConnectOn)
-            assertEquals("123456", step.quickConnectCode)
-            // The code is still polled: approving it signs in.
-            other.quickConnectApproved = true
-            vm.await<UiState.SignedIn>()
-        } finally {
-            other.close()
-        }
     }
 
     @Test
@@ -1513,6 +1514,8 @@ class JellyfinViewModelTest {
                                 it
                         },
                         index,
+                        dispatcher = Dispatchers.IO,
+                        cipher = PlainCipher.forLibrary(),
                         discover = {
                             gate.await()
                             server
