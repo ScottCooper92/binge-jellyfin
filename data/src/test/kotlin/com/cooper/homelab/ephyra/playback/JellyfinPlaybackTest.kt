@@ -2,12 +2,17 @@ package com.cooper.homelab.ephyra.playback
 
 import com.cooper.homelab.ephyra.FakeItem
 import com.cooper.homelab.ephyra.FakeJellyfin
+import com.cooper.homelab.ephyra.FakeTitle
 import com.cooper.homelab.ephyra.server.ClientIdentity
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
+import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.player.api.CodecLimit
+import com.cooper.homelab.player.api.PlayChapter
 import com.cooper.homelab.player.api.PlayMethod
+import com.cooper.homelab.player.api.PlaySegment
+import com.cooper.homelab.player.api.PlaySegmentKind
 import com.cooper.homelab.player.api.PlayTitle
 import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +44,7 @@ class JellyfinPlaybackTest {
             token = "token-1",
             logger = DiscardLogger,
         )
-    private val minter = JellyfinSourceMinter(client, "user-1")
+    private val minter = JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.11.6"))
     private val reporter = JellyfinPlayReporter(client)
     private val item = PlayItem("movie-1", PlayTitle("The Long Voyage"))
     private val profile = PlaybackDeviceProfile(videoCodecs = listOf("video/avc"), audioCodecs = listOf("audio/mp4a-latm"), maxWidth = 1920)
@@ -155,6 +160,116 @@ class JellyfinPlaybackTest {
         jellyfin.playbackInfo = """{"PlaySessionId":"p","MediaSources":[]}"""
         assertEquals(404, assertThrows(JellyfinHttpException::class.java) { runBlocking { minter.mint(item, profile, null) } }.code)
     }
+
+    private fun segmentsBody(vararg entries: String) = """{"Items":[${entries.joinToString(",")}],"TotalRecordCount":${entries.size}}"""
+
+    private fun segment(
+        type: String,
+        startTicks: Long,
+        endTicks: Long,
+    ) = """{"Id":"s-$type","ItemId":"movie-1","Type":"$type","StartTicks":$startTicks,"EndTicks":$endTicks}"""
+
+    @Test
+    fun `the segments the server marked are the player's skips, in the order they start`() =
+        runBlocking {
+            jellyfin.segments["movie-1"] =
+                segmentsBody(
+                    segment("Outro", 33_000_000_000L, 36_000_000_000L),
+                    segment("Intro", 300_000_000L, 900_000_000L),
+                    segment("Recap", 0L, 300_000_000L),
+                    segment("Preview", 32_000_000_000L, 33_000_000_000L),
+                    segment("Commercial", 10_000_000_000L, 11_000_000_000L),
+                    segment("Unknown", 12_000_000_000L, 13_000_000_000L),
+                    segment("Intro", 5L, 5L),
+                )
+            assertEquals(
+                listOf(
+                    PlaySegment(PlaySegmentKind.RECAP, 0L, 30_000L),
+                    PlaySegment(PlaySegmentKind.INTRO, 30_000L, 90_000L),
+                    PlaySegment(PlaySegmentKind.PREVIEW, 3_200_000L, 3_300_000L),
+                    PlaySegment(PlaySegmentKind.CREDITS, 3_300_000L, 3_600_000L),
+                ),
+                minter.mint(item, profile, null).request.segments,
+            )
+        }
+
+    @Test
+    fun `a server that cannot mark segments, a source that holds none, or a read that fails gives a play with none`() =
+        runBlocking {
+            jellyfin.segments["movie-1"] = segmentsBody(segment("Intro", 300_000_000L, 900_000_000L))
+            val old = JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.9.11"))
+            assertTrue(
+                old
+                    .mint(item, profile, null)
+                    .request.segments
+                    .isEmpty(),
+            )
+            assertEquals(0, jellyfin.hits("/MediaSegments/movie-1"))
+            jellyfin.playbackInfo =
+                FakeJellyfin.directPlayInfo().replace("\"Container\":\"mp4\"", "\"Container\":\"mp4\",\"HasSegments\":false")
+            assertTrue(
+                minter
+                    .mint(item, profile, null)
+                    .request.segments
+                    .isEmpty(),
+            )
+            assertEquals(0, jellyfin.hits("/MediaSegments/movie-1"))
+            jellyfin.playbackInfo = FakeJellyfin.directPlayInfo()
+            jellyfin.status["/MediaSegments/movie-1"] = 500
+            val request = minter.mint(item, profile, null).request
+            assertTrue(request.segments.isEmpty())
+            assertEquals(
+                "source-1",
+                request.source.url
+                    .toHttpUrl()
+                    .queryParameter("mediaSourceId"),
+            )
+        }
+
+    @Test
+    fun `an item's chapters are the player's, a numbered one with no title`() =
+        runBlocking {
+            jellyfin.browse.titles +=
+                FakeTitle(
+                    "movie-1",
+                    "The Long Voyage",
+                    "lib-movies",
+                    extra =
+                        """"Chapters":[{"StartPositionTicks":0,"Name":"Departure"},{"StartPositionTicks":6000000000,"Name":" "},""" +
+                            """{"StartPositionTicks":12000000000}]""",
+                )
+            assertEquals(
+                listOf(PlayChapter(0L, "Departure"), PlayChapter(600_000L, null), PlayChapter(1_200_000L, null)),
+                minter.mint(item, profile, null).request.chapters,
+            )
+        }
+
+    @Test
+    fun `an item the server has no chapters for, or a read that fails, gives a play with none`() =
+        runBlocking {
+            assertTrue(
+                minter
+                    .mint(item, profile, null)
+                    .request.chapters
+                    .isEmpty(),
+            )
+            jellyfin.browse.titles += FakeTitle("movie-1", "The Long Voyage", "lib-movies")
+            assertTrue(
+                minter
+                    .mint(item, profile, null)
+                    .request.chapters
+                    .isEmpty(),
+            )
+            jellyfin.status["/Items/movie-1"] = 500
+            assertEquals(
+                "source-1",
+                minter
+                    .mint(item, profile, null)
+                    .request.source.url
+                    .toHttpUrl()
+                    .queryParameter("mediaSourceId"),
+            )
+        }
 
     private fun handle() = JellyfinPlayHandle("movie-1", "source-1", "play-1", "DirectPlay", runtimeMs = 3_600_000L)
 

@@ -49,6 +49,7 @@ internal class DemoBrowse(
                 "Episodes",
             ) { call, parts -> ok(page(call, children(parts.first(), "Episode", call.query("seasonId")))) },
             route("GET", "Persons") { call, _ -> ok(searchPeople(call.query("searchTerm").orEmpty())) },
+            route("GET", "MediaSegments", "{}") { _, parts -> segmentsOf(titles.firstOrNull { it.id == parts.first() }) },
             route("GET", "Items", "{}", "Similar") { call, parts ->
                 ok(
                     page(

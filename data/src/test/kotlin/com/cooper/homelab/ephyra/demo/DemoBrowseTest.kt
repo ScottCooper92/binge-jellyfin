@@ -22,6 +22,8 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.JellyfinVersion
+import com.cooper.homelab.ephyra.server.SegmentKind
+import com.cooper.homelab.ephyra.server.mediaSegments
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
@@ -52,6 +54,16 @@ class DemoBrowseTest {
             libraries.views().forEach { view ->
                 assertTrue(view.name, view.primaryImageTag != null && view.thumbImageTag == null && view.backdropImageTag == null)
             }
+        }
+
+    @Test
+    fun `the demo marks an intro and credits in an episode, credits in a film, and nothing in what it does not have`() =
+        runBlocking {
+            val episode = client.mediaSegments("demo-ep-1-1")
+            assertEquals(listOf(SegmentKind.Intro, SegmentKind.Outro), episode.map { it.kind })
+            assertEquals(30_000L to 90_000L, episode.first().startMillis to episode.first().endMillis)
+            assertEquals(listOf(SegmentKind.Outro), client.mediaSegments("demo-movie-1").map { it.kind })
+            assertTrue(client.mediaSegments("demo-nobody").isEmpty())
         }
 
     @Test
