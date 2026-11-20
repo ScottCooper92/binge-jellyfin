@@ -81,10 +81,8 @@ class SearchServerConfigTest {
         try {
             withTimeout(millis, block)
         } catch (e: TimeoutCancellationException) {
-            throw AssertionError("Timed out after $millis ms. The server was asked ${asked()}", e)
+            throw AssertionError("Timed out after $millis ms. The server was asked ${jellyfin.asked()}", e)
         }
-
-    private fun asked() = jellyfin.requests.map { "${it.method} ${it.url.encodedPath}" }
 
     private fun held(): JsonObject = Json.parseToJsonElement(jellyfin.serverConfiguration).jsonObject
 
@@ -162,14 +160,18 @@ class SearchServerConfigTest {
                 }
             } as SearchConfigState.Ready
         assertEquals(
-            "the copy shown after the refresh; the server was asked ${asked()}",
+            "the copy shown after the refresh; the server was asked ${jellyfin.asked()}",
             original,
             ready.configuration
                 .getValue("EnableMetrics")
                 .jsonPrimitive.boolean,
         )
         assertFalse(ready.reading)
-        assertEquals("the server's copy; it was asked ${asked()}", original, held().getValue("EnableMetrics").jsonPrimitive.boolean)
+        assertEquals(
+            "the server's copy; it was asked ${jellyfin.asked()}",
+            original,
+            held().getValue("EnableMetrics").jsonPrimitive.boolean,
+        )
     }
 
     private fun encodingHeld(): JsonObject = Json.parseToJsonElement(jellyfin.encodingConfiguration).jsonObject

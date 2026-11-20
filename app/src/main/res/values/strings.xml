@@ -185,6 +185,9 @@
     <string name="languages_subtitles">Subtitle language</string>
     <string name="languages_subtitle_mode">Subtitle mode</string>
     <string name="languages_any">Any language</string>
+    <string name="playback_quality_wifi">Maximum quality on Wi-Fi</string>
+    <string name="playback_quality_mobile">Maximum quality on mobile data</string>
+    <string name="playback_quality_auto">Auto</string>
     <string name="settings_not_saved">Not saved. %1$s</string>
     <string name="subtitle_mode_default">Follow the file</string>
     <string name="subtitle_mode_default_detail">The subtitles the file marks as default or forced</string>

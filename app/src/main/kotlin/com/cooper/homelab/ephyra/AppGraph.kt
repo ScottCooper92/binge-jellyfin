@@ -85,7 +85,10 @@ import com.cooper.homelab.ephyra.playback.PlaybackSittings
 import com.cooper.homelab.ephyra.playback.SignedInNextEpisodes
 import com.cooper.homelab.ephyra.playback.SignedInPlayReporter
 import com.cooper.homelab.ephyra.playback.SignedInSourceMinter
+import com.cooper.homelab.ephyra.playback.StreamingCap
+import com.cooper.homelab.ephyra.playback.StreamingQualityPrefs
 import com.cooper.homelab.ephyra.server.Connection
+import com.cooper.homelab.ephyra.server.ConnectivityStreamingNetwork
 import com.cooper.homelab.ephyra.server.LibraryIndex
 import com.cooper.homelab.ephyra.server.ServerEvents
 import com.cooper.homelab.ephyra.server.UdpDiscovery
@@ -236,6 +239,19 @@ class AppGraph(
             ),
         )
     }
+
+    /** The most the user lets a play stream, on Wi-Fi and on mobile data, in a store of its own. Auto until chosen. */
+    val streamingQualityPrefs: StreamingQualityPrefs by lazy {
+        StreamingQualityPrefs(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("streaming_quality") },
+            ),
+        )
+    }
+
+    /** The user's cap for whichever connection the device is on at each mint, which the in-app player's minter is held to. */
+    val streamingCap: StreamingCap by lazy { streamingQualityPrefs.cap(ConnectivityStreamingNetwork(appContext)) }
 
     /** Whether the app browses and plays as well as manages: the remote flag and the user's own choice, read from this one place. */
     val clientGate: PreferenceGate by lazy {
@@ -399,7 +415,7 @@ class AppGraph(
         PlaybackSittings(
             scope = scope,
             player = inAppPlayer,
-            minter = SignedInSourceMinter(connection),
+            minter = SignedInSourceMinter(connection, streamingCap),
             reporter = SignedInPlayReporter(connection),
             nextEpisodes = SignedInNextEpisodes(connection),
             newSessionId = { UUID.randomUUID().toString() },

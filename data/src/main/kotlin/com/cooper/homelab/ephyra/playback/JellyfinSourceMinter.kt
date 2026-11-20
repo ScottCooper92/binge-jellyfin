@@ -46,6 +46,9 @@ private const val REFUSED = 409
  * (`GET /Videos/{id}/stream?static=true`), or as the server's own HLS transcode (`TranscodingUrl`) when it cannot. This app never
  * inspects the file.
  *
+ * The user's own cap on the bitrate ([cap], read at each mint) lowers the profile's ceiling before the server sees it, so the body and the
+ * profile carry the same number; a cap never raises what the device says it can play.
+ *
  * The token is in the `Authorization` header the source carries and in no URL: the player sends that header on every request it makes,
  * the subtitle files included, so a subtitle needs no `ApiKey` of its own.
  */
@@ -53,6 +56,7 @@ class JellyfinSourceMinter(
     private val client: JellyfinClient,
     private val userId: String,
     private val server: JellyfinServerProfile,
+    private val cap: StreamingCap = NoStreamingCap,
 ) : SourceMinter {
     override suspend fun mint(
         item: PlayItem,
@@ -61,7 +65,8 @@ class JellyfinSourceMinter(
     ): Minted {
         val read = attempt { client.item(userId, item.itemId, ITEM_FIELDS) }
         val resume = resumeMs ?: savedPosition(read.getOrThrow())
-        val info = client.playbackInfo(userId, item.itemId, playbackInfoBody(userId, profile.toContract()), resume * TICKS_PER_MILLI)
+        val capped = cap.maxBitrateBps()?.let(profile::cappedTo) ?: profile
+        val info = client.playbackInfo(userId, item.itemId, playbackInfoBody(userId, capped.toContract()), resume * TICKS_PER_MILLI)
         info.string("ErrorCode")?.let { throw JellyfinHttpException(if (it == "NotAllowed") FORBIDDEN else REFUSED, PLAYBACK_INFO) }
         val source = info.array("MediaSources").firstOrNull() as? JsonObject ?: throw JellyfinHttpException(NOT_FOUND, PLAYBACK_INFO)
         val method = playMethodOf(source)

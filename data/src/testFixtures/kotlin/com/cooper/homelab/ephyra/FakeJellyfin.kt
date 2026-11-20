@@ -68,6 +68,13 @@ class FakeJellyfin : Dispatcher() {
     val server = MockWebServer()
     val items = CopyOnWriteArrayList<FakeItem>()
     val requests = CopyOnWriteArrayList<RecordedRequest>()
+
+    /**
+     * What the server was asked, as `METHOD /path` for each request in order, for a test to say when a wait times out. It keeps to the method
+     * and the path: no query, no header and no body, so the access token cannot reach a log through it. Use this, not the requests, to describe one.
+     */
+    fun asked(): List<String> = requests.map { "${it.method} ${it.url.encodedPath}" }
+
     val status: MutableMap<String, Int> = shared()
 
     /** What `/MediaSegments/{itemId}` answers, by item id: the body as the server writes it. An item with none has no segments. */
