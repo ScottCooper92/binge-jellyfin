@@ -58,8 +58,8 @@ import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
 import com.cooper.homelab.ephyra.ui.client.PersonPage
-import com.cooper.homelab.ephyra.ui.client.SeasonPage
 import com.cooper.homelab.ephyra.ui.client.SearchTab
+import com.cooper.homelab.ephyra.ui.client.SeasonPage
 import com.cooper.homelab.ephyra.ui.client.SeriesPage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
