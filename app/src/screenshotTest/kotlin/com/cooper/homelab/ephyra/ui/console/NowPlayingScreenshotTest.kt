@@ -12,8 +12,7 @@ import com.cooper.homelab.ephyra.preview.JellyfinWideSpanishPreview
 import com.cooper.homelab.ephyra.server.NowPlaying
 import com.cooper.homelab.ephyra.server.PlayMethod
 import com.cooper.homelab.ephyra.server.SessionControls
-
-private const val MINUTE_TICKS = 600_000_000L
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 
 private val previewEpisode =
     NowPlaying(
@@ -23,8 +22,8 @@ private val previewEpisode =
         client = "Jellyfin Android TV",
         title = "Severance",
         episode = "S2:E3 · Who Is Alive?",
-        positionTicks = 31 * MINUTE_TICKS,
-        runtimeTicks = 52 * MINUTE_TICKS,
+        positionTicks = 31 * TICKS_PER_MINUTE,
+        runtimeTicks = 52 * TICKS_PER_MINUTE,
         paused = false,
         method = PlayMethod.Transcode,
         transcodeReasons = listOf("AudioCodecNotSupported"),
@@ -38,8 +37,8 @@ private val previewMovie =
         client = "Binge",
         title = "Sintel",
         episode = null,
-        positionTicks = 4 * MINUTE_TICKS,
-        runtimeTicks = 15 * MINUTE_TICKS,
+        positionTicks = 4 * TICKS_PER_MINUTE,
+        runtimeTicks = 15 * TICKS_PER_MINUTE,
         paused = true,
         method = PlayMethod.DirectPlay,
         transcodeReasons = emptyList(),
