@@ -1462,6 +1462,11 @@ client:client_library_sort_name  dcd1d5223f73
 client:client_library_sort_rating  9f29530464f7
 client:client_library_sort_release_date  bd84924cadae
 client:client_library_sort_runtime  109311589787
+client:client_person_birthplace  7dafb93a1ab9
+client:client_person_born  16178f9087b8
+client:client_person_died  90f16c1dea8a
+client:client_person_empty  ae20b6b79e55
+client:client_person_titles  3b23a123fa00
 client:client_series_all_episodes  9bc2a6704612
 client:client_series_episode_count  b3135dd43c57
 client:client_series_episodes  83f9722d9bb2

@@ -47,6 +47,11 @@
     <string name="client_title_media_picture">Vídeo</string>
     <string name="client_title_media_audio">Audio</string>
     <string name="client_title_media_subtitles">Subtítulos</string>
+    <string name="client_person_born">Nacimiento</string>
+    <string name="client_person_died">Fallecimiento</string>
+    <string name="client_person_birthplace">Lugar de nacimiento</string>
+    <string name="client_person_titles">Títulos</string>
+    <string name="client_person_empty">No hay nada suyo en este servidor.</string>
     <string name="client_series_play_episode">Reproducir T%1$d · E%2$d</string>
     <string name="client_series_resume_episode">Reanudar T%1$d · E%2$d</string>
     <string name="client_series_resume_episode_left">Reanudar T%1$d · E%2$d · quedan %3$d min</string>
