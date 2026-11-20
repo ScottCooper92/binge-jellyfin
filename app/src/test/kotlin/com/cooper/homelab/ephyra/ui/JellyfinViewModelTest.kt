@@ -1199,6 +1199,67 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `the Quick Connect tab shows its form without asking for a code, and the password tab brings back what was typed`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("sam")
+        vm.onPassword("hunter2")
+        vm.await<UiState.SignIn> { it.username == "sam" && it.password == "hunter2" }
+
+        vm.actions.selectMethod(quickConnect = true)
+        val tab = vm.await<UiState.SignIn> { it.quickConnectSelected }
+        assertNull("choosing the tab asks for no code", tab.quickConnectCode)
+        assertEquals("no request for a code was made", 0, jellyfin.hits("/QuickConnect/Initiate"))
+
+        vm.actions.selectMethod(quickConnect = false)
+        val back = vm.await<UiState.SignIn> { !it.quickConnectSelected }
+        assertEquals("sam", back.username)
+        assertEquals("hunter2", back.password)
+    }
+
+    @Test
+    fun `asking for a code from the Quick Connect tab shows it, and cancelling stays on the tab`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.await<UiState.SignIn> { it.quickConnectSelected }
+
+        vm.startQuickConnect()
+        assertTrue(vm.await<UiState.SignIn> { it.quickConnectCode != null }.quickConnectSelected)
+
+        vm.actions.cancelCode()
+        val stayed = vm.await<UiState.SignIn> { it.quickConnectCode == null }
+        assertTrue("cancelling a code does not leave the tab", stayed.quickConnectSelected)
+    }
+
+    @Test
+    fun `leaving the Quick Connect tab while a code waits lets the wait go`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectCode != null }
+
+        vm.actions.selectMethod(quickConnect = false)
+
+        val back = vm.await<UiState.SignIn> { !it.quickConnectSelected && it.quickConnectCode == null }
+        assertNull(back.quickConnectError)
+        assertFalse(back.gettingCode)
+    }
+
+    @Test
+    fun `choosing the tab already chosen changes nothing`() {
+        val vm = viewModel()
+        vm.toSignIn()
+        vm.onUsername("sam")
+        vm.await<UiState.SignIn> { it.username == "sam" }
+
+        vm.actions.selectMethod(quickConnect = false)
+
+        assertEquals("sam", (vm.state.value as UiState.SignIn).username)
+    }
+
+    @Test
     fun `Quick Connect turned off on the server is reported as that reason`() {
         val vm = viewModel()
         vm.toSignIn()
@@ -1215,16 +1276,15 @@ class JellyfinViewModelTest {
         vm.toSignIn()
         val step = vm.state.value as UiState.SignIn
         assertTrue(step.quickConnectOn)
-        assertTrue(step.showsQuickConnectHint)
+        assertFalse("the password's form is the tab it opens on", step.quickConnectSelected)
     }
 
     @Test
-    fun `the sign-in step stops offering Quick Connect, and its hint, when the server has it off`() {
+    fun `the sign-in step stops offering Quick Connect when the server has it off`() {
         jellyfin.quickConnectEnabled = false
         val vm = viewModel()
         vm.toSignIn()
         val step = vm.await<UiState.SignIn> { !it.quickConnectOn }
-        assertFalse(step.showsQuickConnectHint)
         assertNull(step.quickConnectError)
     }
 
@@ -1239,7 +1299,6 @@ class JellyfinViewModelTest {
         jellyfin.notJson += "/QuickConnect/Enabled"
         val unclear = viewModel().toSignIn()
         assertTrue(unclear.quickConnectOn)
-        assertTrue(unclear.showsQuickConnectHint)
     }
 
     @Test
@@ -1472,7 +1531,7 @@ class JellyfinViewModelTest {
         assertEquals(false, back.gettingCode)
         // Typing clears the password's own failure.
         vm.onPassword("again")
-        assertNull((vm.state.value as UiState.SignIn).passwordError)
+        assertNull(vm.await<UiState.SignIn> { it.password == "again" }.passwordError)
     }
 
     @Test
@@ -1484,7 +1543,9 @@ class JellyfinViewModelTest {
         vm.await<UiState.SignIn> { it.quickConnectError != null }
         jellyfin.slow += "/QuickConnect/Enabled"
         vm.startQuickConnect()
-        val retrying = vm.state.value as UiState.SignIn
+        // The step shows a code being asked for with the last failure gone, never the failure beside it. Waiting for that state, and
+        // not reading the one the step happens to be in, is what tells it from the failure the step held a moment ago.
+        val retrying = vm.await<UiState.SignIn> { it.gettingCode && it.quickConnectError == null }
         assertNull(retrying.quickConnectError)
         assertTrue(retrying.gettingCode)
         vm.cancelQuickConnect()

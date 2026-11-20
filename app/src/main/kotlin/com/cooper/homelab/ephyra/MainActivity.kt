@@ -466,4 +466,6 @@ private fun JellyfinViewModel.signInActions() =
         onSignIn = ::signInWithPassword,
         onQuickConnect = ::startQuickConnect,
         onCancelQuickConnect = ::cancelQuickConnect,
+        onSelectMethod = actions::selectMethod,
+        onCancelCode = actions::cancelCode,
     )

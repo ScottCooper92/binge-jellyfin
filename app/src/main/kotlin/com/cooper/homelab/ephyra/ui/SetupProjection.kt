@@ -88,6 +88,7 @@ private fun signIn(
         publicUsers = before?.publicUsers.orEmpty(),
         publicPictures = before?.publicPictures.orEmpty(),
         quickConnectOn = SetupMode.QuickConnect in server.modes,
+        quickConnectSelected = quickConnect,
     )
 }
 
@@ -131,7 +132,12 @@ internal fun UiState.SignIn.toConnectState(): ConnectState<PublicServerInfo> {
     val probed = ProbedServer(address, server.serverName.ifBlank { baseUrl }, !server.setupIncomplete, modes, server)
     val failure = (passwordError ?: quickConnectError)?.toConnectError()
     if (server.setupIncomplete) return ConnectState.NotSetUp(probed, isChecking = false, error = failure)
-    val form = SignInForm(SetupMode.Password, mapOf(USERNAME_FIELD to username, PASSWORD_FIELD to password))
+    val form =
+        if (quickConnectSelected) {
+            SignInForm(SetupMode.QuickConnect)
+        } else {
+            SignInForm(SetupMode.Password, mapOf(USERNAME_FIELD to username, PASSWORD_FIELD to password))
+        }
     return ConnectState.SignIn(probed, form, isConnecting = busy || gettingCode || quickConnectCode != null, error = failure)
 }
 

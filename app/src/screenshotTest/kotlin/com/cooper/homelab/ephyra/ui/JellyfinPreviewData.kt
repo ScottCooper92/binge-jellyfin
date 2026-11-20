@@ -151,14 +151,17 @@ val previewSignInHttps = UiState.SignIn(baseUrl = REMOTE, server = remoteServer)
 
 val previewSignInWrongPassword = previewSignIn.copy(password = "hunter2", passwordError = SetupError.WrongCredentials)
 
-val previewQuickConnect = previewSignIn.copy(quickConnectCode = "482913")
+/** The Quick Connect tab, before a code is asked for. */
+val previewQuickConnectTab = previewSignIn.copy(quickConnectSelected = true)
 
-val previewQuickConnectOff = previewSignIn.copy(quickConnectError = SetupError.QuickConnectOff)
+val previewQuickConnect = previewQuickConnectTab.copy(quickConnectCode = "482913")
 
-/** The server said Quick Connect is off before it was tried: no button and no hint. */
+val previewQuickConnectOff = previewQuickConnectTab.copy(quickConnectError = SetupError.QuickConnectOff)
+
+/** The server said Quick Connect is off before it was tried: no tab row, only the password's form. */
 val previewQuickConnectNotOffered = previewSignIn.copy(quickConnectOn = false)
 
-val previewQuickConnectExpired = previewSignIn.copy(quickConnectError = SetupError.QuickConnectExpired)
+val previewQuickConnectExpired = previewQuickConnectTab.copy(quickConnectError = SetupError.QuickConnectExpired)
 
 private val session =
     JellyfinSession(
@@ -205,7 +208,7 @@ val previewSignedInRetrying = previewSignedInFailed.copy(refreshing = true, refr
 
 val previewSignedInHttps = previewSignedIn.copy(session = session.copy(baseUrl = REMOTE, serverName = "Cabin"))
 
-val previewQuickConnectGetting = previewSignIn.copy(gettingCode = true)
+val previewQuickConnectGetting = previewQuickConnectTab.copy(gettingCode = true)
 
 val previewEnterServerLocalNetwork = UiState.EnterServer(address = "192.168.1.99:8096", error = SetupError.LocalNetworkDenied)
 
