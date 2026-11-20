@@ -8,6 +8,7 @@ import com.cooper.homelab.ephyra.server.JellyfinHttpException
 import com.cooper.homelab.ephyra.server.JellyfinItem
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.MediaSegment
+import com.cooper.homelab.ephyra.server.PLAY_METHOD_DIRECT_PLAY
 import com.cooper.homelab.ephyra.server.PLAY_METHOD_TRANSCODE
 import com.cooper.homelab.ephyra.server.SegmentKind
 import com.cooper.homelab.ephyra.server.TICKS_PER_MILLI
@@ -83,7 +84,7 @@ class JellyfinSourceMinter(
                 title = item.title,
                 resumePositionMs = resume,
                 runtimeMs = runtimeMs,
-                subtitles = subtitles(source),
+                subtitles = subtitles(source, method),
                 chapters = chapters(item.itemId),
                 segments = segments(item.itemId, source),
                 trickplay = trickplay(read.getOrNull(), mediaSourceId),
@@ -182,9 +183,16 @@ class JellyfinSourceMinter(
         return PlaySource(client.directStreamUrl(itemId, mediaSourceId, playSessionId), mime, headers, method = PlayMethod.DIRECT_PLAY)
     }
 
-    /** The server's external text subtitles, which the player loads beside the source. Embedded ones stay in the stream. */
-    private fun subtitles(source: JsonObject): List<PlayTrack> =
-        source.externalSubtitles().map {
+    /**
+     * The server's external text subtitles, which the player loads beside the source. Embedded ones stay in the stream. On a direct play
+     * the player reads the file's own text tracks, so those are not loaded a second time; a transcode has them nowhere else, and a
+     * subtitle file beside the video is always loaded.
+     */
+    private fun subtitles(
+        source: JsonObject,
+        method: String,
+    ): List<PlayTrack> =
+        source.externalSubtitles(playerReadsFile = method == PLAY_METHOD_DIRECT_PLAY).map {
             PlayTrack(
                 url = client.resolve(it.path).withoutApiKey(),
                 language = it.language,

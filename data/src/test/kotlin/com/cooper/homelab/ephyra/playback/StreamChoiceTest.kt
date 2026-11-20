@@ -148,6 +148,34 @@ class StreamChoiceTest {
         mint(StreamChoice(TrackChoice("es", null), null))
     }
 
+    private fun textSubtitle(
+        index: Int,
+        language: String,
+        inFile: Boolean,
+        codec: String = "subrip",
+    ) = """{"Type":"Subtitle","Index":$index,"Language":"$language","DisplayTitle":"$language","DeliveryMethod":"External",""" +
+        """"DeliveryUrl":"/Videos/x/Subtitles/$index/0/Stream.srt","Codec":"$codec","IsExternal":${!inFile}}"""
+
+    @Test
+    fun `a direct play does not load a second copy of a text subtitle the file carries, and keeps one that is a file of its own`() {
+        streams(
+            textSubtitle(3, "eng", inFile = true),
+            textSubtitle(4, "spa", inFile = false),
+            textSubtitle(5, "fre", inFile = true, codec = "ttml"),
+        )
+        assertEquals(listOf("spa", "fre"), mint(null).request.subtitles.map { it.language })
+    }
+
+    @Test
+    fun `a transcode keeps every text subtitle, since the stream has none of them`() {
+        jellyfin.playbackInfo =
+            """{"PlaySessionId":"p","MediaSources":[{"Id":"source-1","Container":"mkv","SupportsDirectPlay":false,""" +
+            """"SupportsDirectStream":false,""" +
+            """"TranscodingUrl":"/videos/x/master.m3u8?MediaSourceId=source-1","MediaStreams":[""" +
+            textSubtitle(3, "eng", inFile = true) + "," + textSubtitle(4, "spa", inFile = true) + "]}]}"
+        assertEquals(listOf("eng", "spa"), mint(null).request.subtitles.map { it.language })
+    }
+
     @Test
     fun `a label with no language that matches no track names none`() {
         streams(audio(1, "eng", "Stereo", default = true), audio(2, "spa", "Doblaje"))
