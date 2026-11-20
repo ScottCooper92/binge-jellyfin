@@ -256,8 +256,9 @@ class AppGraph(
     }
 
     /**
-     * The queries the user searched in the Search tab, kept on this device alone and one list per server. The file (`search_history`) and the
-     * key prefix (`search_query`) are on-disk names: a different one would lose what the user searched.
+     * The queries the user searched in the Search tab, kept on this device alone. It is the signed-in account's list: the server id it is keyed
+     * by is minted once per install, so [clearAccountCaches] forgets it when the session ends. The file (`search_history`) and the key prefix
+     * (`search_query`) are on-disk names: a different one would lose what the user searched.
      */
     val queryHistory: QueryHistory by lazy {
         DataStoreQueryHistory(dataStore("search_history"), serverIdentity::currentServerId, "search_query")
@@ -350,10 +351,11 @@ class AppGraph(
 
     val index: LibraryIndex by lazy { LibraryIndex() }
 
-    /** Everything the app keeps on disk about the account that was signed in: its pictures and the last log shared. */
+    /** Everything the app keeps on disk about the account that was signed in: its pictures, its recent searches and the last log shared. */
     suspend fun clearAccountCaches() =
         withContext(io) {
             userPictures.clear()
+            queryHistory.clear()
             clearSharedLogs(appContext.cacheDir)
         }
 
