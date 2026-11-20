@@ -2,8 +2,12 @@ package com.cooper.homelab.ephyra.client.title
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -11,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.DetailInfoEntry
 import com.binge.designsystem.component.DetailPerson
 import com.binge.designsystem.component.DetailPoster
+import com.binge.designsystem.component.EpisodeRow
 import com.binge.designsystem.component.MediaCardStatus
 import com.binge.designsystem.template.PersonItem
 import com.binge.designsystem.template.PosterItem
@@ -88,3 +93,41 @@ internal fun TitleFacts.entries(locale: Locale): List<DetailInfoEntry> =
         DetailInfoEntry(Icons.Filled.Business, stringResource(R.string.client_title_studios), studios.joinToString().ifBlank { null }),
         DetailInfoEntry(Icons.Filled.Event, stringResource(R.string.client_title_premiere), premiereDate?.let { premiere(it, locale) }),
     )
+
+/** The width of an episode's still in its row. */
+private const val STILL_WIDTH = 480
+
+/**
+ * An episode as the template's row: its number or none, name, still, runtime in the supporting line, and a progress bar. With [onToggle] the
+ * row ends in a watched toggle; with none a watched episode shows the template's check.
+ */
+@Composable
+internal fun EpisodeUi.row(
+    imageUrl: (TitleImage, Int) -> String?,
+    onToggle: ((EpisodeUi) -> Unit)?,
+): EpisodeRow {
+    val markWatched = stringResource(if (watched) R.string.client_title_mark_unwatched else R.string.client_title_mark_watched)
+    val runtime = runtimeMinutes?.let { stringResource(DesR.string.detail_runtime_minutes, it) }
+    return EpisodeRow(
+        number = number,
+        name = title,
+        stillUrl = still?.let { imageUrl(it, STILL_WIDTH) },
+        progress = progress,
+        key = id,
+        supporting = runtime,
+        // With a toggle the row ends in it; without one the template's own check marks a watched episode.
+        played = watched,
+        playedLabel = stringResource(R.string.client_title_watched),
+        trailing =
+            onToggle?.let { toggle ->
+                {
+                    IconButton(onClick = { toggle(this) }) {
+                        Icon(
+                            imageVector = if (watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
+                            contentDescription = markWatched,
+                        )
+                    }
+                }
+            },
+    )
+}
