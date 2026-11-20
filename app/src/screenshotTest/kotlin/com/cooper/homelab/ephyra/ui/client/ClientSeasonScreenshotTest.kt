@@ -97,7 +97,7 @@ class ClientSeasonScreenshotTest {
         Season(
             ready(
                 season.copy(
-                    play = SeriesPlay.AllWatched,
+                    play = SeriesPlay.AllWatched(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, minutesLeft = null)),
                     watched = true,
                     episodes =
                         EpisodesState.Ready(
