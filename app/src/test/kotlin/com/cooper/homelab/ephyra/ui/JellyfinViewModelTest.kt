@@ -149,9 +149,8 @@ class JellyfinViewModelTest {
         try {
             runBlocking { withTimeout(10_000) { state.first { it is T && matches(it) } as T } }
         } catch (e: TimeoutCancellationException) {
-            val asked = jellyfin.requests.map { "${it.method} ${it.url.encodedPath}" }
             throw AssertionError(
-                "Timed out waiting for ${T::class.simpleName}. The state was ${state.value::class.simpleName}; the server was asked $asked",
+                "Timed out waiting for ${T::class.simpleName}. The state was ${state.value::class.simpleName}; the server was asked ${jellyfin.asked()}",
                 e,
             )
         }
