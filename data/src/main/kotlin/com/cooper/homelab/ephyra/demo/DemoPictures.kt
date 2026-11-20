@@ -60,7 +60,7 @@ fun demoPictureFor(url: String): DemoPicture? {
     val address = url.toHttpUrlOrNull()?.takeIf { it.isDemo() } ?: return null
     val segments = address.pathSegments
     if (segments.size != SEGMENTS || segments[0] != "Items" || segments[2] != "Images") return null
-    return pictureFor(segments[1], segments[SEGMENTS - 1], width(address))
+    return pictureFor(segments[1], segments[SEGMENTS - 1], width(address), address.queryParameter("tag"))
 }
 
 private const val SEGMENTS = 4
@@ -86,24 +86,6 @@ private val SUBJECTS: Map<String, Subject> by lazy {
                 Subject(person.name, DemoPictureShape.Person, initials(person.name), if (person.photo) setOf("Primary") else emptySet()),
             )
         }
-        // A library's Primary has its name drawn into it, as a server's does; only Movies has a Thumb and a backdrop.
-        DemoLibraries.SEEDED.forEach { (name, id) ->
-            put(
-                id,
-                Subject(
-                    name,
-                    DemoPictureShape.Wide,
-                    initials(name),
-                    if (name ==
-                        "Movies"
-                    ) {
-                        setOf("Primary", "Thumb", "Backdrop")
-                    } else {
-                        setOf("Primary")
-                    },
-                ),
-            )
-        }
     }
 }
 
@@ -126,12 +108,29 @@ private fun subject(title: DemoTitle): Subject {
     return Subject(title.name, shape, label, kinds)
 }
 
+/**
+ * A library, known only by its picture's tag: `p-`, `t-` or `b-`, then the library's id, then its current name. A library's name can
+ * change and a library can be added, so the tag carries the name and nothing here keeps a list of them.
+ */
+private fun library(
+    id: String,
+    kind: String,
+    tag: String?,
+): Subject? {
+    val prefix = LIBRARY_TAG_PREFIXES[kind] ?: return null
+    val name = tag?.takeIf { it.startsWith("$prefix$id-") }?.removePrefix("$prefix$id-")?.takeIf { it.isNotBlank() } ?: return null
+    return Subject(name, DemoPictureShape.Wide, initials(name), setOf(kind))
+}
+
+private val LIBRARY_TAG_PREFIXES = mapOf("Primary" to "p-", "Thumb" to "t-", "Backdrop" to "b-")
+
 private fun pictureFor(
     id: String,
     kind: String,
     width: Int,
+    tag: String?,
 ): DemoPicture? {
-    val subject = SUBJECTS[id]?.takeIf { kind in it.kinds } ?: return null
+    val subject = (SUBJECTS[id] ?: library(id, kind, tag))?.takeIf { kind in it.kinds } ?: return null
     // Backdrops and thumbs are wide whatever they belong to; a Primary takes its subject's own shape.
     val shape = if (kind == "Primary") subject.shape else DemoPictureShape.Wide
     val height =
@@ -148,7 +147,9 @@ private fun pictureFor(
         topColor = hsv(hue, SATURATION_TOP, VALUE_TOP),
         bottomColor = hsv((hue + HUE_SHIFT) % HUE_DEGREES, SATURATION_BOTTOM, VALUE_BOTTOM),
         label = subject.label,
-        caption = subject.name.takeIf { shape != DemoPictureShape.Person },
+        // A backdrop and a thumb sit under a title the screen writes itself, and a person's is a disc: only a poster, a still and a
+        // library's own picture carry the name.
+        caption = subject.name.takeIf { kind == "Primary" && shape != DemoPictureShape.Person },
     )
 }
 

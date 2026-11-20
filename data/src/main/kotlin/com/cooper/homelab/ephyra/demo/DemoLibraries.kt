@@ -53,11 +53,14 @@ internal class DemoLibraries : DemoState {
                 type?.let { put("CollectionType", it) }
                 val id = library.string("ItemId").orEmpty()
                 // Movies has all three pictures, as a library with artwork does; every other library has only a Primary.
+                // The tags carry the library's current name, so its picture follows a rename and a new library gets one of its own:
+                // a tag is only a cache key, and a renamed library is a new key.
+                val name = library.string("Name").orEmpty()
                 putJsonObject("ImageTags") {
-                    put("Primary", "p-$id")
-                    if (type == "movies") put("Thumb", "t-$id")
+                    put("Primary", "p-$id-$name")
+                    if (type == "movies") put("Thumb", "t-$id-$name")
                 }
-                if (type == "movies") putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id")) }
+                if (type == "movies") putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id-$name")) }
             }
         }
 
@@ -134,13 +137,6 @@ internal class DemoLibraries : DemoState {
     }
 
     private fun seededId(name: String) = UUID.nameUUIDFromBytes(name.toByteArray())
-
-    internal companion object {
-        /** The seeded libraries' ids by name, as their views carry them: the same name always has the same id. */
-        val SEEDED: Map<String, String> =
-            listOf("Movies", "TV shows", "Collections", "Mixed", "Music")
-                .associateWith { UUID.nameUUIDFromBytes(it.toByteArray()).toString().replace("-", "") }
-    }
 
     private fun JsonObject.locations() = (get("Locations") as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.content }
 

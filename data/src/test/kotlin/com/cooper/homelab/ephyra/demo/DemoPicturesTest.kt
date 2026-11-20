@@ -1,5 +1,8 @@
 package com.cooper.homelab.ephyra.demo
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -15,7 +18,27 @@ class DemoPicturesTest {
         kind: String = "Primary",
         width: Int? = 300,
         host: String = DEMO_HOST,
-    ) = "https://$host/Items/$id/Images/$kind?tag=p-$id" + (width?.let { "&maxWidth=$it" } ?: "")
+        tag: String? = "p-$id",
+    ) = "https://$host/Items/$id/Images/$kind?" +
+        listOfNotNull(tag?.let { "tag=${it.replace(" ", "%20")}" }, width?.let { "maxWidth=$it" }).joinToString("&")
+
+    /** The demo's libraries as their views carry them, with the picture tags a screen would ask for. */
+    private fun views(model: DemoModel = DemoModel()): List<JsonObject> =
+        (
+            (
+                json(
+                    model.answer(DemoCall("GET", "/UserViews", { null }, { "" })).body,
+                ) as JsonObject
+            )["Items"] as JsonArray
+        ).map { it as JsonObject }
+
+    private fun JsonObject.tag(kind: String): String? =
+        ((get("ImageTags") as? JsonObject)?.get(kind) as? JsonPrimitive)?.content
+            ?: (get("BackdropImageTags") as? JsonArray)?.firstOrNull()?.takeIf { kind == "Backdrop" }?.let { (it as JsonPrimitive).content }
+
+    private fun JsonObject.pictureOf(kind: String): DemoPicture? = demoPictureFor(url(string("Id").orEmpty(), kind, tag = tag(kind)))
+
+    private fun library(name: String): JsonObject = views().first { it.string("Name") == name }
 
     @Test
     fun `a film's poster is two thirds as wide as it is tall, with its initials and its title`() {
@@ -68,9 +91,37 @@ class DemoPicturesTest {
         assertNull(demoPictureFor(url("demo-box-1", "Backdrop")))
         assertNull(demoPictureFor(url("demo-box-1", "Thumb")))
         // Only the Movies library has a thumb and a backdrop.
-        assertNotNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("Movies"), "Thumb")))
-        assertNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("TV shows"), "Thumb")))
-        assertNotNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("TV shows"))))
+        assertNotNull(library("Movies").pictureOf("Thumb"))
+        assertNotNull(library("Movies").pictureOf("Backdrop"))
+        assertNull(library("TV shows").pictureOf("Thumb"))
+        assertNotNull(library("TV shows").pictureOf("Primary"))
+    }
+
+    @Test
+    fun `a library's picture follows its name when it is renamed`() {
+        val model = DemoModel()
+        val before = views(model).first { it.string("Name") == "TV shows" }
+        assertEquals("TV shows", before.pictureOf("Primary")!!.caption)
+        assertEquals("TS", before.pictureOf("Primary")!!.label)
+        val rename = DemoCall("POST", "/Library/VirtualFolders/Name", { mapOf("name" to "TV shows", "newName" to "Series")[it] }, { "" })
+        model.answer(rename)
+        val after = views(model).first { it.string("Name") == "Series" }
+        assertEquals(before.string("Id"), after.string("Id"))
+        assertEquals("Series", after.pictureOf("Primary")!!.caption)
+        assertEquals("S", after.pictureOf("Primary")!!.label)
+        // A new tag is a new cache key, so the screen asks again.
+        assertTrue(before.tag("Primary") != after.tag("Primary"))
+        // A library the tag does not name is not drawn.
+        assertNull(demoPictureFor(url(before.string("Id").orEmpty(), tag = "p-other-Series")))
+    }
+
+    @Test
+    fun `a backdrop and a thumb carry no name, since the screen writes it, and a library's own picture does`() {
+        assertNull(demoPictureFor(url("demo-movie-1", "Backdrop"))!!.caption)
+        assertNull(library("Movies").pictureOf("Thumb")!!.caption)
+        assertNull(library("Movies").pictureOf("Backdrop")!!.caption)
+        assertEquals("Movies", library("Movies").pictureOf("Primary")!!.caption)
+        assertEquals("The Long Quiet", demoPictureFor(url("demo-movie-1"))!!.caption)
     }
 
     @Test
