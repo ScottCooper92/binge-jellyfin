@@ -95,9 +95,6 @@ data class Actions(
 @Composable
 internal fun Actions.isOpenBeside(page: ConsolePage): Boolean = hasPaneBeside() && selectedPage == page
 
-/** Lines a server row's marker and address may take: enough for the whole address at 2× font beside Change. */
-private const val ADDRESS_LINES = 5
-
 @Composable
 fun JellyfinRoot(
     state: UiState,
