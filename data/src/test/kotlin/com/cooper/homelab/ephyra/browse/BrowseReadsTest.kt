@@ -59,6 +59,15 @@ class BrowseReadsTest {
         }
 
     @Test
+    fun `a library carries its Primary, Thumb and first backdrop tags, and one with only a Primary has no others`() =
+        runBlocking {
+            val (movies, shows, home) = libraries.views()
+            assertEquals(Triple("lp", "lt", "lb"), Triple(movies.primaryImageTag, movies.thumbImageTag, movies.backdropImageTag))
+            assertEquals(Triple("sp", null, null), Triple(shows.primaryImageTag, shows.thumbImageTag, shows.backdropImageTag))
+            assertEquals(Triple(null, null, null), Triple(home.primaryImageTag, home.thumbImageTag, home.backdropImageTag))
+        }
+
+    @Test
     fun `an older server is asked for views the old way`() =
         runBlocking {
             JellyfinLibraryRepository(client, "user-1", JellyfinServerProfile(JellyfinVersion(10, 8, 13))).views()

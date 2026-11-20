@@ -120,6 +120,12 @@ fun NavBackStack<NavKey>.openFromHome(
     }
 }
 
+/** [libraryId]'s screen, over the shell. A second tap on the same tile while it opens adds nothing. */
+fun NavBackStack<NavKey>.openLibrary(libraryId: String) {
+    val key = LibraryRoute(libraryId)
+    if (lastOrNull() != key) add(key)
+}
+
 /** Back: the entry on top closes, and the one under it, or the home, shows. The root never closes. */
 fun NavBackStack<NavKey>.closeTop() {
     if (size > 1) removeAt(lastIndex)

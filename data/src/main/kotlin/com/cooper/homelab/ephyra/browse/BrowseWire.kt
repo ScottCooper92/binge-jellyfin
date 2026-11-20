@@ -44,6 +44,7 @@ internal data class ViewWire(
     @SerialName("Name") val name: String? = null,
     @SerialName("CollectionType") val collectionType: String? = null,
     @SerialName("ImageTags") val imageTags: Map<String, String> = emptyMap(),
+    @SerialName("BackdropImageTags") val backdropImageTags: List<String> = emptyList(),
 )
 
 @Serializable
@@ -169,7 +170,16 @@ internal data class FiltersWire(
 )
 
 internal fun ViewWire.toLibraryView(): LibraryView? =
-    id?.let { LibraryView(it, name.orEmpty(), LibraryKind.fromServer(collectionType), imageTags["Primary"]) }
+    id?.let {
+        LibraryView(
+            id = it,
+            name = name.orEmpty(),
+            kind = LibraryKind.fromServer(collectionType),
+            primaryImageTag = imageTags["Primary"],
+            thumbImageTag = imageTags["Thumb"],
+            backdropImageTag = backdropImageTags.firstOrNull(),
+        )
+    }
 
 internal fun ItemWire.toBrowseItem(): BrowseItem? {
     val id = id ?: return null
