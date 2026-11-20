@@ -32,6 +32,9 @@ internal class DemoLibraries : DemoState {
         mutableListOf(
             library("Movies", "movies", listOf("/media/movies"), seededId("Movies")),
             library("TV shows", "tvshows", listOf("/media/tv"), seededId("TV shows")),
+            library("Collections", "boxsets", listOf("/media/collections"), seededId("Collections")),
+            // No kind: a library of films and series together, which the client does not browse yet.
+            library("Mixed", "", listOf("/media/mixed"), seededId("Mixed")),
             library("Music", "music", listOf("/media/music"), seededId("Music")),
         )
 

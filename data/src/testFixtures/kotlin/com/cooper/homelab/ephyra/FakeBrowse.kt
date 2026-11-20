@@ -29,6 +29,8 @@ data class FakeTitle(
     val personIds: List<String> = emptyList(),
     /** The ids of the collections it is in, for `/Items/{id}/Collections`. */
     val collectionIds: List<String> = emptyList(),
+    /** What a box set holds, sent as `ChildCount` only when a read names it in `fields`, as the server does. */
+    val childCount: Int? = null,
     /** Raw JSON members appended to the item (`"Overview":"..."`, `"MediaSources":[...]`), for what a title page reads. */
     val extra: String = "",
 )
@@ -176,7 +178,11 @@ class FakeBrowse {
         val start = url.queryParameter("startIndex")?.toInt() ?: 0
         val limit = url.queryParameter("limit")?.toInt() ?: found.size
         val total = if (url.queryParameter("enableTotalRecordCount") == "false") "" else ",\"TotalRecordCount\":${found.size}"
-        return json("""{"Items":[${found.drop(start).take(limit).joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
+        return json(
+            """{"Items":[${found.drop(
+                start,
+            ).take(limit).joinToString(",") { it.toJson(url.queryParameter("fields")) }}]$total,"StartIndex":$start}""",
+        )
     }
 
     /** `/Persons?searchTerm=`: the titles of type Person that match. 10.x ignores `startIndex`, 12.0 and later honours it. */
@@ -224,7 +230,7 @@ class FakeBrowse {
         val page = ordered.drop(start).take(limit)
         // The server leaves the count out when it is not asked for it.
         val total = if (url.queryParameter("enableTotalRecordCount") == "false") "" else ",\"TotalRecordCount\":${ordered.size}"
-        return json("""{"Items":[${page.joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
+        return json("""{"Items":[${page.joinToString(",") { it.toJson(url.queryParameter("fields")) }}]$total,"StartIndex":$start}""")
     }
 
     private fun resume(request: RecordedRequest): MockResponse {
@@ -254,7 +260,7 @@ class FakeBrowse {
         val played = url.queryParameter("isPlayed")?.toBooleanStrictOrNull()
         val limit = url.queryParameter("limit")?.toInt() ?: Int.MAX_VALUE
         val newest = inLibrary(request).filter { played == null || it.played == played }.sortedByDescending { it.added }.take(limit)
-        return json("[${newest.joinToString(",") { it.toJson() }}]")
+        return json("[${newest.joinToString(",") { it.toJson(url.queryParameter("fields")) }}]")
     }
 
     private fun inParent(
@@ -270,7 +276,8 @@ class FakeBrowse {
         val start = url.queryParameter("startIndex")?.toInt() ?: 0
         val limit = url.queryParameter("limit")?.toInt() ?: list.size
         val total = if (url.queryParameter("enableTotalRecordCount") == "false") "" else ",\"TotalRecordCount\":${list.size}"
-        return json("""{"Items":[${list.drop(start).take(limit).joinToString(",") { it.toJson() }}]$total,"StartIndex":$start}""")
+        val fields = url.queryParameter("fields")
+        return json("""{"Items":[${list.drop(start).take(limit).joinToString(",") { it.toJson(fields) }}]$total,"StartIndex":$start}""")
     }
 
     private fun comparator(
@@ -288,7 +295,8 @@ class FakeBrowse {
         return (if (descending) key.reversed() else key).thenBy { it.name.lowercase() }
     }
 
-    private fun FakeTitle.toJson(): String =
+    /** The item as the server sends it; [fields] is the read's `fields`, which a `ChildCount` has to be named in. */
+    private fun FakeTitle.toJson(fields: String? = null): String =
         buildString {
             append("""{"Id":"$id","Name":"$name","Type":"$type"""")
             year?.let { append(""","ProductionYear":$it""") }
@@ -300,6 +308,7 @@ class FakeBrowse {
             season?.let { append(""","ParentIndexNumber":$it""") }
             episode?.let { append(""","IndexNumber":$it""") }
             seasonId?.let { append(""","SeasonId":"$it"""") }
+            childCount?.takeIf { fields?.split(',')?.contains("ChildCount") == true }?.let { append(""","ChildCount":$it""") }
             if (extra.isNotEmpty()) append(",").append(extra)
             append(""","UserData":{"Played":$played,"IsFavorite":$favourite,"PlaybackPositionTicks":$positionTicks}}""")
         }

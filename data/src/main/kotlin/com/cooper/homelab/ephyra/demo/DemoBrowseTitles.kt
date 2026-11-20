@@ -23,6 +23,15 @@ internal class DemoTitle(
     val seriesName: String? = null,
     val season: Int? = null,
     val episode: Int? = null,
+    val runtimeTicks: Long = RUNTIME_TICKS,
+    /** The files a film or episode comes in; two is a film with a second version to choose. */
+    val versions: Int = 1,
+    /** A box set's parts, by id. */
+    val members: List<String> = emptyList(),
+    /** The ids of the people in it, for a person's credits and the cast row. */
+    val cast: List<String> = emptyList(),
+    /** False for a title with a poster and no backdrop, as a hand-made box set has. */
+    val hasBackdrop: Boolean = true,
 )
 
 /** The id of the season a title is in, or its own when it is a season. */
@@ -55,8 +64,8 @@ private const val TITLES =
 internal const val DETAIL =
     """
     {"Overview":"A quiet story told over one long night.","Taglines":["Some nights last."],"Genres":["Drama"],
-     "Studios":[{"Name":"Demo Pictures"}],"People":[{"Id":"demo-person-1","Name":"Sam Rivers","Role":"Lead","Type":"Actor"},
-     {"Id":"demo-person-2","Name":"Alex Moor","Type":"Director"}],
+     "Studios":[{"Name":"Demo Pictures"}],"People":[{"Id":"demo-person-1","Name":"Sam Rivers","Role":"Lead","Type":"Actor","PrimaryImageTag":"p-demo-person-1"},
+     {"Id":"demo-person-2","Name":"Alex Moor","Type":"Director","PrimaryImageTag":"p-demo-person-2"}],
      "ProviderIds":{"Tmdb":"1"},
      "Chapters":[{"StartPositionTicks":0,"Name":"Opening"},{"StartPositionTicks":18000000000,"Name":"Night"}],
      "MediaSources":[{"Id":"demo-source","Name":"1080p","Container":"mkv","Size":4000000000,"Bitrate":8000000,
@@ -66,7 +75,9 @@ internal const val DETAIL =
       {"Index":2,"Type":"Subtitle","Codec":"subrip","Language":"eng","DisplayTitle":"English - SubRip"}]}]}
     """
 
-internal fun seedTitles(): List<DemoTitle> =
+internal fun seedTitles(): List<DemoTitle> = sampleTitles() + richTitles()
+
+private fun sampleTitles(): List<DemoTitle> =
     (json(TITLES) as JsonArray).map { element ->
         val title = element as JsonObject
 
@@ -89,6 +100,7 @@ internal fun seedTitles(): List<DemoTitle> =
             seriesName = text("SeriesName"),
             season = number("Season"),
             episode = number("Episode"),
+            cast = originalCast(text("Id").orEmpty()),
         )
     }
 
@@ -115,13 +127,8 @@ internal fun writeUserData(
     )
 }
 
-/** The two people in every demo title's cast, as the item route sends a person. */
-internal val PEOPLE: Map<String, String> =
-    mapOf(
-        "demo-person-1" to
-            """{"Id":"demo-person-1","Name":"Sam Rivers","Type":"Person","Overview":"An actor.","PremiereDate":"1980-03-02T00:00:00.0000000Z","ProductionLocations":["Leeds, UK"]}""",
-        "demo-person-2" to """{"Id":"demo-person-2","Name":"Alex Moor","Type":"Person","Overview":"A director."}""",
-    )
+/** The demo's people as the item route sends a person, by id. */
+internal val PEOPLE: Map<String, String> = PERSONS.associate { it.id to it.toJson().toString() }
 
 /** Whether this title passes the filters the call names: genres, ratings, years, played and favourite. */
 internal fun DemoTitle.passes(call: DemoCall): Boolean {
