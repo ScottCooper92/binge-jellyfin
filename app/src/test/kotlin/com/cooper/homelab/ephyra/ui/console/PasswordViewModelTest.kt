@@ -130,7 +130,7 @@ class PasswordViewModelTest {
                 object : ViewModelStoreOwner {
                     override val viewModelStore = store
                 },
-                viewModelFactory { initializer { PasswordViewModel(connection) } },
+                viewModelFactory { initializer { made(PasswordViewModel(connection)) } },
             )[PasswordViewModel::class.java]
         vm.fill("old-secret", "new-secret").change()
         store.clear()
