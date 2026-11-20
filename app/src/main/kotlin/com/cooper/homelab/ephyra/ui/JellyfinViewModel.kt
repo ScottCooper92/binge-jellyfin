@@ -411,8 +411,16 @@ class JellyfinViewModel(
     init {
         viewModelScope.launch {
             val session = sessions.current()
-            // A session is the app's own state to come back to; the steps before one are what the saved draft puts back.
-            if (session != null) setup.restore(session) else drafts.restoreInto(setup)
+            // A session is the app's own state to come back to. Without one, a Quick Connect wait the last process left is picked
+            // up where it was; with none, the steps before a session are what the saved draft puts back.
+            when {
+                session != null -> {
+                    withContext(dispatcher) { linkStash.clear() }
+                    setup.restore(session)
+                }
+                withContext(dispatcher) { linkStash.read() != null } -> setup.links.restore()
+                else -> drafts.restoreInto(setup)
+            }
             // Nothing is kept once a session exists: the draft is for the steps that lead to one.
             drafts.keep(combine(setup.flow.draft, signedInFlow) { draft, signedIn -> draft.takeIf { signedIn == null } })
         }

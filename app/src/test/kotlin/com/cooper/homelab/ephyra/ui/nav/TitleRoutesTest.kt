@@ -41,6 +41,19 @@ class TitleRoutesTest {
     }
 
     @Test
+    fun `from a series to its season to an episode, and Back twice returns to the series`() {
+        val back = stack()
+        back.openTitle(ItemKind.Series, "s1")
+        back.openTitle(ItemKind.Season, "season1")
+        back.openTitle(ItemKind.Episode, "e1")
+        assertEquals(listOf(ShellRoute, SeriesRoute("s1"), SeasonRoute("season1"), EpisodeRoute("e1")), back.toList())
+        back.closeTop()
+        assertEquals(listOf(ShellRoute, SeriesRoute("s1"), SeasonRoute("season1")), back.toList())
+        back.closeTop()
+        assertEquals(listOf(ShellRoute, SeriesRoute("s1")), back.toList())
+    }
+
+    @Test
     fun `a person opens its page, and the same person again adds nothing`() {
         val back = stack()
         back.openPerson("p1")
