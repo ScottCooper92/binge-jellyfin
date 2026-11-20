@@ -3,7 +3,9 @@ package com.cooper.homelab.ephyra.client.libraries
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +51,7 @@ class LibraryGridActions(
     val onApply: (LibraryFilterDraft) -> Unit,
     val onClearChip: (section: String) -> Unit,
     val onClearFilters: () -> Unit,
+    val onRefresh: () -> Unit,
 )
 
 /** How wide a poster is asked for: a phone column at a high density, which a tablet's column is not wider than. */
@@ -66,7 +69,8 @@ fun parseLibraryItemKey(key: String): Pair<ItemKind, String>? {
 /**
  * A library's titles on the design system's paged grid: the library's name as the title, a pill and chips for the order and filters,
  * and a sheet that holds them. [imageUrl] turns a title and a width in pixels into a URL, or null when it has no picture, so this
- * screen holds no server and no token. [reselect] is the tab this is the root of, when it is one.
+ * screen holds no server and no token. A pull down reads the first page again behind the rows, and a refresh that fails says so in a
+ * snackbar and keeps them.
  */
 @Composable
 fun LibraryGridScreen(
@@ -77,6 +81,10 @@ fun LibraryGridScreen(
 ) {
     val applied = state.controls.applied
     val filtered = applied.appliedCount > 0
+    val ready = state as? GridState.Ready
+    val snackbarHostState = remember { SnackbarHostState() }
+    val refreshFailed = stringResource(R.string.client_library_refresh_failed)
+    LaunchedEffect(ready?.refreshFailed) { if (ready?.refreshFailed == true) snackbarHostState.showSnackbar(refreshFailed) }
     PagedGridScreen(
         title = state.controls.libraryName ?: stringResource(R.string.client_libraries_title),
         state = state.toTemplate(imageUrl, filtered, actions.onClearFilters),
@@ -88,8 +96,11 @@ fun LibraryGridScreen(
                 onClearChip = actions.onClearChip,
                 onOpenFilters = actions.onFiltersOpened,
                 onBack = actions.onBack,
+                onRefresh = actions.onRefresh,
             ),
         modifier = modifier,
+        refreshing = ready?.refreshing == true,
+        snackbarHostState = snackbarHostState,
         filterBar = applied.toBar(),
         filterSheet = { dismiss -> LibraryFilterSheet(state.controls, actions.onApply, dismiss) },
     )
@@ -107,6 +118,7 @@ private fun LibraryGridUiState.toTemplate(
             if (filtered) {
                 PagedGridState.Empty(
                     message = stringResource(R.string.client_library_empty_filtered),
+                    title = stringResource(R.string.client_library_empty_filtered_title),
                     action = ScreenAction(stringResource(R.string.client_library_clear_filters), onClearFilters),
                 )
             } else {
@@ -139,10 +151,9 @@ private const val PERCENT = 100.0
 
 /** The pill and the chips for what is applied: each filter that has a value is one chip, and a changed order counts without one. */
 @Composable
-private fun LibraryFilterDraft.toBar(): GridFilterBar {
-    val orderCounts = sort != ItemSort()
-    return GridFilterBar(
-        activeCount = appliedCount + if (orderCounts) 1 else 0,
+private fun LibraryFilterDraft.toBar(): GridFilterBar =
+    GridFilterBar(
+        activeCount = activeCount,
         pillLabel = stringResource(R.string.client_library_filters),
         pillDescription = stringResource(R.string.client_library_filters_description),
         chips =
@@ -161,7 +172,6 @@ private fun LibraryFilterDraft.toBar(): GridFilterBar {
                 }
             },
     )
-}
 
 /** The sheet: the order and the short filters inline, the long ones (genres, years) as rows that open a page with a search. */
 @Composable
@@ -190,8 +200,8 @@ private fun LibraryFilterSheet(
             onApply(draft)
             onDismiss()
         },
-        onClearAll = { draft = draft.clearedFilters() },
-        appliedLabel = draft.appliedCount.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.client_library_filters_applied, it, it) },
+        onClearAll = { draft = draft.clearedAll() },
+        appliedLabel = draft.activeCount.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.client_library_filters_applied, it, it) },
         rows = rows,
         onSingleSelect = handlers.onSingleSelect,
         onOptionClick = handlers.onOptionClick,

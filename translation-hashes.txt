@@ -1437,6 +1437,7 @@ client:client_library_descending  79479a6c76d8
 client:client_library_done  11a6767d5674
 client:client_library_empty  35a7ec96dac6
 client:client_library_empty_filtered  d5bd1e4feede
+client:client_library_empty_filtered_title  2df01a03ff43
 client:client_library_favourites_all  a52ace420f21
 client:client_library_favourites_only  1ecce82c2283
 client:client_library_filters  546ebb8eb993
@@ -1446,6 +1447,7 @@ client:client_library_no_match  965b516df3ba
 client:client_library_played_any  2b505597daa7
 client:client_library_played_unwatched  48a91de207a0
 client:client_library_played_watched  1ca8c1c0de6f
+client:client_library_refresh_failed  6f680280da6b
 client:client_library_search_genres  e47f29282f70
 client:client_library_search_years  ef65a7949043
 client:client_library_section_direction  9c8a9579abe5

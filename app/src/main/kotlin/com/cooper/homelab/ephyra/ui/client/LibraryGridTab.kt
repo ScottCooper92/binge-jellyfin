@@ -58,6 +58,7 @@ fun LibraryGridTab(
                 onApply = model::apply,
                 onClearChip = model::clearChip,
                 onClearFilters = model::clearFilters,
+                onRefresh = model::refresh,
             ),
         modifier = modifier,
     )
