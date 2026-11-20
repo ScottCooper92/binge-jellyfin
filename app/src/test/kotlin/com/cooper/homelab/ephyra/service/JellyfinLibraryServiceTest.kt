@@ -748,6 +748,104 @@ class JellyfinLibraryServiceTest {
             assertEquals("${jellyfin.baseUrl}/videos/x/master.m3u8?MediaSourceId=source-2&ApiKey=token-1", response.source.url)
         }
 
+    /**
+     * Everything the Binge path sends to the server and hands back for one play, as text, with what changes from run to run (the
+     * server's port, the device id, the message's identity) replaced.
+     */
+    private fun GetPlaybackSourceRequest.captured(): String =
+        runBlocking {
+            val response = stub.getPlaybackSource(this@captured)
+            val info = jellyfin.lastBodyText("/Items/${response.playbackSessionId.substringBefore('|')}/PlaybackInfo")
+            "$info\n$response"
+                .replace(jellyfin.baseUrl, "BASE")
+                .replace(Regex("DeviceId=\\\\\"[0-9a-f-]+"), "DeviceId=\\\\\"DEVICE")
+                .lines()
+                .filterNot { it.startsWith("# ") }
+                .joinToString("\n")
+        }
+
+    private fun golden(name: String): String =
+        checkNotNull(javaClass.getResource("/golden/$name.txt")) { "No golden file $name" }.readText().trimEnd()
+
+    private val goldenDevice =
+        PlaybackDeviceProfile
+            .newBuilder()
+            .addVideoCodecs("video/avc")
+            .addAudioCodecs("audio/mp4a-latm")
+            .setMaxWidth(1920)
+
+    @Test
+    fun `Binge's direct play source is what it was, byte for byte`() {
+        val request =
+            GetPlaybackSourceRequest
+                .newBuilder()
+                .setMedia(movie)
+                .setDevice(goldenDevice)
+                .build()
+        assertEquals(golden("binge-direct-play"), request.captured())
+    }
+
+    @Test
+    fun `Binge's source for an installed player is what it was, byte for byte`() {
+        val request =
+            GetPlaybackSourceRequest
+                .newBuilder()
+                .setMedia(
+                    movie,
+                ).setDevice(goldenDevice)
+                .setPlayerPackage("org.videolan.vlc")
+                .build()
+        assertEquals(golden("binge-installed-player"), request.captured())
+    }
+
+    @Test
+    fun `Binge's transcode source is what it was, byte for byte`() {
+        jellyfin.playbackInfo = FakeJellyfin.transcodeInfo()
+        val request =
+            GetPlaybackSourceRequest
+                .newBuilder()
+                .setMedia(series)
+                .setEpisode(episode(1, 2))
+                .build()
+        assertEquals(golden("binge-transcode"), request.captured())
+    }
+
+    @Test
+    fun `Binge's transcode source for an installed player is what it was, byte for byte`() {
+        jellyfin.playbackInfo = FakeJellyfin.transcodeInfo()
+        val request =
+            GetPlaybackSourceRequest
+                .newBuilder()
+                .setMedia(series)
+                .setEpisode(episode(1, 2))
+                .setPlayerPackage("org.videolan.vlc")
+                .build()
+        assertEquals(golden("binge-transcode-installed-player"), request.captured())
+    }
+
+    @Test
+    fun `Binge's play reports are what they were, byte for byte`() =
+        runBlocking {
+            val bodies =
+                PlaybackEvent.entries
+                    .filter { it != PlaybackEvent.PLAYBACK_EVENT_UNSPECIFIED && it != PlaybackEvent.UNRECOGNIZED }
+                    .map { event ->
+                        stub.reportPlayback(
+                            ReportPlaybackRequest
+                                .newBuilder()
+                                .setMedia(movie)
+                                .setPlaybackSessionId("movie-1|source-1|play-1|DirectPlay")
+                                .setEvent(event)
+                                .setPositionMillis(1_500)
+                                .setRuntimeMillis(3_600_000)
+                                .build(),
+                        )
+                        val request = jellyfin.requests.last { it.url.encodedPath.startsWith("/Sessions/Playing") }
+                        "${event.name} ${request.url.encodedPath} ${request.body?.utf8()}"
+                    }.joinToString("\n")
+            assertEquals(golden("binge-reports"), bodies)
+        }
+
     @Test
     fun `a signed-out handshake is UNAUTHENTICATED with a message for the user`() {
         runBlocking { sessions.clear() }

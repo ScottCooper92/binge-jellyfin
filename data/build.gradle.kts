@@ -28,6 +28,9 @@ android {
 }
 
 dependencies {
+    // The seam of the shared player: the request a player is handed and the events it sends back. Plain Kotlin, so the sitting
+    // that runs between it and the server is tested on the JVM. api: the screens above this module name its types.
+    api("com.cooper.homelab:player-api")
     implementation(libs.binge.companion.sdk)
     implementation(libs.binge.companion.kit)
     implementation(libs.binge.companion.contracts)

@@ -2,7 +2,6 @@ package com.cooper.homelab.ephyra.service
 
 import com.binge.companion.contracts.library.v1.GetPlaybackSourceRequest
 import com.binge.companion.contracts.library.v1.GetPlaybackSourceResponse
-import com.binge.companion.contracts.library.v1.PlaybackDeviceProfile
 import com.binge.companion.contracts.library.v1.PlaybackEvent
 import com.binge.companion.contracts.library.v1.PlaybackMethod
 import com.binge.companion.contracts.library.v1.ReportPlaybackRequest
@@ -18,20 +17,26 @@ import com.cooper.homelab.ephyra.server.DeviceProfiles
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinItem
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
+import com.cooper.homelab.ephyra.server.PLAY_METHOD_TRANSCODE
+import com.cooper.homelab.ephyra.server.TICKS_PER_MILLI
 import com.cooper.homelab.ephyra.server.array
-import com.cooper.homelab.ephyra.server.bool
+import com.cooper.homelab.ephyra.server.directStreamUrl
+import com.cooper.homelab.ephyra.server.externalSubtitles
 import com.cooper.homelab.ephyra.server.item
 import com.cooper.homelab.ephyra.server.long
+import com.cooper.homelab.ephyra.server.playMethodOf
+import com.cooper.homelab.ephyra.server.playReportBody
 import com.cooper.homelab.ephyra.server.playbackInfo
+import com.cooper.homelab.ephyra.server.playbackInfoBody
 import com.cooper.homelab.ephyra.server.reportProgress
 import com.cooper.homelab.ephyra.server.reportStart
 import com.cooper.homelab.ephyra.server.reportStopped
 import com.cooper.homelab.ephyra.server.string
+import com.cooper.homelab.ephyra.server.withApiKey
+import com.cooper.homelab.ephyra.server.withoutApiKey
 import io.grpc.Status
 import io.grpc.StatusException
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.time.Instant
 
 /**
@@ -84,7 +89,7 @@ class PlaybackSources(
             .setRuntimeMillis(runtimeMillis)
             .setMethod(
                 if (sitting.playMethod ==
-                    TRANSCODE
+                    PLAY_METHOD_TRANSCODE
                 ) {
                     PlaybackMethod.PLAYBACK_METHOD_TRANSCODE
                 } else {
@@ -147,24 +152,6 @@ class PlaybackSources(
         }
     }
 
-    private fun playbackInfoBody(
-        userId: String,
-        device: PlaybackDeviceProfile?,
-    ): JsonObject =
-        JsonObject(
-            mapOf(
-                "UserId" to JsonPrimitive(userId),
-                "DeviceProfile" to DeviceProfiles.toJellyfin(device),
-                "MaxStreamingBitrate" to JsonPrimitive(DeviceProfiles.maxBitrate(device)),
-                "EnableDirectPlay" to JsonPrimitive(true),
-                "EnableDirectStream" to JsonPrimitive(true),
-                "EnableTranscoding" to JsonPrimitive(true),
-                "AllowVideoStreamCopy" to JsonPrimitive(true),
-                "AllowAudioStreamCopy" to JsonPrimitive(true),
-                "AutoOpenLiveStream" to JsonPrimitive(true),
-            ),
-        )
-
     /** The server's choice: a direct stream of the file when it can play as it is, else its HLS transcode. */
     private fun stream(
         client: JellyfinClient,
@@ -173,23 +160,16 @@ class PlaybackSources(
         tokenInUrl: String?,
     ): PlaybackSource {
         val transcodingUrl = source.string("TranscodingUrl")
-        if (sitting.playMethod == TRANSCODE && transcodingUrl != null) {
+        if (sitting.playMethod == PLAY_METHOD_TRANSCODE && transcodingUrl != null) {
             return PlaybackSource
                 .newBuilder()
                 .setUrl(client.resolve(transcodingUrl).withoutApiKey().withApiKey(tokenInUrl))
                 .setMimeType(HLS)
                 .build()
         }
-        val query =
-            buildMap {
-                put("static", "true")
-                put("mediaSourceId", sitting.mediaSourceId)
-                if (sitting.playSessionId.isNotEmpty()) put("playSessionId", sitting.playSessionId)
-                tokenInUrl?.let { put(API_KEY, it) }
-            }
         return PlaybackSource
             .newBuilder()
-            .setUrl(client.url("Videos/${sitting.itemId}/stream", query).toString())
+            .setUrl(client.directStreamUrl(sitting.itemId, sitting.mediaSourceId, sitting.playSessionId, tokenInUrl))
             .setMimeType(DeviceProfiles.mimeForContainer(source.string("Container")))
             .build()
     }
@@ -200,29 +180,16 @@ class PlaybackSources(
         source: JsonObject,
         token: String,
     ): List<SubtitleTrack> =
-        source
-            .array("MediaStreams")
-            .filterIsInstance<JsonObject>()
-            .filter { it.string("Type") == "Subtitle" && it.string("DeliveryMethod") == "External" }
-            .mapNotNull { stream ->
-                val path = stream.string("DeliveryUrl") ?: return@mapNotNull null
-                val mime = DeviceProfiles.subtitleMime(stream.string("Codec")) ?: return@mapNotNull null
-                SubtitleTrack
-                    .newBuilder()
-                    .setUrl(client.resolve(path).withApiKey(token))
-                    .setLanguage(stream.string("Language").orEmpty())
-                    .setLabel(stream.string("DisplayTitle") ?: stream.string("Title").orEmpty())
-                    .setMimeType(mime)
-                    .setForced(stream.bool("IsForced") == true)
-                    .setHearingImpaired(stream.bool("IsHearingImpaired") == true)
-                    .build()
-            }.take(MAX_SUBTITLES)
-
-    private fun playMethodOf(source: JsonObject): String =
-        when {
-            source.bool("SupportsDirectPlay") == true -> "DirectPlay"
-            source.bool("SupportsDirectStream") == true || source.string("TranscodingUrl") == null -> "DirectStream"
-            else -> TRANSCODE
+        source.externalSubtitles().map {
+            SubtitleTrack
+                .newBuilder()
+                .setUrl(client.resolve(it.path).withApiKey(token))
+                .setLanguage(it.language)
+                .setLabel(it.label.orEmpty())
+                .setMimeType(it.mimeType)
+                .setForced(it.forced)
+                .setHearingImpaired(it.hearingImpaired)
+                .build()
         }
 
     /** What a report needs to name the play to Jellyfin, carried in the opaque `playback_session_id`. */
@@ -237,18 +204,7 @@ class PlaybackSources(
         fun body(
             ticks: Long,
             paused: Boolean,
-        ): JsonObject =
-            JsonObject(
-                mapOf(
-                    "ItemId" to JsonPrimitive(itemId),
-                    "MediaSourceId" to JsonPrimitive(mediaSourceId),
-                    "PlaySessionId" to JsonPrimitive(playSessionId),
-                    "PlayMethod" to JsonPrimitive(playMethod),
-                    "PositionTicks" to JsonPrimitive(ticks),
-                    "CanSeek" to JsonPrimitive(true),
-                    "IsPaused" to JsonPrimitive(paused),
-                ),
-            )
+        ): JsonObject = playReportBody(itemId, mediaSourceId, playSessionId, playMethod, ticks, paused)
 
         companion object {
             private const val SEPARATOR = "|"
@@ -264,27 +220,7 @@ class PlaybackSources(
 
     private companion object {
         const val TAG = "JellyfinPlayback"
-        const val TRANSCODE = "Transcode"
         const val HLS = "application/x-mpegURL"
-        const val API_KEY = "ApiKey"
         const val SOURCE_LIFETIME_SECONDS = 6 * 60 * 60L
-        const val MAX_SUBTITLES = 10
-
-        /** [this] without any `ApiKey` or `api_key` parameter: Jellyfin puts the token into its transcode URL, which the header already covers. */
-        fun String.withoutApiKey(): String {
-            val url = toHttpUrlOrNull() ?: return this
-            val builder = url.newBuilder()
-            url.queryParameterNames
-                .filter { it.equals(API_KEY, ignoreCase = true) || it.equals("api_key", ignoreCase = true) }
-                .forEach(builder::removeAllQueryParameters)
-            return builder.build().toString()
-        }
-
-        /** [this] with [token] as `ApiKey`, unless there is none to add or it already carries one. */
-        fun String.withApiKey(token: String?): String {
-            if (token == null || "ApiKey=" in this || "api_key=" in this) return this
-            val separator = if ('?' in this) '&' else '?'
-            return "$this$separator$API_KEY=$token"
-        }
     }
 }
