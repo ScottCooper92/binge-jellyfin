@@ -1434,7 +1434,7 @@ client:client_library_ascending  77184595bde3
 client:client_library_clear  83b12c2216ef
 client:client_library_clear_all  29a390f9237e
 client:client_library_clear_filters  7179ea0035fc
-client:client_library_collection_count  935395f972db
+client:client_library_collection_count  151908ec4e60
 client:client_library_descending  79479a6c76d8
 client:client_library_done  11a6767d5674
 client:client_library_empty  35a7ec96dac6

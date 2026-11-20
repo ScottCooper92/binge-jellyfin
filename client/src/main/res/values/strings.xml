@@ -107,7 +107,6 @@
     <string name="client_library_empty_filtered">No title matches these filters.</string>
     <plurals name="client_library_collection_count">
         <item quantity="one">%1$d title</item>
-        <item quantity="many">%1$d títulos</item>
         <item quantity="other">%1$d titles</item>
     </plurals>
     <string name="client_library_empty_filtered_title">No matches</string>
