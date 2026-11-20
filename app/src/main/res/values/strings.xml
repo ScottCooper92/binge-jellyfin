@@ -12,7 +12,6 @@
     <string name="setup_insecure_warning">This address uses plain HTTP on a public host, so your password would cross the internet unencrypted. Use https:// if the server supports it.</string>
     <string name="setup_allow_cleartext">Connect over plain HTTP anyway</string>
     <string name="setup_try_demo">Try the demo</string>
-    <string name="setup_change">Change</string>
     <string name="setup_incomplete_title">This server isn’t set up yet</string>
     <string name="setup_incomplete_body">Finish setting it up in Jellyfin’s web page, then check again. There is no account to sign in to until you do.</string>
     <string name="setup_incomplete_check">Check again</string>
@@ -32,7 +31,6 @@
     <string name="startup_password_again">Password again</string>
     <string name="startup_password_mismatch">The passwords don’t match.</string>
     <string name="startup_account_save">Create account</string>
-    <string name="setup_sign_in_title">Sign in</string>
     <string name="forgot_password">Forgot password?</string>
     <string name="tv_forgot_back">Back to sign in</string>
     <string name="forgot_admin_title">Ask an administrator</string>
@@ -58,7 +56,6 @@
 
     <string name="quick_connect_title">Enter this code</string>
     <string name="quick_connect_body">In a Jellyfin app you\'re signed in to, open your profile, then Quick Connect, and enter the code.</string>
-    <string name="quick_connect_cancel">Use a password instead</string>
 
     <string name="server_detail">%1$s · Jellyfin %2$s</string>
     <string name="server_detail_cleartext">Not encrypted · %1$s</string>

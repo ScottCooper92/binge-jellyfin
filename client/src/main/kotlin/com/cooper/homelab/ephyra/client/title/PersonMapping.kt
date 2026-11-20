@@ -5,8 +5,6 @@ import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.PersonDetail
 import com.cooper.homelab.ephyra.browse.TitleDetail
 
-private const val TICKS_PER_MINUTE = 600_000_000L
-
 /** The person page from who they are and the titles read so far. */
 fun personPageUi(
     person: PersonDetail,
@@ -35,7 +33,7 @@ fun collectionPageUi(
         overview = detail.overview?.takeIf { it.isNotBlank() },
         backdrop = item.imageTags[ImageKind.Backdrop]?.let { TitleImage(item.id, ImageKind.Backdrop, it) },
         poster = item.imageTags[ImageKind.Primary]?.let { TitleImage(item.id, ImageKind.Primary, it) },
-        parts = parts.map { CollectionPart(titleCard(it), it.runTimeTicks?.let { ticks -> (ticks / TICKS_PER_MINUTE).toInt() }) },
+        parts = parts.map { CollectionPart(titleCard(it), it.runTimeTicks?.let(::runtimeMinutes)) },
         watchedCount = parts.count { it.userData.played },
     )
 }

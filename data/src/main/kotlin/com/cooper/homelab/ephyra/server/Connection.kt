@@ -118,8 +118,8 @@ class Connection(
                     } else if (identity != baseline) {
                         baseline = identity
                         monitor.reset(SAVED_SERVER)
-                        pendingSaves.toList().forEach { it.cancel() }
-                        backupJobs.toList().forEach { it.cancel() }
+                        snapshot(pendingSaves).forEach { it.cancel() }
+                        snapshot(backupJobs).forEach { it.cancel() }
                         creations.value = BackupCreation.Idle
                     }
                 }
@@ -169,7 +169,13 @@ class Connection(
     }
 
     /** Waits for every save started so far, so a page opened next reads what the last one saved. */
-    suspend fun awaitSaves() = pendingSaves.toList().joinAll()
+    suspend fun awaitSaves() = snapshot(pendingSaves).joinAll()
+
+    /**
+     * The jobs in [jobs] now. A one-element `toList` reads the size and then the first element, and a save that finishes in
+     * between leaves nothing to read (a `NoSuchElementException`), so the copy is taken in one call.
+     */
+    private fun snapshot(jobs: Set<Job>): List<Job> = jobs.toTypedArray().asList()
 
     suspend fun identity(): ClientIdentity = ClientIdentity(client, device, sessions.deviceId(), version)
 
