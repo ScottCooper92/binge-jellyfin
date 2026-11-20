@@ -17,8 +17,10 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runAndroidComposeUiTest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.test.core.app.ApplicationProvider
+import com.cooper.homelab.core.presentation.connect.LinkStash
 import com.cooper.homelab.ephyra.AppGraph
 import com.cooper.homelab.ephyra.ConsoleHost
 import com.cooper.homelab.ephyra.FakeJellyfin
@@ -34,10 +36,17 @@ import com.cooper.homelab.ephyra.testSessionStore
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -69,21 +78,42 @@ class ProcessDeathRestoreTest {
     @After
     fun close() = teardown.close(jellyfin)
 
+    /** The view model the composition last built, so a test can read what it restored. */
+    private var shown: JellyfinViewModel? = null
+
+    /** What a process that died left for the next: a stash that outlives the view models, as the file does. */
+    private class MemoryStash : LinkStash {
+        @Volatile
+        var value: String? = null
+
+        override fun read(): String? = value
+
+        override fun write(value: String) {
+            this.value = value
+        }
+
+        override fun clear() {
+            value = null
+        }
+    }
+
     /** The app's screen over a view model that is new each time the composition is built from nothing but its saved state. */
     @Composable
-    private fun App() {
+    private fun App(linkStash: LinkStash = NoLinkStash) {
         val viewModel =
             remember {
-                teardown.made(
-                    JellyfinViewModel(
-                        sessions,
-                        connection,
-                        LibraryIndex(),
-                        dispatcher = Dispatchers.IO,
-                        cipher = PlainCipher.forLibrary(),
-                        discover = { emptyList() },
-                    ),
-                )
+                teardown
+                    .made(
+                        JellyfinViewModel(
+                            sessions,
+                            connection,
+                            LibraryIndex(),
+                            dispatcher = Dispatchers.IO,
+                            cipher = PlainCipher.forLibrary(),
+                            discover = { emptyList() },
+                            linkStash = linkStash,
+                        ),
+                    ).also { shown = it }
             }
         val state by viewModel.state.collectAsStateWithLifecycle()
         val backStack = rememberNavBackStack(HomeRoute)
@@ -150,6 +180,52 @@ class ProcessDeathRestoreTest {
     /** How many times the server has been asked for a library's titles newest first. */
     private fun readsByDateAdded(): Int =
         jellyfin.requests.count { it.url.encodedPath == "/Items" && it.url.queryParameter("sortBy")?.startsWith("DateCreated") == true }
+
+    @Test
+    fun `a Quick Connect wait the killed process left comes back with its code, and approving it signs in to the shell`() =
+        runAndroidComposeUiTest<ComponentActivity> {
+            val stash = MemoryStash()
+            // The process that dies: it shows a code, keeps the wait, and is gone before anything is approved.
+            val dying =
+                teardown.made(
+                    JellyfinViewModel(
+                        sessions,
+                        connection,
+                        LibraryIndex(),
+                        dispatcher = Dispatchers.IO,
+                        cipher = PlainCipher.forLibrary(),
+                        discover = { emptyList() },
+                        linkStash = stash,
+                    ),
+                )
+            awaitState(dying) { it is UiState.EnterServer }
+            dying.onAddress(jellyfin.baseUrl)
+            dying.connect()
+            awaitState(dying) { it is UiState.SignIn }
+            dying.startQuickConnect()
+            val code =
+                requireNotNull(
+                    (awaitState(dying) { it is UiState.SignIn && it.quickConnectCode != null } as UiState.SignIn).quickConnectCode,
+                )
+            runBlocking { requireNotNull(dying.viewModelScope.coroutineContext[Job]).cancelAndJoin() }
+            assertNotNull("the wait outlives the process", stash.value)
+
+            // The process that comes back: a new view model reads the wait, and the screen it composes shows that code again.
+            val tester = StateRestorationTester(this)
+            tester.setContent { App(stash) }
+            val restored = awaitState(requireNotNull(shown)) { it is UiState.SignIn && it.quickConnectCode != null } as UiState.SignIn
+            assertEquals("the user sees the code they were given", code, restored.quickConnectCode)
+
+            // The user approves it from the other Jellyfin app, and this one signs in to its shell.
+            jellyfin.quickConnectApproved = true
+            waitUntil(timeoutMillis = WAIT_MILLIS) { onAllNodesWithTag("tab_server").fetchSemanticsNodes().isNotEmpty() }
+            assertNull("nothing is kept once it has signed in", stash.value)
+        }
+
+    private fun awaitState(
+        viewModel: JellyfinViewModel,
+        matches: (UiState) -> Boolean,
+    ): UiState = runBlocking { withTimeout(WAIT_MILLIS) { viewModel.state.first { matches(it) } } }
 
     private companion object {
         const val WAIT_MILLIS = 10_000L
