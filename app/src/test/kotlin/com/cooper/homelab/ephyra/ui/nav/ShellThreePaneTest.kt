@@ -70,4 +70,15 @@ class ShellThreePaneTest : ShellHostTestBase() {
         assertBar(true)
         assertEquals(listOf<NavKey>(ShellRoute), keys())
     }
+
+    @Test
+    fun `a title covers the rail and the whole window, and Back brings the shell back`() {
+        hostWithTitles()
+        click("open movie")
+        assertShown("title MovieRoute m1")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertBar(true)
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
 }

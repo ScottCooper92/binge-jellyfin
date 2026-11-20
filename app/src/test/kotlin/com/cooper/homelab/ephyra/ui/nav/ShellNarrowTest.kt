@@ -252,4 +252,47 @@ class ShellNarrowTest : ShellHostTestBase() {
         compose.waitForIdle()
         assertEquals(listOf<NavKey>(HomeRoute), keys())
     }
+
+    @Test
+    fun `a title opens over the bar, and Back closes it to the tab it came from with the bar back`() {
+        hostWithTitles()
+        click("open movie")
+        assertEquals(listOf(ShellRoute, MovieRoute("m1")), keys())
+        assertShown("title MovieRoute m1")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+        assertBar(true)
+        assertShown("open movie")
+        assertEquals(EphyraTab.Home, tabs?.selected)
+    }
+
+    @Test
+    fun `an open title is restored after a process death, and Back still closes it`() {
+        hostWithTitles()
+        click("open movie")
+        compose.scenario.recreate()
+        connected = null
+        hostWithTitles()
+        assertEquals(listOf(ShellRoute, MovieRoute("m1")), keys())
+        compose.runOnUiThread { connected = true }
+        compose.waitForIdle()
+        assertShown("title MovieRoute m1")
+        assertFalse(pressBack())
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
+
+    @Test
+    fun `a title opened over a title closes one at a time, and a session that ends closes them all`() {
+        hostWithTitles()
+        click("open movie")
+        compose.runOnUiThread { stack?.openPerson("p1") }
+        compose.waitForIdle()
+        assertEquals(listOf(ShellRoute, MovieRoute("m1"), PersonRoute("p1")), keys())
+        assertFalse(pressBack())
+        assertEquals(listOf(ShellRoute, MovieRoute("m1")), keys())
+        compose.runOnUiThread { connected = false }
+        compose.waitForIdle()
+        assertEquals(listOf<NavKey>(HomeRoute), keys())
+    }
 }

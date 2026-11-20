@@ -159,4 +159,15 @@ class ShellWideTest : ShellHostTestBase() {
         tap("tab_server")
         assertEquals(listOf(ConsolePage.Tasks), pageKeys().map { it.page })
     }
+
+    @Test
+    fun `a title covers the rail and the whole window, and Back brings the shell back`() {
+        hostWithTitles()
+        click("open movie")
+        assertShown("title MovieRoute m1")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertBar(true)
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
 }

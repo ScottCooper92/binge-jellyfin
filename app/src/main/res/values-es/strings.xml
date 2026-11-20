@@ -1533,4 +1533,5 @@
     <string name="shell_tab_search">Buscar</string>
     <string name="shell_tab_server">Servidor</string>
     <string name="shell_placeholder_message">Esta pantalla está en camino.</string>
+    <string name="title_placeholder_title">Título</string>
 </resources>
