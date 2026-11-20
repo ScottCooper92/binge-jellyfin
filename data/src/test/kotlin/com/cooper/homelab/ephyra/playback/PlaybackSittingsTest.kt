@@ -9,6 +9,7 @@ import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import com.cooper.homelab.player.api.PlaybackOutcome
 import com.cooper.homelab.player.api.PlaybackRefusal
 import com.cooper.homelab.player.api.PlayerEvent
+import com.cooper.homelab.player.api.SubtitlePreference
 import com.cooper.homelab.player.api.TrackChoice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -189,6 +190,29 @@ class PlaybackSittingsTest {
             player.events.send(PlayerEvent.NextRequested(59_000))
             assertEquals("item2" to 0L, minted.last())
             assertEquals(later, choices.last())
+        }
+
+    @Test
+    fun `a re-mint and the next episode ask the player to open on the tracks it was on, subtitles off included`() =
+        runTest {
+            nextOf = { item -> episodes.getOrNull(episodes.indexOf(item) + 1) }
+            val sittings = sittings()
+            sittings.start(episodes[0])
+            assertNull(player.played.single().preferredAudio)
+            assertNull(player.played.single().preferredSubtitle)
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            val audio = TrackChoice("es", "Doblaje", "r-7")
+            val subtitle = TrackChoice("es", null)
+            player.events.send(PlayerEvent.TracksChosen(subtitle, audio))
+
+            player.events.send(PlayerEvent.SourceRejected(30_000, 403))
+            assertEquals("the opaque token goes back as it came", audio, player.updates.last().preferredAudio)
+            assertEquals(SubtitlePreference.Track(subtitle), player.updates.last().preferredSubtitle)
+
+            player.events.send(PlayerEvent.TracksChosen(null, audio))
+            player.events.send(PlayerEvent.NextRequested(59_000))
+            assertEquals(audio, player.updates.last().preferredAudio)
+            assertEquals("off is a choice, kept", SubtitlePreference.Off, player.updates.last().preferredSubtitle)
         }
 
     @Test

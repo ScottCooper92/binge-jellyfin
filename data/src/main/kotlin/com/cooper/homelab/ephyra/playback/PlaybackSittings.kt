@@ -3,12 +3,14 @@ package com.cooper.homelab.ephyra.playback
 import com.binge.companion.sdk.attempt
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
 import com.cooper.homelab.player.api.MediaPlayer
+import com.cooper.homelab.player.api.PlayRequest
 import com.cooper.homelab.player.api.PlayTitle
 import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import com.cooper.homelab.player.api.PlaybackOutcome
 import com.cooper.homelab.player.api.PlaybackRefusal
 import com.cooper.homelab.player.api.PlaybackSittingControl
 import com.cooper.homelab.player.api.PlayerEvent
+import com.cooper.homelab.player.api.SubtitlePreference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -164,7 +166,7 @@ class PlaybackSittings(
                 sitting.fail(it, item.title)
                 return null
             }
-        player.update(minted.request.copy(sessionId = id, next = upNext?.title))
+        player.update(minted.request.copy(sessionId = id, next = upNext?.title).opensOn(sitting.choice.value))
         sitting.outcome.value = PlaybackOutcome.Playing(item.title)
         return minted
     }
@@ -176,6 +178,17 @@ class PlaybackSittings(
     ) {
         attempt { reporter.report(minted.report, kind, positionMs) }
     }
+
+    /** The request asking the player to open on the tracks of [choice], as the user left them; the player's own default where there is none. */
+    private fun PlayRequest.opensOn(choice: StreamChoice?): PlayRequest =
+        if (choice == null) {
+            this
+        } else {
+            copy(
+                preferredAudio = choice.audio,
+                preferredSubtitle = choice.subtitle?.let { SubtitlePreference.Track(it) } ?: SubtitlePreference.Off,
+            )
+        }
 
     private fun PlaybackOutcome.endsOnItsOwn() = this !is PlaybackOutcome.Refused && this !is PlaybackOutcome.SourceExpired
 
