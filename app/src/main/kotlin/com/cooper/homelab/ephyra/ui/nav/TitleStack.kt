@@ -49,3 +49,12 @@ fun NavBackStack<NavKey>.openSearchHit(
         SearchKind.Person -> openPerson(id)
     }
 }
+
+/** The player for the sitting [sessionId], over the page that began it. */
+fun NavBackStack<NavKey>.openPlayer(
+    sessionId: String,
+    title: String,
+) {
+    val key = PlayerRoute(sessionId, title)
+    if (lastOrNull() != key) add(key)
+}

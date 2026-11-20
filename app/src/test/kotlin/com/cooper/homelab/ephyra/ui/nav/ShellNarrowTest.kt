@@ -283,6 +283,19 @@ class ShellNarrowTest : ShellHostTestBase() {
     }
 
     @Test
+    fun `a play opens over the title that began it and covers the bar, and Back returns to the title`() {
+        hostWithPlayer()
+        click("open movie")
+        click("title m1")
+        assertEquals(listOf(ShellRoute, MovieRoute("m1"), PlayerRoute("s1", "Colour Bars")), keys())
+        assertShown("player s1 Colour Bars")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertEquals(listOf(ShellRoute, MovieRoute("m1")), keys())
+        assertShown("title m1")
+    }
+
+    @Test
     fun `an open title is restored after a process death, and Back still closes it`() {
         hostWithTitles()
         click("open movie")

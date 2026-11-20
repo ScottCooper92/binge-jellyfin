@@ -49,6 +49,7 @@ abstract class ShellHostTestBase {
         searchTab: (@Composable () -> Unit)? = null,
         library: @Composable (LibraryRoute) -> Unit = {},
         title: @Composable (TitleRoute) -> Unit = {},
+        player: @Composable (PlayerRoute) -> Unit = {},
     ) {
         compose.setContent {
             JellyfinTheme {
@@ -68,6 +69,7 @@ abstract class ShellHostTestBase {
                     searchTab = searchTab,
                     library = library,
                     title = title,
+                    player = player,
                     onBack = { backStack.closeTop() },
                     signedOut = { Text("sign in") },
                     home = {
@@ -101,6 +103,14 @@ abstract class ShellHostTestBase {
             // Clear of the rail, as the console home is: a bare Text would sit under it on a wide window.
             homeTab = { Text("open movie", Modifier.padding(start = 112.dp).clickable { stack?.openTitle(ItemKind.Movie, "m1") }) },
             title = { Text("title ${it::class.simpleName} ${it.itemId}") },
+        )
+
+    /** The shell with a Home tab that offers a movie to open, whose page offers to play it: a screen for the title and one for the play. */
+    protected fun hostWithPlayer() =
+        host(
+            homeTab = { Text("open movie", Modifier.padding(start = 112.dp).clickable { stack?.openTitle(ItemKind.Movie, "m1") }) },
+            title = { Text("title ${it.itemId}", Modifier.clickable { stack?.openPlayer("s1", "Colour Bars") }) },
+            player = { Text("player ${it.sessionId} ${it.title}") },
         )
 
     protected fun titleKeys(): List<TitleRoute> = keys().filterIsInstance<TitleRoute>()
