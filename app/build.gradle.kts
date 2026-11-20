@@ -215,6 +215,9 @@ dependencies {
     // The client's screens (epic #759), in a module of their own. Their classes count towards the floor below too.
     implementation(project(":client"))
     kover(project(":client"))
+    // The shared player, as source (a private submodule). Nothing draws it yet: this is the build wiring, and what the app
+    // adds on top of it comes in later changes.
+    implementation("com.cooper.homelab:player")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     // The demo's pictures: one fetcher added to the image loader the design system draws with. Real servers' pictures never reach it.

@@ -15,7 +15,7 @@
 #            Service, the review launcher, keep rules and the like.
 #   release  the R8 build. True only for what decides whether R8 can build the app: a build file (any
 #            *.gradle.kts), the version catalog, `gradle/` and gradle.properties, a keep rule or any .pro
-#            file, or a submodule pin (design-system, binge-companions, binge-ci, homelab-core). Binge builds
+#            file, or a submodule pin (design-system, binge-companions, binge-ci, homelab-core, homelab-player). Binge builds
 #            release only on a tag; here a PR builds it only for those paths, and every push to main builds it
 #            regardless, so a break the filter missed shows right after the merge. The workflow itself,
 #            the manifest, resources and assets are not inputs: ordinary app code and UI changes skip it.
@@ -53,7 +53,7 @@ release_input() {
   case "$1" in
     *.pro | app/src/main/keepRules/*) return 0 ;;
     *.gradle.kts | libs.versions.toml | gradle/* | gradle.properties) return 0 ;;
-    design-system | binge-companions | binge-ci | homelab-core) return 0 ;;
+    design-system | binge-companions | binge-ci | homelab-core | homelab-player) return 0 ;;
   esac
   return 1
 }

@@ -10,3 +10,6 @@
 [submodule "homelab-core"]
 	path = homelab-core
 	url = https://github.com/ScottCooper92/homelab-core.git
+[submodule "homelab-player"]
+	path = homelab-player
+	url = https://github.com/ScottCooper92/homelab-player
