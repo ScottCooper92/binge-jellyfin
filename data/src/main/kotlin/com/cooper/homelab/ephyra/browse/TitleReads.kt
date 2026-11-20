@@ -2,12 +2,21 @@ package com.cooper.homelab.ephyra.browse
 
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 // The reads behind a title page. The title itself is the server's item route, which sends the whole item and takes no
 // `fields`; the lists (seasons, episodes) name what they want as the card reads do.
 
 private const val SEASON_FIELDS = "PrimaryImageAspectRatio,ChildCount"
 private const val EPISODE_FIELDS = "PrimaryImageAspectRatio,Overview"
+
+// Before 12.0 no route says which box sets hold an item, so each box set is asked for its members. Both numbers cap that cost.
+private const val COLLECTION_SCAN_LIMIT = 100
+private const val COLLECTION_SCAN_PARALLEL = 4
 
 /** One title with everything a page shows. A missing id is the server's 404, thrown as the transport's error. */
 internal suspend fun JellyfinClient.browseTitle(
@@ -120,14 +129,57 @@ internal suspend fun JellyfinClient.browseCollectionParts(
     return decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items.mapNotNull { it.toBrowseItem() }
 }
 
-/** The collections [id] is in, or null when the server cannot say: the route is 12.0 and later, and no earlier one exists. */
+/**
+ * The collections [id] is in. From 12.0 the server names them (`/Items/{id}/Collections`). Before it, no route or field does, so
+ * the user's box sets are listed and each is asked for its members: a hand-made box set with no provider ids is found the same
+ * way as any other, because membership is the server's own list of children.
+ */
 internal suspend fun JellyfinClient.browseCollectionsOf(
     userId: String,
     profile: JellyfinServerProfile,
     id: String,
-): List<BrowseItem>? {
-    if (!profile.hasItemCollectionsRoute) return null
+): List<BrowseItem> {
+    if (!profile.hasItemCollectionsRoute) return scanCollectionsOf(userId, id)
     val path = "Items/$id/Collections"
     val query = cardQuery(userId)
     return decodeAnswer(ItemsWire.serializer(), getObject(path, query), path).items.mapNotNull { it.toBrowseItem() }
 }
+
+/** Every box set the user can see, up to [COLLECTION_SCAN_LIMIT], in name order. `parentId` is left out: before 12.0 the server drops it for a lone BoxSet type. */
+private suspend fun JellyfinClient.browseBoxSets(userId: String): List<BrowseItem> {
+    val query = cardQuery(userId)
+    query["includeItemTypes"] = "BoxSet"
+    query["recursive"] = "true"
+    query["sortBy"] = "SortName"
+    query["sortOrder"] = "Ascending"
+    query["limit"] = COLLECTION_SCAN_LIMIT.toString()
+    query["enableTotalRecordCount"] = "false"
+    return decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items.mapNotNull { it.toBrowseItem() }
+}
+
+private suspend fun JellyfinClient.scanCollectionsOf(
+    userId: String,
+    id: String,
+): List<BrowseItem> =
+    coroutineScope {
+        val gate = Semaphore(COLLECTION_SCAN_PARALLEL)
+        browseBoxSets(userId)
+            .map { box ->
+                async {
+                    val members =
+                        gate.withPermit {
+                            val query =
+                                linkedMapOf(
+                                    "userId" to userId,
+                                    "parentId" to box.id,
+                                    "enableImages" to "false",
+                                    "enableUserData" to "false",
+                                    "enableTotalRecordCount" to "false",
+                                )
+                            decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items
+                        }
+                    box.takeIf { members.any { it.id == id } }
+                }
+            }.awaitAll()
+            .filterNotNull()
+    }

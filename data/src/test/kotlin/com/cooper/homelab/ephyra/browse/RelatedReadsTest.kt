@@ -130,15 +130,29 @@ class RelatedReadsTest {
         }
 
     @Test
-    fun `the collections a movie is in come from the server where it can say, and null where it cannot`() =
+    fun `the collections a movie is in come from the server's route where it has one`() =
         runBlocking {
             jellyfin.browse.titles.add(FakeTitle("box", "Alien Collection", "lib-box", "BoxSet"))
             movie("a", "Alien", 1979, collection = "box")
             movie("b", "Blade Runner", 1982)
-            assertEquals(listOf("box"), collections.collectionsOf("a")!!.map { it.id })
+            assertEquals(listOf("box"), collections.collectionsOf("a").map { it.id })
             assertEquals(emptyList<BrowseItem>(), collections.collectionsOf("b"))
-            val before = jellyfin.requests.size
-            assertNull(JellyfinCollectionRepository(client, "user-1", floor).collectionsOf("a"))
-            assertEquals("no request is made for a server that cannot answer", before, jellyfin.requests.size)
+        }
+
+    @Test
+    fun `before 12_0 a hand-made box set with no provider ids is found by asking each box set for its members`() =
+        runBlocking {
+            val before = JellyfinCollectionRepository(client, "user-1", floor)
+            jellyfin.browse.titles.add(FakeTitle("box", "Sol Levante Collection", "lib-box", "BoxSet"))
+            jellyfin.browse.titles.add(FakeTitle("other", "Another Collection", "lib-box", "BoxSet"))
+            jellyfin.browse.titles.add(FakeTitle("m1", "One", "box", year = 2020))
+            jellyfin.browse.titles.add(FakeTitle("m2", "Two", "box", year = 2021))
+            jellyfin.browse.titles.add(FakeTitle("m3", "Three", "other", year = 2022))
+            jellyfin.browse.titles.add(FakeTitle("solo", "Alone", "lib-movies", year = 2019))
+            assertEquals(listOf("box"), before.collectionsOf("m2").map { it.id })
+            assertEquals(listOf("other"), before.collectionsOf("m3").map { it.id })
+            assertEquals(emptyList<BrowseItem>(), before.collectionsOf("solo"))
+            val asked = jellyfin.requests.map { it.url.encodedPath }
+            assertTrue("the route that does not exist is not asked for", asked.none { it.endsWith("/Collections") })
         }
 }
