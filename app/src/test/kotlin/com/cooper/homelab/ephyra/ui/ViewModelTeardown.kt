@@ -28,10 +28,19 @@ internal class ViewModelTeardown {
     /** A connection a test builds: closed with the view models, so its session watcher and saves end with the test. */
     fun made(connection: Connection): Connection = connection.also { connections += it }
 
-    fun close(jellyfin: FakeJellyfin) {
+    /**
+     * Stops every view model's work and waits for it to finish, and closes nothing else. For a test that has to have its work quiet
+     * before the test ends, such as one whose Compose rule destroys the activity when the body returns, ahead of [close]; [close]
+     * then finds nothing left to wait for.
+     */
+    fun stop() {
         val jobs = viewModels.mapNotNull { it.viewModelScope.coroutineContext[Job] }
         jobs.forEach { it.cancel() }
         runBlocking { jobs.forEach { it.join() } }
+    }
+
+    fun close(jellyfin: FakeJellyfin) {
+        stop()
         viewModels.clear()
         connections.forEach { it.close() }
         connections.clear()
