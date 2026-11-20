@@ -305,6 +305,37 @@ class PlaybackSittingsTest {
         }
 
     @Test
+    fun `a play that reaches its end with nothing after it says so, and one with a next episode leaves it to Up next`() =
+        runTest {
+            val sittings = sittings()
+            val id = sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            val endings = mutableListOf<Unit>()
+            val job = launch(UnconfinedTestDispatcher(testScheduler)) { sittings.endings(id).collect { endings += it } }
+
+            player.events.send(PlayerEvent.Ended(60_000, 60_000))
+            assertEquals(1, endings.size)
+            player.events.send(PlayerEvent.Ended(60_000, 60_000))
+            assertEquals("a replay that ends again closes it again", 2, endings.size)
+            job.cancel()
+        }
+
+    @Test
+    fun `an end with a next episode closes nothing`() =
+        runTest {
+            nextOf = { item -> episodes.getOrNull(episodes.indexOf(item) + 1) }
+            val sittings = sittings()
+            val id = sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            val endings = mutableListOf<Unit>()
+            val job = launch(UnconfinedTestDispatcher(testScheduler)) { sittings.endings(id).collect { endings += it } }
+
+            player.events.send(PlayerEvent.Ended(60_000, 60_000))
+            assertEquals(emptyList<Unit>(), endings)
+            job.cancel()
+        }
+
+    @Test
     fun `a sitting run again from its start forgets the tracks`() =
         runTest {
             val sittings = sittings()

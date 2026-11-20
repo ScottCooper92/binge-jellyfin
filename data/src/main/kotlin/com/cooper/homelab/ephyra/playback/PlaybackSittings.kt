@@ -55,6 +55,9 @@ class PlaybackSittings(
 
         /** A switch of audio the server did not make; the old source plays on. */
         val audioFailures = MutableSharedFlow<AudioSwitchFailure>(extraBufferCapacity = 1)
+
+        /** The play reached its end with nothing to follow it. */
+        val endings = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     }
 
     private val sittings = MutableStateFlow<Map<String, Sitting>>(emptyMap())
@@ -71,6 +74,9 @@ class PlaybackSittings(
     /** The switches of audio the server did not make, for the screen to say so. The play goes on with the audio it had. */
     fun audioSwitchFailures(sessionId: String): Flow<AudioSwitchFailure> =
         sittings.flatMapLatest { it[sessionId]?.audioFailures ?: emptyFlow() }
+
+    /** Says once each time the play reaches its end with nothing after it, for the screen to close. With a next episode it says nothing: Up next takes over. */
+    fun endings(sessionId: String): Flow<Unit> = sittings.flatMapLatest { it[sessionId]?.endings ?: emptyFlow() }
 
     override fun outcome(sessionId: String): Flow<PlaybackOutcome?> = sittings.flatMapLatest { it[sessionId]?.outcome ?: flowOf(null) }
 
@@ -161,6 +167,7 @@ class PlaybackSittings(
             is PlayerEvent.AudioOptionRequested -> switchAudio(event, id, sitting, profile, play)
             is PlayerEvent.NextRequested -> moveToNext(event, id, sitting, profile, play)
             is PlayerEvent.TracksChosen -> sitting.choice.update { it.after(event) }
+            is PlayerEvent.Ended -> if (play.upNext == null) sitting.endings.tryEmit(Unit)
         }
     }
 

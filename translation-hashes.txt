@@ -203,11 +203,6 @@ app:channel_mappings_pick_title  421cf7800f87
 app:channel_mappings_search  db9f2284f1cf
 app:channel_mappings_title  7b66db40cf32
 app:channel_mappings_unmatched  2395fae627c0
-app:client_audio_channels_5_1  77065cda8fe1
-app:client_audio_channels_7_1  772444a00dc2
-app:client_audio_channels_mono  d7de34b17b46
-app:client_audio_channels_n  42e26188d8da
-app:client_audio_channels_stereo  b526aece2917
 app:client_audio_switch_refused  fc33a82ee923
 app:client_audio_switch_title  005c5bab3c84
 app:client_audio_switch_unreachable  2f1fad030672

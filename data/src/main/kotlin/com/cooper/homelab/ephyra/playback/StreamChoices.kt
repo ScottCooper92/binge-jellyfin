@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.playback
 import com.cooper.homelab.ephyra.server.array
 import com.cooper.homelab.ephyra.server.bool
 import com.cooper.homelab.ephyra.server.string
+import com.cooper.homelab.player.api.AudioCodec
 import com.cooper.homelab.player.api.PlayAudioOption
 import com.cooper.homelab.player.api.TrackChoice
 import kotlinx.serialization.json.JsonObject
@@ -66,11 +67,10 @@ private fun JsonObject.indexOf(
 
 /**
  * The audio streams of the media source, as options the player lists when the stream itself has one track (a transcode): the key is the
-
- * server's stream index. Empty for a source with fewer than two. The label is the language in the device's own language, and the
- * description is [wording]'s line for the stream (its codec and channels), the way the player words its own rows.
+ * server's stream index. Empty for a source with fewer than two. The label is the language in the device's own language; the format and
+ * the channel count go to the player, which words the row's second line the way it words its own rows.
  */
-internal fun JsonObject.audioOptions(wording: AudioWording): List<PlayAudioOption> {
+internal fun JsonObject.audioOptions(): List<PlayAudioOption> {
     val streams = array("MediaStreams").filterIsInstance<JsonObject>().filter { it.string("Type") == "Audio" }
     if (streams.size < MIN_AUDIO_OPTIONS) return emptyList()
     val current = this["DefaultAudioStreamIndex"]?.jsonPrimitive?.intOrNull
@@ -81,12 +81,32 @@ internal fun JsonObject.audioOptions(wording: AudioWording): List<PlayAudioOptio
             key = index.toString(),
             language = stream.string("Language"),
             label = label,
-            description =
-                wording.describe(
-                    AudioFormat(stream.string("Codec"), stream.string("Profile"), stream["Channels"]?.jsonPrimitive?.intOrNull),
-                ),
             current = index == current,
+            codec = audioCodecOf(stream.string("Codec"), stream.string("Profile")),
+            channelCount = stream["Channels"]?.jsonPrimitive?.intOrNull,
         )
+    }
+}
+
+/** The player's name for the server's codec (and profile, which tells Atmos and DTS-HD apart); null where the stream names none. */
+internal fun audioCodecOf(
+    codec: String?,
+    profile: String?,
+): AudioCodec? {
+    val atmos = profile?.contains("atmos", ignoreCase = true) == true
+    val dtsHd = profile?.contains("dts-hd", ignoreCase = true) == true
+    return when (codec?.lowercase()) {
+        null -> null
+        "ac3" -> AudioCodec.DOLBY_DIGITAL
+        "eac3" -> if (atmos) AudioCodec.DOLBY_ATMOS else AudioCodec.DOLBY_DIGITAL_PLUS
+        "truehd" -> if (atmos) AudioCodec.DOLBY_ATMOS else AudioCodec.DOLBY_TRUEHD
+        "dts" -> if (dtsHd) AudioCodec.DTS_HD else AudioCodec.DTS
+        "aac" -> AudioCodec.AAC
+        "mp3" -> AudioCodec.MP3
+        "opus" -> AudioCodec.OPUS
+        "flac" -> AudioCodec.FLAC
+        "vorbis" -> AudioCodec.VORBIS
+        else -> AudioCodec.OTHER
     }
 }
 
