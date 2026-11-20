@@ -55,19 +55,19 @@ class SharedPreferencesLinkStashTest {
     }
 
     @Test
-    fun `every write and clear is committed, never applied, so a kill right after cannot lose it`() {
+    fun `a write is committed so a kill right after cannot lose it, and a clear is applied so it never blocks the main thread`() {
         val counting = CountingPreferences(preferences)
         val stash = SharedPreferencesLinkStash(counting)
 
         stash.write("record")
         stash.clear()
 
-        assertEquals(2, counting.commits)
-        assertEquals("nothing is left to be written later", 0, counting.applies)
+        assertEquals(1, counting.commits)
+        assertEquals(1, counting.applies)
     }
 
     @Test
-    fun `the record is in the file as soon as write returns, and out of it as soon as clear does`() {
+    fun `the record is in the file as soon as write returns, and out of reach as soon as clear returns`() {
         val stash = SharedPreferencesLinkStash(preferences)
         val file = File(context.applicationInfo.dataDir, "shared_prefs/link-stash-test.xml")
 
@@ -75,7 +75,7 @@ class SharedPreferencesLinkStashTest {
         assertTrue("on disk when write returns", file.readText().contains("sealed-record"))
         stash.clear()
 
-        assertTrue("off disk when clear returns", !file.readText().contains("sealed-record"))
+        assertNull("a read straight after a clear finds nothing", stash.read())
     }
 
     @Test
