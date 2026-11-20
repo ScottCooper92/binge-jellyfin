@@ -51,6 +51,7 @@ import com.cooper.homelab.ephyra.ui.JellyfinRoot
 import com.cooper.homelab.ephyra.ui.JellyfinViewModel
 import com.cooper.homelab.ephyra.ui.UiState
 import com.cooper.homelab.ephyra.ui.chooseServer
+import com.cooper.homelab.ephyra.ui.client.CollectionPage
 import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryPlaceholder
@@ -64,10 +65,12 @@ import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.console.ConsolePageRoute
 import com.cooper.homelab.ephyra.ui.console.LocalUserPictures
 import com.cooper.homelab.ephyra.ui.localNetworkAnswered
+import com.cooper.homelab.ephyra.ui.nav.CollectionRoute
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import com.cooper.homelab.ephyra.ui.nav.MovieRoute
+import com.cooper.homelab.ephyra.ui.nav.TitleRoute
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
@@ -291,22 +294,7 @@ internal fun ConsoleHost(
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
         },
         library = { LibraryPlaceholder(onBack = { backStack.closeTop() }) },
-        title = { route ->
-            val signed = state as? UiState.SignedIn
-            when {
-                // A film's page needs the user's session and the server's version. Every other kind keeps the placeholder until its screen lands.
-                route is MovieRoute && signed != null ->
-                    MoviePage(
-                        graph,
-                        signed.profile,
-                        route.itemId,
-                        onBack = { backStack.closeTop() },
-                        onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
-                        onOpenPerson = { id -> backStack.openPerson(id) },
-                    )
-                else -> TitlePlaceholder(onBack = { backStack.closeTop() })
-            }
-        },
+        title = { route -> TitlePageRoute(route, state as? UiState.SignedIn, graph, backStack) },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
                 // A stream tapped here has no page to open over, so the page opens, and the stream over it.
@@ -354,6 +342,39 @@ internal fun ConsoleHost(
             }
         },
     )
+}
+
+/**
+ * The page for a title route. A film's or a collection's page needs the user's session and the server's version; every other kind keeps
+ * the placeholder until its screen lands.
+ */
+@Composable
+private fun TitlePageRoute(
+    route: TitleRoute,
+    signed: UiState.SignedIn?,
+    graph: AppGraph,
+    backStack: NavBackStack<NavKey>,
+) {
+    when {
+        route is MovieRoute && signed != null ->
+            MoviePage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+                onOpenPerson = { id -> backStack.openPerson(id) },
+            )
+        route is CollectionRoute && signed != null ->
+            CollectionPage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+            )
+        else -> TitlePlaceholder(onBack = { backStack.closeTop() })
+    }
 }
 
 /**

@@ -1420,6 +1420,8 @@ app:users_unrated_series  e714ae21d3b4
 app:users_unrated_trailer  099cdbe8994e
 app:users_video_transcoding  bf238a29e9bf
 app:users_you  71897d3f4628
+client:client_collection_empty  cdbbd00f7d70
+client:client_collection_watched  c6e615564b67
 client:client_home_caption_episode  bf48a13f757a
 client:client_home_empty  a18bce91f48b
 client:client_home_loading_row  dc380888c4e2

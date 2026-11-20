@@ -47,4 +47,6 @@
     <string name="client_movie_media_picture">Vídeo</string>
     <string name="client_movie_media_audio">Audio</string>
     <string name="client_movie_media_subtitles">Subtítulos</string>
+    <string name="client_collection_watched">%1$d de %2$d vistos</string>
+    <string name="client_collection_empty">No hay títulos de esta colección en tu servidor.</string>
 </resources>
