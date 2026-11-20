@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import com.cooper.homelab.ephyra.ADDRESS_POLICY_SWITCH
 import com.cooper.homelab.ephyra.JellyfinApp
 import com.cooper.homelab.ephyra.SEARCH_TOGGLES_SWITCH
 import com.cooper.homelab.ephyra.SERVER_REGISTRY_SWITCH
@@ -15,8 +14,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Debug builds only. Writes a switch: `.SERVER_REGISTRY` says whether the saved session lives in the shared library's per-server
- * stores, and `.ADDRESS_POLICY` whether a typed address is read, and plain HTTP guarded, the way the library does, and `.SEARCH_TOGGLES` whether a settings-search
- * result for an on/off setting carries its switch. Each is
+ * stores, and `.SEARCH_TOGGLES` whether a settings-search result for an on/off setting carries its switch. Each is
  * read once when the process starts, so it takes effect on the next launch. An `enabled` extra of false turns it back off, and no
  * extra clears it. The old file is never touched, so a flip back finds the session as the old file left it, and loses what was
  * changed in the new stores.
@@ -31,7 +29,6 @@ class ServerRegistrySwitchReceiver : BroadcastReceiver() {
         val action = intent.action.orEmpty()
         val name =
             when {
-                action.endsWith(".ADDRESS_POLICY") -> ADDRESS_POLICY_SWITCH
                 action.endsWith(".SEARCH_TOGGLES") -> SEARCH_TOGGLES_SWITCH
                 else -> SERVER_REGISTRY_SWITCH
             }

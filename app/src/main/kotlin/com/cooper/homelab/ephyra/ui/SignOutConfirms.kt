@@ -8,8 +8,7 @@ import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.flags.bingePromotion
-import com.cooper.homelab.ephyra.server.AddressPolicy
-import com.cooper.homelab.ephyra.server.insecureHost
+import com.cooper.homelab.ephyra.insecurePublicHost
 
 /** Shows or hides the sign-out confirm. */
 fun JellyfinViewModel.confirmSignOut(showing: Boolean) = updateSignedIn { it.copy(confirmingSignOut = showing) }
@@ -61,7 +60,4 @@ internal fun SignOutConfirm(
 }
 
 /** The state of a session just signed in or restored: it carries the public host whose plain-HTTP agreement it holds, if any. */
-internal fun signedInState(
-    policy: AddressPolicy,
-    session: JellyfinSession,
-) = UiState.SignedIn(session, consentHost = policy.insecureHost(session.baseUrl))
+internal fun signedInState(session: JellyfinSession) = UiState.SignedIn(session, consentHost = insecurePublicHost(session.baseUrl))

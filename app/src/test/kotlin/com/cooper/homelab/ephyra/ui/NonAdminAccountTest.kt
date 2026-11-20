@@ -1,6 +1,8 @@
 package com.cooper.homelab.ephyra.ui
 
 import com.cooper.homelab.ephyra.FakeJellyfin
+import com.cooper.homelab.ephyra.PlainCipher
+import com.cooper.homelab.ephyra.auth.forLibrary
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinAccount
@@ -61,7 +63,16 @@ class NonAdminAccountTest {
     }
 
     private fun viewModel(): JellyfinViewModel =
-        teardown.made(JellyfinViewModel(sessions, connection, LibraryIndex(), discover = { emptyList() }))
+        teardown.made(
+            JellyfinViewModel(
+                sessions,
+                connection,
+                LibraryIndex(),
+                dispatcher = Dispatchers.IO,
+                cipher = PlainCipher.forLibrary(),
+                discover = { emptyList() },
+            ),
+        )
 
     private fun JellyfinViewModel.signedIn(matches: (UiState.SignedIn) -> Boolean): UiState.SignedIn =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is UiState.SignedIn && matches(it) } as UiState.SignedIn } }
