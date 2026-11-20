@@ -22,14 +22,14 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 /**
  * The Home tab: the rows of the user's own server, with pull to refresh. [onOpen] is a card's tap, which opens its title page, and
  * [onResume] is a Continue watching card's, which plays it from where the user stopped; the shell hands both in. [onOpen] gets the item's
- * kind as well as its id, to pick the page; [onResume] gets the id. The view model is the tab's, so the rows survive a switch of tab and a rotation.
+ * kind as well as its id, to pick the page; [onResume] gets the id and the title's name. The view model is the tab's, so the rows survive a switch of tab and a rotation.
  */
 @Composable
 fun HomeTab(
     graph: AppGraph,
     profile: JellyfinServerProfile,
     onOpen: (kind: ItemKind, itemId: String) -> Unit,
-    onResume: (itemId: String) -> Unit,
+    onResume: (itemId: String, title: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val model: HomeTabViewModel =
@@ -42,7 +42,7 @@ fun HomeTab(
         refreshing = refreshing,
         imageUrl = model::imageUrl,
         onOpen = { onOpen(it.kind, it.id) },
-        onResume = { onResume(it.id) },
+        onResume = { onResume(it.id, it.title) },
         onRefresh = model::refresh,
         modifier = modifier,
     )
