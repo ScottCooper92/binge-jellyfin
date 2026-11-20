@@ -77,7 +77,10 @@ class SeriesMappingTest {
     fun `the button follows what to play next`() {
         assertNull(seriesPlay(null))
         assertEquals(SeriesPlay.NoEpisodes, seriesPlay(NextEpisode.None))
-        assertEquals(SeriesPlay.AllWatched, seriesPlay(NextEpisode.AllWatched))
+        assertEquals(
+            SeriesPlay.AllWatched(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null)),
+            seriesPlay(NextEpisode.AllWatched(episode("e1", 1))),
+        )
         assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null), seriesPlay(NextEpisode.Start(episode("e1", 1))))
         assertEquals(SeriesPlay.Episode(PlayKind.Play, "e2", 1, 2, null), seriesPlay(NextEpisode.Next(episode("e2", 2))))
         assertEquals(
@@ -90,7 +93,7 @@ class SeriesMappingTest {
     fun `the season shown first holds the episode to play, else the first that is not specials, else the first`() {
         val seasons = listOf(season("sp", 0), season("s1", 1), season("s2", 2))
         assertEquals("s2", initialSeason(seasons, NextEpisode.Next(episode("e", 1, seasonId = "s2"))))
-        assertEquals("s1", initialSeason(seasons, NextEpisode.AllWatched))
+        assertEquals("s1", initialSeason(seasons, NextEpisode.AllWatched(episode("e1", 1))))
         assertEquals("s1", initialSeason(seasons, null))
         assertEquals("sp", initialSeason(listOf(season("sp", 0)), null))
         assertNull(initialSeason(emptyList(), null))

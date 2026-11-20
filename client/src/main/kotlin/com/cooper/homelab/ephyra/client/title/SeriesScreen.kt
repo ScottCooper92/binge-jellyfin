@@ -269,7 +269,8 @@ private fun SeriesUi.episodeList(): List<EpisodeUi> = (episodes as? EpisodesStat
 private fun SeriesPlay?.primaryLabel(): String? =
     when (this) {
         is SeriesPlay.Episode -> label()
-        SeriesPlay.AllWatched, SeriesPlay.NoEpisodes, null -> null
+        is SeriesPlay.AllWatched -> first.label()
+        SeriesPlay.NoEpisodes, null -> null
     }
 
 @Composable

@@ -55,7 +55,7 @@ fun seriesPlay(next: NextEpisode?): SeriesPlay? =
     when (next) {
         null -> null
         NextEpisode.None -> SeriesPlay.NoEpisodes
-        NextEpisode.AllWatched -> SeriesPlay.AllWatched
+        is NextEpisode.AllWatched -> SeriesPlay.AllWatched(episodePlay(PlayKind.Play, next.first))
         is NextEpisode.Start -> episodePlay(PlayKind.Play, next.episode)
         is NextEpisode.Next -> episodePlay(PlayKind.Play, next.episode)
         is NextEpisode.Resume -> episodePlay(PlayKind.Resume, next.episode)
