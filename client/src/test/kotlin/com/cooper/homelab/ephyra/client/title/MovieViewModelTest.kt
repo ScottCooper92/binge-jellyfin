@@ -89,6 +89,19 @@ class MovieViewModelTest {
         }
 
     @Test
+    fun `a film in two box sets shows the first one the server names`() =
+        runBlocking {
+            add("m1", "Alien", collections = listOf("boxA", "boxB"))
+            jellyfin.browse.titles.add(FakeTitle("boxA", "Alien Collection", "lib-box", "BoxSet"))
+            jellyfin.browse.titles.add(FakeTitle("boxB", "Space Horror", "lib-box", "BoxSet"))
+            jellyfin.browse.titles.add(FakeTitle("pa", "Alien", "boxA"))
+            jellyfin.browse.titles.add(FakeTitle("pb", "Event Horizon", "boxB"))
+            val movie = viewModel().also { it.start("m1") }.ready { it.collection != null }
+            assertEquals("boxA", movie.collection!!.id)
+            assertEquals(listOf("pa"), movie.collection!!.parts.map { it.id })
+        }
+
+    @Test
     fun `a server that cannot name a collection has no row, and the page still shows`() =
         runBlocking {
             add("m1", "Alien")

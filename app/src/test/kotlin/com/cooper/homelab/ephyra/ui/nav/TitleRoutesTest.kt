@@ -41,6 +41,16 @@ class TitleRoutesTest {
     }
 
     @Test
+    fun `a film's collection opens on top of the film, and Back returns to the film`() {
+        val back = stack()
+        back.openTitle(ItemKind.Movie, "m1")
+        back.openTitle(ItemKind.BoxSet, "box")
+        assertEquals(listOf(ShellRoute, MovieRoute("m1"), CollectionRoute("box")), back.toList())
+        back.closeTop()
+        assertEquals(listOf(ShellRoute, MovieRoute("m1")), back.toList())
+    }
+
+    @Test
     fun `a person opens its page, and the same person again adds nothing`() {
         val back = stack()
         back.openPerson("p1")

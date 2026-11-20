@@ -89,6 +89,7 @@ internal fun noActions() =
         onToggleFavourite = {},
         onOpenTitle = {},
         onOpenPerson = {},
+        onOpenCollection = {},
     )
 
 /** A film with every part the page shows, none of it loading a picture. */
