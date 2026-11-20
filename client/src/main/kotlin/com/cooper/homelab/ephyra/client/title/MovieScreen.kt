@@ -111,7 +111,7 @@ fun MovieScreen(
     actions: MovieActions,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    events: Flow<MovieEvent> = emptyFlow(),
+    events: Flow<TitleEvent> = emptyFlow(),
 ) {
     val writeFailed = stringResource(R.string.client_movie_write_failed)
     LaunchedEffect(events) { events.collect { snackbarHostState.showSnackbar(writeFailed) } }
@@ -189,7 +189,7 @@ private fun MovieContent(
             MovieActionRow(movie, actions, onChooseVersion = { choosing = true })
             if (!cinematic) DetailOverviewSection(stringResource(R.string.client_movie_overview), synopsis)
             MovieRails(movie, imageUrl, actions)
-            MovieFacts(movie.facts)
+            TitleFacts(movie.facts)
         }
     }
     if (choosing) {
@@ -330,7 +330,7 @@ private fun TitleCard.poster(
 
 /** The facts at the end of the page: the original title, the studios and the premiere date. Each is left out when the server gave none. */
 @Composable
-private fun MovieFacts(facts: MovieFacts) {
+private fun TitleFacts(facts: TitleFacts) {
     val locale = LocalConfiguration.current.locales[0]
     DetailInfoSection(
         heading = stringResource(R.string.client_movie_details),

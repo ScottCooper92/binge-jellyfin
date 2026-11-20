@@ -8,9 +8,9 @@ import com.cooper.homelab.ephyra.browse.ImageUrls
 import com.cooper.homelab.ephyra.browse.JellyfinCollectionRepository
 import com.cooper.homelab.ephyra.browse.JellyfinTitleRepository
 import com.cooper.homelab.ephyra.browse.JellyfinUserDataRepository
-import com.cooper.homelab.ephyra.client.title.MovieEvent
 import com.cooper.homelab.ephyra.client.title.MovieUiState
 import com.cooper.homelab.ephyra.client.title.MovieViewModel
+import com.cooper.homelab.ephyra.client.title.TitleEvent
 import com.cooper.homelab.ephyra.client.title.TitleImage
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
@@ -71,7 +71,7 @@ class MoviePageViewModel(
             }.stateIn(viewModelScope, SharingStarted.Eagerly, MovieUiState.Loading)
 
     /** What the page tells the user once, as a snackbar. */
-    val events: Flow<MovieEvent> = source.flatMapLatest { (it as? MovieSource.Ready)?.model?.events ?: emptyFlow() }
+    val events: Flow<TitleEvent> = source.flatMapLatest { (it as? MovieSource.Ready)?.model?.events ?: emptyFlow() }
 
     /** Opens the page for the film [id]. Does nothing once it has, or while the read of the session still runs. */
     fun start(id: String) {

@@ -107,7 +107,7 @@ internal fun sampleMovie(
     watched = false,
     favourite = false,
     overview = "A lighthouse keeper receives a letter that should not exist. ".repeat(4).trim(),
-    facts = MovieFacts("Le Grand Silence", listOf("Harbour Films"), "2021-04-09T00:00:00.0000000Z"),
+    facts = TitleFacts("Le Grand Silence", listOf("Harbour Films"), "2021-04-09T00:00:00.0000000Z"),
     versions = List(versions) { VersionUi("v$it", null, "mkv", Resolution.FullHd, null, null, emptyList(), emptyList(), null, null) },
     cast = listOf(PersonUi("p1", "Amara Okafor", "Lead", null)),
     crew = listOf(PersonUi("p2", "Jonas Weil", null, null, CrewJob.Director)),

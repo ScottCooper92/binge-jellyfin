@@ -8,7 +8,6 @@ import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.client.title.CollectionRow
 import com.cooper.homelab.ephyra.client.title.CrewJob
 import com.cooper.homelab.ephyra.client.title.MovieActions
-import com.cooper.homelab.ephyra.client.title.MovieFacts
 import com.cooper.homelab.ephyra.client.title.MovieScreen
 import com.cooper.homelab.ephyra.client.title.MovieStats
 import com.cooper.homelab.ephyra.client.title.MovieUi
@@ -18,6 +17,7 @@ import com.cooper.homelab.ephyra.client.title.PlayAction
 import com.cooper.homelab.ephyra.client.title.PlayKind
 import com.cooper.homelab.ephyra.client.title.Resolution
 import com.cooper.homelab.ephyra.client.title.TitleCard
+import com.cooper.homelab.ephyra.client.title.TitleFacts
 import com.cooper.homelab.ephyra.client.title.TitleImage
 import com.cooper.homelab.ephyra.client.title.VersionUi
 import com.cooper.homelab.ephyra.preview.JellyfinFontScalePreviews
@@ -52,7 +52,7 @@ class ClientMovieScreenshotTest {
             overview =
                 "A lighthouse keeper on a remote island receives a letter that should not exist, and the sender is someone " +
                     "the island buried a long time ago. As the weather closes in, the keeper has to decide what to believe.",
-            facts = MovieFacts("Le Grand Silence", listOf("Harbour Films", "Northlight"), "2021-04-09T00:00:00.0000000Z"),
+            facts = TitleFacts("Le Grand Silence", listOf("Harbour Films", "Northlight"), "2021-04-09T00:00:00.0000000Z"),
             versions = listOf(version("v1"), version("v2")),
             cast =
                 listOf(
@@ -109,7 +109,7 @@ class ClientMovieScreenshotTest {
                     genres = emptyList(),
                     stats = MovieStats(null, 2021, null, null),
                     overview = null,
-                    facts = MovieFacts(null, emptyList(), null),
+                    facts = TitleFacts(null, emptyList(), null),
                     versions = listOf(version("v1")),
                     cast = emptyList(),
                     crew = emptyList(),
