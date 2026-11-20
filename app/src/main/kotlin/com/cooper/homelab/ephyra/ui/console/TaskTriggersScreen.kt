@@ -53,6 +53,7 @@ import com.binge.designsystem.template.EmptyScreen
 import com.cooper.homelab.ephyra.R
 import com.cooper.homelab.ephyra.server.ServerTask
 import com.cooper.homelab.ephyra.server.TICKS_PER_HOUR
+import com.cooper.homelab.ephyra.server.TICKS_PER_MILLI
 import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import com.cooper.homelab.ephyra.server.TICKS_PER_SECOND
 import com.cooper.homelab.ephyra.server.TRIGGER_DAYS
@@ -65,7 +66,6 @@ import java.util.Locale
 import java.util.TimeZone
 import com.binge.designsystem.R as DesR
 
-private const val MILLIS_PER_TICK = 10_000L
 internal const val MINUTES_PER_HOUR = 60
 
 /** One quarter-hour through one day, at quarter-hour stops. */
@@ -213,7 +213,7 @@ internal fun rememberTimeLabel(): (Long) -> String {
     val locale = LocalConfiguration.current.locales[0]
     return remember(context, locale) {
         val format = DateFormat.getTimeFormat(context).apply { timeZone = TimeZone.getTimeZone("UTC") }
-        val label = { ticks: Long -> format.format(Date(ticks / MILLIS_PER_TICK)) }
+        val label = { ticks: Long -> format.format(Date(ticks / TICKS_PER_MILLI)) }
         label
     }
 }
