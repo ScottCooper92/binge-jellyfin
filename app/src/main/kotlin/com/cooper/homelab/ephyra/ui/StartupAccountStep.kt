@@ -20,7 +20,7 @@ import okhttp3.HttpUrl
  */
 class StartupAccountStep internal constructor(
     private val connection: Connection,
-    private val state: MutableStateFlow<UiState>,
+    private val state: MutableStateFlow<UiState.Setup>,
     private val scope: CoroutineScope,
     private val localNetwork: LocalNetworkPermission,
 ) {
