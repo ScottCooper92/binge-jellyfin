@@ -76,7 +76,10 @@ fun String.withoutApiKey(): String {
     return builder.build().toString()
 }
 
-/** [this] with [token] as `ApiKey`, unless there is none to add or it already carries one. */
+/**
+ * [this] with [token] as `ApiKey`, unless there is none to add or it already carries one. The token goes into an address in
+ * exactly two places (`CLAUDE.md`, the one rule): a source minted for an installed player, and a subtitle URL handed to Binge's player.
+ */
 fun String.withApiKey(token: String?): String {
     if (token == null || "ApiKey=" in this || "api_key=" in this) return this
     val separator = if ('?' in this) '&' else '?'
