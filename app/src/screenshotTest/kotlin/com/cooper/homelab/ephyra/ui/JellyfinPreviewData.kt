@@ -222,19 +222,6 @@ val previewSignedInAdmin =
 /** An administrator whose server has no libraries: the home hints at adding the first. */
 val previewSignedInNoLibraries = previewSignedInAdmin.copy(card = previewSignedInAdmin.card.copy(libraries = 0))
 
-/** A user who is not an administrator but may manage Live TV: their home gets the Live TV row. */
-val previewSignedInLiveTvManager =
-    previewSignedIn.copy(
-        account =
-            JellyfinAccount(
-                previewSignedIn.session.userName,
-                buildJsonObject {
-                    put("IsAdministrator", false)
-                    put("EnableLiveTvManagement", true)
-                },
-            ),
-    )
-
 /** An administrator whose policy lets them manage Live TV: the row is on their home too. */
 val previewSignedInAdminLiveTv =
     previewSignedInAdmin.copy(

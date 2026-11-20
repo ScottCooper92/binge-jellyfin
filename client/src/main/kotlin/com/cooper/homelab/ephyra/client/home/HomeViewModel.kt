@@ -10,6 +10,7 @@ import com.cooper.homelab.ephyra.browse.LibraryRepository
 import com.cooper.homelab.ephyra.browse.LibraryView
 import com.cooper.homelab.ephyra.browse.NextUpRepository
 import com.cooper.homelab.ephyra.browse.ResumeRepository
+import com.cooper.homelab.ephyra.client.TabModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,34 +46,42 @@ class HomeViewModel(
     private val nextUp: NextUpRepository,
     private val latest: LatestRepository,
     private val classify: suspend (Throwable) -> ServerFailure,
-) {
+) : TabModel<HomeUiState> {
     private val read = MutableStateFlow<Libraries>(Libraries.Loading)
     private val loader = HubLoader<HomeRowKey, BrowseItem>(scope, dispatcher, classify, ::load)
 
     /** What Home shows now. */
-    val state: StateFlow<HomeUiState> =
+    override val state: StateFlow<HomeUiState> =
         combine(read, loader.state) { libraries, rows -> uiState(libraries, rows) }
             .stateIn(scope, SharingStarted.Eagerly, HomeUiState.Loading)
 
     /** Whether a [refresh] is still running, for a pull-to-refresh indicator. */
-    val refreshing: StateFlow<Boolean> = loader.refreshing
+    override val refreshing: StateFlow<Boolean> = loader.refreshing
 
     /** Reads the libraries, then asks for the rows they name. Call it once when Home opens. */
-    fun start() = readLibraries()
+    override fun start() = readLibraries()
 
     /** Reads everything again, keeping the rows on screen until the new ones land. After a failure it is a retry. */
-    fun refresh() = readLibraries(refresh = true)
+    override fun refresh() = readLibraries(refresh = true)
 
     private fun readLibraries(refresh: Boolean = false) {
         scope.launch(dispatcher) {
+            // Rows already shown are reloaded by a refresh. With no libraries read yet, `show` starts every row itself, so a refresh as
+            // well would cancel each one it had just started and load it again.
+            val rowsShown = read.value is Libraries.Loaded
             attempt { libraries.views() }
                 .onSuccess { views ->
                     read.value = Libraries.Loaded(views)
                     loader.show(homeRowKeys(views))
-                    if (refresh) loader.refresh()
+                    if (refresh && rowsShown) loader.refresh()
                 }.onFailure { error ->
-                    // A refresh that cannot read the libraries keeps the rows already shown; a first read has none, so it is the failure.
-                    if (read.value !is Libraries.Loaded) read.value = Libraries.Failed(classify(error))
+                    if (rowsShown) {
+                        // The libraries could not be read again, but the rows are asked for anyway: the list they were made from still
+                        // stands, and a retry that did nothing at all would look like a button that does not work.
+                        if (refresh) loader.refresh()
+                    } else {
+                        read.value = Libraries.Failed(classify(error))
+                    }
                 }
         }
     }

@@ -26,6 +26,10 @@ data class LibraryView(
     val kind: LibraryKind,
     /** The tag of the library's own picture, when it has one. See [ImageUrls]. */
     val primaryImageTag: String? = null,
+    /** The tag of the library's thumb picture, when it has one. A Primary has the library's name drawn into it; a Thumb does not. */
+    val thumbImageTag: String? = null,
+    /** The tag of the library's first backdrop, when it has one. */
+    val backdropImageTag: String? = null,
 )
 
 /** The kind of one item. A type this app does not know is [Other], never a failure. */
