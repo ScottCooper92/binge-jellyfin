@@ -31,6 +31,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.File
 import java.nio.file.Files
+import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -60,31 +61,39 @@ data class FakeItem(
  * server's OpenAPI document gives them. Every request is recorded; [status] overrides one path, [notJson] answers one with HTML and [slow] holds one back for good, [dropped] cuts one off, and [hold] holds one in flight until a test ends it.
  */
 class FakeJellyfin : Dispatcher() {
+    // A test sets this server up from its own thread while MockWebServer answers on others, so everything either side touches is
+    // safe to share: every `var` is volatile, and every map or set is a synchronized one that keeps insertion order, as the
+    // plain ones did. A loop over one is made inside `synchronized(map)`.
     val server = MockWebServer()
     val items = CopyOnWriteArrayList<FakeItem>()
     val requests = CopyOnWriteArrayList<RecordedRequest>()
-    val status = mutableMapOf<String, Int>()
+    val status: MutableMap<String, Int> = shared()
 
     /** The browse reads: a library's titles, paged, ordered and filtered, and the filter choices. */
     val browse = FakeBrowse()
 
     /** What `/Users/ForgotPassword` answers, and the PIN `/Users/ForgotPassword/Pin` accepts. */
+    @Volatile
     var forgotAnswer = """{"Action":"ContactAdmin"}"""
+
+    @Volatile
     var forgotPin = "1234"
 
     /** What `/Users/Public` answers: the accounts the server lists on its login screen. */
+    @Volatile
     var publicUsers = "[]"
 
     /** Answers `/Items` with a 500 for the read of the titles that carry no TMDB id (`hasTmdbId=false`) alone. */
+    @Volatile
     var failsTheMissingIdCount = false
 
     /** The body a [status] override answers with, by path. */
-    val statusBody = mutableMapOf<String, String>()
-    val slow = mutableSetOf<String>()
+    val statusBody: MutableMap<String, String> = shared()
+    val slow: MutableSet<String> = sharedSet()
 
     /** Paths whose connection is cut as the request arrives, as a server that has gone away. */
-    val dropped = mutableSetOf<String>()
-    val notJson = mutableSetOf<String>()
+    val dropped: MutableSet<String> = sharedSet()
+    val notJson: MutableSet<String> = sharedSet()
 
     /** The requests a test is holding in flight, each until the test chooses how it ends (see [hold]). */
     private val holds = CopyOnWriteArrayList<Hold>()
@@ -160,37 +169,49 @@ class FakeJellyfin : Dispatcher() {
     val socketMessages = CopyOnWriteArrayList<String>()
 
     /** The `Data` of the `ForceKeepAlive` the socket opens with, in seconds. */
+    @Volatile
     var keepAliveSeconds = 60
 
     /** Sends [message] on every open event socket. */
     fun push(message: String) = sockets.forEach { it.send(message) }
 
+    @Volatile
     var quickConnectEnabled = true
 
     /** What `/System/Info/Public` says of the server's first-run setup. */
+    @Volatile
     var startupWizardCompleted = true
 
     /** What `/Startup/Configuration` holds; a save replaces it. A server that sends no `ServerName` models an older one. */
+    @Volatile
     var startupConfiguration =
         """{"ServerName":"truenas","UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}"""
 
     /** What `/Startup/FirstUser` suggests as the first account's name. */
+    @Volatile
     var startupFirstUser = """{"Name":"root","Password":""}"""
 
     /** The body of the last `POST /Startup/RemoteAccess`, or null before one. */
+    @Volatile
     var savedStartupRemoteAccess: String? = null
 
     /** Whether `POST /Startup/Complete` has been made; from then the Startup routes answer only an administrator, so a bare request is refused. */
+    @Volatile
     var startupCompleted = false
 
     /** The body of the last `POST /Startup/User`, or null before one. */
+    @Volatile
     var savedStartupUser: String? = null
 
     /** The body of the last `POST /Startup/Configuration`, or null before one. */
+    @Volatile
     var savedStartupConfiguration: String? = null
+
+    @Volatile
     var quickConnectApproved = false
 
     /** Whether `/Users/Me` answers with an administrator's policy. */
+    @Volatile
     var administrator = false
 
     /**
@@ -201,18 +222,21 @@ class FakeJellyfin : Dispatcher() {
      * `/Users`, which this refuses. Stricter is safe for the tests that use it (a read that was refused here can only fail them), but it
      * is not evidence of what a real server refuses.
      */
+    @Volatile
     var enforcesAdministrator = false
 
     /** The `METHOD /path` of each request [enforcesAdministrator] refused, so a test can say none was made. */
     val forbidden = CopyOnWriteArrayList<String>()
 
     /** More of the user's policy for `/Users/Me`, as JSON members after `IsAdministrator` (`,"Key":value`). */
+    @Volatile
     var policy = ""
 
     /**
      * The signed-in user's picture, as the file the server holds. Set by a POST to either route, whose body the real server
      * reads as base64 text (a body that is not base64 is a 400, as it is there); cleared by a DELETE.
      */
+    @Volatile
     var userImage: ByteArray? = null
 
     /**
@@ -220,16 +244,20 @@ class FakeJellyfin : Dispatcher() {
      * `SplashscreenLocation` into the branding configuration, a delete clears it, and the image is served only while the
      * splash screen is on.
      */
+    @Volatile
     var splashImage: ByteArray? = null
 
     /** The `Content-Type` of the last picture sent. */
+    @Volatile
     var userImageType: String? = null
 
     /** The user's configuration, as `/Users/Me` answers it and `/Users/Configuration` replaces it. */
+    @Volatile
     var userConfiguration =
         """{"AudioLanguagePreference":"eng","SubtitleLanguagePreference":"","SubtitleMode":"Default","HidePlayedInLatest":true}"""
 
     /** The user's libraries, as `/UserViews` (and before 10.9, `/Users/{id}/Views`) lists them. */
+    @Volatile
     var userViews =
         """[{"Id":"lib-movies","Name":"Movies","CollectionType":"movies",""" +
             """"ImageTags":{"Primary":"lp","Thumb":"lt"},"BackdropImageTags":["lb"]},""" +
@@ -251,12 +279,15 @@ class FakeJellyfin : Dispatcher() {
     }
 
     /** `/Library/VirtualFolders`: the libraries as the server lists them, changed by the calls that add, rename and remove. */
+    @Volatile
     var libraries: JsonArray = Json.parseToJsonElement(LIBRARIES).jsonArray
 
     /** Whether a library made or renamed with a refresh is listed with no id, as the server does until it validates its folders. */
+    @Volatile
     var withholdIds = false
 
     /** `/Libraries/AvailableOptions`: the providers the server offers a library. */
+    @Volatile
     var availableOptions =
         """{"MetadataSavers":[{"Name":"Nfo","DefaultEnabled":false}],"MetadataReaders":[{"Name":"Nfo","DefaultEnabled":true}],""" +
             """"SubtitleFetchers":[{"Name":"Open Subtitles","DefaultEnabled":true},{"Name":"Podnapisi","DefaultEnabled":true}],""" +
@@ -264,16 +295,19 @@ class FakeJellyfin : Dispatcher() {
             """"MediaSegmentProviders":[{"Name":"Chapter Segments","DefaultEnabled":true}],"TypeOptions":[]}"""
 
     /** What `/Libraries/AvailableOptions` answers for one `libraryContentType`, where it differs from [availableOptions]. */
-    val availableOptionsByType = mutableMapOf<String, String>()
+    val availableOptionsByType: MutableMap<String, String> = shared()
 
     /** The folders `/Environment/DirectoryContents` lists, by parent: `""` holds the drives. */
+    @Volatile
     var serverFolders: Map<String, List<String>> =
         mapOf("" to listOf("/media"), "/media" to listOf("/media/movies", "/media/tv"), "/media/movies" to emptyList())
 
     /** The libraries `GroupedFolders` may name, as the grouping options list them. */
+    @Volatile
     var groupingOptions = """[{"Id":"lib-home","Name":"Home videos"}]"""
 
     /** The server's configuration, as `/System/Configuration` answers it and a save replaces it. */
+    @Volatile
     var serverConfiguration =
         """{"ServerName":"truenas","PreferredMetadataLanguage":"en","MetadataCountryCode":"US",""" +
             """"QuickConnectAvailable":true,"EnableMetrics":false,"TrickplayOptions":{"EnableHwAcceleration":false,""" +
@@ -282,6 +316,7 @@ class FakeJellyfin : Dispatcher() {
             """"Qscale":4,"JpegQuality":90,"ProcessThreads":1}}"""
 
     /** The network configuration, as `/System/Configuration/network` answers it and a save replaces it. */
+    @Volatile
     var networkConfiguration =
         """{"EnableHttps":false,"RequireHttps":false,"CertificatePath":"","CertificatePassword":"s3cret","InternalHttpPort":8096,""" +
             """"InternalHttpsPort":8920,"PublicHttpPort":8096,"PublicHttpsPort":8920,"AutoDiscovery":true,"EnableUPnP":false,""" +
@@ -291,6 +326,7 @@ class FakeJellyfin : Dispatcher() {
             """"PublishedServerUriBySubnet":[],"BaseUrl":"","RemoteIPFilter":[],"IsRemoteIPFilterBlacklist":false,"FutureOption":{"keep":"me"}}"""
 
     /** The encoding configuration, as `/System/Configuration/encoding` answers it and a save replaces it. */
+    @Volatile
     var encodingConfiguration =
         """{"HardwareAccelerationType":"qsv","VaapiDevice":"/dev/dri/renderD128","QsvDevice":"","EnableHardwareEncoding":true,""" +
             """"AllowHevcEncoding":false,"EnableIntelLowPowerHevcHwEncoder":false,"EnableEnhancedNvdecDecoder":true,""" +
@@ -307,17 +343,20 @@ class FakeJellyfin : Dispatcher() {
             """"FutureOption":{"keep":"me"}}"""
 
     /** The NFO configuration, as `/System/Configuration/xbmcmetadata` answers it and a save replaces it. */
+    @Volatile
     var nfoConfiguration =
         """{"UserId":null,"ReleaseDateFormat":"yyyy-MM-dd","SaveImagePathsInNfo":false,"EnablePathSubstitution":true,""" +
             """"EnableExtraThumbsDuplication":false,"FutureOption":{"keep":"me"}}"""
 
     /** The login branding, as `/System/Configuration/branding` answers it and a save replaces it. */
+    @Volatile
     var brandingConfiguration = """{"LoginDisclaimer":"","CustomCss":"","SplashscreenEnabled":false}"""
 
     /**
      * The Live TV configuration, as `/System/Configuration/livetv` answers it: an M3U tuner whose address carries its account, an
      * HDHomeRun, an XMLTV guide and a Schedules Direct one whose `Password` is a stored hash.
      */
+    @Volatile
     var liveTvConfiguration =
         """{"GuideDays":7,"RecordingPath":"/recordings","MovieRecordingPath":"","PrePaddingSeconds":0,"PostPaddingSeconds":180,""" +
             """"EnableRecordingSubfolders":false,"SaveRecordingNFO":true,"FutureOption":{"keep":"me"},"TunerHosts":[""" +
@@ -327,27 +366,35 @@ class FakeJellyfin : Dispatcher() {
             """{"Id":"g2","Type":"SchedulesDirect","Username":"alice","Password":"5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8"}]}"""
 
     /** The status `POST /LiveTv/ListingProviders` answers with, 200 when it keeps the provider; the server answers 500 for one it cannot read. */
+    @Volatile
     var listingSaveStatus = 200
 
     /** What `/LiveTv/ListingProviders/SchedulesDirect/Countries` answers: Schedules Direct's own JSON, regions each holding countries. */
+    @Volatile
     var sdCountries =
         """{"North America":[{"fullName":"United States","shortName":"USA","postalCodeExample":"90210","postalCode":"d"}],""" +
             """"Europe":[{"fullName":"United Kingdom","shortName":"GBR","postalCodeExample":"SW1A 1AA","postalCode":"x"}]}"""
 
     /** What `/LiveTv/ListingProviders/Lineups` answers, or the status code that replaces it. An empty list is also what a failed login gives. */
+    @Volatile
     var sdLineups = """[{"Name":"Comcast Digital","Id":"USA-NY12345-X"},{"Name":"Dish Network","Id":"USA-DISH-X"}]"""
+
+    @Volatile
     var sdLineupsStatus = 200
 
     /** The status `POST /LiveTv/TunerHosts` answers with, 200 when it keeps the host; the server answers 500 for one it cannot reach. */
+    @Volatile
     var tunerSaveStatus = 200
 
     /** The tuners `GET /LiveTv/Tuners/Discover` finds. */
+    @Volatile
     var discoveredTuners = """[{"Type":"hdhomerun","Url":"http://192.168.1.77","FriendlyName":"HDHomeRun PRIME","DeviceId":"1070A1B2"}]"""
 
     /**
      * What `/LiveTv/ChannelMappingOptions` answers: three guide channels and three tuner channels, the first two paired by the
      * server (the second by a mapping an administrator made, the first by name). `POST /LiveTv/ChannelMappings` changes it.
      */
+    @Volatile
     var channelMappingOptions =
         """{"ProviderName":"XMLTV","ProviderChannels":[{"Name":"BBC One","Id":"p1"},{"Name":"BBC Two","Id":"p2"},""" +
             """{"Name":"ITV","Id":"p3"}],""" +
@@ -357,25 +404,34 @@ class FakeJellyfin : Dispatcher() {
             """"Mappings":[{"Name":"c2","Value":"p2"}]}"""
 
     /** The status the two channel mapping calls answer with, 200 when they work. */
+    @Volatile
     var channelMappingStatus = 200
 
     /** What `/LiveTv/GuideInfo` answers, or the status code that replaces it. */
+    @Volatile
     var guideInfo = """{"StartDate":"2026-11-01T00:00:00.0000000Z","EndDate":"2026-11-08T00:00:00.0000000Z"}"""
+
+    @Volatile
     var guideInfoStatus = 200
 
     /** The user's password, as `/Users/Password` checks and changes it. */
+    @Volatile
     var password = "old-secret"
 
     /** `/Sessions`: one stream playing, a movie being transcoded, and a session playing nothing. */
+    @Volatile
     var sessions = SESSIONS
 
     /** The session ids `/Sessions?controllableByUserId=` answers with; null answers every session, as a server with no limits would. */
+    @Volatile
     var controllableSessionIds: Set<String>? = null
 
     /** `/ScheduledTasks`: the library scan, an idle task that last failed, and a hidden one. */
+    @Volatile
     var scheduledTasks = TASKS
 
     /** The activity log, newest first: `/System/ActivityLog/Entries` pages through it. */
+    @Volatile
     var activityEntries: List<String> =
         (1..5).map { n ->
             """{"Id":${6 - n},"Name":"Entry ${6 - n}","Type":"SessionStarted","Severity":"Information",""" +
@@ -383,9 +439,11 @@ class FakeJellyfin : Dispatcher() {
         }
 
     /** Whether the activity log filters by `severity`, as Jellyfin 12 does. Off, it ignores the parameter, as an older server does. */
+    @Volatile
     var activityFiltersSeverity = false
 
     /** `/System/Logs`: the log files, as the server lists them. */
+    @Volatile
     var logFiles: List<String> =
         listOf(
             """{"Name":"log_20261030.log","Size":2048,"DateModified":"2026-10-30T23:00:00Z"}""",
@@ -393,6 +451,7 @@ class FakeJellyfin : Dispatcher() {
         )
 
     /** `/System/Logs/Log?name=`: each log's text, by file name. */
+    @Volatile
     var logTexts: MutableMap<String, String> =
         mutableMapOf(
             "log_20261031.log" to
@@ -404,6 +463,7 @@ class FakeJellyfin : Dispatcher() {
         )
 
     /** `/Auth/Keys`: the API keys, each `AccessToken`, `AppName` and `DateCreated`. A POST adds one. */
+    @Volatile
     var apiKeys: List<String> =
         listOf(
             """{"AccessToken":"aaaabbbbccccdddd1111","AppName":"Sonarr","DateCreated":"2026-10-01T10:00:00Z"}""",
@@ -411,6 +471,7 @@ class FakeJellyfin : Dispatcher() {
         )
 
     /** `/Plugins`: an active plugin with a settings page, and one that was superseded. Enable, Disable and DELETE change it. */
+    @Volatile
     var plugins: List<String> =
         listOf(
             """{"Name":"AniDB","Version":"1.2.3.4","Description":"Anime metadata.","Id":"a1b2c3d4-e5f6-0718-293a-4b5c6d7e8f90",""" +
@@ -420,10 +481,12 @@ class FakeJellyfin : Dispatcher() {
         )
 
     /** `/web/ConfigurationPages`: the settings pages plugins serve, by the plugin that serves each. */
+    @Volatile
     var configurationPages =
         """[{"Name":"AniDB settings","PluginId":"a1b2c3d4-e5f6-0718-293a-4b5c6d7e8f90"}]"""
 
     /** `/Packages`: the catalog, one package with a version for this server and a newer one, and one for a newer server only. */
+    @Volatile
     var packages =
         """[
         {"name":"Playback Reporting","guid":"5c0f1d6a1e8b4b5aa5d0c7f2b8e1d3a9","description":"Reports playback.","overview":"Shows who watched what.",
@@ -437,10 +500,12 @@ class FakeJellyfin : Dispatcher() {
         ]"""
 
     /** `/Repositories`: where the catalog comes from. A POST replaces the list. */
+    @Volatile
     var repositories =
         """[{"Name":"Jellyfin Stable","Url":"https://repo.example/stable.json","Enabled":true,"FutureField":1}]"""
 
     /** `/Devices`: a TV seen most recently, a browser, and one with no id, which isn't a device. */
+    @Volatile
     var devices: List<String> =
         listOf(
             """{"Id":"d-web","Name":"Firefox","AppName":"Jellyfin Web","LastUserName":"sam","DateLastActivity":"2026-10-30T10:00:00Z"}""",
@@ -449,14 +514,14 @@ class FakeJellyfin : Dispatcher() {
         )
 
     /** The names an admin gave devices, by id. */
-    val deviceNames = mutableMapOf<String, String>()
+    val deviceNames: MutableMap<String, String> = shared()
 
     /**
      * `/Users`, by id: Claude, the signed-in administrator (`user-1`), and Sam, who sees one library.
      * A policy saved here replaces the user's whole policy, as the server does.
      */
     val serverUsers: MutableMap<String, JsonObject> =
-        mutableMapOf(
+        shared(
             "user-1" to
                 user(
                     "user-1",
@@ -472,14 +537,16 @@ class FakeJellyfin : Dispatcher() {
         )
 
     /** Passwords an administrator set, by user id. */
-    val adminPasswords = mutableMapOf<String, String>()
+    val adminPasswords: MutableMap<String, String> = shared()
 
     /** `/System/Info`, as an administrator reads it. */
+    @Volatile
     var systemInfo =
         """{"ServerName":"truenas","Version":"10.11.6","LocalAddress":"http://192.168.1.10:8096","SystemArchitecture":"X64",""" +
             """"OperatingSystemDisplayName":"Linux","HasUpdateAvailable":false,"HasPendingRestart":true,"CanSelfRestart":true}"""
 
     /** `/System/Info/Storage`: the disk space of the server's folders, and of each library's. */
+    @Volatile
     var systemStorage =
         """{"ProgramDataFolder":{"Path":"/config","FreeSpace":400,"UsedSpace":100,"StorageType":"ext4","DeviceId":"a"},""" +
             """"CacheFolder":{"Path":"/cache","FreeSpace":5,"UsedSpace":95,"StorageType":"zfs","DeviceId":"b"},""" +
@@ -488,9 +555,11 @@ class FakeJellyfin : Dispatcher() {
             """{"Name":"Empty","Folders":[]},{"Id":"x"}]}"""
 
     /** `/Items/Counts`, as the signed-in user's library answers it. */
+    @Volatile
     var itemCounts = """{"MovieCount":120,"SeriesCount":14,"EpisodeCount":900,"SongCount":0}"""
 
     /** `/Backup`: the backups, each a manifest with its `Path`. A create adds one, which a restore can then name. */
+    @Volatile
     var backups: List<String> =
         listOf(
             backupManifest("jellyfin-backup-20261020090000.zip", "2026-10-20T09:00:00Z", "10.11.5.0", metadata = true),
@@ -498,18 +567,28 @@ class FakeJellyfin : Dispatcher() {
         )
 
     /** How long a create holds its answer back, as the server writes the archive before it answers. */
+    @Volatile
     var backupCreateDelayMillis = 0L
 
     /** Whether a restore leaves this session's token unknown to the restored database, as one made after the backup is. */
+    @Volatile
     var restoreEndsSession = false
+
+    @Volatile
     private var sessionEnded = false
 
     /** How many `/System/Info/Public` reads a restart refuses, as the server goes down and comes back. */
+    @Volatile
     var restartDownPolls = 2
+
+    @Volatile
     private var down = 0
 
     /** The one Quick Connect code another device is waiting to have approved. */
+    @Volatile
     var approvableCode = "654321"
+
+    @Volatile
     var playbackInfo: String = directPlayInfo()
 
     init {
@@ -520,6 +599,8 @@ class FakeJellyfin : Dispatcher() {
     val baseUrl: String get() = server.url("/").toString().trimEnd('/')
 
     private val socketLock = Any()
+
+    @Volatile
     private var closing = false
 
     /**
@@ -810,7 +891,7 @@ class FakeJellyfin : Dispatcher() {
                 json(groupingOptions)
             path == "/Users/Password" && "CurrentPw" !in request.body?.utf8().orEmpty() -> adminPassword(request)
             path == "/Users/Password" -> changePassword(request)
-            path == "/Users" -> json(serverUsers.values.joinToString(",", "[", "]") { it.toString() })
+            path == "/Users" -> json(synchronized(serverUsers) { serverUsers.values.joinToString(",", "[", "]") { it.toString() } })
             path == "/Users/New" -> createUser(request)
             path.startsWith("/Users/") && path.endsWith("/Policy") -> savePolicy(path.split('/')[2], request)
             path.startsWith("/Users/") && request.method == "GET" && path.count { it == '/' } == 2 ->
@@ -1101,9 +1182,15 @@ class FakeJellyfin : Dispatcher() {
                 .jsonObject
                 .getValue("Name")
                 .jsonPrimitive.content
-        val id = "user-${serverUsers.size + 1}"
-        serverUsers[id] = user(id, name, """{"IsAdministrator":false,"IsDisabled":false,"EnableAllFolders":true,"EnabledFolders":[]}""")
-        return json(serverUsers.getValue(id).toString())
+        // Two creates at once must not take the same id: the count and the insert are one step.
+        val created =
+            synchronized(serverUsers) {
+                val id = "user-${serverUsers.size + 1}"
+                user(id, name, """{"IsAdministrator":false,"IsDisabled":false,"EnableAllFolders":true,"EnabledFolders":[]}""").also {
+                    serverUsers[id] = it
+                }
+            }
+        return json(created.toString())
     }
 
     private fun libraryCall(
@@ -1246,6 +1333,7 @@ class FakeJellyfin : Dispatcher() {
     }
 
     /** Whether Enable and Disable leave the plugin as `Restart`, which is what a real server reports. */
+    @Volatile
     var pluginsReportRestart = false
 
     /** Enable or Disable on `/Plugins/{id}/{version}/…`: the plugin's status becomes [status]. */
@@ -1275,6 +1363,7 @@ class FakeJellyfin : Dispatcher() {
      * Whether the branding configuration serves `SplashscreenLocation`. The real one does from 10.11; before that the property is
      * `[JsonIgnore]`d ("Not served via the API"), so the page cannot tell an image of the user's own from the default.
      */
+    @Volatile
     var servesSplashLocation = true
 
     /**
@@ -1565,3 +1654,9 @@ private const val HOLD_LIMIT_SECONDS = 20L
 
 private const val AWAIT_BODY_MILLIS = 10_000L
 private const val AWAIT_BODY_POLL_MILLIS = 10L
+
+/** A map a test fills from its thread and the server reads from another: synchronized, and in insertion order like `mutableMapOf`. */
+private fun <K, V> shared(vararg entries: Pair<K, V>): MutableMap<K, V> = Collections.synchronizedMap(LinkedHashMap(mapOf(*entries)))
+
+/** A set a test fills from its thread and the server reads from another: synchronized, and in insertion order like `mutableSetOf`. */
+private fun <T> sharedSet(): MutableSet<T> = Collections.synchronizedSet(LinkedHashSet())
