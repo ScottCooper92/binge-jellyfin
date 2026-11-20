@@ -330,7 +330,7 @@ internal fun ConsoleHost(
         signedOut = { JellyfinRoot(state, homeActions) },
         home = { JellyfinRoot(state, homeActions) },
         // Home's rows come from the user's own server, so the tab needs a session. A card opens its title page and Continue watching
-        // resumes it, both once those screens exist (#753, #756): until then neither has anywhere to go.
+        // resumes it through PlayStartHost.
         homeTab =
             (state as? UiState.SignedIn)?.let { signed ->
                 {

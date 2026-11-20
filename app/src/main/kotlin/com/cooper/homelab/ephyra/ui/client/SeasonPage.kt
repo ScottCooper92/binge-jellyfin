@@ -21,8 +21,8 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.player.api.PlayTitle
 
 /**
- * A season's page, over the shell. [onOpenSeries] opens the series it belongs to and [onOpenEpisode] one of its episodes. The play button does
- * nothing yet: playing in the app is #756. The view model is the page's own, keyed by the season so two seasons on the stack keep their own.
+ * A season's page, over the shell. [onOpenSeries] opens the series it belongs to and [onOpenEpisode] one of its episodes. The play button
+ * plays the season's episode through [PlayStartHost]. The view model is the page's own, keyed by the season so two seasons on the stack keep their own.
  */
 @Composable
 fun SeasonPage(

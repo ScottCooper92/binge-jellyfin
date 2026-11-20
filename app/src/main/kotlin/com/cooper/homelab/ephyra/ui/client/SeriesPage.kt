@@ -23,8 +23,8 @@ import com.cooper.homelab.player.api.PlayTitle
 
 /**
  * A series' page, over the shell. [onOpenTitle] opens a similar series, which is of the kind it is given; [onOpenSeason] opens a season and [onOpenEpisode] an episode;
- * [onOpenPerson] opens a person. The play button does nothing yet: playing in the app is #756. The view model is the page's own,
- * keyed by the series so two series on the stack keep their own.
+ * [onOpenPerson] opens a person. The play button plays the episode to resume, else the next one, or the first when all are watched.
+ * The view model is the page's own, keyed by the series so two series on the stack keep their own.
  */
 @Composable
 fun SeriesPage(

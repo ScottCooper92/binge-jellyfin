@@ -21,8 +21,8 @@ import com.cooper.homelab.player.api.PlayTitle
 
 /**
  * An episode's page, over the shell. [onOpenEpisode] opens another episode of its season;
- * [onOpenPerson] opens a person. The play button does nothing yet: playing in the app is #756. The view model is the page's own,
- * keyed by the episode so two episodes on the stack keep their own.
+ * [onOpenPerson] opens a person. The play button plays the episode through [PlayStartHost], with [serverAddress] and [onPlay].
+ * The view model is the page's own, keyed by the episode so two episodes on the stack keep their own.
  */
 @Composable
 fun EpisodePage(
