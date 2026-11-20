@@ -12,4 +12,12 @@
         <item quantity="one">%1$d subtitle</item>
         <item quantity="other">%1$d subtitles</item>
     </plurals>
+    <string name="client_home_row_continue_watching">Continue watching</string>
+    <string name="client_home_row_next_up">Next up</string>
+    <string name="client_home_row_latest">Latest in %1$s</string>
+    <string name="client_home_loading_row">Loading</string>
+    <string name="client_home_caption_episode">S%1$d, E%2$d · %3$s</string>
+    <string name="client_home_empty">Nothing to show yet. Titles you watch and add will appear here.</string>
+    <string name="client_libraries_title">Libraries</string>
+    <string name="client_libraries_empty">Movie and series libraries on this server will appear here.</string>
 </resources>

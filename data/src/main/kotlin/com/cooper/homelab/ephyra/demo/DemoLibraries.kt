@@ -5,6 +5,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import java.util.UUID
 
 private const val HTTP_BAD_REQUEST = 400
@@ -44,7 +46,15 @@ internal class DemoLibraries : DemoState {
             buildJsonObject {
                 put("Id", library.string("ItemId").orEmpty())
                 put("Name", library.string("Name").orEmpty())
-                library.string("CollectionType")?.let { put("CollectionType", it) }
+                val type = library.string("CollectionType")
+                type?.let { put("CollectionType", it) }
+                val id = library.string("ItemId").orEmpty()
+                // Movies has all three pictures, as a library with artwork does; every other library has only a Primary.
+                putJsonObject("ImageTags") {
+                    put("Primary", "p-$id")
+                    if (type == "movies") put("Thumb", "t-$id")
+                }
+                if (type == "movies") putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id")) }
             }
         }
 

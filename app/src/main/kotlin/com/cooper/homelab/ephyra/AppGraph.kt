@@ -15,6 +15,8 @@ import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
 import com.cooper.homelab.core.flags.FeatureFlags
 import com.cooper.homelab.core.flags.FirebaseRemoteFlagSource
+import com.cooper.homelab.core.flags.FlagPreferenceGate
+import com.cooper.homelab.core.flags.PreferenceGate
 import com.cooper.homelab.core.flags.RemoteFeatureFlags
 import com.cooper.homelab.core.flags.SharedFlags
 import com.cooper.homelab.core.flags.StaticFlagOverrides
@@ -58,8 +60,6 @@ import com.cooper.homelab.ephyra.auth.forLibrary
 import com.cooper.homelab.ephyra.demo.DemoTransport
 import com.cooper.homelab.ephyra.flags.ClientEnabled
 import com.cooper.homelab.ephyra.flags.ClientPrefs
-import com.cooper.homelab.ephyra.flags.FlagPreferenceGate
-import com.cooper.homelab.ephyra.flags.PreferenceGate
 import com.cooper.homelab.ephyra.flags.RemoteFlagKeys
 import com.cooper.homelab.ephyra.notifications.ActivityChecker
 import com.cooper.homelab.ephyra.notifications.ActivitySwitch

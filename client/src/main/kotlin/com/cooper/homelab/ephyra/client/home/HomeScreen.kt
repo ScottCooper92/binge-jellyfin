@@ -42,7 +42,7 @@ fun HomeScreen(
 ) {
     when (state) {
         HomeUiState.Loading -> HomeSkeleton(modifier, contentPadding)
-        HomeUiState.Empty -> EmptyScreen(stringResource(R.string.home_empty), modifier.padding(contentPadding))
+        HomeUiState.Empty -> EmptyScreen(stringResource(R.string.client_home_empty), modifier.padding(contentPadding))
         is HomeUiState.Error ->
             ErrorScreen(state.failure.errorKind(), onRetry.takeIf { state.failure.canRetry() }, modifier.padding(contentPadding))
         is HomeUiState.Ready -> HomeContent(state, imageUrl, onOpen, onResume, modifier, contentPadding)
@@ -89,7 +89,7 @@ fun HomeContent(
                 )
             }
         }
-        items(state.pending) { CarouselSkeleton(description = stringResource(R.string.home_loading_row)) }
+        items(state.pending) { CarouselSkeleton(description = stringResource(R.string.client_home_loading_row)) }
     }
 }
 
@@ -108,7 +108,7 @@ fun HomeSkeleton(
             )
         }
         items(SKELETON_ROWS) { index ->
-            CarouselSkeleton(modifier = Modifier.firstRowAnchor(index), description = stringResource(R.string.home_loading_row))
+            CarouselSkeleton(modifier = Modifier.firstRowAnchor(index), description = stringResource(R.string.client_home_loading_row))
         }
     }
 }
@@ -129,9 +129,9 @@ private fun HomeHero.toHeroItem(imageUrl: String?): HeroItem =
 @Composable
 private fun HomeRowKey.title(): String =
     when (this) {
-        HomeRowKey.ContinueWatching -> stringResource(R.string.home_row_continue_watching)
-        HomeRowKey.NextUp -> stringResource(R.string.home_row_next_up)
-        is HomeRowKey.Latest -> stringResource(R.string.home_row_latest, libraryName)
+        HomeRowKey.ContinueWatching -> stringResource(R.string.client_home_row_continue_watching)
+        HomeRowKey.NextUp -> stringResource(R.string.client_home_row_next_up)
+        is HomeRowKey.Latest -> stringResource(R.string.client_home_row_latest, libraryName)
     }
 
 /** The caption in words, or null when the card has none. */
@@ -141,7 +141,7 @@ private fun HomeCaption.text(): String? =
         HomeCaption.None -> null
         is HomeCaption.Year -> year.toString()
         is HomeCaption.Episode ->
-            if (season != null && episode != null) stringResource(R.string.home_caption_episode, season, episode, name) else name
+            if (season != null && episode != null) stringResource(R.string.client_home_caption_episode, season, episode, name) else name
     }
 
 private fun HomeRowKey.rowId(): String =
