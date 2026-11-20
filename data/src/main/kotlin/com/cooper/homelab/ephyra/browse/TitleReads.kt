@@ -178,7 +178,7 @@ private suspend fun JellyfinClient.scanCollectionsOf(
                                 )
                             decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items
                         }
-                    box.takeIf { _ -> members.any { it.id == id } }
+                    box.takeIf { members.any { it.id == id } }
                 }
             }.awaitAll()
             .filterNotNull()
