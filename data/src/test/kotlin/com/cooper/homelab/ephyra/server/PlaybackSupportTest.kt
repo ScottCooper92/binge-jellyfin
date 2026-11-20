@@ -25,6 +25,12 @@ class PlaybackSupportTest {
     private fun source(json: String) = Json.parseToJsonElement(json).jsonObject
 
     @Test
+    fun `there are ten thousand ticks in a millisecond and a thousand milliseconds in the second`() {
+        assertEquals(10_000L, TICKS_PER_MILLI)
+        assertEquals(TICKS_PER_SECOND, 1_000 * TICKS_PER_MILLI)
+    }
+
+    @Test
     fun `a key in an address is taken out in either spelling, and put back only where it is asked for and absent`() {
         assertEquals("https://jf.example/a?x=1", "https://jf.example/a?x=1&ApiKey=t&api_key=u".withoutApiKey())
         assertEquals("https://jf.example/a", "https://jf.example/a?API_KEY=t".withoutApiKey())
