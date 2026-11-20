@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.client.title
 import android.content.res.Resources
 import android.text.format.Formatter
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.BingeChoice
@@ -24,8 +25,10 @@ fun VersionSheet(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val resources = LocalContext.current.resources
+    // Read first, so a change of configuration recomposes the sheet and its strings follow the new locale.
+    LocalConfiguration.current
     val context = LocalContext.current
+    val resources = context.resources
     val choices =
         versions.mapIndexed { index, version ->
             BingeChoice(
@@ -36,7 +39,7 @@ fun VersionSheet(
             )
         }
     BingeChoiceSheet(
-        title = stringResource(R.string.movie_versions_title),
+        title = stringResource(R.string.client_movie_versions_title),
         choices = BingeChoiceList.Ready(choices),
         selected = selected,
         onSelect = onSelect,
@@ -54,7 +57,7 @@ fun versionTitle(
 ): String =
     version.name
         ?: listOfNotNull(version.resolution?.label, version.range).joinToString(SEPARATOR).ifBlank { null }
-        ?: resources.getString(R.string.movie_version_number, index + 1)
+        ?: resources.getString(R.string.client_movie_version_number, index + 1)
 
 /**
  * What tells this file from another: its container, size, the audio it opens with and how many subtitles it carries. [formatSize]
@@ -71,6 +74,6 @@ fun versionSummary(
         version.container?.uppercase(),
         version.sizeBytes?.let(formatSize),
         audio?.label,
-        subtitles.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.movie_version_subtitles, it, it) },
+        subtitles.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.client_movie_version_subtitles, it, it) },
     ).joinToString(SEPARATOR).ifBlank { null }
 }

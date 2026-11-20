@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="movie_versions_title">Choose a version</string>
-    <string name="movie_version_number">Version %1$d</string>
-    <plurals name="movie_version_subtitles">
+    <string name="client_movie_versions_title">Choose a version</string>
+    <string name="client_movie_version_number">Version %1$d</string>
+    <plurals name="client_movie_version_subtitles">
         <item quantity="one">%1$d subtitle</item>
         <item quantity="other">%1$d subtitles</item>
     </plurals>
