@@ -69,6 +69,9 @@ class FakeJellyfin : Dispatcher() {
     val requests = CopyOnWriteArrayList<RecordedRequest>()
     val status: MutableMap<String, Int> = shared()
 
+    /** What `/MediaSegments/{itemId}` answers, by item id: the body as the server writes it. An item with none has no segments. */
+    val segments: MutableMap<String, String> = shared()
+
     /** The browse reads: a library's titles, paged, ordered and filtered, and the filter choices. */
     val browse = FakeBrowse()
 
@@ -1018,6 +1021,7 @@ class FakeJellyfin : Dispatcher() {
                 paged(request, items.filter { it.type == "Episode" && !it.played }.distinctBy { it.seriesId })
             path.startsWith("/UserPlayedItems/") -> setPlayed(path.removePrefix("/UserPlayedItems/"), request.method == "POST")
             path.matches(OLD_PLAYED_ROUTE) -> setPlayed(path.substringAfterLast('/'), request.method == "POST")
+            path.startsWith("/MediaSegments/") -> json(segments[path.substringAfterLast('/')] ?: """{"Items":[],"TotalRecordCount":0}""")
             path.endsWith("/PlaybackInfo") -> json(playbackInfo)
             path.startsWith("/Sessions/Playing") -> MockResponse(code = 204)
             else -> MockResponse(code = 404)
