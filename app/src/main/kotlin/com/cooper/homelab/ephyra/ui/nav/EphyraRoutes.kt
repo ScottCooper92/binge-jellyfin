@@ -50,6 +50,47 @@ data class LibraryRoute(
 ) : EphyraRoute
 
 /**
+ * A title's page, above [ShellRoute]: opened from a card or a tile, it covers the bar or rail on every width and Back closes it. A key
+ * carries the item's id alone and no screen state, so it survives a process death and a hand-off from another app can build a back
+ * stack of them. Its screen is the host's `title` slot; the key names only which kind of page it is.
+ */
+sealed interface TitleRoute : EphyraRoute {
+    val itemId: String
+}
+
+@Serializable
+data class MovieRoute(
+    override val itemId: String,
+) : TitleRoute
+
+@Serializable
+data class SeriesRoute(
+    override val itemId: String,
+) : TitleRoute
+
+@Serializable
+data class SeasonRoute(
+    override val itemId: String,
+) : TitleRoute
+
+@Serializable
+data class EpisodeRoute(
+    override val itemId: String,
+) : TitleRoute
+
+/** A collection (a box set) of movies. */
+@Serializable
+data class CollectionRoute(
+    override val itemId: String,
+) : TitleRoute
+
+/** A person: an actor, a director, a writer. */
+@Serializable
+data class PersonRoute(
+    override val itemId: String,
+) : TitleRoute
+
+/**
  * The signed-in client, which replaces [HubRoute] at the root while the client is on (the user has not opted out, and the flag
  * offers it). Its entry holds the tab bar and each tab's root. The console's home is the Server tab's root, and its pages and
  * items are the keys above this one. With the client off there is no shell: [HubRoute] is the whole app. See [settleHome].

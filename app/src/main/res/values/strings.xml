@@ -1534,4 +1534,5 @@
     <string name="shell_tab_search">Search</string>
     <string name="shell_tab_server">Server</string>
     <string name="shell_placeholder_message">This screen is on its way.</string>
+    <string name="title_placeholder_title">Title</string>
 </resources>
