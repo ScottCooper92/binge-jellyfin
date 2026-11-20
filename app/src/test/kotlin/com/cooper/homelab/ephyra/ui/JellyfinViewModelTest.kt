@@ -29,6 +29,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -59,10 +60,13 @@ import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.net.ServerSocket
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLProtocolException
+import com.cooper.homelab.core.server.connection.SecretCipher as LibraryCipher
 
 /** Setup and settings against a fake server. The server calls run on a real IO thread, so each step waits for its state. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -86,7 +90,10 @@ class JellyfinViewModelTest {
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() {
+        teardown.close(jellyfin)
+        mainExecutor?.shutdownNow()
+    }
 
     @Volatile
     private var found: List<DiscoveredServer> = emptyList()
@@ -116,13 +123,14 @@ class JellyfinViewModelTest {
         cleartext: CleartextConsent = CleartextConsent.None,
         savedState: SavedStateHandle = SavedStateHandle(),
         linkStash: LinkStash = NoLinkStash,
+        cipher: LibraryCipher = PlainCipher.forLibrary(),
     ) = made(
         JellyfinViewModel(
             sessions,
             over,
             index,
             dispatcher = Dispatchers.IO,
-            cipher = PlainCipher.forLibrary(),
+            cipher = cipher,
             discover = { found },
             quickConnectPollMillis = 10L,
             analytics = analytics,
@@ -1033,6 +1041,46 @@ class JellyfinViewModelTest {
         }
     }
 
+    private var mainExecutor: ExecutorService? = null
+
+    /**
+     * Main as a device has it: a thread of its own, which work resumes on. The class's own Main runs a coroutine on whichever thread
+     * resumes it, so work the view model hands to the IO dispatcher would come back to it there, and a test could not tell main-thread
+     * work from the rest. Ended with the test, after the teardown.
+     */
+    private fun useAMainThread() {
+        val executor = Executors.newSingleThreadExecutor { Thread(it, MAIN_THREAD) }
+        mainExecutor = executor
+        Dispatchers.setMain(executor.asCoroutineDispatcher())
+    }
+
+    /** A stash that notes whether each of its reads and clears ran on the main thread. */
+    private class ThreadNotingStash(
+        private val inner: MemoryStash,
+    ) : LinkStash {
+        val onMain = CopyOnWriteArrayList<Boolean>()
+
+        override fun read(): String? = inner.read().also { onMain += Thread.currentThread().name.startsWith(MAIN_THREAD) }
+
+        override fun write(value: String) = inner.write(value)
+
+        override fun clear() = inner.clear()
+    }
+
+    /** A cipher that notes whether each decryption ran on the main thread: it is a Keystore call. */
+    private class ThreadNotingCipher(
+        private val inner: LibraryCipher,
+    ) : LibraryCipher {
+        val decryptedOnMain = CopyOnWriteArrayList<Boolean>()
+
+        override fun encrypt(plaintext: String): String = inner.encrypt(plaintext)
+
+        override fun decrypt(ciphertext: String): String? =
+            inner.decrypt(ciphertext).also {
+                decryptedOnMain += Thread.currentThread().name.startsWith(MAIN_THREAD)
+            }
+    }
+
     /** Starts Quick Connect on the sign-in step and returns once its code shows. */
     private fun JellyfinViewModel.waitingForApproval(): UiState.SignIn {
         toSignIn()
@@ -1312,6 +1360,37 @@ class JellyfinViewModelTest {
 
         assertNull(stash.value)
         assertEquals(jellyfin.baseUrl, runBlocking { sessions.current() }?.baseUrl)
+    }
+
+    @Test
+    fun `a pending Quick Connect wait is found, read and decrypted off the main thread at launch`() {
+        useAMainThread()
+        val stash = MemoryStash()
+        val first = viewModel(linkStash = stash)
+        first.waitingForApproval()
+        runBlocking { requireNotNull(first.viewModelScope.coroutineContext[Job]).cancelAndJoin() }
+        assertNotNull(stash.value)
+
+        val notedStash = ThreadNotingStash(stash)
+        val notedCipher = ThreadNotingCipher(PlainCipher.forLibrary())
+        val second = viewModel(linkStash = notedStash, cipher = notedCipher)
+        second.await<UiState.SignIn> { it.quickConnectCode != null }
+
+        assertTrue("the record was read", notedStash.onMain.isNotEmpty())
+        assertEquals("no read of it ran on the main thread", emptyList<Boolean>(), notedStash.onMain.filter { it })
+        assertTrue("the record was decrypted", notedCipher.decryptedOnMain.isNotEmpty())
+        assertEquals("no decryption of it ran on the main thread", emptyList<Boolean>(), notedCipher.decryptedOnMain.filter { it })
+    }
+
+    @Test
+    fun `the launch finds no wait without waiting on the main thread, and the address step shows at once`() {
+        useAMainThread()
+        val notedStash = ThreadNotingStash(MemoryStash())
+
+        val vm = viewModel(linkStash = notedStash)
+
+        vm.await<UiState.EnterServer>()
+        assertEquals(emptyList<Boolean>(), notedStash.onMain.filter { it })
     }
 
     @Test
@@ -1775,6 +1854,9 @@ class JellyfinViewModelTest {
         assertEquals(before, libraryReads())
     }
 }
+
+/** The thread name Main has in the tests that give it a thread of its own; a coroutine on it adds its own name after this. */
+private const val MAIN_THREAD = "test-main"
 
 private const val PUBLIC_USERS =
     """[{"Name":"Kid","Id":"u-kid","HasPassword":false},{"Name":"Mum","Id":"u-mum","HasPassword":true}]"""

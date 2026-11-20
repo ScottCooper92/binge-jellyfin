@@ -417,12 +417,15 @@ class JellyfinViewModel(
             val session = sessions.current()
             // A session is the app's own state to come back to. Without one, a Quick Connect wait the last process left is picked
             // up where it was; with none, the steps before a session are what the saved draft puts back.
+            // Finding the wait, and reading and decrypting it (a Keystore call), is disk and crypto work: it runs on the IO dispatcher,
+            // and the screen shows its loading step until it has said what comes back, so no frame waits on the main thread for it.
+            val waiting = session == null && withContext(dispatcher) { linkStash.read() != null }
             when {
                 session != null -> {
                     withContext(dispatcher) { linkStash.clear() }
                     setup.restore(session)
                 }
-                withContext(dispatcher) { linkStash.read() != null } -> setup.links.restore()
+                waiting -> withContext(dispatcher) { setup.links.restore() }
                 else -> drafts.restoreInto(setup)
             }
             // Nothing is kept once a session exists: the draft is for the steps that lead to one.
