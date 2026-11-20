@@ -116,4 +116,18 @@
         <item quantity="many">%1$d aplicados</item>
         <item quantity="other">%1$d aplicados</item>
     </plurals>
+    <string name="client_search_title">Buscar</string>
+    <string name="client_search_placeholder">Buscar en tu biblioteca</string>
+    <string name="client_search_idle_message">Busca una película, una serie, un episodio o una persona.</string>
+    <string name="client_search_type_all">Todo</string>
+    <string name="client_search_type_movies">Películas</string>
+    <string name="client_search_type_series">Series</string>
+    <string name="client_search_type_episodes">Episodios</string>
+    <string name="client_search_type_people">Personas</string>
+    <string name="client_search_kind_movie">Película</string>
+    <string name="client_search_kind_series">Serie</string>
+    <string name="client_search_kind_episode">Episodio</string>
+    <string name="client_search_episode_of">%1$s · T%2$d, E%3$d</string>
+    <string name="client_search_no_results">Nada coincide con «%1$s».</string>
+    <string name="client_search_type_empty">Ninguno de los resultados hasta ahora es de este tipo.</string>
 </resources>
