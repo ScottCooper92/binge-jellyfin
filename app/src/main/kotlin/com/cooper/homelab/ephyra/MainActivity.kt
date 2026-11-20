@@ -246,7 +246,7 @@ class MainActivity : ComponentActivity() {
 
 /** The app's screens: the sign-in steps, then the home, and the pages and items open over it, on [backStack]. */
 @Composable
-private fun ConsoleHost(
+internal fun ConsoleHost(
     state: UiState,
     backStack: NavBackStack<NavKey>,
     graph: AppGraph,

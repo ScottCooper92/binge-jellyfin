@@ -79,8 +79,14 @@ class SeriesViewModel(
     /** Shows the season [seasonId], reading its episodes the first time. */
     fun selectSeason(seasonId: String) {
         val current = loaded.value as? Loaded.Series ?: return
-        loaded.value = current.copy(selectedSeasonId = seasonId)
-        if (seasonId !in current.episodes) loadEpisodes(seasonId)
+        // A season that failed before is read again, so it shows as loading, not as the old failure, until the new answer lands.
+        val reading = seasonId !in current.episodes
+        loaded.value =
+            current.copy(
+                selectedSeasonId = seasonId,
+                failedSeasons = if (reading) current.failedSeasons - seasonId else current.failedSeasons,
+            )
+        if (reading) loadEpisodes(seasonId)
     }
 
     /** Reads the shown season's episodes again, after they failed. */

@@ -104,6 +104,7 @@ fun LibrariesGrid(
                 title = tile.name,
                 imageUrl = tile.imageTag?.let { imageUrl(tile, PICTURE_WIDTH_PX) },
                 onClick = { onOpen(tile) },
+                showTitle = tile.showsName,
                 modifier = Modifier.fillMaxWidth().firstTileAnchor(index),
             )
         }

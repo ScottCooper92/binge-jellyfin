@@ -104,7 +104,8 @@ class EpisodeViewModel(
     /** The season's episodes. An episode the server gives no series for has none to list, and the row is left out. */
     private suspend fun loadSeason(episode: BrowseItem) {
         val series = episode.seriesId ?: return
-        attempt { titles.episodes(series, episode.seasonId) }
+        val season = episode.seasonId ?: return
+        attempt { titles.episodes(series, season) }
             .onSuccess { list -> loaded.update { if (it is EpisodeLoad.Loaded) it.copy(siblings = list) else it } }
             .onFailure { error ->
                 val failure = classify(error)
@@ -132,8 +133,11 @@ private fun uiState(loaded: EpisodeLoad): EpisodeUiState =
         EpisodeLoad.Loading -> EpisodeUiState.Loading
         is EpisodeLoad.Failed -> EpisodeUiState.Failed(loaded.failure)
         is EpisodeLoad.Loaded -> {
+            val item = loaded.detail.item
             val season =
                 when {
+                    // Without a series and a season there is no list to read, so there is no row: not a skeleton that never ends.
+                    item.seriesId == null || item.seasonId == null -> null
                     loaded.siblingsFailure != null -> EpisodesState.Failed(loaded.siblingsFailure)
                     loaded.siblings == null -> EpisodesState.Loading
                     else -> EpisodesState.Ready(loaded.siblings.map(::episodeUi))
