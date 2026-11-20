@@ -52,7 +52,8 @@ class FakeBrowse {
                     url.queryParameter(
                         "parentId",
                     ) != null ||
-                        url.queryParameter("personIds") != null
+                        url.queryParameter("personIds") != null ||
+                        url.queryParameter("includeItemTypes") == "BoxSet"
                 ) -> items(request)
             titles.isNotEmpty() && userDataRoute.matches(url.encodedPath) -> writeUserData(request)
 
