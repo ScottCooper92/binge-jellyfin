@@ -791,6 +791,40 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `a kill on the Quick Connect tab reopens the sign-in step on that tab, with no code asked for`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(savedState = handle)
+        vm.toSignIn()
+        vm.await<UiState.SignIn>()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.await<UiState.SignIn> { it.quickConnectSelected }
+        runBlocking { withTimeout(10_000) { while (handle.get<Boolean>("setup_quick_connect") != true) delay(5) } }
+
+        val reopened = viewModel(savedState = handle.afterKill())
+
+        val step = reopened.await<UiState.SignIn> { it.quickConnectSelected }
+        assertNull("no code is asked for on the way back", step.quickConnectCode)
+        assertFalse(step.gettingCode)
+    }
+
+    @Test
+    fun `a kill on the password tab reopens the sign-in step on the password tab`() {
+        val handle = SavedStateHandle()
+        val vm = viewModel(savedState = handle)
+        vm.toSignIn()
+        vm.await<UiState.SignIn>()
+        vm.actions.selectMethod(quickConnect = true)
+        vm.await<UiState.SignIn> { it.quickConnectSelected }
+        vm.actions.selectMethod(quickConnect = false)
+        vm.await<UiState.SignIn> { !it.quickConnectSelected }
+        runBlocking { withTimeout(10_000) { while (handle.get<Boolean>("setup_quick_connect") != false) delay(5) } }
+
+        val reopened = viewModel(savedState = handle.afterKill())
+
+        assertFalse(reopened.await<UiState.SignIn>().quickConnectSelected)
+    }
+
+    @Test
     fun `nothing is kept once a session exists, and a saved draft does not override the session`() {
         runBlocking { sessions.save(jellyfin.session()) }
         val handle = SavedStateHandle(mapOf("setup_address" to "http://elsewhere.example:8096", "setup_signing_in" to true))

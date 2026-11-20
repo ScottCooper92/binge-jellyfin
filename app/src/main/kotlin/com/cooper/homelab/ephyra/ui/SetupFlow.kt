@@ -101,6 +101,9 @@ internal class SetupFlow(
     /** What the password form held when Quick Connect was chosen, so leaving Quick Connect gives it back. */
     var typed: Map<String, String> = emptyMap()
 
+    /** The tab the sign-in step opens on once the server has been read, for a restore; used once, and only if the server offers it. */
+    var firstMode: SetupMode? = null
+
     /** The name to put in the sign-in step once the server has been read again: the account the wizard made, whose sign-in failed. */
     private var pendingName: String? = null
 
@@ -126,6 +129,16 @@ internal class SetupFlow(
         if (connect is ConnectState.SignIn && connect.form.mode == null) {
             flow.selectMode(SetupMode.Password)
             return
+        }
+        // A restore opens on the tab the killed process was on, once the server has been read and still offers it.
+        if (connect is ConnectState.SignIn) {
+            firstMode?.let { first ->
+                firstMode = null
+                if (first in connect.server.modes && connect.form.mode != first) {
+                    flow.selectMode(first)
+                    return
+                }
+            }
         }
         if (connect is ConnectState.SignIn) {
             pendingName?.let { name ->

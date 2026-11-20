@@ -122,9 +122,9 @@ internal fun UiState.EnterServer.toConnectState(): ConnectState.Address =
 private const val UNPARSED_ADDRESS = "http://invalid.invalid"
 
 /**
- * The second step the shared screen draws for this sign-in step: the password form (the way in the screens offer first, with Quick
- * Connect as a button of their own, so the form always holds the password's mode), or the notice of a server that is not set up. A code
- * being waited on is [linkState]'s, and keeps the step busy.
+ * The second step the shared screen draws for this sign-in step: the form of the tab chosen, the password's (the one the screens open
+ * on) or Quick Connect's, which has no fields, or the notice of a server that is not set up. A code being waited on is [linkState]'s,
+ * and keeps the step busy.
  */
 internal fun UiState.SignIn.toConnectState(): ConnectState<PublicServerInfo> {
     val address = ServerAddress.parse(baseUrl) ?: requireNotNull(ServerAddress.parse(UNPARSED_ADDRESS))
