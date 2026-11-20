@@ -1,16 +1,13 @@
 package com.cooper.homelab.ephyra.client.title
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -24,27 +21,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.binge.companion.sdk.attempt
 import com.binge.designsystem.component.BingeFilledButton
-import com.binge.designsystem.component.DetailInfoEntry
-import com.binge.designsystem.component.DetailPerson
-import com.binge.designsystem.component.DetailPoster
 import com.binge.designsystem.component.DetailRoundAction
 import com.binge.designsystem.component.DetailStat
-import com.binge.designsystem.component.MediaCardStatus
 import com.binge.designsystem.template.DetailInfo
 import com.binge.designsystem.template.DetailState
 import com.binge.designsystem.template.MediaDetail
 import com.binge.designsystem.template.MediaDetailCallbacks
 import com.binge.designsystem.template.MovieDetailScreen
 import com.binge.designsystem.template.PeopleRail
-import com.binge.designsystem.template.PersonItem
-import com.binge.designsystem.template.PosterItem
 import com.binge.designsystem.template.PosterRail
-import com.binge.designsystem.theme.BingeSentiment
 import com.cooper.homelab.ephyra.client.R
 import com.cooper.homelab.ephyra.client.home.canRetry
 import com.cooper.homelab.ephyra.client.home.errorKind
@@ -98,7 +86,7 @@ fun MovieScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     events: Flow<TitleEvent> = emptyFlow(),
 ) {
-    val writeFailed = stringResource(R.string.client_movie_write_failed)
+    val writeFailed = stringResource(R.string.client_title_write_failed)
     LaunchedEffect(events) { events.collect { snackbarHostState.showSnackbar(writeFailed) } }
     var choosing by rememberSaveable { mutableStateOf(false) }
     var version by rememberSaveable { mutableStateOf<String?>(null) }
@@ -179,20 +167,6 @@ fun movieDetail(
     imageUrl: (TitleImage, Int) -> String?,
 ): MediaDetail {
     val locale = LocalConfiguration.current.locales[0]
-    val cardWidth = with(LocalDensity.current) { dimensionResource(DesR.dimen.card_width).roundToPx() }
-    val photoWidth = with(LocalDensity.current) { dimensionResource(DesR.dimen.person_card_photo_size).roundToPx() }
-    val watched = stringResource(R.string.client_movie_watched)
-    val jobs = crewJobWords()
-
-    fun people(list: List<PersonUi>) =
-        list.map { person ->
-            PersonItem(
-                person.key(),
-                DetailPerson(person.name, person.subtitle ?: person.job?.let(jobs::get), person.photo?.let { imageUrl(it, photoWidth) }),
-            )
-        }
-
-    fun posters(list: List<TitleCard>) = list.map { PosterItem(it.key(), it.poster(imageUrl, cardWidth, watched)) }
     return MediaDetail(
         title = movie.title,
         backdropUrl = movie.backdrop?.let { imageUrl(it, HERO_PICTURE_WIDTH) },
@@ -201,18 +175,18 @@ fun movieDetail(
         genres = movie.genres,
         stats = movie.stats.cells(locale),
         overview = movie.overview,
-        overviewHeading = stringResource(R.string.client_movie_overview),
+        overviewHeading = stringResource(R.string.client_title_overview),
         peopleRails =
             listOf(
-                PeopleRail(stringResource(R.string.client_movie_cast), people(movie.cast)),
-                PeopleRail(stringResource(R.string.client_movie_crew), people(movie.crew)),
+                PeopleRail(stringResource(R.string.client_title_cast), peopleItems(movie.cast, imageUrl)),
+                PeopleRail(stringResource(R.string.client_title_crew), peopleItems(movie.crew, imageUrl)),
             ),
         posterRails =
             listOfNotNull(
-                movie.collection?.let { PosterRail(it.name, posters(it.parts)) },
-                PosterRail(stringResource(R.string.client_movie_similar), posters(movie.similar)),
+                movie.collection?.let { PosterRail(it.name, posterItems(it.parts, imageUrl)) },
+                PosterRail(stringResource(R.string.client_title_similar), posterItems(movie.similar, imageUrl)),
             ),
-        info = DetailInfo(stringResource(R.string.client_movie_details), movie.facts.entries(locale)),
+        info = DetailInfo(stringResource(R.string.client_title_details), movie.facts.entries(locale)),
     )
 }
 
@@ -222,11 +196,6 @@ private fun MovieUi.people(): List<PersonUi> = cast + crew
 /** Every poster on the page: the collection's parts, then similar films. */
 private fun MovieUi.cards(): List<TitleCard> = collection?.parts.orEmpty() + similar
 
-/** A person's key on a rail: text, as a list's key must be saveable. One person is two items when they have two roles, so the role is in it. */
-private fun PersonUi.key(): String = "$id|$job|$subtitle"
-
-private fun TitleCard.key(): String = id
-
 /** The round buttons beside the primary: watched and favourite, which show their state, and for a film with several files, the file to play. */
 @Composable
 private fun movieRoundActions(
@@ -234,10 +203,10 @@ private fun movieRoundActions(
     actions: MovieActions,
     onChooseVersion: () -> Unit,
 ): List<DetailRoundAction> {
-    val watchedLabel = stringResource(R.string.client_movie_watched)
-    val favouriteLabel = stringResource(R.string.client_movie_favourite)
-    val markWatched = stringResource(if (movie.watched) R.string.client_movie_mark_unwatched else R.string.client_movie_mark_watched)
-    val markFavourite = stringResource(if (movie.favourite) R.string.client_movie_remove_favourite else R.string.client_movie_add_favourite)
+    val watchedLabel = stringResource(R.string.client_title_watched)
+    val favouriteLabel = stringResource(R.string.client_title_favourite)
+    val markWatched = stringResource(if (movie.watched) R.string.client_title_mark_unwatched else R.string.client_title_mark_watched)
+    val markFavourite = stringResource(if (movie.favourite) R.string.client_title_remove_favourite else R.string.client_title_add_favourite)
     val versionsLabel = stringResource(R.string.client_movie_versions)
     return buildList {
         add(
@@ -268,38 +237,6 @@ private fun PlayAction.label(): String =
         else -> stringResource(R.string.client_movie_resume)
     }
 
-/** What each crew job is called, in the user's language. The server sends no text for it. */
-@Composable
-private fun crewJobWords(): Map<CrewJob, String> =
-    mapOf(
-        CrewJob.Director to stringResource(R.string.client_movie_job_director),
-        CrewJob.Writer to stringResource(R.string.client_movie_job_writer),
-        CrewJob.Producer to stringResource(R.string.client_movie_job_producer),
-        CrewJob.Composer to stringResource(R.string.client_movie_job_composer),
-    )
-
-private fun TitleCard.poster(
-    imageUrl: (TitleImage, Int) -> String?,
-    width: Int,
-    watched: String,
-): DetailPoster =
-    DetailPoster(
-        posterUrl = poster?.let { imageUrl(it, width) },
-        title = title,
-        rating = rating?.toFloat(),
-        status = if (played) MediaCardStatus(watched, BingeSentiment.Positive) else null,
-        subtitle = year?.toString(),
-    )
-
-/** The facts at the end of the page: the original title, the studios and the premiere date. Each is left out when the server gave none. */
-@Composable
-private fun TitleFacts.entries(locale: Locale): List<DetailInfoEntry> =
-    listOf(
-        DetailInfoEntry(Icons.Filled.Translate, stringResource(R.string.client_movie_original_title), originalTitle),
-        DetailInfoEntry(Icons.Filled.Business, stringResource(R.string.client_movie_studios), studios.joinToString().ifBlank { null }),
-        DetailInfoEntry(Icons.Filled.Event, stringResource(R.string.client_movie_premiere), premiereDate?.let { premiere(it, locale) }),
-    )
-
 /** The premiere date in the user's locale, or the server's text when it is not a date. */
 internal fun premiere(
     text: String,
@@ -323,7 +260,7 @@ private const val ISO_DATE_LENGTH = 10
 private fun MovieStats.cells(locale: Locale): List<DetailStat> =
     listOfNotNull(
         rating?.let { DetailStat(Icons.Filled.Star, "%.1f".format(locale, it), stringResource(DesR.string.detail_rating)) },
-        year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), stringResource(R.string.client_movie_year)) },
+        year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), stringResource(R.string.client_title_year)) },
         runtimeMinutes?.let {
             DetailStat(
                 Icons.Filled.Schedule,
@@ -331,5 +268,5 @@ private fun MovieStats.cells(locale: Locale): List<DetailStat> =
                 stringResource(R.string.client_movie_runtime),
             )
         },
-        certification?.let { DetailStat(Icons.Filled.Shield, it, stringResource(R.string.client_movie_certification)) },
+        certification?.let { DetailStat(Icons.Filled.Shield, it, stringResource(R.string.client_title_certification)) },
     )
