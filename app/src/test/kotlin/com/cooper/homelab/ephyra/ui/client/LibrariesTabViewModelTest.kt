@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra.ui.client
 
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.FakeJellyfin
+import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.client.libraries.LibrariesUiState
 import com.cooper.homelab.ephyra.client.libraries.LibraryTile
@@ -79,6 +80,15 @@ class LibrariesTabViewModelTest {
         assertTrue(url, url.contains("/Items/lib-movies/Images/Primary"))
         assertTrue(url, url.contains("tag=tag-1") && url.contains("maxWidth=300"))
         assertFalse(url, url.contains("token-1"))
+    }
+
+    @Test
+    fun `a thumb tile asks for the thumb picture`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val vm = viewModel()
+        vm.settled { it is LibrariesUiState.Ready }
+        val url = vm.imageUrl(LibraryTile("lib-movies", "Movies", LibraryKind.Movies, "tag-t", ImageKind.Thumb), 300).orEmpty()
+        assertTrue(url, url.contains("/Items/lib-movies/Images/Thumb") && url.contains("tag=tag-t"))
     }
 
     @Test
