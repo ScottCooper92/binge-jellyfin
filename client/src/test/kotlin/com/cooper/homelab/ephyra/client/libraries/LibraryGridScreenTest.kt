@@ -3,6 +3,8 @@ package com.cooper.homelab.ephyra.client.libraries
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -46,6 +48,7 @@ class LibraryGridScreenTest {
         val cleared = mutableListOf<String>()
         var retried = 0
         var clearedAll = 0
+        var refreshed = 0
         var filtersOpened = 0
         var loadedMore = 0
         var back = 0
@@ -70,6 +73,7 @@ class LibraryGridScreenTest {
                             onApply = { reported.applied += it },
                             onClearChip = { reported.cleared += it },
                             onClearFilters = { reported.clearedAll++ },
+                            onRefresh = { reported.refreshed++ },
                         ),
                 )
             }
@@ -101,7 +105,9 @@ class LibraryGridScreenTest {
     @Test
     fun `an empty library says so and an empty result of a filter offers to clear it`() {
         show(GridState.Empty(controls))
+        rule.onNodeWithText("Nothing here yet").assertIsDisplayed()
         rule.onNodeWithText("This library has nothing in it yet.").assertIsDisplayed()
+        rule.onNodeWithText("No matches").assertDoesNotExist()
         rule.onNodeWithText("Clear filters").assertDoesNotExist()
     }
 
@@ -109,9 +115,24 @@ class LibraryGridScreenTest {
     fun `filters that match nothing offer Clear filters`() {
         val filtered = LibraryGridControls("Movies", LibraryFilterDraft(filters = ItemFilters(genres = setOf("Drama"))), null)
         val reported = show(GridState.Empty(filtered))
+        rule.onNodeWithText("No matches").assertIsDisplayed()
         rule.onNodeWithText("No title matches these filters.").assertIsDisplayed()
+        rule.onNodeWithText("Nothing here yet").assertDoesNotExist()
         rule.onNodeWithText("Clear filters").performClick()
         assertEquals(1, reported.clearedAll)
+    }
+
+    @Test
+    fun `a refresh that fails says so in a snackbar and keeps the titles`() {
+        show(GridState.Ready(controls, listOf(heat, dark), hasMore = false, appending = false, appendFailed = false, refreshFailed = true))
+        rule.onNodeWithText("Couldn't refresh. Pull down to try again.").assertIsDisplayed()
+        rule.onNodeWithText("Heat").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a refresh that has not failed shows no snackbar`() {
+        show(ready())
+        rule.onNodeWithText("Couldn't refresh. Pull down to try again.").assertDoesNotExist()
     }
 
     @Test
@@ -161,6 +182,17 @@ class LibraryGridScreenTest {
             listOf(LibraryFilterDraft(ItemSort(SortField.DateAdded), ItemFilters(officialRatings = setOf("PG")))),
             reported.applied,
         )
+    }
+
+    @Test
+    fun `with only the order changed Clear all is on, and it resets the order to the default`() {
+        val sorted = LibraryFilterDraft(ItemSort(SortField.Rating, ascending = false))
+        val reported = show(ready(LibraryGridControls("Movies", sorted, FilterChoices(emptyList(), emptyList(), emptyList()))))
+        rule.onNodeWithContentDescription("Filters and order").performClick()
+        rule.onAllNodesWithText("1 applied").onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("Clear all").onFirst().performClick()
+        rule.onNodeWithText("Show results").performClick()
+        assertEquals(listOf(LibraryFilterDraft()), reported.applied)
     }
 
     @Test

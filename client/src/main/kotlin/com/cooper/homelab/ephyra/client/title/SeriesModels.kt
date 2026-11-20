@@ -26,8 +26,10 @@ sealed interface SeriesPlay {
         val minutesLeft: Int?,
     ) : SeriesPlay
 
-    /** Every episode is watched, so there is nothing to continue with. The page words it, and may offer the first episode. */
-    data object AllWatched : SeriesPlay
+    /** Every episode is watched, so there is nothing to continue with. The page offers [first], the first episode, to watch again. */
+    data class AllWatched(
+        val first: Episode,
+    ) : SeriesPlay
 
     /** The series has no episode on the server. */
     data object NoEpisodes : SeriesPlay
