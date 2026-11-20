@@ -12,13 +12,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cooper.homelab.ephyra.AppGraph
 import com.cooper.homelab.ephyra.client.title.SeasonActions
-import com.cooper.homelab.ephyra.client.title.SeasonPageUi
 import com.cooper.homelab.ephyra.client.title.SeasonScreen
 import com.cooper.homelab.ephyra.client.title.SeasonUiState
-import com.cooper.homelab.ephyra.client.title.SeriesPlay
-import com.cooper.homelab.ephyra.playback.PlayItem
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
-import com.cooper.homelab.player.api.PlayTitle
 
 /**
  * A season's page, over the shell. [onOpenSeries] opens the series it belongs to and [onOpenEpisode] one of its episodes. The play button
@@ -56,7 +52,7 @@ fun SeasonPage(
                     onRetry = model::retry,
                     onPlay = {
                         (stateNow as? SeasonUiState.Ready)?.season?.let { season ->
-                            season.play.episode()?.let { playNow(season.playItem(it)) }
+                            season.play.episode()?.let { playNow(it.playItem(season.seriesName ?: season.name)) }
                         }
                     },
                     onToggleWatched = { model.toggleWatched() },
@@ -69,6 +65,3 @@ fun SeasonPage(
         SeasonScreen(state = state, imageUrl = model::imageUrl, actions = actions, modifier = modifier, events = model.events)
     }
 }
-
-private fun SeasonPageUi.playItem(episode: SeriesPlay.Episode) =
-    PlayItem(episode.episodeId, PlayTitle(title = seriesName ?: name, seasonNumber = episode.season, episodeNumber = episode.episode))

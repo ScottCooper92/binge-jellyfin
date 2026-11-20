@@ -71,6 +71,7 @@ private fun episodePlay(
         season = episode.seasonNumber,
         episode = episode.episodeNumber,
         minutesLeft = if (kind == PlayKind.Resume) playAction(episode).minutesLeft else null,
+        name = episode.name,
     )
 
 /** A season as a row: its own number (0 for specials), name, how many episodes it has and how many are unwatched. */

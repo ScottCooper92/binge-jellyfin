@@ -100,7 +100,7 @@ class SeriesViewModelTest {
             assertEquals(2, series.stats.seasonCount)
             assertEquals("s1", series.selectedSeasonId)
             assertEquals(listOf("e1", "e2"), (series.episodes as EpisodesState.Ready).episodes.map { it.id })
-            assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null), series.play)
+            assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null, "Episode 1"), series.play)
         }
 
     @Test
@@ -199,7 +199,7 @@ class SeriesViewModelTest {
             // E3 is not the episode the button names (E2), but it is now the last one watched, so what comes after it is next.
             model.toggleEpisodeWatched("e3")
             val moved = model.ready { (it.play as? SeriesPlay.Episode)?.episodeId == "e4" }
-            assertEquals(SeriesPlay.Episode(PlayKind.Play, "e4", 1, 4, null), moved.play)
+            assertEquals(SeriesPlay.Episode(PlayKind.Play, "e4", 1, 4, null, "Episode 4"), moved.play)
         }
 
     @Test

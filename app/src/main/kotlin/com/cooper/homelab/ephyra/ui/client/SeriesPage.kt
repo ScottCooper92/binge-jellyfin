@@ -15,7 +15,6 @@ import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.client.title.SeriesActions
 import com.cooper.homelab.ephyra.client.title.SeriesPlay
 import com.cooper.homelab.ephyra.client.title.SeriesScreen
-import com.cooper.homelab.ephyra.client.title.SeriesUi
 import com.cooper.homelab.ephyra.client.title.SeriesUiState
 import com.cooper.homelab.ephyra.playback.PlayItem
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
@@ -60,7 +59,7 @@ fun SeriesPage(
                     onRetry = model::retry,
                     onPlay = {
                         (stateNow as? SeriesUiState.Ready)?.series?.let { series ->
-                            series.play.episode()?.let { playNow(series.playItem(it)) }
+                            series.play.episode()?.let { playNow(it.playItem(series.title)) }
                         }
                     },
                     onToggleWatched = { model.toggleWatched() },
@@ -86,5 +85,6 @@ internal fun SeriesPlay?.episode(): SeriesPlay.Episode? =
         SeriesPlay.NoEpisodes, null -> null
     }
 
-private fun SeriesUi.playItem(episode: SeriesPlay.Episode) =
-    PlayItem(episode.episodeId, PlayTitle(title = title, seasonNumber = episode.season, episodeNumber = episode.episode))
+/** The episode as a play names it: the series' name, with the episode's numbers and its own name. */
+internal fun SeriesPlay.Episode.playItem(seriesName: String) =
+    PlayItem(episodeId, PlayTitle(title = seriesName, seasonNumber = season, episodeNumber = episode, episodeTitle = name))

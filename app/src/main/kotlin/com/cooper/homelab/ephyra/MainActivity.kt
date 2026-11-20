@@ -107,7 +107,6 @@ import com.cooper.homelab.ephyra.ui.rememberNotificationBinding
 import com.cooper.homelab.ephyra.ui.tv.TvConsentGate
 import com.cooper.homelab.ephyra.ui.tv.TvJellyfinRoot
 import com.cooper.homelab.ephyra.ui.tv.rememberTvPlayback
-import com.cooper.homelab.player.api.PlayTitle
 import kotlinx.coroutines.launch
 
 /** The app's own UI: connect to a server, sign in, and the signed-in settings. */
@@ -339,7 +338,7 @@ internal fun ConsoleHost(
                             graph,
                             signed.profile,
                             onOpen = { kind, id -> backStack.openTitle(kind, id) },
-                            onResume = { id, title -> play(PlayItem(id, PlayTitle(title))) },
+                            onResume = { id, title -> play(PlayItem(id, title)) },
                         )
                     }
                 }

@@ -72,4 +72,16 @@ fun EpisodePage(
 
 /** The episode as a play names it: its series' name, with the episode's numbers and its own name. */
 private fun EpisodePageUi.playItem() =
-    PlayItem(id, PlayTitle(title = seriesName ?: title, seasonNumber = seasonNumber, episodeNumber = episodeNumber, episodeTitle = title))
+    PlayItem(
+        id,
+        PlayTitle(
+            title = seriesName ?: title,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+            episodeTitle =
+                title.takeIf {
+                    seriesName !=
+                        null
+                },
+        ),
+    )

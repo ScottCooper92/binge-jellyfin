@@ -107,7 +107,7 @@ class SeasonViewModelTest {
             assertEquals(1, page.seasonNumber)
             assertEquals("Show", page.seriesName)
             assertEquals(listOf("e1", "e2", "e3"), (page.episodes as EpisodesState.Ready).episodes.map { it.id })
-            assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null), page.play)
+            assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null, "Episode 1"), page.play)
         }
 
     @Test
