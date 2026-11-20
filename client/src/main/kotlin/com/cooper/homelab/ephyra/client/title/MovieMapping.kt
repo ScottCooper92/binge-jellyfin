@@ -8,6 +8,7 @@ import com.cooper.homelab.ephyra.browse.PersonKind
 import com.cooper.homelab.ephyra.browse.TitleDetail
 import com.cooper.homelab.ephyra.browse.TitlePerson
 import com.cooper.homelab.ephyra.browse.TrackKind
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 
 private const val UHD_WIDTH = 3_000
 private const val FULL_HD_WIDTH = 1_800

@@ -25,9 +25,11 @@ class PlaybackSupportTest {
     private fun source(json: String) = Json.parseToJsonElement(json).jsonObject
 
     @Test
-    fun `there are ten thousand ticks in a millisecond and a thousand milliseconds in the second`() {
+    fun `a millisecond is ten thousand ticks, and the second, minute and hour follow from it`() {
         assertEquals(10_000L, TICKS_PER_MILLI)
         assertEquals(TICKS_PER_SECOND, 1_000 * TICKS_PER_MILLI)
+        assertEquals(600_000_000L, TICKS_PER_MINUTE)
+        assertEquals(36_000_000_000L, TICKS_PER_HOUR)
     }
 
     @Test
