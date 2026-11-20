@@ -11,14 +11,12 @@ import com.cooper.homelab.ephyra.server.IndexKey
 import com.cooper.homelab.ephyra.server.IndexType
 import com.cooper.homelab.ephyra.server.ItemPage
 import com.cooper.homelab.ephyra.server.JellyfinItem
+import com.cooper.homelab.ephyra.server.TICKS_PER_MILLI
 import com.google.protobuf.Timestamp
 import io.grpc.Status
 import io.grpc.StatusException
 import java.time.Instant
 import java.time.format.DateTimeParseException
-
-/** Jellyfin counts time in ticks of 100 ns; the contract in milliseconds. */
-internal const val TICKS_PER_MILLI = 10_000L
 
 /** The reason the host reads on UNAUTHENTICATED to send the user to sign in. */
 internal const val REASON_SIGNED_OUT = "SIGNED_OUT"

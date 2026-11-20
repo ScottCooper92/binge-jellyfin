@@ -3,26 +3,26 @@ package com.cooper.homelab.ephyra.playback
 import com.cooper.homelab.ephyra.server.DeviceProfiles
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
+import com.cooper.homelab.ephyra.server.PLAY_METHOD_TRANSCODE
+import com.cooper.homelab.ephyra.server.TICKS_PER_MILLI
 import com.cooper.homelab.ephyra.server.array
-import com.cooper.homelab.ephyra.server.bool
+import com.cooper.homelab.ephyra.server.directStreamUrl
+import com.cooper.homelab.ephyra.server.externalSubtitles
 import com.cooper.homelab.ephyra.server.item
 import com.cooper.homelab.ephyra.server.long
+import com.cooper.homelab.ephyra.server.playMethodOf
 import com.cooper.homelab.ephyra.server.playbackInfo
+import com.cooper.homelab.ephyra.server.playbackInfoBody
 import com.cooper.homelab.ephyra.server.string
+import com.cooper.homelab.ephyra.server.withoutApiKey
 import com.cooper.homelab.player.api.PlayMethod
 import com.cooper.homelab.player.api.PlayRequest
 import com.cooper.homelab.player.api.PlaySource
 import com.cooper.homelab.player.api.PlayTrack
 import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 private const val HLS = "application/x-mpegURL"
-private const val DIRECT_PLAY = "DirectPlay"
-private const val DIRECT_STREAM = "DirectStream"
-private const val TRANSCODE = "Transcode"
-private const val MAX_SUBTITLES = 10
 private const val NOT_FOUND = 404
 private const val FORBIDDEN = 403
 private const val REFUSED = 409
@@ -46,7 +46,7 @@ class JellyfinSourceMinter(
         resumeMs: Long?,
     ): Minted {
         val resume = resumeMs ?: savedPosition(item.itemId)
-        val info = client.playbackInfo(userId, item.itemId, body(profile), resume * TICKS_PER_MILLI)
+        val info = client.playbackInfo(userId, item.itemId, playbackInfoBody(userId, profile.toContract()), resume * TICKS_PER_MILLI)
         info.string("ErrorCode")?.let { throw JellyfinHttpException(if (it == "NotAllowed") FORBIDDEN else REFUSED, PLAYBACK_INFO) }
         val source = info.array("MediaSources").firstOrNull() as? JsonObject ?: throw JellyfinHttpException(NOT_FOUND, PLAYBACK_INFO)
         val method = playMethodOf(source)
@@ -75,23 +75,6 @@ class JellyfinSourceMinter(
                 ?.positionTicks ?: 0L
         ) / TICKS_PER_MILLI
 
-    private fun body(profile: PlaybackDeviceProfile): JsonObject {
-        val device = profile.toContract()
-        return JsonObject(
-            mapOf(
-                "UserId" to JsonPrimitive(userId),
-                "DeviceProfile" to DeviceProfiles.toJellyfin(device),
-                "MaxStreamingBitrate" to JsonPrimitive(DeviceProfiles.maxBitrate(device)),
-                "EnableDirectPlay" to JsonPrimitive(true),
-                "EnableDirectStream" to JsonPrimitive(true),
-                "EnableTranscoding" to JsonPrimitive(true),
-                "AllowVideoStreamCopy" to JsonPrimitive(true),
-                "AllowAudioStreamCopy" to JsonPrimitive(true),
-                "AutoOpenLiveStream" to JsonPrimitive(true),
-            ),
-        )
-    }
-
     private fun playSource(
         source: JsonObject,
         itemId: String,
@@ -101,56 +84,27 @@ class JellyfinSourceMinter(
     ): PlaySource {
         val transcodingUrl = source.string("TranscodingUrl")
         val headers = listOf("Authorization" to client.authorization())
-        if (method == TRANSCODE && transcodingUrl != null) {
+        if (method == PLAY_METHOD_TRANSCODE && transcodingUrl != null) {
             return PlaySource(client.resolve(transcodingUrl).withoutApiKey(), HLS, headers, method = PlayMethod.TRANSCODE)
         }
-        val query =
-            buildMap {
-                put("static", "true")
-                put("mediaSourceId", mediaSourceId)
-                if (playSessionId.isNotEmpty()) put("playSessionId", playSessionId)
-            }
         val mime = DeviceProfiles.mimeForContainer(source.string("Container"))
-        return PlaySource(client.url("Videos/$itemId/stream", query).toString(), mime, headers, method = PlayMethod.DIRECT_PLAY)
+        return PlaySource(client.directStreamUrl(itemId, mediaSourceId, playSessionId), mime, headers, method = PlayMethod.DIRECT_PLAY)
     }
 
     /** The server's external text subtitles, which the player loads beside the source. Embedded ones stay in the stream. */
     private fun subtitles(source: JsonObject): List<PlayTrack> =
-        source
-            .array("MediaStreams")
-            .filterIsInstance<JsonObject>()
-            .filter { it.string("Type") == "Subtitle" && it.string("DeliveryMethod") == "External" }
-            .mapNotNull { stream ->
-                val path = stream.string("DeliveryUrl") ?: return@mapNotNull null
-                val mime = DeviceProfiles.subtitleMime(stream.string("Codec")) ?: return@mapNotNull null
-                PlayTrack(
-                    url = client.resolve(path).withoutApiKey(),
-                    language = stream.string("Language").orEmpty(),
-                    label = stream.string("DisplayTitle") ?: stream.string("Title"),
-                    mimeType = mime,
-                    forced = stream.bool("IsForced") == true,
-                    hearingImpaired = stream.bool("IsHearingImpaired") == true,
-                )
-            }.take(MAX_SUBTITLES)
-
-    private fun playMethodOf(source: JsonObject): String =
-        when {
-            source.bool("SupportsDirectPlay") == true -> DIRECT_PLAY
-            source.bool("SupportsDirectStream") == true || source.string("TranscodingUrl") == null -> DIRECT_STREAM
-            else -> TRANSCODE
+        source.externalSubtitles().map {
+            PlayTrack(
+                url = client.resolve(it.path).withoutApiKey(),
+                language = it.language,
+                label = it.label,
+                mimeType = it.mimeType,
+                forced = it.forced,
+                hearingImpaired = it.hearingImpaired,
+            )
         }
 
     private companion object {
         const val PLAYBACK_INFO = "Items/{id}/PlaybackInfo"
-
-        /** [this] without any `ApiKey` or `api_key` parameter: Jellyfin puts the token into the URLs it writes, which the header covers. */
-        fun String.withoutApiKey(): String {
-            val url = toHttpUrlOrNull() ?: return this
-            val builder = url.newBuilder()
-            url.queryParameterNames
-                .filter { it.equals("ApiKey", ignoreCase = true) || it.equals("api_key", ignoreCase = true) }
-                .forEach(builder::removeAllQueryParameters)
-            return builder.build().toString()
-        }
     }
 }

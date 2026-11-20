@@ -5,11 +5,11 @@ import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.NowPlaying
 import com.cooper.homelab.ephyra.server.PlaystateCommand
 import com.cooper.homelab.ephyra.server.SessionControls
+import com.cooper.homelab.ephyra.server.TICKS_PER_MILLI
 import com.cooper.homelab.ephyra.server.sendGeneralCommand
 import com.cooper.homelab.ephyra.server.sendPlaystate
 import com.cooper.homelab.ephyra.server.sendSessionMessage
 import com.cooper.homelab.ephyra.server.setSessionVolume
-import com.cooper.homelab.ephyra.service.TICKS_PER_MILLI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
