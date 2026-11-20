@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="home_row_continue_watching">Seguir viendo</string>
-    <string name="home_row_next_up">A continuación</string>
-    <string name="home_row_latest">Novedades en %1$s</string>
-    <string name="home_loading_row">Cargando</string>
-    <string name="home_caption_episode">T%1$d, E%2$d · %3$s</string>
-    <string name="home_empty">Aún no hay nada que mostrar. Aquí aparecerán los títulos que veas y añadas.</string>
-    <string name="movie_versions_title">Elige una versión</string>
-    <string name="movie_version_number">Versión %1$d</string>
-    <plurals name="movie_version_subtitles">
+    <string name="client_movie_versions_title">Elige una versión</string>
+    <string name="client_movie_version_number">Versión %1$d</string>
+    <plurals name="client_movie_version_subtitles">
         <item quantity="one">%1$d subtítulo</item>
         <item quantity="many">%1$d subtítulos</item>
         <item quantity="other">%1$d subtítulos</item>
     </plurals>
+    <string name="client_home_row_continue_watching">Seguir viendo</string>
+    <string name="client_home_row_next_up">A continuación</string>
+    <string name="client_home_row_latest">Novedades en %1$s</string>
+    <string name="client_home_loading_row">Cargando</string>
+    <string name="client_home_caption_episode">T%1$d, E%2$d · %3$s</string>
+    <string name="client_home_empty">Aún no hay nada que mostrar. Aquí aparecerán los títulos que veas y añadas.</string>
+    <string name="client_libraries_title">Bibliotecas</string>
+    <string name="client_libraries_empty">Las bibliotecas de películas y series de este servidor aparecerán aquí.</string>
 </resources>

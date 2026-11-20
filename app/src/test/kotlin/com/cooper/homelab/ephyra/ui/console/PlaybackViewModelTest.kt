@@ -110,7 +110,7 @@ class PlaybackViewModelTest {
             object : ViewModelStoreOwner {
                 override val viewModelStore = store
             },
-            viewModelFactory { initializer { PlaybackViewModel(connection) } },
+            viewModelFactory { initializer { made(PlaybackViewModel(connection)) } },
         )[PlaybackViewModel::class.java]
 
     @Test

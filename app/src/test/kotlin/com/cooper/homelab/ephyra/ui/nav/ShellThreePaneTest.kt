@@ -58,4 +58,27 @@ class ShellThreePaneTest : ShellHostTestBase() {
         assertShown("item scan")
         assertEquals(ConsolePage.Tasks, pageKeys().single().page)
     }
+
+    @Test
+    fun `a library covers the rail on a landscape tablet too, and Back closes it`() {
+        hostWithLibraries()
+        tap("tab_libraries")
+        click("open movies")
+        assertShown("library lib-movies")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertBar(true)
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
+
+    @Test
+    fun `a title covers the rail and the whole window, and Back brings the shell back`() {
+        hostWithTitles()
+        click("open movie")
+        assertShown("title MovieRoute m1")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertBar(true)
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
 }

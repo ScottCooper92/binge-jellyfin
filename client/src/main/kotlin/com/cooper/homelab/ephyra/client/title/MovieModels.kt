@@ -42,13 +42,23 @@ data class TitleFacts(
     val premiereDate: String?,
 )
 
+/** What a crew member did. The screen words it from its own strings, so it reads in the user's language; the server sends no text for it. */
+enum class CrewJob {
+    Director,
+    Writer,
+    Producer,
+    Composer,
+}
+
 /** A person in the cast or crew. */
 data class PersonUi(
     val id: String,
     val name: String,
-    /** The character of an actor, or the job of a crew member. */
+    /** The character an actor plays, when the server says. It is the server's own text. */
     val subtitle: String?,
     val photo: TitleImage?,
+    /** What a crew member did, or null for an actor. */
+    val job: CrewJob? = null,
 )
 
 /** One stream of a file, as the versions sheet lists it. [label] is the server's own description, else a short one made from the stream. */

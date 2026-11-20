@@ -98,14 +98,14 @@ class ServerCardLoader(
  */
 internal fun ServerCardLoader.refresh(
     scope: CoroutineScope,
-    state: MutableStateFlow<UiState>,
+    state: MutableStateFlow<UiState.SignedIn?>,
     session: JellyfinSession,
     client: JellyfinClient,
     account: JellyfinAccount,
     force: Boolean,
 ) {
     val key = "${session.baseUrl}|${session.userId}"
-    val current = (state.value as? UiState.SignedIn)?.card
+    val current = state.value?.card
     val shown = current?.connected == true
     if (!force && shown && !due(key)) {
         // The first-library hint is up, so the administrator may have just added the library it asks for and come back. Its count
@@ -113,7 +113,7 @@ internal fun ServerCardLoader.refresh(
         if (account.isAdministrator && current.libraries == 0) {
             scope.launch {
                 attempt { client.libraries().size }.onSuccess { count ->
-                    state.update { (it as? UiState.SignedIn)?.copy(card = it.card.copy(libraries = count)) ?: it }
+                    state.update { it?.copy(card = it.card.copy(libraries = count)) }
                 }
             }
         }
@@ -121,7 +121,7 @@ internal fun ServerCardLoader.refresh(
     }
     scope.launch {
         load(key, client, session.userId, account.isAdministrator) { change ->
-            state.update { (it as? UiState.SignedIn)?.copy(card = change(it.card)) ?: it }
+            state.update { it?.copy(card = change(it.card)) }
         }
     }
 }

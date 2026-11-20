@@ -22,6 +22,7 @@ import com.binge.designsystem.testing.createTakeDownAndroidComposeRule
 import com.cooper.homelab.core.uiandroid.shell.RestartOnGateChange
 import com.cooper.homelab.core.uiandroid.shell.RestartOnSessionEnd
 import com.cooper.homelab.core.uiandroid.shell.TabShellState
+import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import org.junit.Rule
@@ -42,7 +43,12 @@ abstract class ShellHostTestBase {
     protected var stack: NavBackStack<NavKey>? = null
     protected var tabs: TabShellState<EphyraTab>? = null
 
-    protected fun host(homeTab: (@Composable () -> Unit)? = null) {
+    protected fun host(
+        homeTab: (@Composable () -> Unit)? = null,
+        librariesTab: (@Composable () -> Unit)? = null,
+        library: @Composable (LibraryRoute) -> Unit = {},
+        title: @Composable (TitleRoute) -> Unit = {},
+    ) {
         compose.setContent {
             JellyfinTheme {
                 val backStack = rememberNavBackStack(HomeRoute)
@@ -57,6 +63,9 @@ abstract class ShellHostTestBase {
                     resolved = connected != null,
                     tabs = shell.takeIf { gate ?: true },
                     homeTab = homeTab,
+                    librariesTab = librariesTab,
+                    library = library,
+                    title = title,
                     onBack = { backStack.closeTop() },
                     signedOut = { Text("sign in") },
                     home = {
@@ -75,6 +84,26 @@ abstract class ShellHostTestBase {
         }
         compose.waitForIdle()
     }
+
+    /** The shell with a Libraries tab that offers one library to open, and a screen for it. */
+    protected fun hostWithLibraries() =
+        host(
+            // Clear of the rail, as the console home is: a bare Text would sit under it on a wide window.
+            librariesTab = { Text("open movies", Modifier.padding(start = 112.dp).clickable { stack?.openLibrary("lib-movies") }) },
+            library = { Text("library ${it.libraryId}") },
+        )
+
+    /** The shell with a Home tab that offers a movie to open, and a screen for any title. */
+    protected fun hostWithTitles() =
+        host(
+            // Clear of the rail, as the console home is: a bare Text would sit under it on a wide window.
+            homeTab = { Text("open movie", Modifier.padding(start = 112.dp).clickable { stack?.openTitle(ItemKind.Movie, "m1") }) },
+            title = { Text("title ${it::class.simpleName} ${it.itemId}") },
+        )
+
+    protected fun titleKeys(): List<TitleRoute> = keys().filterIsInstance<TitleRoute>()
+
+    protected fun libraryKeys(): List<LibraryRoute> = keys().filterIsInstance<LibraryRoute>()
 
     protected fun tap(tag: String) {
         compose.onNodeWithTag(tag).performClick()

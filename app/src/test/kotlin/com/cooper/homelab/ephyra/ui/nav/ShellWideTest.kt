@@ -133,4 +133,41 @@ class ShellWideTest : ShellHostTestBase() {
         assertAbsent("page Logs")
         assertShown("console home")
     }
+
+    @Test
+    fun `a library covers the rail and the whole window, and Back brings the shell back`() {
+        hostWithLibraries()
+        tap("tab_libraries")
+        click("open movies")
+        assertShown("library lib-movies")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertBar(true)
+        assertShown("open movies")
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
+
+    @Test
+    fun `a page parked on the Server tab is still there after a library was opened and closed`() {
+        hostWithLibraries()
+        tap("tab_server")
+        click("open tasks")
+        tap("tab_libraries")
+        click("open movies")
+        assertFalse(pressBack())
+        assertEquals(EphyraTab.Libraries, tabs?.selected)
+        tap("tab_server")
+        assertEquals(listOf(ConsolePage.Tasks), pageKeys().map { it.page })
+    }
+
+    @Test
+    fun `a title covers the rail and the whole window, and Back brings the shell back`() {
+        hostWithTitles()
+        click("open movie")
+        assertShown("title MovieRoute m1")
+        assertBar(false)
+        assertFalse(pressBack())
+        assertBar(true)
+        assertEquals(listOf<NavKey>(ShellRoute), keys())
+    }
 }

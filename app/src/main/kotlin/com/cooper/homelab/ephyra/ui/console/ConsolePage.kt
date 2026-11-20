@@ -81,7 +81,10 @@ enum class ConsolePage {
     /** The server's transcoding, resume and streaming settings. Admin only. */
     Transcoding,
 
-    /** The server's Live TV tuners and guide data. For a user whose policy lets them manage Live TV, an administrator or not. */
+    /**
+     * The server's Live TV tuners and guide data. An administrator whose policy lets them manage Live TV. The server would let any user with
+     * that policy change tuners, but Jellyfin's web client keeps them in the administrator's dashboard, so this app does too (#790).
+     */
     LiveTv,
 
     /** How the server records Live TV: folders, padding and saved files. Opened from the Live TV page. Admin only. */
@@ -118,7 +121,7 @@ enum class ConsolePage {
             NowPlaying, Licences, Diagnostics, ThisApp, Search -> true
             Trickplay -> account.isAdministrator && profile.hasTrickplay
             Plugins -> account.isAdministrator
-            LiveTv -> account.canManageLiveTv
+            LiveTv -> account.isAdministrator && account.canManageLiveTv
             LiveTvRecording -> account.isAdministrator && account.canManageLiveTv
             Backups -> account.isAdministrator && profile.hasBackups
             Account, Libraries, Tasks, Activity, Logs, ApiKeys, Devices, Users, Advanced,
