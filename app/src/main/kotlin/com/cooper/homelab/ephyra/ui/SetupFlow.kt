@@ -15,6 +15,7 @@ import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.auth.SessionStore
+import com.cooper.homelab.ephyra.demo.isDemoOrigin
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.PublicServerInfo
 import com.cooper.homelab.ephyra.server.SignedIn
@@ -111,7 +112,7 @@ internal class SetupFlow(
 
     /** Begins the session that was saved before this process started. */
     fun restore(session: JellyfinSession) {
-        flow.editAddress(session.baseUrl)
+        flow.editAddress(addressAfter(session.baseUrl))
         signedInFlow.value = signedInState(session)
         refresh()
     }
@@ -175,7 +176,7 @@ internal class SetupFlow(
     /** A sign-in has ended in a kept session: the signed-in state takes the screen, and the steps that led here are gone. */
     private fun publish(begun: UiState.SignedIn) {
         // The server step that comes back when the session ends starts at this server's address, from its first frame.
-        flow.editAddress(begun.session.baseUrl)
+        flow.editAddress(addressAfter(begun.session.baseUrl))
         signedInFlow.value = begun
         // The step that led here goes with it: its typed password and the account pictures are gone when the step is left.
         state.value = UiState.Loading
@@ -187,12 +188,15 @@ internal class SetupFlow(
         signedInFlow.value = null
     }
 
+    /** The address the server step starts at once the session of [baseUrl] has ended: the server's own, and none for the demo's, which is no server of the user's. */
+    private fun addressAfter(baseUrl: String): String = baseUrl.takeUnless { it.isDemoOrigin() }.orEmpty()
+
     /** The session has ended: the server step takes the screen with the address it had, and the signed-in state goes. */
     fun leave(baseUrl: String) {
         signedInFlow.value = null
         state.value = UiState.Loading
         typed = emptyMap()
-        flow.editAddress(baseUrl)
+        flow.editAddress(addressAfter(baseUrl))
         flow.changeServer()
         // The flow may already have been at this step, in which case it has nothing new to say.
         renderNow()

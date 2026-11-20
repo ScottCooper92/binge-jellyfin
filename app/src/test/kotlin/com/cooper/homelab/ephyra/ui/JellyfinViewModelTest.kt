@@ -207,6 +207,16 @@ class JellyfinViewModelTest {
     }
 
     @Test
+    fun `leaving the demo brings back an empty address step, not the demo's address`() {
+        val vm = demoViewModel()
+        vm.await<UiState.EnterServer>()
+        vm.tryDemo()
+        vm.await<UiState.SignedIn>()
+        vm.signOut()
+        assertEquals("", vm.await<UiState.EnterServer>().address)
+    }
+
+    @Test
     fun `a demo that cannot be saved ends the spinner with an error and counts the failure`() {
         val refusing =
             object : SecretCipher {
