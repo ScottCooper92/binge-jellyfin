@@ -11,11 +11,11 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -35,21 +35,21 @@ import org.robolectric.RobolectricTestRunner
 class HomeTabViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions = testSessionStore()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
+    private val teardown = ViewModelTeardown()
+    private val connection =
+        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
 
     @Before
     fun main() {
         Dispatchers.setMain(Dispatchers.Unconfined)
     }
 
+    /** The view model's scope is stopped, and finished, before the fake server closes and Main is reset (#493, #816). */
     @After
-    fun close() {
-        connection.close()
-        jellyfin.close()
-        Dispatchers.resetMain()
-    }
+    fun close() = teardown.close(jellyfin)
 
-    private fun viewModel() = HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6")).also { it.start() }
+    private fun viewModel() =
+        teardown.made(HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6"))).also { it.start() }
 
     private fun HomeTabViewModel.settled(matches: (HomeUiState) -> Boolean = { it !is HomeUiState.Loading }) =
         runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(matches) } }
