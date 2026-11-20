@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The one teardown every view model test shares. A view model's work is stopped first, then the fake
@@ -23,24 +24,34 @@ internal class ViewModelTeardown {
     private val viewModels = mutableListOf<ViewModel>()
     private val connections = mutableListOf<Connection>()
 
+    private companion object {
+        /** How long a wait for a job to finish lasts before the looper is run again. */
+        const val IDLE_POLL_MILLIS = 5L
+    }
+
     fun <T : ViewModel> made(viewModel: T): T = viewModel.also { viewModels += it }
 
     /** A connection a test builds: closed with the view models, so its session watcher and saves end with the test. */
     fun made(connection: Connection): Connection = connection.also { connections += it }
 
     /**
-     * Stops every view model's work and waits for it to finish, and closes nothing else. For a test that has to have its work quiet
-     * before the test ends, such as one whose Compose rule destroys the activity when the body returns, ahead of [close]; [close]
-     * then finds nothing left to wait for.
+     * [idle] runs the platform's main looper, for a test whose Main is [MainLooperDispatcher]: the cancelled work finishes on the main
+     * thread, which this call blocks, so the looper is run in between checks. With Main as `Dispatchers.Unconfined` it is not needed.
      */
-    fun stop() {
+    fun close(
+        jellyfin: FakeJellyfin,
+        idle: () -> Unit = {},
+    ) {
         val jobs = viewModels.mapNotNull { it.viewModelScope.coroutineContext[Job] }
         jobs.forEach { it.cancel() }
-        runBlocking { jobs.forEach { it.join() } }
-    }
-
-    fun close(jellyfin: FakeJellyfin) {
-        stop()
+        runBlocking {
+            jobs.forEach { job ->
+                while (!job.isCompleted) {
+                    idle()
+                    withTimeoutOrNull(IDLE_POLL_MILLIS) { job.join() }
+                }
+            }
+        }
         viewModels.clear()
         connections.forEach { it.close() }
         connections.clear()

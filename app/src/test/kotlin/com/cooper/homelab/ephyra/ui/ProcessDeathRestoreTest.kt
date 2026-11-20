@@ -1,5 +1,6 @@
 package com.cooper.homelab.ephyra.ui
 
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,11 +39,8 @@ import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -53,6 +51,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -68,36 +67,20 @@ class ProcessDeathRestoreTest {
     private val jellyfin = FakeJellyfin()
     private val sessions: SessionStore = testSessionStore()
     private val teardown = ViewModelTeardown()
-
-    /** Everything this class runs on an IO thread goes through this, so it can be made quiet before the activity is destroyed (#898). */
-    private val io = QuietableDispatcher()
     private val connection =
-        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", io, DiscardLogger))
-    private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext(), io = io, sessionsForTest = sessions) }
-
-    /** As every view model test: Main is a dispatcher the teardown can wait on from the main thread, which the platform's looper is not. */
-    @Before
-    fun main() = Dispatchers.setMain(Dispatchers.Unconfined)
-
-    @After
-    fun close() = teardown.close(jellyfin)
+        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
+    private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext(), sessionsForTest = sessions) }
 
     /**
-     * [runAndroidComposeUiTest] with the IO work made quiet as the body ends. The rule destroys the activity, and disposes the
-     * composition, when the body returns, before `@After` closes the view models and the server; until then the view models' work
-     * is still running and writing the state the composition collects, from IO threads, as Main is `Dispatchers.Unconfined` (#898).
+     * Main is confined to the main thread, as on a device (#898, #904), so a collector in the composition resumes there whichever thread
+     * emits. See [MainLooperDispatcher] for what that asks of a test: every wait here either evaluates a node or calls `waitForIdle()`,
+     * and none blocks the main thread on work that runs on it.
      */
-    private fun composeTest(body: AndroidComposeUiTest<ComponentActivity>.() -> Unit) =
-        runAndroidComposeUiTest<ComponentActivity> {
-            try {
-                body()
-            } finally {
-                waitForIdle()
-                // The view models first, while the dispatcher still runs what their cancellation has to finish; then nothing runs.
-                teardown.stop()
-                io.quiesce()
-            }
-        }
+    @Before
+    fun main() = Dispatchers.setMain(MainLooperDispatcher)
+
+    @After
+    fun close() = teardown.close(jellyfin, idle = { shadowOf(Looper.getMainLooper()).idle() })
 
     /** The view model the composition last built, so a test can read what it restored. */
     private var shown: JellyfinViewModel? = null
@@ -129,7 +112,7 @@ class ProcessDeathRestoreTest {
                             sessions,
                             connection,
                             LibraryIndex(),
-                            dispatcher = io,
+                            dispatcher = Dispatchers.IO,
                             cipher = PlainCipher.forLibrary(),
                             discover = { emptyList() },
                             linkStash = linkStash,
@@ -148,7 +131,7 @@ class ProcessDeathRestoreTest {
 
     @Test
     fun `a signed in app killed with the client on comes back to its shell`() =
-        composeTest {
+        runAndroidComposeUiTest<ComponentActivity> {
             runBlocking { sessions.save(jellyfin.session()) }
             val tester = StateRestorationTester(this)
             tester.setContent { App() }
@@ -166,7 +149,7 @@ class ProcessDeathRestoreTest {
     @Config(qualifiers = "w411dp-h891dp-xhdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun `a library open with its order and filters comes back with them`() =
-        composeTest {
+        runAndroidComposeUiTest<ComponentActivity> {
             runBlocking { sessions.save(jellyfin.session()) }
             val tester = StateRestorationTester(this)
             tester.setContent { App() }
@@ -185,13 +168,18 @@ class ProcessDeathRestoreTest {
             waitUntil(timeoutMillis = WAIT_MILLIS) { onAllNodesWithText("Date added").fetchSemanticsNodes().isNotEmpty() }
             onNodeWithText("Date added").performScrollTo().performClick()
             onNodeWithText("Show results").performClick()
-            waitUntil(timeoutMillis = WAIT_MILLIS) { readsByDateAdded() > 0 }
+            waitUntil(timeoutMillis = WAIT_MILLIS) {
+                waitForIdle()
+                readsByDateAdded() > 0
+            }
             val before = readsByDateAdded()
-
             tester.emulateSaveAndRestore()
 
             // The library is on screen again, and its first page is asked for in the order the user chose, not the default.
-            waitUntil(timeoutMillis = WAIT_MILLIS) { readsByDateAdded() > before }
+            waitUntil(timeoutMillis = WAIT_MILLIS) {
+                waitForIdle()
+                readsByDateAdded() > before
+            }
             assertTrue(
                 "the library's grid is on screen after the restore",
                 onAllNodesWithContentDescription("Filters and order").fetchSemanticsNodes().isNotEmpty(),
@@ -204,7 +192,7 @@ class ProcessDeathRestoreTest {
 
     @Test
     fun `a Quick Connect wait the killed process left comes back with its code, and approving it signs in to the shell`() =
-        composeTest {
+        runAndroidComposeUiTest<ComponentActivity> {
             val stash = MemoryStash()
             // The process that dies: it shows a code, keeps the wait, and is gone before anything is approved.
             val dying =
@@ -213,7 +201,7 @@ class ProcessDeathRestoreTest {
                         sessions,
                         connection,
                         LibraryIndex(),
-                        dispatcher = io,
+                        dispatcher = Dispatchers.IO,
                         cipher = PlainCipher.forLibrary(),
                         discover = { emptyList() },
                         linkStash = stash,
@@ -228,7 +216,13 @@ class ProcessDeathRestoreTest {
                 requireNotNull(
                     (awaitState(dying) { it is UiState.SignIn && it.quickConnectCode != null } as UiState.SignIn).quickConnectCode,
                 )
-            runBlocking { requireNotNull(dying.viewModelScope.coroutineContext[Job]).cancelAndJoin() }
+            val dyingJob = requireNotNull(dying.viewModelScope.coroutineContext[Job])
+            dyingJob.cancel()
+            // Not a blocking join: the cancelled work finishes on the main thread, which a block would hold.
+            waitUntil(timeoutMillis = WAIT_MILLIS) {
+                waitForIdle()
+                dyingJob.isCompleted
+            }
             assertNotNull("the wait outlives the process", stash.value)
 
             // The process that comes back: a new view model reads the wait, and the screen it composes shows that code again.
@@ -243,10 +237,17 @@ class ProcessDeathRestoreTest {
             assertNull("nothing is kept once it has signed in", stash.value)
         }
 
-    private fun awaitState(
+    /** Waits with the test's own idling, which runs the main looper where Main's work is, and does not block the main thread. */
+    private fun AndroidComposeUiTest<ComponentActivity>.awaitState(
         viewModel: JellyfinViewModel,
         matches: (UiState) -> Boolean,
-    ): UiState = runBlocking { withTimeout(WAIT_MILLIS) { viewModel.state.first { matches(it) } } }
+    ): UiState {
+        waitUntil(timeoutMillis = WAIT_MILLIS) {
+            waitForIdle()
+            matches(viewModel.state.value)
+        }
+        return viewModel.state.value
+    }
 
     private companion object {
         const val WAIT_MILLIS = 10_000L
