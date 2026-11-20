@@ -5,8 +5,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 private const val TICKS_PER_SECOND = 10_000_000L
-private const val INTRO_START_SECONDS = 30L
-private const val INTRO_END_SECONDS = 90L
+private const val INTRO_START_TICKS = 30L * TICKS_PER_SECOND
+private const val INTRO_END_TICKS = 90L * TICKS_PER_SECOND
 private const val CREDITS_SECONDS = 120L
 
 /**
@@ -16,11 +16,7 @@ private const val CREDITS_SECONDS = 120L
 internal fun segmentsOf(title: DemoTitle?): DemoAnswer {
     val items =
         buildJsonArray {
-            if (title?.type ==
-                "Episode"
-            ) {
-                add(segment(title.id, "Intro", INTRO_START_SECONDS * TICKS_PER_SECOND, INTRO_END_SECONDS * TICKS_PER_SECOND))
-            }
+            if (title?.isEpisode() == true) add(segment(title.id, "Intro", INTRO_START_TICKS, INTRO_END_TICKS))
             if (title != null && title.hasCredits()) {
                 add(segment(title.id, "Outro", title.runtimeTicks - CREDITS_SECONDS * TICKS_PER_SECOND, title.runtimeTicks))
             }
@@ -33,6 +29,8 @@ internal fun segmentsOf(title: DemoTitle?): DemoAnswer {
         },
     )
 }
+
+private fun DemoTitle.isEpisode(): Boolean = type == "Episode"
 
 private fun DemoTitle.hasCredits(): Boolean = (type == "Episode" || type == "Movie") && runtimeTicks > CREDITS_SECONDS * TICKS_PER_SECOND
 

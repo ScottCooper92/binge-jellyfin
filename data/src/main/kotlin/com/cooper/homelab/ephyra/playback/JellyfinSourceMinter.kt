@@ -5,6 +5,7 @@ import com.cooper.homelab.ephyra.browse.browseTitle
 import com.cooper.homelab.ephyra.server.DeviceProfiles
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinHttpException
+import com.cooper.homelab.ephyra.server.JellyfinItem
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.MediaSegment
 import com.cooper.homelab.ephyra.server.PLAY_METHOD_TRANSCODE
@@ -21,6 +22,7 @@ import com.cooper.homelab.ephyra.server.playMethodOf
 import com.cooper.homelab.ephyra.server.playbackInfo
 import com.cooper.homelab.ephyra.server.playbackInfoBody
 import com.cooper.homelab.ephyra.server.string
+import com.cooper.homelab.ephyra.server.trickplayDescriptor
 import com.cooper.homelab.ephyra.server.withoutApiKey
 import com.cooper.homelab.player.api.PlayChapter
 import com.cooper.homelab.player.api.PlayMethod
@@ -29,6 +31,7 @@ import com.cooper.homelab.player.api.PlaySegment
 import com.cooper.homelab.player.api.PlaySegmentKind
 import com.cooper.homelab.player.api.PlaySource
 import com.cooper.homelab.player.api.PlayTrack
+import com.cooper.homelab.player.api.PlayTrickplay
 import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import kotlinx.serialization.json.JsonObject
 
@@ -56,7 +59,8 @@ class JellyfinSourceMinter(
         profile: PlaybackDeviceProfile,
         resumeMs: Long?,
     ): Minted {
-        val resume = resumeMs ?: savedPosition(item.itemId)
+        val read = attempt { client.item(userId, item.itemId, ITEM_FIELDS) }
+        val resume = resumeMs ?: savedPosition(read.getOrThrow())
         val info = client.playbackInfo(userId, item.itemId, playbackInfoBody(userId, profile.toContract()), resume * TICKS_PER_MILLI)
         info.string("ErrorCode")?.let { throw JellyfinHttpException(if (it == "NotAllowed") FORBIDDEN else REFUSED, PLAYBACK_INFO) }
         val source = info.array("MediaSources").firstOrNull() as? JsonObject ?: throw JellyfinHttpException(NOT_FOUND, PLAYBACK_INFO)
@@ -74,6 +78,7 @@ class JellyfinSourceMinter(
                 subtitles = subtitles(source),
                 chapters = chapters(item.itemId),
                 segments = segments(item.itemId, source),
+                trickplay = trickplay(read.getOrNull(), mediaSourceId),
             )
         return Minted(request, JellyfinPlayHandle(item.itemId, mediaSourceId, playSessionId, method, runtimeMs))
     }
@@ -96,15 +101,31 @@ class JellyfinSourceMinter(
             attempt { client.mediaSegments(itemId) }.getOrNull().orEmpty().mapNotNull { it.toPlaySegment() }
         }
 
-    /** Where the server has the user in the item: its resume point, or the start once the item is played. */
-    private suspend fun savedPosition(itemId: String): Long =
-        (
-            client
-                .item(userId, itemId)
-                ?.userData
-                ?.takeUnless { it.played }
-                ?.positionTicks ?: 0L
-        ) / TICKS_PER_MILLI
+    /** Where the server has the user in [item]: its resume point, or the start once it is played or the server does not know it. */
+    private fun savedPosition(item: JellyfinItem?): Long = (item?.userData?.takeUnless { it.played }?.positionTicks ?: 0L) / TICKS_PER_MILLI
+
+    /** The seek-thumbnail sheets the server holds for [mediaSourceId], where it makes them; none for a read that failed. */
+    private fun trickplay(
+        item: JellyfinItem?,
+        mediaSourceId: String,
+    ): PlayTrickplay? {
+        val found =
+            item
+                ?.takeIf { server.hasTrickplay }
+                ?.trickplay
+                ?.get(mediaSourceId)
+                .orEmpty()
+        val descriptor = client.trickplayDescriptor(mediaSourceId, found) ?: return null
+        return PlayTrickplay(
+            urlTemplate = descriptor.urlTemplate,
+            thumbnailWidth = descriptor.thumbnailWidth,
+            thumbnailHeight = descriptor.thumbnailHeight,
+            tileColumns = descriptor.tileColumns,
+            tileRows = descriptor.tileRows,
+            intervalMs = descriptor.intervalMillis,
+            thumbnailCount = descriptor.thumbnailCount,
+        )
+    }
 
     private fun playSource(
         source: JsonObject,
@@ -149,5 +170,6 @@ class JellyfinSourceMinter(
 
     private companion object {
         const val PLAYBACK_INFO = "Items/{id}/PlaybackInfo"
+        const val ITEM_FIELDS = "ProviderIds,Trickplay"
     }
 }
