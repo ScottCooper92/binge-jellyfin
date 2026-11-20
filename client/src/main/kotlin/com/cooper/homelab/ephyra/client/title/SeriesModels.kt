@@ -82,7 +82,8 @@ data class SeriesUi(
     val genres: List<String>,
     val backdrop: TitleImage?,
     val stats: SeriesStats,
-    val play: SeriesPlay,
+    /** What the one wide button does, or null while that is not known yet (still loading, or the read failed). */
+    val play: SeriesPlay?,
     val watched: Boolean,
     val favourite: Boolean,
     val overview: String?,
