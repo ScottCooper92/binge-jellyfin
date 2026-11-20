@@ -1003,6 +1003,7 @@ class JellyfinViewModelTest {
         assertTrue(jellyfin.requests.none { it.url.encodedPath == "/Users/ForgotPassword" })
 
         vm.onUsername(" Mum ")
+        vm.await<UiState.SignIn> { it.username == " Mum " }
         vm.forgotPassword.start()
         assertEquals(
             ForgotPasswordStep.Told(ForgotPasswordAction.ContactAdmin),
@@ -1030,6 +1031,7 @@ class JellyfinViewModelTest {
         vm.toSignIn()
         vm.onUsername("Mum")
         vm.onPassword("typed")
+        vm.await<UiState.SignIn> { it.username == "Mum" && it.password == "typed" }
         vm.forgotPassword.start()
         assertEquals(
             ForgotPasswordStep.EnterPin("/config/data/passwordreset.json"),
@@ -1058,6 +1060,9 @@ class JellyfinViewModelTest {
         val vm = viewModel()
         vm.toSignIn()
         vm.onUsername("Mum")
+        // The name reaches the screen's state through the connect flow, which runs on another dispatcher: asking before it has
+        // arrived is a reset for no one, which the flow rightly ignores.
+        vm.await<UiState.SignIn> { it.username == "Mum" }
         jellyfin.status["/Users/ForgotPassword"] = 500
         vm.forgotPassword.start()
         vm.await<UiState.SignIn> { it.forgot == ForgotPasswordStep.Failed }
