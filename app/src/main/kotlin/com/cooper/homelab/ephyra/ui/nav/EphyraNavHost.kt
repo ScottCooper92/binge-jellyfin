@@ -93,6 +93,9 @@ fun EphyraNavHost(
     val threePane = hubBeside && isThreePaneWindow()
     val threePaneNow by rememberUpdatedState(threePane)
     val depth by rememberUpdatedState(backStack.entries().size)
+    // The shell entry is built while the session is still being read after a process death, so it reads both of these live.
+    val signedInNow by rememberUpdatedState(signedIn)
+    val tabsNow by rememberUpdatedState(tabs)
     val signedOutNow by rememberUpdatedState(signedOut)
     val homeNow by rememberUpdatedState(home)
     val homeTabNow by rememberUpdatedState(homeTab)
@@ -140,7 +143,7 @@ fun EphyraNavHost(
                     NavEntry(
                         key,
                         metadata = ShellPane,
-                    ) { ShellEntry(tabs, signedIn, backStack, hubBeside, homeNow, defaultPageNow, homeTabNow, librariesTabNow) }
+                    ) { ShellEntry(tabsNow, signedInNow, backStack, hubBeside, homeNow, defaultPageNow, homeTabNow, librariesTabNow) }
                 is PageRoute ->
                     // Keyed by the opening, so a page opened on another row is the same entry and keeps its state.
                     NavEntry(key, contentKey = "page-${key.opening}", metadata = pageMetadata(key.page)) {
