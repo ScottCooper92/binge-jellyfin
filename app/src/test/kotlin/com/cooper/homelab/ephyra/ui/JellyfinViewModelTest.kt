@@ -1,7 +1,9 @@
 package com.cooper.homelab.ephyra.ui
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.binge.companion.kit.SecretCipher
+import com.cooper.homelab.core.presentation.connect.LinkStash
 import com.cooper.homelab.core.server.connection.CallResult
 import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.CleartextGate
@@ -26,6 +28,8 @@ import com.cooper.homelab.ephyra.testSessionStore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -45,6 +49,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -110,6 +115,7 @@ class JellyfinViewModelTest {
         over: Connection = connection,
         cleartext: CleartextConsent = CleartextConsent.None,
         savedState: SavedStateHandle = SavedStateHandle(),
+        linkStash: LinkStash = NoLinkStash,
     ) = made(
         JellyfinViewModel(
             sessions,
@@ -123,6 +129,7 @@ class JellyfinViewModelTest {
             onSessionEnded = { sessionsEnded.incrementAndGet() },
             cleartext = cleartext,
             savedState = savedState,
+            linkStash = linkStash,
         ),
     )
 
@@ -1010,6 +1017,29 @@ class JellyfinViewModelTest {
         assertFalse(vm.await<UiState.SignIn> { !it.server.setupIncomplete }.server.setupIncomplete)
     }
 
+    /** A stash that lives as long as the test, so a second view model can find what the first left: a process that died and came back. */
+    private class MemoryStash : LinkStash {
+        @Volatile
+        var value: String? = null
+
+        override fun read(): String? = value
+
+        override fun write(value: String) {
+            this.value = value
+        }
+
+        override fun clear() {
+            value = null
+        }
+    }
+
+    /** Starts Quick Connect on the sign-in step and returns once its code shows. */
+    private fun JellyfinViewModel.waitingForApproval(): UiState.SignIn {
+        toSignIn()
+        startQuickConnect()
+        return await<UiState.SignIn> { it.quickConnectCode != null }
+    }
+
     private class RecordingConsent : CleartextConsent {
         val granted = mutableListOf<String>()
 
@@ -1196,6 +1226,103 @@ class JellyfinViewModelTest {
         vm.await<UiState.EnterServer>()
         awaitReports(2)
         assertEquals(listOf("sign_in" to mapOf("method" to "quick_connect"), "sign_out" to emptyMap<String, Any>()), reported)
+    }
+
+    @Test
+    fun `a Quick Connect wait is kept while its code waits, and is gone once it has signed in`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.waitingForApproval()
+        assertNotNull("the wait is kept as soon as its code shows", stash.value)
+
+        jellyfin.quickConnectApproved = true
+        vm.await<UiState.SignedIn>()
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `cancelling a Quick Connect wait forgets it`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.waitingForApproval()
+        assertNotNull(stash.value)
+
+        vm.cancelQuickConnect()
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `a Quick Connect wait the server refuses or lets expire is forgotten`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.toSignIn()
+        // The code is given, and then every check of it is refused: the wait ends as an expired code does.
+        jellyfin.status["/QuickConnect/Connect"] = 500
+        vm.startQuickConnect()
+        vm.await<UiState.SignIn> { it.quickConnectError != null }
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `changing the server while a code waits forgets the wait`() {
+        val stash = MemoryStash()
+        val vm = viewModel(linkStash = stash)
+        vm.waitingForApproval()
+        assertNotNull(stash.value)
+
+        vm.changeServer(recheck = false)
+        vm.await<UiState.EnterServer>()
+
+        assertNull(stash.value)
+    }
+
+    @Test
+    fun `a record left behind is forgotten when a session exists at launch and when it ends`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val stash = MemoryStash().apply { value = "left by an earlier run" }
+        val vm = viewModel(linkStash = stash)
+        vm.await<UiState.SignedIn>()
+        assertNull("a launch with a session keeps no wait", stash.value)
+
+        stash.value = "left again"
+        vm.signOut()
+        vm.await<UiState.EnterServer>()
+
+        assertNull("signing out keeps none either", stash.value)
+    }
+
+    @Test
+    fun `a process killed while a code waits comes back to the same code, and signs in once it is approved`() {
+        val stash = MemoryStash()
+        val first = viewModel(linkStash = stash)
+        val code = requireNotNull(first.waitingForApproval().quickConnectCode)
+        // The process dies: the view model's work is cancelled and nothing runs after it, so nothing clears the record.
+        runBlocking { requireNotNull(first.viewModelScope.coroutineContext[Job]).cancelAndJoin() }
+        assertNotNull("the record outlives the view model", stash.value)
+
+        val second = viewModel(linkStash = stash)
+        val back = second.await<UiState.SignIn> { it.quickConnectCode != null }
+        assertEquals("the user is shown the code they were given", code, back.quickConnectCode)
+
+        jellyfin.quickConnectApproved = true
+        second.await<UiState.SignedIn>()
+
+        assertNull(stash.value)
+        assertEquals(jellyfin.baseUrl, runBlocking { sessions.current() }?.baseUrl)
+    }
+
+    @Test
+    fun `a record no one can use is forgotten at launch, and the address step shows`() {
+        val stash = MemoryStash().apply { value = "not a record" }
+
+        val vm = viewModel(linkStash = stash)
+
+        vm.await<UiState.EnterServer>()
+        runBlocking { withTimeout(10_000) { while (stash.value != null) delay(5) } }
+        assertNull(stash.value)
     }
 
     @Test
