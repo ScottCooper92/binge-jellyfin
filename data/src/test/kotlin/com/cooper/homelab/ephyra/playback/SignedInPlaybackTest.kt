@@ -37,7 +37,7 @@ class SignedInPlaybackTest {
         runBlocking {
             sessions.save(jellyfin.session())
 
-            val minted = SignedInSourceMinter(connection).mint(item, profile, null)
+            val minted = SignedInSourceMinter(connection).mint(item, profile, null, null)
             SignedInPlayReporter(connection).report(minted.report, PlayReport.STARTED, 0L)
 
             assertTrue(jellyfin.requests.any { it.method == "POST" && it.url.encodedPath == "/Items/movie-1/PlaybackInfo" })
@@ -49,7 +49,7 @@ class SignedInPlaybackTest {
         runBlocking {
             sessions.save(jellyfin.session())
 
-            SignedInSourceMinter(connection) { 4_000_000L }.mint(item, profile.copy(maxBitrateBps = 40_000_000L), null)
+            SignedInSourceMinter(connection) { 4_000_000L }.mint(item, profile.copy(maxBitrateBps = 40_000_000L), null, null)
 
             val body = jellyfin.lastBody("/Items/movie-1/PlaybackInfo")
             assertEquals(4_000_000L, body["MaxStreamingBitrate"]?.jsonPrimitive?.content?.toLong())
@@ -67,7 +67,10 @@ class SignedInPlaybackTest {
     fun `with no session each call is refused like a token the server refused`() =
         runBlocking {
             val minted = SignedInSourceMinter(connection)
-            assertEquals(401, assertThrows(JellyfinHttpException::class.java) { runBlocking { minted.mint(item, profile, null) } }.code)
+            assertEquals(
+                401,
+                assertThrows(JellyfinHttpException::class.java) { runBlocking { minted.mint(item, profile, null, null) } }.code,
+            )
             assertEquals(
                 401,
                 assertThrows(JellyfinHttpException::class.java) { runBlocking { SignedInNextEpisodes(connection).after(item) } }.code,

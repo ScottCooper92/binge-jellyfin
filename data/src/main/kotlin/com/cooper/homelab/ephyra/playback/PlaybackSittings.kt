@@ -44,6 +44,9 @@ class PlaybackSittings(
         val outcome: MutableStateFlow<PlaybackOutcome>,
     ) {
         var job: Job? = null
+
+        /** What the player last said it is on; null until it says, and again whenever the sitting runs from its start. */
+        val choice = MutableStateFlow<StreamChoice?>(null)
     }
 
     private val sittings = MutableStateFlow<Map<String, Sitting>>(emptyMap())
@@ -83,9 +86,10 @@ class PlaybackSittings(
         id: String,
         sitting: Sitting,
     ) {
+        sitting.choice.value = null
         val profile = attempt { player.deviceProfile() }.getOrElse { return sitting.fail(it, sitting.item.title) }
         var current = sitting.item
-        var minted = attempt { minter.mint(current, profile, null) }.getOrElse { return sitting.fail(it, current.title) }
+        var minted = attempt { minter.mint(current, profile, null, null) }.getOrElse { return sitting.fail(it, current.title) }
         var upNext = attempt { nextEpisodes.after(current) }.getOrNull()
         var remintedOnce = false
         var position = 0L
@@ -134,7 +138,7 @@ class PlaybackSittings(
                                 }
                             }
                         }
-                        is PlayerEvent.TracksChosen -> Unit
+                        is PlayerEvent.TracksChosen -> sitting.choice.value = StreamChoice(event.audio, event.subtitle)
                     }
                 }
         } catch (e: CancellationException) {
@@ -156,7 +160,7 @@ class PlaybackSittings(
         sitting: Sitting,
     ): Minted? {
         val minted =
-            attempt { minter.mint(item, profile, positionMs) }.getOrElse {
+            attempt { minter.mint(item, profile, positionMs, sitting.choice.value) }.getOrElse {
                 sitting.fail(it, item.title)
                 return null
             }

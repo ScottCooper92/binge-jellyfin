@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.playback
 import com.cooper.homelab.player.api.PlayRequest
 import com.cooper.homelab.player.api.PlayTitle
 import com.cooper.homelab.player.api.PlaybackDeviceProfile
+import com.cooper.homelab.player.api.TrackChoice
 
 /** One thing to play: the server's id for it, and how the player names it. */
 data class PlayItem(
@@ -19,12 +20,25 @@ class Minted(
     val report: PlayReportHandle,
 )
 
-/** Mints a source for [item] that a device with [profile] can play, from [resumeMs], or from the server's own resume point where it is null. */
+/**
+ * The audio and subtitle tracks a sitting is on, as the player last said: by language, and by label where the language is not enough.
+ * A null [subtitle] is subtitles off. Kept for the sitting only; it is never written to the account's own preferences.
+ */
+data class StreamChoice(
+    val audio: TrackChoice?,
+    val subtitle: TrackChoice?,
+)
+
+/**
+ * Mints a source for [item] that a device with [profile] can play, from [resumeMs], or from the server's own resume point where it is null.
+ * With a [choice], the source carries the tracks it names where the item has them; with none, the server's own defaults decide.
+ */
 fun interface SourceMinter {
     suspend fun mint(
         item: PlayItem,
         profile: PlaybackDeviceProfile,
         resumeMs: Long?,
+        choice: StreamChoice?,
     ): Minted
 }
 

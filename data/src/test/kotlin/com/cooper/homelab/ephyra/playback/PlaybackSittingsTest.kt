@@ -9,6 +9,7 @@ import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import com.cooper.homelab.player.api.PlaybackOutcome
 import com.cooper.homelab.player.api.PlaybackRefusal
 import com.cooper.homelab.player.api.PlayerEvent
+import com.cooper.homelab.player.api.TrackChoice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -57,6 +58,7 @@ class PlaybackSittingsTest {
     private val player = FakePlayer()
     private val episodes = (1..3).map { PlayItem("item$it", PlayTitle("Show", seasonNumber = 1, episodeNumber = it)) }
     private val minted = mutableListOf<Pair<String, Long?>>()
+    private val choices = mutableListOf<StreamChoice?>()
     private var mintFails: Throwable? = null
     private val reports = mutableListOf<Triple<String, PlayReport, Long>>()
     private var nextOf: (PlayItem) -> PlayItem? = { null }
@@ -66,9 +68,10 @@ class PlaybackSittingsTest {
         PlaybackSittings(
             scope,
             player,
-            minter = { item, _, resume ->
+            minter = { item, _, resume, choice ->
                 mintFails?.let { throw it }
                 minted += item.itemId to resume
+                choices += choice
                 Minted(request(item), Handle(item))
             },
             reporter = { play, kind, position -> reports += Triple((play as Handle).item.itemId, kind, position) },
@@ -165,6 +168,38 @@ class PlaybackSittingsTest {
             player.events.send(PlayerEvent.SourceRejected(31_000, 403))
             assertEquals("no third mint", 2, minted.size)
             assertTrue(sittings.outcomeOf(id) is PlaybackOutcome.SourceExpired)
+        }
+
+    @Test
+    fun `the tracks the player says it is on go to a re-mint and to the next episode, not to the first mint`() =
+        runTest {
+            nextOf = { item -> episodes.getOrNull(episodes.indexOf(item) + 1) }
+            val sittings = sittings()
+            sittings.start(episodes[0])
+            assertNull("a play from a page starts on the server's defaults", choices.single())
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            val first = StreamChoice(TrackChoice("en", null), null)
+            val later = StreamChoice(TrackChoice("es", "Doblaje"), TrackChoice("es", null))
+            player.events.send(PlayerEvent.TracksChosen(first.subtitle, first.audio))
+            player.events.send(PlayerEvent.TracksChosen(later.subtitle, later.audio))
+
+            player.events.send(PlayerEvent.SourceRejected(30_000, 403))
+            assertEquals(later, choices.last())
+
+            player.events.send(PlayerEvent.NextRequested(59_000))
+            assertEquals("item2" to 0L, minted.last())
+            assertEquals(later, choices.last())
+        }
+
+    @Test
+    fun `a sitting run again from its start forgets the tracks`() =
+        runTest {
+            val sittings = sittings()
+            mintFails = IOException("down")
+            val id = sittings.start(episodes[0])
+            mintFails = null
+            sittings.retry(id)
+            assertNull(choices.last())
         }
 
     @Test
@@ -265,7 +300,7 @@ class PlaybackSittingsTest {
                 PlaybackSittings(
                     scope,
                     player,
-                    minter = { item, _, _ -> Minted(request(item), Handle(item)) },
+                    minter = { item, _, _, _ -> Minted(request(item), Handle(item)) },
                     reporter = { _, _, _ -> throw IOException("offline") },
                     nextEpisodes = { null },
                     newSessionId = { "s1" },

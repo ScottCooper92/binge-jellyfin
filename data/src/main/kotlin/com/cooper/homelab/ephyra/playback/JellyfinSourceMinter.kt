@@ -62,11 +62,14 @@ class JellyfinSourceMinter(
         item: PlayItem,
         profile: PlaybackDeviceProfile,
         resumeMs: Long?,
+        choice: StreamChoice?,
     ): Minted {
         val read = attempt { client.item(userId, item.itemId, ITEM_FIELDS) }
         val resume = resumeMs ?: savedPosition(read.getOrThrow())
         val capped = cap.maxBitrateBps()?.let(profile::cappedTo) ?: profile
-        val info = client.playbackInfo(userId, item.itemId, playbackInfoBody(userId, capped.toContract()), resume * TICKS_PER_MILLI)
+        val body = playbackInfoBody(userId, capped.toContract())
+        val first = client.playbackInfo(userId, item.itemId, body, resume * TICKS_PER_MILLI)
+        val info = choice?.let { withChoice(item, body, resume, first, it) } ?: first
         info.string("ErrorCode")?.let { throw JellyfinHttpException(if (it == "NotAllowed") FORBIDDEN else REFUSED, PLAYBACK_INFO) }
         val source = info.array("MediaSources").firstOrNull() as? JsonObject ?: throw JellyfinHttpException(NOT_FOUND, PLAYBACK_INFO)
         val method = playMethodOf(source)
@@ -86,6 +89,34 @@ class JellyfinSourceMinter(
                 trickplay = trickplay(read.getOrNull(), mediaSourceId),
             )
         return Minted(request, JellyfinPlayHandle(item.itemId, mediaSourceId, playSessionId, method, runtimeMs))
+    }
+
+    /**
+     * Asks again, naming the streams of [choice], when the server's first answer is on others: the server picks the tracks of a transcode, so
+     * the choice has to be in the request. Null, so the first answer stands, when it already matches, the choice names nothing this source
+     * has, the server refused, or the second ask fails: a track hint never stops a play.
+     */
+    private suspend fun withChoice(
+        item: PlayItem,
+        body: JsonObject,
+        resume: Long,
+        first: JsonObject,
+        choice: StreamChoice,
+    ): JsonObject? {
+        if (first.string("ErrorCode") != null) return null
+        val source = first.array("MediaSources").firstOrNull() as? JsonObject ?: return null
+        val wanted = source.streamIndexes(choice)
+        val chosen = source.chosenIndexes()
+        val audio = wanted.audio?.takeIf { it != chosen.audio }
+        val subtitle = wanted.subtitle?.takeIf { it != chosen.subtitle }
+        if (audio == null && subtitle == null) return null
+        val streams =
+            buildMap {
+                source.string("Id")?.let { put("mediaSourceId", it) }
+                audio?.let { put("audioStreamIndex", it.toString()) }
+                subtitle?.let { put("subtitleStreamIndex", it.toString()) }
+            }
+        return attempt { client.playbackInfo(userId, item.itemId, body, resume * TICKS_PER_MILLI, streams) }.getOrNull()
     }
 
     /** The item's chapters, as the page reads them; none when the read fails, since a play does not need them. */

@@ -22,6 +22,7 @@ class SignedInSourceMinter(
         item: PlayItem,
         profile: PlaybackDeviceProfile,
         resumeMs: Long?,
+        choice: StreamChoice?,
     ): Minted {
         val (session, client) = connection.signedInOrRefused()
         return JellyfinSourceMinter(
@@ -29,7 +30,7 @@ class SignedInSourceMinter(
             session.userId,
             JellyfinServerProfile.from(session.serverVersion),
             cap,
-        ).mint(item, profile, resumeMs)
+        ).mint(item, profile, resumeMs, choice)
     }
 }
 
