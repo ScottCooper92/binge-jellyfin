@@ -141,21 +141,7 @@ private fun PlaybackRoute(
     val playback: PlaybackViewModel =
         viewModel(factory = viewModelFactory { initializer { PlaybackViewModel(graph.connection) } })
     val state by playback.state.collectAsStateWithLifecycle()
-    PlaybackScreen(
-        state,
-        PlaybackActions(
-            onAudio = playback::setAudio,
-            onSubtitles = playback::setSubtitles,
-            onSubtitleMode = playback::setSubtitleMode,
-            onPlayDefaultAudioTrack = playback::setPlayDefaultAudioTrack,
-            onRememberAudio = playback::setRememberAudio,
-            onRememberSubtitles = playback::setRememberSubtitles,
-            onAutoplayNextEpisode = playback::setAutoplayNextEpisode,
-            onRetry = playback::load,
-            onRetrySave = playback::retrySave,
-            onBack = onBack,
-        ),
-    )
+    PlaybackScreen(state, playback.actions(onBack))
 }
 
 /**
@@ -454,6 +440,8 @@ private fun ThisAppRoute(
     val tip = holder.tip
     val state by tip.state.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
+    // The user's own server preferences, only behind the client gate, read when the page opens.
+    val playback = if (actions.appSettings.client == true) thisAppPlayback(graph) else null
     ThisAppScreen(
         actions,
         onBack,
@@ -461,5 +449,7 @@ private fun ThisAppRoute(
         tipEvents = tip.events,
         onGiveTip = { step -> activity?.let { tip.give(it, step) } },
         serverVersion = serverVersion,
+        playback = playback?.first,
+        playbackActions = playback?.second ?: PlaybackActions(),
     )
 }

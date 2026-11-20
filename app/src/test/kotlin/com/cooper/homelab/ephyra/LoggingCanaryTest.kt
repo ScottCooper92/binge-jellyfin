@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra
 
 import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
+import com.cooper.homelab.core.diagnostics.follow
 import com.cooper.homelab.core.foundation.Clock
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.server.Connection
@@ -13,7 +14,9 @@ import com.cooper.homelab.ephyra.ui.console.consoleCall
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import okhttp3.Interceptor
@@ -152,4 +155,9 @@ class LoggingCanaryTest {
         sessions.value = null
         assertEquals("https://other.example", redactor.redact("https://other.example"))
     }
+
+    private fun Redactor.followSession(
+        sessions: Flow<JellyfinSession?>,
+        scope: CoroutineScope,
+    ) = follow(sessions.map { it?.toRedactionLiterals() }, scope)
 }

@@ -38,12 +38,12 @@ import com.binge.companion.kit.isTelevision
 import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.server.network.AndroidLocalNetworkPermission
 import com.cooper.homelab.core.uiandroid.consent.ConsentGate
+import com.cooper.homelab.core.uiandroid.flags.LocalFlags
 import com.cooper.homelab.core.uiandroid.review.ReviewPromptOnReturnToRoot
 import com.cooper.homelab.core.uiandroid.shell.RestartOnGateChange
 import com.cooper.homelab.core.uiandroid.shell.RestartOnSessionEnd
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.flags.LocalClientEnabled
-import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.playback.PlayItem
 import com.cooper.homelab.ephyra.telemetry.ReportScreen
 import com.cooper.homelab.ephyra.theme.JellyfinTheme

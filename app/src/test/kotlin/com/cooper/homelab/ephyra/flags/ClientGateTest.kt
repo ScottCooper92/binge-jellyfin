@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.flags
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.cooper.homelab.core.flags.BooleanPreference
 import com.cooper.homelab.core.flags.FixedFeatureFlags
 import com.cooper.homelab.core.flags.FlagPreferenceGate
 import com.cooper.homelab.core.flags.Flags
@@ -30,20 +31,20 @@ class ClientGateTest {
 
     private var files = 0
 
-    private suspend fun TestScope.prefs(stored: Boolean?): ClientPrefs {
+    private suspend fun TestScope.prefs(stored: Boolean?): BooleanPreference {
         val store = PreferenceDataStoreFactory.create(scope = backgroundScope) { folder.newFile("c${files++}.preferences_pb") }
-        return ClientPrefs(store).also { if (stored != null) it.setEnabled(stored) }
+        return clientPreference(store).also { if (stored != null) it.set(stored) }
     }
 
     private fun TestScope.gate(
         flag: Boolean,
-        prefs: ClientPrefs,
+        prefs: BooleanPreference,
     ): PreferenceGate =
         FlagPreferenceGate(
             FixedFeatureFlags(Flags.of(ClientEnabled to flag)),
             ClientEnabled,
-            prefs.enabled,
-            prefs::setEnabled,
+            prefs.value,
+            prefs::set,
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
 
@@ -57,7 +58,7 @@ class ClientGateTest {
     @Test
     fun `the preference defaults to on`() =
         runTest {
-            assertTrue(prefs(stored = null).enabled.first())
+            assertTrue(prefs(stored = null).value.first())
         }
 
     @Test

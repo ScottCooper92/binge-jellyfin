@@ -16,6 +16,7 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.JellyfinVersion
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -104,7 +105,7 @@ class DemoClientDataTest {
     fun `a film can run under a minute, and a film can have a resume point`() =
         runBlocking {
             val short = titles.title("demo-movie-9")!!.item
-            assertTrue(short.runTimeTicks!! < 600_000_000L)
+            assertTrue(short.runTimeTicks!! < TICKS_PER_MINUTE)
             assertTrue(
                 titles
                     .title("demo-movie-1")!!

@@ -1,5 +1,6 @@
 package com.cooper.homelab.ephyra.demo
 
+import com.cooper.homelab.ephyra.server.TICKS_PER_HOUR
 import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import com.cooper.homelab.ephyra.server.TICKS_PER_SECOND
 import kotlinx.serialization.json.JsonArray
@@ -9,7 +10,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-internal const val RUNTIME_TICKS = 72_000_000_000L
+internal const val RUNTIME_TICKS = 2 * TICKS_PER_HOUR
 private const val EPISODE_TICKS = 47 * TICKS_PER_MINUTE
 private const val GENERATED_FILMS = 70
 private const val ADJECTIVE_COUNT = 10

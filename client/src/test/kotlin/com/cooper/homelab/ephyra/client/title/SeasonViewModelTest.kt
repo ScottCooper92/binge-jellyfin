@@ -13,6 +13,7 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.JellyfinVersion
+import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import com.cooper.homelab.ephyra.server.UserDataChange
 import com.cooper.homelab.ephyra.server.serverFailure
 import kotlinx.coroutines.CoroutineScope
@@ -181,7 +182,7 @@ class SeasonViewModelTest {
     fun `the season's button resumes, plays the first not watched, or offers the first again`() {
         val e1 = episode("e1", 1, played = true)
         val e2 = episode("e2", 2)
-        val e3 = episode("e3", 3, positionTicks = 600_000_000L)
+        val e3 = episode("e3", 3, positionTicks = TICKS_PER_MINUTE)
         assertEquals("e3", (seasonPlay(listOf(e1, e2, e3)) as SeriesPlay.Episode).episodeId)
         assertEquals("e2", (seasonPlay(listOf(e1, e2)) as SeriesPlay.Episode).episodeId)
         val again = seasonPlay(listOf(e1, episode("e2b", 2, played = true))) as SeriesPlay.AllWatched
