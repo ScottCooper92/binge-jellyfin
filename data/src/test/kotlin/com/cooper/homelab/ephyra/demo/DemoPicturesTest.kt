@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra.demo
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -70,7 +71,25 @@ class DemoPicturesTest {
         // Only the Movies library has a thumb and a backdrop.
         assertNotNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("Movies"), "Thumb")))
         assertNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("TV shows"), "Thumb")))
-        assertNotNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("TV shows"))))
+        assertNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("TV shows"))))
+    }
+
+    @Test
+    fun `a library's picture carries its current name, and a rename draws a new picture`() {
+        val id = DemoLibraries.SEEDED.getValue("TV shows")
+
+        fun primary(name: String) = "https://$DEMO_HOST/Items/$id/Images/Primary?tag=${libraryPrimaryTag(name)}&maxWidth=300"
+        val before = demoPictureFor(primary("TV shows"))!!
+        val after = demoPictureFor(primary("Series"))!!
+        assertEquals("TV shows", before.caption)
+        assertEquals("Series", after.caption)
+        assertEquals("S", after.label)
+        assertNotEquals(libraryPrimaryTag("TV shows"), libraryPrimaryTag("Series"))
+    }
+
+    @Test
+    fun `the Movies thumb is drawn without a caption, as the tile writes the name over it`() {
+        assertNull(demoPictureFor(url(DemoLibraries.SEEDED.getValue("Movies"), "Thumb"))!!.caption)
     }
 
     @Test

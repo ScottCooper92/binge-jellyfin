@@ -1,7 +1,9 @@
 package com.cooper.homelab.ephyra.demo
 
+import com.binge.companion.sdk.attempt
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import java.util.Base64
 
 private const val DEFAULT_WIDTH = 300
 private const val MIN_WIDTH = 16
@@ -26,6 +28,8 @@ private const val RED_SHIFT = 16
 private const val GREEN_SHIFT = 8
 private const val SEGMENT_PAIR = 2
 private const val INITIALS = 2
+private const val LIBRARY_TAG = "l-"
+private val MOVIES_LIBRARY_ID = DemoLibraries.SEEDED.getValue("Movies")
 private val SKIPPED_WORDS = setOf("the", "a", "an")
 
 /** How a demo picture is laid out: a poster, a wide backdrop or thumb, an episode still, or a person's square. */
@@ -60,8 +64,18 @@ fun demoPictureFor(url: String): DemoPicture? {
     val address = url.toHttpUrlOrNull()?.takeIf { it.isDemo() } ?: return null
     val segments = address.pathSegments
     if (segments.size != SEGMENTS || segments[0] != "Items" || segments[2] != "Images") return null
-    return pictureFor(segments[1], segments[SEGMENTS - 1], width(address))
+    return pictureFor(segments[1], segments[SEGMENTS - 1], width(address), address.queryParameter("tag"))
 }
+
+/** The tag of a library's Primary: it carries the name drawn into the picture, so a rename is a new picture. */
+internal fun libraryPrimaryTag(name: String): String =
+    LIBRARY_TAG + Base64.getUrlEncoder().withoutPadding().encodeToString(name.toByteArray())
+
+private fun libraryNameIn(tag: String?): String? =
+    tag
+        ?.takeIf { it.startsWith(LIBRARY_TAG) }
+        ?.let { attempt { String(Base64.getUrlDecoder().decode(it.removePrefix(LIBRARY_TAG))) }.getOrNull() }
+        ?.takeIf { it.isNotBlank() }
 
 private const val SEGMENTS = 4
 
@@ -84,24 +98,6 @@ private val SUBJECTS: Map<String, Subject> by lazy {
             put(
                 person.id,
                 Subject(person.name, DemoPictureShape.Person, initials(person.name), if (person.photo) setOf("Primary") else emptySet()),
-            )
-        }
-        // A library's Primary has its name drawn into it, as a server's does; only Movies has a Thumb and a backdrop.
-        DemoLibraries.SEEDED.forEach { (name, id) ->
-            put(
-                id,
-                Subject(
-                    name,
-                    DemoPictureShape.Wide,
-                    initials(name),
-                    if (name ==
-                        "Movies"
-                    ) {
-                        setOf("Primary", "Thumb", "Backdrop")
-                    } else {
-                        setOf("Primary")
-                    },
-                ),
             )
         }
     }
@@ -130,8 +126,19 @@ private fun pictureFor(
     id: String,
     kind: String,
     width: Int,
+    tag: String?,
 ): DemoPicture? {
-    val subject = SUBJECTS[id]?.takeIf { kind in it.kinds } ?: return null
+    val libraryName = libraryNameIn(tag)?.takeIf { kind == "Primary" }
+    val subject =
+        if (libraryName != null) {
+            // A library's Primary has the library's current name drawn into it, as the tag says.
+            Subject(libraryName, DemoPictureShape.Wide, initials(libraryName), setOf("Primary"))
+        } else if (id == MOVIES_LIBRARY_ID && kind != "Primary") {
+            // Movies' Thumb and backdrop carry no caption: the tile writes the library's name over them.
+            Subject("", DemoPictureShape.Wide, initials("Movies"), setOf("Thumb", "Backdrop"))
+        } else {
+            SUBJECTS[id]?.takeIf { kind in it.kinds }
+        } ?: return null
     // Backdrops and thumbs are wide whatever they belong to; a Primary takes its subject's own shape.
     val shape = if (kind == "Primary") subject.shape else DemoPictureShape.Wide
     val height =
@@ -148,7 +155,7 @@ private fun pictureFor(
         topColor = hsv(hue, SATURATION_TOP, VALUE_TOP),
         bottomColor = hsv((hue + HUE_SHIFT) % HUE_DEGREES, SATURATION_BOTTOM, VALUE_BOTTOM),
         label = subject.label,
-        caption = subject.name.takeIf { shape != DemoPictureShape.Person },
+        caption = subject.name.takeIf { shape != DemoPictureShape.Person && it.isNotEmpty() },
     )
 }
 

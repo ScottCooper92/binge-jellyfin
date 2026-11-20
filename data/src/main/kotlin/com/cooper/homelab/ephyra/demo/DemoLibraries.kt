@@ -24,19 +24,27 @@ private const val DEFAULT_OPTIONS =
      "SubtitleDownloadLanguages":["eng"],"RequirePerfectSubtitleMatch":true,"AllowEmbeddedSubtitles":"AllowAll","TypeOptions":[]}
     """
 
+private data class SeededLibrary(
+    val name: String,
+    val kind: String,
+    val path: String,
+)
+
+private val SEEDED_LIBRARIES =
+    listOf(
+        SeededLibrary("Movies", "movies", "/media/movies"),
+        SeededLibrary("TV shows", "tvshows", "/media/tv"),
+        SeededLibrary("Collections", "boxsets", "/media/collections"),
+        // No kind: a library of films and series together, which the client does not browse yet.
+        SeededLibrary("Mixed", "", "/media/mixed"),
+        SeededLibrary("Music", "music", "/media/music"),
+    )
+
 /** The server's libraries, which can be added, renamed, given other folders and set up while the demo is open. */
 internal class DemoLibraries : DemoState {
     private val libraries: MutableList<JsonObject> = seed()
 
-    private fun seed() =
-        mutableListOf(
-            library("Movies", "movies", listOf("/media/movies"), seededId("Movies")),
-            library("TV shows", "tvshows", listOf("/media/tv"), seededId("TV shows")),
-            library("Collections", "boxsets", listOf("/media/collections"), seededId("Collections")),
-            // No kind: a library of films and series together, which the client does not browse yet.
-            library("Mixed", "", listOf("/media/mixed"), seededId("Mixed")),
-            library("Music", "music", listOf("/media/music"), seededId("Music")),
-        )
+    private fun seed() = SEEDED_LIBRARIES.map { (name, kind, path) -> library(name, kind, listOf(path), seededId(name)) }.toMutableList()
 
     override fun reset() {
         libraries.clear()
@@ -54,7 +62,7 @@ internal class DemoLibraries : DemoState {
                 val id = library.string("ItemId").orEmpty()
                 // Movies has all three pictures, as a library with artwork does; every other library has only a Primary.
                 putJsonObject("ImageTags") {
-                    put("Primary", "p-$id")
+                    put("Primary", libraryPrimaryTag(library.string("Name").orEmpty()))
                     if (type == "movies") put("Thumb", "t-$id")
                 }
                 if (type == "movies") putJsonArray("BackdropImageTags") { add(JsonPrimitive("b-$id")) }
@@ -138,8 +146,7 @@ internal class DemoLibraries : DemoState {
     internal companion object {
         /** The seeded libraries' ids by name, as their views carry them: the same name always has the same id. */
         val SEEDED: Map<String, String> =
-            listOf("Movies", "TV shows", "Collections", "Mixed", "Music")
-                .associateWith { UUID.nameUUIDFromBytes(it.toByteArray()).toString().replace("-", "") }
+            SEEDED_LIBRARIES.associate { it.name to UUID.nameUUIDFromBytes(it.name.toByteArray()).toString().replace("-", "") }
     }
 
     private fun JsonObject.locations() = (get("Locations") as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.content }
