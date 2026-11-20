@@ -53,6 +53,8 @@ import com.binge.designsystem.component.DetailStatsRows
 import com.binge.designsystem.component.DetailStatsRowsSkeleton
 import com.binge.designsystem.component.MediaCardStatus
 import com.binge.designsystem.isExpandedLayout
+import com.binge.designsystem.layout.LayoutAnchors
+import com.binge.designsystem.layout.layoutAnchor
 import com.binge.designsystem.template.ErrorScreen
 import com.binge.designsystem.template.HeroDetailScreen
 import com.binge.designsystem.template.HeroDetailStateScreen
@@ -144,9 +146,11 @@ fun MovieSkeleton(
     ) {
         Spacer(Modifier.height(dimensionResource(DesR.dimen.padding_m)))
         Column(Modifier.clearAndSetSemantics {}, verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_m))) {
-            if (!cinematic) DetailStatsRowsSkeleton(count = SKELETON_STATS)
+            if (!cinematic) {
+                DetailStatsRowsSkeleton(Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Detail.STATS)), count = SKELETON_STATS)
+            }
             DetailActionsSkeleton(Modifier.readingMargin(), buttons = SKELETON_ACTIONS)
-            if (!cinematic) DetailOverviewSkeleton()
+            if (!cinematic) DetailOverviewSkeleton(Modifier.layoutAnchor(LayoutAnchors.section(LayoutAnchors.Detail.OVERVIEW)))
         }
     }
 }
