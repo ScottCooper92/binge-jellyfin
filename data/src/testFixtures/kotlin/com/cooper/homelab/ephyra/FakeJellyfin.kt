@@ -261,7 +261,7 @@ class FakeJellyfin : Dispatcher() {
     var userViews =
         """[{"Id":"lib-movies","Name":"Movies","CollectionType":"movies",""" +
             """"ImageTags":{"Primary":"lp","Thumb":"lt"},"BackdropImageTags":["lb"]},""" +
-            """{"Id":"lib-shows","Name":"Shows","CollectionType":"tvshows","ImageTags":{"Primary":"sp"}},{"Id":"lib-home","Name":"Home videos"}]"""
+            """{"Id":"lib-shows","Name":"Shows","CollectionType":"tvshows","ImageTags":{"Primary":"sp"}},{"Id":"lib-home","Name":"Home videos","CollectionType":"homevideos"}]"""
 
     /** [userViews] without the libraries in the configuration's `GroupedFolders`, as the server leaves them out. */
     private fun ungroupedViews(): String {
@@ -453,7 +453,7 @@ class FakeJellyfin : Dispatcher() {
     /** `/System/Logs/Log?name=`: each log's text, by file name. */
     @Volatile
     var logTexts: MutableMap<String, String> =
-        mutableMapOf(
+        shared(
             "log_20261031.log" to
                 "[2026-10-31 10:00:00.000 +00:00] [INF] [1] Main: Server started\n" +
                 "[2026-10-31 10:05:00.000 +00:00] [WRN] [2] Jellyfin.Api: Slow query\n" +
@@ -1300,9 +1300,12 @@ class FakeJellyfin : Dispatcher() {
         request: RecordedRequest,
     ): MockResponse {
         val policy = Json.parseToJsonElement(request.body?.utf8().orEmpty()).jsonObject
-        val user = serverUsers[id] ?: return MockResponse(code = 404)
-        serverUsers[id] = JsonObject(user + ("Policy" to policy))
-        return MockResponse(code = 204)
+        // Read and write are one step, so two saves for one user cannot lose one.
+        val saved =
+            synchronized(serverUsers) {
+                serverUsers[id]?.let { user -> serverUsers[id] = JsonObject(user + ("Policy" to policy)) }
+            }
+        return MockResponse(code = if (saved == null) 404 else 204)
     }
 
     private fun adminPassword(request: RecordedRequest): MockResponse {

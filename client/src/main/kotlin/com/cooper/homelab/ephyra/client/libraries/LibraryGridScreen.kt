@@ -13,6 +13,7 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.template.FilterControlHandlers
@@ -111,8 +112,10 @@ private fun LibraryGridUiState.toTemplate(
     imageUrl: (BrowseItem, Int) -> String?,
     filtered: Boolean,
     onClearFilters: () -> Unit,
-): PagedGridState =
-    when (this) {
+): PagedGridState {
+    val resources = LocalResources.current
+    val countLabel = { count: Int -> resources.getQuantityString(R.plurals.client_library_collection_count, count, count) }
+    return when (this) {
         is GridState.Loading -> PagedGridState.Loading
         is GridState.Empty ->
             if (filtered) {
@@ -127,14 +130,18 @@ private fun LibraryGridUiState.toTemplate(
         is GridState.Error -> PagedGridState.Failed(failure.errorKind(), retryable = failure.canRetry())
         is GridState.Ready ->
             PagedGridState.Ready(
-                items = items.map { it.toCell(imageUrl) },
+                items = items.map { it.toCell(imageUrl, countLabel) },
                 hasMore = hasMore,
                 appending = appending,
                 appendFailed = appendFailed,
             )
     }
+}
 
-private fun BrowseItem.toCell(imageUrl: (BrowseItem, Int) -> String?): GridItem =
+private fun BrowseItem.toCell(
+    imageUrl: (BrowseItem, Int) -> String?,
+    countLabel: (Int) -> String,
+): GridItem =
     GridItem(
         key = libraryItemKey(this),
         posterUrl = imageUrl(this, POSTER_WIDTH_PX),
@@ -142,7 +149,7 @@ private fun BrowseItem.toCell(imageUrl: (BrowseItem, Int) -> String?): GridItem 
         rating = communityRating?.toFloat(),
         favourite = userData.favourite,
         progress = userData.playedPercentage?.let { (it / PERCENT).toFloat() }?.takeIf { it > 0f && !userData.played },
-        subtitle = year?.toString(),
+        subtitle = childCount.takeIf { kind == ItemKind.BoxSet }?.let(countLabel) ?: year?.toString(),
         watched = userData.played,
         unwatchedCount = userData.unplayedCount?.takeIf { it > 0 && kind == ItemKind.Series },
     )
@@ -182,7 +189,7 @@ private fun LibraryFilterSheet(
 ) {
     var draft by remember { mutableStateOf(controls.applied) }
     // The pill asked the library what it offers when the sheet opened; the sections follow once that answer is in.
-    val sections = draft.sections(controls.choices ?: FilterChoices(emptyList(), emptyList(), emptyList()))
+    val sections = draft.sections(controls.choices ?: FilterChoices(emptyList(), emptyList(), emptyList()), controls.kind)
     val inline = sections.filter { it.id !in LONG_SECTIONS }.map { it.toUi() }
     val rows = sections.filter { it.id in LONG_SECTIONS }.map { it.toRow() }
     val handlers =

@@ -1658,5 +1658,3 @@ private const val DEAD_PORT = "http://127.0.0.1:1/"
 /** What Android's TLS stack throws when the server asks for a client certificate and none is sent. */
 private const val CERTIFICATE_REQUIRED_ALERT =
     "Read error: ssl=0x0: error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED"
-
-/** How long teardown waits for a view model's cancelled work to end: a call on the fake server returns at once. */

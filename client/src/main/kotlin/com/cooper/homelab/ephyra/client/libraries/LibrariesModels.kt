@@ -25,12 +25,13 @@ sealed interface LibrariesUiState {
     /** The libraries have not been read yet. */
     data object Loading : LibrariesUiState
 
-    /** At least one movie or series library. */
+    /** At least one library this app lists. [othersHidden] is whether the server has libraries of other kinds, which the tab leaves out. */
     data class Ready(
         val tiles: List<LibraryTile>,
+        val othersHidden: Boolean = false,
     ) : LibrariesUiState
 
-    /** The user has libraries, but none this app lists (only movies and series are). */
+    /** The user has libraries, but none this app lists (movies, series, collections and mixed libraries are). */
     data object Empty : LibrariesUiState
 
     data class Error(
@@ -38,8 +39,14 @@ sealed interface LibrariesUiState {
     ) : LibrariesUiState
 }
 
-/** Whether the Libraries tab lists a library of [this] kind: movies and series, for now. */
-fun LibraryKind.listed(): Boolean = this == LibraryKind.Movies || this == LibraryKind.TvShows
+/**
+ * Whether the Libraries tab lists a library of [this] kind: movies, series, collections, and a mixed library (no collection type) that
+ * holds movies and series together. Music, books, photos, home videos, playlists and live TV are left out, not greyed.
+ */
+fun LibraryKind.listed(): Boolean = this != LibraryKind.Other
+
+/** Whether the server has a library the tab does not list. */
+fun List<LibraryView>.hasUnlisted(): Boolean = any { !it.kind.listed() }
 
 /** The libraries the tab lists, in the order the server gave them, as tiles. */
 fun List<LibraryView>.tiles(): List<LibraryTile> = filter { it.kind.listed() }.map { it.tile() }

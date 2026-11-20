@@ -41,6 +41,24 @@ class ClientLibrariesScreenshotTest {
 
     @PreviewTest
     @JellyfinScreenStatePreview
+    @JellyfinSpanishPreviews
+    @JellyfinWidePreview
+    @Composable
+    fun withCollectionsAndOthersHidden() =
+        Libraries(
+            LibrariesUiState.Ready(
+                listOf(
+                    tiles[0],
+                    LibraryTile("lib-sets", "Collections", LibraryKind.BoxSets, imageTag = null),
+                    tiles[1],
+                    LibraryTile("lib-mixed", "Everything", LibraryKind.Mixed, imageTag = null),
+                ),
+                othersHidden = true,
+            ),
+        )
+
+    @PreviewTest
+    @JellyfinScreenStatePreview
     @JellyfinWidePreview
     @Composable
     fun loading() = Libraries(LibrariesUiState.Loading)

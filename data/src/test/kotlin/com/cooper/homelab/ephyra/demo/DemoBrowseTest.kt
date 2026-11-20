@@ -183,6 +183,6 @@ class DemoBrowseTest {
             val people = JellyfinPersonRepository(client, "demo-user", latest)
             assertEquals("Sam Rivers", people.person("demo-person-1")!!.name)
             assertTrue(people.titlesWith("demo-person-1").items.isNotEmpty())
-            assertTrue(JellyfinCollectionRepository(client, "demo-user", latest).collectionsOf("demo-movie-1")!!.isEmpty())
+            assertTrue(JellyfinCollectionRepository(client, "demo-user", latest).collectionsOf("demo-movie-1").isEmpty())
         }
 }

@@ -1,16 +1,21 @@
 package com.cooper.homelab.ephyra.browse
 
-/** What a library holds, from the server's `CollectionType`. A kind this app does not browse is [Other]. */
+/**
+ * What a library holds, from the server's `CollectionType`. A view with no collection type holds movies and series together and is
+ * [Mixed]. A kind this app does not browse (music, books, photos, home videos, playlists, live TV) is [Other].
+ */
 enum class LibraryKind {
     Movies,
     TvShows,
     BoxSets,
+    Mixed,
     Other,
     ;
 
     companion object {
         fun fromServer(collectionType: String?): LibraryKind =
             when (collectionType?.lowercase()) {
+                null, "" -> Mixed
                 "movies" -> Movies
                 "tvshows" -> TvShows
                 "boxsets" -> BoxSets

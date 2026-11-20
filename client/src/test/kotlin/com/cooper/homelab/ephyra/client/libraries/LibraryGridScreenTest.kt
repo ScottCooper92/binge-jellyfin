@@ -19,6 +19,7 @@ import com.cooper.homelab.ephyra.browse.ItemFilters
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.browse.ItemSort
 import com.cooper.homelab.ephyra.browse.ItemUserData
+import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.SortField
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -120,6 +121,32 @@ class LibraryGridScreenTest {
         rule.onNodeWithText("Nothing here yet").assertDoesNotExist()
         rule.onNodeWithText("Clear filters").performClick()
         assertEquals(1, reported.clearedAll)
+    }
+
+    @Test
+    fun `a box set shows how many titles it holds, and a one-title box set says so`() {
+        val sets =
+            listOf(
+                BrowseItem("c1", "Bond", ItemKind.BoxSet, childCount = 24),
+                BrowseItem("c2", "Solo", ItemKind.BoxSet, childCount = 1),
+                BrowseItem("c3", "Unknown count", ItemKind.BoxSet, year = 2001),
+            )
+        show(ready(items = sets))
+        rule.onNodeWithText("24 titles").assertIsDisplayed()
+        rule.onNodeWithText("1 title").assertIsDisplayed()
+        rule.onNodeWithText("2001").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a box-set library's sheet lists the order and favourites and no watched, genres or years`() {
+        val choices = FilterChoices(listOf("Drama"), listOf(2020), listOf("PG"))
+        show(ready(LibraryGridControls("Collections", LibraryFilterDraft(), choices, LibraryKind.BoxSets)))
+        rule.onNodeWithContentDescription("Filters and order").performClick()
+        rule.onNodeWithText("Sort by").assertIsDisplayed()
+        rule.onNodeWithText("Favourites").assertExists()
+        rule.onNodeWithText("Watched").assertDoesNotExist()
+        rule.onNodeWithText("Genres").assertDoesNotExist()
+        rule.onNodeWithText("Years").assertDoesNotExist()
     }
 
     @Test
