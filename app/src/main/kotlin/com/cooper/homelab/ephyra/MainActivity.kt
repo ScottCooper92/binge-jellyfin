@@ -370,8 +370,8 @@ internal fun ConsoleHost(
 }
 
 /**
- * The page for a title route. A film's, a collection's, a series' or an episode's page needs the user's session and the server's version; every other
- * kind keeps the placeholder until its screen lands.
+ * The page for a title route. A film's, a collection's, a series' or an episode's page needs the user's session and the server's version; every
+ * other kind keeps the placeholder until its screen lands.
  */
 @Composable
 private fun TitlePageRoute(
