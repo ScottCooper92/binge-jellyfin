@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.ui
 
 import android.graphics.Bitmap
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.binge.companion.sdk.attempt
@@ -342,6 +343,8 @@ class JellyfinViewModel(
     private val cleartext: CleartextConsent = CleartextConsent.None,
     /** Where a Quick Connect wait is kept so it outlives the process; nothing is kept by default. */
     private val linkStash: LinkStash = NoLinkStash,
+    /** Where the typed address and the step reached are kept across the process being killed; nothing survives by default. */
+    savedState: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     /** The steps before a session exists. The setup half writes this and never a signed-in state. */
     private val _state = MutableStateFlow<UiState.Setup>(UiState.Loading)
@@ -407,8 +410,16 @@ class JellyfinViewModel(
     /** The forgotten-password steps of the sign-in step. */
     val forgotPassword = ForgotPasswordFlow(viewModelScope, connection, _state, fillPassword = setup::fillPassword)
 
+    private val drafts = SetupDrafts(savedState)
+
     init {
-        viewModelScope.launch { sessions.current()?.let(setup::restore) }
+        viewModelScope.launch {
+            val session = sessions.current()
+            // A session is the app's own state to come back to; the steps before one are what the saved draft puts back.
+            if (session != null) setup.restore(session) else drafts.restoreInto(setup)
+            // Nothing is kept once a session exists: the draft is for the steps that lead to one.
+            drafts.keep(combine(setup.flow.draft, signedInFlow) { draft, signedIn -> draft.takeIf { signedIn == null } })
+        }
     }
 
     /** Reads the gates, then the library index; with [gatesOnly], the gates alone. See [SignedInSession.refresh]. */

@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -137,6 +138,7 @@ class MainActivity : ComponentActivity() {
                     analytics = graph.analytics,
                     onSessionEnded = graph::clearAccountCaches,
                     cleartext = graph.cleartextConsent,
+                    savedState = createSavedStateHandle(),
                 )
             }
         }

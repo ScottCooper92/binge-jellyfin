@@ -78,7 +78,8 @@ internal fun ConnectSetupScreen(
     var lastEnterServer by remember { mutableStateOf<UiState.EnterServer?>(null) }
     val signIn = state as? UiState.SignIn
     val enterServer = state as? UiState.EnterServer
-    signIn?.let { lastSignIn = it }
+    // What a sliding step keeps is for drawing it out, so the account pictures and the typed password are not part of it.
+    signIn?.let { lastSignIn = it.copy(password = "", publicPictures = emptyMap()) }
     enterServer?.let { lastEnterServer = it }
     val signInShown = signIn ?: lastSignIn
     val enterServerShown = enterServer ?: lastEnterServer
@@ -95,6 +96,8 @@ internal fun ConnectSetupScreen(
                 notThisServer = stringResource(R.string.error_not_jellyfin),
                 notSetUpMessage = stringResource(R.string.setup_incomplete_body),
                 linkCopy = { quickConnectCopy() },
+                // Ephyra's sign-in asks for no key, so its warning says "your password", as the television's does.
+                insecureWarning = stringResource(R.string.setup_insecure_warning),
             ),
         addressActions =
             ConnectAddressActions(
@@ -122,7 +125,7 @@ internal fun ConnectSetupScreen(
         },
         barActions = { ReportProblemAction() },
         localNetwork =
-            enterServer?.takeIf { it.error == SetupError.LocalNetworkDenied }?.let { localNetworkAsk(actions) },
+            enterServerShown?.takeIf { it.error == SetupError.LocalNetworkDenied }?.let { localNetworkAsk(actions) },
         foundServers = enterServerShown?.let { step -> { DiscoveredServers(step, actions) } },
         errorText = { error -> errorText(error.toSetupError()) },
         signInOptions =
