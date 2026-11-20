@@ -1,108 +1,57 @@
 package com.cooper.homelab.ephyra.ui.client
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.binge.companion.sdk.attempt
 import com.cooper.homelab.core.foundation.ServerFailure
-import com.cooper.homelab.ephyra.browse.ImageUrls
 import com.cooper.homelab.ephyra.browse.JellyfinCollectionRepository
 import com.cooper.homelab.ephyra.browse.JellyfinTitleRepository
 import com.cooper.homelab.ephyra.browse.JellyfinUserDataRepository
 import com.cooper.homelab.ephyra.client.title.CollectionUiState
 import com.cooper.homelab.ephyra.client.title.CollectionViewModel
-import com.cooper.homelab.ephyra.client.title.TitleImage
 import com.cooper.homelab.ephyra.server.Connection
+import com.cooper.homelab.ephyra.server.JellyfinClient
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.UserDataChange
 import com.cooper.homelab.ephyra.server.serverFailure
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-
-/** What the host has read of the session so far. */
-private sealed interface CollectionSource {
-    data object Starting : CollectionSource
-
-    data object NotConnected : CollectionSource
-
-    class Ready(
-        val model: CollectionViewModel,
-        val images: ImageUrls,
-    ) : CollectionSource
-}
 
 /**
  * Holds a collection page's [CollectionViewModel] for the life of the page, so a rotation keeps what it shows. The signed-in client is read once
  * ([Connection.signedIn]) and the page's model is built on it, with the repositories for the user and the server's [profile]. [socket]
- * is the server's `UserDataChanged` messages, so a mark made in another app shows here. With no session the page is a "not connected"
- * failure, and a retry reads the session again. The access token is the client's own, in its header: pictures are named through
- * [ImageUrls], which never carries it.
+ * is the server's `UserDataChanged` messages, so a mark made in another app shows here. The host is [TitlePageViewModel]'s: this adds the
+ * model the page is built on and its own actions.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 class CollectionPageViewModel(
-    private val connection: Connection,
-    private val dispatcher: CoroutineDispatcher,
-    private val profile: JellyfinServerProfile,
-    private val socket: Flow<List<UserDataChange>>,
-) : ViewModel() {
-    private val source = MutableStateFlow<CollectionSource>(CollectionSource.Starting)
-    private var itemId: String? = null
-    private var starting: Job? = null
+    connection: Connection,
+    dispatcher: CoroutineDispatcher,
+    profile: JellyfinServerProfile,
+    socket: Flow<List<UserDataChange>>,
+) : TitlePageViewModel<CollectionViewModel, CollectionUiState>(
+        connection,
+        dispatcher,
+        profile,
+        socket,
+        loading = CollectionUiState.Loading,
+        notConnected = CollectionUiState.Failed(ServerFailure.NotConnected),
+    ) {
+    override fun create(
+        client: JellyfinClient,
+        userId: String,
+    ) = CollectionViewModel(
+        scope = viewModelScope,
+        dispatcher = dispatcher,
+        titles = JellyfinTitleRepository(client, userId, profile),
+        userData = JellyfinUserDataRepository(client, userId, profile, socket),
+        collections = JellyfinCollectionRepository(client, userId, profile),
+        classify = { it.serverFailure() },
+    )
 
-    /** What the page shows. */
-    val state: StateFlow<CollectionUiState> =
-        source
-            .flatMapLatest {
-                when (it) {
-                    CollectionSource.Starting -> flowOf(CollectionUiState.Loading)
-                    CollectionSource.NotConnected -> flowOf(CollectionUiState.Failed(ServerFailure.NotConnected))
-                    is CollectionSource.Ready -> it.model.state
-                }
-            }.stateIn(viewModelScope, SharingStarted.Eagerly, CollectionUiState.Loading)
+    override fun stateOf(model: CollectionViewModel) = model.state
 
-    /** Opens the page for the collection [id]. Does nothing once it has, or while the read of the session still runs. */
-    fun start(id: String) {
-        itemId = id
-        if (source.value is CollectionSource.Ready || starting?.isActive == true) return
-        starting =
-            viewModelScope.launch(dispatcher) {
-                val signedIn = attempt { connection.signedIn() }.getOrNull()
-                if (signedIn == null) {
-                    source.value = CollectionSource.NotConnected
-                    return@launch
-                }
-                val (session, client) = signedIn
-                val model =
-                    CollectionViewModel(
-                        scope = viewModelScope,
-                        dispatcher = dispatcher,
-                        titles = JellyfinTitleRepository(client, session.userId, profile),
-                        userData = JellyfinUserDataRepository(client, session.userId, profile, socket),
-                        collections = JellyfinCollectionRepository(client, session.userId, profile),
-                        classify = { it.serverFailure() },
-                    )
-                source.value = CollectionSource.Ready(model, ImageUrls(client))
-                model.start(id)
-            }
-    }
+    override fun open(
+        model: CollectionViewModel,
+        id: String,
+    ) = model.start(id)
 
-    /** Reads the collection again after a failure; with no session read yet, it reads the session again. */
-    fun retry() {
-        val ready = source.value as? CollectionSource.Ready
-        if (ready != null) ready.model.retry() else itemId?.let(::start)
-    }
-
-    /** Turns a picture the page asks for into a URL at [width] pixels, or null before the client is read. */
-    fun imageUrl(
-        image: TitleImage,
-        width: Int,
-    ): String? = (source.value as? CollectionSource.Ready)?.images?.of(image.itemId, image.kind, image.tag, width)
+    override fun reload(model: CollectionViewModel) = model.retry()
 }
