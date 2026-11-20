@@ -37,7 +37,7 @@ jobs:
       (!github.event.workflow_run || github.event.workflow_run.head_repository.full_name == github.repository)
     uses: ScottCooper92/binge-ci/.github/workflows/author-retarget.yml@c34892a468b77ebc2f92ef7ec716e27ad5c50d69 # v1.0.50
     with:
-      private_submodules: homelab-core,binge-design-system,binge-ci
+      private_submodules: homelab-core,homelab-player,binge-design-system,binge-ci
       author_bot_id: ${{ vars.AUTHOR_BOT_ID }}
     secrets:
       AUTHOR_APP_ID: ${{ secrets.AUTHOR_APP_ID }}
