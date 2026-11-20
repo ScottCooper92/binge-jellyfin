@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.ui.nav
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.cooper.homelab.ephyra.browse.ItemKind
+import com.cooper.homelab.ephyra.client.search.SearchKind
 
 /** The route for an item of [kind], or null for a kind that has no page (the server's other types). */
 fun titleRoute(
@@ -34,4 +35,17 @@ fun NavBackStack<NavKey>.openTitle(
 fun NavBackStack<NavKey>.openPerson(itemId: String) {
     val key = PersonRoute(itemId)
     if (lastOrNull() != key) add(key)
+}
+
+/** A search result's page, over the shell: a title opens its own page and a person theirs. */
+fun NavBackStack<NavKey>.openSearchHit(
+    kind: SearchKind,
+    id: String,
+) {
+    when (kind) {
+        SearchKind.Movie -> openTitle(ItemKind.Movie, id)
+        SearchKind.Series -> openTitle(ItemKind.Series, id)
+        SearchKind.Episode -> openTitle(ItemKind.Episode, id)
+        SearchKind.Person -> openPerson(id)
+    }
 }
