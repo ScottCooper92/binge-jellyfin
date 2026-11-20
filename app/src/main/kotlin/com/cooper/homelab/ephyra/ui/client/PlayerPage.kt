@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -34,4 +35,6 @@ fun PlayerPage(
     var failure by remember(route.sessionId) { mutableStateOf<AudioSwitchFailure?>(null) }
     LaunchedEffect(route.sessionId) { graph.playbackSittings.audioSwitchFailures(route.sessionId).collect { failure = it } }
     failure?.let { AudioSwitchMessage(it, onDismiss = { failure = null }) }
+    val leave by rememberUpdatedState(onBack)
+    LaunchedEffect(route.sessionId) { graph.playbackSittings.endings(route.sessionId).collect { leave() } }
 }
