@@ -66,7 +66,7 @@ jobs:
       (!github.event.workflow_run || github.event.workflow_run.head_repository.full_name == github.repository)
     uses: ScottCooper92/binge-ci/.github/workflows/bot-review.yml@c34892a468b77ebc2f92ef7ec716e27ad5c50d69 # v1.0.50
     with:
-      private_submodules: homelab-core,binge-design-system,binge-ci
+      private_submodules: homelab-core,homelab-player,binge-design-system,binge-ci
       dispatch_pr: ${{ inputs.pr }}
       auto_merge: true
       # Stacked PRs land here, and squash rewrites the parent's commits into a new SHA. Once the
