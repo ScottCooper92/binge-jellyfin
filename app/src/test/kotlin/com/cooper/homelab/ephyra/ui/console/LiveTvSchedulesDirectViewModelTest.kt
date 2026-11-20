@@ -11,6 +11,7 @@ import com.cooper.homelab.ephyra.testSessionStore
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
@@ -60,8 +61,14 @@ class LiveTvSchedulesDirectViewModelTest {
 
     private fun vm() = made(LiveTvSchedulesDirectViewModel(connection) { changed++ })
 
-    private fun LiveTvSchedulesDirectViewModel.until(check: (SdUiState) -> Boolean) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+    /** A wait that times out says where the setup had got to and what the server was asked, so a failure on a loaded machine can be told apart. */
+    private fun LiveTvSchedulesDirectViewModel.until(check: (SdUiState) -> Boolean): SdUiState =
+        try {
+            runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+        } catch (e: TimeoutCancellationException) {
+            val asked = jellyfin.requests.map { "${it.method} ${it.url.encodedPath}" }
+            throw AssertionError("Timed out waiting for the setup to reach a state. It was ${state.value}; the server was asked $asked", e)
+        }
 
     private val usa = SdCountry("USA", "United States", "North America")
 
