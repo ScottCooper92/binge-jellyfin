@@ -57,6 +57,7 @@ import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
+import com.cooper.homelab.ephyra.ui.client.SeasonPage
 import com.cooper.homelab.ephyra.ui.client.SeriesPage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
@@ -73,6 +74,7 @@ import com.cooper.homelab.ephyra.ui.nav.EpisodeRoute
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import com.cooper.homelab.ephyra.ui.nav.LibraryRoute
 import com.cooper.homelab.ephyra.ui.nav.MovieRoute
+import com.cooper.homelab.ephyra.ui.nav.SeasonRoute
 import com.cooper.homelab.ephyra.ui.nav.SeriesRoute
 import com.cooper.homelab.ephyra.ui.nav.TitleRoute
 import com.cooper.homelab.ephyra.ui.nav.closeTop
@@ -368,7 +370,7 @@ internal fun ConsoleHost(
 }
 
 /**
- * The page for a title route. A film's, a series' or an episode's page needs the user's session and the server's version; every other kind keeps the
+ * The page for a title route. A film's, a series', a season's or an episode's page needs the user's session and the server's version; every other kind keeps the
  * placeholder until its screen lands.
  */
 @Composable
@@ -408,6 +410,15 @@ private fun TitlePageRoute(
                 onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
                 onOpenSeries = { id -> backStack.openTitle(ItemKind.Series, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
+            )
+        route is SeasonRoute && signed != null ->
+            SeasonPage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenSeries = { id -> backStack.openTitle(ItemKind.Series, id) },
+                onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
             )
         else -> TitlePlaceholder(onBack = { backStack.closeTop() })
     }
