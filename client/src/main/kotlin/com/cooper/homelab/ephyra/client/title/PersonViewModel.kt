@@ -60,8 +60,10 @@ class PersonViewModel(
         load()
     }
 
-    /** Reads the person again, after a failure. */
-    fun retry() = load()
+    /** Reads the person again, after a failure. Does nothing otherwise, so it cannot run beside a page of titles that is still being read. */
+    fun retry() {
+        if (held.value is Held.Failed) load()
+    }
 
     /** Asks for the next page of titles, when there is one and none is being read; also the retry of a page that failed. */
     fun loadMore() {

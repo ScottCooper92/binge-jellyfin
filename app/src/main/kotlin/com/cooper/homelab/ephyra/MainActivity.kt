@@ -84,7 +84,6 @@ import com.cooper.homelab.ephyra.ui.nav.top
 import com.cooper.homelab.ephyra.ui.pickPublicUser
 import com.cooper.homelab.ephyra.ui.rememberAppSettingsBinding
 import com.cooper.homelab.ephyra.ui.rememberNotificationBinding
-import com.cooper.homelab.ephyra.ui.tryDemo
 import com.cooper.homelab.ephyra.ui.tv.TvConsentGate
 import com.cooper.homelab.ephyra.ui.tv.TvJellyfinRoot
 import com.cooper.homelab.ephyra.ui.tv.rememberTvPlayback
@@ -131,11 +130,12 @@ class MainActivity : ComponentActivity() {
                     graph.sessions,
                     graph.connection,
                     graph.index,
+                    dispatcher = graph.ioDispatcher,
+                    cipher = graph.linkCipher,
                     discover = graph.discovery::find,
                     localNetwork = AndroidLocalNetworkPermission(applicationContext),
                     analytics = graph.analytics,
                     onSessionEnded = graph::clearAccountCaches,
-                    addressPolicy = graph.addressPolicy,
                     cleartext = graph.cleartextConsent,
                 )
             }
@@ -249,7 +249,7 @@ class MainActivity : ComponentActivity() {
 
 /** The app's screens: the sign-in steps, then the home, and the pages and items open over it, on [backStack]. */
 @Composable
-private fun ConsoleHost(
+internal fun ConsoleHost(
     state: UiState,
     backStack: NavBackStack<NavKey>,
     graph: AppGraph,

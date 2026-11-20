@@ -114,13 +114,16 @@ class StartupWizard internal constructor(
     private val state: MutableStateFlow<UiState.Setup>,
     private val scope: CoroutineScope,
     private val localNetwork: LocalNetworkPermission,
+    /** The wizard was left for the notice it was opened from: the sign-in step shows again as it was. */
+    private val onBack: () -> Unit,
+    signInByHand: (name: String, baseUrl: String) -> Unit,
     signIn: suspend (HttpUrl, PublicServerInfo, SignedIn) -> Unit,
 ) {
     /** The first account: its fields and its save. */
     val account = StartupAccountStep(connection, state, scope, localNetwork)
 
     /** Remote access, then completing the server and signing in as the account. */
-    val finish = StartupFinishStep(connection, state, scope, localNetwork, signIn)
+    val finish = StartupFinishStep(connection, state, scope, localNetwork, signIn, signInByHand)
 
     /** Opens the wizard from the notice, and reads what it needs. */
     fun open() {
@@ -176,10 +179,8 @@ class StartupWizard internal constructor(
 
     /** Back to the notice. */
     fun back() {
-        val wizard = state.value as? UiState.Startup ?: return
-        state.value = UiState.SignIn(baseUrl = wizard.baseUrl, server = wizard.server)
-        // The step is built anew, so Quick Connect's state is read again, as on the step reached from the server step.
-        scope.loadQuickConnectOn(connection, state, wizard.server.baseUrl, wizard.baseUrl) {}
+        if (state.value !is UiState.Startup) return
+        onBack()
     }
 
     /** The wizard's calls, as the screens take them. */

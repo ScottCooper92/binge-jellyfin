@@ -25,6 +25,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -95,6 +96,20 @@ class EpisodeViewModelTest {
             assertEquals(2, page.episodeNumber)
             assertEquals(PlayAction(PlayKind.Play, null), page.play)
             assertEquals(listOf("e1", "e2", "e3"), (page.season as EpisodesState.Ready).episodes.map { it.id })
+        }
+
+    @Test
+    fun `an episode the server gives no season for has no season row`() =
+        runBlocking {
+            seed()
+            jellyfin.browse.titles.add(
+                FakeTitle("loose", "Loose", "lib-shows", "Episode", seriesId = "series", seriesName = "Show", season = 1, episode = 9),
+            )
+            val model = viewModel().also { it.start("loose") }
+            val page = model.ready()
+            assertNull(page.season)
+            Thread.sleep(SETTLE_MILLIS)
+            assertNull(model.ready().season)
         }
 
     @Test

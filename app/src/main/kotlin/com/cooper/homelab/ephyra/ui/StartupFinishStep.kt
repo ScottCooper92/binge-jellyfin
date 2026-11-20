@@ -28,6 +28,8 @@ class StartupFinishStep internal constructor(
     private val scope: CoroutineScope,
     private val localNetwork: LocalNetworkPermission,
     private val signIn: suspend (HttpUrl, PublicServerInfo, SignedIn) -> Unit,
+    /** The sign-in as the new account failed: the sign-in step shows, on the server read again, with this name filled in. */
+    private val signInByHand: (name: String, baseUrl: String) -> Unit,
 ) {
     fun onRemoteAccess(on: Boolean) = edit { copy(remoteAccess = on, portMapping = portMapping && on, error = null) }
 
@@ -73,12 +75,7 @@ class StartupFinishStep internal constructor(
         val finished = wizard.server.copy(startupWizardCompleted = true)
         val signedIn = attempt { connection.anonymous(url).authenticateByName(step.name, step.password) }
         signedIn.exceptionOrNull()?.let { connection.logger.noted(TAG, "sign-in after setup failed", it) }
-        signedIn.getOrNull()?.let { signIn(url, finished, it) } ?: state.update { current ->
-            if (current !is UiState.Startup) return@update current
-            UiState.SignIn(baseUrl = wizard.baseUrl, server = finished, username = step.name)
-        }
-        // The step is built anew, so Quick Connect's state is read again, as on the step reached from the server step.
-        scope.loadQuickConnectOn(connection, state, url, wizard.baseUrl) {}
+        signedIn.getOrNull()?.let { signIn(url, finished, it) } ?: signInByHand(step.name, wizard.baseUrl)
     }
 
     private fun Throwable.isAlreadyComplete() = this is JellyfinHttpException && code == HTTP_UNAUTHORIZED

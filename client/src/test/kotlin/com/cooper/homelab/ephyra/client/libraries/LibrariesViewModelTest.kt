@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.client.libraries
 
 import com.cooper.homelab.core.foundation.ServerFailure
+import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.LibraryRepository
 import com.cooper.homelab.ephyra.browse.LibraryView
@@ -67,6 +68,21 @@ class LibrariesViewModelTest {
             ),
             ready.tiles,
         )
+    }
+
+    @Test
+    fun `a library is drawn with its thumb, else its backdrop, else its primary, else no picture`() {
+        val thumb = LibraryView("a", "A", LibraryKind.Movies, primaryImageTag = "p", thumbImageTag = "t", backdropImageTag = "b")
+        val backdrop = LibraryView("b", "B", LibraryKind.Movies, primaryImageTag = "p", backdropImageTag = "b")
+        val primary = LibraryView("c", "C", LibraryKind.Movies, primaryImageTag = "p")
+        val none = LibraryView("d", "D", LibraryKind.Movies)
+        val tiles = listOf(thumb, backdrop, primary, none).tiles()
+        assertEquals(
+            listOf(ImageKind.Thumb to "t", ImageKind.Backdrop to "b", ImageKind.Primary to "p", ImageKind.Primary to null),
+            tiles.map { it.imageKind to it.imageTag },
+        )
+        // The name goes over a picture with none in it, and a Primary already has it; with no picture the tile is the name.
+        assertEquals(listOf(true, true, false, true), tiles.map { it.showsName })
     }
 
     @Test

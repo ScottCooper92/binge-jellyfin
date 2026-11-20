@@ -2,7 +2,6 @@ package com.cooper.homelab.ephyra.ui.client
 
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.auth.JellyfinSession
-import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.JellyfinLibraryRepository
 import com.cooper.homelab.ephyra.client.libraries.LibrariesUiState
 import com.cooper.homelab.ephyra.client.libraries.LibrariesViewModel
@@ -44,5 +43,5 @@ class LibrariesTabViewModel(
     fun imageUrl(
         tile: LibraryTile,
         width: Int,
-    ): String? = tile.imageTag?.let { images?.of(tile.id, ImageKind.Primary, it, width) }
+    ): String? = tile.imageTag?.let { images?.of(tile.id, tile.imageKind, it, width) }
 }

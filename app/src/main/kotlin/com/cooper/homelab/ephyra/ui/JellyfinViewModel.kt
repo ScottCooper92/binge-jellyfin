@@ -4,47 +4,33 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.binge.companion.sdk.attempt
+import com.cooper.homelab.core.presentation.connect.LinkStash
+import com.cooper.homelab.core.server.connection.SecretCipher
 import com.cooper.homelab.core.server.network.CleartextConsent
 import com.cooper.homelab.core.server.network.LocalNetworkPermission
 import com.cooper.homelab.core.telemetry.Analytics
 import com.cooper.homelab.core.telemetry.NoOpAnalytics
 import com.cooper.homelab.ephyra.auth.JellyfinSession
 import com.cooper.homelab.ephyra.auth.SessionStore
-import com.cooper.homelab.ephyra.demo.DEMO_ORIGIN
-import com.cooper.homelab.ephyra.demo.DEMO_USER_NAME
-import com.cooper.homelab.ephyra.demo.isDemoOrigin
-import com.cooper.homelab.ephyra.server.AddressPolicy
 import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscoveredServer
 import com.cooper.homelab.ephyra.server.JellyfinAccount
-import com.cooper.homelab.ephyra.server.JellyfinClient
-import com.cooper.homelab.ephyra.server.JellyfinHttpException
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
-import com.cooper.homelab.ephyra.server.JellyfinUnreadableAnswer
 import com.cooper.homelab.ephyra.server.LibraryIndex
 import com.cooper.homelab.ephyra.server.PublicServerInfo
 import com.cooper.homelab.ephyra.server.PublicUser
 import com.cooper.homelab.ephyra.server.SignedIn
-import com.cooper.homelab.ephyra.server.authenticateByName
-import com.cooper.homelab.ephyra.server.authenticateWithQuickConnect
-import com.cooper.homelab.ephyra.server.insecureHost
 import com.cooper.homelab.ephyra.server.localNetworkHostOrNull
 import com.cooper.homelab.ephyra.server.noted
 import com.cooper.homelab.ephyra.server.publicUsers
-import com.cooper.homelab.ephyra.server.quickConnectAuthenticated
-import com.cooper.homelab.ephyra.server.quickConnectEnabled
-import com.cooper.homelab.ephyra.server.quickConnectEnabledOrNull
-import com.cooper.homelab.ephyra.server.quickConnectInitiate
 import com.cooper.homelab.ephyra.server.userThumbnail
 import com.cooper.homelab.ephyra.telemetry.AnalyticsEvents
 import com.cooper.homelab.ephyra.telemetry.SignInReports
 import com.cooper.homelab.ephyra.ui.console.decodeThumbnail
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -150,7 +136,7 @@ fun JellyfinViewModel.pickPublicUser(user: PublicUser) {
 }
 
 /** Reads the server's public users once, for the sign-in step. A failure or an empty list leaves the step as it is. */
-private fun CoroutineScope.loadPublicUsers(
+internal fun CoroutineScope.loadPublicUsers(
     connection: Connection,
     state: MutableStateFlow<UiState.Setup>,
     url: HttpUrl,
@@ -163,38 +149,6 @@ private fun CoroutineScope.loadPublicUsers(
                 state.update { (it as? UiState.SignIn)?.takeIf { s -> s.baseUrl == base }?.copy(publicUsers = users) ?: it }
                 loadPublicPictures(connection, state, url, users)
             }.onFailure { connection.logger.noted("JellyfinSetup", "the server's public users could not be read", it) }
-    }
-}
-
-/**
- * Reads whether the server has Quick Connect on, for the sign-in step. The route is public, so it is the anonymous client. Only an
- * answer of "off" changes the step: a failure or an unclear answer keeps Quick Connect offered. A code already asked for is
- * dropped without an error, since the user did not ask to be told.
- */
-internal fun CoroutineScope.loadQuickConnectOn(
-    connection: Connection,
-    state: MutableStateFlow<UiState.Setup>,
-    url: HttpUrl,
-    base: String,
-    onOff: () -> Unit,
-) {
-    launch {
-        val on =
-            attempt { connection.anonymous(url).quickConnectEnabledOrNull() }
-                .onFailure { connection.logger.noted("JellyfinSetup", "whether Quick Connect is on could not be read", it) }
-                .getOrNull()
-        // Only for the step it was asked for: the user may have moved to another server while it was in flight, and that server's
-        // code request is not this answer's to cancel.
-        if (on == false && (state.value as? UiState.SignIn)?.baseUrl == base) {
-            // A code request already in flight stops first, so it cannot land a code or an error after the step says it is off.
-            onOff()
-            state.update { s ->
-                (s as? UiState.SignIn)
-                    ?.takeIf { it.baseUrl == base }
-                    ?.copy(quickConnectOn = false, quickConnectCode = null, quickConnectError = null, gettingCode = false)
-                    ?: s
-            }
-        }
     }
 }
 
@@ -232,13 +186,6 @@ private suspend fun loadPublicPictures(
 
 private const val CONCURRENT_PICTURES = 4
 
-/** Opens the demo server, which answers from memory and signs in as its own administrator. */
-fun JellyfinViewModel.tryDemo() {
-    if ((state.value as? UiState.EnterServer)?.checking == true) return
-    onAddress(DEMO_ORIGIN)
-    connect()
-}
-
 /**
  * The user has answered the local-network prompt, or come back from the app's settings: try again whatever it was that
  * failed for want of it. The server step connects again; a signed-in server is read again; sign-in leaves the next press
@@ -246,7 +193,7 @@ fun JellyfinViewModel.tryDemo() {
  */
 fun JellyfinViewModel.localNetworkAnswered() {
     when (state.value) {
-        is UiState.EnterServer -> connect()
+        is UiState.EnterServer -> localNetworkResult()
         is UiState.SignedIn -> refresh()
         else -> Unit
     }
@@ -369,11 +316,18 @@ sealed interface UiState {
     }
 }
 
-/** The app's one screen state machine: server, sign-in (password or Quick Connect), then the signed-in settings. */
+/**
+ * The app's one screen state machine: server, sign-in (password or Quick Connect), then the signed-in settings. The first two steps are
+ * the shared connect flow's, in [SetupFlow]; what the screens read of them is [projectSetup], in the shapes they have always taken.
+ */
 class JellyfinViewModel(
     private val sessions: SessionStore,
     private val connection: Connection,
     private val index: LibraryIndex,
+    /** Where every read and sign-in of the connect flow runs. */
+    private val dispatcher: CoroutineDispatcher,
+    /** Seals what a Quick Connect wait keeps, should the app keep it. */
+    private val cipher: SecretCipher,
     /** The servers that answer a broadcast on the local network; empty when none does. */
     private val discover: suspend () -> List<DiscoveredServer>,
     private val quickConnectPollMillis: Long = QUICK_CONNECT_POLL_MILLIS,
@@ -384,10 +338,10 @@ class JellyfinViewModel(
     private val analytics: Analytics = NoOpAnalytics,
     /** Runs when the session ends, by sign-out or a refused token: what the app cached about the account goes with it. */
     private val onSessionEnded: suspend () -> Unit = {},
-    /** How a typed address becomes the addresses to try: the released behaviour unless the app passes the shared library's. */
-    private val addressPolicy: AddressPolicy = AddressPolicy.Legacy,
     /** Where the user's agreement to plain HTTP to a public host is kept. Nothing is agreed to by default. */
     private val cleartext: CleartextConsent = CleartextConsent.None,
+    /** Where a Quick Connect wait is kept so it outlives the process; nothing is kept by default. */
+    private val linkStash: LinkStash = NoLinkStash,
 ) : ViewModel() {
     /** The steps before a session exists. The setup half writes this and never a signed-in state. */
     private val _state = MutableStateFlow<UiState.Setup>(UiState.Loading)
@@ -401,23 +355,10 @@ class JellyfinViewModel(
     /** What the screens read: the signed-in state while a session is held, the setup step otherwise. */
     val state: StateFlow<UiState> = ScreenState(_state, signedInFlow)
 
-    /** The setup wizard for a server that has not finished its first-run setup. */
-    val startup =
-        StartupWizard(connection, _state, viewModelScope, localNetwork) { url, server, signedIn ->
-            finish(url, server, signedIn, AnalyticsEvents.METHOD_PASSWORD)
-        }
-
     private val reports = SignInReports(analytics)
 
-    private val addressCheck = AddressCheck(connection, localNetwork)
-
-    private var quickConnect: Job? = null
-
-    /** The forgotten-password steps of the sign-in step. */
-    val forgotPassword = ForgotPasswordFlow(viewModelScope, connection, _state)
-
     /** Refreshing, the gates, the server's health and signing out: everything from a saved session on. */
-    private val signedIn =
+    private val signedIn: SignedInSession =
         SignedInSession(
             viewModelScope,
             signedInFlow,
@@ -428,25 +369,46 @@ class JellyfinViewModel(
             localNetwork,
             reports,
             onSessionEnded,
-            leave = ::leaveSession,
+            leave = { setup.leave(it) },
         )
 
-    /** The session has ended: the server step takes the screen, and the signed-in state goes. */
-    private fun leaveSession(baseUrl: String) {
-        _state.value = enterServer(addressPolicy, baseUrl)
-        signedInFlow.value = null
-    }
+    /** The address and sign-in steps, and where they end. */
+    internal val setup: SetupFlow =
+        SetupFlow(
+            scope = viewModelScope,
+            dispatcher = dispatcher,
+            connection = connection,
+            sessions = sessions,
+            handoff = SessionHandoff(sessions, index),
+            localNetwork = localNetwork,
+            cleartext = cleartext,
+            cipher = cipher,
+            linkStash = linkStash,
+            quickConnectPollMillis = quickConnectPollMillis,
+            reports = reports,
+            state = _state,
+            signedInFlow = signedInFlow,
+            refresh = { signedIn.refresh() },
+        )
+
+    private val actions = SetupActions(setup, _state, viewModelScope, { signedInFlow.value }, discover)
+
+    /** The setup wizard for a server that has not finished its first-run setup. */
+    val startup =
+        StartupWizard(
+            connection,
+            _state,
+            viewModelScope,
+            localNetwork,
+            onBack = setup::showSignInAgain,
+            signInByHand = setup::signInByHand,
+        ) { url, server, signedIn -> setup.finish(url, server, signedIn, AnalyticsEvents.METHOD_PASSWORD) }
+
+    /** The forgotten-password steps of the sign-in step. */
+    val forgotPassword = ForgotPasswordFlow(viewModelScope, connection, _state, fillPassword = setup::fillPassword)
 
     init {
-        viewModelScope.launch {
-            val session = sessions.current()
-            if (session == null) {
-                _state.value = UiState.EnterServer()
-            } else {
-                signedInFlow.value = signedInState(addressPolicy, session)
-                refresh()
-            }
-        }
+        viewModelScope.launch { sessions.current()?.let(setup::restore) }
     }
 
     /** Reads the gates, then the library index; with [gatesOnly], the gates alone. See [SignedInSession.refresh]. */
@@ -458,274 +420,40 @@ class JellyfinViewModel(
     /** Ends the session here and on the server. See [SignedInSession.signOut]. */
     fun signOut() = signedIn.signOut()
 
-    fun onAddress(value: String) =
-        _state.update { current ->
-            if (current !is UiState.EnterServer) return@update current
-            val host = addressPolicy.insecureHost(value)
-            // The agreement is for one host: a typed address that names another has not been agreed to.
-            current.copy(
-                address = value,
-                error = null,
-                insecureHost = host,
-                cleartextAllowed = host != null && host == current.insecureHost && current.cleartextAllowed,
-            )
-        }
+    fun onAddress(value: String) = actions.onAddress(value)
 
     /** The user's agreement, or its withdrawal, to plain HTTP to the public host the typed address names. */
-    fun allowCleartext(allowed: Boolean) =
-        _state.update {
-            (it as? UiState.EnterServer)?.takeIf { s -> s.insecureHost != null }?.copy(cleartextAllowed = allowed, error = null)
-                ?: it
-        }
+    fun allowCleartext(allowed: Boolean) = actions.allowCleartext(allowed)
 
-    fun onUsername(value: String) = _state.update { (it as? UiState.SignIn)?.copy(username = value, passwordError = null) ?: it }
+    fun onUsername(value: String) = actions.onUsername(value)
 
-    fun onPassword(value: String) = _state.update { (it as? UiState.SignIn)?.copy(password = value, passwordError = null) ?: it }
+    fun onPassword(value: String) = actions.onPassword(value)
 
     /** Looks for servers on the local network once per visit to the server step. A server is one tap away; nothing found shows nothing. */
-    fun discoverServers() {
-        val current = _state.value as? UiState.EnterServer ?: return
-        if (current.discovering) return
-        _state.value = current.copy(discovering = true)
-        viewModelScope.launch {
-            val found = discover()
-            _state.update { (it as? UiState.EnterServer)?.copy(discovered = found, discovering = false) ?: it }
-        }
-    }
+    fun discoverServers() = actions.discoverServers()
 
-    fun connect() {
-        val current = _state.value as? UiState.EnterServer ?: return
-        // A check already in flight is the only one: a second would finish in either order and replace a later state.
-        if (current.checking) return
-        val candidates = addressPolicy.candidates(current.address)
-        if (candidates.isEmpty()) {
-            _state.value = current.copy(error = SetupError.InvalidAddress)
-            return
-        }
-        if (current.insecureHost != null && !current.cleartextAllowed) {
-            _state.value = current.copy(error = SetupError.CleartextRefused)
-            return
-        }
-        _state.value = current.copy(checking = true, error = null)
-        viewModelScope.launch {
-            // Agreed to by ticking the row, so it is kept before the first byte is sent.
-            current.insecureHost?.let { cleartext.grant(it) }
-            val found =
-                when (val result = addressCheck.first(candidates)) {
-                    is AddressCheck.Result.Found -> result
-                    is AddressCheck.Result.Failed -> {
-                        _state.update { (it as? UiState.EnterServer)?.copy(checking = false, error = result.error) ?: it }
-                        return@launch
-                    }
-                }
-            val url = found.url
-            val info = found.info
-            if (url.toString().isDemoOrigin() && info.baseUrl.toString().isDemoOrigin()) {
-                // The demo has no account to ask for: it signs in as its own administrator, through the same calls.
-                val demo = attempt { connection.anonymous(url).authenticateByName(DEMO_USER_NAME, "") }
-                demo.onSuccess { finish(url, info, it, AnalyticsEvents.METHOD_DEMO) }
-                demo.onFailure {
-                    connection.logger.noted(TAG, "the demo sign-in failed", it)
-                    reports.failed(AnalyticsEvents.METHOD_DEMO, SetupError.Generic)
-                    _state.update { s ->
-                        (s as? UiState.EnterServer)?.copy(checking = false, error = SetupError.Generic) ?: s
-                    }
-                }
-            } else {
-                val base = info.baseUrl.toString().trimEnd('/')
-                _state.value = UiState.SignIn(baseUrl = base, server = info)
-                viewModelScope.loadPublicUsers(connection, _state, info.baseUrl, base)
-                viewModelScope.loadQuickConnectOn(connection, _state, info.baseUrl, base) { quickConnect?.cancel() }
-            }
-        }
-    }
+    /** Reads the server at the typed address. The demo's address signs in to the demo instead of asking for an account. */
+    fun connect() = actions.connect()
 
-    fun signInWithPassword() {
-        val current = _state.value as? UiState.SignIn ?: return
-        if (current.username.isBlank()) return
-        _state.value = current.copy(busy = true, passwordError = null)
-        viewModelScope.launch {
-            val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return@launch
-            try {
-                finish(
-                    url,
-                    current.server,
-                    connection.anonymous(url).authenticateByName(current.username.trim(), current.password),
-                    AnalyticsEvents.METHOD_PASSWORD,
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: JellyfinHttpException) {
-                connection.logger.noted(TAG, "password sign-in refused", e)
-                val error = if (e.code == HTTP_UNAUTHORIZED) SetupError.WrongCredentials else SetupError.Generic
-                reports.failed(AnalyticsEvents.METHOD_PASSWORD, error)
-                _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = error) ?: it }
-            } catch (e: JellyfinUnreadableAnswer) {
-                connection.logger.noted(TAG, "password sign-in answered something that is not a media server's", e)
-                reports.failed(AnalyticsEvents.METHOD_PASSWORD, SetupError.Generic)
-                _state.update { (it as? UiState.SignIn)?.copy(busy = false, passwordError = SetupError.Generic) ?: it }
-            } catch (e: IOException) {
-                connection.logger.noted(TAG, "password sign-in failed", e)
-                reports.failed(AnalyticsEvents.METHOD_PASSWORD, unreachableSetup(current.baseUrl, localNetwork))
-                _state.update {
-                    (it as? UiState.SignIn)?.copy(busy = false, passwordError = unreachableSetup(current.baseUrl, localNetwork))
-                        ?: it
-                }
-            }
-        }
-    }
+    fun signInWithPassword() = actions.signInWithPassword()
 
     /** Shows a code, then polls until the user approves it in a signed-in Jellyfin app, as Seerr's Plex PIN flow does. */
-    fun startQuickConnect() {
-        val current = _state.value as? UiState.SignIn ?: return
-        val url = JellyfinClient.parseBaseUrl(current.baseUrl) ?: return
-        quickConnect?.cancel()
-        // The last failure goes as the new request starts, so a retry shows progress, not the old error.
-        _state.value = current.copy(quickConnectCode = null, quickConnectError = null, gettingCode = true)
-        quickConnect =
-            viewModelScope.launch {
-                try {
-                    awaitQuickConnect(connection, _state, reports, quickConnectPollMillis, url) { signedIn ->
-                        finish(url, current.server, signedIn, AnalyticsEvents.METHOD_QUICK_CONNECT)
-                    }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: JellyfinHttpException) {
-                    connection.logger.noted(TAG, "Quick Connect refused", e)
-                    _state.failQuickConnect(SetupError.QuickConnectExpired, reports)
-                } catch (e: JellyfinUnreadableAnswer) {
-                    connection.logger.noted(TAG, "Quick Connect answered something that is not a media server's", e)
-                    _state.failQuickConnect(SetupError.Generic, reports)
-                } catch (e: IOException) {
-                    connection.logger.noted(TAG, "Quick Connect failed", e)
-                    _state.failQuickConnect(unreachableSetup(current.baseUrl, localNetwork), reports)
-                }
-            }
-    }
+    fun startQuickConnect() = actions.startQuickConnect()
 
     /** Leaves Quick Connect for the password form, taking Quick Connect's code and failure with it. */
-    fun cancelQuickConnect() {
-        quickConnect?.cancel()
-        _state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, quickConnectError = null, gettingCode = false) ?: it }
-    }
+    fun cancelQuickConnect() = actions.cancelQuickConnect()
 
-    /**
-     * The server step again, with the address filled in: from the sign-in step, or from a saved server that cannot be
-     * reached. A saved session stays saved until a new sign-in replaces it, so closing the app comes back to the gate.
-     * With [recheck], from the sign-in step, the address is read again at once: the notice for a server that was not set up
-     * says to finish that elsewhere, and this finds out whether it has been.
-     */
-    fun changeServer(recheck: Boolean = false) {
-        quickConnect?.cancel()
-        val saved = signedInFlow.value
-        val address =
-            saved?.session?.baseUrl
-                ?: when (val current = _state.value) {
-                    is UiState.SignIn -> current.baseUrl
-                    is UiState.Startup -> current.baseUrl
-                    else -> ""
-                }
-        // Reaching the sign-in step took a connect, which had the agreement, so a recheck from it keeps it.
-        val agreed = saved == null && _state.value is UiState.SignIn
-        _state.value = enterServer(addressPolicy, address).let { it.copy(cleartextAllowed = agreed && it.insecureHost != null) }
-        signedInFlow.value = null
-        if (recheck && address.isNotBlank()) connect()
-    }
+    /** The server step again, with the address filled in. See [SetupActions.changeServer]. */
+    fun changeServer(recheck: Boolean = false) = actions.changeServer(recheck)
 
-    private suspend fun finish(
-        url: HttpUrl,
-        server: PublicServerInfo,
-        signedIn: SignedIn,
-        method: String,
-    ) {
-        val session =
-            JellyfinSession(
-                baseUrl = url.toString().trimEnd('/'),
-                serverName = server.serverName,
-                serverId = signedIn.serverId.ifBlank { server.serverId },
-                serverVersion = server.version,
-                userId = signedIn.userId,
-                userName = signedIn.userName,
-                token = signedIn.token,
-            )
-        if (!sessions.save(session)) {
-            reports.failed(method, SetupError.Generic)
-            // The failure belongs to the method that got this far: Quick Connect holds a code, a password does not.
-            _state.update {
-                when (it) {
-                    is UiState.SignIn ->
-                        if (it.quickConnectCode != null) {
-                            it.copy(quickConnectCode = null, gettingCode = false, quickConnectError = SetupError.Generic)
-                        } else {
-                            it.copy(busy = false, passwordError = SetupError.Generic)
-                        }
-                    // The demo signs in from the server step, so that is where its failure has to land.
-                    is UiState.EnterServer -> it.copy(checking = false, error = SetupError.Generic)
-                    // Setup is complete but the session could not be kept: the last step stays, with the reason.
-                    is UiState.Startup ->
-                        it.copy(phase = (it.phase as? StartupPhase.Finish)?.copy(busy = false, error = SetupError.Generic) ?: it.phase)
-                    else -> it
-                }
-            }
-            return
-        }
-        index.clear()
-        reports.signedIn(method)
-        signedInFlow.value = signedInState(addressPolicy, session)
-        // The step that led here goes with it: its typed password and the account pictures are gone when the step is left.
-        _state.value = UiState.Loading
-        refresh()
-    }
+    internal fun tryDemo() = actions.tryDemo()
+
+    internal fun localNetworkResult() = actions.localNetworkResult()
 
     private companion object {
         const val QUICK_CONNECT_POLL_MILLIS = 3_000L
     }
 }
-
-/** How long a Quick Connect code is waited on before it counts as expired. */
-private const val QUICK_CONNECT_WINDOW_MILLIS = 10 * 60_000L
-
-/** Quick Connect couldn't get or keep a code: the code goes, and the failure stays with Quick Connect. */
-private fun MutableStateFlow<UiState.Setup>.failQuickConnect(
-    error: SetupError,
-    reports: SignInReports,
-) {
-    reports.failed(AnalyticsEvents.METHOD_QUICK_CONNECT, error)
-    update { (it as? UiState.SignIn)?.copy(quickConnectCode = null, gettingCode = false, quickConnectError = error) ?: it }
-}
-
-/** Asks the server for a Quick Connect code, shows it, and polls until the user approves it or its window ends; [finish] takes the sign-in. */
-private suspend fun awaitQuickConnect(
-    connection: Connection,
-    state: MutableStateFlow<UiState.Setup>,
-    reports: SignInReports,
-    pollMillis: Long,
-    url: HttpUrl,
-    finish: suspend (SignedIn) -> Unit,
-) {
-    val client = connection.anonymous(url)
-    if (!client.quickConnectEnabled()) {
-        state.failQuickConnect(SetupError.QuickConnectOff, reports)
-        return
-    }
-    val start = client.quickConnectInitiate()
-    state.update { (it as? UiState.SignIn)?.copy(quickConnectCode = start.code, gettingCode = false) ?: it }
-    val deadline = System.currentTimeMillis() + QUICK_CONNECT_WINDOW_MILLIS
-    while (System.currentTimeMillis() < deadline) {
-        delay(pollMillis)
-        if (client.quickConnectAuthenticated(start.secret)) {
-            finish(client.authenticateWithQuickConnect(start.secret))
-            return
-        }
-    }
-    state.failQuickConnect(SetupError.QuickConnectExpired, reports)
-}
-
-/** The server step with [address] in it, asking for the user's agreement when it reaches a public host over plain HTTP. */
-internal fun enterServer(
-    policy: AddressPolicy,
-    address: String,
-) = UiState.EnterServer(address = address, insecureHost = policy.insecureHost(address))
 
 /**
  * The state the screens read: the signed-in state while a session is held, the setup step otherwise. Its [value] is read from the

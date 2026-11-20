@@ -25,6 +25,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -124,6 +125,8 @@ class SeasonViewModelTest {
             val model = viewModel().also { it.start("s1") }
             val failed = model.ready { it.episodes is EpisodesState.Failed }
             assertEquals(ServerFailure.ServerError, (failed.episodes as EpisodesState.Failed).failure)
+            // Nothing is known about what to play, which is not the same as there being no episode.
+            assertNull(failed.play)
             jellyfin.status.clear()
             model.retryEpisodes()
             assertTrue(model.ready { it.episodes is EpisodesState.Ready }.episodes is EpisodesState.Ready)
