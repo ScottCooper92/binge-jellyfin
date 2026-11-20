@@ -900,6 +900,9 @@ app:playback_autoplay  22664633ad79
 app:playback_default_audio  641bdd2609fc
 app:playback_default_audio_detail  bd2d2c9b7ce7
 app:playback_episodes  83f9722d9bb2
+app:playback_quality_auto  0286249762f7
+app:playback_quality_mobile  ff12c0250e5c
+app:playback_quality_wifi  fe25dea6513c
 app:playback_remember_audio  6ef58ae2c352
 app:playback_remember_detail  b6c9a60f070e
 app:playback_remember_subtitles  03cf8df9d770

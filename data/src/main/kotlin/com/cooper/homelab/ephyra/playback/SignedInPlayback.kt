@@ -13,9 +13,10 @@ private const val HTTP_UNAUTHORIZED = 401
  */
 private suspend fun Connection.signedInOrRefused() = signedIn() ?: throw JellyfinHttpException(HTTP_UNAUTHORIZED, "no session")
 
-/** [JellyfinSourceMinter] for whichever session is saved when the source is asked for. */
+/** [JellyfinSourceMinter] for whichever session is saved when the source is asked for, held to the user's own [cap] on the bitrate. */
 class SignedInSourceMinter(
     private val connection: Connection,
+    private val cap: StreamingCap = NoStreamingCap,
 ) : SourceMinter {
     override suspend fun mint(
         item: PlayItem,
@@ -23,7 +24,12 @@ class SignedInSourceMinter(
         resumeMs: Long?,
     ): Minted {
         val (session, client) = connection.signedInOrRefused()
-        return JellyfinSourceMinter(client, session.userId, JellyfinServerProfile.from(session.serverVersion)).mint(item, profile, resumeMs)
+        return JellyfinSourceMinter(
+            client,
+            session.userId,
+            JellyfinServerProfile.from(session.serverVersion),
+            cap,
+        ).mint(item, profile, resumeMs)
     }
 }
 

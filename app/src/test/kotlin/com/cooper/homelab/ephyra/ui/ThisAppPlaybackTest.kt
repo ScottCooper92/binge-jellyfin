@@ -46,7 +46,7 @@ class ThisAppPlaybackTest {
     }
 
     @Test
-    fun `nothing shows while the preferences are read, or when they cannot be`() {
+    fun `nothing shows while the preferences are read`() {
         show(PlaybackUiState.Loading)
         compose.onAllNodesWithText("Audio language").assertCountEquals(0)
         compose.onAllNodesWithText("PLAYBACK").assertCountEquals(0)

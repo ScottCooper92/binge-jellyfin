@@ -10,6 +10,7 @@ import com.cooper.homelab.player.api.PlayTitle
 import com.cooper.homelab.player.api.PlaybackDeviceProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -41,6 +42,17 @@ class SignedInPlaybackTest {
 
             assertTrue(jellyfin.requests.any { it.method == "POST" && it.url.encodedPath == "/Items/movie-1/PlaybackInfo" })
             assertTrue(jellyfin.requests.any { it.method == "POST" && it.url.encodedPath == "/Sessions/Playing" })
+        }
+
+    @Test
+    fun `the user's cap is what the signed in minter asks the server for`() =
+        runBlocking {
+            sessions.save(jellyfin.session())
+
+            SignedInSourceMinter(connection) { 4_000_000L }.mint(item, profile.copy(maxBitrateBps = 40_000_000L), null)
+
+            val body = jellyfin.lastBody("/Items/movie-1/PlaybackInfo")
+            assertEquals(4_000_000L, body["MaxStreamingBitrate"]?.jsonPrimitive?.content?.toLong())
         }
 
     @Test
