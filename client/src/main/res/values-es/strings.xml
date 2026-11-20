@@ -82,6 +82,7 @@
     <string name="client_library_clear_filters">Borrar filtros</string>
     <plurals name="client_library_filters_applied">
         <item quantity="one">%1$d aplicado</item>
+        <item quantity="many">%1$d aplicados</item>
         <item quantity="other">%1$d aplicados</item>
     </plurals>
     <string name="client_search_title">Buscar</string>
