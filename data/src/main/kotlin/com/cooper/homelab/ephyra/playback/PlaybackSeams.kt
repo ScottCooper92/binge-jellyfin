@@ -1,0 +1,45 @@
+package com.cooper.homelab.ephyra.playback
+
+import com.cooper.homelab.player.api.PlayRequest
+import com.cooper.homelab.player.api.PlayTitle
+import com.cooper.homelab.player.api.PlaybackDeviceProfile
+
+/** One thing to play: the server's id for it, and how the player names it. */
+data class PlayItem(
+    val itemId: String,
+    val title: PlayTitle,
+)
+
+/** What a play's reports are made against: the item, the media source, the play session and the play method. The sitting never opens it. */
+interface PlayReportHandle
+
+/** A source the server minted for one item. The [request]'s session id is the sitting's own, set by the sitting. */
+class Minted(
+    val request: PlayRequest,
+    val report: PlayReportHandle,
+)
+
+/** Mints a source for [item] that a device with [profile] can play, from [resumeMs], or from the server's own resume point where it is null. */
+fun interface SourceMinter {
+    suspend fun mint(
+        item: PlayItem,
+        profile: PlaybackDeviceProfile,
+        resumeMs: Long?,
+    ): Minted
+}
+
+enum class PlayReport { STARTED, PROGRESS, PAUSED, RESUMED, FINISHED, STOPPED }
+
+/** Tells the server where a play stands. A failure here never ends the play. */
+fun interface PlayReporter {
+    suspend fun report(
+        play: PlayReportHandle,
+        kind: PlayReport,
+        positionMs: Long,
+    )
+}
+
+/** The item that follows [item] in a series, or null when nothing does. */
+fun interface NextEpisodes {
+    suspend fun after(item: PlayItem): PlayItem?
+}
