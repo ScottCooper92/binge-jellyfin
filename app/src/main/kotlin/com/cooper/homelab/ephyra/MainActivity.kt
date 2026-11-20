@@ -41,6 +41,7 @@ import com.cooper.homelab.core.uiandroid.consent.ConsentGate
 import com.cooper.homelab.core.uiandroid.review.ReviewPromptOnReturnToRoot
 import com.cooper.homelab.core.uiandroid.shell.RestartOnGateChange
 import com.cooper.homelab.core.uiandroid.shell.RestartOnSessionEnd
+import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.flags.LocalClientEnabled
 import com.cooper.homelab.ephyra.flags.LocalFlags
 import com.cooper.homelab.ephyra.telemetry.ReportScreen
@@ -55,6 +56,7 @@ import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryPlaceholder
 import com.cooper.homelab.ephyra.ui.client.MoviePage
+import com.cooper.homelab.ephyra.ui.client.SeriesPage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
 import com.cooper.homelab.ephyra.ui.confirmTakeBack
@@ -68,6 +70,7 @@ import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import com.cooper.homelab.ephyra.ui.nav.MovieRoute
+import com.cooper.homelab.ephyra.ui.nav.SeriesRoute
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
 import com.cooper.homelab.ephyra.ui.nav.keeping
@@ -294,7 +297,7 @@ internal fun ConsoleHost(
         title = { route ->
             val signed = state as? UiState.SignedIn
             when {
-                // A film's page needs the user's session and the server's version. Every other kind keeps the placeholder until its screen lands.
+                // A film's or a series' page needs the user's session and the server's version. Every other kind keeps the placeholder until its screen lands.
                 route is MovieRoute && signed != null ->
                     MoviePage(
                         graph,
@@ -302,6 +305,17 @@ internal fun ConsoleHost(
                         route.itemId,
                         onBack = { backStack.closeTop() },
                         onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+                        onOpenPerson = { id -> backStack.openPerson(id) },
+                    )
+                route is SeriesRoute && signed != null ->
+                    SeriesPage(
+                        graph,
+                        signed.profile,
+                        route.itemId,
+                        onBack = { backStack.closeTop() },
+                        onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+                        onOpenSeason = { id -> backStack.openTitle(ItemKind.Season, id) },
+                        onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
                         onOpenPerson = { id -> backStack.openPerson(id) },
                     )
                 else -> TitlePlaceholder(onBack = { backStack.closeTop() })

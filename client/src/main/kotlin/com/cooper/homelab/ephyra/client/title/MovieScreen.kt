@@ -232,9 +232,9 @@ private fun movieRoundActions(
 @Composable
 private fun PlayAction.label(): String =
     when {
-        kind == PlayKind.Play -> stringResource(R.string.client_movie_play)
+        kind == PlayKind.Play -> stringResource(R.string.client_title_play)
         minutesLeft != null -> stringResource(R.string.client_movie_resume_left, minutesLeft)
-        else -> stringResource(R.string.client_movie_resume)
+        else -> stringResource(R.string.client_title_resume)
     }
 
 /** The premiere date in the user's locale, or the server's text when it is not a date. */

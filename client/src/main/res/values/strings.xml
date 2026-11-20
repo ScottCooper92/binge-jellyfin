@@ -15,8 +15,8 @@
     <string name="client_libraries_title">Libraries</string>
     <string name="client_libraries_empty">Movie and series libraries on this server will appear here.</string>
     <string name="client_title_overview">Overview</string>
-    <string name="client_movie_play">Play</string>
-    <string name="client_movie_resume">Resume</string>
+    <string name="client_title_play">Play</string>
+    <string name="client_title_resume">Resume</string>
     <string name="client_movie_resume_left">Resume · %1$d min left</string>
     <string name="client_title_watched">Watched</string>
     <string name="client_title_mark_watched">Mark as watched</string>
@@ -46,4 +46,18 @@
     <string name="client_movie_media_picture">Video</string>
     <string name="client_movie_media_audio">Audio</string>
     <string name="client_movie_media_subtitles">Subtitles</string>
+    <string name="client_series_play_episode">Play S%1$d · E%2$d</string>
+    <string name="client_series_resume_episode">Resume S%1$d · E%2$d</string>
+    <string name="client_series_resume_episode_left">Resume S%1$d · E%2$d · %3$d min left</string>
+    <string name="client_series_seasons">Seasons</string>
+    <string name="client_series_status">Status</string>
+    <string name="client_series_episodes">Episodes</string>
+    <string name="client_series_all_episodes">All episodes</string>
+    <string name="client_series_season_subtitle">%1$s · %2$s</string>
+    <string name="client_series_unwatched_count">%1$s · %2$d not watched</string>
+    <plurals name="client_series_episode_count">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <string name="client_series_episodes_failed">Couldn\'t load the episodes.</string>
 </resources>
