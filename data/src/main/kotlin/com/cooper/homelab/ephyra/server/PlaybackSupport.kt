@@ -86,6 +86,9 @@ fun String.withApiKey(token: String?): String {
     return "$this$separator$API_KEY=$token"
 }
 
+/** The text subtitle codecs the player reads from inside the file it plays (Matroska and MP4), by the server's name for them. */
+private val FILE_SUBTITLE_CODECS = setOf("subrip", "srt", "ass", "ssa", "webvtt", "vtt", "mov_text")
+
 /** One external text subtitle a media source offers: where the server serves it, and what it is. */
 data class ExternalSubtitle(
     val path: String,
@@ -98,12 +101,14 @@ data class ExternalSubtitle(
 
 /**
  * The media source's external text subtitles in a format a player parses, at most ten. Embedded ones stay in the stream, and a
- * format no player here reads is left out.
+ * format no player here reads is left out. With [playerReadsFile], a track the file itself carries, in a format the player reads from
+ * the file, is left out too: the player lists it already, and a copy beside it would show the subtitle twice.
  */
-fun JsonObject.externalSubtitles(): List<ExternalSubtitle> =
+fun JsonObject.externalSubtitles(playerReadsFile: Boolean = false): List<ExternalSubtitle> =
     array("MediaStreams")
         .filterIsInstance<JsonObject>()
         .filter { it.string("Type") == "Subtitle" && it.string("DeliveryMethod") == "External" }
+        .filterNot { playerReadsFile && it.bool("IsExternal") == false && it.string("Codec")?.lowercase() in FILE_SUBTITLE_CODECS }
         .mapNotNull { stream ->
             val path = stream.string("DeliveryUrl") ?: return@mapNotNull null
             val mime = DeviceProfiles.subtitleMime(stream.string("Codec")) ?: return@mapNotNull null
