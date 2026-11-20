@@ -13,6 +13,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.binge.companion.kit.KeystoreSecretCipher
 import com.cooper.homelab.core.diagnostics.Redactor
 import com.cooper.homelab.core.diagnostics.RingLog
+import com.cooper.homelab.core.diagnostics.follow
 import com.cooper.homelab.core.flags.BooleanPreference
 import com.cooper.homelab.core.flags.FeatureFlags
 import com.cooper.homelab.core.flags.FirebaseRemoteFlagSource
@@ -381,7 +382,7 @@ class AppGraph(
     /** Told what the session holds, so an entry that names it is redacted. A debug build says so when one had to be. */
     private val redactor: Redactor by lazy {
         Redactor(onRedaction = { if (BuildConfig.DEBUG) Log.w(REDACTOR_TAG, "A log entry held a registered literal") })
-            .also { it.followSession(sessions.session, scope) }
+            .also { it.follow(sessions.session.map { session -> session?.toRedactionLiterals() }, scope) }
     }
 
     /** The app's log: held in memory and never written to disk. A debug build also forwards each redacted entry to Logcat. */
