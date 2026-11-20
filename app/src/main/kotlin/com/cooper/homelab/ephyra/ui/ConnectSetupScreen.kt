@@ -58,7 +58,7 @@ private const val ADDRESS_EXAMPLE = "192.168.1.10:8096"
 /**
  * The address step and the sign-in step, drawn by the shared connect screen from the state the setup half holds. The screen's
  * own pieces are the address field, the plain-HTTP agreement, the demo entry, the fields, the Sign in button and the code sheet;
- * this app adds the servers found on the network, the accounts the server lists, Quick Connect as a button under the form, the
+ * this app adds the servers found on the network, the accounts the server lists, the Quick Connect tab beside the password's, the
  * reset of a forgotten password, and the first-run wizard's way in.
  */
 @Composable
