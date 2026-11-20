@@ -182,7 +182,8 @@ class PlaybackSittings(
                 play.upNext,
                 sitting,
                 picked,
-            ) { sitting.audioFailures.tryEmit(it.audioSwitchFailure()) }
+                accept = { it.request.audioOptions.any { option -> option.current && option.key == event.key } },
+            ) { sitting.audioFailures.tryEmit(it?.audioSwitchFailure() ?: AudioSwitchFailure.Refused) }
         if (fresh != null) {
             sitting.choice.value = picked
             play.minted = fresh
@@ -212,7 +213,7 @@ class PlaybackSittings(
 
     /**
      * Mints [item] again at [positionMs] on the tracks of [choice] and hands it to the player under the same session. Null when the server
-     * refuses, which [onFailure] says: by default the sitting ends in a refusal, which a switch of audio (the old source still plays) does not.
+     * refuses, or [accept] says the mint is not on the tracks asked for (the server fell back to its own), which [onFailure] says: by default the sitting ends in a refusal, which a switch of audio (the old source still plays) does not.
      */
     private suspend fun reload(
         id: String,
@@ -222,13 +223,18 @@ class PlaybackSittings(
         upNext: PlayItem?,
         sitting: Sitting,
         choice: StreamChoice? = sitting.choice.value,
-        onFailure: (Throwable) -> Unit = { sitting.fail(it, item.title) },
+        accept: (Minted) -> Boolean = { true },
+        onFailure: (Throwable?) -> Unit = { it?.let { error -> sitting.fail(error, item.title) } },
     ): Minted? {
         val minted =
             attempt { minter.mint(item, profile, positionMs, choice) }.getOrElse {
                 onFailure(it)
                 return null
             }
+        if (!accept(minted)) {
+            onFailure(null)
+            return null
+        }
         player.update(minted.request.copy(sessionId = id, next = upNext?.title).opensOn(choice))
         sitting.outcome.value = PlaybackOutcome.Playing(item.title)
         return minted

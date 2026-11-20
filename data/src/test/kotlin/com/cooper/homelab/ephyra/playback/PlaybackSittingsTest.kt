@@ -63,6 +63,7 @@ class PlaybackSittingsTest {
     private val minted = mutableListOf<Pair<String, Long?>>()
     private val choices = mutableListOf<StreamChoice?>()
     private var mintFails: Throwable? = null
+    private var serverIgnoresPick = false
     private var mintFailsOnce: Throwable? = null
     private val reports = mutableListOf<Triple<String, PlayReport, Long>>()
     private var nextOf: (PlayItem) -> PlayItem? = { null }
@@ -80,7 +81,10 @@ class PlaybackSittingsTest {
                 }
                 minted += item.itemId to resume
                 choices += choice
-                Minted(if (offeredAudio) offered(item) else request(item), Handle(item))
+                Minted(
+                    if (offeredAudio) offered(item, if (serverIgnoresPick) null else choice?.audioStream) else request(item),
+                    Handle(item),
+                )
             },
             reporter = { play, kind, position -> reports += Triple((play as Handle).item.itemId, kind, position) },
             nextEpisodes = { nextOf(it) },
@@ -222,14 +226,16 @@ class PlaybackSittingsTest {
             assertEquals("off is a choice, kept", SubtitlePreference.Off, player.updates.last().preferredSubtitle)
         }
 
-    private fun offered(item: PlayItem) =
-        request(item).copy(
-            audioOptions =
-                listOf(
-                    PlayAudioOption("1", "en", "English", current = true),
-                    PlayAudioOption("2", "es", "Spanish"),
-                ),
-        )
+    private fun offered(
+        item: PlayItem,
+        on: Int? = null,
+    ) = request(item).copy(
+        audioOptions =
+            listOf(
+                PlayAudioOption("1", "en", "English", current = on == null || on == 1),
+                PlayAudioOption("2", "es", "Spanish", current = on == 2),
+            ),
+    )
 
     @Test
     fun `a pick from the offered audio mints that stream at the position in the same session, and is remembered for the next episode`() =
@@ -275,6 +281,27 @@ class PlaybackSittingsTest {
 
             player.events.send(PlayerEvent.AudioOptionRequested("9", 14_000))
             assertEquals("a key it never offered is ignored", 2, failures.size)
+            job.cancel()
+        }
+
+    @Test
+    fun `a mint that fell back to the server's own audio is a refused switch, and nothing changes`() =
+        runTest {
+            val sittings = sittings(offeredAudio = true)
+            val id = sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            val failures = mutableListOf<AudioSwitchFailure>()
+            val job = launch(UnconfinedTestDispatcher(testScheduler)) { sittings.audioSwitchFailures(id).collect { failures += it } }
+
+            serverIgnoresPick = true
+            player.events.send(PlayerEvent.AudioOptionRequested("2", 12_000))
+            assertEquals(listOf(AudioSwitchFailure.Refused), failures)
+            assertTrue("no new source was handed over", player.updates.isEmpty())
+
+            serverIgnoresPick = false
+            player.events.send(PlayerEvent.AudioOptionRequested("2", 13_000))
+            assertEquals("a later pick the server honours goes through", 1, failures.size)
+            assertEquals(1, player.updates.size)
             job.cancel()
         }
 
