@@ -6,8 +6,11 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 // The reads behind the browse repositories. Each asks for only what a card shows, by naming `fields`, `enableUserData`,
 // `enableImageTypes` and `imageTypeLimit` itself rather than taking the server's defaults, which are large on a big library.
 
-/** The item fields a card needs beyond the ones the server always sends. */
-internal const val CARD_FIELDS = "PrimaryImageAspectRatio"
+/**
+ * The item fields a card needs beyond the ones the server always sends. `ChildCount` is what a box set holds, for its card's "N titles":
+ * the server sends it only when asked for, and it is cheap.
+ */
+internal const val CARD_FIELDS = "PrimaryImageAspectRatio,ChildCount"
 
 /** The pictures a grid cell or card can show; one of each, never the whole set. */
 internal const val CARD_IMAGE_TYPES = "Primary,Thumb,Backdrop"
