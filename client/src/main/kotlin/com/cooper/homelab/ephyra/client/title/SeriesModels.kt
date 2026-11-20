@@ -17,13 +17,14 @@ data class SeriesStats(
 
 /** What the series' one wide button does. */
 sealed interface SeriesPlay {
-    /** The episode the button plays or resumes, and where it sits. [kind] says which. */
+    /** The episode the button plays or resumes, and where it sits, with its own [name]. [kind] says which. */
     data class Episode(
         val kind: PlayKind,
         val episodeId: String,
         val season: Int?,
         val episode: Int?,
         val minutesLeft: Int?,
+        val name: String? = null,
     ) : SeriesPlay
 
     /** Every episode is watched, so there is nothing to continue with. The page offers [first], the first episode, to watch again. */

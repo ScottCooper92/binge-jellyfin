@@ -3,10 +3,8 @@ package com.cooper.homelab.ephyra.ui.client
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,28 +48,23 @@ fun MoviePage(
     LaunchedEffect(model, itemId) { model.start(itemId) }
     val state by model.state.collectAsStateWithLifecycle()
     val stateNow by rememberUpdatedState(state)
-    var blocked by remember { mutableStateOf<PlayBlock?>(null) }
-    val actions =
-        remember(model, onBack, onPlay, onOpenTitle, onOpenPerson) {
-            MovieActions(
-                onBack = onBack,
-                onRetry = model::retry,
-                onPlay = {
-                    val title = (stateNow as? MovieUiState.Ready)?.movie?.title
-                    val block = playBlockFor(serverAddress)
-                    when {
-                        title == null -> Unit
-                        block != null -> blocked = block
-                        else -> onPlay(graph.playbackSittings.start(PlayItem(itemId, PlayTitle(title))), title)
-                    }
-                },
-                onToggleWatched = { model.toggleWatched() },
-                onToggleFavourite = { model.toggleFavourite() },
-                onOpenTitle = { onOpenTitle(it.kind, it.id) },
-                onOpenPerson = { onOpenPerson(it.id) },
-                onOpenCollection = { onOpenTitle(ItemKind.BoxSet, it) },
-            )
-        }
-    MovieScreen(state = state, imageUrl = model::imageUrl, actions = actions, modifier = modifier, events = model.events)
-    blocked?.let { PlayBlockedMessage(it, onDismiss = { blocked = null }) }
+    PlayStartHost(graph, serverAddress, onPlay) { play ->
+        val playNow by rememberUpdatedState(play)
+        val actions =
+            remember(model, onBack, onOpenTitle, onOpenPerson) {
+                MovieActions(
+                    onBack = onBack,
+                    onRetry = model::retry,
+                    onPlay = {
+                        (stateNow as? MovieUiState.Ready)?.movie?.title?.let { title -> playNow(PlayItem(itemId, PlayTitle(title))) }
+                    },
+                    onToggleWatched = { model.toggleWatched() },
+                    onToggleFavourite = { model.toggleFavourite() },
+                    onOpenTitle = { onOpenTitle(it.kind, it.id) },
+                    onOpenPerson = { onOpenPerson(it.id) },
+                    onOpenCollection = { onOpenTitle(ItemKind.BoxSet, it) },
+                )
+            }
+        MovieScreen(state = state, imageUrl = model::imageUrl, actions = actions, modifier = modifier, events = model.events)
+    }
 }

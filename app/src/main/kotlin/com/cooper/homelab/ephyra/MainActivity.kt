@@ -44,6 +44,7 @@ import com.cooper.homelab.core.uiandroid.shell.RestartOnGateChange
 import com.cooper.homelab.core.uiandroid.shell.RestartOnSessionEnd
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.flags.LocalClientEnabled
+import com.cooper.homelab.ephyra.playback.PlayItem
 import com.cooper.homelab.ephyra.telemetry.ReportScreen
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.theme.JellyfinTvTheme
@@ -59,6 +60,7 @@ import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryGridTab
 import com.cooper.homelab.ephyra.ui.client.MoviePage
 import com.cooper.homelab.ephyra.ui.client.PersonPage
+import com.cooper.homelab.ephyra.ui.client.PlayStartHost
 import com.cooper.homelab.ephyra.ui.client.PlayerPage
 import com.cooper.homelab.ephyra.ui.client.SearchTab
 import com.cooper.homelab.ephyra.ui.client.SeasonPage
@@ -327,10 +329,19 @@ internal fun ConsoleHost(
         signedOut = { JellyfinRoot(state, homeActions) },
         home = { JellyfinRoot(state, homeActions) },
         // Home's rows come from the user's own server, so the tab needs a session. A card opens its title page and Continue watching
-        // resumes it, both once those screens exist (#753, #756): until then neither has anywhere to go.
+        // resumes it through PlayStartHost.
         homeTab =
             (state as? UiState.SignedIn)?.let { signed ->
-                { HomeTab(graph, signed.profile, onOpen = { kind, id -> backStack.openTitle(kind, id) }, onResume = {}) }
+                {
+                    PlayStartHost(graph, signed.session.baseUrl, onPlayer = { id, title -> backStack.openPlayer(id, title) }) { play ->
+                        HomeTab(
+                            graph,
+                            signed.profile,
+                            onOpen = { kind, id -> backStack.openTitle(kind, id) },
+                            onResume = { id, title -> play(PlayItem(id, title)) },
+                        )
+                    }
+                }
             },
         librariesTab = {
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
@@ -432,7 +443,9 @@ private fun TitlePageRoute(
                 graph,
                 signed.profile,
                 route.itemId,
+                signed.session.baseUrl,
                 onBack = { backStack.closeTop() },
+                onPlay = { sessionId, title -> backStack.openPlayer(sessionId, title) },
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
                 onOpenSeason = { id -> backStack.openTitle(ItemKind.Season, id) },
                 onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
@@ -443,7 +456,9 @@ private fun TitlePageRoute(
                 graph,
                 signed.profile,
                 route.itemId,
+                signed.session.baseUrl,
                 onBack = { backStack.closeTop() },
+                onPlay = { sessionId, title -> backStack.openPlayer(sessionId, title) },
                 onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
                 onOpenSeries = { id -> backStack.openTitle(ItemKind.Series, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
@@ -453,7 +468,9 @@ private fun TitlePageRoute(
                 graph,
                 signed.profile,
                 route.itemId,
+                signed.session.baseUrl,
                 onBack = { backStack.closeTop() },
+                onPlay = { sessionId, title -> backStack.openPlayer(sessionId, title) },
                 onOpenSeries = { id -> backStack.openTitle(ItemKind.Series, id) },
                 onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
             )

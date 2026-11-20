@@ -77,13 +77,13 @@ class SeriesMappingTest {
         assertNull(seriesPlay(null))
         assertEquals(SeriesPlay.NoEpisodes, seriesPlay(NextEpisode.None))
         assertEquals(
-            SeriesPlay.AllWatched(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null)),
+            SeriesPlay.AllWatched(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null, "Episode 1")),
             seriesPlay(NextEpisode.AllWatched(episode("e1", 1))),
         )
-        assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null), seriesPlay(NextEpisode.Start(episode("e1", 1))))
-        assertEquals(SeriesPlay.Episode(PlayKind.Play, "e2", 1, 2, null), seriesPlay(NextEpisode.Next(episode("e2", 2))))
+        assertEquals(SeriesPlay.Episode(PlayKind.Play, "e1", 1, 1, null, "Episode 1"), seriesPlay(NextEpisode.Start(episode("e1", 1))))
+        assertEquals(SeriesPlay.Episode(PlayKind.Play, "e2", 1, 2, null, "Episode 2"), seriesPlay(NextEpisode.Next(episode("e2", 2))))
         assertEquals(
-            SeriesPlay.Episode(PlayKind.Resume, "e3", 1, 3, 25),
+            SeriesPlay.Episode(PlayKind.Resume, "e3", 1, 3, 25, "Episode 3"),
             seriesPlay(NextEpisode.Resume(episode("e3", 3, position = 25 * TICKS_PER_MINUTE))),
         )
     }

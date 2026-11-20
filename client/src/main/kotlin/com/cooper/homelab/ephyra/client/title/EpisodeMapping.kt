@@ -79,11 +79,13 @@ fun seasonPlay(episodes: List<BrowseItem>): SeriesPlay {
         episodes.isEmpty() -> SeriesPlay.NoEpisodes
         target == null ->
             episodes.first().let { first ->
-                SeriesPlay.AllWatched(SeriesPlay.Episode(PlayKind.Play, first.id, first.seasonNumber, first.episodeNumber, null))
+                SeriesPlay.AllWatched(
+                    SeriesPlay.Episode(PlayKind.Play, first.id, first.seasonNumber, first.episodeNumber, null, first.name),
+                )
             }
         else -> {
             val action = playAction(target)
-            SeriesPlay.Episode(action.kind, target.id, target.seasonNumber, target.episodeNumber, action.minutesLeft)
+            SeriesPlay.Episode(action.kind, target.id, target.seasonNumber, target.episodeNumber, action.minutesLeft, target.name)
         }
     }
 }
