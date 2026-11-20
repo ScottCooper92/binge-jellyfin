@@ -30,10 +30,11 @@ import com.cooper.homelab.ephyra.theme.JellyfinTheme
 import com.cooper.homelab.ephyra.ui.nav.HomeRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.setMain
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -45,7 +46,6 @@ import org.robolectric.RobolectricTestRunner
  * real [ConsoleHost] over a real view model, and rebuilds the composition from its saved state with a new view model.
  */
 @OptIn(ExperimentalTestApi::class)
-@Ignore("Hangs since the connect flow moved to the shared machine: ephyra issue 839")
 @RunWith(RobolectricTestRunner::class)
 class ProcessDeathRestoreTest {
     private val jellyfin = FakeJellyfin()
@@ -54,6 +54,10 @@ class ProcessDeathRestoreTest {
     private val connection =
         teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
     private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext()) }
+
+    /** As every view model test: Main is a dispatcher the teardown can wait on from the main thread, which the platform's looper is not. */
+    @Before
+    fun main() = Dispatchers.setMain(Dispatchers.Unconfined)
 
     @After
     fun close() = teardown.close(jellyfin)
