@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="client_movie_versions_title">Elige una versión</string>
-    <string name="client_movie_version_number">Versión %1$d</string>
-    <plurals name="client_movie_version_subtitles">
+    <string name="client_title_versions_title">Elige una versión</string>
+    <string name="client_title_version_number">Versión %1$d</string>
+    <plurals name="client_title_version_subtitles">
         <item quantity="one">%1$d subtítulo</item>
         <item quantity="many">%1$d subtítulos</item>
         <item quantity="other">%1$d subtítulos</item>
@@ -18,14 +18,14 @@
     <string name="client_title_overview">Sinopsis</string>
     <string name="client_title_play">Reproducir</string>
     <string name="client_title_resume">Reanudar</string>
-    <string name="client_movie_resume_left">Reanudar · quedan %1$d min</string>
+    <string name="client_title_resume_left">Reanudar · quedan %1$d min</string>
     <string name="client_title_watched">Vista</string>
     <string name="client_title_mark_watched">Marcar como vista</string>
     <string name="client_title_mark_unwatched">Marcar como no vista</string>
     <string name="client_title_favourite">Favorita</string>
     <string name="client_title_add_favourite">Añadir a favoritas</string>
     <string name="client_title_remove_favourite">Quitar de favoritas</string>
-    <string name="client_movie_versions">Versiones</string>
+    <string name="client_title_versions">Versiones</string>
     <string name="client_title_cast">Reparto</string>
     <string name="client_title_crew">Equipo</string>
     <string name="client_title_similar">Más como esta</string>
@@ -34,21 +34,21 @@
     <string name="client_title_studios">Estudios</string>
     <string name="client_title_premiere">Estreno</string>
     <string name="client_title_year">Año</string>
-    <string name="client_movie_runtime">Duración</string>
+    <string name="client_title_runtime">Duración</string>
     <string name="client_title_certification">Clasificación</string>
     <string name="client_title_write_failed">Sin cambios. Inténtalo de nuevo.</string>
     <string name="client_title_job_director">Dirección</string>
     <string name="client_title_job_writer">Guion</string>
     <string name="client_title_job_producer">Producción</string>
     <string name="client_title_job_composer">Música</string>
-    <string name="client_movie_media_info">Información del archivo</string>
-    <string name="client_movie_media_container">Contenedor</string>
-    <string name="client_movie_media_size">Tamaño</string>
-    <string name="client_movie_media_picture">Vídeo</string>
-    <string name="client_movie_media_audio">Audio</string>
-    <string name="client_movie_media_subtitles">Subtítulos</string>
     <string name="client_collection_watched">%1$d de %2$d vistos</string>
     <string name="client_collection_empty">No hay títulos de esta colección en tu servidor.</string>
+    <string name="client_title_media_info">Información del archivo</string>
+    <string name="client_title_media_container">Contenedor</string>
+    <string name="client_title_media_size">Tamaño</string>
+    <string name="client_title_media_picture">Vídeo</string>
+    <string name="client_title_media_audio">Audio</string>
+    <string name="client_title_media_subtitles">Subtítulos</string>
     <string name="client_series_play_episode">Reproducir T%1$d · E%2$d</string>
     <string name="client_series_resume_episode">Reanudar T%1$d · E%2$d</string>
     <string name="client_series_resume_episode_left">Reanudar T%1$d · E%2$d · quedan %3$d min</string>
@@ -64,6 +64,13 @@
         <item quantity="other">%1$d episodios</item>
     </plurals>
     <string name="client_series_episodes_failed">No se pudieron cargar los episodios.</string>
+    <string name="client_title_guest_cast">Reparto invitado</string>
+    <string name="client_title_season_episode">T%1$d · E%2$d</string>
+    <string name="client_title_air_date">Fecha de emisión</string>
+    <string name="client_title_more_from_season">Más de la temporada %1$d</string>
+    <string name="client_title_more_episodes">Más episodios</string>
+    <string name="client_title_series">Serie</string>
+    <string name="client_title_go_to_series">Ir a la serie</string>
     <string name="client_library_filters">Filtros</string>
     <string name="client_library_filters_description">Filtros y orden</string>
     <string name="client_library_clear_all">Borrar todo</string>
