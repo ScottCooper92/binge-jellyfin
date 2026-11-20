@@ -91,7 +91,7 @@ class HomeLayoutViewModelTest {
     fun `a current server is asked with UserViews and an older one the old way`() {
         made(HomeLayoutViewModel(connection, current)).ready()
         assertEquals(1, jellyfin.hits("/UserViews"))
-        HomeLayoutViewModel(connection, JellyfinServerProfile.from("10.8.13")).ready()
+        made(HomeLayoutViewModel(connection, JellyfinServerProfile.from("10.8.13"))).ready()
         assertEquals(1, jellyfin.hits("/Users/user-1/Views"))
         assertEquals(1, jellyfin.hits("/Users/user-1/GroupingOptions"))
     }

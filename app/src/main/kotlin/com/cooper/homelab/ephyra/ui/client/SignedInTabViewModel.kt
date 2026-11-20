@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +37,7 @@ private sealed interface Source<out M> {
  * The host of a client tab's view model, for the life of the tab, so a rotation or a switch of tab keeps what it shows. The signed-in
  * client is read once ([Connection.signedIn]) and the tab's own model is built on it by [build]. With no session the tab is [loading]
  * until the read answers, then [notConnected]. The access token is the client's own, in its header: [images] builds picture URLs
- * through [ImageUrls], which never carries it. A tab keeps only what is its own: its [build] and how it names a picture.
+ * through [ImageUrls], which never carries it. [shown] lays anything else the tab knows over what the model says. A tab keeps only what is its own: its [build] and how it names a picture.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 abstract class SignedInTabViewModel<S, M : TabModel<S>>(
@@ -44,6 +45,7 @@ abstract class SignedInTabViewModel<S, M : TabModel<S>>(
     private val dispatcher: CoroutineDispatcher,
     loading: S,
     notConnected: S,
+    shown: (Flow<S>) -> Flow<S> = { it },
 ) : ViewModel() {
     private val source = MutableStateFlow<Source<M>>(Source.Starting)
 
@@ -56,7 +58,8 @@ abstract class SignedInTabViewModel<S, M : TabModel<S>>(
                     Source.NotConnected -> flowOf(notConnected)
                     is Source.Ready -> it.model.state
                 }
-            }.stateIn(viewModelScope, SharingStarted.Eagerly, loading)
+            }.let(shown)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, loading)
 
     /** Whether a refresh is still running, for the pull-to-refresh indicator. */
     val refreshing: StateFlow<Boolean> =
