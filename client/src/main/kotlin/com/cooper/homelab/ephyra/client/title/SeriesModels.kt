@@ -108,11 +108,3 @@ sealed interface SeriesUiState {
         val failure: ServerFailure,
     ) : SeriesUiState
 }
-
-/** A one-off thing the page tells the user, as a snackbar. */
-sealed interface SeriesEvent {
-    /** A watched or favourite mark did not reach the server. */
-    data class WriteFailed(
-        val failure: ServerFailure,
-    ) : SeriesEvent
-}

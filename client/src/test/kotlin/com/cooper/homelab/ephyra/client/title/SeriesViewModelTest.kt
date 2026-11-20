@@ -241,7 +241,7 @@ class SeriesViewModelTest {
             val event = scope.async { withTimeout(TIMEOUT) { model.events.first() } }
             Thread.sleep(SETTLE_MILLIS)
             model.toggleWatched()
-            assertEquals(SeriesEvent.WriteFailed(ServerFailure.ServerError), event.await())
+            assertEquals(TitleEvent.WriteFailed(ServerFailure.ServerError), event.await())
             assertEquals(false, (model.state.value as SeriesUiState.Ready).series.watched)
         }
 

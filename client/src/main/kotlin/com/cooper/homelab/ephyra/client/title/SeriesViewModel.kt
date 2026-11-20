@@ -58,13 +58,13 @@ class SeriesViewModel(
     private var seriesId: String? = null
     private var nextRead: Job? = null
     private val loaded = MutableStateFlow<Loaded>(Loaded.Loading)
-    private val eventFlow = MutableSharedFlow<SeriesEvent>(extraBufferCapacity = EVENT_BUFFER)
+    private val eventFlow = MutableSharedFlow<TitleEvent>(extraBufferCapacity = EVENT_BUFFER)
 
     /** What the page shows now. */
     val state: StateFlow<SeriesUiState> = loaded.map(::uiState).stateIn(scope, SharingStarted.Eagerly, SeriesUiState.Loading)
 
     /** What the page tells the user once, as a snackbar. */
-    val events: SharedFlow<SeriesEvent> = eventFlow.asSharedFlow()
+    val events: SharedFlow<TitleEvent> = eventFlow.asSharedFlow()
 
     /** Opens the page for the series [id] and follows the changes to the user's data from then on. Call it once. */
     fun start(id: String) {
@@ -114,7 +114,7 @@ class SeriesViewModel(
 
     private fun write(action: suspend () -> UserDataChange) {
         scope.launch(dispatcher) {
-            attempt { action() }.onFailure { eventFlow.emit(SeriesEvent.WriteFailed(classify(it))) }
+            attempt { action() }.onFailure { eventFlow.emit(TitleEvent.WriteFailed(classify(it))) }
         }
     }
 
