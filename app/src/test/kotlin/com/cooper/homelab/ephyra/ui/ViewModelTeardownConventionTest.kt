@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
@@ -19,6 +20,8 @@ class ViewModelTeardownConventionTest {
     @Test
     fun `every test that builds a view model uses the shared teardown`() {
         val root = File("src/test/kotlin")
+        // Unit tests run from the module's directory. From anywhere else there would be nothing to read, and the rule would pass unchecked.
+        assertTrue("No test sources at ${root.absolutePath}", root.isDirectory)
         val offenders =
             root
                 .walkTopDown()

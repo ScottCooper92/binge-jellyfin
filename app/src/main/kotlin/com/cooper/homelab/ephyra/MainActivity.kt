@@ -53,6 +53,7 @@ import com.cooper.homelab.ephyra.ui.chooseServer
 import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
 import com.cooper.homelab.ephyra.ui.client.LibraryPlaceholder
+import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
 import com.cooper.homelab.ephyra.ui.confirmTakeBack
 import com.cooper.homelab.ephyra.ui.connected
@@ -73,6 +74,7 @@ import com.cooper.homelab.ephyra.ui.nav.openLibrary
 import com.cooper.homelab.ephyra.ui.nav.openPage
 import com.cooper.homelab.ephyra.ui.nav.openPageItem
 import com.cooper.homelab.ephyra.ui.nav.openSubItem
+import com.cooper.homelab.ephyra.ui.nav.openTitle
 import com.cooper.homelab.ephyra.ui.nav.openings
 import com.cooper.homelab.ephyra.ui.nav.rememberEphyraTabs
 import com.cooper.homelab.ephyra.ui.nav.top
@@ -278,12 +280,13 @@ private fun ConsoleHost(
         // resumes it, both once those screens exist (#753, #756): until then neither has anywhere to go.
         homeTab =
             (state as? UiState.SignedIn)?.let { signed ->
-                { HomeTab(graph, signed.profile, onOpen = {}, onResume = {}) }
+                { HomeTab(graph, signed.profile, onOpen = { kind, id -> backStack.openTitle(kind, id) }, onResume = {}) }
             },
         librariesTab = {
             (state as? UiState.SignedIn)?.let { LibrariesTab(graph, it.profile, onOpen = { id -> backStack.openLibrary(id) }) }
         },
         library = { LibraryPlaceholder(onBack = { backStack.closeTop() }) },
+        title = { TitlePlaceholder(onBack = { backStack.closeTop() }) },
         defaultPage = {
             (state as? UiState.SignedIn)?.let { gated ->
                 // A stream tapped here has no page to open over, so the page opens, and the stream over it.
