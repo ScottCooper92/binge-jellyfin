@@ -80,7 +80,7 @@ class PlaybackSittingsTest {
                 }
                 minted += item.itemId to resume
                 choices += choice
-                Minted(if (offeredAudio) offered(item) else request(item), Handle(item))
+                Minted(if (offeredAudio) offered(item, choice) else request(item), Handle(item))
             },
             reporter = { play, kind, position -> reports += Triple((play as Handle).item.itemId, kind, position) },
             nextEpisodes = { nextOf(it) },
@@ -222,14 +222,19 @@ class PlaybackSittingsTest {
             assertEquals("off is a choice, kept", SubtitlePreference.Off, player.updates.last().preferredSubtitle)
         }
 
-    private fun offered(item: PlayItem) =
-        request(item).copy(
+    private fun offered(
+        item: PlayItem,
+        choice: StreamChoice?,
+    ): PlayRequest {
+        val current = choice?.audioStream?.toString() ?: "1"
+        return request(item).copy(
             audioOptions =
                 listOf(
-                    PlayAudioOption("1", "en", "English", current = true),
-                    PlayAudioOption("2", "es", "Spanish"),
+                    PlayAudioOption("1", "en", "English", current = current == "1"),
+                    PlayAudioOption("2", "es", "Spanish", current = current == "2"),
                 ),
         )
+    }
 
     @Test
     fun `a pick from the offered audio mints that stream at the position in the same session, and is remembered for the next episode`() =
@@ -276,6 +281,27 @@ class PlaybackSittingsTest {
             player.events.send(PlayerEvent.AudioOptionRequested("9", 14_000))
             assertEquals("a key it never offered is ignored", 2, failures.size)
             job.cancel()
+        }
+
+    @Test
+    fun `a source that is replaced is reported so the server can end its work, and the play's state is left alone`() =
+        runTest {
+            val sittings = sittings(offeredAudio = true)
+            sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            reports.clear()
+
+            player.events.send(PlayerEvent.AudioOptionRequested("2", 12_000))
+            assertEquals(listOf(Triple("item1", PlayReport.REPLACED, 0L)), reports)
+
+            reports.clear()
+            player.events.send(PlayerEvent.SourceRejected(30_000, 403))
+            assertEquals(listOf(Triple("item1", PlayReport.REPLACED, 0L)), reports)
+
+            reports.clear()
+            mintFailsOnce = IOException("down")
+            player.events.send(PlayerEvent.RetryRequested(31_000))
+            assertEquals("a re-mint that fails replaces nothing", emptyList<Any>(), reports)
         }
 
     @Test

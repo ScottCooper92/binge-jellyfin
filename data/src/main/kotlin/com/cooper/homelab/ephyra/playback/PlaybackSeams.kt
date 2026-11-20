@@ -47,7 +47,11 @@ fun interface SourceMinter {
 /** Why a switch of audio in a play did not happen: the server could not be reached, or it would not make the source. */
 enum class AudioSwitchFailure { Unreachable, Refused }
 
-enum class PlayReport { STARTED, PROGRESS, PAUSED, RESUMED, FINISHED, STOPPED }
+/**
+ * What a play's reports say. [REPLACED] is not about the viewer: a source was handed over for another, and the server may end the work it
+ * started for the old one. It leaves the play's state alone.
+ */
+enum class PlayReport { STARTED, PROGRESS, PAUSED, RESUMED, FINISHED, STOPPED, REPLACED }
 
 /** Tells the server where a play stands. A failure here never ends the play. */
 fun interface PlayReporter {

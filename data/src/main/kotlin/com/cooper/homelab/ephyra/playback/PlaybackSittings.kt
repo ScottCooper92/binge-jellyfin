@@ -151,12 +151,12 @@ class PlaybackSittings(
                     sitting.outcome.value = PlaybackOutcome.SourceExpired(play.current.title)
                 } else {
                     play.remintedOnce = true
-                    play.minted = reload(id, play.current, profile, event.positionMs, play.upNext, sitting) ?: minted
+                    replace(play, reload(id, play.current, profile, event.positionMs, play.upNext, sitting))
                 }
             }
             is PlayerEvent.RetryRequested -> {
                 play.remintedOnce = false
-                play.minted = reload(id, play.current, profile, event.positionMs, play.upNext, sitting) ?: minted
+                replace(play, reload(id, play.current, profile, event.positionMs, play.upNext, sitting))
             }
             is PlayerEvent.AudioOptionRequested -> switchAudio(event, id, sitting, profile, play)
             is PlayerEvent.NextRequested -> moveToNext(event, id, sitting, profile, play)
@@ -182,11 +182,24 @@ class PlaybackSittings(
                 play.upNext,
                 sitting,
                 picked,
-            ) { sitting.audioFailures.tryEmit(it.audioSwitchFailure()) }
+                onFailure = { sitting.audioFailures.tryEmit(it.audioSwitchFailure()) },
+                accept = { it.isOnAudio(event.key) },
+            )
         if (fresh != null) {
             sitting.choice.value = picked
-            play.minted = fresh
+            replace(play, fresh)
         }
+    }
+
+    /** Takes [fresh] as the source in play, if there is one, and tells the server the old one is no longer used. */
+    private suspend fun replace(
+        play: Playing,
+        fresh: Minted?,
+    ) {
+        if (fresh == null) return
+        val old = play.minted
+        play.minted = fresh
+        report(old, PlayReport.REPLACED, play.position)
     }
 
     /** The next episode: minted first on the tracks carried over, then the one playing is reported stopped. */
@@ -223,12 +236,17 @@ class PlaybackSittings(
         sitting: Sitting,
         choice: StreamChoice? = sitting.choice.value,
         onFailure: (Throwable) -> Unit = { sitting.fail(it, item.title) },
+        accept: (Minted) -> Boolean = { true },
     ): Minted? {
         val minted =
             attempt { minter.mint(item, profile, positionMs, choice) }.getOrElse {
                 onFailure(it)
                 return null
             }
+        if (!accept(minted)) {
+            onFailure(SourceNotOnChoice())
+            return null
+        }
         player.update(minted.request.copy(sessionId = id, next = upNext?.title).opensOn(choice))
         sitting.outcome.value = PlaybackOutcome.Playing(item.title)
         return minted
@@ -242,8 +260,6 @@ class PlaybackSittings(
         attempt { reporter.report(minted.report, kind, positionMs) }
     }
 
-    private fun PlaybackOutcome.endsOnItsOwn() = this !is PlaybackOutcome.Refused && this !is PlaybackOutcome.SourceExpired
-
     private fun Sitting.fail(
         error: Throwable,
         title: PlayTitle,
@@ -255,15 +271,23 @@ class PlaybackSittings(
                 else -> PlaybackOutcome.Refused(title, PlaybackRefusal.Generic)
             }
     }
-
-    private fun JellyfinHttpException.refusal(): PlaybackRefusal =
-        when (code) {
-            HTTP_UNAUTHORIZED -> PlaybackRefusal.SignedOut
-            HTTP_FORBIDDEN -> PlaybackRefusal.NoPermission
-            HTTP_NOT_FOUND -> PlaybackRefusal.NotFound
-            else -> PlaybackRefusal.Generic
-        }
 }
+
+/** The server answered, but with a source that is not on the track asked for. */
+private class SourceNotOnChoice : Exception()
+
+/** Whether the source on offer is on the audio option [key], as the server says it is: a pick the server did not make is not a switch. */
+private fun Minted.isOnAudio(key: String): Boolean = request.audioOptions.firstOrNull { it.current }?.key == key
+
+private fun PlaybackOutcome.endsOnItsOwn() = this !is PlaybackOutcome.Refused && this !is PlaybackOutcome.SourceExpired
+
+private fun JellyfinHttpException.refusal(): PlaybackRefusal =
+    when (code) {
+        HTTP_UNAUTHORIZED -> PlaybackRefusal.SignedOut
+        HTTP_FORBIDDEN -> PlaybackRefusal.NoPermission
+        HTTP_NOT_FOUND -> PlaybackRefusal.NotFound
+        else -> PlaybackRefusal.Generic
+    }
 
 /** The choice that follows the user's pick of the option [key] the source offered, or null for a key it did not offer. */
 private fun pickAudio(

@@ -118,6 +118,15 @@ fun JsonObject.externalSubtitles(): List<ExternalSubtitle> =
         }.take(MAX_SUBTITLES)
 
 /**
+ * Ends the transcode the server is running for [playSessionId] on this device (`DELETE /Videos/ActiveEncodings` with `deviceId` and
+ * `playSessionId`), so a source that was replaced does not leave the server encoding for nobody. It leaves the play's state and resume
+ * point alone, which a stopped report would not.
+ */
+suspend fun JellyfinClient.stopEncoding(playSessionId: String) {
+    delete("Videos/ActiveEncodings", mapOf("deviceId" to identity.deviceId, "playSessionId" to playSessionId))
+}
+
+/**
  * The body of a session report (`/Sessions/Playing`, `/Progress`, `/Stopped`): the item, the media source, the play session, the play
  * method and where the play is.
  */

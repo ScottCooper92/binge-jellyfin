@@ -1034,6 +1034,7 @@ class FakeJellyfin : Dispatcher() {
             path.startsWith("/UserPlayedItems/") -> setPlayed(path.removePrefix("/UserPlayedItems/"), request.method == "POST")
             path.matches(OLD_PLAYED_ROUTE) -> setPlayed(path.substringAfterLast('/'), request.method == "POST")
             path.startsWith("/MediaSegments/") -> json(segments[path.substringAfterLast('/')] ?: """{"Items":[],"TotalRecordCount":0}""")
+            path == "/Videos/ActiveEncodings" && request.method == "DELETE" -> MockResponse(code = 204)
             path.endsWith("/PlaybackInfo") -> json(playbackInfoFor(request))
             path.startsWith("/Sessions/Playing") -> MockResponse(code = 204)
             else -> MockResponse(code = 404)
