@@ -11,19 +11,14 @@ import com.cooper.homelab.ephyra.demo.DemoPicture
 import com.cooper.homelab.ephyra.demo.DemoPictureShape
 import kotlin.math.min
 
-private const val LABEL_WITH_CAPTION_CENTRE = 0.44f
 private const val LABEL_CENTRE = 0.5f
-private const val CAPTION_CENTRE = 0.8f
 private const val POSTER_LABEL_SIZE = 0.3f
 private const val WIDE_LABEL_SIZE = 0.34f
 private const val PERSON_LABEL_SIZE = 0.4f
-private const val CAPTION_SIZE = 0.075f
-private const val CAPTION_WIDTH = 0.84f
-private const val ELLIPSIS = "…"
-private const val CAPTION_ALPHA = 0xD0
+private const val LABEL_WIDTH = 0.84f
 
 /**
- * Draws [picture] as a gradient between its two colours with its label in white, big and centred, and its title small under it.
+ * Draws [picture] as a gradient between its two colours with its label in white, big and centred (none, when the label is empty).
  * The colours are dark enough for white to read whichever theme the screen is in, so nothing here asks for the theme. A person's is
  * the whole square: the screen crops it to a circle.
  */
@@ -46,21 +41,11 @@ internal fun drawDemoPicture(picture: DemoPicture): Bitmap {
             DemoPictureShape.Person -> PERSON_LABEL_SIZE * width
         }
     paint.textSize = labelSize
-    val caption = picture.caption
-    canvas.drawText(
-        picture.label,
-        width / 2,
-        centredBaseline(
-            paint,
-            height * if (caption != null) LABEL_WITH_CAPTION_CENTRE else LABEL_CENTRE,
-        ),
-        paint,
-    )
-    if (caption != null) {
-        paint.typeface = Typeface.DEFAULT
-        paint.textSize = CAPTION_SIZE * width
-        paint.alpha = CAPTION_ALPHA
-        canvas.drawText(fitted(paint, caption, width * CAPTION_WIDTH), width / 2, centredBaseline(paint, height * CAPTION_CENTRE), paint)
+    if (picture.label.isNotEmpty()) {
+        // A library's whole name may be wider than its picture: it shrinks to fit rather than being cut.
+        val measured = paint.measureText(picture.label)
+        if (measured > width * LABEL_WIDTH) paint.textSize = labelSize * width * LABEL_WIDTH / measured
+        canvas.drawText(picture.label, width / 2, centredBaseline(paint, height * LABEL_CENTRE), paint)
     }
     return bitmap
 }
@@ -70,14 +55,3 @@ private fun centredBaseline(
     paint: Paint,
     centre: Float,
 ): Float = centre - (paint.fontMetrics.ascent + paint.fontMetrics.descent) / 2
-
-/** [text] cut to fit [limit] pixels, with an ellipsis where it was cut. */
-private fun fitted(
-    paint: Paint,
-    text: String,
-    limit: Float,
-): String {
-    if (paint.measureText(text) <= limit) return text
-    val fits = paint.breakText(text, true, limit - paint.measureText(ELLIPSIS), null)
-    return text.take(fits).trimEnd() + ELLIPSIS
-}

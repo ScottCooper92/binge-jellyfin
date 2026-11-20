@@ -33,7 +33,8 @@ enum class DemoPictureShape { Poster, Wide, Still, Person }
 
 /**
  * What the demo draws for one picture, as plain values: the shape and size, the two colours of its gradient, the big text on it
- * (initials, or an episode's number) and the title under it. The app draws it; nothing here touches the screen, so it is checked
+ * (initials, or an episode's number; a library's Primary has its whole name, as Jellyfin's generated one does; a library's Thumb or
+ * Backdrop has none, because the tile writes the name over it). The app draws it; nothing here touches the screen, so it is checked
  * without a device. Colours come from the item's id, so a title looks the same on every run and no two neighbours match, and both
  * are dark enough for white text to read on them whichever theme the screen around it is in.
  */
@@ -46,7 +47,6 @@ data class DemoPicture(
     /** ARGB of the bottom right corner. */
     val bottomColor: Int,
     val label: String,
-    val caption: String?,
 )
 
 /** Whether [this] is an address on the demo server, whatever it asks for. */
@@ -119,7 +119,8 @@ private fun library(
 ): Subject? {
     val prefix = LIBRARY_TAG_PREFIXES[kind] ?: return null
     val name = tag?.takeIf { it.startsWith("$prefix$id-") }?.removePrefix("$prefix$id-")?.takeIf { it.isNotBlank() } ?: return null
-    return Subject(name, DemoPictureShape.Wide, initials(name), setOf(kind))
+    // Jellyfin draws a library's name into its generated Primary; a Thumb or Backdrop has no name in it, and the tile writes one.
+    return Subject(name, DemoPictureShape.Wide, name.takeIf { kind == "Primary" }.orEmpty(), setOf(kind))
 }
 
 private val LIBRARY_TAG_PREFIXES = mapOf("Primary" to "p-", "Thumb" to "t-", "Backdrop" to "b-")
@@ -146,10 +147,8 @@ private fun pictureFor(
         height = height,
         topColor = hsv(hue, SATURATION_TOP, VALUE_TOP),
         bottomColor = hsv((hue + HUE_SHIFT) % HUE_DEGREES, SATURATION_BOTTOM, VALUE_BOTTOM),
+        // Every card writes its title under the picture, so a title's picture has initials only.
         label = subject.label,
-        // A backdrop and a thumb sit under a title the screen writes itself, and a person's is a disc: only a poster, a still and a
-        // library's own picture carry the name.
-        caption = subject.name.takeIf { kind == "Primary" && shape != DemoPictureShape.Person },
     )
 }
 

@@ -41,12 +41,11 @@ class DemoPicturesTest {
     private fun library(name: String): JsonObject = views().first { it.string("Name") == name }
 
     @Test
-    fun `a film's poster is two thirds as wide as it is tall, with its initials and its title`() {
+    fun `a film's poster is two thirds as wide as it is tall, with its initials only`() {
         val poster = demoPictureFor(url("demo-movie-1"))!!
         assertEquals(DemoPictureShape.Poster, poster.shape)
         assertEquals(300 to 450, poster.width to poster.height)
         assertEquals("LQ", poster.label)
-        assertEquals("The Long Quiet", poster.caption)
     }
 
     @Test
@@ -75,12 +74,11 @@ class DemoPicturesTest {
     }
 
     @Test
-    fun `a person with a photo is a square of initials with no caption`() {
+    fun `a person with a photo is a square of initials`() {
         val person = demoPictureFor(url("demo-person-1", width = 96))!!
         assertEquals(DemoPictureShape.Person, person.shape)
         assertEquals(96 to 96, person.width to person.height)
         assertEquals("SR", person.label)
-        assertNull(person.caption)
     }
 
     @Test
@@ -101,14 +99,12 @@ class DemoPicturesTest {
     fun `a library's picture follows its name when it is renamed`() {
         val model = DemoModel()
         val before = views(model).first { it.string("Name") == "TV shows" }
-        assertEquals("TV shows", before.pictureOf("Primary")!!.caption)
-        assertEquals("TS", before.pictureOf("Primary")!!.label)
+        assertEquals("TV shows", before.pictureOf("Primary")!!.label)
         val rename = DemoCall("POST", "/Library/VirtualFolders/Name", { mapOf("name" to "TV shows", "newName" to "Series")[it] }, { "" })
         model.answer(rename)
         val after = views(model).first { it.string("Name") == "Series" }
         assertEquals(before.string("Id"), after.string("Id"))
-        assertEquals("Series", after.pictureOf("Primary")!!.caption)
-        assertEquals("S", after.pictureOf("Primary")!!.label)
+        assertEquals("Series", after.pictureOf("Primary")!!.label)
         // A new tag is a new cache key, so the screen asks again.
         assertTrue(before.tag("Primary") != after.tag("Primary"))
         // A library the tag does not name is not drawn.
@@ -116,12 +112,15 @@ class DemoPicturesTest {
     }
 
     @Test
-    fun `a backdrop and a thumb carry no name, since the screen writes it, and a library's own picture does`() {
-        assertNull(demoPictureFor(url("demo-movie-1", "Backdrop"))!!.caption)
-        assertNull(library("Movies").pictureOf("Thumb")!!.caption)
-        assertNull(library("Movies").pictureOf("Backdrop")!!.caption)
-        assertEquals("Movies", library("Movies").pictureOf("Primary")!!.caption)
-        assertEquals("The Long Quiet", demoPictureFor(url("demo-movie-1"))!!.caption)
+    fun `a library's own picture has its whole name and its thumb and backdrop none, as on a real server`() {
+        // Jellyfin draws the name into a library's generated Primary; the tile writes it over a Thumb or a Backdrop.
+        assertEquals("Movies", library("Movies").pictureOf("Primary")!!.label)
+        assertEquals("", library("Movies").pictureOf("Thumb")!!.label)
+        assertEquals("", library("Movies").pictureOf("Backdrop")!!.label)
+        assertEquals("Collections", library("Collections").pictureOf("Primary")!!.label)
+        // A title's pictures say initials only, since its card writes the title under them.
+        assertEquals("LQ", demoPictureFor(url("demo-movie-1"))!!.label)
+        assertEquals("LQ", demoPictureFor(url("demo-movie-1", "Backdrop"))!!.label)
     }
 
     @Test
