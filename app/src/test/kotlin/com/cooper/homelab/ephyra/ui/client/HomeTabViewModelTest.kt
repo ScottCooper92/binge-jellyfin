@@ -94,7 +94,7 @@ class HomeTabViewModelTest {
 
     @Test
     fun `a server the monitor reads as unreachable shows no connection while Home is still loading`() {
-        val vm = HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6"))
+        val vm = teardown.made(HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6")))
         connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         assertEquals(HomeUiState.Error(ServerFailure.Unreachable()), vm.settled())
@@ -102,7 +102,7 @@ class HomeTabViewModelTest {
 
     @Test
     fun `an answer from the server takes no connection away again`() {
-        val vm = HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6"))
+        val vm = teardown.made(HomeTabViewModel(connection, Dispatchers.IO, JellyfinServerProfile.from("10.11.6")))
         connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         vm.settled { it is HomeUiState.Error }
