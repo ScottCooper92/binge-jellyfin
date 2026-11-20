@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.demo
 
 import com.binge.companion.sdk.attempt
+import com.cooper.homelab.ephyra.server.TICKS_PER_HOUR
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -10,7 +11,6 @@ import kotlinx.serialization.json.put
 import java.time.Duration
 import java.time.Instant
 
-private const val TICKS_PER_HOUR = 36_000_000_000L
 private const val SCAN_HOURS = 3L
 private const val DAY_HOURS = 24L
 private const val SCAN_MINUTES_AGO = 40L
