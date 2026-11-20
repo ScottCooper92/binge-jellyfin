@@ -52,6 +52,7 @@ import com.cooper.homelab.ephyra.ui.JellyfinRoot
 import com.cooper.homelab.ephyra.ui.JellyfinViewModel
 import com.cooper.homelab.ephyra.ui.UiState
 import com.cooper.homelab.ephyra.ui.chooseServer
+import com.cooper.homelab.ephyra.ui.client.CollectionPage
 import com.cooper.homelab.ephyra.ui.client.EpisodePage
 import com.cooper.homelab.ephyra.ui.client.HomeTab
 import com.cooper.homelab.ephyra.ui.client.LibrariesTab
@@ -70,6 +71,7 @@ import com.cooper.homelab.ephyra.ui.console.ConsolePage
 import com.cooper.homelab.ephyra.ui.console.ConsolePageRoute
 import com.cooper.homelab.ephyra.ui.console.LocalUserPictures
 import com.cooper.homelab.ephyra.ui.localNetworkAnswered
+import com.cooper.homelab.ephyra.ui.nav.CollectionRoute
 import com.cooper.homelab.ephyra.ui.nav.EphyraNavHost
 import com.cooper.homelab.ephyra.ui.nav.EphyraTab
 import com.cooper.homelab.ephyra.ui.nav.EpisodeRoute
@@ -384,8 +386,8 @@ internal fun ConsoleHost(
 }
 
 /**
- * The page for a title route. A film's, a series', a season's, an episode's or a person's page needs the user's session and the server's version; every other kind keeps the
- * placeholder until its screen lands.
+ * The page for a title route. A film's, a collection's, a series', a season's, an episode's or a person's page needs the user's session and the
+ * server's version; every other kind keeps the placeholder until its screen lands.
  */
 @Composable
 private fun TitlePageRoute(
@@ -403,6 +405,14 @@ private fun TitlePageRoute(
                 onBack = { backStack.closeTop() },
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
+            )
+        route is CollectionRoute && signed != null ->
+            CollectionPage(
+                graph,
+                signed.profile,
+                route.itemId,
+                onBack = { backStack.closeTop() },
+                onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
             )
         route is PersonRoute && signed != null ->
             PersonPage(

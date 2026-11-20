@@ -58,7 +58,8 @@ private const val SKELETON_ACTIONS = 2
 
 /**
  * What the movie page does: [onBack] leaves it, [onRetry] reads the title again after a failure, and [onPlay] is the primary button,
- * which opens nothing yet (in-app play is #756). [onOpenTitle] and [onOpenPerson] open a poster card's or a person's page.
+ * which opens nothing yet (in-app play is #756). [onOpenTitle] and [onOpenPerson] open a poster card's or a person's page, and
+ * [onOpenCollection] the page of the collection the film is in, from its rail's See all button or its trailing tile (the heading is not tappable).
  */
 class MovieActions(
     val onBack: () -> Unit,
@@ -68,6 +69,7 @@ class MovieActions(
     val onToggleFavourite: () -> Unit,
     val onOpenTitle: (TitleCard) -> Unit,
     val onOpenPerson: (PersonUi) -> Unit,
+    val onOpenCollection: (collectionId: String) -> Unit,
 )
 
 /**
@@ -98,6 +100,8 @@ fun MovieScreen(
             onRetry = actions.onRetry,
             onOpenPerson = { key -> movie?.people()?.firstOrNull { it.key() == key }?.let(actions.onOpenPerson) },
             onOpenPoster = { key -> movie?.cards()?.firstOrNull { it.key() == key }?.let(actions.onOpenTitle) },
+            // The collection's rail is the first poster rail when the film has one, so it is the only one that has a see-all.
+            onSeeAllPosters = { index -> movie?.collection?.takeIf { index == 0 }?.let { actions.onOpenCollection(it.id) } },
         )
     when (state) {
         MovieUiState.Loading ->
@@ -183,7 +187,7 @@ fun movieDetail(
             ),
         posterRails =
             listOfNotNull(
-                movie.collection?.let { PosterRail(it.name, posterItems(it.parts, imageUrl)) },
+                movie.collection?.let { PosterRail(it.name, posterItems(it.parts, imageUrl), seeAll = true) },
                 PosterRail(stringResource(R.string.client_title_similar), posterItems(movie.similar, imageUrl)),
             ),
         info = DetailInfo(stringResource(R.string.client_title_details), movie.facts.entries(locale)),

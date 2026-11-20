@@ -16,7 +16,7 @@ import com.cooper.homelab.ephyra.client.title.MovieScreen
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 
 /**
- * A film's page, over the shell. [onOpenTitle] opens a similar title or a collection's part, which is of the kind it is given;
+ * A film's page, over the shell. [onOpenTitle] opens a similar title, a collection's part or the collection itself, which is of the kind it is given;
  * [onOpenPerson] opens a person. The play button does nothing yet: playing in the app is #756. The view model is the page's own,
  * keyed by the film so two films on the stack keep their own.
  */
@@ -51,6 +51,7 @@ fun MoviePage(
                 onToggleFavourite = { model.toggleFavourite() },
                 onOpenTitle = { onOpenTitle(it.kind, it.id) },
                 onOpenPerson = { onOpenPerson(it.id) },
+                onOpenCollection = { onOpenTitle(ItemKind.BoxSet, it) },
             )
         }
     MovieScreen(state = state, imageUrl = model::imageUrl, actions = actions, modifier = modifier, events = model.events)

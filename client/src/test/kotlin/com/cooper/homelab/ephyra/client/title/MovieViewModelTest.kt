@@ -89,7 +89,43 @@ class MovieViewModelTest {
         }
 
     @Test
-    fun `a server that cannot name a collection has no row, and the page still shows`() =
+    fun `a film in two box sets shows the first one the server names`() =
+        runBlocking {
+            add("m1", "Alien", collections = listOf("boxA", "boxB"))
+            jellyfin.browse.titles.add(FakeTitle("boxA", "Alien Collection", "lib-box", "BoxSet"))
+            jellyfin.browse.titles.add(FakeTitle("boxB", "Space Horror", "lib-box", "BoxSet"))
+            jellyfin.browse.titles.add(FakeTitle("pa", "Alien", "boxA"))
+            jellyfin.browse.titles.add(FakeTitle("pb", "Event Horizon", "boxB"))
+            val movie = viewModel().also { it.start("m1") }.ready { it.collection != null }
+            assertEquals("boxA", movie.collection!!.id)
+            assertEquals(listOf("pa"), movie.collection!!.parts.map { it.id })
+        }
+
+    @Test
+    fun `before 12_0 a film in a hand-made box set with no provider ids gets its rail from the box set's members`() =
+        runBlocking {
+            jellyfin.browse.titles.add(FakeTitle("m1", "Alien", "box", year = 1979))
+            jellyfin.browse.titles.add(FakeTitle("m2", "Aliens", "box", year = 1986))
+            jellyfin.browse.titles.add(FakeTitle("box", "Sol Levante Collection", "lib-box", "BoxSet"))
+            val movie = viewModel(JellyfinVersion(10, 11, 6)).also { it.start("m1") }.ready { it.collection != null }
+            assertEquals("box", movie.collection!!.id)
+            assertEquals(listOf("m1", "m2"), movie.collection!!.parts.map { it.id })
+        }
+
+    @Test
+    fun `before 12_0 a film in two box sets shows the first by name`() =
+        runBlocking {
+            jellyfin.browse.titles.add(FakeTitle("m1", "Alien", "boxA", year = 1979))
+            jellyfin.browse.titles.add(FakeTitle("boxA", "Alpha Collection", "lib-box", "BoxSet"))
+            jellyfin.browse.titles.add(FakeTitle("boxB", "Beta Collection", "lib-box", "BoxSet"))
+            // The fake gives a title one library, so the second box set holds the film through a copy with its own id.
+            jellyfin.browse.titles.add(FakeTitle("m1b", "Alien", "boxB", year = 1979))
+            val movie = viewModel(JellyfinVersion(10, 11, 6)).also { it.start("m1") }.ready { it.collection != null }
+            assertEquals("boxA", movie.collection!!.id)
+        }
+
+    @Test
+    fun `a film in no box set has no row on an older server, and the page still shows`() =
         runBlocking {
             add("m1", "Alien")
             val model = viewModel(JellyfinVersion(10, 11, 6)).also { it.start("m1") }
