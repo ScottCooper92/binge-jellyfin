@@ -59,7 +59,7 @@ internal fun chooseNextEpisode(episodes: List<BrowseItem>): NextEpisode {
         else ->
             regular.drop(lastPlayed + 1).firstOrNull { !it.userData.played }?.let { NextEpisode.Next(it) }
                 ?: regular.firstOrNull { !it.userData.played }?.let { NextEpisode.Next(it) }
-                ?: NextEpisode.AllWatched
+                ?: NextEpisode.AllWatched(regular.first())
     }
 }
 

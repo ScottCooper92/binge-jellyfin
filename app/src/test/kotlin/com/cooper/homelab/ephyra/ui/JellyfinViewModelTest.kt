@@ -1,11 +1,6 @@
 package com.cooper.homelab.ephyra.ui
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import com.binge.companion.kit.SecretCipher
 import com.cooper.homelab.core.server.connection.CallResult
 import com.cooper.homelab.core.server.network.CleartextConsent
@@ -31,11 +26,9 @@ import com.cooper.homelab.ephyra.testSessionStore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -62,6 +55,7 @@ import java.io.IOException
 import java.net.ServerSocket
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLProtocolException
 
@@ -72,7 +66,13 @@ class JellyfinViewModelTest {
     private val jellyfin = FakeJellyfin()
     private val sessions: SessionStore = testSessionStore()
     private val index = LibraryIndex()
-    private val connection = Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)
+
+    /** The one teardown every view model test shares: the view models are stopped and finished, and the connections closed, before Main is reset. */
+    private val teardown = ViewModelTeardown()
+    private val connection =
+        teardown.made(
+            Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger),
+        )
 
     @Before
     fun main() {
@@ -80,30 +80,14 @@ class JellyfinViewModelTest {
         jellyfin.items += FakeItem("m", "Companion", "Movie", tmdbId = 1084199)
     }
 
-    /** The connections a test builds beside the shared one (the demo's, a slow one): closed with it. */
-    private val extraConnections = mutableListOf<Connection>()
-
     @After
-    fun close() {
-        // Cancels what the view models still have in flight and waits for it to end, so none resumes on Main while it is reset: a
-        // server call on the real IO thread can still be running when the stores are cleared, and clearing alone does not wait for it.
-        val jobs = viewModels.mapNotNull { it.viewModelScope.coroutineContext[Job] }
-        stores.forEach { it.clear() }
-        runBlocking { withTimeout(TEARDOWN_MILLIS) { jobs.forEach { it.join() } } }
-        connection.close()
-        extraConnections.forEach { it.close() }
-        jellyfin.close()
-        Dispatchers.resetMain()
-    }
+    fun close() = teardown.close(jellyfin)
 
+    @Volatile
     private var found: List<DiscoveredServer> = emptyList()
 
-    private val stores = mutableListOf<ViewModelStore>()
-
-    /** The view models a test made, so teardown can wait for the work each still has in flight. */
-    private val viewModels = mutableListOf<JellyfinViewModel>()
-
-    private val reported = mutableListOf<Pair<String, Map<String, Any>>>()
+    /** What the view model reported, from its IO threads: read from the test's thread, so it is one that is safe to share. */
+    private val reported = CopyOnWriteArrayList<Pair<String, Map<String, Any>>>()
 
     private val analytics =
         object : Analytics {
@@ -117,17 +101,16 @@ class JellyfinViewModelTest {
             }
         }
 
-    private var sessionsEnded = 0
+    private val sessionsEnded = AtomicInteger()
 
     /** A successful sign-in is counted just after the signed-in state shows, so a test waits for the count it expects. */
-    private fun awaitReports(count: Int) =
-        runBlocking { withTimeout(10_000) { while (synchronized(reported) { reported.size } < count) delay(5) } }
+    private fun awaitReports(count: Int) = runBlocking { withTimeout(10_000) { while (reported.size < count) delay(5) } }
 
     private fun viewModel(
         over: Connection = connection,
         cleartext: CleartextConsent = CleartextConsent.None,
         savedState: SavedStateHandle = SavedStateHandle(),
-    ) = track(
+    ) = made(
         JellyfinViewModel(
             sessions,
             over,
@@ -137,17 +120,13 @@ class JellyfinViewModelTest {
             discover = { found },
             quickConnectPollMillis = 10L,
             analytics = analytics,
-            onSessionEnded = { sessionsEnded++ },
+            onSessionEnded = { sessionsEnded.incrementAndGet() },
             cleartext = cleartext,
             savedState = savedState,
         ),
     )
 
-    private fun track(vm: JellyfinViewModel): JellyfinViewModel {
-        viewModels += vm
-        val store = ViewModelStore().also { stores += it }
-        return ViewModelProvider(store, viewModelFactory { initializer { vm } })[JellyfinViewModel::class.java]
-    }
+    private fun made(vm: JellyfinViewModel): JellyfinViewModel = teardown.made(vm)
 
     private inline fun <reified T : UiState> JellyfinViewModel.await(crossinline matches: (T) -> Boolean = { true }): T =
         runBlocking { withTimeout(10_000) { state.first { it is T && matches(it) } as T } }
@@ -160,7 +139,7 @@ class JellyfinViewModelTest {
         return await<UiState.SignIn>()
     }
 
-    private fun demoViewModel(cipher: SecretCipher = PlainCipher): JellyfinViewModel {
+    private fun demoVm(cipher: SecretCipher = PlainCipher): JellyfinViewModel {
         val demoSessions = testSessionStore(cipher)
         val demoConnection =
             Connection(
@@ -171,8 +150,8 @@ class JellyfinViewModelTest {
                 "1.0",
                 Dispatchers.IO,
                 DiscardLogger,
-            ).also { extraConnections += it }
-        return track(
+            ).also { teardown.made(it) }
+        return made(
             JellyfinViewModel(
                 demoSessions,
                 demoConnection,
@@ -199,7 +178,7 @@ class JellyfinViewModelTest {
 
     @Test
     fun `Try the demo signs in to the demo server with no address and no account`() {
-        val vm = demoViewModel()
+        val vm = demoVm()
         vm.await<UiState.EnterServer>()
         vm.tryDemo()
         val signedIn = vm.await<UiState.SignedIn>()
@@ -211,7 +190,7 @@ class JellyfinViewModelTest {
 
     @Test
     fun `leaving the demo brings back an empty address step, not the demo's address`() {
-        val vm = demoViewModel()
+        val vm = demoVm()
         vm.await<UiState.EnterServer>()
         vm.tryDemo()
         vm.await<UiState.SignedIn>()
@@ -227,11 +206,12 @@ class JellyfinViewModelTest {
 
                 override fun decrypt(ciphertext: String): String? = null
             }
-        val vm = demoViewModel(refusing)
+        val vm = demoVm(refusing)
         vm.await<UiState.EnterServer>()
         vm.tryDemo()
         val state = vm.await<UiState.EnterServer> { !it.checking && it.error != null }
         assertEquals(SetupError.Generic, state.error)
+        awaitReports(1)
         assertTrue(reported.any { it.first == "sign_in_failed" && it.second["method"] == "demo" })
     }
 
@@ -613,7 +593,8 @@ class JellyfinViewModelTest {
         jellyfin.close()
         vm.onAddress(jellyfin.baseUrl)
         vm.connect()
-        assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error != null }.error)
+        // The step still holds the first answer until the second check ends, so wait for the second answer itself.
+        assertEquals(SetupError.Unreachable, vm.await<UiState.EnterServer> { it.error == SetupError.Unreachable }.error)
     }
 
     @Test
@@ -636,7 +617,7 @@ class JellyfinViewModelTest {
         vm.await<UiState.EnterServer>()
 
         vm.onAddress("http://jellyfin.example.com")
-        val asked = vm.await<UiState.EnterServer>()
+        val asked = vm.await<UiState.EnterServer> { it.address == "http://jellyfin.example.com" }
         assertEquals("jellyfin.example.com", asked.insecureHost)
         assertFalse(asked.canConnect)
 
@@ -645,10 +626,17 @@ class JellyfinViewModelTest {
 
         // The agreement was for that host: another address has not been agreed to.
         vm.onAddress("http://other.example.org")
-        val other = vm.await<UiState.EnterServer>()
+        val other = vm.await<UiState.EnterServer> { it.address == "http://other.example.org" }
         assertEquals("other.example.org", other.insecureHost)
         assertFalse(other.cleartextAllowed)
     }
+
+    /**
+     * A connection that reaches nothing and says so at once. A test that saves a session at a host of its own (a name that is not the
+     * fake server, a LAN address) must not let the view model's read or its sign-out dial it: a real lookup or connect to a host that
+     * does not answer takes as long as the client's own timeout, which is the length of a test's wait.
+     */
+    private fun offlineConnection() = failingWith { IOException("offline") }
 
     /** A connection that records every address asked for and answers none of them. */
     private fun recordingConnection(asked: MutableList<HttpUrl>) =
@@ -665,7 +653,7 @@ class JellyfinViewModelTest {
             "1.0",
             Dispatchers.IO,
             DiscardLogger,
-        ).also { extraConnections += it }
+        ).also { teardown.made(it) }
 
     private fun askedFor(
         typed: String,
@@ -738,7 +726,7 @@ class JellyfinViewModelTest {
     fun `a plain http host the user agreed to earlier is found agreed to again when its server is edited`() {
         val consent = RecordingConsent().apply { granted += "jellyfin.example.com" }
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
-        val vm = viewModel(cleartext = consent)
+        val vm = viewModel(offlineConnection(), consent)
         vm.await<UiState.SignedIn>()
 
         vm.changeServer()
@@ -800,7 +788,7 @@ class JellyfinViewModelTest {
     @Test
     fun `leaving a plain HTTP public host's session brings back the row asking for agreement`() {
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
-        val vm = viewModel()
+        val vm = viewModel(offlineConnection())
         // The saved session is read in the background: signing out before it has been read lets the read land after the sign-out.
         vm.await<UiState.SignedIn>()
         vm.signOut()
@@ -813,7 +801,7 @@ class JellyfinViewModelTest {
     @Test
     fun `a session to a public plain HTTP host holds an agreement the user can take back`() {
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
-        val vm = viewModel()
+        val vm = viewModel(offlineConnection())
         assertEquals("jellyfin.example.com", vm.await<UiState.SignedIn>().consentHost)
     }
 
@@ -821,7 +809,7 @@ class JellyfinViewModelTest {
     fun `a session that holds no agreement has none to take back and cannot ask`() {
         listOf("https://jellyfin.example.com", "http://192.168.1.10:8096").forEach { url ->
             runBlocking { sessions.save(jellyfin.session().copy(baseUrl = url)) }
-            val vm = viewModel()
+            val vm = viewModel(offlineConnection())
             assertNull(url, vm.await<UiState.SignedIn>().consentHost)
             vm.confirmTakeBack(true)
             assertFalse(url, vm.await<UiState.SignedIn>().confirmingTakeBack)
@@ -831,7 +819,7 @@ class JellyfinViewModelTest {
     @Test
     fun `taking the agreement back asks first, and confirming signs out and brings back the row asking for it`() {
         runBlocking { sessions.save(jellyfin.session().copy(baseUrl = "http://jellyfin.example.com")) }
-        val vm = viewModel()
+        val vm = viewModel(offlineConnection())
         vm.await<UiState.SignedIn>()
 
         vm.confirmTakeBack(true)
@@ -857,7 +845,7 @@ class JellyfinViewModelTest {
 
         listOf("https://jellyfin.example.com", "192.168.1.10:8096", "jellyfin.example.com", "http://jellyfin.local").forEach {
             vm.onAddress(it)
-            assertNull(it, vm.await<UiState.EnterServer>().insecureHost)
+            assertNull(it, vm.await<UiState.EnterServer> { step -> step.address == it }.insecureHost)
         }
     }
 
@@ -873,7 +861,7 @@ class JellyfinViewModelTest {
                 "1.0",
                 Dispatchers.IO,
                 DiscardLogger,
-            ).also { extraConnections += it }
+            ).also { teardown.made(it) }
         val vm = viewModel(failing, consent)
         vm.await<UiState.EnterServer>()
         vm.onAddress("http://jellyfin.example.com")
@@ -897,7 +885,7 @@ class JellyfinViewModelTest {
             "1.0",
             Dispatchers.IO,
             DiscardLogger,
-        ).also { extraConnections += it }
+        ).also { teardown.made(it) }
 
     private fun askingForCertificate() = failingWith { SSLProtocolException(CERTIFICATE_REQUIRED_ALERT) }
 
@@ -1007,7 +995,7 @@ class JellyfinViewModelTest {
                 "1.0",
                 Dispatchers.IO,
                 DiscardLogger,
-            ).also { extraConnections += it }
+            ).also { teardown.made(it) }
         val vm = viewModel(reaching, RecordingConsent())
         vm.await<UiState.EnterServer>()
         vm.onAddress("http://jellyfin.example.com")
@@ -1047,7 +1035,7 @@ class JellyfinViewModelTest {
             "1.0",
             Dispatchers.IO,
             DiscardLogger,
-        ).also { extraConnections += it }
+        ).also { teardown.made(it) }
 
     @Test
     fun `forgot password needs a name, sends only the name, and tells what the server answered`() {
@@ -1217,6 +1205,7 @@ class JellyfinViewModelTest {
         jellyfin.quickConnectEnabled = false
         vm.startQuickConnect()
         vm.await<UiState.SignIn> { it.quickConnectError != null }
+        awaitReports(1)
         assertEquals(listOf("sign_in_failed" to mapOf("method" to "quick_connect", "reason" to "quick_connect_off")), reported)
     }
 
@@ -1303,7 +1292,7 @@ class JellyfinViewModelTest {
         assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
         assertEquals(1, jellyfin.hits("/Sessions/Logout"))
         assertNull(runBlocking { sessions.current() })
-        assertEquals("what was cached about the account goes with the session", 1, sessionsEnded)
+        assertEquals("what was cached about the account goes with the session", 1, sessionsEnded.get())
     }
 
     @Test
@@ -1417,7 +1406,7 @@ class JellyfinViewModelTest {
         vm.refresh()
         assertEquals(jellyfin.baseUrl, vm.await<UiState.EnterServer>().address)
         assertNull(runBlocking { sessions.current() })
-        assertEquals(1, sessionsEnded)
+        assertEquals(1, sessionsEnded.get())
     }
 
     @Test
@@ -1565,13 +1554,10 @@ class JellyfinViewModelTest {
         ServerSocket(0).use { silent ->
             val slow = OkHttpClient.Builder().callTimeout(500, TimeUnit.MILLISECONDS).build()
             val vm =
-                track(
+                made(
                     JellyfinViewModel(
                         sessions,
-                        Connection(slow, sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger).also {
-                            extraConnections +=
-                                it
-                        },
+                        teardown.made(Connection(slow, sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger)),
                         index,
                         dispatcher = Dispatchers.IO,
                         cipher = PlainCipher.forLibrary(),
@@ -1674,4 +1660,3 @@ private const val CERTIFICATE_REQUIRED_ALERT =
     "Read error: ssl=0x0: error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED"
 
 /** How long teardown waits for a view model's cancelled work to end: a call on the fake server returns at once. */
-private const val TEARDOWN_MILLIS = 10_000L

@@ -211,7 +211,7 @@ private fun NextEpisode.withChange(change: UserDataChange): NextEpisode =
         is NextEpisode.Start -> copy(episode = episode.with(change))
         is NextEpisode.Next -> copy(episode = episode.with(change))
         is NextEpisode.Resume -> copy(episode = episode.with(change))
-        NextEpisode.None, NextEpisode.AllWatched -> this
+        NextEpisode.None, is NextEpisode.AllWatched -> this
     }
 
 private fun uiState(loaded: Loaded): SeriesUiState =
