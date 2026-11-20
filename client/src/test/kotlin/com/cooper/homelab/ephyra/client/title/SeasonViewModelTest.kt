@@ -3,6 +3,9 @@ package com.cooper.homelab.ephyra.client.title
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.FakeJellyfin
 import com.cooper.homelab.ephyra.FakeTitle
+import com.cooper.homelab.ephyra.browse.BrowseItem
+import com.cooper.homelab.ephyra.browse.ItemKind
+import com.cooper.homelab.ephyra.browse.ItemUserData
 import com.cooper.homelab.ephyra.browse.JellyfinTitleRepository
 import com.cooper.homelab.ephyra.browse.JellyfinUserDataRepository
 import com.cooper.homelab.ephyra.server.ClientIdentity
@@ -159,6 +162,33 @@ class SeasonViewModelTest {
             model.toggleWatched()
             assertEquals(TitleEvent.WriteFailed(ServerFailure.ServerError), event.await())
         }
+
+    private fun episode(
+        id: String,
+        number: Int,
+        played: Boolean = false,
+        positionTicks: Long = 0,
+    ) = BrowseItem(
+        id,
+        "Episode $number",
+        ItemKind.Episode,
+        seasonNumber = 1,
+        episodeNumber = number,
+        userData = ItemUserData(played = played, positionTicks = positionTicks),
+    )
+
+    @Test
+    fun `the season's button resumes, plays the first not watched, or offers the first again`() {
+        val e1 = episode("e1", 1, played = true)
+        val e2 = episode("e2", 2)
+        val e3 = episode("e3", 3, positionTicks = 600_000_000L)
+        assertEquals("e3", (seasonPlay(listOf(e1, e2, e3)) as SeriesPlay.Episode).episodeId)
+        assertEquals("e2", (seasonPlay(listOf(e1, e2)) as SeriesPlay.Episode).episodeId)
+        val again = seasonPlay(listOf(e1, episode("e2b", 2, played = true))) as SeriesPlay.AllWatched
+        assertEquals("e1", again.first.episodeId)
+        assertEquals(PlayKind.Play, again.first.kind)
+        assertEquals(SeriesPlay.NoEpisodes, seasonPlay(emptyList()))
+    }
 
     private companion object {
         const val TIMEOUT = 10_000L
