@@ -92,7 +92,7 @@ internal fun LibraryKind.itemTypes(): String =
         LibraryKind.Movies -> "Movie"
         LibraryKind.TvShows -> "Series"
         LibraryKind.BoxSets -> "BoxSet"
-        LibraryKind.Other -> "Movie,Series"
+        LibraryKind.Mixed, LibraryKind.Other -> "Movie,Series"
     }
 
 /**
@@ -102,6 +102,6 @@ internal fun LibraryKind.itemTypes(): String =
 internal fun LibraryKind.latestItemTypes(): String =
     when (this) {
         LibraryKind.TvShows -> "Episode"
-        LibraryKind.Other -> "Movie,Episode"
+        LibraryKind.Mixed, LibraryKind.Other -> "Movie,Episode"
         else -> itemTypes()
     }

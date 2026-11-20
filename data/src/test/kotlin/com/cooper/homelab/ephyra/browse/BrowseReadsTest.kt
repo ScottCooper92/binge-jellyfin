@@ -50,6 +50,26 @@ class BrowseReadsTest {
     private fun names(page: Page<BrowseItem>) = page.items.map { it.name }
 
     @Test
+    fun `a collections view is BoxSets, a view with no type is Mixed, and music is Other`() =
+        runBlocking {
+            jellyfin.userViews =
+                """[{"Id":"lib-sets","Name":"Collections","CollectionType":"boxsets"},""" +
+                """{"Id":"lib-mixed","Name":"Everything"},{"Id":"lib-music","Name":"Music","CollectionType":"music"}]"""
+            val views = libraries.views()
+            assertEquals(listOf(LibraryKind.BoxSets, LibraryKind.Mixed, LibraryKind.Other), views.map { it.kind })
+            assertEquals("BoxSet", LibraryKind.BoxSets.itemTypes())
+            assertEquals("Movie,Series", LibraryKind.Mixed.itemTypes())
+        }
+
+    @Test
+    fun `a collection type is matched ignoring case, and blank is Mixed`() {
+        assertEquals(LibraryKind.BoxSets, LibraryKind.fromServer("BoxSets"))
+        assertEquals(LibraryKind.Mixed, LibraryKind.fromServer(null))
+        assertEquals(LibraryKind.Mixed, LibraryKind.fromServer(""))
+        assertEquals(LibraryKind.Other, LibraryKind.fromServer("livetv"))
+    }
+
+    @Test
     fun `views list each library with its kind, and an unknown kind is Other`() =
         runBlocking {
             val views = libraries.views()

@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.client.libraries
 import com.cooper.homelab.ephyra.browse.FilterChoices
 import com.cooper.homelab.ephyra.browse.ItemFilters
 import com.cooper.homelab.ephyra.browse.ItemSort
+import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.SortField
 
 /** What a library's grid can be ordered by, in the order the sheet lists them. The rest of [SortField] (a year, a random order) is not offered. */
@@ -44,6 +45,9 @@ object LibraryFilterSection {
     const val RATINGS = "ratings"
     const val YEARS = "years"
 }
+
+/** The sections a box-set library's sheet offers. */
+private val BOX_SET_SECTIONS = setOf(LibraryFilterSection.SORT, LibraryFilterSection.DIRECTION, LibraryFilterSection.FAVOURITES)
 
 /** The option ids that are not a value the server named (a genre, a rating, a year are their own ids). */
 object LibraryFilterOption {
@@ -93,8 +97,21 @@ data class LibraryFilterDraft(
                 (if (filters.played != null) 1 else 0) +
                 (if (filters.favouritesOnly) 1 else 0)
 
-    /** The sections the sheet draws for a library that has [choices]. A section with nothing to choose from is left out. */
-    fun sections(choices: FilterChoices): List<FilterSection> =
+    /**
+     * The sections the sheet draws for a library that has [choices]. A section with nothing to choose from is left out, and a box-set
+     * [kind] has only the order and Favourites: watched, genres, years and ratings mean little for a collection.
+     */
+    fun sections(
+        choices: FilterChoices,
+        kind: LibraryKind? = null,
+    ): List<FilterSection> =
+        if (kind == LibraryKind.BoxSets) {
+            allSections(choices).filter { it.id in BOX_SET_SECTIONS }
+        } else {
+            allSections(choices)
+        }
+
+    private fun allSections(choices: FilterChoices): List<FilterSection> =
         listOfNotNull(
             FilterSection.Single(
                 LibraryFilterSection.SORT,
