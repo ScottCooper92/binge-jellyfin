@@ -140,7 +140,7 @@ class TranscodingViewModelTest {
                 store,
                 object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                        checkNotNull(modelClass.cast(TranscodingViewModel(connection)))
+                        checkNotNull(modelClass.cast(made(TranscodingViewModel(connection))))
                 },
             )[TranscodingViewModel::class.java]
         vm.ready()
