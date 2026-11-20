@@ -40,7 +40,7 @@ fun movieUi(
         watched = item.userData.played,
         favourite = item.userData.favourite,
         overview = detail.overview?.takeIf { it.isNotBlank() },
-        facts = MovieFacts(detail.originalTitle, detail.studios, detail.premiereDate),
+        facts = TitleFacts(detail.originalTitle, detail.studios, detail.premiereDate),
         versions = detail.versions.map(::versionUi),
         cast = detail.people.filter { it.kind == PersonKind.Actor || it.kind == PersonKind.GuestStar }.map(::personUi),
         crew = detail.people.filter { it.kind in CREW_KINDS }.map(::personUi),
