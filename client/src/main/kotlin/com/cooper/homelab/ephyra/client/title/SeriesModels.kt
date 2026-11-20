@@ -81,6 +81,8 @@ data class SeriesUi(
     val tagline: String?,
     val genres: List<String>,
     val backdrop: TitleImage?,
+    /** The series' poster, drawn beside the title at the expanded width. */
+    val poster: TitleImage?,
     val stats: SeriesStats,
     /** What the one wide button does, or null while that is not known yet (still loading, or the read failed). */
     val play: SeriesPlay?,
