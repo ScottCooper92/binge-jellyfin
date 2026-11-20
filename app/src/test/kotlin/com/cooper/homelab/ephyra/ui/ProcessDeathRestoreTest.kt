@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -67,9 +68,12 @@ class ProcessDeathRestoreTest {
     private val jellyfin = FakeJellyfin()
     private val sessions: SessionStore = testSessionStore()
     private val teardown = ViewModelTeardown()
+
+    /** Everything this class runs on an IO thread goes through this, so it can be made quiet before the activity is destroyed (#898). */
+    private val io = QuietableDispatcher()
     private val connection =
-        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger))
-    private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext(), sessionsForTest = sessions) }
+        teardown.made(Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", io, DiscardLogger))
+    private val graph by lazy { AppGraph(ApplicationProvider.getApplicationContext(), io = io, sessionsForTest = sessions) }
 
     /** As every view model test: Main is a dispatcher the teardown can wait on from the main thread, which the platform's looper is not. */
     @Before
@@ -77,6 +81,23 @@ class ProcessDeathRestoreTest {
 
     @After
     fun close() = teardown.close(jellyfin)
+
+    /**
+     * [runAndroidComposeUiTest] with the IO work made quiet as the body ends. The rule destroys the activity, and disposes the
+     * composition, when the body returns, before `@After` closes the view models and the server; until then the view models' work
+     * is still running and writing the state the composition collects, from IO threads, as Main is `Dispatchers.Unconfined` (#898).
+     */
+    private fun composeTest(body: AndroidComposeUiTest<ComponentActivity>.() -> Unit) =
+        runAndroidComposeUiTest<ComponentActivity> {
+            try {
+                body()
+            } finally {
+                waitForIdle()
+                // The view models first, while the dispatcher still runs what their cancellation has to finish; then nothing runs.
+                teardown.stop()
+                io.quiesce()
+            }
+        }
 
     /** The view model the composition last built, so a test can read what it restored. */
     private var shown: JellyfinViewModel? = null
@@ -108,7 +129,7 @@ class ProcessDeathRestoreTest {
                             sessions,
                             connection,
                             LibraryIndex(),
-                            dispatcher = Dispatchers.IO,
+                            dispatcher = io,
                             cipher = PlainCipher.forLibrary(),
                             discover = { emptyList() },
                             linkStash = linkStash,
@@ -127,7 +148,7 @@ class ProcessDeathRestoreTest {
 
     @Test
     fun `a signed in app killed with the client on comes back to its shell`() =
-        runAndroidComposeUiTest<ComponentActivity> {
+        composeTest {
             runBlocking { sessions.save(jellyfin.session()) }
             val tester = StateRestorationTester(this)
             tester.setContent { App() }
@@ -145,7 +166,7 @@ class ProcessDeathRestoreTest {
     @Config(qualifiers = "w411dp-h891dp-xhdpi")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun `a library open with its order and filters comes back with them`() =
-        runAndroidComposeUiTest<ComponentActivity> {
+        composeTest {
             runBlocking { sessions.save(jellyfin.session()) }
             val tester = StateRestorationTester(this)
             tester.setContent { App() }
@@ -183,7 +204,7 @@ class ProcessDeathRestoreTest {
 
     @Test
     fun `a Quick Connect wait the killed process left comes back with its code, and approving it signs in to the shell`() =
-        runAndroidComposeUiTest<ComponentActivity> {
+        composeTest {
             val stash = MemoryStash()
             // The process that dies: it shows a code, keeps the wait, and is gone before anything is approved.
             val dying =
@@ -192,7 +213,7 @@ class ProcessDeathRestoreTest {
                         sessions,
                         connection,
                         LibraryIndex(),
-                        dispatcher = Dispatchers.IO,
+                        dispatcher = io,
                         cipher = PlainCipher.forLibrary(),
                         discover = { emptyList() },
                         linkStash = stash,
