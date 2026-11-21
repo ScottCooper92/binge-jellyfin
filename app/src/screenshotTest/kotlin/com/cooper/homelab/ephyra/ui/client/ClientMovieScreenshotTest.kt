@@ -103,7 +103,7 @@ class ClientMovieScreenshotTest {
         MovieScreen(
             state = state,
             imageUrl = { _, _ -> null },
-            actions = MovieActions({}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }),
+            actions = MovieActions({}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}),
         )
 
     @PreviewTest

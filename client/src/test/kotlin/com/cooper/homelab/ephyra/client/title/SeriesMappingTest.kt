@@ -7,6 +7,8 @@ import com.cooper.homelab.ephyra.browse.ItemUserData
 import com.cooper.homelab.ephyra.browse.NextEpisode
 import com.cooper.homelab.ephyra.browse.PersonKind
 import com.cooper.homelab.ephyra.browse.TitleDetail
+import com.cooper.homelab.ephyra.browse.TitleLink
+import com.cooper.homelab.ephyra.browse.TitleLinkKind
 import com.cooper.homelab.ephyra.browse.TitlePerson
 import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import org.junit.Assert.assertEquals
@@ -89,6 +91,27 @@ class SeriesMappingTest {
             seriesUi(seriesDetail("Continuing", "2021-11-01T00:00:00Z"), emptyList(), null, emptyList(), null, EpisodesState.Loading)
         assertNull(running.facts.endDate)
         assertNull(running.stats.episodeCount)
+    }
+
+    @Test
+    fun `a series carries its trailer, tags, links and the public page to share`() {
+        val link = TitleLink(TitleLinkKind.Tmdb, "TheMovieDb", "https://www.themoviedb.org/tv/1")
+        val detail =
+            seriesDetail("Ended").copy(
+                trailerUrl = "https://youtu.be/abc",
+                tags = listOf("Slow burn"),
+                links = listOf(link),
+                externalIds = mapOf("Tmdb" to "95396"),
+            )
+        val series = seriesUi(detail, emptyList(), null, emptyList(), null, EpisodesState.Loading)
+        assertEquals("https://youtu.be/abc", series.trailerUrl)
+        assertEquals(listOf("Slow burn"), series.tags)
+        assertEquals(listOf(link), series.links)
+        assertEquals("https://www.themoviedb.org/tv/95396", series.shareUrl)
+        val bare = seriesUi(seriesDetail("Ended"), emptyList(), null, emptyList(), null, EpisodesState.Loading)
+        assertNull(bare.trailerUrl)
+        assertNull(bare.shareUrl)
+        assertTrue(bare.tags.isEmpty() && bare.links.isEmpty())
     }
 
     @Test

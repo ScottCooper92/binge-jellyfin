@@ -23,6 +23,8 @@ import com.binge.designsystem.component.EpisodeRow
 import com.binge.designsystem.component.ExternalScore
 import com.binge.designsystem.component.ExternalScoreKind
 import com.binge.designsystem.component.MediaCardStatus
+import com.binge.designsystem.component.PersonCardStyle
+import com.binge.designsystem.template.PeopleRail
 import com.binge.designsystem.template.PersonItem
 import com.binge.designsystem.template.PosterItem
 import com.binge.designsystem.theme.BingeSentiment
@@ -57,6 +59,14 @@ internal fun peopleItems(
     }
 }
 
+/** A cast or crew rail of compact cards, with See all on the heading when there is anyone to list. */
+@Composable
+internal fun peopleRail(
+    title: String,
+    people: List<PersonUi>,
+    imageUrl: (TitleImage, Int) -> String?,
+): PeopleRail = PeopleRail(title, peopleItems(people, imageUrl), seeAll = people.isNotEmpty(), cardStyle = PersonCardStyle.Compact)
+
 /** The titles of a rail as the template's poster items, each keyed by its id, with a watched mark on one the user has finished. */
 @Composable
 internal fun posterItems(
@@ -70,7 +80,7 @@ internal fun posterItems(
 
 /** What each crew job is called, in the user's language. The server sends no text for it. */
 @Composable
-private fun crewJobWords(): Map<CrewJob, String> =
+internal fun crewJobWords(): Map<CrewJob, String> =
     mapOf(
         CrewJob.Director to stringResource(R.string.client_title_job_director),
         CrewJob.Writer to stringResource(R.string.client_title_job_writer),

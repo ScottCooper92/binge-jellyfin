@@ -37,6 +37,15 @@ fun NavBackStack<NavKey>.openPerson(itemId: String) {
     if (lastOrNull() != key) add(key)
 }
 
+/** The cast and crew of the title [itemId], over its page, on [tab] (0 cast, 1 crew). */
+fun NavBackStack<NavKey>.openPeople(
+    itemId: String,
+    tab: Int,
+) {
+    val key = TitlePeopleRoute(itemId, tab)
+    if (lastOrNull() != key) add(key)
+}
+
 /** A search result's page, over the shell: a title opens its own page and a person theirs. */
 fun NavBackStack<NavKey>.openSearchHit(
     kind: SearchKind,

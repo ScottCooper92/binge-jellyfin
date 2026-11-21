@@ -30,6 +30,10 @@
     <string name="client_title_share">Share</string>
     <string name="client_title_tags">Tags</string>
     <string name="client_title_external_links">External links</string>
+    <string name="client_people_title">Cast and crew</string>
+    <string name="client_people_loading">Loading cast and crew</string>
+    <string name="client_people_cast_empty">Nobody is listed in the cast.</string>
+    <string name="client_people_crew_empty">Nobody is listed in the crew.</string>
     <string name="client_title_link_imdb" translatable="false">IMDb</string>
     <string name="client_title_link_tmdb" translatable="false">TMDB</string>
     <string name="client_title_cast">Cast</string>

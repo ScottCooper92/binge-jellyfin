@@ -31,6 +31,10 @@
     <string name="client_title_share">Compartir</string>
     <string name="client_title_tags">Etiquetas</string>
     <string name="client_title_external_links">Enlaces externos</string>
+    <string name="client_people_title">Reparto y equipo</string>
+    <string name="client_people_loading">Cargando reparto y equipo</string>
+    <string name="client_people_cast_empty">No hay nadie en el reparto.</string>
+    <string name="client_people_crew_empty">No hay nadie en el equipo.</string>
     <string name="client_title_cast">Reparto</string>
     <string name="client_title_crew">Equipo</string>
     <string name="client_title_similar">Más como esta</string>

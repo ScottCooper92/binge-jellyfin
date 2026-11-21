@@ -26,7 +26,6 @@ import com.binge.designsystem.template.DetailInfo
 import com.binge.designsystem.template.DetailState
 import com.binge.designsystem.template.MediaDetail
 import com.binge.designsystem.template.MediaDetailCallbacks
-import com.binge.designsystem.template.PeopleRail
 import com.binge.designsystem.template.PosterRail
 import com.binge.designsystem.template.SeriesDetail
 import com.binge.designsystem.template.SeriesDetailCallbacks
@@ -73,6 +72,7 @@ class SeriesActions(
     val onOpenPerson: (PersonUi) -> Unit,
     val onOpenLink: (url: String) -> Unit,
     val onShare: (title: String, url: String) -> Unit,
+    val onOpenPeople: (tab: Int) -> Unit,
 )
 
 /**
@@ -101,6 +101,7 @@ fun SeriesScreen(
             onRetry = actions.onRetry,
             onOpenPerson = { key -> series?.people()?.firstOrNull { it.key() == key }?.let(actions.onOpenPerson) },
             onOpenPoster = { key -> series?.similar?.firstOrNull { it.key() == key }?.let(actions.onOpenTitle) },
+            onSeeAllPeople = { index -> actions.onOpenPeople(index) },
         )
     val seriesCallbacks =
         SeriesDetailCallbacks(
@@ -178,8 +179,8 @@ fun seriesDetail(
         overviewHeading = stringResource(R.string.client_title_overview),
         peopleRails =
             listOf(
-                PeopleRail(stringResource(R.string.client_title_cast), peopleItems(series.cast, imageUrl)),
-                PeopleRail(stringResource(R.string.client_title_crew), peopleItems(series.crew, imageUrl)),
+                peopleRail(stringResource(R.string.client_title_cast), series.cast, imageUrl),
+                peopleRail(stringResource(R.string.client_title_crew), series.crew, imageUrl),
             ),
         posterRails = listOf(PosterRail(stringResource(R.string.client_title_similar), posterItems(series.similar, imageUrl))),
         info = DetailInfo(stringResource(R.string.client_title_details), series.facts.seriesEntries(locale)),

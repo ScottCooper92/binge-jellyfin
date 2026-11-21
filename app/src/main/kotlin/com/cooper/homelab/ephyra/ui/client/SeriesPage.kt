@@ -40,6 +40,7 @@ fun SeriesPage(
     onOpenSeason: (itemId: String) -> Unit,
     onOpenEpisode: (itemId: String) -> Unit,
     onOpenPerson: (itemId: String) -> Unit,
+    onOpenPeople: (itemId: String, tab: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val model: SeriesPageViewModel =
@@ -57,7 +58,7 @@ fun SeriesPage(
     PlayStartHost(graph, serverAddress, onPlay) { play ->
         val playNow by rememberUpdatedState(play)
         val actions =
-            remember(model, context, onBack, onOpenTitle, onOpenSeason, onOpenEpisode, onOpenPerson) {
+            remember(model, context, onOpenPeople, onBack, onOpenTitle, onOpenSeason, onOpenEpisode, onOpenPerson) {
                 SeriesActions(
                     onBack = onBack,
                     onRetry = model::retry,
@@ -77,6 +78,7 @@ fun SeriesPage(
                     onOpenPerson = { onOpenPerson(it.id) },
                     onOpenLink = context::openInBrowser,
                     onShare = context::shareTitle,
+                    onOpenPeople = { tab -> onOpenPeople(itemId, tab) },
                 )
             }
         SeriesScreen(state = state, imageUrl = model::imageUrl, actions = actions, modifier = modifier, events = model.events)
