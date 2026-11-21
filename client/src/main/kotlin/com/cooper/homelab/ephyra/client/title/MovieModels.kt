@@ -3,6 +3,7 @@ package com.cooper.homelab.ephyra.client.title
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
+import com.cooper.homelab.ephyra.browse.TitleLink
 import com.cooper.homelab.ephyra.browse.TrackKind
 
 /** A picture to show, named by item, kind and tag. The screen turns it into a URL at the size it draws it. */
@@ -148,6 +149,10 @@ data class MovieUi(
     val trailerUrl: String? = null,
     /** The title's public page to share, or null when the server holds no TMDb or IMDb id. */
     val shareUrl: String? = null,
+    /** What the server tagged the title with. */
+    val tags: List<String> = emptyList(),
+    /** The title's pages on other sites, IMDb first, then TMDb, then the rest. */
+    val links: List<TitleLink> = emptyList(),
 )
 
 /** What the movie page shows. */

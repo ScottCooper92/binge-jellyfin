@@ -90,7 +90,7 @@ internal fun noActions() =
         onOpenTitle = {},
         onOpenPerson = {},
         onOpenCollection = {},
-        onOpenTrailer = {},
+        onOpenLink = {},
         onShare = { _, _ -> },
     )
 

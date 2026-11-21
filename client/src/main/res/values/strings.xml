@@ -28,6 +28,10 @@
     <string name="client_title_versions">Versions</string>
     <string name="client_title_trailer">Trailer</string>
     <string name="client_title_share">Share</string>
+    <string name="client_title_tags">Tags</string>
+    <string name="client_title_external_links">External links</string>
+    <string name="client_title_link_imdb" translatable="false">IMDb</string>
+    <string name="client_title_link_tmdb" translatable="false">TMDB</string>
     <string name="client_title_cast">Cast</string>
     <string name="client_title_crew">Crew</string>
     <string name="client_title_similar">More like this</string>

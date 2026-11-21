@@ -5,6 +5,8 @@ import com.android.tools.screenshot.PreviewTest
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
+import com.cooper.homelab.ephyra.browse.TitleLink
+import com.cooper.homelab.ephyra.browse.TitleLinkKind
 import com.cooper.homelab.ephyra.browse.TrackKind
 import com.cooper.homelab.ephyra.client.title.CollectionRow
 import com.cooper.homelab.ephyra.client.title.CrewJob
@@ -65,6 +67,13 @@ class ClientMovieScreenshotTest {
             criticsPercent = 87,
             trailerUrl = "https://example.com/trailer",
             shareUrl = "https://www.themoviedb.org/movie/1",
+            tags = listOf("Slow burn", "Atmospheric", "Quiet"),
+            links =
+                listOf(
+                    TitleLink(TitleLinkKind.Imdb, "IMDb", "https://www.imdb.com/title/tt0000001/"),
+                    TitleLink(TitleLinkKind.Tmdb, "TheMovieDb", "https://www.themoviedb.org/movie/1"),
+                    TitleLink(TitleLinkKind.Other, "Studio", "https://example.com/studio"),
+                ),
             versions = listOf(version("v1"), version("v2")),
             cast =
                 listOf(
@@ -126,6 +135,10 @@ class ClientMovieScreenshotTest {
                     genres = emptyList(),
                     stats = MovieStats(null, 2021, null, null),
                     criticsPercent = null,
+                    trailerUrl = null,
+                    shareUrl = null,
+                    tags = emptyList(),
+                    links = emptyList(),
                     overview = null,
                     facts = TitleFacts(null, emptyList(), null),
                     versions = listOf(version("v1")),

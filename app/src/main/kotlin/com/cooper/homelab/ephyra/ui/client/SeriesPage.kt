@@ -75,7 +75,7 @@ fun SeriesPage(
                     onToggleEpisodeWatched = { model.toggleEpisodeWatched(it.id) },
                     onOpenTitle = { onOpenTitle(it.kind, it.id) },
                     onOpenPerson = { onOpenPerson(it.id) },
-                    onOpenTrailer = context::openInBrowser,
+                    onOpenLink = context::openInBrowser,
                     onShare = context::shareTitle,
                 )
             }

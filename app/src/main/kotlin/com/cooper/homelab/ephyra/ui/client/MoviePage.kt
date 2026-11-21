@@ -67,7 +67,7 @@ fun MoviePage(
                     onOpenTitle = { onOpenTitle(it.kind, it.id) },
                     onOpenPerson = { onOpenPerson(it.id) },
                     onOpenCollection = { onOpenTitle(ItemKind.BoxSet, it) },
-                    onOpenTrailer = context::openInBrowser,
+                    onOpenLink = context::openInBrowser,
                     onShare = context::shareTitle,
                 )
             }
