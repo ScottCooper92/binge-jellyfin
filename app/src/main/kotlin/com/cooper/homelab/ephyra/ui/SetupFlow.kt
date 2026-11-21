@@ -23,7 +23,6 @@ import com.cooper.homelab.ephyra.telemetry.SignInReports
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -109,7 +108,7 @@ internal class SetupFlow(
 
     init {
         scope.launch {
-            combine(flow.state, links.link) { connect, link -> connect to link }.collect { (connect, link) -> render(connect, link) }
+            links.view.collect { render(it.state, it.link) }
         }
     }
 
@@ -157,7 +156,7 @@ internal class SetupFlow(
         entered?.let { scope.loadPublicUsers(connection, state, it.server.baseUrl, it.baseUrl) }
     }
 
-    /** Lays the flow's state over the setup half as it stands now. */
+    /** Lays the flow's own state over the setup half as it stands now: the view lags a step behind, and a stale one would bring back a step just left. */
     fun renderNow() = render(flow.state.value, links.link.value)
 
     /** Back from the wizard to the notice it was opened from: the flow still holds that server, so it is shown again as it was. */
