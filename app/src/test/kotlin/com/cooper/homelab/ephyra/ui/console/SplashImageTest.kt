@@ -7,11 +7,14 @@ import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -48,21 +51,21 @@ class SplashImageTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
         jellyfin.administrator = true
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun ServerSettingsViewModel.ready(check: (ServerSettingsUiState.Ready) -> Boolean = { true }) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) { state.first { it is ServerSettingsUiState.Ready && check(it) } }
         } as ServerSettingsUiState.Ready
 
     private fun ServerSettingsViewModel.splash(check: (SplashUiState) -> Boolean) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { splashImage.state.first(check) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { splashImage.state.first(check) } }
 
     private fun jpeg(): ByteArray {
         val bitmap = Bitmap.createBitmap(SIDE, SIDE, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.MAGENTA) }
@@ -110,7 +113,7 @@ class SplashImageTest {
         vm.ready { it.branding.customSplashscreen }
         vm.splash { !it.busy }
         vm.setSplashscreen(true)
-        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
+        jellyfin.awaitBodyIdling("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
         assertEquals("/data/splashscreen-upload.jpg", branding().getValue("SplashscreenLocation").jsonPrimitive.content)
     }
 
@@ -143,7 +146,7 @@ class SplashImageTest {
         }
         vm.splashImage.open(false)
         vm.saveText(ServerText.LoginDisclaimer, "Hello")
-        jellyfin.awaitBody("/System/Configuration/branding") { it["LoginDisclaimer"]?.jsonPrimitive?.content == "Hello" }
+        jellyfin.awaitBodyIdling("/System/Configuration/branding") { it["LoginDisclaimer"]?.jsonPrimitive?.content == "Hello" }
         release.countDown()
         vm.splash { !it.busy }
         assertTrue(vm.ready().branding.customSplashscreen)
@@ -156,13 +159,13 @@ class SplashImageTest {
         val vm = viewModel()
         val reread = jellyfin.hold("/System/Configuration/branding", method = "GET")
         vm.splashImage.choose { jpeg() }
-        reread.awaitArrival()
+        idling { reread.awaitArrival() }
         vm.setSplashscreen(true)
         reread.release()
         vm.splash { !it.busy }
         assertTrue(vm.ready().branding.splashscreen)
         assertTrue(vm.ready().branding.customSplashscreen)
-        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
+        jellyfin.awaitBodyIdling("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
         assertEquals("/data/splashscreen-upload.jpg", stored().getValue("SplashscreenLocation").jsonPrimitive.content)
     }
 
@@ -179,7 +182,7 @@ class SplashImageTest {
         assertTrue(after.branding.splashscreen)
         assertEquals(ConsoleFailure.Unreachable, after.saveFailed)
         vm.retrySave()
-        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
+        jellyfin.awaitBodyIdling("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
     }
 
     @Test
@@ -193,7 +196,7 @@ class SplashImageTest {
             jpeg()
         }
         vm.setSplashscreen(true)
-        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
+        jellyfin.awaitBodyIdling("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
         release.countDown()
         vm.splash { !it.busy }
         assertTrue(vm.ready().branding.customSplashscreen)
@@ -209,7 +212,7 @@ class SplashImageTest {
         assertNull(vm.splashImage.state.value.refused)
         vm.splashImage.open(false)
         vm.setSplashscreen(true)
-        jellyfin.awaitBody("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
+        jellyfin.awaitBodyIdling("/System/Configuration/branding") { it["SplashscreenEnabled"]?.jsonPrimitive?.booleanOrNull == true }
         vm.splashImage.open(true)
         assertNotNull(vm.splash { !it.loading }.picture)
     }
@@ -247,7 +250,7 @@ class SplashImageTest {
         // Robolectric decodes any bytes to a stand-in bitmap, so the unreadable file is the prepare step answering null.
         val controller = SplashImageController(connection, kotlinx.coroutines.GlobalScope, {}, prepare = { null })
         controller.choose { "not an image".toByteArray() }
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { controller.state.first { !it.busy && it.unreadable } } }
+        idling { withTimeout(TIMEOUT_MILLIS) { controller.state.first { !it.busy && it.unreadable } } }
         assertEquals(0, jellyfin.requests.count { it.method == "POST" && it.url.encodedPath == "/Branding/Splashscreen" })
     }
 

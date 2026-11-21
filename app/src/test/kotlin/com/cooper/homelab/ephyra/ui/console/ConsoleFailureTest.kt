@@ -13,11 +13,13 @@ import com.cooper.homelab.ephyra.server.JellyfinHttpException
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
@@ -100,9 +102,9 @@ class ConsoleFailureTest {
         val jellyfin = FakeJellyfin()
         val teardown = ViewModelTeardown()
         try {
-            Dispatchers.setMain(Dispatchers.Unconfined)
+            Dispatchers.setMain(MainLooperDispatcher)
             val sessions = testSessionStore()
-            runBlocking { sessions.save(jellyfin.session()) }
+            idling { sessions.save(jellyfin.session()) }
             val connection =
                 teardown.made(
                     Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger),
@@ -110,11 +112,11 @@ class ConsoleFailureTest {
             jellyfin.status["/System/Configuration"] = 500
             jellyfin.statusBody["/System/Configuration"] = """{"title":"The disk is full."}"""
             val vm = teardown.made(ServerSettingsViewModel(connection))
-            runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it !is ServerSettingsUiState.Loading } } }
-            val failure = runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is ServerSettingsUiState.Failed } } }
+            idling { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it !is ServerSettingsUiState.Loading } } }
+            val failure = idling { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is ServerSettingsUiState.Failed } } }
             assertEquals("The disk is full.", (failure as ServerSettingsUiState.Failed).failure.reason)
         } finally {
-            teardown.close(jellyfin)
+            teardown.close(jellyfin, idle = ::idleMain)
         }
     }
 

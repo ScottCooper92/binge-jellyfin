@@ -9,12 +9,15 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.ServerSettings
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.booleanOrNull
@@ -44,15 +47,15 @@ class ServerSettingsViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun ServerSettingsViewModel.settled(check: (ServerSettingsUiState) -> Boolean = { it !is ServerSettingsUiState.Loading }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
 
     private fun ServerSettingsViewModel.ready() = settled() as ServerSettingsUiState.Ready
 
@@ -60,7 +63,7 @@ class ServerSettingsViewModelTest {
         path: String,
         count: Int,
     ) {
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (jellyfin.requests.count { it.url.encodedPath == path && it.method == "POST" } < count) delay(POLL_MILLIS)
             }
@@ -83,7 +86,7 @@ class ServerSettingsViewModelTest {
         vm.setMetadataCountry("GB")
         saves("/System/Configuration", 1)
         vm.setQuickConnect(false)
-        jellyfin.awaitBody("/System/Configuration") { it["QuickConnectAvailable"]?.jsonPrimitive?.booleanOrNull == false }
+        jellyfin.awaitBodyIdling("/System/Configuration") { it["QuickConnectAvailable"]?.jsonPrimitive?.booleanOrNull == false }
         val body = jellyfin.lastBody("/System/Configuration")
         assertEquals("GB", body.getValue("MetadataCountryCode").jsonPrimitive.content)
         assertEquals(false, body.getValue("QuickConnectAvailable").jsonPrimitive.booleanOrNull)
@@ -190,7 +193,7 @@ class ServerSettingsViewModelTest {
         vm.ready()
         val branding = jellyfin.hold("/System/Configuration/branding", method = "POST")
         vm.setSplashscreen(false)
-        branding.awaitArrival()
+        idling { branding.awaitArrival() }
         jellyfin.status["/System/Configuration"] = 409
         vm.setMetadataLanguage("fr")
         vm.sheet { it.refused == ConsoleFailure.Refused }
@@ -272,7 +275,7 @@ class ServerSettingsViewModelTest {
         val held = jellyfin.hold("/System/Configuration", method = "POST")
         vm.edit(ServerText.Name)
         vm.saveText(ServerText.Name, "Den")
-        held.awaitArrival()
+        idling { held.awaitArrival() }
         // The sheet is closed while the call is still running, then the call is refused.
         vm.edit(null)
         held.refuse(409)

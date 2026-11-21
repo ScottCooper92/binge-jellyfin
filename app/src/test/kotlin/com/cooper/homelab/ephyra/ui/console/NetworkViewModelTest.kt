@@ -9,13 +9,16 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.NetworkImpact
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonObject
@@ -54,24 +57,24 @@ class NetworkViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun vm(version: String = "10.10.7") = made(NetworkViewModel(connection, JellyfinServerProfile.from(version)))
 
     private fun NetworkViewModel.ready(check: (NetworkUiState.Ready) -> Boolean = { true }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is NetworkUiState.Ready && check(it) } } } as NetworkUiState.Ready
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first { it is NetworkUiState.Ready && check(it) } } } as NetworkUiState.Ready
 
     private fun posts(path: String) = jellyfin.requests.count { it.url.encodedPath == path && it.method == "POST" }
 
     private fun waitFor(
         path: String,
         count: Int,
-    ) = runBlocking {
+    ) = idling {
         withTimeout(TIMEOUT_MILLIS) { while (posts(path) < count) delay(POLL_MILLIS) }
     }
 
@@ -281,7 +284,7 @@ class NetworkViewModelTest {
         assertEquals(listOf("10.0.0.1", "10.0.0.2"), sent().getValue("KnownProxies").jsonArray.map { it.jsonPrimitive.content })
         assertEquals("s3cret", sent().getValue("CertificatePassword").jsonPrimitive.content)
         vm.setSwitch("AutoDiscovery", false, form = false)
-        jellyfin.awaitBody(NETWORK) { it["AutoDiscovery"]?.jsonPrimitive?.booleanOrNull == false }
+        jellyfin.awaitBodyIdling(NETWORK) { it["AutoDiscovery"]?.jsonPrimitive?.booleanOrNull == false }
         assertEquals(false, sent().getValue("AutoDiscovery").jsonPrimitive.boolean)
         assertTrue(vm.ready().draft.isEmpty())
     }
@@ -354,13 +357,13 @@ class NetworkViewModelTest {
         vm.setSwitch("AutoDiscovery", false, form = false)
         vm.saveNumber(NetworkNumber.PublicHttpPort, "8000")
         vm.save()
-        flush.awaitArrival()
+        idling { flush.awaitArrival() }
         vm.ready { it.committing }
         vm.viewModelScope.cancel()
         flush.release()
         // The confirmed save is the write that carries the new port. The count of writes cannot say which one it is: the
         // as-made write before it is a write too, and it still has the old port.
-        val confirmed = jellyfin.awaitBody(NETWORK) { it["PublicHttpPort"]?.jsonPrimitive?.intOrNull == 8000 }
+        val confirmed = jellyfin.awaitBodyIdling(NETWORK) { it["PublicHttpPort"]?.jsonPrimitive?.intOrNull == 8000 }
         assertEquals(false, confirmed.getValue("AutoDiscovery").jsonPrimitive.boolean)
     }
 
@@ -374,7 +377,7 @@ class NetworkViewModelTest {
         vm.ready { it.committing }
         vm.setSwitch("AutoDiscovery", false, form = false)
         vm.saveItems(NetworkList.KnownProxies, "10.0.0.9")
-        Thread.sleep(SETTLE_MILLIS)
+        idling { delay(SETTLE_MILLIS) }
         val during = vm.ready()
         assertTrue(during.settings.autoDiscovery)
         assertTrue(during.settings.knownProxies.isEmpty())
@@ -395,7 +398,7 @@ class NetworkViewModelTest {
         vm.saveNumber(NetworkNumber.PublicHttpsPort, "9443")
         val during = vm.ready()
         assertTrue(during.draft.none { it == "EnableIPv6" || it.contains("Https", ignoreCase = true) && it.contains("Public") })
-        Thread.sleep(SETTLE_MILLIS)
+        idling { delay(SETTLE_MILLIS) }
         assertEquals(1, posts(NETWORK))
     }
 
@@ -416,7 +419,7 @@ class NetworkViewModelTest {
         val vm = vm()
         assertEquals(
             NetworkUiState.Failed(ConsoleFailure.Refused),
-            runBlocking {
+            idling {
                 withTimeout(TIMEOUT_MILLIS) { vm.state.first { it !is NetworkUiState.Loading } }
             },
         )

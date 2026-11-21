@@ -8,12 +8,15 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.TrickplaySettings
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
@@ -50,21 +53,21 @@ class TrickplayViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun TrickplayViewModel.settled(check: (TrickplayUiState) -> Boolean = { it !is TrickplayUiState.Loading }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
 
     private fun TrickplayViewModel.ready(check: (TrickplayUiState.Ready) -> Boolean = { true }) =
         settled { it is TrickplayUiState.Ready && check(it) } as TrickplayUiState.Ready
 
     private fun saves(count: Int) {
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" } < count) delay(POLL_MILLIS)
             }
@@ -112,7 +115,7 @@ class TrickplayViewModelTest {
         saves(1)
         assertFalse("EnableKeyFrameOnlyExtraction" in options())
         vm.setKeyFrameOnly(true)
-        jellyfin.awaitBody(CONFIGURATION) {
+        jellyfin.awaitBodyIdling(CONFIGURATION) {
             it["TrickplayOptions"]
                 ?.jsonObject
                 ?.get("EnableKeyFrameOnlyExtraction")
@@ -132,7 +135,7 @@ class TrickplayViewModelTest {
         vm.setScanBehavior("Blocking")
         saves(1)
         vm.setProcessPriority("Idle")
-        jellyfin.awaitBody(CONFIGURATION) {
+        jellyfin.awaitBodyIdling(CONFIGURATION) {
             it["TrickplayOptions"]
                 ?.jsonObject
                 ?.get("ProcessPriority")
@@ -288,7 +291,7 @@ class TrickplayViewModelTest {
         val held = jellyfin.hold(CONFIGURATION, method = "POST")
         vm.edit(TrickplayField.JpegQuality)
         vm.save(TrickplayField.JpegQuality, "75")
-        held.awaitArrival()
+        idling { held.awaitArrival() }
         // The sheet is closed while the call is still running, then the call is refused.
         vm.edit(null)
         held.refuse(409)
