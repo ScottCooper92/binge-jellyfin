@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 // What the server sends, as the OpenAPI document names it, and nothing else. The public models in BrowseModels.kt are
 // what the app reads; these map to them. A field the server adds is ignored, one it leaves out is null, and an enum
@@ -94,6 +95,16 @@ internal data class ItemWire(
     @SerialName("CriticRating") val criticRating: Double? = null,
     @SerialName("SeasonName") val seasonName: String? = null,
     @SerialName("ProductionLocations") val productionLocations: List<String> = emptyList(),
+    @SerialName("RemoteTrailers") val remoteTrailers: List<UrlWire> = emptyList(),
+    @SerialName("ExternalUrls") val externalUrls: List<UrlWire> = emptyList(),
+    @SerialName("Tags") val tags: List<String> = emptyList(),
+)
+
+/** A trailer (`RemoteTrailers`) or an external link (`ExternalUrls`): the two arrays share one shape. */
+@Serializable
+internal data class UrlWire(
+    @SerialName("Name") val name: String? = null,
+    @SerialName("Url") val url: String? = null,
 )
 
 @Serializable
@@ -265,7 +276,35 @@ internal fun ItemWire.toTitleDetail(): TitleDetail? {
         versions = mediaSources.mapNotNull { it.toVersion() },
         chapters = chapters.map { TitleChapter(it.startPositionTicks ?: 0L, it.name?.takeIf(String::isNotBlank), it.imageTag) },
         seasonName = seasonName,
+        trailerUrl = remoteTrailers.firstNotNullOfOrNull { it.url.webAddress() },
+        links = externalUrls.toLinks(),
+        tags = tags.map(String::trim).filter(String::isNotEmpty).distinct(),
     )
+}
+
+private fun String?.webAddress(): String? = this?.trim()?.takeIf { it.toHttpUrlOrNull() != null }
+
+private fun List<UrlWire>.toLinks(): List<TitleLink> {
+    val seen = HashSet<String>()
+    val links =
+        mapNotNull { wire ->
+            val url = wire.url.webAddress() ?: return@mapNotNull null
+            if (!seen.add(url)) return@mapNotNull null
+            val host =
+                url
+                    .toHttpUrlOrNull()
+                    ?.host
+                    .orEmpty()
+                    .removePrefix("www.")
+            val kind =
+                when {
+                    host == "imdb.com" || host.endsWith(".imdb.com") -> TitleLinkKind.Imdb
+                    host == "themoviedb.org" || host.endsWith(".themoviedb.org") -> TitleLinkKind.Tmdb
+                    else -> TitleLinkKind.Other
+                }
+            TitleLink(kind, wire.name?.trim()?.takeIf(String::isNotEmpty) ?: host, url)
+        }
+    return links.sortedBy { it.kind.ordinal }
 }
 
 private fun SourceWire.toVersion(): MediaVersion? {

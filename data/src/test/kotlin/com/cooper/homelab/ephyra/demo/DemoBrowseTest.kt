@@ -17,6 +17,7 @@ import com.cooper.homelab.ephyra.browse.LibraryKind
 import com.cooper.homelab.ephyra.browse.NextEpisode
 import com.cooper.homelab.ephyra.browse.PersonKind
 import com.cooper.homelab.ephyra.browse.SortField
+import com.cooper.homelab.ephyra.browse.TitleLinkKind
 import com.cooper.homelab.ephyra.server.ClientIdentity
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.JellyfinClient
@@ -30,6 +31,8 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -150,6 +153,27 @@ class DemoBrowseTest {
                 )
                 assertEquals(2, detail.chapters.size)
             }
+        }
+
+    @Test
+    fun `demo titles read a critics score, trailer, links and tags, and one reads none`() =
+        runBlocking {
+            val titles = JellyfinTitleRepository(client, "demo-user", profile)
+            val film = titles.title("demo-movie-1")!!
+            assertTrue(film.criticRating!! >= 60.0)
+            assertTrue(film.trailerUrl!!.startsWith("https://"))
+            assertEquals(listOf(TitleLinkKind.Imdb, TitleLinkKind.Tmdb, TitleLinkKind.Other), film.links.map { it.kind })
+            assertEquals(listOf("Slow burn", "Atmospheric"), film.tags)
+            assertTrue(titles.title("demo-movie-7")!!.criticRating!! < 60.0)
+            val bare = titles.title("demo-movie-9")!!
+            assertNull(bare.criticRating)
+            assertNull(bare.trailerUrl)
+            assertTrue(bare.links.isEmpty() && bare.tags.isEmpty())
+            val ended = titles.title("demo-series-4")!!
+            assertEquals("Ended", ended.status)
+            assertNotNull(ended.endDate)
+            assertEquals("Continuing", titles.title("demo-series-1")!!.status)
+            assertNull(titles.title("demo-series-1")!!.endDate)
         }
 
     @Test

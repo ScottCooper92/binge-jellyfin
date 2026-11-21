@@ -12,6 +12,7 @@ import kotlinx.serialization.json.putJsonObject
 
 internal const val RUNTIME_TICKS = 2 * TICKS_PER_HOUR
 private const val EPISODE_TICKS = 47 * TICKS_PER_MINUTE
+private const val ROTTEN_CRITICS = 48.0
 private const val GENERATED_FILMS = 70
 private const val ADJECTIVE_COUNT = 10
 private const val FIRST_YEAR = 1990
@@ -108,6 +109,7 @@ private fun specialFilms(): List<DemoTitle> =
             added = 3,
             versions = 2,
             cast = listOf(SAM_RIVERS, ROBIN_HALE),
+            critics = ROTTEN_CRITICS,
         ),
         DemoTitle(
             id = "demo-movie-9",
@@ -119,6 +121,8 @@ private fun specialFilms(): List<DemoTitle> =
             score = 6.5,
             added = 2,
             runtimeTicks = SHORT_FILM_SECONDS * TICKS_PER_SECOND,
+            critics = null,
+            hasExtras = false,
         ),
     )
 
@@ -218,6 +222,7 @@ private fun lighthouseYears(): List<DemoTitle> {
             8.6,
             3,
             cast = listOf(SAM_RIVERS, ROBIN_HALE, ALEX_MOOR),
+            ended = true,
         )
     return listOf(series, season(0), season(1), season(2)) + specials + firstSeason + secondSeason
 }
@@ -271,8 +276,42 @@ internal fun DemoTitle.detail(): JsonObject {
                 remove("ProviderIds")
             }
             if (type == "Episode") put("SeasonName", JsonPrimitive(if (season == 0) "Specials" else "Season $season"))
+            if (type == "Movie" || type == "Series") putAll(titleExtras())
         },
     )
+}
+
+/** A film's or series' critics score, dates, trailer, web pages and tags: the reads a title page makes beyond its people and files. */
+private fun DemoTitle.titleExtras(): JsonObject =
+    buildJsonObject {
+        critics?.let { put("CriticRating", it) }
+        if (year > 0) put("PremiereDate", "$year-03-01T00:00:00.0000000Z")
+        if (type == "Series") {
+            put("Status", if (ended) "Ended" else "Continuing")
+            if (ended) put("EndDate", "${year + 1}-11-01T00:00:00.0000000Z")
+        }
+        if (hasExtras) {
+            put("RemoteTrailers", JsonArray(listOf(urlEntry("Trailer", "https://www.youtube.com/watch?v=demo-$id"))))
+            put(
+                "ExternalUrls",
+                JsonArray(
+                    listOf(
+                        urlEntry("TheMovieDb", "https://www.themoviedb.org/${if (type == "Series") "tv" else "movie"}/1"),
+                        urlEntry("IMDb", "https://www.imdb.com/title/tt0000001/"),
+                        urlEntry("Studio", "https://example.com/demo-pictures"),
+                    ),
+                ),
+            )
+            put("Tags", JsonArray(listOf("Slow burn", "Atmospheric").map(::JsonPrimitive)))
+        }
+    }
+
+private fun urlEntry(
+    name: String,
+    url: String,
+) = buildJsonObject {
+    put("Name", name)
+    put("Url", url)
 }
 
 private fun DemoTitle.people(): JsonArray =

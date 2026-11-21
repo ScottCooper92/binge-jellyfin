@@ -101,6 +101,42 @@ class TitleReadsTest {
         }
 
     @Test
+    fun `a trailer, web pages and tags read, keeping only http and https addresses`() =
+        runBlocking {
+            add(
+                FakeTitle(
+                    "m3",
+                    "Linked",
+                    "lib-movies",
+                    extra =
+                        """
+                        "RemoteTrailers":[{"Url":"javascript:alert(1)"},{"Name":"Trailer","Url":" https://youtu.be/abc "},{"Url":"https://youtu.be/def"}],
+                        "ExternalUrls":[{"Name":"Studio","Url":"https://example.com/film"},{"Name":"Site","Url":"file:///etc/passwd"},
+                          {"Name":"TheMovieDb","Url":"https://www.themoviedb.org/movie/348"},
+                          {"Name":"IMDb","Url":"https://www.imdb.com/title/tt0078748/"},{"Name":"Again","Url":"https://example.com/film"},
+                          {"Name":"Bare","Url":"not a url"},{"Name":"None"}],
+                        "Tags":["Slow burn"," ","Slow burn","Space"]
+                        """.trimIndent(),
+                ),
+            )
+            val detail = titles.title("m3")!!
+            assertEquals("https://youtu.be/abc", detail.trailerUrl)
+            assertEquals(listOf(TitleLinkKind.Imdb, TitleLinkKind.Tmdb, TitleLinkKind.Other), detail.links.map { it.kind })
+            assertEquals(listOf("IMDb", "TheMovieDb", "Studio"), detail.links.map { it.name })
+            assertEquals("https://example.com/film", detail.links.last().url)
+            assertEquals(listOf("Slow burn", "Space"), detail.tags)
+        }
+
+    @Test
+    fun `a title with no trailer, links or tags reads them empty`() =
+        runBlocking {
+            add(FakeTitle("m4", "Plain", "lib-movies", extra = "\"RemoteTrailers\":[{\"Url\":\"ftp://x/y\"}]"))
+            val detail = titles.title("m4")!!
+            assertNull(detail.trailerUrl)
+            assertTrue(detail.links.isEmpty() && detail.tags.isEmpty())
+        }
+
+    @Test
     fun `versions carry what a version and a track picker need`() =
         runBlocking {
             add(FakeTitle("m1", "Alien", "lib-movies", extra = movieJson))

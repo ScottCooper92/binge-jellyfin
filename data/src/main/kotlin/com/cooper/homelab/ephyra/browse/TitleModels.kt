@@ -116,7 +116,21 @@ data class TitleDetail(
     val versions: List<MediaVersion>,
     val chapters: List<TitleChapter>,
     val seasonName: String?,
+    /** The first trailer address the server holds that is http or https, or null. */
+    val trailerUrl: String? = null,
+    /** The title's web pages (IMDb, TMDb first, then the server's own order), http and https only. */
+    val links: List<TitleLink> = emptyList(),
+    val tags: List<String> = emptyList(),
 )
+
+/** A web page about a title: [kind] says which site when it is one the page names, [name] is the server's label. */
+data class TitleLink(
+    val kind: TitleLinkKind,
+    val name: String,
+    val url: String,
+)
+
+enum class TitleLinkKind { Imdb, Tmdb, Other }
 
 /** What to play next in a series, and why. The page chooses its button's label from which one it is. */
 sealed interface NextEpisode {
