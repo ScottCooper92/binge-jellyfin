@@ -11,14 +11,16 @@ import com.cooper.homelab.ephyra.server.NETWORK_IGNORE_VIRTUAL
 import com.cooper.homelab.ephyra.server.NFO_PATH_SUBSTITUTION
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -53,17 +55,17 @@ class SearchServerConfigTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun started() = made(SearchSwitchesViewModel(connection)).also { it.server.start() }
 
     private fun SearchSwitchesViewModel.ready() =
-        runBlocking { waitFor(TIMEOUT_MILLIS) { server.state.first { it is SearchConfigState.Ready } } } as SearchConfigState.Ready
+        idling { waitFor(TIMEOUT_MILLIS) { server.state.first { it is SearchConfigState.Ready } } } as SearchConfigState.Ready
 
     private fun SearchSwitchesViewModel.flip(
         row: String,
@@ -87,7 +89,7 @@ class SearchServerConfigTest {
     private fun held(): JsonObject = Json.parseToJsonElement(jellyfin.serverConfiguration).jsonObject
 
     private fun awaitServer(check: (JsonObject) -> Boolean) {
-        runBlocking {
+        idling {
             waitFor(TIMEOUT_MILLIS) {
                 while (!check(held())) delay(POLL_MILLIS)
             }
@@ -148,13 +150,13 @@ class SearchServerConfigTest {
         vm.ready()
         jellyfin.status["/System/Configuration"] = 409
         vm.flip(SettingRows.ADVANCED_METRICS, !original)
-        runBlocking {
+        idling {
             waitFor(TIMEOUT_MILLIS) { vm.server.state.first { (it as? SearchConfigState.Ready)?.refused != null } }
         }
         jellyfin.status.remove("/System/Configuration")
         vm.server.refresh()
         val ready =
-            runBlocking {
+            idling {
                 waitFor(TIMEOUT_MILLIS) {
                     vm.server.state.first { it is SearchConfigState.Ready && !it.reading }
                 }
@@ -177,7 +179,7 @@ class SearchServerConfigTest {
     private fun encodingHeld(): JsonObject = Json.parseToJsonElement(jellyfin.encodingConfiguration).jsonObject
 
     private fun SearchSwitchesViewModel.encodingReady() =
-        runBlocking { waitFor(TIMEOUT_MILLIS) { encoding.state.first { it is SearchConfigState.Ready } } } as SearchConfigState.Ready
+        idling { waitFor(TIMEOUT_MILLIS) { encoding.state.first { it is SearchConfigState.Ready } } } as SearchConfigState.Ready
 
     @Test
     fun `a Transcoding flip lands in the encoding configuration and keeps the rest`() {
@@ -211,14 +213,14 @@ class SearchServerConfigTest {
 
     @Test
     fun `the search reads the encoding configuration to know which rows the page draws`() {
-        val read = runBlocking { connection.encodingForSearch() }
+        val read = idling { connection.encodingForSearch() }
         assertEquals(encodingHeld(), read)
     }
 
     @Test
     fun `the search offers everything when the encoding configuration cannot be read`() {
         jellyfin.status["/System/Configuration/encoding"] = 500
-        assertEquals(null, runBlocking { connection.encodingForSearch() })
+        assertEquals(null, idling { connection.encodingForSearch() })
     }
 
     private fun networkHeld(): JsonObject = Json.parseToJsonElement(jellyfin.networkConfiguration).jsonObject
@@ -228,9 +230,9 @@ class SearchServerConfigTest {
         val before = networkHeld()
         val original = before.getValue(NETWORK_IGNORE_VIRTUAL).jsonPrimitive.boolean
         val vm = made(SearchSwitchesViewModel(connection)).also { it.network.start() }
-        runBlocking { waitFor(TIMEOUT_MILLIS) { vm.network.state.first { it is SearchConfigState.Ready } } }
+        idling { waitFor(TIMEOUT_MILLIS) { vm.network.state.first { it is SearchConfigState.Ready } } }
         vm.flip(SettingRows.network(NETWORK_IGNORE_VIRTUAL), !original)
-        runBlocking {
+        idling {
             waitFor(TIMEOUT_MILLIS) {
                 while (networkHeld().getValue(NETWORK_IGNORE_VIRTUAL).jsonPrimitive.boolean == original) delay(POLL_MILLIS)
             }
@@ -248,9 +250,9 @@ class SearchServerConfigTest {
         val before = liveTvHeld()
         val original = before.getValue(LIVE_TV_SAVE_NFO).jsonPrimitive.boolean
         val vm = made(SearchSwitchesViewModel(connection)).also { it.liveTv.start() }
-        runBlocking { waitFor(TIMEOUT_MILLIS) { vm.liveTv.state.first { it is SearchConfigState.Ready } } }
+        idling { waitFor(TIMEOUT_MILLIS) { vm.liveTv.state.first { it is SearchConfigState.Ready } } }
         vm.flip(SettingRows.liveTv(LIVE_TV_SAVE_NFO), !original)
-        runBlocking {
+        idling {
             waitFor(TIMEOUT_MILLIS) {
                 while (liveTvHeld().getValue(LIVE_TV_SAVE_NFO).jsonPrimitive.boolean == original) delay(POLL_MILLIS)
             }
@@ -268,9 +270,9 @@ class SearchServerConfigTest {
         val before = nfoHeld()
         val original = before.getValue(NFO_PATH_SUBSTITUTION).jsonPrimitive.boolean
         val vm = made(SearchSwitchesViewModel(connection)).also { it.nfo.start() }
-        runBlocking { waitFor(TIMEOUT_MILLIS) { vm.nfo.state.first { it is SearchConfigState.Ready } } }
+        idling { waitFor(TIMEOUT_MILLIS) { vm.nfo.state.first { it is SearchConfigState.Ready } } }
         vm.flip(SettingRows.nfo(NFO_PATH_SUBSTITUTION), !original)
-        runBlocking {
+        idling {
             waitFor(TIMEOUT_MILLIS) {
                 while (nfoHeld().getValue(NFO_PATH_SUBSTITUTION).jsonPrimitive.boolean == original) delay(POLL_MILLIS)
             }
@@ -288,9 +290,9 @@ class SearchServerConfigTest {
             """{"LoginDisclaimer":"hello","CustomCss":"a{}","SplashscreenEnabled":false,"SplashscreenLocation":"/config/splash.png"}"""
         val before = brandingHeld()
         val vm = made(SearchSwitchesViewModel(connection)).also { it.branding.start() }
-        runBlocking { waitFor(TIMEOUT_MILLIS) { vm.branding.state.first { it is SearchConfigState.Ready } } }
+        idling { waitFor(TIMEOUT_MILLIS) { vm.branding.state.first { it is SearchConfigState.Ready } } }
         vm.flip(SettingRows.SERVER_SPLASHSCREEN, true)
-        runBlocking {
+        idling {
             waitFor(TIMEOUT_MILLIS) {
                 while (!brandingHeld().getValue("SplashscreenEnabled").jsonPrimitive.boolean) delay(POLL_MILLIS)
             }
@@ -308,7 +310,7 @@ class SearchServerConfigTest {
     }
 
     private fun awaitEncoding(check: (JsonObject) -> Boolean) {
-        runBlocking {
+        idling {
             waitFor(TIMEOUT_MILLIS) {
                 while (!check(encodingHeld())) delay(POLL_MILLIS)
             }
