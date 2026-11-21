@@ -8,13 +8,15 @@ import com.cooper.homelab.ephyra.server.homeLayout
 import com.cooper.homelab.ephyra.server.playbackPreferences
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
 import com.cooper.homelab.ephyra.ui.console.ConsoleFailure
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -54,13 +56,13 @@ class SearchSwitchesViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { connection.awaitWatching() } }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
+        idling { withTimeout(TIMEOUT_MILLIS) { connection.awaitWatching() } }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     /** Makes the change a switch makes, as a result's switch does: through the copy its row lives in. */
     private fun SearchSwitchesViewModel.flip(
@@ -76,7 +78,7 @@ class SearchSwitchesViewModelTest {
     private val SearchConfigState.Ready.home get() = configuration.homeLayout()
 
     private fun SearchSwitchesViewModel.settled(check: (SearchConfigState) -> Boolean = { it is SearchConfigState.Ready }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { user.state.first(check) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { user.state.first(check) } }
 
     private fun SearchSwitchesViewModel.ready() = settled() as SearchConfigState.Ready
 
@@ -86,7 +88,7 @@ class SearchSwitchesViewModelTest {
     private fun server(): JsonObject = Json.parseToJsonElement(jellyfin.userConfiguration).jsonObject
 
     private fun awaitServer(check: (JsonObject) -> Boolean) {
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (!check(server())) delay(POLL_MILLIS)
             }
@@ -169,7 +171,7 @@ class SearchSwitchesViewModelTest {
             jellyfin.userConfiguration.replace("\"AudioLanguagePreference\":\"eng\"", "\"AudioLanguagePreference\":\"fra\"")
         val held = jellyfin.hold("/Users/Me")
         vm.refresh()
-        held.awaitArrival()
+        idling { held.awaitArrival() }
         assertTrue((vm.user.state.value as SearchConfigState.Ready).reading)
 
         // The copy is older than the server's: a flip now would write the old language back, so it is not taken.
@@ -238,7 +240,7 @@ class SearchSwitchesViewModelTest {
         vm.flip(SettingRows.PLAYBACK_AUTOPLAY, false)
         // The page opens at once: it waits for the saves, as every page does as it loads, then reads.
         vm.leaving()
-        runBlocking { connection.awaitSaves() }
+        idling { connection.awaitSaves() }
 
         val read = jellyfin.userConfiguration
         assertTrue(Json.parseToJsonElement(read).jsonObject.containsKey("EnableNextEpisodeAutoPlay"))
@@ -255,7 +257,7 @@ class SearchSwitchesViewModelTest {
         vm.ready()
         vm.flip(SettingRows.PLAYBACK_AUTOPLAY, false)
         vm.leaving()
-        runBlocking { connection.awaitSaves() }
+        idling { connection.awaitSaves() }
         assertFalse(server().on("EnableNextEpisodeAutoPlay"))
 
         // On the page the user turns it back on, and the page saves it. Then the search is shown again.
@@ -268,7 +270,7 @@ class SearchSwitchesViewModelTest {
         vm.settled { (it as? SearchConfigState.Ready)?.playback?.autoplayNextEpisode == true }
         // Whatever the search still owes the server is sent now, so a stale send would be on the server before it is looked at.
         vm.leaving()
-        runBlocking { connection.awaitSaves() }
+        idling { connection.awaitSaves() }
 
         assertTrue("the search's copy shows what the page saved", vm.ready().playback.autoplayNextEpisode)
         assertTrue("the server still has what the page saved", server().on("EnableNextEpisodeAutoPlay"))
@@ -279,7 +281,7 @@ class SearchSwitchesViewModelTest {
         val vm = made(SearchSwitchesViewModel(connection))
         val held = jellyfin.hold("/Users/Me")
         vm.user.refresh()
-        held.awaitArrival()
+        idling { held.awaitArrival() }
         vm.user.refresh()
         vm.user.refresh()
         held.release()
@@ -320,9 +322,9 @@ class SearchSwitchesViewModelTest {
         val reads = jellyfin.hits("/Users/Me")
         vm.refresh()
         // The read has landed: the server was asked, and the copy is no longer reading it.
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { while (jellyfin.hits("/Users/Me") <= reads) delay(POLL_MILLIS) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { while (jellyfin.hits("/Users/Me") <= reads) delay(POLL_MILLIS) } }
         vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
-        Thread.sleep(SEND_WAIT_MILLIS)
+        idling { delay(SEND_WAIT_MILLIS) }
 
         assertTrue(vm.ready().home.hidePlayedInLatest)
         assertEquals(writes, jellyfin.hits("/Users/Configuration"))
@@ -341,7 +343,7 @@ class SearchSwitchesViewModelTest {
 
         val held = jellyfin.hold("/Users/Me")
         vm.refresh()
-        held.awaitArrival()
+        idling { held.awaitArrival() }
         vm.user.retry()
         held.release()
         vm.settled { (it as? SearchConfigState.Ready)?.reading == false }
