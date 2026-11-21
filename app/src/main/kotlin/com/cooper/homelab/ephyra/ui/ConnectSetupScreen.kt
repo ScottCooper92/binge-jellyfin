@@ -143,7 +143,13 @@ internal fun ConnectSetupScreen(
                     { page ->
                         signInShown?.let {
                             val passwordPage = page.form.mode != SetupMode.QuickConnect
-                            AfterError(it, actions, passwordPage = passwordPage, showsError = page.error != null)
+                            AfterError(
+                                it,
+                                actions,
+                                passwordPage = passwordPage,
+                                asksLocalNetwork =
+                                    page.error?.toSetupError() == SetupError.LocalNetworkDenied,
+                            )
                             if (passwordPage) ForgotPasswordOverlay(it.forgot, actions.forgotPassword)
                         }
                     },
@@ -270,15 +276,15 @@ private fun ColumnScope.PublicUsers(
 }
 
 /**
- * Under the form and its error: the reset of a forgotten password (on the [passwordPage] only), and the local-network ask on the page that
- * [showsError], which is the page the error is about.
+ * Under the form and its error: the reset of a forgotten password (on the [passwordPage] only), and the local-network ask on the page whose own error
+ * is the denial ([asksLocalNetwork]).
  */
 @Composable
 private fun ColumnScope.AfterError(
     state: UiState.SignIn,
     actions: Actions,
     passwordPage: Boolean,
-    showsError: Boolean,
+    asksLocalNetwork: Boolean,
 ) {
     if (passwordPage) {
         BingeTextButton(
@@ -289,7 +295,7 @@ private fun ColumnScope.AfterError(
             modifier = Modifier.fillMaxWidth(),
         )
     }
-    if (showsError && (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied)) {
+    if (asksLocalNetwork) {
         val ask = localNetworkAsk(actions)
         BingeOutlinedButton(label = stringResource(ask.label), onClick = ask.run, modifier = Modifier.fillMaxWidth())
     }
