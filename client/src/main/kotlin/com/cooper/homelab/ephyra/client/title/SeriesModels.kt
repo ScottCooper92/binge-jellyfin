@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.client.title
 
 import com.cooper.homelab.core.foundation.ServerFailure
+import com.cooper.homelab.ephyra.browse.TitleLink
 
 /** The headline stats under a series' hero. A stat the server did not give is null and not drawn. */
 data class SeriesStats(
@@ -100,6 +101,10 @@ data class SeriesUi(
     val episodes: EpisodesState,
     val similar: List<TitleCard>,
     val criticsPercent: Int? = null,
+    val trailerUrl: String? = null,
+    val shareUrl: String? = null,
+    val tags: List<String> = emptyList(),
+    val links: List<TitleLink> = emptyList(),
 )
 
 /** What the series page shows. */

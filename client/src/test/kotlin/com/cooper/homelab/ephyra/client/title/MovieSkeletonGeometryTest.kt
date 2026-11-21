@@ -90,6 +90,8 @@ internal fun noActions() =
         onOpenTitle = {},
         onOpenPerson = {},
         onOpenCollection = {},
+        onOpenLink = {},
+        onShare = { _, _ -> },
     )
 
 /** A film with every part the page shows, none of it loading a picture. */

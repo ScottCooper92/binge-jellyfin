@@ -9,6 +9,8 @@ import com.binge.designsystem.preview.SOURCE_LOCALE
 import com.cooper.homelab.core.foundation.ServerFailure
 import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
+import com.cooper.homelab.ephyra.browse.TitleLink
+import com.cooper.homelab.ephyra.browse.TitleLinkKind
 import com.cooper.homelab.ephyra.client.title.CrewJob
 import com.cooper.homelab.ephyra.client.title.EpisodeUi
 import com.cooper.homelab.ephyra.client.title.EpisodesState
@@ -113,6 +115,15 @@ class ClientSeriesScreenshotTest {
                     endDate = "2022-11-18T00:00:00.0000000Z",
                 ),
             criticsPercent = 48,
+            trailerUrl = "https://example.com/trailer",
+            shareUrl = "https://www.themoviedb.org/tv/1",
+            tags = listOf("Slow burn", "Atmospheric", "Quiet"),
+            links =
+                listOf(
+                    TitleLink(TitleLinkKind.Imdb, "IMDb", "https://www.imdb.com/title/tt0000001/"),
+                    TitleLink(TitleLinkKind.Tmdb, "TheMovieDb", "https://www.themoviedb.org/tv/1"),
+                    TitleLink(TitleLinkKind.Other, "Studio", "https://example.com/studio"),
+                ),
             cast =
                 listOf(
                     PersonUi("a1", "Amara Okafor", "Wren", TitleImage("a1", ImageKind.Primary, "pa1")),
@@ -130,7 +141,7 @@ class ClientSeriesScreenshotTest {
         SeriesScreen(
             state = state,
             imageUrl = { _, _ -> null },
-            actions = SeriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+            actions = SeriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }),
         )
 
     @PreviewTest
@@ -176,6 +187,10 @@ class ClientSeriesScreenshotTest {
                     genres = emptyList(),
                     stats = SeriesStats(null, 2020, 1, null),
                     criticsPercent = null,
+                    trailerUrl = null,
+                    shareUrl = null,
+                    tags = emptyList(),
+                    links = emptyList(),
                     overview = null,
                     facts = TitleFacts(null, emptyList(), null),
                     cast = emptyList(),

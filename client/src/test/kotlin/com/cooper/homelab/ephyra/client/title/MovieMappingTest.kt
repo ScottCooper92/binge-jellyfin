@@ -8,6 +8,8 @@ import com.cooper.homelab.ephyra.browse.MediaTrack
 import com.cooper.homelab.ephyra.browse.MediaVersion
 import com.cooper.homelab.ephyra.browse.PersonKind
 import com.cooper.homelab.ephyra.browse.TitleDetail
+import com.cooper.homelab.ephyra.browse.TitleLink
+import com.cooper.homelab.ephyra.browse.TitleLinkKind
 import com.cooper.homelab.ephyra.browse.TitlePerson
 import com.cooper.homelab.ephyra.browse.TrackKind
 import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
@@ -79,6 +81,27 @@ class MovieMappingTest {
         assertEquals(94, movie.criticsPercent)
         assertEquals(listOf("Ridley Scott"), movie.facts.directors)
         assertNull(movieUi(detail(), emptyList(), null).criticsPercent)
+    }
+
+    @Test
+    fun `the trailer and the public page to share are carried`() {
+        val withIds = detail().copy(trailerUrl = "https://youtu.be/abc", externalIds = mapOf("Tmdb" to "348"))
+        val movie = movieUi(withIds, emptyList(), null)
+        assertEquals("https://youtu.be/abc", movie.trailerUrl)
+        assertEquals("https://www.themoviedb.org/movie/348", movie.shareUrl)
+        val bare = movieUi(detail(), emptyList(), null)
+        assertNull(bare.trailerUrl)
+        assertNull(bare.shareUrl)
+    }
+
+    @Test
+    fun `the tags and the links to other sites are carried, and a bare title has none`() {
+        val link = TitleLink(TitleLinkKind.Imdb, "IMDb", "https://www.imdb.com/title/tt1/")
+        val movie = movieUi(detail().copy(tags = listOf("Slow burn"), links = listOf(link)), emptyList(), null)
+        assertEquals(listOf("Slow burn"), movie.tags)
+        assertEquals(listOf(link), movie.links)
+        val bare = movieUi(detail(), emptyList(), null)
+        assertTrue(bare.tags.isEmpty() && bare.links.isEmpty())
     }
 
     @Test
