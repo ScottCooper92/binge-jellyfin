@@ -78,7 +78,7 @@ class JellyfinPlaybackTest {
         runBlocking {
             jellyfin.playbackInfo = FakeJellyfin.transcodeInfo()
             val transcode = minter.mint(item, profile, null, null).report
-            reporter.report(transcode, PlayReport.REPLACED, 5_000L)
+            reporter.report(transcode, PlayReport.REPLACED, 5_000L, null)
             val ended = jellyfin.requests.single { it.method == "DELETE" }
             assertEquals("/Videos/ActiveEncodings", ended.url.encodedPath)
             assertEquals("play-2", ended.url.queryParameter("playSessionId"))
@@ -86,7 +86,7 @@ class JellyfinPlaybackTest {
 
             jellyfin.requests.clear()
             jellyfin.playbackInfo = FakeJellyfin.directPlayInfo()
-            reporter.report(minter.mint(item, profile, null, null).report, PlayReport.REPLACED, 5_000L)
+            reporter.report(minter.mint(item, profile, null, null).report, PlayReport.REPLACED, 5_000L, null)
             assertTrue(jellyfin.requests.none { it.method == "DELETE" })
         }
 
@@ -349,18 +349,18 @@ class JellyfinPlaybackTest {
     fun `a play is reported as the server's sessions, with its position in ticks`() =
         runBlocking {
             val play = handle()
-            reporter.report(play, PlayReport.STARTED, 15_000L)
-            reporter.report(play, PlayReport.PROGRESS, 25_000L)
-            reporter.report(play, PlayReport.PAUSED, 26_000L)
+            reporter.report(play, PlayReport.STARTED, 15_000L, null)
+            reporter.report(play, PlayReport.PROGRESS, 25_000L, null)
+            reporter.report(play, PlayReport.PAUSED, 26_000L, null)
             assertEquals(JsonPrimitive(150_000_000L), body("/Sessions/Playing")["PositionTicks"])
             assertEquals(JsonPrimitive("play-1"), body("/Sessions/Playing")["PlaySessionId"])
             assertEquals(JsonPrimitive("source-1"), body("/Sessions/Playing")["MediaSourceId"])
             assertEquals(JsonPrimitive("DirectPlay"), body("/Sessions/Playing")["PlayMethod"])
             assertEquals(JsonPrimitive(true), body("/Sessions/Playing/Progress")["IsPaused"])
             assertEquals(JsonPrimitive(260_000_000L), body("/Sessions/Playing/Progress")["PositionTicks"])
-            reporter.report(play, PlayReport.RESUMED, 27_000L)
+            reporter.report(play, PlayReport.RESUMED, 27_000L, null)
             assertEquals(JsonPrimitive(false), body("/Sessions/Playing/Progress")["IsPaused"])
-            reporter.report(play, PlayReport.STOPPED, 40_000L)
+            reporter.report(play, PlayReport.STOPPED, 40_000L, null)
             assertEquals(JsonPrimitive(400_000_000L), body("/Sessions/Playing/Stopped")["PositionTicks"])
             assertEquals(3, jellyfin.hits("/Sessions/Playing/Progress"))
         }
@@ -369,11 +369,11 @@ class JellyfinPlaybackTest {
     fun `a finished play is a stop at the end, and nothing after it moves the position back`() =
         runBlocking {
             val play = handle()
-            reporter.report(play, PlayReport.PROGRESS, 3_000_000L)
-            reporter.report(play, PlayReport.FINISHED, 3_400_000L)
+            reporter.report(play, PlayReport.PROGRESS, 3_000_000L, null)
+            reporter.report(play, PlayReport.FINISHED, 3_400_000L, null)
             assertEquals(JsonPrimitive(36_000_000_000L), body("/Sessions/Playing/Stopped")["PositionTicks"])
-            reporter.report(play, PlayReport.PROGRESS, 3_500_000L)
-            reporter.report(play, PlayReport.STOPPED, 3_550_000L)
+            reporter.report(play, PlayReport.PROGRESS, 3_500_000L, null)
+            reporter.report(play, PlayReport.STOPPED, 3_550_000L, null)
             assertEquals(1, jellyfin.hits("/Sessions/Playing/Stopped"))
             assertEquals(1, jellyfin.hits("/Sessions/Playing/Progress"))
         }
@@ -382,10 +382,10 @@ class JellyfinPlaybackTest {
     fun `a finish the server did not get is not counted, so the stop that follows still reaches it`() {
         val play = handle()
         jellyfin.status["/Sessions/Playing/Stopped"] = 500
-        assertThrows(JellyfinHttpException::class.java) { runBlocking { reporter.report(play, PlayReport.FINISHED, 3_400_000L) } }
+        assertThrows(JellyfinHttpException::class.java) { runBlocking { reporter.report(play, PlayReport.FINISHED, 3_400_000L, null) } }
         assertFalse(play.isFinished)
         jellyfin.status.clear()
-        runBlocking { reporter.report(play, PlayReport.STOPPED, 3_400_000L) }
+        runBlocking { reporter.report(play, PlayReport.STOPPED, 3_400_000L, null) }
         assertEquals(JsonPrimitive(34_000_000_000L), body("/Sessions/Playing/Stopped")["PositionTicks"])
     }
 
@@ -393,7 +393,7 @@ class JellyfinPlaybackTest {
     fun `a play with no runtime finishes at the position it reached`() =
         runBlocking {
             val play = JellyfinPlayHandle("movie-1", "source-1", "play-1", "Transcode", runtimeMs = 0L)
-            reporter.report(play, PlayReport.FINISHED, 90_000L)
+            reporter.report(play, PlayReport.FINISHED, 90_000L, null)
             assertEquals(JsonPrimitive(900_000_000L), body("/Sessions/Playing/Stopped")["PositionTicks"])
             assertEquals(JsonPrimitive("Transcode"), body("/Sessions/Playing/Stopped")["PlayMethod"])
         }
@@ -401,7 +401,7 @@ class JellyfinPlaybackTest {
     @Test
     fun `a handle this reporter did not mint is refused`() {
         val stranger = object : PlayReportHandle {}
-        assertThrows(IllegalArgumentException::class.java) { runBlocking { reporter.report(stranger, PlayReport.STARTED, 0L) } }
+        assertThrows(IllegalArgumentException::class.java) { runBlocking { reporter.report(stranger, PlayReport.STARTED, 0L, null) } }
         assertNull(jellyfin.requests.firstOrNull { it.url.encodedPath.startsWith("/Sessions/Playing") })
     }
 }

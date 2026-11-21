@@ -42,6 +42,24 @@ internal fun JsonObject.chosenIndexes(): StreamIndexes =
     )
 
 /**
+ * The streams of this media source that are playing, as the server numbers them, for [choice] (null before the player has said): its
+ * own defaults to start with, then what the choice names. A track the choice names nothing of in this source stays on the server's
+ * default, and subtitles off are [SUBTITLES_OFF], unless the server burns its default subtitle into a transcode, which then plays.
+ */
+internal fun JsonObject.playingIndexes(choice: StreamChoice?): StreamIndexes {
+    val server = chosenIndexes()
+    if (choice == null) return server
+    val wanted = streamIndexes(choice)
+    val subtitle =
+        when {
+            wanted.subtitle == null -> server.subtitle
+            wanted.subtitle == SUBTITLES_OFF && burnsInSubtitle() -> server.subtitle
+            else -> wanted.subtitle
+        }
+    return StreamIndexes(wanted.audio ?: server.audio, subtitle)
+}
+
+/**
  * Whether the server burns its default subtitle into the video of a transcode (`Encode`). The player never has that track, so what it
  * says of subtitles says nothing of it: a "subtitles off" from it is not the user's.
  */

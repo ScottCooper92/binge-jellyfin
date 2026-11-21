@@ -42,9 +42,10 @@ class SignedInPlayReporter(
         play: PlayReportHandle,
         kind: PlayReport,
         positionMs: Long,
+        choice: StreamChoice?,
     ) {
         val (_, client) = connection.signedInOrRefused()
-        JellyfinPlayReporter(client).report(play, kind, positionMs)
+        JellyfinPlayReporter(client).report(play, kind, positionMs, choice)
     }
 }
 

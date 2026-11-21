@@ -93,7 +93,7 @@ class JellyfinSourceMinter(
                 preferredAudio = defaults?.audio,
                 preferredSubtitle = defaults?.subtitle,
             )
-        return Minted(request, JellyfinPlayHandle(item.itemId, mediaSourceId, playSessionId, method, runtimeMs))
+        return Minted(request, JellyfinPlayHandle(item.itemId, mediaSourceId, playSessionId, method, runtimeMs, source))
     }
 
     /**

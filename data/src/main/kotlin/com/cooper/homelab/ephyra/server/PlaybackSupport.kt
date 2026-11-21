@@ -133,7 +133,7 @@ suspend fun JellyfinClient.stopEncoding(playSessionId: String) {
 
 /**
  * The body of a session report (`/Sessions/Playing`, `/Progress`, `/Stopped`): the item, the media source, the play session, the play
- * method and where the play is.
+ * method and where the play is, and the audio and subtitle streams playing where they are given (a subtitle of -1 is none).
  */
 fun playReportBody(
     itemId: String,
@@ -142,15 +142,19 @@ fun playReportBody(
     playMethod: String,
     positionTicks: Long,
     paused: Boolean,
+    audioStreamIndex: Int? = null,
+    subtitleStreamIndex: Int? = null,
 ): JsonObject =
     JsonObject(
-        mapOf(
-            "ItemId" to JsonPrimitive(itemId),
-            "MediaSourceId" to JsonPrimitive(mediaSourceId),
-            "PlaySessionId" to JsonPrimitive(playSessionId),
-            "PlayMethod" to JsonPrimitive(playMethod),
-            "PositionTicks" to JsonPrimitive(positionTicks),
-            "CanSeek" to JsonPrimitive(true),
-            "IsPaused" to JsonPrimitive(paused),
-        ),
+        buildMap {
+            put("ItemId", JsonPrimitive(itemId))
+            put("MediaSourceId", JsonPrimitive(mediaSourceId))
+            put("PlaySessionId", JsonPrimitive(playSessionId))
+            put("PlayMethod", JsonPrimitive(playMethod))
+            put("PositionTicks", JsonPrimitive(positionTicks))
+            put("CanSeek", JsonPrimitive(true))
+            put("IsPaused", JsonPrimitive(paused))
+            audioStreamIndex?.let { put("AudioStreamIndex", JsonPrimitive(it)) }
+            subtitleStreamIndex?.let { put("SubtitleStreamIndex", JsonPrimitive(it)) }
+        },
     )

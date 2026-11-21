@@ -71,7 +71,7 @@ class AudioSwitchTest {
             scope,
             player,
             JellyfinSourceMinter(client, "user-1", JellyfinServerProfile.from("10.11.6")),
-            { _, _, _ -> },
+            { _, _, _, _ -> },
             { null },
             { "s${++ids}" },
         )
