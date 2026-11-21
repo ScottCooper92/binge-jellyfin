@@ -20,12 +20,15 @@ import com.cooper.homelab.ephyra.server.ENCODING_MUXING_QUEUE
 import com.cooper.homelab.ephyra.server.ENCODING_TEMP_PATH
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonPrimitive
@@ -61,18 +64,18 @@ class TranscodingViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
         jellyfin.serverConfiguration =
             """{"ServerName":"truenas","MinResumePct":5,"MaxResumePct":90,"MinResumeDurationSeconds":300,""" +
             """"MinAudiobookResume":5,"MaxAudiobookResume":5,"RemoteClientBitrateLimit":0,"FutureSetting":{"keep":"me"}}"""
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun TranscodingViewModel.ready(check: (TranscodingUiState.Ready) -> Boolean = { true }) =
-        runBlocking {
+        idling {
             withTimeout(
                 TIMEOUT_MILLIS,
             ) { state.first { it is TranscodingUiState.Ready && check(it) } }
@@ -81,7 +84,7 @@ class TranscodingViewModelTest {
     private fun saves(
         path: String,
         count: Int,
-    ) = runBlocking {
+    ) = idling {
         withTimeout(TIMEOUT_MILLIS) {
             while (jellyfin.requests.count { it.url.encodedPath == path && it.method == "POST" } <
                 count
@@ -296,7 +299,7 @@ class TranscodingViewModelTest {
                 .jsonPrimitive.int,
         )
         vm.saveNumber(NumberField.BitrateLimit, "2.5")
-        jellyfin.awaitBody(SERVER) { it["RemoteClientBitrateLimit"]?.jsonPrimitive?.content == "2500000" }
+        jellyfin.awaitBodyIdling(SERVER) { it["RemoteClientBitrateLimit"]?.jsonPrimitive?.content == "2500000" }
         assertEquals(
             2_500_000,
             jellyfin
@@ -376,7 +379,7 @@ class TranscodingViewModelTest {
                 .jsonPrimitive.content,
         )
         val failing = made(TranscodingViewModel(connection))
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { failing.state.first { it is TranscodingUiState.Failed } } }
+        idling { withTimeout(TIMEOUT_MILLIS) { failing.state.first { it is TranscodingUiState.Failed } } }
         jellyfin.status.remove(ENCODING)
         failing.load()
         failing.ready()
