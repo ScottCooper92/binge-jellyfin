@@ -1,8 +1,7 @@
 package com.cooper.homelab.ephyra.openitem
 
-import com.binge.companion.sdk.attempt
 import com.cooper.homelab.ephyra.server.IndexType
-import java.net.URI
+import com.cooper.homelab.ephyra.server.JellyfinClient
 
 /** A TMDB title, as the caller of the exported entry names it: a movie or a TV series, and its TMDB id. */
 data class TmdbRef(
@@ -45,8 +44,6 @@ data class OpenItemRequest(
 private const val MAX_ADDRESS_CHARS = 2048
 private const val MAX_ITEM_ID_CHARS = 36
 private const val ITEM_ID_HEX_DIGITS = 32
-private const val HTTP_PORT = 80
-private const val HTTPS_PORT = 443
 
 /**
  * [raw] as the key two spellings of one server address share: its scheme, its host in lower case, its port (the scheme's own when none is
@@ -58,16 +55,11 @@ fun serverKey(
     assumeHttp: Boolean = false,
 ): String? {
     val text = raw.trim()
-    val withScheme = if ("://" in text) text else "http://$text".takeIf { assumeHttp }
-    val uri = withScheme?.takeIf { text.isNotEmpty() && it.length <= MAX_ADDRESS_CHARS }?.let { attempt { URI(it) }.getOrNull() }
-    val scheme = uri?.scheme?.lowercase()?.takeIf { it == "http" || it == "https" }
-    val host = uri?.host?.lowercase()?.takeIf { it.isNotEmpty() }
-    return if (uri == null || scheme == null || host == null) {
-        null
-    } else {
-        val port = uri.port.takeIf { it != -1 } ?: if (scheme == "https") HTTPS_PORT else HTTP_PORT
-        "$scheme://$host:$port${uri.rawPath.orEmpty().trimEnd('/')}"
-    }
+    val url =
+        text
+            .takeIf { it.isNotEmpty() && it.length <= MAX_ADDRESS_CHARS && ("://" in it || assumeHttp) }
+            ?.let { JellyfinClient.parseBaseUrl(it) }
+    return url?.let { "${it.scheme}://${it.host}:${it.port}${it.encodedPath.trimEnd('/')}" }
 }
 
 /** A Jellyfin item id in the spelling the server sends (32 hex digits, lower case), from [raw] with or without its dashes; null if it is not one. */

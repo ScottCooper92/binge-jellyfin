@@ -102,6 +102,7 @@ class OpenItemRequestTest {
 
     @Test
     fun `an address with no scheme is read as http only where it is asked for`() {
+        assertEquals("http://my_server.lan:8096", serverKey("http://my_server.lan:8096"))
         assertNull(serverKey("jelly.lan:8096"))
         assertEquals("http://jelly.lan:8096", serverKey("jelly.lan:8096", assumeHttp = true))
     }
