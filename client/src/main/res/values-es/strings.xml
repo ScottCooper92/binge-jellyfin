@@ -29,6 +29,8 @@
     <string name="client_title_versions">Versiones</string>
     <string name="client_title_trailer">Tráiler</string>
     <string name="client_title_share">Compartir</string>
+    <string name="client_title_tags">Etiquetas</string>
+    <string name="client_title_external_links">Enlaces externos</string>
     <string name="client_title_cast">Reparto</string>
     <string name="client_title_crew">Equipo</string>
     <string name="client_title_similar">Más como esta</string>

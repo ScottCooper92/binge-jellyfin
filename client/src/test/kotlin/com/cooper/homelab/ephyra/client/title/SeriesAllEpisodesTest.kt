@@ -71,7 +71,7 @@ class SeriesAllEpisodesTest {
                             onToggleEpisodeWatched = {},
                             onOpenTitle = {},
                             onOpenPerson = {},
-                            onOpenTrailer = {},
+                            onOpenLink = {},
                             onShare = { _, _ -> },
                         ),
                 )

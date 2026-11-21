@@ -56,6 +56,8 @@ fun movieUi(
         criticsPercent = detail.criticRating?.roundToInt(),
         trailerUrl = detail.trailerUrl,
         shareUrl = detail.shareUrl(series = false),
+        tags = detail.tags,
+        links = detail.links,
     )
 }
 

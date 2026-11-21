@@ -70,7 +70,7 @@ class MovieActions(
     val onOpenTitle: (TitleCard) -> Unit,
     val onOpenPerson: (PersonUi) -> Unit,
     val onOpenCollection: (collectionId: String) -> Unit,
-    val onOpenTrailer: (url: String) -> Unit,
+    val onOpenLink: (url: String) -> Unit,
     val onShare: (title: String, url: String) -> Unit,
 )
 
@@ -137,6 +137,7 @@ fun MovieScreen(
                 },
                 roundActions = movieRoundActions(state.movie, actions, onChooseVersion = { choosing = true }),
                 topBarActions = shareAction(state.movie.shareUrl) { actions.onShare(state.movie.title, it) },
+                afterRails = linksSection(state.movie.links, actions.onOpenLink),
                 atEnd = {
                     val shown = state.movie.versions.firstOrNull { it.id == version } ?: state.movie.versions.firstOrNull()
                     shown?.let { MovieMediaInfo(it) }
@@ -195,6 +196,7 @@ fun movieDetail(
                 PosterRail(stringResource(R.string.client_title_similar), posterItems(movie.similar, imageUrl)),
             ),
         info = DetailInfo(stringResource(R.string.client_title_details), movie.facts.movieEntries(locale)),
+        tags = tagsSection(movie.tags),
     )
 }
 
@@ -217,7 +219,7 @@ private fun movieRoundActions(
     val markFavourite = stringResource(if (movie.favourite) R.string.client_title_remove_favourite else R.string.client_title_add_favourite)
     val versionsLabel = stringResource(R.string.client_title_versions)
     return buildList {
-        movie.trailerUrl?.let { url -> add(trailerAction { actions.onOpenTrailer(url) }) }
+        movie.trailerUrl?.let { url -> add(trailerAction { actions.onOpenLink(url) }) }
         add(
             DetailRoundAction(
                 icon = if (movie.watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,

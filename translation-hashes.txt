@@ -1519,6 +1519,7 @@ client:client_title_created_by  374cd9d220fb
 client:client_title_crew  5d285367ec5d
 client:client_title_details  45989de49fb7
 client:client_title_directed_by  783deb1acce9
+client:client_title_external_links  2cedb0696337
 client:client_title_favourite  e39b24993c31
 client:client_title_first_aired  c94c5e1d5af9
 client:client_title_go_to_series  a88fc4226cc1
@@ -1555,6 +1556,7 @@ client:client_title_series  a8295e08ff7a
 client:client_title_share  29887a5ff984
 client:client_title_similar  ee548a882ea6
 client:client_title_studios  e41cca7d2395
+client:client_title_tags  1331275bc537
 client:client_title_trailer  6a7b20d1da8a
 client:client_title_version_number  3b334e3c6b61
 client:client_title_version_subtitles  a4dd6d3417d8
