@@ -282,17 +282,16 @@ private fun seriesRoundActions(
 private fun SeriesStats.cells(locale: Locale): List<DetailStat> =
     listOfNotNull(
         rating?.let { DetailStat(Icons.Filled.Star, "%.1f".format(locale, it), stringResource(DesR.string.detail_rating)) },
-        year?.let {
-            val label =
-                if (seasonCount >
-                    0
-                ) {
-                    pluralStringResource(R.plurals.client_title_season_count, seasonCount, seasonCount)
-                } else {
-                    stringResource(R.string.client_title_released)
-                }
-            DetailStat(Icons.Filled.CalendarMonth, it.toString(), label)
-        },
+        year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), yearLabel()) },
         episodeCount?.let { DetailStat(Icons.Filled.VideoLibrary, it.toString(), stringResource(R.string.client_series_episodes)) },
         certification?.let { DetailStat(Icons.Filled.Shield, it, stringResource(R.string.client_title_certification)) },
     )
+
+/** What sits under the year: how many seasons the series has, or "Released" when the server counts none. */
+@Composable
+private fun SeriesStats.yearLabel(): String =
+    if (seasonCount > 0) {
+        pluralStringResource(R.plurals.client_title_season_count, seasonCount, seasonCount)
+    } else {
+        stringResource(R.string.client_title_released)
+    }

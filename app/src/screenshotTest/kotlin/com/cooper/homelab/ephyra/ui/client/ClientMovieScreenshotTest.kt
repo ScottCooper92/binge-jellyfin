@@ -103,6 +103,11 @@ class ClientMovieScreenshotTest {
     fun loaded() = Movie(MovieUiState.Ready(movie))
 
     @PreviewTest
+    @JellyfinDetailsPreviews
+    @Composable
+    fun details() = Movie(MovieUiState.Ready(movie))
+
+    @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun resumeWatchedFavourite() =
@@ -118,6 +123,7 @@ class ClientMovieScreenshotTest {
                     tagline = null,
                     genres = emptyList(),
                     stats = MovieStats(null, 2021, null, null),
+                    criticsPercent = null,
                     overview = null,
                     facts = TitleFacts(null, emptyList(), null),
                     versions = listOf(version("v1")),
