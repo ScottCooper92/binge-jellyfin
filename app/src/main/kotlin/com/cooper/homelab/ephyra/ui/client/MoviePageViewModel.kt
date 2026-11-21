@@ -27,7 +27,7 @@ class MoviePageViewModel(
     dispatcher: CoroutineDispatcher,
     profile: JellyfinServerProfile,
     socket: Flow<List<UserDataChange>>,
-    boxSets: BoxSetMemberships = BoxSetMemberships(),
+    private val boxSets: BoxSetMemberships = BoxSetMemberships(),
 ) : TitlePageViewModel<MovieViewModel, MovieUiState>(
         connection,
         dispatcher,

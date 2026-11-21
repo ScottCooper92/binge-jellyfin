@@ -27,7 +27,7 @@ class CollectionPageViewModel(
     dispatcher: CoroutineDispatcher,
     profile: JellyfinServerProfile,
     socket: Flow<List<UserDataChange>>,
-    boxSets: BoxSetMemberships = BoxSetMemberships(),
+    private val boxSets: BoxSetMemberships = BoxSetMemberships(),
 ) : TitlePageViewModel<CollectionViewModel, CollectionUiState>(
         connection,
         dispatcher,
