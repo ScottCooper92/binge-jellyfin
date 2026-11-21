@@ -56,7 +56,7 @@ fun TitlePeopleScreen(
                 PeopleGridTab(
                     stringResource(R.string.client_title_cast),
                     tabState(state, stringResource(R.string.client_people_cast_empty)) { people ->
-                        listOf(PeopleGridSection("cast", null, people.cast.map { it.gridPerson(null, imageUrl, photoWidth) }))
+                        listOf(PeopleGridSection("cast", null, people.cast.map { it.gridPerson(imageUrl, photoWidth) }))
                     },
                 ),
                 PeopleGridTab(
@@ -66,7 +66,7 @@ fun TitlePeopleScreen(
                             PeopleGridSection(
                                 job?.name ?: "other",
                                 job?.let(jobs::get),
-                                group.map { it.gridPerson(jobs[job], imageUrl, photoWidth) },
+                                group.map { it.gridPerson(imageUrl, photoWidth) },
                             )
                         }
                     },
@@ -101,8 +101,8 @@ private fun tabState(
                 }.let { if (it.isEmpty()) PeopleGridState.Empty(empty) else PeopleGridState.Ready(it) }
     }
 
+/** A person as a grid card. The line under the name is the character an actor plays; a crew member's job is the heading of their section. */
 private fun PersonUi.gridPerson(
-    jobWord: String?,
     imageUrl: (TitleImage, Int) -> String?,
     photoWidth: Int,
-) = PeopleGridPerson(key(), name, subtitle ?: jobWord, photo?.let { imageUrl(it, photoWidth) })
+) = PeopleGridPerson(key(), name, subtitle, photo?.let { imageUrl(it, photoWidth) })
