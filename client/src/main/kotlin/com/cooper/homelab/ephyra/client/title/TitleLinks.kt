@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.client.title
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.RowScope
@@ -117,25 +118,26 @@ internal fun ExternalLinksSection(
     onOpen: (url: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SectionHeader(
-        stringResource(R.string.client_title_external_links),
-        modifier,
-        horizontalPadding = readingInset(),
-        startPadding = readingInset(),
-    )
-    FlowRow(
-        modifier.padding(horizontal = readingInset()),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
-    ) {
-        links.forEach { link ->
-            val (label, icon) =
-                when (link.kind) {
-                    TitleLinkKind.Imdb -> stringResource(R.string.client_title_link_imdb) to Icons.Filled.Movie
-                    TitleLinkKind.Tmdb -> stringResource(R.string.client_title_link_tmdb) to Icons.Filled.Public
-                    TitleLinkKind.Other -> link.name to Icons.Filled.Language
-                }
-            BingeLinkChip(label = label, leadingIcon = icon, onClick = { onOpen(link.url) })
+    Column(modifier) {
+        SectionHeader(
+            stringResource(R.string.client_title_external_links),
+            horizontalPadding = readingInset(),
+            startPadding = readingInset(),
+        )
+        FlowRow(
+            Modifier.padding(horizontal = readingInset()),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(DesR.dimen.padding_s)),
+        ) {
+            links.forEach { link ->
+                val (label, icon) =
+                    when (link.kind) {
+                        TitleLinkKind.Imdb -> stringResource(R.string.client_title_link_imdb) to Icons.Filled.Movie
+                        TitleLinkKind.Tmdb -> stringResource(R.string.client_title_link_tmdb) to Icons.Filled.Public
+                        TitleLinkKind.Other -> link.name to Icons.Filled.Language
+                    }
+                BingeLinkChip(label = label, leadingIcon = icon, onClick = { onOpen(link.url) })
+            }
         }
     }
 }
