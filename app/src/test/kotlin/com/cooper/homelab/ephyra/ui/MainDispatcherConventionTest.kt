@@ -14,6 +14,10 @@ import java.io.File
  *
  * Tests that touch no such class may keep Unconfined, so nothing here is an allowlist: the classes it guards are read from the
  * production sources, and a new settings view model that saves as made joins them by itself.
+ *
+ * What it cannot see: a test that reaches a confined class only through a helper, naming none of the classes in the set, is not
+ * caught, and neither is a class that holds confined state without naming an engine. The repeat check from #848 (the class run
+ * many times in one JVM under CPU load) is how such a test is found.
  */
 class MainDispatcherConventionTest {
     @Test
