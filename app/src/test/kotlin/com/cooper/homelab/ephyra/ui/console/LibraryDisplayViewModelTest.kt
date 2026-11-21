@@ -14,12 +14,15 @@ import com.cooper.homelab.ephyra.server.UiLanguage
 import com.cooper.homelab.ephyra.server.entries
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonPrimitive
@@ -52,23 +55,23 @@ class LibraryDisplayViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
         jellyfin.serverConfiguration =
             """{"ServerName":"truenas","EnableFolderView":false,"SortRemoveWords":["the","a"],"FutureSetting":{"keep":"me"},""" +
             """"PathSubstitutions":[{"From":"/media","To":"/mnt/media"}]}"""
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun LibraryDisplayViewModel.ready(check: (LibraryDisplayUiState.Ready) -> Boolean = { true }) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) { state.first { it is LibraryDisplayUiState.Ready && check(it) } }
         } as LibraryDisplayUiState.Ready
 
     private fun saves(count: Int) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" } < count) delay(POLL_MILLIS)
             }
@@ -144,7 +147,7 @@ class LibraryDisplayViewModelTest {
         vm.add(DisplayList.RemoveWords, ListEntry("   "))
         vm.remove(DisplayList.RemoveWords, 0)
         // The write that carries the removal, not a count of writes: a repeat of the earlier write reaches the count too.
-        jellyfin.awaitBody(CONFIGURATION) { body ->
+        jellyfin.awaitBodyIdling(CONFIGURATION) { body ->
             body[SORT_REMOVE_WORDS]?.jsonArray?.map { it.jsonPrimitive.content } == listOf("a", "an")
         }
         val ready = vm.ready { it.configuration.entries(DisplayList.RemoveWords).size == 2 }
@@ -235,7 +238,7 @@ class LibraryDisplayViewModelTest {
         assertEquals(emptyList<UiLanguage>(), made(LibraryDisplayViewModel(connection)).ready().languages)
         jellyfin.status[CONFIGURATION] = 403
         val vm = made(LibraryDisplayViewModel(connection))
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is LibraryDisplayUiState.Failed } } }
+        idling { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is LibraryDisplayUiState.Failed } } }
         jellyfin.status.remove(CONFIGURATION)
         vm.load()
         vm.ready()
