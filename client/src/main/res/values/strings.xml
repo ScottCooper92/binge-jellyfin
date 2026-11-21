@@ -26,6 +26,8 @@
     <string name="client_title_add_favourite">Add to favourites</string>
     <string name="client_title_remove_favourite">Remove from favourites</string>
     <string name="client_title_versions">Versions</string>
+    <string name="client_title_trailer">Trailer</string>
+    <string name="client_title_share">Share</string>
     <string name="client_title_cast">Cast</string>
     <string name="client_title_crew">Crew</string>
     <string name="client_title_similar">More like this</string>

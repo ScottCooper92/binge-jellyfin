@@ -27,6 +27,8 @@
     <string name="client_title_add_favourite">Añadir a favoritas</string>
     <string name="client_title_remove_favourite">Quitar de favoritas</string>
     <string name="client_title_versions">Versiones</string>
+    <string name="client_title_trailer">Tráiler</string>
+    <string name="client_title_share">Compartir</string>
     <string name="client_title_cast">Reparto</string>
     <string name="client_title_crew">Equipo</string>
     <string name="client_title_similar">Más como esta</string>

@@ -144,6 +144,10 @@ data class MovieUi(
     val similar: List<TitleCard>,
     /** The critics' score out of 100, when the server holds one. */
     val criticsPercent: Int? = null,
+    /** The first trailer address the server holds (http or https), or null. */
+    val trailerUrl: String? = null,
+    /** The title's public page to share, or null when the server holds no TMDb or IMDb id. */
+    val shareUrl: String? = null,
 )
 
 /** What the movie page shows. */

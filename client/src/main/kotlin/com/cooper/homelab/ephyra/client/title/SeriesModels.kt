@@ -100,6 +100,8 @@ data class SeriesUi(
     val episodes: EpisodesState,
     val similar: List<TitleCard>,
     val criticsPercent: Int? = null,
+    val trailerUrl: String? = null,
+    val shareUrl: String? = null,
 )
 
 /** What the series page shows. */
