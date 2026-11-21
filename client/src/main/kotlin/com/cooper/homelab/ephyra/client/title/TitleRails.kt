@@ -4,7 +4,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -16,6 +20,8 @@ import com.binge.designsystem.component.DetailInfoEntry
 import com.binge.designsystem.component.DetailPerson
 import com.binge.designsystem.component.DetailPoster
 import com.binge.designsystem.component.EpisodeRow
+import com.binge.designsystem.component.ExternalScore
+import com.binge.designsystem.component.ExternalScoreKind
 import com.binge.designsystem.component.MediaCardStatus
 import com.binge.designsystem.template.PersonItem
 import com.binge.designsystem.template.PosterItem
@@ -85,13 +91,70 @@ private fun TitleCard.poster(
         subtitle = year?.toString(),
     )
 
-/** The facts at the end of the page: the original title, the studios and the premiere date. Each is left out when the server gave none. */
+/** The critics' score at or above this reads as fresh (a tomato), below it as rotten (a splat), as Rotten Tomatoes draws it. */
+private const val FRESH_THRESHOLD_PERCENT = 60
+
+private const val MINUTES_PER_HOUR = 60
+
+/** The critics' score as the header's score line, or nothing when the server holds none. */
 @Composable
-internal fun TitleFacts.entries(locale: Locale): List<DetailInfoEntry> =
+internal fun criticsScores(percent: Int?): List<ExternalScore> =
+    listOfNotNull(
+        percent?.let {
+            ExternalScore(
+                if (it >= FRESH_THRESHOLD_PERCENT) ExternalScoreKind.CriticsFresh else ExternalScoreKind.CriticsRotten,
+                "$it%",
+                stringResource(R.string.client_title_score_critics, it),
+            )
+        },
+    )
+
+/** A runtime as hours and minutes, or as minutes alone under an hour. */
+@Composable
+internal fun runtimeText(minutes: Int): String =
+    if (minutes < MINUTES_PER_HOUR) {
+        stringResource(DesR.string.detail_runtime_minutes, minutes)
+    } else {
+        stringResource(R.string.client_title_runtime_hours_minutes, minutes / MINUTES_PER_HOUR, minutes % MINUTES_PER_HOUR)
+    }
+
+/** A series' status in the user's language when it is one the server names, else the server's own text. */
+@Composable
+private fun statusText(status: String): String =
+    when {
+        status.equals("Continuing", ignoreCase = true) -> stringResource(R.string.client_series_status_continuing)
+        status.equals("Ended", ignoreCase = true) -> stringResource(R.string.client_series_status_ended)
+        else -> status
+    }
+
+/** A film's details: who directed it, when it came out, the studios and the original title. Each is left out when the server gave none. */
+@Composable
+internal fun TitleFacts.movieEntries(locale: Locale): List<DetailInfoEntry> =
     listOf(
-        DetailInfoEntry(Icons.Filled.Translate, stringResource(R.string.client_title_original_title), originalTitle),
+        DetailInfoEntry(
+            Icons.Filled.Videocam,
+            stringResource(R.string.client_title_directed_by),
+            directors.joinToString().ifBlank { null },
+        ),
+        DetailInfoEntry(Icons.Filled.Event, stringResource(R.string.client_title_release_date), premiereDate?.let { premiere(it, locale) }),
         DetailInfoEntry(Icons.Filled.Business, stringResource(R.string.client_title_studios), studios.joinToString().ifBlank { null }),
-        DetailInfoEntry(Icons.Filled.Event, stringResource(R.string.client_title_premiere), premiereDate?.let { premiere(it, locale) }),
+        DetailInfoEntry(Icons.Filled.Translate, stringResource(R.string.client_title_original_title), originalTitle),
+    )
+
+/** A series' details: who made it, its status, when it first and last aired, the studios and the original title. */
+@Composable
+internal fun TitleFacts.seriesEntries(locale: Locale): List<DetailInfoEntry> =
+    listOf(
+        DetailInfoEntry(Icons.Filled.Person, stringResource(R.string.client_title_created_by), creators.joinToString().ifBlank { null }),
+        DetailInfoEntry(Icons.Filled.Tv, stringResource(R.string.client_series_status), status?.let { statusText(it) }),
+        DetailInfoEntry(Icons.Filled.Event, stringResource(R.string.client_title_first_aired), premiereDate?.let { premiere(it, locale) }),
+        DetailInfoEntry(
+            Icons.Filled.EventAvailable,
+            stringResource(R.string.client_title_last_aired),
+            endDate?.let { premiere(it, locale) },
+        ),
+        DetailInfoEntry(Icons.Filled.Business, stringResource(R.string.client_title_studios), studios.joinToString().ifBlank { null }),
+        DetailInfoEntry(Icons.Filled.Translate, stringResource(R.string.client_title_original_title), originalTitle),
     )
 
 /** The width of an episode's still in its row. */

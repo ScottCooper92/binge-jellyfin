@@ -36,7 +36,7 @@ class SeriesAllEpisodesTest {
             genres = emptyList(),
             backdrop = null,
             poster = null,
-            stats = SeriesStats(rating = null, year = 2020, seasonCount = 1, status = null, certification = null),
+            stats = SeriesStats(rating = null, year = 2020, seasonCount = 1, certification = null),
             play = null,
             watched = false,
             favourite = false,

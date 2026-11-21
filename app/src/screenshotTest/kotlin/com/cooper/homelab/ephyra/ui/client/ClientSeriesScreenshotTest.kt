@@ -34,6 +34,12 @@ import com.cooper.homelab.ephyra.preview.JellyfinSpanishPreviews
 @Preview(name = "tall", device = "spec:width=411dp,height=2400dp,dpi=420", uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
 annotation class JellyfinTallPreview
 
+/** A window tall enough to hold the page down to the end of its Details, in English and in Spanish. */
+@PreviewWrapper(JellyfinScreenshotThemeWrapper::class)
+@Preview(name = "details", device = "spec:width=411dp,height=3600dp,dpi=420", uiMode = UI_MODE_NIGHT_YES, locale = SOURCE_LOCALE)
+@Preview(name = "detailses", device = "spec:width=411dp,height=3600dp,dpi=420", uiMode = UI_MODE_NIGHT_YES, locale = "es")
+annotation class JellyfinDetailsPreviews
+
 /**
  * The series page (`:client`) in the states the issue names: loaded, resuming an episode, every episode watched, a single season,
  * episodes loading and failed, loading, and failed. The frames sit here because the Jellyfin brand and the preview matrices are this
@@ -90,14 +96,23 @@ class ClientSeriesScreenshotTest {
             genres = listOf("Drama", "Mystery"),
             backdrop = TitleImage("series", ImageKind.Backdrop, "b-series"),
             poster = TitleImage("series", ImageKind.Primary, "p-series"),
-            stats = SeriesStats(rating = 8.4, year = 2020, seasonCount = 3, status = "Continuing", certification = "TV-14"),
+            stats = SeriesStats(rating = 8.4, year = 2020, seasonCount = 3, certification = "TV-14", episodeCount = 24),
             play = SeriesPlay.Episode(PlayKind.Play, "e3", season = 1, episode = 3, minutesLeft = null),
             watched = false,
             favourite = false,
             overview =
                 "Three friends inherit a lighthouse on a coastline that keeps changing. As the seasons turn, they find out what " +
                     "the light was for, and what it costs to put it out.",
-            facts = TitleFacts("Los Guardianes del Faro", listOf("Harbour Films", "Northlight"), "2020-03-02T00:00:00.0000000Z"),
+            facts =
+                TitleFacts(
+                    "Los Guardianes del Faro",
+                    listOf("Harbour Films", "Northlight"),
+                    "2020-03-02T00:00:00.0000000Z",
+                    creators = listOf("Ines Calder", "Tomas Rey"),
+                    status = "Ended",
+                    endDate = "2022-11-18T00:00:00.0000000Z",
+                ),
+            criticsPercent = 48,
             cast =
                 listOf(
                     PersonUi("a1", "Amara Okafor", "Wren", TitleImage("a1", ImageKind.Primary, "pa1")),
@@ -159,7 +174,8 @@ class ClientSeriesScreenshotTest {
                 series.copy(
                     tagline = null,
                     genres = emptyList(),
-                    stats = SeriesStats(null, 2020, 1, null, null),
+                    stats = SeriesStats(null, 2020, 1, null),
+                    criticsPercent = null,
                     overview = null,
                     facts = TitleFacts(null, emptyList(), null),
                     cast = emptyList(),
@@ -181,6 +197,11 @@ class ClientSeriesScreenshotTest {
                 ),
             ),
         )
+
+    @PreviewTest
+    @JellyfinDetailsPreviews
+    @Composable
+    fun endedDetails() = Series(SeriesUiState.Ready(series))
 
     @PreviewTest
     @JellyfinTallPreview

@@ -5,6 +5,9 @@ import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.browse.ItemUserData
 import com.cooper.homelab.ephyra.browse.NextEpisode
+import com.cooper.homelab.ephyra.browse.PersonKind
+import com.cooper.homelab.ephyra.browse.TitleDetail
+import com.cooper.homelab.ephyra.browse.TitlePerson
 import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -47,6 +50,46 @@ class SeriesMappingTest {
         parentBackdropImageTag = "bd",
         userData = ItemUserData(played = played, positionTicks = position),
     )
+
+    private fun seriesDetail(
+        status: String?,
+        endDate: String? = null,
+        people: List<TitlePerson> = emptyList(),
+    ) = TitleDetail(
+        item = BrowseItem("series", "Show", ItemKind.Series, year = 2020),
+        originalTitle = null,
+        overview = null,
+        taglines = emptyList(),
+        genres = emptyList(),
+        studios = listOf("Network"),
+        criticRating = 59.6,
+        premiereDate = "2020-03-02T00:00:00Z",
+        endDate = endDate,
+        status = status,
+        externalIds = emptyMap(),
+        people = people,
+        versions = emptyList(),
+        chapters = emptyList(),
+        seasonName = null,
+    )
+
+    @Test
+    fun `a series counts its episodes without the specials, and carries its creators, status and end date in the facts`() {
+        val seasons = listOf(season("sp", 0, count = 2), season("s1", 1, count = 10), season("s2", 2, count = 4))
+        val people = listOf(TitlePerson("c", "Jo Maker", null, PersonKind.Creator, null))
+        val ended = seriesUi(seriesDetail("Ended", "2021-11-01T00:00:00Z", people), seasons, null, emptyList(), null, EpisodesState.Loading)
+        assertEquals(14, ended.stats.episodeCount)
+        assertEquals(2, ended.stats.seasonCount)
+        assertEquals(60, ended.criticsPercent)
+        assertEquals(listOf("Jo Maker"), ended.facts.creators)
+        assertEquals("Ended", ended.facts.status)
+        assertEquals("2021-11-01T00:00:00Z", ended.facts.endDate)
+        assertTrue(ended.crew.isEmpty())
+        val running =
+            seriesUi(seriesDetail("Continuing", "2021-11-01T00:00:00Z"), emptyList(), null, emptyList(), null, EpisodesState.Loading)
+        assertNull(running.facts.endDate)
+        assertNull(running.stats.episodeCount)
+    }
 
     @Test
     fun `a season is its own number, with specials marked and its counts carried`() {
