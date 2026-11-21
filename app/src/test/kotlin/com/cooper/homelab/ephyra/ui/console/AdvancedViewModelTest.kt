@@ -8,11 +8,14 @@ import com.cooper.homelab.ephyra.server.Connection
 import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
@@ -52,16 +55,16 @@ class AdvancedViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
         jellyfin.serverConfiguration = FULL
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun AdvancedViewModel.settled(check: (AdvancedUiState) -> Boolean = { it !is AdvancedUiState.Loading }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
 
     private fun AdvancedViewModel.ready(check: (AdvancedUiState.Ready) -> Boolean = { true }) =
         settled { it is AdvancedUiState.Ready && check(it) } as AdvancedUiState.Ready
@@ -82,7 +85,7 @@ class AdvancedViewModelTest {
         key: String,
         check: (JsonElement?) -> Boolean,
     ) {
-        lastWritten = jellyfin.awaitBody(CONFIGURATION) { check(it[key]) }
+        lastWritten = jellyfin.awaitBodyIdling(CONFIGURATION) { check(it[key]) }
     }
 
     private fun sent(): JsonObject = lastWritten
