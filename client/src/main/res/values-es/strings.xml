@@ -43,6 +43,7 @@
     <string name="client_title_score_critics">Crítica: %1$d por ciento</string>
     <plurals name="client_title_season_count">
         <item quantity="one">%d temporada</item>
+        <item quantity="many">%d temporadas</item>
         <item quantity="other">%d temporadas</item>
     </plurals>
     <string name="client_title_runtime">Duración</string>
