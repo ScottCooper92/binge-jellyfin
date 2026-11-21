@@ -53,8 +53,8 @@ fun seriesUi(
                 status = detail.status?.takeIf { it.isNotBlank() },
                 endDate = detail.endDate.takeIf { detail.status.equals("Ended", ignoreCase = true) },
             ),
-        cast = detail.people.filter { it.kind == PersonKind.Actor || it.kind == PersonKind.GuestStar }.map(::personUi),
-        crew = detail.people.filter { it.kind in CREW_KINDS }.map(::personUi),
+        cast = castOf(detail),
+        crew = crewOf(detail),
         seasons = seasonRows,
         selectedSeasonId = selectedSeasonId,
         episodes = episodes,
@@ -66,8 +66,6 @@ fun seriesUi(
         links = detail.links,
     )
 }
-
-private val CREW_KINDS = setOf(PersonKind.Director, PersonKind.Writer, PersonKind.Producer, PersonKind.Composer)
 
 /** What the one wide button does, from what [next] says to play. Null when [next] is not known yet, which is not "no episodes". */
 fun seriesPlay(next: NextEpisode?): SeriesPlay? =

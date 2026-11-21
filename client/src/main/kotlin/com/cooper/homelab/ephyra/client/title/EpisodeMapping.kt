@@ -2,10 +2,7 @@ package com.cooper.homelab.ephyra.client.title
 
 import com.cooper.homelab.ephyra.browse.BrowseItem
 import com.cooper.homelab.ephyra.browse.ImageKind
-import com.cooper.homelab.ephyra.browse.PersonKind
 import com.cooper.homelab.ephyra.browse.TitleDetail
-
-private val EPISODE_CREW = setOf(PersonKind.Director, PersonKind.Writer, PersonKind.Producer, PersonKind.Composer)
 
 /** The episode page from what the server answered for the episode and, once read, its season's episodes. */
 fun episodePageUi(
@@ -35,8 +32,8 @@ fun episodePageUi(
         overview = detail.overview?.takeIf { it.isNotBlank() },
         airDate = detail.premiereDate,
         versions = detail.versions.map(::versionUi),
-        guestCast = detail.people.filter { it.kind == PersonKind.GuestStar || it.kind == PersonKind.Actor }.map(::personUi),
-        crew = detail.people.filter { it.kind in EPISODE_CREW }.map(::personUi),
+        guestCast = castOf(detail),
+        crew = crewOf(detail),
         season = season,
     )
 }
