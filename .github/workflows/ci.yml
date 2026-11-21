@@ -94,6 +94,7 @@ jobs:
         run: |
           .github/scripts/classify-changes.test.sh
           .github/scripts/shard-screenshots.test.sh
+          .github/scripts/check-r8-names.test.sh
 
       - name: Classify the diff
         id: classify
@@ -363,6 +364,11 @@ jobs:
 
       - name: Assemble the release build
         run: ./gradlew assembleRelease --continue
+
+      # The ring log keeps a frame only if it starts with this app's package, which `-keepnames` in companion.keep holds. The minified
+      # debug build is not obfuscated, so only this build's mapping shows a rule that stopped working.
+      - name: Check R8 kept this app's class names
+        run: .github/scripts/check-r8-names.sh app/build/outputs/mapping/release/mapping.txt
 
       - name: Upload reports
         if: ${{ failure() }}
