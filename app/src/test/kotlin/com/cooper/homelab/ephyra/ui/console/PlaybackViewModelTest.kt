@@ -14,12 +14,15 @@ import com.cooper.homelab.ephyra.server.PlaybackPreferences
 import com.cooper.homelab.ephyra.server.SubtitleMode
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.booleanOrNull
@@ -50,21 +53,21 @@ class PlaybackViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun PlaybackViewModel.settled(check: (PlaybackUiState) -> Boolean = { it !is PlaybackUiState.Loading }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
 
     private fun PlaybackViewModel.ready() = settled() as PlaybackUiState.Ready
 
     /** Waits for the fake to have taken [count] saves. */
     private fun saves(count: Int) {
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (jellyfin.hits("/Users/Configuration") < count) delay(POLL_MILLIS)
             }
@@ -87,7 +90,7 @@ class PlaybackViewModelTest {
         saves(1)
         vm.setSubtitleMode(SubtitleMode.Smart)
         // The write that carries the second pick, not a count of writes: a repeat of the first write reaches the count too.
-        jellyfin.awaitBody("/Users/Configuration") { it["SubtitleMode"]?.jsonPrimitive?.content == "Smart" }
+        jellyfin.awaitBodyIdling("/Users/Configuration") { it["SubtitleMode"]?.jsonPrimitive?.content == "Smart" }
         val body = jellyfin.lastBody("/Users/Configuration")
         assertEquals("fre", body.getValue("SubtitleLanguagePreference").jsonPrimitive.content)
         assertEquals("Smart", body.getValue("SubtitleMode").jsonPrimitive.content)
@@ -139,9 +142,9 @@ class PlaybackViewModelTest {
         saves(1)
         vm.setSubtitles("fre")
         // Another account signs in while the first save is on the wire and the second waits behind it.
-        runBlocking { sessions.save(jellyfin.session().copy(userId = "user-2", token = "token-2")) }
+        idling { sessions.save(jellyfin.session().copy(userId = "user-2", token = "token-2")) }
         jellyfin.slow.clear()
-        runBlocking {
+        idling {
             connection.awaitSaves()
             delay(SETTLE_MILLIS)
         }
@@ -196,7 +199,7 @@ class PlaybackViewModelTest {
         jellyfin.status.remove("/Users/Configuration")
         vm.setAudio("fra")
         // The write that carries "fra": the refused write before it is a request too, and carries "spa".
-        jellyfin.awaitBody("/Users/Configuration") { it["AudioLanguagePreference"]?.jsonPrimitive?.content == "fra" }
+        jellyfin.awaitBodyIdling("/Users/Configuration") { it["AudioLanguagePreference"]?.jsonPrimitive?.content == "fra" }
         assertEquals("fra", vm.ready().preferences.audio)
         assertEquals(
             "fra",
@@ -220,7 +223,7 @@ class PlaybackViewModelTest {
 
     @Test
     fun `signed out, the page can't read`() {
-        runBlocking { sessions.clear() }
+        idling { sessions.clear() }
         assertEquals(PlaybackUiState.Failed(ConsoleFailure.Unreachable), made(PlaybackViewModel(connection)).settled())
     }
 
@@ -241,7 +244,7 @@ class PlaybackViewModelTest {
         vm.setAutoplayNextEpisode(false)
         saves(1)
         vm.setRememberAudio(false)
-        jellyfin.awaitBody("/Users/Configuration") { it["RememberAudioSelections"]?.jsonPrimitive?.booleanOrNull == false }
+        jellyfin.awaitBodyIdling("/Users/Configuration") { it["RememberAudioSelections"]?.jsonPrimitive?.booleanOrNull == false }
         val body = jellyfin.lastBody("/Users/Configuration")
         assertEquals(false, body.getValue("EnableNextEpisodeAutoPlay").jsonPrimitive.booleanOrNull)
         assertEquals(false, body.getValue("RememberAudioSelections").jsonPrimitive.booleanOrNull)
