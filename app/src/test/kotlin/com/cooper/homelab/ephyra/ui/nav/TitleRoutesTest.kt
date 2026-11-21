@@ -71,6 +71,29 @@ class TitleRoutesTest {
         assertEquals(listOf(ShellRoute, PersonRoute("p1")), back.toList())
     }
 
+    @Test
+    fun `a title's cast and crew open on top of its page, on the tab asked for, and Back returns to the page`() {
+        val back = stack()
+        back.openTitle(ItemKind.Movie, "m1")
+        back.openPeople("m1", 1)
+        back.openPeople("m1", 1)
+        assertEquals(listOf(ShellRoute, MovieRoute("m1"), TitlePeopleRoute("m1", 1)), back.toList())
+        back.closeTop()
+        assertEquals(listOf(ShellRoute, MovieRoute("m1")), back.toList())
+        // The other tab is another entry, so Cast then Crew from the same page keep their own places.
+        back.openPeople("m1", 0)
+        back.openPeople("m1", 1)
+        assertEquals(listOf(TitlePeopleRoute("m1", 0), TitlePeopleRoute("m1", 1)), back.toList().takeLast(2))
+    }
+
+    @Test
+    fun `the cast and crew key is saved and restored as itself, carrying the title and the tab and nothing else`() {
+        val key = TitlePeopleRoute("m1", 1)
+        val saved = Json.encodeToString(key)
+        assertEquals(key, Json.decodeFromString<TitlePeopleRoute>(saved))
+        assertEquals(setOf("itemId", "tab"), Json.parseToJsonElement(saved).jsonObject.keys)
+    }
+
     /** Saves [key] under its own serializer, as the back stack does, and restores it. Only the id is in what is saved. */
     private inline fun <reified T : TitleRoute> savedAsItself(key: T) {
         val saved = Json.encodeToString(key)

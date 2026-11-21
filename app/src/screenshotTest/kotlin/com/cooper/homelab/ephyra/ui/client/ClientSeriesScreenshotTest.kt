@@ -141,7 +141,7 @@ class ClientSeriesScreenshotTest {
         SeriesScreen(
             state = state,
             imageUrl = { _, _ -> null },
-            actions = SeriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }),
+            actions = SeriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}),
         )
 
     @PreviewTest

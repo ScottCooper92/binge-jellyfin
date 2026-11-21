@@ -67,6 +67,7 @@ import com.cooper.homelab.ephyra.ui.client.PlayerPage
 import com.cooper.homelab.ephyra.ui.client.SearchTab
 import com.cooper.homelab.ephyra.ui.client.SeasonPage
 import com.cooper.homelab.ephyra.ui.client.SeriesPage
+import com.cooper.homelab.ephyra.ui.client.TitlePeoplePage
 import com.cooper.homelab.ephyra.ui.client.TitlePlaceholder
 import com.cooper.homelab.ephyra.ui.confirmSignOut
 import com.cooper.homelab.ephyra.ui.confirmTakeBack
@@ -86,6 +87,7 @@ import com.cooper.homelab.ephyra.ui.nav.MovieRoute
 import com.cooper.homelab.ephyra.ui.nav.PersonRoute
 import com.cooper.homelab.ephyra.ui.nav.SeasonRoute
 import com.cooper.homelab.ephyra.ui.nav.SeriesRoute
+import com.cooper.homelab.ephyra.ui.nav.TitlePeopleRoute
 import com.cooper.homelab.ephyra.ui.nav.TitleRoute
 import com.cooper.homelab.ephyra.ui.nav.closeTop
 import com.cooper.homelab.ephyra.ui.nav.entries
@@ -95,6 +97,7 @@ import com.cooper.homelab.ephyra.ui.nav.openItem
 import com.cooper.homelab.ephyra.ui.nav.openLibrary
 import com.cooper.homelab.ephyra.ui.nav.openPage
 import com.cooper.homelab.ephyra.ui.nav.openPageItem
+import com.cooper.homelab.ephyra.ui.nav.openPeople
 import com.cooper.homelab.ephyra.ui.nav.openPerson
 import com.cooper.homelab.ephyra.ui.nav.openPlayer
 import com.cooper.homelab.ephyra.ui.nav.openSearchHit
@@ -425,6 +428,7 @@ private fun TitlePageRoute(
                 onPlay = { sessionId, title -> backStack.openPlayer(sessionId, title) },
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
+                onOpenPeople = { id, tab -> backStack.openPeople(id, tab) },
             )
         route is CollectionRoute && signed != null ->
             CollectionPage(
@@ -433,6 +437,15 @@ private fun TitlePageRoute(
                 route.itemId,
                 onBack = { backStack.closeTop() },
                 onOpenTitle = { kind, id -> backStack.openTitle(kind, id) },
+            )
+        route is TitlePeopleRoute && signed != null ->
+            TitlePeoplePage(
+                graph,
+                signed.profile,
+                route.itemId,
+                route.tab,
+                onBack = { backStack.closeTop() },
+                onOpenPerson = { id -> backStack.openPerson(id) },
             )
         route is PersonRoute && signed != null ->
             PersonPage(
@@ -454,6 +467,7 @@ private fun TitlePageRoute(
                 onOpenSeason = { id -> backStack.openTitle(ItemKind.Season, id) },
                 onOpenEpisode = { id -> backStack.openTitle(ItemKind.Episode, id) },
                 onOpenPerson = { id -> backStack.openPerson(id) },
+                onOpenPeople = { id, tab -> backStack.openPeople(id, tab) },
             )
         route is EpisodeRoute && signed != null ->
             EpisodePage(

@@ -38,6 +38,7 @@ fun MoviePage(
     onPlay: (sessionId: String, title: String) -> Unit,
     onOpenTitle: (kind: ItemKind, itemId: String) -> Unit,
     onOpenPerson: (itemId: String) -> Unit,
+    onOpenPeople: (itemId: String, tab: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val model: MoviePageViewModel =
@@ -55,7 +56,7 @@ fun MoviePage(
     PlayStartHost(graph, serverAddress, onPlay) { play ->
         val playNow by rememberUpdatedState(play)
         val actions =
-            remember(model, context, onBack, onOpenTitle, onOpenPerson) {
+            remember(model, context, onOpenPeople, onBack, onOpenTitle, onOpenPerson) {
                 MovieActions(
                     onBack = onBack,
                     onRetry = model::retry,
@@ -69,6 +70,7 @@ fun MoviePage(
                     onOpenCollection = { onOpenTitle(ItemKind.BoxSet, it) },
                     onOpenLink = context::openInBrowser,
                     onShare = context::shareTitle,
+                    onOpenPeople = { tab -> onOpenPeople(itemId, tab) },
                 )
             }
         MovieScreen(state = state, imageUrl = model::imageUrl, actions = actions, modifier = modifier, events = model.events)

@@ -73,6 +73,7 @@ class SeriesAllEpisodesTest {
                             onOpenPerson = {},
                             onOpenLink = {},
                             onShare = { _, _ -> },
+                            onOpenPeople = {},
                         ),
                 )
             }

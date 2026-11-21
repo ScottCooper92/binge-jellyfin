@@ -91,6 +91,16 @@ data class PersonRoute(
 ) : TitleRoute
 
 /**
+ * A title's cast and crew, over the title's page: the See all of its Cast or Crew rail. [tab] is the one to open on (0 cast, 1 crew), and
+ * [itemId] is the film's or the series'.
+ */
+@Serializable
+data class TitlePeopleRoute(
+    override val itemId: String,
+    val tab: Int,
+) : TitleRoute
+
+/**
  * A play, above the title page it began from: the player covers the window, bar and all. It carries the sitting's id and the title's
  * name alone, so it survives a process death; a sitting that is not known then shows as one that is gone.
  */

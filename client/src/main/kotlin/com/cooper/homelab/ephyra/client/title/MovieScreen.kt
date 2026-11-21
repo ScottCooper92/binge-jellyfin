@@ -31,7 +31,6 @@ import com.binge.designsystem.template.DetailState
 import com.binge.designsystem.template.MediaDetail
 import com.binge.designsystem.template.MediaDetailCallbacks
 import com.binge.designsystem.template.MovieDetailScreen
-import com.binge.designsystem.template.PeopleRail
 import com.binge.designsystem.template.PosterRail
 import com.cooper.homelab.ephyra.client.R
 import com.cooper.homelab.ephyra.client.home.canRetry
@@ -72,6 +71,7 @@ class MovieActions(
     val onOpenCollection: (collectionId: String) -> Unit,
     val onOpenLink: (url: String) -> Unit,
     val onShare: (title: String, url: String) -> Unit,
+    val onOpenPeople: (tab: Int) -> Unit,
 )
 
 /**
@@ -103,6 +103,7 @@ fun MovieScreen(
             onOpenPerson = { key -> movie?.people()?.firstOrNull { it.key() == key }?.let(actions.onOpenPerson) },
             onOpenPoster = { key -> movie?.cards()?.firstOrNull { it.key() == key }?.let(actions.onOpenTitle) },
             // The collection's rail is the first poster rail when the film has one, so it is the only one that has a see-all.
+            onSeeAllPeople = { index -> actions.onOpenPeople(index) },
             onSeeAllPosters = { index -> movie?.collection?.takeIf { index == 0 }?.let { actions.onOpenCollection(it.id) } },
         )
     when (state) {
@@ -187,8 +188,8 @@ fun movieDetail(
         overviewHeading = stringResource(R.string.client_title_overview),
         peopleRails =
             listOf(
-                PeopleRail(stringResource(R.string.client_title_cast), peopleItems(movie.cast, imageUrl)),
-                PeopleRail(stringResource(R.string.client_title_crew), peopleItems(movie.crew, imageUrl)),
+                peopleRail(stringResource(R.string.client_title_cast), movie.cast, imageUrl),
+                peopleRail(stringResource(R.string.client_title_crew), movie.crew, imageUrl),
             ),
         posterRails =
             listOfNotNull(
