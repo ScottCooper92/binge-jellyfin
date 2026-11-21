@@ -47,7 +47,9 @@ import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -67,6 +69,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLProtocolException
+import com.cooper.homelab.core.server.connection.ConnectionHealth as CoreHealth
 import com.cooper.homelab.core.server.connection.SecretCipher as LibraryCipher
 
 /** Setup and settings against a fake server. The server calls run on a real IO thread, so each step waits for its state. */
@@ -79,9 +82,24 @@ class JellyfinViewModelTest {
 
     /** The one teardown every view model test shares: the view models are stopped and finished, and the connections closed, before Main is reset. */
     private val teardown = ViewModelTeardown()
+
+    /**
+     * The calls to the fake server that have not been answered yet. The connection's own health interceptor sits inside this one,
+     * so a call is reported to the monitor before it stops counting here.
+     */
+    private val calls = CallsInFlight()
+
     private val connection =
         teardown.made(
-            Connection(OkHttpClient(), sessions, "Jellyfin Companion", "Test", "1.0", Dispatchers.IO, DiscardLogger),
+            Connection(
+                OkHttpClient.Builder().addInterceptor(calls).build(),
+                sessions,
+                "Jellyfin Companion",
+                "Test",
+                "1.0",
+                Dispatchers.IO,
+                DiscardLogger,
+            ),
         )
 
     @Before
@@ -1674,6 +1692,9 @@ class JellyfinViewModelTest {
         runBlocking { sessions.save(jellyfin.session()) }
         val vm = viewModel()
         assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { it.titles != null }.health)
+        // The server card's reads start before the library is counted and may still be answering: an answer between the two failures
+        // below would start the run over, and the health would never turn into a problem.
+        calls.awaitNone()
         connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
         // One call without an answer is a blip, as binge-seerr counts it.
         assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn>().health)
@@ -1681,6 +1702,41 @@ class JellyfinViewModelTest {
         assertEquals(ConnectionHealth.Unreachable, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
         connection.monitor.report(SAVED_SERVER, CallResult.Answered(200))
         assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn> { !it.health.isProblem }.health)
+    }
+
+    @Test
+    fun `a read of the server card answered between two calls without an answer starts the run over`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        // The card's read of what is playing is held in the server, so it is answered when the test says.
+        val held = jellyfin.hold("/Sessions")
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        held.awaitArrival()
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        held.release()
+        vm.await<UiState.SignedIn> { it.card.playing != null }
+        calls.awaitNone()
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        // The answer came between the two, so they are not a run of two: this is why a test that reports its own failures waits for
+        // the calls the app makes to be answered first.
+        assertEquals(CoreHealth.Healthy, connection.monitor.current(SAVED_SERVER))
+        assertEquals(ConnectionHealth.Healthy, vm.await<UiState.SignedIn>().health)
+    }
+
+    @Test
+    fun `a read of the server card still waiting for its answer is waited for before the failures are reported`() {
+        runBlocking { sessions.save(jellyfin.session()) }
+        val held = jellyfin.hold("/Sessions")
+        val vm = viewModel()
+        vm.await<UiState.SignedIn> { it.titles != null }
+        held.awaitArrival()
+        // Answered a moment after the wait begins: the failures are reported once it has been, so they are a run of two.
+        val answering = Thread { Thread.sleep(ANSWER_AFTER_MILLIS).also { held.release() } }.also { it.start() }
+        calls.awaitNone()
+        answering.join()
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        connection.monitor.report(SAVED_SERVER, CallResult.TransportFailure())
+        assertEquals(ConnectionHealth.Unreachable, vm.await<UiState.SignedIn> { it.health.isProblem }.health)
     }
 
     @Test
@@ -1992,3 +2048,30 @@ private const val DEAD_PORT = "http://127.0.0.1:1/"
 /** What Android's TLS stack throws when the server asks for a client certificate and none is sent. */
 private const val CERTIFICATE_REQUIRED_ALERT =
     "Read error: ssl=0x0: error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED"
+
+private const val CALLS_WAIT_MILLIS = 10_000L
+private const val CALLS_POLL_MILLIS = 5L
+private const val ANSWER_AFTER_MILLIS = 400L
+
+/** Counts the calls that have been sent and not yet answered, so a test can wait for the server to go quiet. */
+private class CallsInFlight : Interceptor {
+    private val open = AtomicInteger()
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        open.incrementAndGet()
+        try {
+            return chain.proceed(chain.request())
+        } finally {
+            open.decrementAndGet()
+        }
+    }
+
+    /** Waits until no call is waiting for an answer. */
+    fun awaitNone() {
+        val until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CALLS_WAIT_MILLIS)
+        while (open.get() > 0) {
+            check(System.nanoTime() < until) { "${open.get()} calls still had no answer after $CALLS_WAIT_MILLIS ms" }
+            Thread.sleep(CALLS_POLL_MILLIS)
+        }
+    }
+}
