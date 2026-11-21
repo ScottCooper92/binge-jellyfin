@@ -66,6 +66,7 @@ class PlaybackSittingsTest {
     private var mintFailsOnce: Throwable? = null
     private var serverDefaults: Pair<TrackChoice, SubtitlePreference>? = null
     private val reports = mutableListOf<Triple<String, PlayReport, Long>>()
+    private val reportedChoices = mutableListOf<StreamChoice?>()
     private var nextOf: (PlayItem) -> PlayItem? = { null }
     private var ids = 0
 
@@ -83,7 +84,10 @@ class PlaybackSittingsTest {
                 choices += choice
                 Minted(withDefaults(if (offeredAudio) offered(item, choice) else request(item), choice), Handle(item))
             },
-            reporter = { play, kind, position -> reports += Triple((play as Handle).item.itemId, kind, position) },
+            reporter = { play, kind, position, choice ->
+                reports += Triple((play as Handle).item.itemId, kind, position)
+                reportedChoices += choice
+            },
             nextEpisodes = { nextOf(it) },
             newSessionId = { "s${++ids}" },
         )
@@ -119,6 +123,20 @@ class PlaybackSittingsTest {
                 ),
                 reports,
             )
+        }
+
+    @Test
+    fun `each report carries the choice the sitting is on, none before the player has said`() =
+        runTest {
+            val sittings = sittings()
+            sittings.start(episodes[0])
+            player.events.send(PlayerEvent.Started(0, 60_000))
+            player.events.send(PlayerEvent.TracksChosen(TrackChoice("spa", null), TrackChoice("eng", null)))
+            player.events.send(PlayerEvent.Progress(10_000, 60_000))
+            player.events.send(PlayerEvent.Stopped(20_000, 60_000))
+
+            val chosen = StreamChoice(TrackChoice("eng", null), TrackChoice("spa", null))
+            assertEquals(listOf(null, chosen, chosen), reportedChoices)
         }
 
     @Test
@@ -472,7 +490,7 @@ class PlaybackSittingsTest {
                     scope,
                     player,
                     minter = { item, _, _, _ -> Minted(request(item), Handle(item)) },
-                    reporter = { _, _, _ -> throw IOException("offline") },
+                    reporter = { _, _, _, _ -> throw IOException("offline") },
                     nextEpisodes = { null },
                     newSessionId = { "s1" },
                 )

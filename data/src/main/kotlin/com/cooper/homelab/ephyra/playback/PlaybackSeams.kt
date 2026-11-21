@@ -53,12 +53,16 @@ enum class AudioSwitchFailure { Unreachable, Refused }
  */
 enum class PlayReport { STARTED, PROGRESS, PAUSED, RESUMED, FINISHED, STOPPED, REPLACED }
 
-/** Tells the server where a play stands. A failure here never ends the play. */
+/**
+ * Tells the server where a play stands, and on which tracks (the sitting's [choice], null before the player has said). A failure here
+ * never ends the play.
+ */
 fun interface PlayReporter {
     suspend fun report(
         play: PlayReportHandle,
         kind: PlayReport,
         positionMs: Long,
+        choice: StreamChoice?,
     )
 }
 

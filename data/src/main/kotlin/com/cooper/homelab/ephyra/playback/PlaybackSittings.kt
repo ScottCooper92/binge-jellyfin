@@ -126,7 +126,7 @@ class PlaybackSittings(
                     handle(event, id, sitting, profile, play)
                 }
         } catch (e: CancellationException) {
-            withContext(NonCancellable) { report(play.minted, PlayReport.STOPPED, play.position) }
+            withContext(NonCancellable) { report(play.minted, PlayReport.STOPPED, play.position, sitting.choice.value) }
             throw e
         }
         // A sitting that ended on its own is forgotten, whether or not the first frame came; one that ended in a refusal or an expired
@@ -145,13 +145,13 @@ class PlaybackSittings(
         when (event) {
             is PlayerEvent.Started -> {
                 sitting.outcome.value = PlaybackOutcome.Playing(play.current.title)
-                report(minted, PlayReport.STARTED, play.position)
+                report(minted, PlayReport.STARTED, play.position, sitting.choice.value)
             }
-            is PlayerEvent.Progress -> report(minted, PlayReport.PROGRESS, play.position)
-            is PlayerEvent.Paused -> report(minted, PlayReport.PAUSED, play.position)
-            is PlayerEvent.Resumed -> report(minted, PlayReport.RESUMED, play.position)
-            is PlayerEvent.Finished -> report(minted, PlayReport.FINISHED, play.position)
-            is PlayerEvent.Stopped -> report(minted, PlayReport.STOPPED, play.position)
+            is PlayerEvent.Progress -> report(minted, PlayReport.PROGRESS, play.position, sitting.choice.value)
+            is PlayerEvent.Paused -> report(minted, PlayReport.PAUSED, play.position, sitting.choice.value)
+            is PlayerEvent.Resumed -> report(minted, PlayReport.RESUMED, play.position, sitting.choice.value)
+            is PlayerEvent.Finished -> report(minted, PlayReport.FINISHED, play.position, sitting.choice.value)
+            is PlayerEvent.Stopped -> report(minted, PlayReport.STOPPED, play.position, sitting.choice.value)
             is PlayerEvent.SourceRejected -> {
                 if (play.remintedOnce) {
                     sitting.outcome.value = PlaybackOutcome.SourceExpired(play.current.title)
@@ -206,7 +206,7 @@ class PlaybackSittings(
         if (fresh == null) return
         val old = play.minted
         play.minted = fresh
-        report(old, PlayReport.REPLACED, play.position)
+        report(old, PlayReport.REPLACED, play.position, null)
     }
 
     /** The next episode: minted first on the tracks carried over, then the one playing is reported stopped. */
@@ -222,7 +222,7 @@ class PlaybackSittings(
         val carried = sitting.choice.value?.copy(audioStream = null)
         val fresh = reload(id, next, profile, 0L, following, sitting, carried) ?: return
         sitting.choice.value = carried
-        report(play.minted, PlayReport.STOPPED, event.positionMs)
+        report(play.minted, PlayReport.STOPPED, event.positionMs, sitting.choice.value)
         play.current = next
         play.upNext = following
         play.minted = fresh
@@ -263,8 +263,9 @@ class PlaybackSittings(
         minted: Minted,
         kind: PlayReport,
         positionMs: Long,
+        choice: StreamChoice?,
     ) {
-        attempt { reporter.report(minted.report, kind, positionMs) }
+        attempt { reporter.report(minted.report, kind, positionMs, choice) }
     }
 
     private fun Sitting.fail(

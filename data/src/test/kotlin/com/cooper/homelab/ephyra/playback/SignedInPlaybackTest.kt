@@ -38,7 +38,7 @@ class SignedInPlaybackTest {
             sessions.save(jellyfin.session())
 
             val minted = SignedInSourceMinter(connection).mint(item, profile, null, null)
-            SignedInPlayReporter(connection).report(minted.report, PlayReport.STARTED, 0L)
+            SignedInPlayReporter(connection).report(minted.report, PlayReport.STARTED, 0L, null)
 
             assertTrue(jellyfin.requests.any { it.method == "POST" && it.url.encodedPath == "/Items/movie-1/PlaybackInfo" })
             assertTrue(jellyfin.requests.any { it.method == "POST" && it.url.encodedPath == "/Sessions/Playing" })
