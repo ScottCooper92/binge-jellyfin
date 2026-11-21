@@ -10,12 +10,14 @@ import com.cooper.homelab.ephyra.server.Provider
 import com.cooper.homelab.ephyra.server.fetchers
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
@@ -48,8 +50,8 @@ class MetadataDefaultsViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
         jellyfin.serverConfiguration =
             """{"ServerName":"truenas","FutureSetting":{"keep":"me"},"MetadataOptions":[""" +
             """{"ItemType":"Movie","DisabledMetadataFetchers":[],"DisabledImageFetchers":[]},""" +
@@ -66,7 +68,7 @@ class MetadataDefaultsViewModelTest {
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun named(vararg names: String) = names.joinToString(",") { """{"Name":"$it","DefaultEnabled":true}""" }
 
@@ -74,12 +76,12 @@ class MetadataDefaultsViewModelTest {
         """{"MetadataSavers":[],"MetadataReaders":[],"TypeOptions":[${options.joinToString(",")}]}"""
 
     private fun MetadataDefaultsViewModel.ready(check: (MetadataDefaultsUiState.Ready) -> Boolean = { true }) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) { state.first { it is MetadataDefaultsUiState.Ready && check(it) } }
         } as MetadataDefaultsUiState.Ready
 
     private fun saves(count: Int) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (jellyfin.requests.count { it.url.encodedPath == CONFIGURATION && it.method == "POST" } < count) delay(POLL_MILLIS)
             }
@@ -291,7 +293,7 @@ class MetadataDefaultsViewModelTest {
     fun `a configuration that can't be read fails the page, and Try again reads it`() {
         jellyfin.status[CONFIGURATION] = 403
         val vm = made(MetadataDefaultsViewModel(connection))
-        val failed = runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is MetadataDefaultsUiState.Failed } } }
+        val failed = idling { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is MetadataDefaultsUiState.Failed } } }
         assertTrue(failed is MetadataDefaultsUiState.Failed)
 
         jellyfin.status.remove(CONFIGURATION)
