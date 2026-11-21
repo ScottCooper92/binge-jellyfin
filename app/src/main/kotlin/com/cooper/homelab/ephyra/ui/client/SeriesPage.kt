@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -18,6 +19,8 @@ import com.cooper.homelab.ephyra.client.title.SeriesScreen
 import com.cooper.homelab.ephyra.client.title.SeriesUiState
 import com.cooper.homelab.ephyra.playback.PlayItem
 import com.cooper.homelab.ephyra.server.JellyfinServerProfile
+import com.cooper.homelab.ephyra.ui.openInBrowser
+import com.cooper.homelab.ephyra.ui.shareTitle
 import com.cooper.homelab.player.api.PlayTitle
 
 /**
@@ -50,10 +53,11 @@ fun SeriesPage(
     LaunchedEffect(model, itemId) { model.start(itemId) }
     val state by model.state.collectAsStateWithLifecycle()
     val stateNow by rememberUpdatedState(state)
+    val context = LocalContext.current
     PlayStartHost(graph, serverAddress, onPlay) { play ->
         val playNow by rememberUpdatedState(play)
         val actions =
-            remember(model, onBack, onOpenTitle, onOpenSeason, onOpenEpisode, onOpenPerson) {
+            remember(model, context, onBack, onOpenTitle, onOpenSeason, onOpenEpisode, onOpenPerson) {
                 SeriesActions(
                     onBack = onBack,
                     onRetry = model::retry,
@@ -71,6 +75,8 @@ fun SeriesPage(
                     onToggleEpisodeWatched = { model.toggleEpisodeWatched(it.id) },
                     onOpenTitle = { onOpenTitle(it.kind, it.id) },
                     onOpenPerson = { onOpenPerson(it.id) },
+                    onOpenTrailer = context::openInBrowser,
+                    onShare = context::shareTitle,
                 )
             }
         SeriesScreen(state = state, imageUrl = model::imageUrl, actions = actions, modifier = modifier, events = model.events)

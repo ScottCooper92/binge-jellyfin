@@ -45,6 +45,8 @@ class MovieCollectionRailTest {
                             onOpenTitle = { titles += it },
                             onOpenPerson = {},
                             onOpenCollection = { collections += it },
+                            onOpenTrailer = {},
+                            onShare = { _, _ -> },
                         ),
                 )
             }

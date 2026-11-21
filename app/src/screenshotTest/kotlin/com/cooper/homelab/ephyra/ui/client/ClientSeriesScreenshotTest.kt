@@ -113,6 +113,8 @@ class ClientSeriesScreenshotTest {
                     endDate = "2022-11-18T00:00:00.0000000Z",
                 ),
             criticsPercent = 48,
+            trailerUrl = "https://example.com/trailer",
+            shareUrl = "https://www.themoviedb.org/tv/1",
             cast =
                 listOf(
                     PersonUi("a1", "Amara Okafor", "Wren", TitleImage("a1", ImageKind.Primary, "pa1")),
@@ -130,7 +132,7 @@ class ClientSeriesScreenshotTest {
         SeriesScreen(
             state = state,
             imageUrl = { _, _ -> null },
-            actions = SeriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+            actions = SeriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }),
         )
 
     @PreviewTest

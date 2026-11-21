@@ -82,6 +82,17 @@ class MovieMappingTest {
     }
 
     @Test
+    fun `the trailer and the public page to share are carried`() {
+        val withIds = detail().copy(trailerUrl = "https://youtu.be/abc", externalIds = mapOf("Tmdb" to "348"))
+        val movie = movieUi(withIds, emptyList(), null)
+        assertEquals("https://youtu.be/abc", movie.trailerUrl)
+        assertEquals("https://www.themoviedb.org/movie/348", movie.shareUrl)
+        val bare = movieUi(detail(), emptyList(), null)
+        assertNull(bare.trailerUrl)
+        assertNull(bare.shareUrl)
+    }
+
+    @Test
     fun `a film with nothing started plays, a film part watched resumes with what is left, and a watched one plays again`() {
         assertEquals(PlayAction(PlayKind.Play, null), playAction(item()))
         assertEquals(PlayAction(PlayKind.Resume, 90), playAction(item(position = 30 * TICKS_PER_MINUTE)))

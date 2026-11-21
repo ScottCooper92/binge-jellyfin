@@ -71,6 +71,8 @@ class SeriesActions(
     val onToggleEpisodeWatched: (EpisodeUi) -> Unit,
     val onOpenTitle: (TitleCard) -> Unit,
     val onOpenPerson: (PersonUi) -> Unit,
+    val onOpenTrailer: (url: String) -> Unit,
+    val onShare: (title: String, url: String) -> Unit,
 )
 
 /**
@@ -140,6 +142,7 @@ fun SeriesScreen(
                         .primaryLabel()
                         ?.let { label -> { sized -> PlayButton(label, actions.onPlay, sized) } },
                 roundActions = seriesRoundActions(state.series, actions),
+                topBarActions = shareAction(state.series.shareUrl) { actions.onShare(state.series.title, it) },
                 snackbarHostState = snackbarHostState,
             )
     }
@@ -261,7 +264,8 @@ private fun seriesRoundActions(
     val markWatched = stringResource(if (series.watched) R.string.client_title_mark_unwatched else R.string.client_title_mark_watched)
     val markFavourite =
         stringResource(if (series.favourite) R.string.client_title_remove_favourite else R.string.client_title_add_favourite)
-    return listOf(
+    return listOfNotNull(
+        series.trailerUrl?.let { url -> trailerAction { actions.onOpenTrailer(url) } },
         DetailRoundAction(
             icon = if (series.watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircleOutline,
             label = stringResource(R.string.client_title_watched),

@@ -60,6 +60,8 @@ fun seriesUi(
         episodes = episodes,
         similar = similar.map(::titleCard),
         criticsPercent = detail.criticRating?.roundToInt(),
+        trailerUrl = detail.trailerUrl,
+        shareUrl = detail.shareUrl(series = true),
     )
 }
 

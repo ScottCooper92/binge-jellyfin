@@ -63,6 +63,8 @@ class ClientMovieScreenshotTest {
                     directors = listOf("Mira Lund"),
                 ),
             criticsPercent = 87,
+            trailerUrl = "https://example.com/trailer",
+            shareUrl = "https://www.themoviedb.org/movie/1",
             versions = listOf(version("v1"), version("v2")),
             cast =
                 listOf(
@@ -92,7 +94,7 @@ class ClientMovieScreenshotTest {
         MovieScreen(
             state = state,
             imageUrl = { _, _ -> null },
-            actions = MovieActions({}, {}, {}, {}, {}, {}, {}, {}),
+            actions = MovieActions({}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }),
         )
 
     @PreviewTest
