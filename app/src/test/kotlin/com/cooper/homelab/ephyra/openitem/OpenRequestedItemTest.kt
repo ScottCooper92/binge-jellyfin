@@ -79,6 +79,18 @@ class OpenRequestedItemTest {
         }
 
     @Test
+    fun `a running app open on a library takes the film over the library`() =
+        runComposeUiTest {
+            val requests = OpenItemRequests()
+            val back = stack(ShellRoute, LibraryRoute("lib"))
+            setContent { OpenRequestedItem(requests, signedIn, true, back, goesTo(OpenTarget.Title(ItemKind.Movie, "m1"))) }
+            waitForIdle()
+            requests.offer(request)
+            waitUntil { back.size == 3 }
+            assertEquals(listOf(ShellRoute, LibraryRoute("lib"), MovieRoute("m1")), back.toList())
+        }
+
+    @Test
     fun `a request made before the session is read waits for it`() =
         runComposeUiTest {
             val requests = OpenItemRequests()

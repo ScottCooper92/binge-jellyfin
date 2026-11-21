@@ -28,7 +28,7 @@ class OpenItemActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val graph = (application as JellyfinApp).graph
         intent.toOpenItemRequest()?.let(graph.openRequests::offer)
-        // A running app takes the request in onNewIntent with its stack intact; a cold start builds the app as usual.
+        // A running app takes the request from the channel with its stack intact, and MainActivity reads no intent; a cold start builds the app as usual.
         startActivity(
             Intent(this, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
