@@ -49,8 +49,8 @@ fun movieUi(
                 directors = detail.people.filter { it.kind == PersonKind.Director }.map { it.name },
             ),
         versions = detail.versions.map(::versionUi),
-        cast = detail.people.filter { it.kind == PersonKind.Actor || it.kind == PersonKind.GuestStar }.map(::personUi),
-        crew = detail.people.filter { it.kind in CREW_KINDS }.map(::personUi),
+        cast = castOf(detail),
+        crew = crewOf(detail),
         collection = collection,
         similar = similar.map(::titleCard),
         criticsPercent = detail.criticRating?.roundToInt(),
@@ -60,8 +60,6 @@ fun movieUi(
         links = detail.links,
     )
 }
-
-private val CREW_KINDS = setOf(PersonKind.Director, PersonKind.Writer, PersonKind.Producer, PersonKind.Composer)
 
 private fun minutes(ticks: Long): Int = (ticks / TICKS_PER_MINUTE).toInt()
 
@@ -75,6 +73,15 @@ fun playAction(item: BrowseItem): PlayAction {
         PlayAction(PlayKind.Play, null)
     }
 }
+
+private val CREW_KINDS = setOf(PersonKind.Director, PersonKind.Writer, PersonKind.Producer, PersonKind.Composer)
+
+/** The actors and guest stars of [detail], the one split every page that lists a title's cast uses. */
+internal fun castOf(detail: TitleDetail): List<PersonUi> =
+    detail.people.filter { it.kind == PersonKind.Actor || it.kind == PersonKind.GuestStar }.map(::personUi)
+
+/** The crew of [detail] (director, writer, producer, composer), the one split every page that lists a title's crew uses. */
+internal fun crewOf(detail: TitleDetail): List<PersonUi> = detail.people.filter { it.kind in CREW_KINDS }.map(::personUi)
 
 /** A person as a card: the actor's character from the server, and for a crew member the job as a [CrewJob] for the screen to word. */
 fun personUi(person: TitlePerson): PersonUi =
