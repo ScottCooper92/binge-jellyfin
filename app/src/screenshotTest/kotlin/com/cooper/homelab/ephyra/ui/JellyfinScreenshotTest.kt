@@ -577,7 +577,7 @@ class JellyfinScreenshotTest {
     fun forgotDone() = Surface { ForgotPasswordOverlay(ForgotPasswordStep.Done, null, inWindow = false) }
 }
 
-/** The shared search page over this app's real index, as an administrator on a current server sees it. */
+/** The shared search page over this app's real index, on the pinned bar the app opens it with, as an administrator on a current server sees it. */
 @Composable
 private fun SearchPage(
     initialQuery: String = "",
@@ -601,5 +601,6 @@ private fun SearchPage(
         onRetry = {},
         onClearRecent = {},
         initialQuery = initialQuery,
+        pinnedBar = true,
     )
 }

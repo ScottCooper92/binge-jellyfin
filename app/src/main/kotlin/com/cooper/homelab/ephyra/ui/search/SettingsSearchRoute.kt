@@ -88,6 +88,7 @@ internal fun SettingsSearchRoute(
                 } else {
                     null
                 },
+            pinnedBar = true,
         )
         // What the pages say of a save, said here too, since the user does not leave the search to flip a switch.
         SearchServerMessages(switches, host)
