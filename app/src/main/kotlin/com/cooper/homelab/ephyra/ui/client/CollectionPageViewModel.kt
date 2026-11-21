@@ -2,6 +2,7 @@ package com.cooper.homelab.ephyra.ui.client
 
 import androidx.lifecycle.viewModelScope
 import com.cooper.homelab.core.foundation.ServerFailure
+import com.cooper.homelab.ephyra.browse.BoxSetMemberships
 import com.cooper.homelab.ephyra.browse.JellyfinCollectionRepository
 import com.cooper.homelab.ephyra.browse.JellyfinTitleRepository
 import com.cooper.homelab.ephyra.browse.JellyfinUserDataRepository
@@ -26,6 +27,7 @@ class CollectionPageViewModel(
     dispatcher: CoroutineDispatcher,
     profile: JellyfinServerProfile,
     socket: Flow<List<UserDataChange>>,
+    private val boxSets: BoxSetMemberships = BoxSetMemberships(),
 ) : TitlePageViewModel<CollectionViewModel, CollectionUiState>(
         connection,
         dispatcher,
@@ -42,7 +44,7 @@ class CollectionPageViewModel(
         dispatcher = dispatcher,
         titles = JellyfinTitleRepository(client, userId, profile),
         userData = JellyfinUserDataRepository(client, userId, profile, socket),
-        collections = JellyfinCollectionRepository(client, userId, profile),
+        collections = JellyfinCollectionRepository(client, userId, profile, boxSets),
         classify = { it.serverFailure() },
     )
 

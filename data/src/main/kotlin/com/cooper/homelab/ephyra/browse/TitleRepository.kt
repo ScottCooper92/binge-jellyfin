@@ -101,8 +101,9 @@ class JellyfinCollectionRepository(
     private val client: JellyfinClient,
     private val userId: String,
     private val profile: JellyfinServerProfile,
+    private val memberships: BoxSetMemberships = BoxSetMemberships(),
 ) : CollectionRepository {
     override suspend fun parts(collectionId: String): List<BrowseItem> = client.browseCollectionParts(userId, collectionId)
 
-    override suspend fun collectionsOf(id: String): List<BrowseItem> = client.browseCollectionsOf(userId, profile, id)
+    override suspend fun collectionsOf(id: String): List<BrowseItem> = client.browseCollectionsOf(userId, profile, id, memberships)
 }

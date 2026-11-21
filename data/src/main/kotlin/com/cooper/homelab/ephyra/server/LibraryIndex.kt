@@ -1,6 +1,7 @@
 package com.cooper.homelab.ephyra.server
 
 import com.binge.companion.sdk.attempt
+import com.cooper.homelab.ephyra.browse.BoxSetMemberships
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -23,6 +24,9 @@ class LibraryIndex(
     private val maxAgeMillis: Long = MAX_AGE_MILLIS,
     private val missRefreshMillis: Long = MISS_REFRESH_MILLIS,
 ) {
+    /** Which box sets hold a title, for servers before 12.0. It is stale when the index is, and gone when the index is. */
+    val boxSets = BoxSetMemberships(now)
+
     private val lock = Mutex()
     private var owner: String? = null
     private var builtAt = 0L
@@ -73,9 +77,12 @@ class LibraryIndex(
     ) = ensure(client, userId, maxAge = 0L)
 
     /** Marks the index stale, so the next lookup rebuilds it: the server said its library changed. */
-    suspend fun invalidate() = lock.withLock { builtAt = 0L }
+    suspend fun invalidate() {
+        lock.withLock { builtAt = 0L }
+        boxSets.invalidate()
+    }
 
-    suspend fun clear() =
+    suspend fun clear() {
         lock.withLock {
             owner = null
             byKey = emptyMap()
@@ -83,6 +90,8 @@ class LibraryIndex(
             lacksIds = false
             builtAt = 0L
         }
+        boxSets.clear()
+    }
 
     private suspend fun ensure(
         client: JellyfinClient,

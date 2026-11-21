@@ -31,7 +31,15 @@ fun CollectionPage(
             key = "collection-$itemId",
             factory =
                 viewModelFactory {
-                    initializer { CollectionPageViewModel(graph.connection, graph.ioDispatcher, profile, graph.events.userDataChanges) }
+                    initializer {
+                        CollectionPageViewModel(
+                            graph.connection,
+                            graph.ioDispatcher,
+                            profile,
+                            graph.events.userDataChanges,
+                            graph.index.boxSets,
+                        )
+                    }
                 },
         )
     LaunchedEffect(model, itemId) { model.start(itemId) }

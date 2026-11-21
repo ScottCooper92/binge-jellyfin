@@ -14,8 +14,8 @@ import kotlinx.coroutines.sync.withPermit
 private const val SEASON_FIELDS = "PrimaryImageAspectRatio,ChildCount"
 private const val EPISODE_FIELDS = "PrimaryImageAspectRatio,Overview"
 
-// Before 12.0 no route says which box sets hold an item, so each box set is asked for its members. Both numbers cap that cost.
-private const val COLLECTION_SCAN_LIMIT = 100
+// Before 12.0 no route says which box sets hold an item, so each box set is asked for its members: the page size of the box set list, and how many are asked at once.
+private const val BOX_SET_PAGE = 100
 private const val COLLECTION_SCAN_PARALLEL = 4
 
 /** One title with everything a page shows. A missing id is the server's 404, thrown as the transport's error. */
@@ -131,36 +131,41 @@ internal suspend fun JellyfinClient.browseCollectionParts(
 
 /**
  * The collections [id] is in. From 12.0 the server names them (`/Items/{id}/Collections`). Before it, no route or field does, so
- * the user's box sets are listed and each is asked for its members: a hand-made box set with no provider ids is found the same
- * way as any other, because membership is the server's own list of children.
+ * the user's box sets are listed and each is asked for its members, once, and [memberships] holds the answer for the next page: a
+ * hand-made box set with no provider ids is found the same way as any other, because membership is the server's own list of children.
  */
 internal suspend fun JellyfinClient.browseCollectionsOf(
     userId: String,
     profile: JellyfinServerProfile,
     id: String,
+    memberships: BoxSetMemberships,
 ): List<BrowseItem> {
-    if (!profile.hasItemCollectionsRoute) return scanCollectionsOf(userId, id)
+    if (!profile.hasItemCollectionsRoute) return memberships.containing(this, userId, id)
     val path = "Items/$id/Collections"
     val query = cardQuery(userId)
     return decodeAnswer(ItemsWire.serializer(), getObject(path, query), path).items.mapNotNull { it.toBrowseItem() }
 }
 
-/** Every box set the user can see, up to [COLLECTION_SCAN_LIMIT], in name order. `parentId` is left out: before 12.0 the server drops it for a lone BoxSet type. */
+/** Every box set the user can see, in name order, a page at a time. `parentId` is left out: before 12.0 the server drops it for a lone BoxSet type. */
 private suspend fun JellyfinClient.browseBoxSets(userId: String): List<BrowseItem> {
-    val query = cardQuery(userId)
-    query["includeItemTypes"] = "BoxSet"
-    query["recursive"] = "true"
-    query["sortBy"] = "SortName"
-    query["sortOrder"] = "Ascending"
-    query["limit"] = COLLECTION_SCAN_LIMIT.toString()
-    query["enableTotalRecordCount"] = "false"
-    return decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items.mapNotNull { it.toBrowseItem() }
+    val boxes = mutableListOf<BrowseItem>()
+    while (true) {
+        val query = cardQuery(userId)
+        query["includeItemTypes"] = "BoxSet"
+        query["recursive"] = "true"
+        query["sortBy"] = "SortName"
+        query["sortOrder"] = "Ascending"
+        query["startIndex"] = boxes.size.toString()
+        query["limit"] = BOX_SET_PAGE.toString()
+        query["enableTotalRecordCount"] = "false"
+        val page = decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items.mapNotNull { it.toBrowseItem() }
+        boxes += page
+        if (page.size < BOX_SET_PAGE) return boxes
+    }
 }
 
-private suspend fun JellyfinClient.scanCollectionsOf(
-    userId: String,
-    id: String,
-): List<BrowseItem> =
+/** Each of the user's box sets with the ids of its members, read four at a time. */
+internal suspend fun JellyfinClient.browseBoxSetMembers(userId: String): List<BoxSetMembers> =
     coroutineScope {
         val gate = Semaphore(COLLECTION_SCAN_PARALLEL)
         browseBoxSets(userId)
@@ -178,8 +183,7 @@ private suspend fun JellyfinClient.scanCollectionsOf(
                                 )
                             decodeAnswer(ItemsWire.serializer(), getObject("Items", query), "Items").items
                         }
-                    box.takeIf { members.any { it.id == id } }
+                    BoxSetMembers(box, members.mapNotNullTo(mutableSetOf()) { it.id })
                 }
             }.awaitAll()
-            .filterNotNull()
     }

@@ -46,7 +46,15 @@ fun MoviePage(
             key = "movie-$itemId",
             factory =
                 viewModelFactory {
-                    initializer { MoviePageViewModel(graph.connection, graph.ioDispatcher, profile, graph.events.userDataChanges) }
+                    initializer {
+                        MoviePageViewModel(
+                            graph.connection,
+                            graph.ioDispatcher,
+                            profile,
+                            graph.events.userDataChanges,
+                            graph.index.boxSets,
+                        )
+                    }
                 },
         )
     LaunchedEffect(model, itemId) { model.start(itemId) }
