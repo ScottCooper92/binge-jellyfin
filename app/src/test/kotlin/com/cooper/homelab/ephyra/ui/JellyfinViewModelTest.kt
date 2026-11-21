@@ -689,7 +689,12 @@ class JellyfinViewModelTest {
         val vm = viewModel(recordingConnection(asked), consent)
         vm.await<UiState.EnterServer>()
         vm.onAddress(typed)
-        if (agreed) vm.allowCleartext(true)
+        // The step shows the address once the sign-in state has caught up with it, so the wait below starts from the typed one.
+        vm.await<UiState.EnterServer> { it.address == typed }
+        if (agreed) {
+            vm.allowCleartext(true)
+            vm.await<UiState.EnterServer> { it.cleartextAllowed }
+        }
         vm.connect()
         vm.await<UiState.EnterServer> { it.error != null || !it.canConnect }
         return asked.map { "${it.scheme}://${it.host}${if (it.port == it.scheme.defaultPort()) "" else ":${it.port}"}" }.distinct()

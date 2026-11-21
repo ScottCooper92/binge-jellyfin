@@ -18,7 +18,6 @@ import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -118,12 +117,17 @@ class PublicUserPicturesTest {
         assertNotNull(await(vm) { it is UiState.SignIn && it.publicPictures.isNotEmpty() })
 
         vm.changeServer()
-        assertFalse(vm.state.value is UiState.SignIn)
+        // The step is left once the sign-in state has caught up with the change of server.
+        runBlocking { withTimeout(10_000) { vm.state.first { it !is UiState.SignIn } } }
 
         vm.onAddress(jellyfin.baseUrl)
         vm.connect()
         val again = await(vm) { it is UiState.SignIn && it.publicPictures.isNotEmpty() }
         assertEquals(setOf("u-mum"), again.publicPictures.keys)
-        assertEquals(2, jellyfin.hits("/Users/u-mum/Images/Primary"))
+        assertEquals(
+            "the picture is asked for once a visit: ${jellyfin.requests.map { it.url.encodedPath }}",
+            2,
+            jellyfin.hits("/Users/u-mum/Images/Primary"),
+        )
     }
 }

@@ -128,23 +128,28 @@ internal fun ConnectSetupScreen(
         foundServers = enterServerShown?.let { step -> { DiscoveredServers(step, actions) } },
         errorText = { error -> errorText(error.toSetupError()) },
         signInOptions =
-            ConnectSignInOptions(
+            ConnectSignInOptions<PublicServerInfo>(
                 // The tab row is the shared one: Password and Quick Connect. It starts at the fields' own edge: with the inset it keeps by
                 // default, Spanish at 2x font runs the second tab off the screen's edge.
                 tabEdgePadding = 0.dp,
-                // The listed accounts are for the password's form.
-                aboveFields = { signInShown?.takeUnless { it.quickConnectSelected }?.let { PublicUsers(it, actions, passwordFocus) } },
-                // After the error, so the error sits directly under the fields it is about.
+                // The listed accounts are for the password's page. Each page is asked about its own mode, which is not the selected one while
+                // a swipe is under way.
+                aboveFields = { page ->
+                    signInShown?.takeUnless { page.form.mode == SetupMode.QuickConnect }?.let { PublicUsers(it, actions, passwordFocus) }
+                },
+                // After the error, so the error sits directly under the fields it is about. The reset of a forgotten password, and the
+                // overlay it opens, belong to the password's page alone: the overlay is a window, and two pages would each open one.
                 afterError =
-                    {
+                    { page ->
                         signInShown?.let {
-                            AfterError(it, actions)
-                            ForgotPasswordOverlay(it.forgot, actions.forgotPassword)
+                            val passwordPage = page.form.mode != SetupMode.QuickConnect
+                            AfterError(it, actions, passwordPage = passwordPage, showsError = page.error != null)
+                            if (passwordPage) ForgotPasswordOverlay(it.forgot, actions.forgotPassword)
                         }
                     },
                 fieldFocus = mapOf(PASSWORD_FIELD to passwordFocus),
                 notSetUpAction = { SetupWizardEntry(actions) },
-            ),
+            ).swipingBetweenModes(),
     )
 }
 
@@ -264,13 +269,18 @@ private fun ColumnScope.PublicUsers(
     )
 }
 
-/** Under the form and its error: the reset of a forgotten password (the password's form only), and the local-network ask. */
+/**
+ * Under the form and its error: the reset of a forgotten password (on the [passwordPage] only), and the local-network ask on the page that
+ * [showsError], which is the page the error is about.
+ */
 @Composable
 private fun ColumnScope.AfterError(
     state: UiState.SignIn,
     actions: Actions,
+    passwordPage: Boolean,
+    showsError: Boolean,
 ) {
-    if (!state.quickConnectSelected) {
+    if (passwordPage) {
         BingeTextButton(
             label = stringResource(R.string.forgot_password),
             onClick = { actions.forgotPassword?.start() },
@@ -279,7 +289,7 @@ private fun ColumnScope.AfterError(
             modifier = Modifier.fillMaxWidth(),
         )
     }
-    if (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied) {
+    if (showsError && (state.passwordError == SetupError.LocalNetworkDenied || state.quickConnectError == SetupError.LocalNetworkDenied)) {
         val ask = localNetworkAsk(actions)
         BingeOutlinedButton(label = stringResource(ask.label), onClick = ask.run, modifier = Modifier.fillMaxWidth())
     }
