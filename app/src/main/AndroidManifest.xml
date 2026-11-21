@@ -71,13 +71,15 @@
 
         <!--
             Another app opens one title here. A public contract (see OpenItemActivity): the action and extras never change once
-            released. DEFAULT only, so a web page cannot reach it.
+            released. DEFAULT only, so a web page cannot reach it. It has no task affinity: it must not run inside the app's own
+            task, or an intent for a running app lands in the entry above it and never reaches the app.
         -->
         <activity
             android:name=".OpenItemActivity"
             android:exported="true"
             android:excludeFromRecents="true"
             android:noHistory="true"
+            android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="com.cooper.homelab.ephyra.action.OPEN_ITEM" />

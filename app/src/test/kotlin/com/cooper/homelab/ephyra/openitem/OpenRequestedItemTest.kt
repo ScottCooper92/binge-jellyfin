@@ -79,15 +79,30 @@ class OpenRequestedItemTest {
         }
 
     @Test
-    fun `a running app open on a library takes the film over the library`() =
+    fun `a request that arrives while the app is already open on a library goes over it`() =
         runComposeUiTest {
             val requests = OpenItemRequests()
             val back = stack(ShellRoute, LibraryRoute("lib"))
             setContent { OpenRequestedItem(requests, signedIn, true, back, goesTo(OpenTarget.Title(ItemKind.Movie, "m1"))) }
             waitForIdle()
             requests.offer(request)
-            waitUntil { back.size == 3 }
+            waitForIdle()
             assertEquals(listOf(ShellRoute, LibraryRoute("lib"), MovieRoute("m1")), back.toList())
+        }
+
+    @Test
+    fun `a second request after the first has been acted on is acted on too`() =
+        runComposeUiTest {
+            val requests = OpenItemRequests()
+            val back = stack(ShellRoute)
+            setContent { OpenRequestedItem(requests, signedIn, true, back, goesTo(OpenTarget.Title(ItemKind.Movie, "m1"))) }
+            waitForIdle()
+            requests.offer(request)
+            waitForIdle()
+            back.removeAt(back.lastIndex)
+            requests.offer(request)
+            waitForIdle()
+            assertEquals(listOf(ShellRoute, MovieRoute("m1")), back.toList())
         }
 
     @Test

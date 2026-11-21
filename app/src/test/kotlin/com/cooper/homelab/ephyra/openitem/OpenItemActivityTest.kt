@@ -73,6 +73,24 @@ class OpenItemActivityTest {
         assertTrue(activity.isFinishing)
     }
 
+    @Test
+    fun `an intent delivered to an entry that is already running is handed over too`() {
+        val controller = Robolectric.buildActivity(OpenItemActivity::class.java, Intent(OpenItem.ACTION)).create()
+        val activity = controller.get()
+        shadowOf(activity).clearNextStartedActivities()
+        controller.newIntent(intent())
+        val requests = (context as JellyfinApp).graph.openRequests
+        val request = runBlocking { withTimeout(TIMEOUT_MILLIS) { requests.requests.first() } }
+        assertEquals(id, request.itemId)
+        assertNotNull("the app is started for it, so a running app comes to the front", shadowOf(activity).nextStartedActivity)
+    }
+
+    @Test
+    fun `the entry has no task of its own to share with the app`() {
+        val info = context.packageManager.getActivityInfo(ComponentName(context, OpenItemActivity::class.java), 0)
+        assertTrue("its affinity is empty, not the app's: ${info.taskAffinity}", info.taskAffinity.isNullOrEmpty())
+    }
+
     private companion object {
         const val TIMEOUT_MILLIS = 5_000L
     }
