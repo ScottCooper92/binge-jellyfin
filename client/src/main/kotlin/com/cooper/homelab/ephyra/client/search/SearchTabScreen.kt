@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.binge.designsystem.component.MediaResult
 import com.binge.designsystem.component.MediaResultKind
+import com.binge.designsystem.template.ScreenBar
 import com.binge.designsystem.template.SearchCallbacks
 import com.binge.designsystem.template.SearchScreen
 import com.binge.designsystem.template.SearchState
@@ -35,7 +36,7 @@ private const val STILL_WIDTH_PX = 400
 private const val AVATAR_WIDTH_PX = 200
 
 /**
- * The Search tab on the design system's search screen: the field and the type chips under a large title, the recent queries while idle,
+ * The Search tab on the design system's search screen: the field and the type chips under a small pinned bar, with the results fading under it, the recent queries while idle,
  * rows of results, and the failures and empty answers. [imageUrl] turns a result and a width in pixels into a URL, or null when it has no
  * picture, so this screen holds no server and no token. [reselect] is the tab this is the root of: a tap on it again focuses the field.
  */
@@ -70,6 +71,8 @@ fun SearchTabScreen(
         idleTitle = title,
         idleMessage = stringResource(R.string.client_search_idle_message),
         reselectKey = reselect,
+        bar = ScreenBar.Small,
+        pinned = true,
     )
 }
 
