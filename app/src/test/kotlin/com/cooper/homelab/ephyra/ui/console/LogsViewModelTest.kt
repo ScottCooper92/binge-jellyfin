@@ -9,11 +9,13 @@ import com.cooper.homelab.ephyra.server.LogEntry
 import com.cooper.homelab.ephyra.server.LogLevel
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -48,14 +50,14 @@ class LogsViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
-    private fun LogsViewModel.settled(check: (LogsUiState) -> Boolean) = runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+    private fun LogsViewModel.settled(check: (LogsUiState) -> Boolean) = idling { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
 
     private fun LogsViewModel.ready(check: (LogsUiState.Ready) -> Boolean = { true }) =
         settled { it is LogsUiState.Ready && check(it) } as LogsUiState.Ready

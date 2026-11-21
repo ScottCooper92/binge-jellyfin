@@ -11,12 +11,14 @@ import com.cooper.homelab.ephyra.server.LIVE_TV_PRE_PADDING
 import com.cooper.homelab.ephyra.server.LIVE_TV_SUBFOLDERS
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonNull
@@ -51,20 +53,20 @@ class LiveTvRecordingViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun LiveTvRecordingViewModel.ready(check: (LiveTvRecordingUiState.Ready) -> Boolean = { true }) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) { state.first { it is LiveTvRecordingUiState.Ready && check(it) } }
         } as LiveTvRecordingUiState.Ready
 
     private fun saved(count: Int) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (jellyfin.requests.count { it.url.encodedPath == PATH && it.method == "POST" } < count) delay(POLL_MILLIS)
             }
@@ -176,7 +178,7 @@ class LiveTvRecordingViewModelTest {
     fun `a configuration the server will not give is a failure the page can retry`() {
         jellyfin.liveTvConfiguration = ""
         val vm = made(LiveTvRecordingViewModel(connection))
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is LiveTvRecordingUiState.Failed } } }
+        idling { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is LiveTvRecordingUiState.Failed } } }
         jellyfin.liveTvConfiguration = """{"RecordingPath":"/r","TunerHosts":[],"ListingProviders":[]}"""
         vm.load()
         assertEquals(

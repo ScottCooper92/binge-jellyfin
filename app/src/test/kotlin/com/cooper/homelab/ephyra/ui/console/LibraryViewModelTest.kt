@@ -14,12 +14,15 @@ import com.cooper.homelab.ephyra.server.ProviderGroup
 import com.cooper.homelab.ephyra.server.ServerLibrary
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -59,8 +62,8 @@ class LibraryViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
         jellyfin.libraries =
             Json
                 .parseToJsonElement(
@@ -72,12 +75,12 @@ class LibraryViewModelTest {
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun LibraryViewModel.ready(check: (LibraryUiState.Ready) -> Boolean = { true }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is LibraryUiState.Ready && check(it) } } } as LibraryUiState.Ready
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first { it is LibraryUiState.Ready && check(it) } } } as LibraryUiState.Ready
 
-    private fun waitFor(condition: () -> Boolean) = runBlocking { withTimeout(TIMEOUT_MILLIS) { while (!condition()) delay(POLL_MILLIS) } }
+    private fun waitFor(condition: () -> Boolean) = idling { withTimeout(TIMEOUT_MILLIS) { while (!condition()) delay(POLL_MILLIS) } }
 
     private fun saves(count: Int) = waitFor { jellyfin.requests.count { it.url.encodedPath == OPTIONS && it.method == "POST" } >= count }
 
@@ -181,7 +184,7 @@ class LibraryViewModelTest {
         assertEquals(listOf("Podnapisi"), savedOptions().getValue("DisabledSubtitleFetchers").jsonArray.map { it.jsonPrimitive.content })
         vm.moveProvider(ProviderGroup.Subtitles, "Podnapisi", 1)
         // The write that carries the move, not a count of writes: a repeat of the earlier write reaches the count too.
-        jellyfin.awaitBody(OPTIONS) { body ->
+        jellyfin.awaitBodyIdling(OPTIONS) { body ->
             val order =
                 body["LibraryOptions"]
                     ?.jsonObject
@@ -208,7 +211,7 @@ class LibraryViewModelTest {
         val ready = vm.ready()
         assertEquals(listOf("Movie"), ready.available.types.map { it.type })
         vm.fetcherEdits.set(FetcherKind.Metadata, "Movie", "TheMovieDb", enabled = false)
-        jellyfin.awaitBody(OPTIONS) { body ->
+        jellyfin.awaitBodyIdling(OPTIONS) { body ->
             body["LibraryOptions"]
                 ?.jsonObject
                 ?.get("TypeOptions")
@@ -222,7 +225,7 @@ class LibraryViewModelTest {
         // The image side was written out as the server offered it, so choosing here does not switch it off.
         assertEquals(listOf("TheMovieDb"), entry().getValue("ImageFetchers").jsonArray.map { it.jsonPrimitive.content })
         vm.fetcherEdits.move(FetcherKind.Metadata, "Movie", "OMDb", -1)
-        jellyfin.awaitBody(OPTIONS) { body ->
+        jellyfin.awaitBodyIdling(OPTIONS) { body ->
             body["LibraryOptions"]
                 ?.jsonObject
                 ?.get("TypeOptions")
@@ -491,7 +494,7 @@ class LibraryViewModelTest {
         assertEquals(emptyList<String>(), ready.available.subtitleFetchers)
         jellyfin.status["/Library/VirtualFolders"] = 500
         val failed = made(LibraryViewModel(connection, movies))
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { failed.state.first { it is LibraryUiState.Failed } } }
+        idling { withTimeout(TIMEOUT_MILLIS) { failed.state.first { it is LibraryUiState.Failed } } }
         assertNotNull(failed.state.value)
     }
 
