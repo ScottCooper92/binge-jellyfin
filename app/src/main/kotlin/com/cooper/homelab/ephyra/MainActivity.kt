@@ -44,6 +44,8 @@ import com.cooper.homelab.core.uiandroid.shell.RestartOnGateChange
 import com.cooper.homelab.core.uiandroid.shell.RestartOnSessionEnd
 import com.cooper.homelab.ephyra.browse.ItemKind
 import com.cooper.homelab.ephyra.flags.LocalClientEnabled
+import com.cooper.homelab.ephyra.openitem.OpenRequestedItem
+import com.cooper.homelab.ephyra.openitem.resolveFor
 import com.cooper.homelab.ephyra.playback.PlayItem
 import com.cooper.homelab.ephyra.telemetry.ReportScreen
 import com.cooper.homelab.ephyra.theme.JellyfinTheme
@@ -320,6 +322,8 @@ internal fun ConsoleHost(
     RestartOnSessionEnd(state.connected(), tabs, backStack)
     // At the root when nothing is open over it: no page and no library.
     ReviewPromptOnReturnToRoot(connected = state.connected(), atRoot = backStack.size <= 1, reviewPrompt = graph.reviewPrompt)
+    // A title another app asked for opens over the shell once the user is signed in and the client is on.
+    OpenRequestedItem(graph.openRequests, state, clientResolved, backStack) { request, signed -> graph.resolveFor(request, signed) }
     EphyraNavHost(
         backStack = backStack,
         signedIn = signedIn,
