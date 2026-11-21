@@ -26,14 +26,17 @@ private val IMDB_ID = Regex("""tt\d{1,12}""")
  * from the ids alone, so it is never an address on the user's server and carries no token. [series] picks TMDb's `tv` path over `movie`.
  */
 internal fun TitleDetail.shareUrl(series: Boolean): String? {
-    val tmdb = externalIds["Tmdb"]?.takeIf { TMDB_ID.matches(it) }
-    val imdb = externalIds["Imdb"]?.takeIf { IMDB_ID.matches(it) }
+    val tmdb = externalId("Tmdb")?.takeIf { TMDB_ID.matches(it) }
+    val imdb = externalId("Imdb")?.takeIf { IMDB_ID.matches(it) }
     return when {
         tmdb != null -> "https://www.themoviedb.org/${if (series) "tv" else "movie"}/$tmdb"
         imdb != null -> "https://www.imdb.com/title/$imdb/"
         else -> null
     }
 }
+
+private fun TitleDetail.externalId(provider: String): String? =
+    externalIds.entries.firstOrNull { it.key.equals(provider, ignoreCase = true) }?.value
 
 /** Share in the page's bar, beside back. [glassBackgroundAlpha] is the bar's own fade: the glass hands over to the bar as it fills. */
 @Composable
