@@ -69,6 +69,22 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Another app opens one title here. A public contract (see OpenItemActivity): the action and extras never change once
+            released. DEFAULT only, so a web page cannot reach it.
+        -->
+        <activity
+            android:name=".OpenItemActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="com.cooper.homelab.ephyra.action.OPEN_ITEM" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Binge's "manage" row: started for a result, so callingPackage is set and checked. -->
         <activity
             android:name=".SettingsHandOffActivity"

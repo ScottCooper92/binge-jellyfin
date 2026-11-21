@@ -81,6 +81,7 @@ import com.cooper.homelab.ephyra.notifications.PollBreadcrumbs
 import com.cooper.homelab.ephyra.notifications.PollRunner
 import com.cooper.homelab.ephyra.notifications.pollReactor
 import com.cooper.homelab.ephyra.notifications.workManagerPollScheduler
+import com.cooper.homelab.ephyra.openitem.OpenItemRequests
 import com.cooper.homelab.ephyra.playback.PlaybackSittings
 import com.cooper.homelab.ephyra.playback.SignedInNextEpisodes
 import com.cooper.homelab.ephyra.playback.SignedInPlayReporter
@@ -386,6 +387,9 @@ class AppGraph(
     }
 
     val index: LibraryIndex by lazy { LibraryIndex() }
+
+    /** The title another app asked for through the exported entry, until the screens act on it. */
+    val openRequests: OpenItemRequests = OpenItemRequests()
 
     /** Everything the app keeps on disk about the account that was signed in: its pictures, its recent searches and the last log shared. */
     suspend fun clearAccountCaches() =
