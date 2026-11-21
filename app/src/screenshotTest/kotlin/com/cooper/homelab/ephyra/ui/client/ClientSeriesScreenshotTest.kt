@@ -90,14 +90,23 @@ class ClientSeriesScreenshotTest {
             genres = listOf("Drama", "Mystery"),
             backdrop = TitleImage("series", ImageKind.Backdrop, "b-series"),
             poster = TitleImage("series", ImageKind.Primary, "p-series"),
-            stats = SeriesStats(rating = 8.4, year = 2020, seasonCount = 3, status = "Continuing", certification = "TV-14"),
+            stats = SeriesStats(rating = 8.4, year = 2020, seasonCount = 3, certification = "TV-14", episodeCount = 24),
             play = SeriesPlay.Episode(PlayKind.Play, "e3", season = 1, episode = 3, minutesLeft = null),
             watched = false,
             favourite = false,
             overview =
                 "Three friends inherit a lighthouse on a coastline that keeps changing. As the seasons turn, they find out what " +
                     "the light was for, and what it costs to put it out.",
-            facts = TitleFacts("Los Guardianes del Faro", listOf("Harbour Films", "Northlight"), "2020-03-02T00:00:00.0000000Z"),
+            facts =
+                TitleFacts(
+                    "Los Guardianes del Faro",
+                    listOf("Harbour Films", "Northlight"),
+                    "2020-03-02T00:00:00.0000000Z",
+                    creators = listOf("Ines Calder", "Tomas Rey"),
+                    status = "Ended",
+                    endDate = "2022-11-18T00:00:00.0000000Z",
+                ),
+            criticsPercent = 48,
             cast =
                 listOf(
                     PersonUi("a1", "Amara Okafor", "Wren", TitleImage("a1", ImageKind.Primary, "pa1")),
@@ -159,7 +168,7 @@ class ClientSeriesScreenshotTest {
                 series.copy(
                     tagline = null,
                     genres = emptyList(),
-                    stats = SeriesStats(null, 2020, 1, null, null),
+                    stats = SeriesStats(null, 2020, 1, null),
                     overview = null,
                     facts = TitleFacts(null, emptyList(), null),
                     cast = emptyList(),

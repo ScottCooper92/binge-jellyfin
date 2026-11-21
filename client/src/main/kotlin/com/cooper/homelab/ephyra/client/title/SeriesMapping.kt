@@ -5,6 +5,7 @@ import com.cooper.homelab.ephyra.browse.ImageKind
 import com.cooper.homelab.ephyra.browse.NextEpisode
 import com.cooper.homelab.ephyra.browse.PersonKind
 import com.cooper.homelab.ephyra.browse.TitleDetail
+import kotlin.math.roundToInt
 
 private const val PERCENT = 100f
 
@@ -31,20 +32,34 @@ fun seriesUi(
                 rating = item.communityRating,
                 year = item.year,
                 seasonCount = seasonRows.count { !it.isSpecials },
-                status = detail.status?.takeIf { it.isNotBlank() },
                 certification = item.officialRating?.takeIf { it.isNotBlank() },
+                episodeCount =
+                    seasonRows
+                        .filter { !it.isSpecials }
+                        .mapNotNull { it.episodeCount }
+                        .takeIf { it.isNotEmpty() }
+                        ?.sum(),
             ),
         play = seriesPlay(next),
         watched = item.userData.played,
         favourite = item.userData.favourite,
         overview = detail.overview?.takeIf { it.isNotBlank() },
-        facts = TitleFacts(detail.originalTitle, detail.studios, detail.premiereDate),
+        facts =
+            TitleFacts(
+                detail.originalTitle,
+                detail.studios,
+                detail.premiereDate,
+                creators = detail.people.filter { it.kind == PersonKind.Creator }.map { it.name },
+                status = detail.status?.takeIf { it.isNotBlank() },
+                endDate = detail.endDate.takeIf { detail.status.equals("Ended", ignoreCase = true) },
+            ),
         cast = detail.people.filter { it.kind == PersonKind.Actor || it.kind == PersonKind.GuestStar }.map(::personUi),
         crew = detail.people.filter { it.kind in CREW_KINDS }.map(::personUi),
         seasons = seasonRows,
         selectedSeasonId = selectedSeasonId,
         episodes = episodes,
         similar = similar.map(::titleCard),
+        criticsPercent = detail.criticRating?.roundToInt(),
     )
 }
 

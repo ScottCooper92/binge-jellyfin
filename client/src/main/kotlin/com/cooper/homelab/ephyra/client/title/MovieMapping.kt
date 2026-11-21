@@ -9,6 +9,7 @@ import com.cooper.homelab.ephyra.browse.TitleDetail
 import com.cooper.homelab.ephyra.browse.TitlePerson
 import com.cooper.homelab.ephyra.browse.TrackKind
 import com.cooper.homelab.ephyra.server.TICKS_PER_MINUTE
+import kotlin.math.roundToInt
 
 private const val UHD_WIDTH = 3_000
 private const val FULL_HD_WIDTH = 1_800
@@ -40,12 +41,19 @@ fun movieUi(
         watched = item.userData.played,
         favourite = item.userData.favourite,
         overview = detail.overview?.takeIf { it.isNotBlank() },
-        facts = TitleFacts(detail.originalTitle, detail.studios, detail.premiereDate),
+        facts =
+            TitleFacts(
+                detail.originalTitle,
+                detail.studios,
+                detail.premiereDate,
+                directors = detail.people.filter { it.kind == PersonKind.Director }.map { it.name },
+            ),
         versions = detail.versions.map(::versionUi),
         cast = detail.people.filter { it.kind == PersonKind.Actor || it.kind == PersonKind.GuestStar }.map(::personUi),
         crew = detail.people.filter { it.kind in CREW_KINDS }.map(::personUi),
         collection = collection,
         similar = similar.map(::titleCard),
+        criticsPercent = detail.criticRating?.roundToInt(),
     )
 }
 
@@ -80,7 +88,7 @@ private fun PersonKind.crewJob(): CrewJob? =
         PersonKind.Writer -> CrewJob.Writer
         PersonKind.Producer -> CrewJob.Producer
         PersonKind.Composer -> CrewJob.Composer
-        PersonKind.Actor, PersonKind.GuestStar, PersonKind.Other -> null
+        PersonKind.Actor, PersonKind.GuestStar, PersonKind.Creator, PersonKind.Other -> null
     }
 
 /** A poster card for a similar title or a collection's part. */

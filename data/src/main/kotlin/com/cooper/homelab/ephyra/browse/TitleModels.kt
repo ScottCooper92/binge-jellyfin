@@ -8,6 +8,7 @@ enum class PersonKind {
     Writer,
     Producer,
     Composer,
+    Creator,
     Other,
     ;
 
@@ -120,6 +121,7 @@ data class TitleDetail(
     val trailerUrl: String? = null,
     /** The title's web pages (IMDb, TMDb first, then the server's own order), http and https only. */
     val links: List<TitleLink> = emptyList(),
+    /** What the server tagged it with, trimmed and without repeats. */
     val tags: List<String> = emptyList(),
 )
 

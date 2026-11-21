@@ -8,11 +8,11 @@ data class SeriesStats(
     val year: Int?,
     /** How many seasons it has, not counting specials. */
     val seasonCount: Int,
-    /** "Continuing" or "Ended", as the server says it. */
-    val status: String?,
     val certification: String?,
+    /** The episodes the seasons hold, not counting specials, when the server counts them. */
+    val episodeCount: Int? = null,
 ) {
-    val isEmpty: Boolean get() = rating == null && year == null && seasonCount == 0 && status == null && certification == null
+    val isEmpty: Boolean get() = rating == null && year == null && seasonCount == 0 && certification == null && episodeCount == null
 }
 
 /** What the series' one wide button does. */
@@ -99,6 +99,7 @@ data class SeriesUi(
     val selectedSeasonId: String?,
     val episodes: EpisodesState,
     val similar: List<TitleCard>,
+    val criticsPercent: Int? = null,
 )
 
 /** What the series page shows. */

@@ -64,7 +64,7 @@ class TitleReadsTest {
         "ProviderIds":{"Tmdb":"348","Imdb":"tt0078748","Gone":null},
         "People":[{"Id":"p1","Name":"Sigourney Weaver","Role":"Ripley","Type":"Actor","PrimaryImageTag":"pt"},
                   {"Id":"p2","Name":"Ridley Scott","Type":"Director"},{"Name":"No id","Type":"Actor"},
-                  {"Id":"p3","Name":"Odd","Type":"Lyricist"}],
+                  {"Id":"p3","Name":"Odd","Type":"Lyricist"},{"Id":"p4","Name":"Maker","Type":"Creator"}],
         "Chapters":[{"StartPositionTicks":0,"Name":"Chapter 1","ImageTag":"c1"},{"StartPositionTicks":6000000000}],
         "MediaSources":[
           {"Id":"v1","Name":"Alien 4K","Container":"mkv","Size":9000000000,"Bitrate":20000000,"RunTimeTicks":7000000000,
@@ -92,8 +92,8 @@ class TitleReadsTest {
             assertEquals(listOf("Brandywine"), detail.studios)
             assertEquals(93.5, detail.criticRating!!, 0.0)
             assertEquals(mapOf("Tmdb" to "348", "Imdb" to "tt0078748"), detail.externalIds)
-            assertEquals(listOf("p1", "p2", "p3"), detail.people.map { it.id })
-            assertEquals(listOf(PersonKind.Actor, PersonKind.Director, PersonKind.Other), detail.people.map { it.kind })
+            assertEquals(listOf("p1", "p2", "p3", "p4"), detail.people.map { it.id })
+            assertEquals(listOf(PersonKind.Actor, PersonKind.Director, PersonKind.Other, PersonKind.Creator), detail.people.map { it.kind })
             assertEquals("Ripley", detail.people.first().role)
             assertNull(detail.people[1].role)
             assertEquals(listOf("Chapter 1", null), detail.chapters.map { it.name })
