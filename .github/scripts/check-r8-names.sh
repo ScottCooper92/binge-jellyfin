@@ -29,14 +29,14 @@ fi
 
 failed=0
 for name in "${sentinels[@]}"; do
-  # The class line only: it starts at column 0, so an indented member line never matches.
-  line="$(grep -F -m1 -- "$name -> " "$mapping" | grep -E "^${name//./\\.} -> " || true)"
-  if [ -z "$line" ]; then
+  # The class line only: it starts at column 0 as `name -> final:`, so a member line (indented) or a longer name never matches. An exact
+  # string compare, so a dot or a dollar sign in a name is itself and not a pattern.
+  final="$(awk -v n="$name" '$1 == n && $2 == "->" { print $3; exit }' "$mapping")"
+  if [ -z "$final" ]; then
     echo "$name is not in the R8 mapping: the class was renamed, removed or shrunk away. Update the sentinel list in $(basename "$0")." >&2
     failed=1
     continue
   fi
-  final="${line#*" -> "}"
   final="${final%:}"
   if [ "$final" != "$name" ]; then
     echo "R8 renamed $name to $final. Keep rules in app/src/main/keepRules/companion.keep must keep \`-keepnames class com.cooper.homelab.**\`; the ring log matches frames by that prefix." >&2
