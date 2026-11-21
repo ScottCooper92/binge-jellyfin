@@ -178,6 +178,7 @@ fun movieDetail(
         tagline = movie.tagline,
         genres = movie.genres,
         stats = movie.stats.cells(locale),
+        scores = criticsScores(movie.criticsPercent),
         overview = movie.overview,
         overviewHeading = stringResource(R.string.client_title_overview),
         peopleRails =
@@ -190,7 +191,7 @@ fun movieDetail(
                 movie.collection?.let { PosterRail(it.name, posterItems(it.parts, imageUrl), seeAll = true) },
                 PosterRail(stringResource(R.string.client_title_similar), posterItems(movie.similar, imageUrl)),
             ),
-        info = DetailInfo(stringResource(R.string.client_title_details), movie.facts.entries(locale)),
+        info = DetailInfo(stringResource(R.string.client_title_details), movie.facts.movieEntries(locale)),
     )
 }
 
@@ -258,11 +259,11 @@ private const val ISO_DATE_LENGTH = 10
 private fun MovieStats.cells(locale: Locale): List<DetailStat> =
     listOfNotNull(
         rating?.let { DetailStat(Icons.Filled.Star, "%.1f".format(locale, it), stringResource(DesR.string.detail_rating)) },
-        year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), stringResource(R.string.client_title_year)) },
+        year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), stringResource(R.string.client_title_released)) },
         runtimeMinutes?.let {
             DetailStat(
                 Icons.Filled.Schedule,
-                stringResource(DesR.string.detail_runtime_minutes, it),
+                runtimeText(it),
                 stringResource(R.string.client_title_runtime),
             )
         },

@@ -55,7 +55,14 @@ class ClientMovieScreenshotTest {
             overview =
                 "A lighthouse keeper on a remote island receives a letter that should not exist, and the sender is someone " +
                     "the island buried a long time ago. As the weather closes in, the keeper has to decide what to believe.",
-            facts = TitleFacts("Le Grand Silence", listOf("Harbour Films", "Northlight"), "2021-04-09T00:00:00.0000000Z"),
+            facts =
+                TitleFacts(
+                    "Le Grand Silence",
+                    listOf("Harbour Films", "Northlight"),
+                    "2021-04-09T00:00:00.0000000Z",
+                    directors = listOf("Mira Lund"),
+                ),
+            criticsPercent = 87,
             versions = listOf(version("v1"), version("v2")),
             cast =
                 listOf(
@@ -96,6 +103,11 @@ class ClientMovieScreenshotTest {
     fun loaded() = Movie(MovieUiState.Ready(movie))
 
     @PreviewTest
+    @JellyfinDetailsPreviews
+    @Composable
+    fun details() = Movie(MovieUiState.Ready(movie))
+
+    @PreviewTest
     @JellyfinScreenStatePreview
     @Composable
     fun resumeWatchedFavourite() =
@@ -111,6 +123,7 @@ class ClientMovieScreenshotTest {
                     tagline = null,
                     genres = emptyList(),
                     stats = MovieStats(null, 2021, null, null),
+                    criticsPercent = null,
                     overview = null,
                     facts = TitleFacts(null, emptyList(), null),
                     versions = listOf(version("v1")),

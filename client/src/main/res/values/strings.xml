@@ -32,8 +32,18 @@
     <string name="client_title_details">Details</string>
     <string name="client_title_original_title">Original title</string>
     <string name="client_title_studios">Studios</string>
-    <string name="client_title_premiere">Premiere</string>
-    <string name="client_title_year">Year</string>
+    <string name="client_title_released">Released</string>
+    <string name="client_title_release_date">Release date</string>
+    <string name="client_title_directed_by">Directed by</string>
+    <string name="client_title_created_by">Created by</string>
+    <string name="client_title_first_aired">First aired</string>
+    <string name="client_title_last_aired">Last aired</string>
+    <string name="client_title_runtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="client_title_score_critics">Critics %1$d percent</string>
+    <plurals name="client_title_season_count">
+        <item quantity="one">%d season</item>
+        <item quantity="other">%d seasons</item>
+    </plurals>
     <string name="client_title_runtime">Runtime</string>
     <string name="client_title_certification">Rated</string>
     <string name="client_title_write_failed">Not changed. Try again.</string>
@@ -57,7 +67,8 @@
     <string name="client_series_play_episode">Play S%1$d · E%2$d</string>
     <string name="client_series_resume_episode">Resume S%1$d · E%2$d</string>
     <string name="client_series_resume_episode_left">Resume S%1$d · E%2$d · %3$d min left</string>
-    <string name="client_series_seasons">Seasons</string>
+    <string name="client_series_status_continuing">Continuing</string>
+    <string name="client_series_status_ended">Ended</string>
     <string name="client_series_status">Status</string>
     <string name="client_series_episodes">Episodes</string>
     <string name="client_series_all_episodes">All episodes</string>

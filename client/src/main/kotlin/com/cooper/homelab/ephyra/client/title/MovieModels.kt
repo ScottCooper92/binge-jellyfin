@@ -40,6 +40,13 @@ data class TitleFacts(
     val studios: List<String>,
     /** The premiere date as the server sends it (`yyyy-MM-dd…`); the screen words it in the user's locale. */
     val premiereDate: String?,
+    val directors: List<String> = emptyList(),
+    /** A series' creators. */
+    val creators: List<String> = emptyList(),
+    /** A series' "Continuing" or "Ended", as the server says it. */
+    val status: String? = null,
+    /** When a series ended, as the server sends it. */
+    val endDate: String? = null,
 )
 
 /** What a crew member did. The screen words it from its own strings, so it reads in the user's language; the server sends no text for it. */
@@ -135,6 +142,8 @@ data class MovieUi(
     val crew: List<PersonUi>,
     val collection: CollectionRow?,
     val similar: List<TitleCard>,
+    /** The critics' score out of 100, when the server holds one. */
+    val criticsPercent: Int? = null,
 )
 
 /** What the movie page shows. */

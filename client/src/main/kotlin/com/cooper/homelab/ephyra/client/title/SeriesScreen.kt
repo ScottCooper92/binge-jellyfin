@@ -7,7 +7,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -170,6 +169,7 @@ fun seriesDetail(
         tagline = series.tagline,
         genres = series.genres,
         stats = series.stats.cells(locale),
+        scores = criticsScores(series.criticsPercent),
         overview = series.overview,
         overviewHeading = stringResource(R.string.client_title_overview),
         peopleRails =
@@ -178,7 +178,7 @@ fun seriesDetail(
                 PeopleRail(stringResource(R.string.client_title_crew), peopleItems(series.crew, imageUrl)),
             ),
         posterRails = listOf(PosterRail(stringResource(R.string.client_title_similar), posterItems(series.similar, imageUrl))),
-        info = DetailInfo(stringResource(R.string.client_title_details), series.facts.entries(locale)),
+        info = DetailInfo(stringResource(R.string.client_title_details), series.facts.seriesEntries(locale)),
     )
 }
 
@@ -277,19 +277,21 @@ private fun seriesRoundActions(
     )
 }
 
-/** The stats the server gave, each a cell; a stat it did not give is left out. */
+/** The stats the server gave, each a cell: the rating, the year with its seasons under it, the episodes and the certification. */
 @Composable
 private fun SeriesStats.cells(locale: Locale): List<DetailStat> =
     listOfNotNull(
         rating?.let { DetailStat(Icons.Filled.Star, "%.1f".format(locale, it), stringResource(DesR.string.detail_rating)) },
-        year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), stringResource(R.string.client_title_year)) },
-        seasonCount.takeIf { it > 0 }?.let {
-            DetailStat(
-                Icons.Filled.VideoLibrary,
-                it.toString(),
-                stringResource(R.string.client_series_seasons),
-            )
-        },
-        status?.let { DetailStat(Icons.Filled.Tv, it, stringResource(R.string.client_series_status)) },
+        year?.let { DetailStat(Icons.Filled.CalendarMonth, it.toString(), yearLabel()) },
+        episodeCount?.let { DetailStat(Icons.Filled.VideoLibrary, it.toString(), stringResource(R.string.client_series_episodes)) },
         certification?.let { DetailStat(Icons.Filled.Shield, it, stringResource(R.string.client_title_certification)) },
     )
+
+/** What sits under the year: how many seasons the series has, or "Released" when the server counts none. */
+@Composable
+private fun SeriesStats.yearLabel(): String =
+    if (seasonCount > 0) {
+        pluralStringResource(R.plurals.client_title_season_count, seasonCount, seasonCount)
+    } else {
+        stringResource(R.string.client_title_released)
+    }

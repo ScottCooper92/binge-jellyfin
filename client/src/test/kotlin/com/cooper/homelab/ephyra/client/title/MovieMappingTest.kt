@@ -69,6 +69,19 @@ class MovieMappingTest {
     }
 
     @Test
+    fun `the critics score is rounded, and the directors are in the facts`() {
+        val people =
+            listOf(
+                TitlePerson("c", "Ridley Scott", null, PersonKind.Director, null),
+                TitlePerson("w", "Dan", null, PersonKind.Writer, null),
+            )
+        val movie = movieUi(detail(people = people).copy(criticRating = 93.5), emptyList(), null)
+        assertEquals(94, movie.criticsPercent)
+        assertEquals(listOf("Ridley Scott"), movie.facts.directors)
+        assertNull(movieUi(detail(), emptyList(), null).criticsPercent)
+    }
+
+    @Test
     fun `a film with nothing started plays, a film part watched resumes with what is left, and a watched one plays again`() {
         assertEquals(PlayAction(PlayKind.Play, null), playAction(item()))
         assertEquals(PlayAction(PlayKind.Resume, 90), playAction(item(position = 30 * TICKS_PER_MINUTE)))
