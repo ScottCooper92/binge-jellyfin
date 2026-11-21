@@ -35,6 +35,12 @@ class TitleLinksTest {
     }
 
     @Test
+    fun `the provider names match whatever their case`() {
+        assertEquals("https://www.themoviedb.org/movie/348", detail(mapOf("TMDB" to "348")).shareUrl(series = false))
+        assertEquals("https://www.imdb.com/title/tt1/", detail(mapOf("imdb" to "tt1")).shareUrl(series = false))
+    }
+
+    @Test
     fun `without a TMDb id the share address is the IMDb page`() {
         assertEquals("https://www.imdb.com/title/tt0078748/", detail(mapOf("Imdb" to "tt0078748")).shareUrl(series = false))
     }
