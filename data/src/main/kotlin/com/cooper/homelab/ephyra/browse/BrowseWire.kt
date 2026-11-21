@@ -57,6 +57,7 @@ internal data class ItemsWire(
 internal data class ItemWire(
     @SerialName("Id") val id: String? = null,
     @SerialName("Name") val name: String? = null,
+    @SerialName("SortName") val sortName: String? = null,
     @SerialName("Type") val type: String? = null,
     @SerialName("ProductionYear") val productionYear: Int? = null,
     @SerialName("CommunityRating") val communityRating: Double? = null,
@@ -222,6 +223,7 @@ internal fun ItemWire.toBrowseItem(): BrowseItem? {
                 playedPercentage = userData?.playedPercentage,
                 unplayedCount = userData?.unplayedItemCount,
             ),
+        sortName = sortName,
     )
 }
 

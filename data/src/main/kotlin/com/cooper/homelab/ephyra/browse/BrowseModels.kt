@@ -121,6 +121,8 @@ data class BrowseItem(
     /** How many children a season or series has (episodes, seasons), on the reads that ask for it. */
     val childCount: Int? = null,
     val userData: ItemUserData = ItemUserData(),
+    /** The name the server sorts the title by, with its leading articles dropped, on the reads that ask for it; null otherwise. */
+    val sortName: String? = null,
 )
 
 /**

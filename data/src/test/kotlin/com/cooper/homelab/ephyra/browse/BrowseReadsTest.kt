@@ -193,7 +193,7 @@ class BrowseReadsTest {
             assertEquals("Movie", sent.queryParameter("includeItemTypes"))
             assertEquals("true", sent.queryParameter("recursive"))
             assertEquals("true", sent.queryParameter("enableUserData"))
-            assertEquals("PrimaryImageAspectRatio,ChildCount", sent.queryParameter("fields"))
+            assertEquals("PrimaryImageAspectRatio,ChildCount,SortName", sent.queryParameter("fields"))
             assertEquals("Primary,Thumb,Backdrop", sent.queryParameter("enableImageTypes"))
             assertEquals("1", sent.queryParameter("imageTypeLimit"))
             assertEquals("false", sent.queryParameter("enableTotalRecordCount"))
@@ -201,6 +201,16 @@ class BrowseReadsTest {
             assertEquals("Ascending", sent.queryParameter("sortOrder"))
             assertEquals("10", sent.queryParameter("limit"))
             assertFalse(sent.toString().contains("token-1"))
+        }
+
+    @Test
+    fun `a library grid read carries the name the server sorts by`() =
+        runBlocking {
+            jellyfin.browse.titles.add(FakeTitle("m1", "The Long Quiet", "lib-movies", "Movie", sortName = "long quiet"))
+            jellyfin.browse.titles.add(FakeTitle("m2", "Alien", "lib-movies", "Movie"))
+            val read = items.items(movies).items.associateBy { it.id }
+            assertEquals("long quiet", read.getValue("m1").sortName)
+            assertNull(read.getValue("m2").sortName)
         }
 
     @Test

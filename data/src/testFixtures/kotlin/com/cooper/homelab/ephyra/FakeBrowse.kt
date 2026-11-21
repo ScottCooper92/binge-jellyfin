@@ -35,6 +35,8 @@ data class FakeTitle(
     val childCount: Int? = null,
     /** Raw JSON members appended to the item (`"Overview":"..."`, `"MediaSources":[...]`), for what a title page reads. */
     val extra: String = "",
+    /** The name the server sorts by, sent as `SortName` only when a read names it in `fields`, as the server does. */
+    val sortName: String? = null,
 )
 
 /**
@@ -311,6 +313,7 @@ class FakeBrowse {
             episode?.let { append(""","IndexNumber":$it""") }
             seasonId?.let { append(""","SeasonId":"$it"""") }
             childCount?.takeIf { fields?.split(',')?.contains("ChildCount") == true }?.let { append(""","ChildCount":$it""") }
+            sortName?.takeIf { fields?.split(',')?.contains("SortName") == true }?.let { append(""","SortName":"$it"""") }
             if (extra.isNotEmpty()) append(",").append(extra)
             append(""","UserData":{"Played":$played,"IsFavorite":$favourite,"PlaybackPositionTicks":$positionTicks}}""")
         }
