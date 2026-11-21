@@ -7,12 +7,14 @@ import com.cooper.homelab.ephyra.server.DiscardLogger
 import com.cooper.homelab.ephyra.server.NFO_PATH_SUBSTITUTION
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonNull
@@ -45,18 +47,18 @@ class NfoViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun NfoViewModel.ready(check: (NfoUiState.Ready) -> Boolean = { true }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first { it is NfoUiState.Ready && check(it) } } } as NfoUiState.Ready
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first { it is NfoUiState.Ready && check(it) } } } as NfoUiState.Ready
 
     private fun saved(count: Int) =
-        runBlocking {
+        idling {
             withTimeout(TIMEOUT_MILLIS) {
                 while (jellyfin.requests.count { it.url.encodedPath == PATH && it.method == "POST" } < count) delay(POLL_MILLIS)
             }
@@ -172,7 +174,7 @@ class NfoViewModelTest {
     fun `a configuration the server will not give is a failure the page can retry`() {
         jellyfin.nfoConfiguration = ""
         val vm = made(NfoViewModel(connection))
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is NfoUiState.Failed } } }
+        idling { withTimeout(TIMEOUT_MILLIS) { vm.state.first { it is NfoUiState.Failed } } }
         jellyfin.nfoConfiguration = """{"UserId":"user-1","ReleaseDateFormat":"yyyy-MM-dd"}"""
         vm.load()
         assertEquals("user-1", vm.ready().config.nfoUserId())

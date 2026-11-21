@@ -9,11 +9,14 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
 import com.cooper.homelab.ephyra.server.UserView
 import com.cooper.homelab.ephyra.session
 import com.cooper.homelab.ephyra.testSessionStore
+import com.cooper.homelab.ephyra.ui.MainLooperDispatcher
 import com.cooper.homelab.ephyra.ui.ViewModelTeardown
+import com.cooper.homelab.ephyra.ui.awaitBodyIdling
+import com.cooper.homelab.ephyra.ui.idleMain
+import com.cooper.homelab.ephyra.ui.idling
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
@@ -48,15 +51,15 @@ class HomeLayoutViewModelTest {
 
     @Before
     fun main() {
-        Dispatchers.setMain(Dispatchers.Unconfined)
-        runBlocking { sessions.save(jellyfin.session()) }
+        Dispatchers.setMain(MainLooperDispatcher)
+        idling { sessions.save(jellyfin.session()) }
     }
 
     @After
-    fun close() = teardown.close(jellyfin)
+    fun close() = teardown.close(jellyfin, idle = ::idleMain)
 
     private fun HomeLayoutViewModel.settled(check: (HomeLayoutUiState) -> Boolean = { it !is HomeLayoutUiState.Loading }) =
-        runBlocking { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
+        idling { withTimeout(TIMEOUT_MILLIS) { state.first(check) } }
 
     private fun HomeLayoutViewModel.ready() = settled() as HomeLayoutUiState.Ready
 
@@ -68,7 +71,7 @@ class HomeLayoutViewModelTest {
      * earlier write (see [FakeJellyfin.awaitBody]), whose body lacks the change the test is waiting for.
      */
     private fun written(check: (JsonObject) -> Boolean) {
-        lastWritten = jellyfin.awaitBody("/Users/Configuration", check = check)
+        lastWritten = jellyfin.awaitBodyIdling("/Users/Configuration", check = check)
     }
 
     /** A key an earlier write does not carry yet reads as empty, so a predicate can be tried against any write. */
