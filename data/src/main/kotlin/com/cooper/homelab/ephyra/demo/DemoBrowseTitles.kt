@@ -34,7 +34,15 @@ internal class DemoTitle(
     val cast: List<String> = emptyList(),
     /** False for a title with a poster and no backdrop, as a hand-made box set has. */
     val hasBackdrop: Boolean = true,
+    /** The critics' score out of 100 a film or series page shows; null for none. */
+    val critics: Double? = score.takeIf { it > 0.0 }?.times(CRITICS_SCALE),
+    /** False for a title with no trailer, web pages or tags, as one nobody has filled in is. */
+    val hasExtras: Boolean = true,
+    /** True for a series that has finished: it has an end date. */
+    val ended: Boolean = false,
 )
+
+private const val CRITICS_SCALE = 10.0
 
 /** The id of the season a title is in, or its own when it is a season. */
 internal fun DemoTitle.seasonId() = if (type == "Season") id else "$seriesId-s$season"
