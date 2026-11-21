@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import com.binge.designsystem.template.FastScrollbarOptions
 import com.binge.designsystem.template.FilterControlHandlers
 import com.binge.designsystem.template.FilterControlUi
 import com.binge.designsystem.template.FilterOptionUi
@@ -71,7 +72,7 @@ fun parseLibraryItemKey(key: String): Pair<ItemKind, String>? {
  * A library's titles on the design system's paged grid: the library's name as the title, a pill and chips for the order and filters,
  * and a sheet that holds them. [imageUrl] turns a title and a width in pixels into a URL, or null when it has no picture, so this
  * screen holds no server and no token. A pull down reads the first page again behind the rows, and a refresh that fails says so in a
- * snackbar and keeps them.
+ * snackbar and keeps them. A long library has the design system's fast scrollbar, whose bubble names the letter or year ([libraryBubbleText]).
  */
 @Composable
 fun LibraryGridScreen(
@@ -86,6 +87,9 @@ fun LibraryGridScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val refreshFailed = stringResource(R.string.client_library_refresh_failed)
     LaunchedEffect(ready?.refreshFailed) { if (ready?.refreshFailed == true) snackbarHostState.showSnackbar(refreshFailed) }
+    val sort = applied.sort.field
+    val titles = ready?.items
+    val scrollbar = remember(sort, titles) { FastScrollbarOptions(bubbleText = libraryBubbleText(sort, titles.orEmpty())) }
     PagedGridScreen(
         title = state.controls.libraryName ?: stringResource(R.string.client_libraries_title),
         state = state.toTemplate(imageUrl, filtered, actions.onClearFilters),
@@ -101,6 +105,7 @@ fun LibraryGridScreen(
             ),
         modifier = modifier,
         refreshing = ready?.refreshing == true,
+        fastScrollbar = scrollbar,
         snackbarHostState = snackbarHostState,
         filterBar = applied.toBar(),
         filterSheet = { dismiss -> LibraryFilterSheet(state.controls, actions.onApply, dismiss) },

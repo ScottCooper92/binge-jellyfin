@@ -12,6 +12,9 @@ import com.cooper.homelab.ephyra.server.JellyfinServerProfile
  */
 internal const val CARD_FIELDS = "PrimaryImageAspectRatio,ChildCount"
 
+/** A library grid also asks for the name it is sorted by, so the scrollbar can say which letter a position is in. */
+private const val LIBRARY_GRID_FIELDS = "$CARD_FIELDS,SortName"
+
 /** The pictures a grid cell or card can show; one of each, never the whole set. */
 internal const val CARD_IMAGE_TYPES = "Primary,Thumb,Backdrop"
 internal const val CARD_IMAGE_LIMIT = "1"
@@ -48,6 +51,7 @@ internal suspend fun JellyfinClient.browseItems(
     withTotal: Boolean,
 ): Page<BrowseItem> {
     val query = cardQuery(userId)
+    query["fields"] = LIBRARY_GRID_FIELDS
     query["parentId"] = library.id
     query["recursive"] = "true"
     query["includeItemTypes"] = library.kind.itemTypes()
