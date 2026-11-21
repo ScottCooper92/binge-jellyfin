@@ -97,9 +97,7 @@ internal fun tagsSection(tags: List<String>): TagsSection? =
     tags.takeIf { it.isNotEmpty() }?.let {
         TagsSection(
             stringResource(R.string.client_title_tags),
-            it.map { tag ->
-                TagItem(tag, tag)
-            },
+            it.map { tag -> TagItem(tag, tag) },
             tappable = false,
         )
     }
